@@ -91,6 +91,22 @@ export class MintApp extends connect(store)(LitElement) {
     // Anything that's related to rendering should be done in here.
     return html`
       <!-- Overall app layout -->
+      <ul class="arrowbox">
+        <li id="variables_breadcrumb" 
+            @click="${() => { this._selectMode('variables') }}">Variables</li>
+        <li id="models_breadcrumb" 
+            @click="${() => { this._selectMode('models') }}">Models</li>
+        <li id="datasets_breadcrumb" 
+            @click="${() => { this._selectMode('datasets') }}">Datasets</li>
+        <li id="parameters_breadcrumb" 
+            @click="${() => { this._selectMode('parameters') }}">Setup</li>
+        <li id="runs_breadcrumb" 
+            @click="${() => { this._selectMode('runs') }}">Runs</li>
+        <li id="results_breadcrumb" 
+            @click="${() => { this._selectMode('results') }}">Results</li>
+        <li id="visualize_breadcrumb" 
+            @click="${() => { this._selectMode('visualize') }}">Visualize</li>
+      </ul>
       <div class="frame">
 
         <!-- Left drawer -->

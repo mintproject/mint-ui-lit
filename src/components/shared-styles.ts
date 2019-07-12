@@ -386,6 +386,7 @@ export const SharedStyles = css`
 
   /* End of Dialog Form elements */
 
+  /* Pure Table */
   .pure-table {
     width: 100%;
     border-collapse: collapse;
@@ -472,5 +473,88 @@ export const SharedStyles = css`
     border-left: 0px;
     border-right: 0px;
   }
+
+  /* End of Pure Table */
+
+
+  /* Arrow Breadcrumbs */
+  .arrowbox {
+    padding: 0;
+    margin: 0;
+    padding-left: 13px;
+    padding-right: 5.5px;
+    display: inline-block;
+    position: relative;
+    height: 26px;
+  }
+  .arrowbox:before {
+    content: "";
+    border-left: 13px solid rgba(0, 0, 0, 0);
+    border-top: 14px solid transparent;
+    border-bottom: 13px solid transparent;
+    border-right: 0;
+    position: absolute;
+    left: 0px;
+  }
+  .arrowbox:after {
+    content: "";
+    border-left: 14px solid transparent;
+    border-top: 14px solid rgba(0, 0, 0, 0);
+    border-bottom: 14px solid rgba(0, 0, 0, 0);
+    border-right: 0;
+    position: absolute;
+    right: 0px;
+    top: 0;
+  }
+  
+  .arrowbox li {
+    border: 1px solid #FFFFFF;
+    list-style-type: none;
+    display: inline-block;
+    margin-right: 13px;
+    height: 26px;
+    line-height: 26px;
+    width: 90px;
+    background: #f0f0f0;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+    position: relative;
+    color: #232323;
+    cursor: pointer;
+  }
+  .arrowbox li::before {
+    content: "";
+    border-left: 13px solid transparent;
+    border-top: 13px solid #f0f0f0;
+    border-bottom: 13px solid #f0f0f0;
+    border-right: 0;
+    position: absolute;
+    left: -13px;
+  }
+  .arrowbox li::after {
+    content: "";
+    border-left: 13px solid #f0f0f0;
+    border-top: 13px solid transparent;
+    border-bottom: 13px solid transparent;
+    border-right: 0;
+    position: absolute;
+    right: -13px;
+  }
+
+  .arrowbox li:hover {
+    background: #e0e0e0;
+  }
+  .arrowbox li:hover::before {
+    border-left-color: transparent;
+    border-top-color: #e0e0e0;
+    border-bottom-color: #e0e0e0;
+  }
+  .arrowbox li:hover::after {
+    border-left-color: #e0e0e0;
+    border-top-color: transparent;
+    border-bottom-color: transparent;
+  }
+  /* End of Chevron Breadcrumbs */  
 
 `;

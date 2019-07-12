@@ -5,6 +5,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Use TypeScript. Don't commit js files in source
+src/*.js
+
 # Runtime data
 pids
 *.pid
