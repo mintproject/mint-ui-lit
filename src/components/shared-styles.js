@@ -219,11 +219,11 @@ export const SharedStyles = css `
   /* End of Tree View */
 
   .card {
-    margin: 0px;
+    margin: 15px;
     left: 0px;
     right: 0px;
-    padding: 0px;
-    height: 100%;
+    padding: 10px;
+    height: calc(100% - 50px);
     background: #FFFFFF;
   }
 
@@ -232,7 +232,7 @@ export const SharedStyles = css `
   }
 
   .page.fullpage[active] {
-    height: 100%;
+    height: calc(100% - 50px);
     left: 0px;
     right: 0px;
   }

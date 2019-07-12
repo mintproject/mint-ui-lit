@@ -49,23 +49,16 @@ export class MintApp extends connect(store)(LitElement) {
     return [
       SharedStyles,
       css`
-      .mainframe {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-      }
       .frame {
-        padding: 0px;
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
         display: flex;
         overflow: auto;
-        align-items: stretch;
-        width: 100%;
+        background: #F6F6F6;
       }
-      div#left {
-      }
-      div#right {
-        flex-grow: 1;
-      }
-      /*
 
       div#left {
         top: 0;
@@ -88,58 +81,6 @@ export class MintApp extends connect(store)(LitElement) {
         bottom: 0;
         width: 100%;
         transition: width 0.2s;
-      }*/
-
-      .chevron {
-        position: relative;
-        top: 8px;
-        z-index: 1;
-        text-align: center;
-        vertical-align: middle;
-        line-height: 20px;
-        padding: 12px;
-        margin-bottom: 6px;
-        height: 20px;
-        width: 65px;
-        font-size: 14px;
-        font-weight: bold;
-        color: white;
-      }
-      
-      .chevron:before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: 100%;
-        width: 51%;
-        background: #629b30;
-        z-index: -1;
-        -webkit-transform: skew(0deg, 14deg);
-        -moz-transform: skew(0deg, 14deg);
-        -ms-transform: skew(0deg, 14deg);
-        -o-transform: skew(0deg, 14deg);
-        transform: skew(0deg, 14deg);
-      }
-      .chevron:after {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: 0;
-        height: 100%;
-        width: 50%;
-        z-index: -1;
-        background: #629b30;
-        -webkit-transform: skew(0deg, -14deg);
-        -moz-transform: skew(0deg, -14deg);
-        -ms-transform: skew(0deg, -14deg);
-        -o-transform: skew(0deg, -14deg);
-        transform: skew(0deg, -14deg);
-      }  
-      
-      .chevron.selected:after,
-      .chevron.selected:before {
-        background: #f1951b;
       }
          
       `
@@ -149,41 +90,60 @@ export class MintApp extends connect(store)(LitElement) {
   protected render() {
     // Anything that's related to rendering should be done in here.
     return html`
-      <!-- Navigation Bar -->
-      <div class="mainframe">
-      <wl-nav>
-        <div slot="title"><a class="title" href="${BASE_HREF}"><img height="40" src="/images/logo.png"></a></div>
-        <div slot="right">
-          ${this.user == null ? 
-            html`
-            <wl-button flat inverted @click="${this._showLoginWindow}">
-              LOGIN &nbsp;
-              <wl-icon alt="account">account_circle</wl-icon>
-            </wl-button>
-            `
-            :
-            html `
-            <wl-button flat inverted @click="${signOut}">
-              LOGOUT ${this.user.email}
-            </wl-button>
-            `
-          }
-        </div>
-      </wl-nav>
-
       <!-- Overall app layout -->
       <div class="frame">
+
         <!-- Left drawer -->
-        <div id="left open">
-          <div class="chevron">Data</div>
-          <div class="chevron">Region</div>
-          <div class="chevron">Models</div>
-          <div class="chevron">Objectives</div>
-          <div class="chevron selected">Modeling</div>
-          <div class="chevron">Analysis</div>  
+        <div id="left">
+          <div class="welcome">
+            <h2>Welcome User !</h2>
+            <img class="avatar" src="images/logo.png"></img>
+          </div>
+          <div class="leftnav">
+            <div class="clt">
+              <a href="${BASE_HREF}"><wl-icon>home</wl-icon> Home</a>
+              <ul>
+                <li>
+                  <a href="${BASE_HREF}">Scenarios</a>
+                </li>
+                <li>
+                  <a href="${BASE_HREF}">Datasets</a>
+                </li>
+                <li>
+                  <a href="${BASE_HREF}">Models</a>
+                </li>
+                <li>
+                  <a href="${BASE_HREF}">Runs</a>
+                </li>                                          
+              </ul>
+            </div>
+            <mint-home-sidebar class="page" ?active="${this._page == 'home'}"></mint-home-sidebar>
+            <mint-scenario-sidebar class="page" ?active="${this._page == 'scenario'}"></mint-scenario-sidebar>          
+          </div>
         </div>
 
         <div id="right">
+          <!-- Navigation Bar -->
+          <wl-nav>
+            <div slot="title"><a class="title" href="${BASE_HREF}"><img height="40" src="/images/logo.png"></a></div>
+            <div slot="right">
+              ${this.user == null ? 
+                html`
+                <wl-button flat inverted @click="${this._showLoginWindow}">
+                  LOGIN &nbsp;
+                  <wl-icon alt="account">account_circle</wl-icon>
+                </wl-button>
+                `
+                :
+                html `
+                <wl-button flat inverted @click="${signOut}">
+                  LOGOUT ${this.user.email}
+                </wl-button>
+                `
+              }
+            </div>
+          </wl-nav>
+
           <!-- Main Pages -->
           <mint-home class="page fullpage" ?active="${this._page == 'home'}"></mint-home>
           <mint-scenario class="page fullpage" ?active="${this._page == 'scenario'}"></mint-scenario>
@@ -192,9 +152,8 @@ export class MintApp extends connect(store)(LitElement) {
           <variable-viewer class="page fullpage" ?active="${this._page == 'variables'}"></variable-viewer>
         </div>
       </div>
-      </div>
 
-      ${this._renderDialogs()}
+      ${this._renderDialogs()};
     `;
   }
 
