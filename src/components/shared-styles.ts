@@ -27,7 +27,7 @@ export const SharedStyles = css`
   }
 
   wl-nav {
-    --nav-bg: #F0F0F0;
+    /*--nav-bg: #F0F0F0;*/
     --nav-color: #232323;
     --nav-height: 50px;
     border-bottom: 1px solid #E6E6E6;

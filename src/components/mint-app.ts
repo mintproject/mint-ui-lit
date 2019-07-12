@@ -49,13 +49,18 @@ export class MintApp extends connect(store)(LitElement) {
     return [
       SharedStyles,
       css`
-      .frame {
+      .appframe {
         position: fixed;
         top: 0;
         bottom: 0;
         left: 0;
         right: 0;
+      }
+
+      .sectionframe {
         display: flex;
+        height: 100%;
+        width: 100%;
         overflow: auto;
         background: #F6F6F6;
       }
@@ -82,7 +87,25 @@ export class MintApp extends connect(store)(LitElement) {
         width: 100%;
         transition: width 0.2s;
       }
-         
+      
+      .arrowbox {
+        margin-left: 20px;
+      }
+
+      .arrowbox li.active {
+        background: #629b30;
+        color: white;
+      }
+      .arrowbox li.active::before {
+        border-left-color: transparent;
+        border-top-color: #629b30;
+        border-bottom-color: #629b30;
+      }
+      .arrowbox li.active::after {
+        border-left-color: #629b30;
+        border-top-color: transparent;
+        border-bottom-color: transparent;
+      }
       `
     ];
   }
@@ -91,74 +114,44 @@ export class MintApp extends connect(store)(LitElement) {
     // Anything that's related to rendering should be done in here.
     return html`
       <!-- Overall app layout -->
-      <ul class="arrowbox">
-        <li id="variables_breadcrumb" 
-            @click="${() => { this._selectMode('variables') }}">Variables</li>
-        <li id="models_breadcrumb" 
-            @click="${() => { this._selectMode('models') }}">Models</li>
-        <li id="datasets_breadcrumb" 
-            @click="${() => { this._selectMode('datasets') }}">Datasets</li>
-        <li id="parameters_breadcrumb" 
-            @click="${() => { this._selectMode('parameters') }}">Setup</li>
-        <li id="runs_breadcrumb" 
-            @click="${() => { this._selectMode('runs') }}">Runs</li>
-        <li id="results_breadcrumb" 
-            @click="${() => { this._selectMode('results') }}">Results</li>
-        <li id="visualize_breadcrumb" 
-            @click="${() => { this._selectMode('visualize') }}">Visualize</li>
-      </ul>
-      <div class="frame">
 
-        <!-- Left drawer -->
-        <div id="left">
-          <div class="welcome">
-            <h2>Welcome User !</h2>
-            <img class="avatar" src="images/logo.png"></img>
-          </div>
-          <div class="leftnav">
-            <div class="clt">
-              <a href="${BASE_HREF}"><wl-icon>home</wl-icon> Home</a>
-              <ul>
-                <li>
-                  <a href="${BASE_HREF}">Scenarios</a>
-                </li>
-                <li>
-                  <a href="${BASE_HREF}">Datasets</a>
-                </li>
-                <li>
-                  <a href="${BASE_HREF}">Models</a>
-                </li>
-                <li>
-                  <a href="${BASE_HREF}">Runs</a>
-                </li>                                          
-              </ul>
-            </div>
-            <mint-home-sidebar class="page" ?active="${this._page == 'home'}"></mint-home-sidebar>
-            <mint-scenario-sidebar class="page" ?active="${this._page == 'scenario'}"></mint-scenario-sidebar>          
-          </div>
+    <div class="appframe">
+      <!-- Navigation Bar -->
+      <wl-nav>
+        <div slot="title">
+          <a class="title" href="${BASE_HREF}"><img height="40" src="/images/logo.png"></a>
+
+          <!-- Need to add click handlers to go to the appropriate page -->
+          <ul class="arrowbox">
+            <li>DATA</li>
+            <li>REGIONS</li>
+            <li>MODELS</li>
+            <li class="active">MODELING</li>
+            <li>ANALYSIS</li>
+          </ul>
+
         </div>
+        <div slot="right">
+          ${this.user == null ? 
+            html`
+            <wl-button flat inverted @click="${this._showLoginWindow}">
+              LOGIN &nbsp;
+              <wl-icon alt="account">account_circle</wl-icon>
+            </wl-button>
+            `
+            :
+            html `
+            <wl-button flat inverted @click="${signOut}">
+              LOGOUT ${this.user.email}
+            </wl-button>
+            `
+          }
+        </div>
+      </wl-nav>
+
+      <div class="sectionframe">
 
         <div id="right">
-          <!-- Navigation Bar -->
-          <wl-nav>
-            <div slot="title"><a class="title" href="${BASE_HREF}"><img height="40" src="/images/logo.png"></a></div>
-            <div slot="right">
-              ${this.user == null ? 
-                html`
-                <wl-button flat inverted @click="${this._showLoginWindow}">
-                  LOGIN &nbsp;
-                  <wl-icon alt="account">account_circle</wl-icon>
-                </wl-button>
-                `
-                :
-                html `
-                <wl-button flat inverted @click="${signOut}">
-                  LOGOUT ${this.user.email}
-                </wl-button>
-                `
-              }
-            </div>
-          </wl-nav>
 
           <!-- Main Pages -->
           <mint-home class="page fullpage" ?active="${this._page == 'home'}"></mint-home>
@@ -168,8 +161,9 @@ export class MintApp extends connect(store)(LitElement) {
           <variable-viewer class="page fullpage" ?active="${this._page == 'variables'}"></variable-viewer>
         </div>
       </div>
+    </div>
 
-      ${this._renderDialogs()};
+    ${this._renderDialogs()}
     `;
   }
 
