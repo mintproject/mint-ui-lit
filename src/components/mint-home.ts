@@ -44,6 +44,7 @@ import { navigate, BASE_HREF } from '../actions/app.js';
 import { PageViewElement } from './page-view-element.js';
 import { renderNotifications } from '../util/ui_renders';
 import { formElementsComplete, showDialog, hideDialog, showNotification, resetForm } from '../util/ui_functions';
+import { GOOGLE_API_KEY } from '../config/google-api-key';
 
 @customElement('mint-home')
 export class MintHome extends connect(store)(PageViewElement) {
@@ -186,7 +187,7 @@ export class MintHome extends connect(store)(PageViewElement) {
             })}
           </div>
 
-          <google-map class="middle2main" api-key="AIzaSyBBHzlgCYAA-yKS7lTvsyiidZFwVHHsPew" 
+          <google-map class="middle2main" api-key="${GOOGLE_API_KEY}" 
             latitude="5" longitude="40" zoom="4" disable-default-ui
             styles="${this._mapStyles}">
             ${this._list && Object.keys(this._regions || {}).map((regionid) => {

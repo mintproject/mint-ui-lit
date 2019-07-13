@@ -24,6 +24,7 @@ import {
 import './mint-home';
 import './mint-scenario';
 import '../catalog-views/dataset-viewer';
+import '../catalog-views/region-viewer';
 import '../catalog-views/model-viewer';
 import '../catalog-views/variable-viewer';
 
@@ -123,11 +124,21 @@ export class MintApp extends connect(store)(LitElement) {
 
           <!-- Need to add click handlers to go to the appropriate page -->
           <ul class="arrowbox">
-            <li>DATA</li>
-            <li>REGIONS</li>
-            <li>MODELS</li>
-            <li class="active">MODELING</li>
-            <li>ANALYSIS</li>
+            <li @click="${()=>this._goToPage('datasets')}"
+                class=${(this._page == 'datasets'? 'active': '')}
+              >DATA</li>
+            <li @click="${()=>this._goToPage('regions')}"
+                class=${(this._page == 'regions'? 'active': '')}
+              >REGIONS</li>
+            <li @click="${()=>this._goToPage('models')}"
+                class=${(this._page == 'models'? 'active': '')}
+              >MODELS</li>
+            <li @click="${()=>this._goToPage('home')}"
+                class=${(this._page == 'home' || this._page == 'scenario') ? 'active': ''}
+              class="active">MODELING</li>
+            <li @click="${()=>this._goToPage('analysis')}"
+                class=${(this._page == 'analysis'? 'active': '')}
+              >ANALYSIS</li>
           </ul>
 
         </div>
@@ -156,6 +167,7 @@ export class MintApp extends connect(store)(LitElement) {
           <!-- Main Pages -->
           <mint-home class="page fullpage" ?active="${this._page == 'home'}"></mint-home>
           <mint-scenario class="page fullpage" ?active="${this._page == 'scenario'}"></mint-scenario>
+          <region-viewer class="page fullpage" ?active="${this._page == 'regions'}"></region-viewer>
           <model-viewer class="page fullpage" ?active="${this._page == 'models'}"></model-viewer>
           <dataset-viewer class="page fullpage" ?active="${this._page == 'datasets'}"></dataset-viewer>
           <variable-viewer class="page fullpage" ?active="${this._page == 'variables'}"></variable-viewer>
@@ -165,6 +177,11 @@ export class MintApp extends connect(store)(LitElement) {
 
     ${this._renderDialogs()}
     `;
+  }
+
+  _goToPage(page:string) {
+    window.history.pushState({}, page, BASE_HREF + page);
+    store.dispatch(navigate(decodeURIComponent(location.pathname)));    
   }
 
   _renderDialogs() {

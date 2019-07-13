@@ -96,6 +96,13 @@ const loadPage: ActionCreator<ThunkResult> = (page: string, params: Array<String
           }
         });
         break;
+    case 'regions':
+        import('../catalog-views/region-viewer.js').then((_module) => {
+          if(params.length > 0) {
+            //store.dispatch(queryRegionDetail(params[0]));
+          }
+        });
+        break;
     case 'datasets':
         import('../catalog-views/dataset-viewer.js').then((_module) => {
           if(params.length > 0) {
