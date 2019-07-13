@@ -8,6 +8,9 @@ yarn-error.log*
 # Use TypeScript. Don't commit js files in source
 src/**/*.js
 
+# Don't commit latest google api key
+src/config/google-api-key.ts
+
 # Runtime data
 pids
 *.pid
