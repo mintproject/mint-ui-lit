@@ -9,7 +9,7 @@ yarn-error.log*
 src/**/*.js
 
 # Don't commit latest google api key
-src/config/google-api-key.ts
+google-api-key.ts
 
 # Runtime data
 pids
