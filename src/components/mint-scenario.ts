@@ -13,9 +13,9 @@ import "weightless/snackbar";
 
 import './mint-pathway';
 
-import { selectSubgoal, selectPathway } from "../actions/ui";
+//mport { selectSubgoal, selectPathway } from "../actions/ui";
 import { getUISelectedSubgoal } from "../util/state_functions";
-import { navigate, BASE_HREF } from "../actions/app";
+import { navigate, BASE_HREF, goToPage } from "../actions/app";
 import { renderVariables, renderNotifications } from "../util/ui_renders";
 import { resetForm, showDialog, formElementsComplete, showNotification, hideDialog, hideNotification } from "../util/ui_functions";
 
@@ -90,20 +90,28 @@ export class MintScenario extends connect(store)(PageViewElement) {
         }
         return html`
         <div class="card">
+            <div class="cltrow scenariorow">
+                <wl-button flat inverted @click="${()=> goToPage('home')}">
+                    <wl-icon>arrow_back_ios</wl-icon>
+                </wl-button>
+                <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
+                    <wl-title level="3" style="margin: 0px">${this._scenario!.name}</wl-title>
+                </div>
+                <wl-icon @click="${this._onEditScenario}" 
+                    class="actionIcon editIcon">edit</wl-icon>
+                <wl-icon @click="${this._onDeleteScenario}" 
+                    class="actionIcon deleteIcon">delete</wl-icon>
+            </div>
             <div class="twocolumns">
                 <div class="left">
                     <div class="clt">
                         <div class="cltrow_padded scenariorow">
                             <div class="cltmain">
-                                <wl-title level="3" style="margin: 0px">${this._scenario!.name}</wl-title>
+                                <wl-title level="4" style="margin: 0px">OBJECTIVES</wl-title>
                             </div>
                             <wl-icon @click="${this._addGoalDialog}" 
                                 class="actionIcon addIcon">note_add</wl-icon>
-                            <wl-icon @click="${this._onEditScenario}" 
-                                class="actionIcon editIcon">edit</wl-icon>
-                            <wl-icon @click="${this._onDeleteScenario}" 
-                                class="actionIcon deleteIcon">delete</wl-icon>
-                        </div>
+                        </div>                    
                         <ul>
                         ${Object.keys(this._scenario_details.goals).map((goalid) => {
                             const goal = this._scenario_details!.goals[goalid];
@@ -553,8 +561,9 @@ export class MintScenario extends connect(store)(PageViewElement) {
         let subgoalid = (e.currentTarget as HTMLButtonElement).dataset['subgoalid'];
         let subgoal = this._scenario_details!.subgoals[subgoalid!];
         if(subgoal && (!this._selectedSubgoal || (this._selectedSubgoal.id != subgoalid))) {
-            store.dispatch(selectSubgoal(subgoal.id));
-            store.dispatch(selectPathway(subgoal.pathwayids![0])); 
+            goToPage("scenario/" + this._scenario!.id + "/" + subgoal.id + "/" + subgoal.pathwayids![0]);
+            //store.dispatch(selectSubgoal(subgoal.id));
+            //store.dispatch(selectPathway(subgoal.pathwayids![0])); 
             // Selecting the first pathway of the subgoal by default
             // TODO: Think about handling multiple pathways in an elegant manner
         }
@@ -612,7 +621,9 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 hideNotification("deleteNotification", this.shadowRoot!);
             }
         }
-        // If a subgoal has been selected
-        this._selectedSubgoal = getUISelectedSubgoal(state)!;
+        if(state.mint.scenario && state.mint.scenario.subgoals) {
+            // If a subgoal has been selected
+            this._selectedSubgoal = getUISelectedSubgoal(state)!;
+        }
     }
 }

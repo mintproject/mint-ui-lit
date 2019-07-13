@@ -13,7 +13,7 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from '../store.js';
 import { queryDatasetDetail } from './datasets.js';
 import { queryModelDetail } from './models.js';
-import { selectScenario, selectPathway } from './ui.js';
+import { selectScenario, selectPathway, selectSubgoal } from './ui.js';
 import { auth } from '../config/firebase.js';
 import { User } from 'firebase';
 
@@ -58,16 +58,21 @@ export const signOut = () => {
   auth.signOut();
 };
 
+export const goToPage = (page:string) => {
+  window.history.pushState({}, page, BASE_HREF + page);
+  store.dispatch(navigate(decodeURIComponent(location.pathname)));    
+}
 
 export const navigate: ActionCreator<ThunkResult> = (path: string) => (dispatch) => {
   // Extract the page name from path.
   let page = path === BASE_HREF ? 'home' : path.slice(BASE_HREF.length);
 
   let params = page.split("/");
-  if(params.length > 1) {
+  if(params.length > 0) {
     page = params[0];
     params.splice(0, 1);
   }
+  console.log(page);
 
   // Any other info you might want to extract from the path (like page type),
   // you can do here
@@ -87,6 +92,12 @@ const loadPage: ActionCreator<ThunkResult> = (page: string, params: Array<String
       import('../components/mint-scenario.js').then((_module) => {
         if(params.length > 0) {
           store.dispatch(selectScenario(params[0]));
+          if(params.length > 1) {
+            store.dispatch(selectSubgoal(params[1]));
+            if(params.length > 2) {
+              store.dispatch(selectPathway(params[2]));
+            }
+          }
         }
       });
       break;

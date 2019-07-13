@@ -191,9 +191,10 @@ export const SharedStyles = css`
   .cltrow, .cltrow_padded {
     display:flex; 
     align-items: center;
+    padding-right: 8px;
   }
   .cltrow_padded {
-    padding: 5px 0px 5px 10px;
+    padding: 5px 8px 5px 10px;
   }
   .cltmain {
     flex-grow: 1;

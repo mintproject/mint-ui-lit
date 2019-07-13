@@ -22,7 +22,7 @@ export const selectScenario: ActionCreator<UIActionSelectScenario> = (scenarioid
 };
 
 export const selectSubgoal: ActionCreator<UIActionSelectSubgoal> = (subgoalid:string) => {
-    //console.log("selectSubgoal:" + subgoalid);
+    console.log("selectSubgoal:" + subgoalid);
     return {
         type: UI_SELECT_SUBGOAL,
         subgoalid: subgoalid

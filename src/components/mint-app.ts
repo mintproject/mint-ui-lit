@@ -18,7 +18,7 @@ import { store, RootState } from '../store';
 
 // These are the actions needed by this element.
 import {
-  navigate, BASE_HREF, fetchUser, signOut, signIn,
+  navigate, BASE_HREF, fetchUser, signOut, signIn, goToPage,
 } from '../actions/app';
 
 import './mint-home';
@@ -124,19 +124,19 @@ export class MintApp extends connect(store)(LitElement) {
 
           <!-- Need to add click handlers to go to the appropriate page -->
           <ul class="arrowbox">
-            <li @click="${()=>this._goToPage('datasets')}"
+            <li @click="${()=>goToPage('datasets')}"
                 class=${(this._page == 'datasets'? 'active': '')}
               >DATA</li>
-            <li @click="${()=>this._goToPage('regions')}"
+            <li @click="${()=>goToPage('regions')}"
                 class=${(this._page == 'regions'? 'active': '')}
               >REGIONS</li>
-            <li @click="${()=>this._goToPage('models')}"
+            <li @click="${()=>goToPage('models')}"
                 class=${(this._page == 'models'? 'active': '')}
               >MODELS</li>
-            <li @click="${()=>this._goToPage('home')}"
+            <li @click="${()=>goToPage('home')}"
                 class=${(this._page == 'home' || this._page == 'scenario') ? 'active': ''}
               class="active">MODELING</li>
-            <li @click="${()=>this._goToPage('analysis')}"
+            <li @click="${()=>goToPage('analysis')}"
                 class=${(this._page == 'analysis'? 'active': '')}
               >ANALYSIS</li>
           </ul>
@@ -177,11 +177,6 @@ export class MintApp extends connect(store)(LitElement) {
 
     ${this._renderDialogs()}
     `;
-  }
-
-  _goToPage(page:string) {
-    window.history.pushState({}, page, BASE_HREF + page);
-    store.dispatch(navigate(decodeURIComponent(location.pathname)));    
   }
 
   _renderDialogs() {
