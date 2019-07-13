@@ -32,6 +32,9 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
     }
     
     protected render() {
+        if(!this.pathway) {
+            return html ``;
+        }
         let driverids = (this.pathway ? this.pathway.driving_variables : []) || [];
         let responseids = (this.pathway ? this.pathway.response_variables: []) || [];
         return html `

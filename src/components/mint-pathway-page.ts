@@ -22,6 +22,7 @@ export class MintPathwayPage extends PageViewElement {
             this.pathway = pathway;
             return true;
         }
+        this.pathway = pathway;
         return false;
     }
 

@@ -13,7 +13,7 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from '../store.js';
 import { queryDatasetDetail } from './datasets.js';
 import { queryModelDetail } from './models.js';
-import { selectScenario } from './ui.js';
+import { selectScenario, selectPathway } from './ui.js';
 import { auth } from '../config/firebase.js';
 import { User } from 'firebase';
 
@@ -80,6 +80,7 @@ const loadPage: ActionCreator<ThunkResult> = (page: string, params: Array<String
       import('../components/mint-home.js').then((_module) => {
         // Put code in here that you want to run every time when
         // navigating to view1 after view is loaded.
+        store.dispatch(selectPathway(null));
       });
       break;
     case 'scenario':

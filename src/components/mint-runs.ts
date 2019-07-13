@@ -22,6 +22,10 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
     }
     
     protected render() {
+        if(!this.pathway) {
+            return html ``;
+        }
+        
         // If no models selected
         if(!this.pathway.executable_ensembles || !this.pathway.executable_ensembles.length) {
             return html `

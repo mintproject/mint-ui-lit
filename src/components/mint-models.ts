@@ -106,6 +106,10 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     }
 
     protected render() {
+        if(!this.pathway) {
+            return html ``;
+        }
+                
         let modelids = Object.keys((this.pathway.models || {})) || [];
         let done = (this.pathway.models && modelids.length > 0);
         return html`

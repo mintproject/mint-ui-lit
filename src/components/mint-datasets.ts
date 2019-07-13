@@ -76,6 +76,10 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     }
 
     protected render() {
+        if(!this.pathway) {
+            return html ``;
+        }
+        
         // If no models selected
         if(!this.pathway.models || !Object.keys(this.pathway.models).length) {
             return html `

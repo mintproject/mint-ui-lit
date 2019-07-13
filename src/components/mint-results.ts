@@ -27,6 +27,10 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     }
     
     protected render() {
+        if(!this.pathway) {
+            return html ``;
+        }
+        
         // If no models selected
         if(getPathwayRunsStatus(this.pathway) != TASK_DONE) {
             return html `

@@ -28,6 +28,10 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
     }
     
     protected render() {
+        if(!this.pathway) {
+            return html ``;
+        }
+        
         return html`
 
         <h1>${this.scenario.name}</h1>
@@ -104,6 +108,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
         super.setUser(state);
         super.setPathway(state);
         this._subgoal = getUISelectedSubgoal(state)!;
-        this._goal = getUISelectedGoal(state, this._subgoal)!;
+        if(this._subgoal)
+            this._goal = getUISelectedGoal(state, this._subgoal)!;
     }
 }
