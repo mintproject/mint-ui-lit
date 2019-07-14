@@ -6,6 +6,9 @@ import { RootState } from '../store';
 import { db, fieldValue } from '../config/firebase';
 import { Dataset } from '../reducers/datasets';
 import { Model } from '../reducers/models';
+import { EXAMPLE_SCENARIOS_LIST_DATA, EXAMPLE_REGION_DATA, EXAMPLE_SCENARIO_DETAILS } from '../offline_data/sample_scenarios';
+
+const OFFLINE_DEMO_MODE = false;
 
 export const REGIONS_LIST = 'REGIONS_LIST';
 
@@ -115,196 +118,19 @@ export type PathwayAction = PathwayVariablesActionAdd | PathwayVariablesActionRe
 
 export type MintAction = RegionsActionList | ScenariosAction | GoalsAction  | PathwaysAction | PathwayAction ;
 
-/*
-const EXAMPLE_INITIAL_DATA = {
-    "scenarioids": [],
-    "scenarios": {},
-    "regions": {
-        "south_sudan": {
-            "id": "south_sudan",
-            "name": "South Sudan",
-            "geojson": "http://mint-ui.org/server/common/geo/south_sudan"
-        },
-        "ethiopia": {
-            "id": "ethiopia",
-            "name": "Ethiopia",
-            "geojson": "https://raw.githubusercontent.com/glynnbird/countriesgeojson/master/ethiopia.geojson"
-        }
-    }
-};
-*/
-
-/*
-const EXAMPLE_INITIAL_DATA = {
-    "scenarioids": [ "scenario1", "scenario2", "scenario3", "scenario4", "scenario5" ],
-    "scenarios": {
-        "scenario1": {
-            "id": "scenario1",
-            "name": "Check on Food Security in South Sudan",
-            "regionid": "south_sudan",
-            "dates": {
-                "start_date": Date(),
-                "end_date": Date()
-            }
-        },
-        "scenario2": {
-            "id": "scenario2",
-            "name": "Check up on Flooding issues in South Sudan",
-            "regionid": "south_sudan",
-            "dates": {
-                "start_date": Date(),
-                "end_date": Date()
-            }
-        },
-        "scenario3": {
-            "id": "scenario3",
-            "name": "Investigate the evolving refugee crisis in Ethipia",
-            "regionid": "ethiopia",
-            "dates": {
-                "start_date": Date(),
-                "end_date": Date()
-            }
-        },
-        "scenario4": {
-            "id": "scenario4",
-            "name": "Check up on Flooding issues in Ethiopia",
-            "regionid": "ethiopia",
-            "dates": {
-                "start_date": Date(),
-                "end_date": Date()
-            }
-        },
-        "scenario5": {
-            "id": "scenario5",
-            "name": "Check up on Flooding issues in Ethiopia",
-            "regionid": "ethiopia",
-            "dates": {
-                "start_date": Date(),
-                "end_date": Date()
-            }
-        }
-    },
-    "regions": {
-        "south_sudan": {
-            "id": "south_sudan",
-            "name": "South Sudan",
-            "geojson": "http://mint-ui.org/server/common/geo/south_sudan"
-        },
-        "ethiopia": {
-            "id": "ethiopia",
-            "name": "Ethiopia",
-            "geojson": "https://raw.githubusercontent.com/glynnbird/countriesgeojson/master/ethiopia.geojson"
-        }
-    }
-}
-*/
-
-/*
-const EXAMPLE_SCENARIO_DETAILS = {
-    "id": "scenario1",
-    "name": "Check on Food Security in South Sudan",
-    "regionid": "south_sudan",
-    "dates": {
-        "start_date": "2017-01-01",
-        "end_date": "2018-01-01"
-    },
-    "goals": {
-        "goal1": {
-            "id": "goal1",
-            "name": "Forecast crop production for lean season of 2017",
-            "subgoalids": ["subgoal1", "subgoal2"]
-        },
-        "goal2": {
-            "id": "goal2",
-            "name": "Check for transportation blockages if there is increased rainfall",
-            "subgoalids": ["subgoal1"]
-        },
-    },
-    "subgoals": {
-        "subgoal1": {
-            "id": "subgoal1",
-            "name": "View historical precipitation data",
-            "pathwayids": [ "pathway1", "pathway2" ]
-        },
-        "subgoal2": {
-            "id": "subgoal2",
-            "name": "Forecast crop production details",
-            "pathwayids": [ "pathway1" ]
-        },
-    },
-    "pathways": {
-        "pathway1": {
-            "id": "pathway1",
-            "variables": {
-                "crop_production": {
-                    "id": "crop_production",
-                    "name": "Crop Production"
-                }
-            },
-            "models": {
-                "model1": {
-                    "id": "model1",
-                    "name": "Model 1"
-                },
-                "model2": {
-                    "id": "model2",
-                    "name": "Model 2"
-                }
-            },
-            "datasets": {
-                "dataset1": {
-                    "id": "dataset1",
-                    "name": "Dataset 1"
-                },
-                "dataset2": {
-                    "id": "dataset2",
-                    "name": "Dataset 2"
-                }
-            },
-            "ensembles": {
-                "ensemble1": {
-                    "modelid": "model1",
-                    "bindings": {
-                        "tvar1": "dataset1",
-                        "param1": "param1"
-                    },
-                    "runid": "runid1"
-                },
-                "ensemble2": {
-                    "modelid": "model1",
-                    "bindings": {
-                        "tvar1": "dataset2"
-                    },
-                    "runid": "runid2"
-                },
-                "ensemble3": {
-                    "modelid": "model2",
-                    "bindings": {
-                        "mvar2": "dataset2"
-                    },
-                    "runid": "runid3"
-                }
-            }
-        },
-        "pathway2": {
-            "id": "pathway2",
-            "variables": {
-                "crop_yeild": {
-                    "id": "crop_yeild",
-                    "name": "Crop Yield"
-                }
-            },
-        },
-    }
-}
-*/
-
 // List Regions
 type ListRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionList>;
 export const listRegions: ActionCreator<ListRegionsThunkResult> = () => (dispatch) => {
     // Here you would normally get the data from the server. We're simulating
     // that by dispatching an async action (that you would dispatch when you
     // succesfully got the data back)
+    if(OFFLINE_DEMO_MODE) {
+        dispatch({
+            type: REGIONS_LIST,
+            list: EXAMPLE_REGION_DATA
+        });
+        return;
+    }
 
     db.collection("regions").get().then((querySnapshot) => {
         let regions:RegionList = {};
@@ -323,6 +149,14 @@ export const listRegions: ActionCreator<ListRegionsThunkResult> = () => (dispatc
 // List Scenarios
 type ListThunkResult = ThunkAction<void, RootState, undefined, ScenariosActionList>;
 export const listScenarios: ActionCreator<ListThunkResult> = () => (dispatch) => {
+
+    if(OFFLINE_DEMO_MODE) {
+        dispatch({
+            type: SCENARIOS_LIST,
+            list: EXAMPLE_SCENARIOS_LIST_DATA
+        });
+        return;
+    }
 
     db.collection("scenarios").onSnapshot((querySnapshot) => {
         let scenarios:IdMap<Scenario> = {};
@@ -350,6 +184,19 @@ export const listScenarios: ActionCreator<ListThunkResult> = () => (dispatch) =>
 // Get Scenario details
 type DetailsThunkResult = ThunkAction<void, RootState, undefined, ScenariosActionDetails | ScenariosActionSubscription>;
 export const getScenarioDetail: ActionCreator<DetailsThunkResult> = (scenarioid: string) => (dispatch) => {
+
+    if(OFFLINE_DEMO_MODE) {
+        dispatch({
+            type: SCENARIO_SUBSCRIPTION,
+            unsubscribe: ()=>{}
+        });
+        EXAMPLE_SCENARIO_DETAILS["id"] = scenarioid;    
+        dispatch({
+            type: SCENARIO_DETAILS,
+            details: EXAMPLE_SCENARIO_DETAILS
+        });
+        return;
+    }
 
     let unsubscribe = db.collection("scenarios").doc(scenarioid).onSnapshot((doc) => {
         var details = doc.data() as ScenarioDetails;

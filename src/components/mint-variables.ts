@@ -16,7 +16,7 @@ import { renderNotifications, renderResponseVariables, renderDrivingVariables, r
 import { formElementsComplete, showNotification, hideNotification } from "../util/ui_functions";
 import { selectPathwaySection } from "../actions/ui";
 import { StepUpdateInformation } from "../reducers/mint";
-import { getVariableLongName } from "../util/variable_list";
+import { getVariableLongName } from "../offline_data/variable_list";
 
 @customElement('mint-variables')
 export class MintVariables extends connect(store)(MintPathwayPage) {

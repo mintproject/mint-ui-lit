@@ -14,116 +14,50 @@ import "./mint-visualize";
 import { getPathwayVariablesStatus, TASK_NOT_STARTED, getPathwayModelsStatus, getPathwayDatasetsStatus, 
     getPathwayRunsStatus, getPathwayResultsStatus, TASK_DONE, TASK_PARTLY_DONE, getUISelectedSubgoal, getPathwayParametersStatus } from "../util/state_functions";
 import { MintPathwayPage } from "./mint-pathway-page";
+import { SubGoal } from "../reducers/mint";
+import { BASE_HREF } from "../actions/app";
 
 @customElement('mint-pathway')
 export class MintPathway extends connect(store)(MintPathwayPage) {
-    @property({type: String })
-    private subgoalName!: string;
+    @property({type: Object })
+    private subgoal: SubGoal | null = null;
 
     @property({ type: String })
     private _currentMode: string = "";
 
     static get styles() {
         return [
-            SharedStyles,
-            css`
-          
-          .arrowbox li.active {
-            background: #0f7acf;
+          SharedStyles,
+          css`
+
+          .breadcrumbs li.active, .breadcrumbs li.done.active {
+            background-color: #0f7acf;
             color: white;
           }
-          .arrowbox li.active::before {
+          .breadcrumbs li.active:before, .breadcrumbs li.done.active:before {
+            border-color: #0f7acf;
             border-left-color: transparent;
-            border-top-color: #0f7acf;
-            border-bottom-color: #0f7acf;
           }
-          .arrowbox li.active::after {
+          .breadcrumbs li.active:after, .breadcrumbs li.done.active:after {
             border-left-color: #0f7acf;
-            border-top-color: transparent;
-            border-bottom-color: transparent;
           }
 
-          .arrowbox li.done {
-            background: #06436c;
+          .breadcrumbs li.done {
+            background-color: #06436c;
             color: white;
           }
-          .arrowbox li.done::before {
+          .breadcrumbs li.done:before {
+            border-color: #06436c;
             border-left-color: transparent;
-            border-top-color: #06436c;
-            border-bottom-color: #06436c;
           }
-          .arrowbox li.done::after {
+          .breadcrumbs li.done:after {
             border-left-color: #06436c;
-            border-top-color: transparent;
-            border-bottom-color: transparent;
-          }
-          .arrowbox li.done:hover {
-            background: #06436c;
-          }
-          .arrowbox li.done:hover::before {
-            border-left-color: transparent;
-            border-top-color: #06436c;
-            border-bottom-color: #06436c;
-          }
-          .arrowbox li.done:hover::after {
-            border-left-color: #06436c;
-            border-top-color: transparent;
-            border-bottom-color: transparent;
-          }
-
-          .arrowbox li.done.active {
-            background: #0f7acf;
-            color: white;
-          }
-          .arrowbox li.done.active::before {
-            border-left-color: transparent;
-            border-top-color: #0f7acf;
-            border-bottom-color: #0f7acf;
-          }
-          .arrowbox li.done.active::after {
-            border-left-color: #0f7acf;
-            border-top-color: transparent;
-            border-bottom-color: transparent;
-          }
-
-        /*
-          .arrowbox li.partially_done {
-            background: #c0daf1;
-          }
-          .arrowbox li.partially_done::before {
-            border-left-color: transparent;
-            border-top-color: #c0daf1;
-            border-bottom-color: #c0daf1;
-          }
-          .arrowbox li.partially_done::after {
-            border-left-color: #c0daf1;
-            border-top-color: transparent;
-            border-bottom-color: transparent;
-          }
-        */
-
-          li {
-            color: white;
-            font-weight: 100;
-          }
-          
-          @media (max-width: 768px) {
-            .arrowbox li {
-              font-size: 12px;
-              width: 70px;
-            }
-          }
-          @media (max-width: 480px) {
-            .arrowbox li {
-              font-size: 9px;
-              width: 49px;
-            }
           }
 
           .card {
             margin: 0px;
             padding: 10px;
-            margin-top: 10px;
+            margin-top: 5px;
             margin-bottom: 10px;
             border: 1px solid #F0F0F0;
             left: 0px;
@@ -138,7 +72,7 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
 
     private _renderProgressBar() {
         return html`
-            <ul class="arrowbox">
+            <ul class="breadcrumbs">
                 <li id="variables_breadcrumb" 
                     class="${this._getBreadcrumbClass('variables')}" 
                     @click="${() => { this._selectMode('variables') }}">Variables</li>
@@ -245,6 +179,12 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
             }
         }
         this._currentMode = mode;
+
+        // TODO: Change the url to reflect mode change.
+        if(this.subgoal) {
+          let page = "scenario/" + this.scenario.id + "/" + this.subgoal!.id + "/" + this.pathway.id + "/" + mode;
+          window.history.pushState({}, mode, BASE_HREF + page);
+        }
     }
 
     protected render() {
@@ -254,7 +194,7 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
 
         return html`
             <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-              <wl-title level="4">${this.subgoalName}</wl-title>
+              <wl-title level="4">${this.subgoal ? this.subgoal.name : ""}</wl-title>
             </div>
             ${this._renderProgressBar()}
 
@@ -298,9 +238,7 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
             this._selectMode(this._getNextMode());
         }
 
-        let subgoal = getUISelectedSubgoal(state);
-        if(subgoal)
-            this.subgoalName = subgoal.name;
+        this.subgoal = getUISelectedSubgoal(state);
           
         if(state.ui.selected_pathway_section) {
           //console.log(state.ui.selected_pathway_section);

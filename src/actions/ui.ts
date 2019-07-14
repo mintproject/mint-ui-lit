@@ -14,7 +14,7 @@ export interface UIActionSelectPathwaySection extends Action<'UI_SELECT_PATHWAY_
 export type UIAction = UIActionSelectScenario | UIActionSelectSubgoal | UIActionSelectPathway | UIActionSelectPathwaySection;
 
 export const selectScenario: ActionCreator<UIActionSelectScenario> = (scenarioid:string) => {
-    //console.log("SelectScenario:" + scenarioid);
+    console.log("SelectScenario:" + scenarioid);
     return {
         type: UI_SELECT_SCENARIO,
         scenarioid: scenarioid

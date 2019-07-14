@@ -34,6 +34,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
         
         return html`
 
+        Visualization is still under development. For now, here is a report of the current analysis.
         <h1>${this.scenario.name}</h1>
         <div class="clt">
             <ul>
@@ -99,8 +100,6 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                 </li>
             </ul>
         </div>
-
-        Visualization is still under development
         `;
     }
 

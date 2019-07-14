@@ -34,7 +34,8 @@ export class MintResults extends connect(store)(MintPathwayPage) {
         // If no models selected
         if(getPathwayRunsStatus(this.pathway) != TASK_DONE) {
             return html `
-                Please run some analyses first
+            <p>This step is for selecting and publishing results of the models that you ran earlier.</p>
+            Please run some models first
             `
         }
 

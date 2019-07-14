@@ -1,6 +1,6 @@
 import { html } from "lit-element";
 import { StepUpdateInformation } from "../reducers/mint";
-import { VARIABLES } from "./variable_list";
+import { VARIABLES } from "../offline_data/variable_list";
 
 export const renderVariables = () => {
     return html`

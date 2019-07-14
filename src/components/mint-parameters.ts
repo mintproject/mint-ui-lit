@@ -40,7 +40,10 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         // If no models selected
         if(!this.pathway.models || !Object.keys(this.pathway.models).length) {
             return html `
-                Please select model(s) first
+            <p>
+                This step is for setting up and running the models that you selected earlier.
+            </p>
+            Please select model(s) first
             `
         }
 

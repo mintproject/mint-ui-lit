@@ -13,7 +13,7 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from '../store.js';
 import { queryDatasetDetail } from './datasets.js';
 import { queryModelDetail } from './models.js';
-import { selectScenario, selectPathway, selectSubgoal } from './ui.js';
+import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection } from './ui.js';
 import { auth } from '../config/firebase.js';
 import { User } from 'firebase';
 
@@ -73,6 +73,7 @@ export const navigate: ActionCreator<ThunkResult> = (path: string) => (dispatch)
     params.splice(0, 1);
   }
   console.log(page);
+  console.log(params);
 
   // Any other info you might want to extract from the path (like page type),
   // you can do here
@@ -85,6 +86,7 @@ const loadPage: ActionCreator<ThunkResult> = (page: string, params: Array<String
       import('../components/mint-home.js').then((_module) => {
         // Put code in here that you want to run every time when
         // navigating to view1 after view is loaded.
+        store.dispatch(selectScenario(null));
         store.dispatch(selectPathway(null));
       });
       break;
@@ -96,6 +98,9 @@ const loadPage: ActionCreator<ThunkResult> = (page: string, params: Array<String
             store.dispatch(selectSubgoal(params[1]));
             if(params.length > 2) {
               store.dispatch(selectPathway(params[2]));
+              if(params.length > 3) {
+                store.dispatch(selectPathwaySection(params[3]));
+              }
             }
           }
         }

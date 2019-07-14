@@ -605,7 +605,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
 
             // If we've already got the details in the state
             // - extract details from the state
-            if(state.mint.scenario && state.mint.scenario.id == scenarioid) {
+            if(this._dispatched && state.mint.scenario && state.mint.scenario.id == scenarioid) {
                 this._dispatched = false;
 
                 this._scenario_details = state.mint.scenario;

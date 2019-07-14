@@ -29,7 +29,10 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         // If no models selected
         if(!this.pathway.executable_ensembles || !this.pathway.executable_ensembles.length) {
             return html `
-                Please select some models and datasets first
+            <p>
+                This step is for monitoring model runs. You can view results of these runs in the next step
+            </p>
+            Please setup and run some models first
             `
         }
 

@@ -83,7 +83,10 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         // If no models selected
         if(!this.pathway.models || !Object.keys(this.pathway.models).length) {
             return html `
-                Please select model(s) first
+            <p>
+                This step is for selecting datasets for each of the models that you selected earlier.
+            </p>
+            Please select model(s) first
             `
         }
 

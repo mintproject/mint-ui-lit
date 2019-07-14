@@ -89,23 +89,20 @@ export class MintApp extends connect(store)(LitElement) {
         transition: width 0.2s;
       }
       
-      .arrowbox {
-        margin-left: 20px;
+      .breadcrumbs {
+        margin-left: 40px;
       }
 
-      .arrowbox li.active {
-        background: #629b30;
+      .breadcrumbs li.active {
+        background-color: #629b30;
         color: white;
       }
-      .arrowbox li.active::before {
+      .breadcrumbs li.active:before {
+        border-color: #629b30;
         border-left-color: transparent;
-        border-top-color: #629b30;
-        border-bottom-color: #629b30;
       }
-      .arrowbox li.active::after {
+      .breadcrumbs li.active:after {
         border-left-color: #629b30;
-        border-top-color: transparent;
-        border-bottom-color: transparent;
       }
       `
     ];
@@ -122,24 +119,28 @@ export class MintApp extends connect(store)(LitElement) {
         <div slot="title">
           <a class="title" href="${BASE_HREF}"><img height="40" src="/images/logo.png"></a>
 
-          <!-- Need to add click handlers to go to the appropriate page -->
-          <ul class="arrowbox">
-            <li @click="${()=>goToPage('datasets')}"
-                class=${(this._page == 'datasets'? 'active': '')}
-              >DATA</li>
-            <li @click="${()=>goToPage('regions')}"
-                class=${(this._page == 'regions'? 'active': '')}
-              >REGIONS</li>
-            <li @click="${()=>goToPage('models')}"
-                class=${(this._page == 'models'? 'active': '')}
-              >MODELS</li>
-            <li @click="${()=>goToPage('home')}"
-                class=${(this._page == 'home' || this._page == 'scenario') ? 'active': ''}
-              class="active">MODELING</li>
-            <li @click="${()=>goToPage('analysis')}"
-                class=${(this._page == 'analysis'? 'active': '')}
-              >ANALYSIS</li>
-          </ul>
+          ${this.user ? 
+            html `
+            <ul class="breadcrumbs">
+              <li @click="${()=>goToPage('datasets')}"
+                  class=${(this._page == 'datasets'? 'active': '')}
+                >DATA</li>
+              <li @click="${()=>goToPage('regions')}"
+                  class=${(this._page == 'regions'? 'active': '')}
+                >REGIONS</li>
+              <li @click="${()=>goToPage('models')}"
+                  class=${(this._page == 'models'? 'active': '')}
+                >MODELS</li>
+              <li @click="${()=>goToPage('home')}"
+                  class=${(this._page == 'home' || this._page == 'scenario') ? 'active': ''}
+                class="active">MODELING</li>
+              <li @click="${()=>goToPage('analysis')}"
+                  class=${(this._page == 'analysis'? 'active': '')}
+                >ANALYSIS</li>
+            </ul>
+            `
+            : html ``
+          }
 
         </div>
         <div slot="right">
@@ -160,19 +161,27 @@ export class MintApp extends connect(store)(LitElement) {
         </div>
       </wl-nav>
 
-      <div class="sectionframe">
+      ${this.user ? 
+        html `
+        <div class="sectionframe">
 
-        <div id="right">
+          <div id="right">
 
-          <!-- Main Pages -->
-          <mint-home class="page fullpage" ?active="${this._page == 'home'}"></mint-home>
-          <mint-scenario class="page fullpage" ?active="${this._page == 'scenario'}"></mint-scenario>
-          <region-viewer class="page fullpage" ?active="${this._page == 'regions'}"></region-viewer>
-          <model-viewer class="page fullpage" ?active="${this._page == 'models'}"></model-viewer>
-          <dataset-viewer class="page fullpage" ?active="${this._page == 'datasets'}"></dataset-viewer>
-          <variable-viewer class="page fullpage" ?active="${this._page == 'variables'}"></variable-viewer>
+            <!-- Main Pages -->
+            <mint-home class="page fullpage" ?active="${this._page == 'home'}"></mint-home>
+            <mint-scenario class="page fullpage" ?active="${this._page == 'scenario'}"></mint-scenario>
+            <region-viewer class="page fullpage" ?active="${this._page == 'regions'}"></region-viewer>
+            <model-viewer class="page fullpage" ?active="${this._page == 'models'}"></model-viewer>
+            <dataset-viewer class="page fullpage" ?active="${this._page == 'datasets'}"></dataset-viewer>
+            <variable-viewer class="page fullpage" ?active="${this._page == 'variables'}"></variable-viewer>
+          </div>
         </div>
-      </div>
+        `
+        :
+        html `
+          <center><wl-title level="3"><br /><br />Please Login to Continue</wl-title></center>
+        `
+      }
     </div>
 
     ${this._renderDialogs()}

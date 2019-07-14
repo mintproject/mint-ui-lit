@@ -478,84 +478,77 @@ export const SharedStyles = css`
   /* End of Pure Table */
 
 
-  /* Arrow Breadcrumbs */
-  .arrowbox {
-    padding: 0;
-    margin: 0;
-    padding-left: 13px;
-    padding-right: 5.5px;
+  /* New Breadcrumbs css */
+  .breadcrumbs {
+    list-style: none;
     display: inline-block;
+    width: 100%;
+    padding:0px;
+    margin:0px;
+    margin-left: 20px;
+  }
+  .breadcrumbs .icon {
+    font-size: 14px;
+  }
+  .breadcrumbs li {
+    float: left;
+    cursor: pointer;
+    min-width: 70px;
+    color: #232323;
+    display: block;
+    background: #f0f0f0;
+    text-decoration: none;
     position: relative;
-    height: 26px;
-  }
-  .arrowbox:before {
-    content: "";
-    border-left: 13px solid rgba(0, 0, 0, 0);
-    border-top: 14px solid transparent;
-    border-bottom: 13px solid transparent;
-    border-right: 0;
-    position: absolute;
-    left: 0px;
-  }
-  .arrowbox:after {
-    content: "";
-    border-left: 14px solid transparent;
-    border-top: 14px solid rgba(0, 0, 0, 0);
-    border-bottom: 14px solid rgba(0, 0, 0, 0);
-    border-right: 0;
-    position: absolute;
-    right: 0px;
-    top: 0;
-  }
-  
-  .arrowbox li {
-    border: 1px solid #FFFFFF;
-    list-style-type: none;
-    display: inline-block;
-    margin-right: 13px;
     height: 26px;
     line-height: 26px;
-    width: 90px;
-    background: #f0f0f0;
     font-size: 13px;
     font-weight: bold;
+    padding: 0 10px 0 5px;
     text-align: center;
-    position: relative;
-    color: #232323;
-    cursor: pointer;
+    margin: 2px 23px 1px 0px;
   }
-  .arrowbox li::before {
+  .breadcrumbs li:before, .breadcrumbs li:after {
     content: "";
-    border-left: 13px solid transparent;
-    border-top: 13px solid #f0f0f0;
-    border-bottom: 13px solid #f0f0f0;
-    border-right: 0;
     position: absolute;
-    left: -13px;
+    top: 0;
+    border: 0 solid #f0f0f0;
+    border-width: 13px 12px;
+    width: 0;
+    height: 0;
   }
-  .arrowbox li::after {
-    content: "";
-    border-left: 13px solid #f0f0f0;
-    border-top: 13px solid transparent;
-    border-bottom: 13px solid transparent;
-    border-right: 0;
-    position: absolute;
-    right: -13px;
+  .breadcrumbs li:before {
+    left: -19px;
+    border-left-color: transparent;
+  }
+  .breadcrumbs li:after {
+    left: 100%;
+    border-color: transparent;
+    border-left-color: #f0f0f0;
+  }
+  .breadcrumbs li:hover {
+    background-color: #e0e0e0;
+  }
+  .breadcrumbs li:hover:before {
+    border-color: #e0e0e0;
+    border-left-color: transparent;
+  }
+  .breadcrumbs li:hover:after {
+    border-left-color: #e0e0e0;
   }
 
-  .arrowbox li:hover {
-    background: #e0e0e0;
+  @media (max-width: 768px) {
+    .breadcrumbs li {
+      font-size: 12px;
+      width: 70px;
+    }
   }
-  .arrowbox li:hover::before {
-    border-left-color: transparent;
-    border-top-color: #e0e0e0;
-    border-bottom-color: #e0e0e0;
+  @media (max-width: 480px) {
+    .breadcrumbs li {
+      font-size: 9px;
+      width: 49px;
+    }
   }
-  .arrowbox li:hover::after {
-    border-left-color: #e0e0e0;
-    border-top-color: transparent;
-    border-bottom-color: transparent;
-  }
+
   /* End of Chevron Breadcrumbs */  
 
 `;
