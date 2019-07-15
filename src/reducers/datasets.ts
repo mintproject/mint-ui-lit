@@ -1,7 +1,7 @@
 import { IdNameObject } from "./mint";
 import { Reducer } from "redux";
 import { RootAction } from "../store";
-import { DATASETS_QUERY, DATASETS_DETAIL } from "../actions/datasets";
+import { DATASETS_VARIABLES_QUERY, DATASETS_DETAIL, DATASETS_LIST } from "../actions/datasets";
 
 export interface Dataset extends IdNameObject {
     region: string,
@@ -37,7 +37,7 @@ const INITIAL_STATE: DatasetsState = { datasets: {} as ModelDatasets, dataset: {
 const datasets: Reducer<DatasetsState, RootAction> = (state = INITIAL_STATE, action) => {
 
     switch (action.type) {
-        case DATASETS_QUERY:
+        case DATASETS_VARIABLES_QUERY:
             // Return datasets
             state.datasets = { ...state.datasets };
             state.datasets[action.modelid] = state.datasets[action.modelid] || {};
@@ -45,6 +45,17 @@ const datasets: Reducer<DatasetsState, RootAction> = (state = INITIAL_STATE, act
             return {
                 ...state
             };
+
+        case DATASETS_LIST:
+            // Return datasets
+            state.datasets = { ...state.datasets };
+            state.datasets["*"] = {
+                "*" : action.datasets
+            };
+            return {
+                ...state
+            };
+
         case DATASETS_DETAIL:
             // Return model details
             return {

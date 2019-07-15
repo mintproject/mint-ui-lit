@@ -4,17 +4,55 @@ import { RootState } from "../store";
 import { Dataset, DatasetDetail } from "../reducers/datasets";
 import { EXAMPLE_DATASETS_QUERY } from "../offline_data/sample_datasets";
 
-export const DATASETS_QUERY = 'DATASETS_QUERY';
+export const DATASETS_VARIABLES_QUERY = 'DATASETS_VARIABLES_QUERY';
+export const DATASETS_LIST = 'DATASETS_LIST';
 export const DATASETS_DETAIL = 'DATASETS_DETAIL';
 
-export interface DatasetsActionQuery extends Action<'DATASETS_QUERY'> { modelid: string, inputid: string, datasets: Dataset[] };
+export interface DatasetsActionList extends Action<'DATASETS_LIST'> { datasets: Dataset[] };
+export interface DatasetsActionVariablesQuery extends Action<'DATASETS_VARIABLES_QUERY'> { 
+    modelid: string, 
+    inputid: string, 
+    datasets: Dataset[] 
+};
 export interface DatasetsActionDetail extends Action<'DATASETS_DETAIL'> { dataset: DatasetDetail };
 
-export type DatasetsAction = DatasetsActionQuery | DatasetsActionDetail;
+export type DatasetsAction = DatasetsActionVariablesQuery | DatasetsActionDetail | DatasetsActionList;
 
-// Query Data Catalog
-type QueryDatasetsThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionQuery>;
-export const queryDatasets: ActionCreator<QueryDatasetsThunkResult> = 
+//const DATA_CATALOG_URI = "https://api.mint-data-catalog.org";
+
+// List all Datasets
+type ListDatasetsThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionList>;
+export const listAllDatasets: ActionCreator<ListDatasetsThunkResult> = () => (dispatch) => {
+
+    /*
+    fetch(DATA_CATALOG_URI + "/datasets/find").then((response) => {
+        response.json().then((obj) => {
+            let models = [] as Model[];
+            let bindings = obj["results"]["bindings"];
+            bindings.map((binding: Object) => {
+                models.push({
+                    name: binding["label"]["value"],
+                    description: binding["desc"]["value"],
+                    original_model: binding["model"]["value"]
+                } as Model);
+            });
+            dispatch({
+                type: MODELS_LIST,
+                models
+            });            
+        })
+    });
+    */
+
+    dispatch({
+        type: DATASETS_LIST,
+        datasets: EXAMPLE_DATASETS_QUERY as Dataset[]
+    });
+};
+
+// Query Data Catalog by Variables
+type QueryDatasetsThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionVariablesQuery>;
+export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> = 
         (modelid: string, inputid: string, driving_variables: string[]) => (dispatch) => {
     let datasets = [] as Dataset[];
     //console.log(driving_variables);
@@ -29,7 +67,7 @@ export const queryDatasets: ActionCreator<QueryDatasetsThunkResult> =
     });
     if(driving_variables.length > 0) {
         dispatch({
-            type: DATASETS_QUERY,
+            type: DATASETS_VARIABLES_QUERY,
             modelid: modelid,
             inputid: inputid,
             datasets: datasets

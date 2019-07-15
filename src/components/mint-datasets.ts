@@ -6,7 +6,7 @@ import datasets, { Dataset, ModelDatasets } from "../reducers/datasets";
 import { IdMap, DatasetMap, DataEnsembleMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation } from "../reducers/mint";
 import { SharedStyles } from "./shared-styles";
 import { Model } from "../reducers/models";
-import { queryDatasets } from "../actions/datasets";
+import { queryDatasetsByVariables } from "../actions/datasets";
 import { updatePathway } from "../actions/mint";
 import { BASE_HREF } from "../actions/app";
 import { createPathwayExecutableEnsembles, removeDatasetFromPathway, matchVariables, getPathwayDatasetsStatus, TASK_DONE } from "../util/state_functions";
@@ -412,7 +412,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                             !this.pathway.model_ensembles![modelid][input.id!] ||
                             this._editMode) {
                         //console.log("Querying datasets for model: " + modelid+", input: " + input.id);
-                        store.dispatch(queryDatasets(modelid, input.id, input.variables));
+                        store.dispatch(queryDatasetsByVariables(modelid, input.id, input.variables));
                     } else {
                         this._queriedDatasets[modelid][input.id!] = [];
                         this.pathway.model_ensembles![modelid][input.id!].map((datasetid) => {

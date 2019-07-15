@@ -72,8 +72,8 @@ export const navigate: ActionCreator<ThunkResult> = (path: string) => (dispatch)
     page = params[0];
     params.splice(0, 1);
   }
-  console.log(page);
-  console.log(params);
+  //console.log(page);
+  //console.log(params);
 
   // Any other info you might want to extract from the path (like page type),
   // you can do here

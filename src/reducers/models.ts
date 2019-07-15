@@ -1,11 +1,12 @@
 import { IdNameObject } from "./mint";
 import { Reducer } from "redux";
 import { RootAction } from "../store";
-import { MODELS_QUERY, MODELS_DETAIL } from "../actions/models";
+import { MODELS_DETAIL, MODELS_VARIABLES_QUERY, MODELS_LIST } from "../actions/models";
 
 
 export interface Model extends IdNameObject {
     calibrated_region: string,
+    description: string,
     category: string,
     input_files: ModelIO[],
     input_parameters: ModelParameter[],
@@ -42,22 +43,32 @@ export interface ModelDetail extends Model {
 
 export interface ModelsState {
     models: VariableModels,
-    model: ModelDetail
+    model: ModelDetail | null
 }
 
 export type VariableModels = Map<string, Model[]> // Map of response variable to models
 
-const INITIAL_STATE: ModelsState = { models: {} as VariableModels, model: {} as ModelDetail };
+const INITIAL_STATE: ModelsState = { 
+    models: {} as VariableModels, 
+    model: null
+};
 
 const models: Reducer<ModelsState, RootAction> = (state = INITIAL_STATE, action) => {
     //let scenario:ScenarioDetails = { ...state.scenario } as ScenarioDetails;
     //let scenarios:ScenarioList = { ...state.scenarios } as ScenarioList;
 
     switch (action.type) {
-        case MODELS_QUERY:
+        case MODELS_VARIABLES_QUERY:
             // Return models list
             state.models = { ...state.models };
             state.models[action.variables.join(",")] = action.models;
+            return {
+                ...state
+            };
+        case MODELS_LIST:
+            // Return models list
+            state.models = { ...state.models };
+            state.models["*"] = action.models;
             return {
                 ...state
             };

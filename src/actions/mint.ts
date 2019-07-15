@@ -198,44 +198,52 @@ export const getScenarioDetail: ActionCreator<DetailsThunkResult> = (scenarioid:
         return;
     }
 
-    let unsubscribe = db.collection("scenarios").doc(scenarioid).onSnapshot((doc) => {
-        var details = doc.data() as ScenarioDetails;
-        if(!details)
-            return;
-        details.id = doc.id;
-        details.goals = {};
-        details.subgoals = {};
-        details.pathways = {};
-        Promise.all([
-            db.collection("scenarios/"+scenarioid+"/goals").get().then((querySnapshot) => {
-                querySnapshot.forEach((doc) => {
-                    var data = doc.data();
-                    data.id = doc.id;
-                    details.goals[doc.id] = data as Goal;
+    let unsubscribe = db.collection("scenarios").doc(scenarioid).onSnapshot({
+        complete: () => {},
+        error: (error) => {
+            // FIXME: Check error code (if permissions error, then unsubscribe)
+            console.log(error.code);
+            unsubscribe();
+        },
+        next: (doc) => {
+            var details = doc.data() as ScenarioDetails;
+            if(!details)
+                return;
+            details.id = doc.id;
+            details.goals = {};
+            details.subgoals = {};
+            details.pathways = {};
+            Promise.all([
+                db.collection("scenarios/"+scenarioid+"/goals").get().then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        var data = doc.data();
+                        data.id = doc.id;
+                        details.goals[doc.id] = data as Goal;
+                    });
+                }),
+                db.collection("scenarios/"+scenarioid+"/subgoals").get().then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        var data = doc.data();
+                        data.id = doc.id;
+                        details.subgoals[doc.id] = data as SubGoal;
+                    });
+                }),
+                db.collection("scenarios/"+scenarioid+"/pathways").get().then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        var data = doc.data();
+                        data.id = doc.id;
+                        details.pathways[doc.id] = data as Pathway;
+                    });
+                })
+            ]).then( () => {
+                console.log("Scenario " + scenarioid + " changed. Dispatching action");
+                // Dispach scenario details on an edit
+                dispatch({
+                    type: SCENARIO_DETAILS,
+                    details
                 });
-            }),
-            db.collection("scenarios/"+scenarioid+"/subgoals").get().then((querySnapshot) => {
-                querySnapshot.forEach((doc) => {
-                    var data = doc.data();
-                    data.id = doc.id;
-                    details.subgoals[doc.id] = data as SubGoal;
-                });
-            }),
-            db.collection("scenarios/"+scenarioid+"/pathways").get().then((querySnapshot) => {
-                querySnapshot.forEach((doc) => {
-                    var data = doc.data();
-                    data.id = doc.id;
-                    details.pathways[doc.id] = data as Pathway;
-                });
-            })
-        ]).then( () => {
-            console.log("Scenario " + scenarioid + " changed. Dispatching action");
-            // Dispach scenario details on an edit
-            dispatch({
-                type: SCENARIO_DETAILS,
-                details
             });
-        });
+        }
     });
 
     // Dispatch unsubscribe function

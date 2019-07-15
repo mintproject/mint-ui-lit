@@ -5,26 +5,65 @@ import { Model, ModelDetail } from "../reducers/models";
 import { matchVariables } from "../util/state_functions";
 import { EXAMPLE_MODEL_QUERY } from "../offline_data/sample_models";
 
-export const MODELS_QUERY = 'MODELS_QUERY';
+export const MODELS_VARIABLES_QUERY = 'MODELS_VARIABLES_QUERY';
+export const MODELS_LIST = 'MODELS_LIST';
 export const MODELS_DETAIL = 'MODELS_DETAIL';
 
-export interface ModelsActionQuery extends Action<'MODELS_QUERY'> { variables: string[], models: Model[] };
+export interface ModelsActionList extends Action<'MODELS_LIST'> { models: Model[] };
+export interface ModelsActionVariablesQuery extends Action<'MODELS_VARIABLES_QUERY'> { 
+    variables: string[], 
+    models: Model[] 
+};
 export interface ModelsActionDetail extends Action<'MODELS_DETAIL'> { model: ModelDetail };
 
-export type ModelsAction = ModelsActionQuery |  ModelsActionDetail ;
+export type ModelsAction = ModelsActionList | ModelsActionVariablesQuery |  ModelsActionDetail ;
 
 //const MODEL_CATALOG_URI = "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries";
 
-// Query Model Catalog
-type QueryModelsThunkResult = ThunkAction<void, RootState, undefined, ModelsActionQuery>;
-export const queryModels: ActionCreator<QueryModelsThunkResult> = (response_variables: string[]) => (dispatch) => {
-    let models = [] as Model[];
-    //console.log(driving_variables);
+// List all Model Configurations
+type ListModelsThunkResult = ThunkAction<void, RootState, undefined, ModelsActionList>;
+export const listAllModels: ActionCreator<ListModelsThunkResult> = () => (dispatch) => {
+    
     /*
-    fetch(MODEL_CATALOG_URI + "/getModelConfigurationsForVariable?std=" + response_variable).then((response) => {
+    fetch(MODEL_CATALOG_URI + "/getModelConfigurations").then((response) => {
+        response.json().then((obj) => {
+            let models = [] as Model[];
+            let bindings = obj["results"]["bindings"];
+            bindings.map((binding: Object) => {
+                models.push({
+                    name: binding["label"]["value"],
+                    description: binding["desc"]["value"],
+                    original_model: binding["model"]["value"]
+                } as Model);
+            });
+            dispatch({
+                type: MODELS_LIST,
+                models
+            });            
+        })
+    });
+    */
+
+    // Offline mode example query
+    dispatch({
+        type: MODELS_LIST,
+        models: EXAMPLE_MODEL_QUERY as Model[]
+    });
+
+};
+
+// Query Model Catalog By Output? Variables
+type QueryModelsThunkResult = ThunkAction<void, RootState, undefined, ModelsActionVariablesQuery>;
+export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (response_variables: string[]) => (dispatch) => {
+    let models = [] as Model[];
+
+    /*
+    fetch(MODEL_CATALOG_URI + "/getModelConfigurationsForVariable?std=" + response_variables).then((response) => {
         console.log(response.json);
     });
     */
+
+    // Offline mode example query
     EXAMPLE_MODEL_QUERY.map((model) => {
         let i=0;
         for(;i<model.output_files.length; i++) {
@@ -34,7 +73,7 @@ export const queryModels: ActionCreator<QueryModelsThunkResult> = (response_vari
         }
     });
     dispatch({
-        type: MODELS_QUERY,
+        type: MODELS_VARIABLES_QUERY,
         variables: response_variables,
         models: models
     });

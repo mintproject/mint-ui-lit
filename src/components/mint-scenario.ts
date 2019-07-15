@@ -579,7 +579,9 @@ export class MintScenario extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         // If a scenario has been selected, fetch scenario details
         let scenarioid = state.ui!.selected_scenarioid;
-        if(scenarioid) {
+        let user = state.app.user;
+
+        if(scenarioid && user) {
             // If we don't have the right details for the scenario, make a call to fetch the details
             if(!this._dispatched && (!state.mint.scenario || (state.mint.scenario.id != scenarioid))) {
                 
@@ -624,6 +626,14 @@ export class MintScenario extends connect(store)(PageViewElement) {
         if(state.mint.scenario && state.mint.scenario.subgoals) {
             // If a subgoal has been selected
             this._selectedSubgoal = getUISelectedSubgoal(state)!;
+        }
+        if(!user && state.mint.scenario) {
+            // Logged out, Unsubscribe
+            if(state.mint.scenario.unsubscribe) {
+                console.log("Unsubscribing to scenario " + state.mint.scenario.id);
+                state.mint.scenario.unsubscribe();
+            }
+            state.mint.scenario = undefined;
         }
     }
 }

@@ -6,7 +6,6 @@ import { ModelMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation } 
 import models, { VariableModels, Model } from "../reducers/models";
 
 import { SharedStyles } from "./shared-styles";
-import { queryModels } from "../actions/models";
 import { updatePathway } from "../actions/mint";
 import { BASE_HREF } from "../actions/app";
 import { removeDatasetFromPathway, createPathwayExecutableEnsembles, matchVariables } from "../util/state_functions";
@@ -17,6 +16,7 @@ import "weightless/popover-card";
 import { renderNotifications, renderLastUpdateText } from "../util/ui_renders";
 import { showNotification, showDialog } from "../util/ui_functions";
 import { selectPathwaySection } from "../actions/ui";
+import { queryModelsByVariables } from "../actions/models";
 
 store.addReducers({
     models
@@ -380,7 +380,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             if(this._responseVariables && this._responseVariables.length > 0) {
                 //console.log("Querying model catalog for " + this._responseVariables);
                 this._dispatched = true;
-                store.dispatch(queryModels(this._responseVariables));
+                store.dispatch(queryModelsByVariables(this._responseVariables));
             }
         }       
     }
