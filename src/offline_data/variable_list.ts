@@ -28,11 +28,11 @@ export const VARIABLES = {
                 "SVO_name": "groundwater__head"
             },
             "var2": {
-                "long_name": "Surface runoff",
+                "long_name": "Surface Runoff",
                 "SVO_name": "land_surface_water__runoff_mass_flux"
             },
             "var3": {
-                "long_name": "Infiltration rate",
+                "long_name": "Infiltration Rate",
                 "SVO_name": "soil_surface_water__infiltration_volume_flux"
             },
             "var4": {
@@ -96,15 +96,15 @@ export const VARIABLES = {
                 "SVO_name": "european_flooding_index"
             },            
             "var1": {
-                "long_name": "Flood 10cm exceeding depth",
+                "long_name": "Flood 10cm Exceeding Depth",
                 "SVO_name": "Flood 10cm exceeding depth"
             },
             "var2": {
-                "long_name": "Surface runoff",
+                "long_name": "Surface Runoff",
                 "SVO_name": "land_surface_water__runoff_mass_flux"
             },
             "var3": {
-                "long_name": "Infiltration rate",
+                "long_name": "Infiltration Rate",
                 "SVO_name": "soil_surface_water__infiltration_volume_flux"
             },
             "var4": {
@@ -134,7 +134,7 @@ export const VARIABLES = {
                 "SVO_name": "land_crop__simulated_mass-per-area_yield"
             },
             "var5": {
-                "long_name": "Tops dry weight",
+                "long_name": "Tops Dry Weight",
                 "SVO_name": "crop~mature~dry_tops__mass-per-area_yield"
             }
         },

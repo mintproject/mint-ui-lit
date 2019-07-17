@@ -1,6 +1,6 @@
-import { Pathway, DatasetMap, ModelEnsembleMap, DataEnsembleMap, InputBindings, ExecutableEnsemble, Scenario, SubGoal } from "../reducers/mint";
-import { RootState } from "../store";
-import { updatePathway } from "../actions/mint";
+import { Pathway, DatasetMap, ModelEnsembleMap, DataEnsembleMap, InputBindings, ExecutableEnsemble, Scenario, SubGoal } from "../screens/modeling/reducers";
+import { RootState } from "../app/store";
+import { updatePathway } from "../screens/modeling/actions";
 
 export const removeDatasetFromPathway = (pathway: Pathway,
         datasetid: string, modelid: string, inputid: string) => {
@@ -224,27 +224,27 @@ export const getPathwayResultsStatus = (pathway:Pathway) => {
 
 /* UI Functions */
 export const getUISelectedScenario = (state: RootState) => {
-    if(state.mint && state.mint.scenarios) {
+    if(state.modeling && state.modeling.scenarios) {
         if(state.ui && state.ui.selected_scenarioid) {
-            return state.mint.scenarios[state.ui.selected_scenarioid];
+            return state.modeling.scenarios[state.ui.selected_scenarioid];
         }
     }
     return null;
 }
 
 export const getUISelectedSubgoal = (state: RootState) => {
-    if(state.mint && state.mint.scenario) {
+    if(state.modeling && state.modeling.scenario) {
         if(state.ui && state.ui.selected_subgoalid) {
-            return state.mint.scenario.subgoals[state.ui.selected_subgoalid];
+            return state.modeling.scenario.subgoals[state.ui.selected_subgoalid];
         }
     }
     return null;
 }
 
 export const getUISelectedGoal = (state: RootState, subgoal: SubGoal) => {
-    if(state.mint && state.mint.scenario) {
-        for(let goalid in state.mint.scenario.goals) {
-            let goal = state.mint.scenario.goals[goalid];
+    if(state.modeling && state.modeling.scenario) {
+        for(let goalid in state.modeling.scenario.goals) {
+            let goal = state.modeling.scenario.goals[goalid];
             if(goal.subgoalids!.indexOf(subgoal.id!) >=0) {
                 return goal;
             }
@@ -254,9 +254,9 @@ export const getUISelectedGoal = (state: RootState, subgoal: SubGoal) => {
 }
 
 export const getUISelectedPathway = (state: RootState) => {
-    if(state.mint && state.mint.scenario) {
+    if(state.modeling && state.modeling.scenario) {
         if(state.ui && state.ui.selected_pathwayid) {
-            return state.mint.scenario.pathways[state.ui.selected_pathwayid];
+            return state.modeling.scenario.pathways[state.ui.selected_pathwayid];
         }
     }
     return null;

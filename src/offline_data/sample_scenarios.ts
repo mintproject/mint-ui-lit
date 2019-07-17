@@ -1,4 +1,6 @@
-import { Region, IdMap, Goal, SubGoal, Pathway } from "../reducers/mint";
+import { Goal, SubGoal, Pathway } from "../screens/modeling/reducers";
+import { IdMap } from "../app/reducers";
+import { Region } from "../screens/regions/reducers";
 
 export const EXAMPLE_REGION_DATA = {
     "south_sudan": {
