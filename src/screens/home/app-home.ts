@@ -50,7 +50,6 @@ export class AppHome extends connect(store)(PageViewElement) {
       //console.log("rendering");
       return html`
   
-      <div class="card">
         <div class="topstats">
           <stats-blurb icon="terrain" text="Scenarios" value="8" change=3 color="#629b30"></stats-blurb>
           <stats-blurb icon="description" text="Datasets" value="2,554" change=20 color="#f1951b"></stats-blurb>
@@ -65,7 +64,6 @@ export class AppHome extends connect(store)(PageViewElement) {
             </p>
         </div>
 
-      </div>
       `
     }
 }

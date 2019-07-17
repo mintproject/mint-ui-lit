@@ -54,7 +54,7 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
             border-left-color: #06436c;
           }
 
-          .card {
+          .card2 {
             margin: 0px;
             padding: 10px;
             margin-top: 5px;
@@ -62,7 +62,7 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
             border: 1px solid #F0F0F0;
             left: 0px;
             right: 0px;
-            height: calc(100% - 60px);
+            height: calc(100% - 62px);
             overflow: auto;
             background: #FFFFFF;
         }
@@ -198,7 +198,7 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
             </div>
             ${this._renderProgressBar()}
 
-            <div class="card">
+            <div class="card2">
                 <mint-variables class="page" 
                     .scenario="${this.scenario}"
                     ?active="${this._currentMode == 'variables'}">

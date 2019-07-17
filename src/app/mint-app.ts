@@ -88,6 +88,11 @@ export class MintApp extends connect(store)(LitElement) {
         width: 100%;
         transition: width 0.2s;
       }
+
+      .card {
+        height: calc(100% - 100px);
+        overflow: auto;
+      }
       
       .breadcrumbs {
         margin-left: 40px;
@@ -166,14 +171,16 @@ export class MintApp extends connect(store)(LitElement) {
         <div class="sectionframe">
 
           <div id="right">
-            <!-- Main Pages -->
-            <app-home class="page fullpage" ?active="${this._page == 'home'}"></app-home>
-            <datasets-home class="page fullpage" ?active="${this._page == 'datasets'}"></datasets-home>
-            <regions-home class="page fullpage" ?active="${this._page == 'regions'}"></regions-home>
-            <variables-home class="page fullpage" ?active="${this._page == 'variables'}"></variables-home>
-            <models-home class="page fullpage" ?active="${this._page == 'models'}"></models-home>
-            <modeling-home class="page fullpage" ?active="${this._page == 'modeling'}"></modeling-home>
-            <analysis-home class="page fullpage" ?active="${this._page == 'analysis'}"></analysis-home>
+            <div class="card">
+              <!-- Main Pages -->
+              <app-home class="page fullpage" ?active="${this._page == 'home'}"></app-home>
+              <datasets-home class="page fullpage" ?active="${this._page == 'datasets'}"></datasets-home>
+              <regions-home class="page fullpage" ?active="${this._page == 'regions'}"></regions-home>
+              <variables-home class="page fullpage" ?active="${this._page == 'variables'}"></variables-home>
+              <models-home class="page fullpage" ?active="${this._page == 'models'}"></models-home>
+              <modeling-home class="page fullpage" ?active="${this._page == 'modeling'}"></modeling-home>
+              <analysis-home class="page fullpage" ?active="${this._page == 'analysis'}"></analysis-home>
+            </div>
           </div>
         </div>
         `

@@ -20,9 +20,7 @@ export class VariablesHome extends PageViewElement {
 
     protected render() {
         return html`
-    <div class="card">
         Details about the variable here
-    </div>
     `
     }
 }

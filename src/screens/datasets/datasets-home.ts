@@ -24,16 +24,6 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
     static get styles() {
         return [
             css `
-            .card2 {
-                margin: 0px;
-                left: 0px;
-                right: 0px;
-                padding: 10px;
-                padding-top: 5px;
-                height: calc(100% - 40px);
-                overflow: auto;
-                background: #FFFFFF;
-            }
             `,
             SharedStyles
         ];
@@ -41,7 +31,6 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
-        <div class="card">
             <wl-title level="3">Gather Data</wl-title>
             <p>
                 This section allows you to:
@@ -59,32 +48,29 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
                 `
                 : html ``
             }
-            <div class="card2">
-                <wl-title level="4">Browse Datasets</wl-title>
-                <table class="pure-table pure-table-bordered">  
-                    <thead>
-                        <th>Dataset</th>
-                        <th>Dataset Description</th>
-                        <th>Dataset Categories</th>
-                        <th>Region</th>
-                        <th>Time Period</th>
-                    </thead>
-                    <tbody>
-                    ${this._datasets.map((ds) => {
-                        return html`
-                        <tr>
-                            <td>${ds.name}</td>
-                            <td>${ds.description}</td>
-                            <td>${ds.categories!.join(", ")}</td>
-                            <td>${ds.region}</td>
-                            <td>${ds.time_period}</td>
-                        </tr>
-                        `;
-                    })}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+            <wl-title level="4">Browse Datasets</wl-title>
+            <table class="pure-table pure-table-bordered">  
+                <thead>
+                    <th>Dataset</th>
+                    <th>Dataset Description</th>
+                    <th>Dataset Categories</th>
+                    <th>Region</th>
+                    <th>Time Period</th>
+                </thead>
+                <tbody>
+                ${this._datasets.map((ds) => {
+                    return html`
+                    <tr>
+                        <td>${ds.name}</td>
+                        <td>${ds.description}</td>
+                        <td>${ds.categories!.join(", ")}</td>
+                        <td>${ds.region}</td>
+                        <td>${ds.time_period}</td>
+                    </tr>
+                    `;
+                })}
+                </tbody>
+            </table>
         `
     }
 

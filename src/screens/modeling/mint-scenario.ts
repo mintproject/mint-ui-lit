@@ -57,8 +57,12 @@ export class MintScenario extends connect(store)(PageViewElement) {
             }
 
             .twocolumns {
+                position: absolute;
+                top: 120px;
+                bottom: 25px;
+                left: 25px;
+                right: 25px;
                 display: flex;
-                height: calc(100%);
                 border: 1px solid #F0F0F0;
             }
 
@@ -102,7 +106,6 @@ export class MintScenario extends connect(store)(PageViewElement) {
             return html``;
         }
         return html`
-        <div class="card">
             <div class="cltrow scenariorow">
                 <wl-button flat inverted @click="${()=> goToPage('modeling')}">
                     <wl-icon>arrow_back_ios</wl-icon>

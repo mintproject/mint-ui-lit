@@ -28,7 +28,7 @@ export class RegionsHome extends connect(store)(PageViewElement) {
             css`
             .middle2main {
                 width: 100%;
-                height: calc(100% - 110px);
+                height: calc(100% - 60px);
             }
             `
         ];
@@ -36,7 +36,6 @@ export class RegionsHome extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
-        <div class="card">
             <wl-title level="3">Define Regions</wl-title>
             <p>
                 This section allows you to:
@@ -56,7 +55,6 @@ export class RegionsHome extends connect(store)(PageViewElement) {
                 `;
                 })}
             </google-map>
-        </div>
         `
     }
 

@@ -42,8 +42,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
-        <div class="card">
-        <wl-title level="3">Gather Data</wl-title>
+            <wl-title level="3">Prepare Models</wl-title>
             <p>
                 This section allows you to:
                 <ul>
@@ -60,7 +59,6 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                 `
                 : html ``
             }
-            <div class="card2">
             ${Object.keys(this._models).map((category) => {
                 let category_models = this._models[category];
                 return html`
@@ -99,8 +97,6 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                 <br />
                 `;
             })}
-            </div>
-        </div>
         `;
     }
 

@@ -63,16 +63,15 @@ export class ScenariosList extends connect(store)(PageViewElement) {
     //console.log("rendering");
     return html`
 
-    <div class="card">      
-      <div class="cltrow_padded scenariorow">
+    <div class="cltrow scenariorow">
         <div class="cltmain">
-            <wl-title level="3" style="margin: 0px">Scenarios</wl-title>
+            <wl-title level="3" style="margin: 0px">Model Scenarios</wl-title>
         </div>
         <wl-icon @click="${this._addScenarioDialog}" 
-          class="actionIcon bigActionIcon" id="addScenarioIcon">note_add</wl-icon>
-      </div>
-      <!-- Show Scenario List -->
-      ${this._list && this._list.scenarioids.map((scenarioid) => {
+        class="actionIcon bigActionIcon" id="addScenarioIcon">note_add</wl-icon>
+    </div>
+    <!-- Show Scenario List -->
+    ${this._list && this._list.scenarioids.map((scenarioid) => {
         let scenario = this._list.scenarios[scenarioid];
         let region = this._regions[scenario.regionid];
         return html`
@@ -85,13 +84,10 @@ export class ScenariosList extends connect(store)(PageViewElement) {
             <!--wl-progress-bar mode="determinate" value="${Math.random()}"></wl-progress-bar-->
         </wl-list-item>
         `
-      })}
-    </div>
+    })}
     
     ${this._renderTooltips()}
-
     ${renderNotifications()}
-    
     ${this._renderDialogs()}
     `
   }

@@ -23,7 +23,6 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
-        <div class="card">
             <wl-title level="3">Prepare Reports</wl-title>
             <p>
                 This section allows you to:
@@ -34,7 +33,6 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
                     <li>Prepare reports</li>
                 </ul>
             </p>
-        </div>
         `
     }
 }
