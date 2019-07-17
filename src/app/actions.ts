@@ -122,11 +122,20 @@ const loadPage: ActionCreator<ThunkResult> =
       }
       break;
     case 'models':
-        import('../screens/models/models-home').then((_module) => {
-          if(params.length > 0) {
-            store.dispatch(queryModelDetail(params[0]));
-          }
-        });
+        if (subpage == 'home') {
+            // No parameters. Load Model Home
+            import('../screens/models/models-home').then((_module) => {
+                if(params.length > 0) {
+                    store.dispatch(queryModelDetail(params[0]));
+                }
+            });
+        } else if (subpage == "explore") {
+            import('../screens/models/model-explore/model-explore').then((_module) => {
+                if(params.length > 0) {
+                    //TODO: dispatch when model selected;
+                }
+            });
+        }
         break;
     case 'regions':
         import('../screens/regions/regions-home').then((_module) => {

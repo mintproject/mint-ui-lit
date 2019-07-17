@@ -9,6 +9,7 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { listAllModels } from './actions';
 
 import "weightless/card";
+import "./model-explore/model-explore";
 
 store.addReducers({
     models
@@ -25,28 +26,25 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     static get styles() {
         return [
             css `
-            .card2 {
-                margin: 0px;
-                left: 0px;
-                right: 0px;
-                padding: 10px;
-                padding-top: 5px;
-                height: calc(100% - 40px);
-                overflow: auto;
-                background: #FFFFFF;
-            }
             `,
             SharedStyles
         ];
     }
 
     protected render() {
+        return html`<div>
+            <model-explorer class="page fullpage" ?active="${this._subpage == 'explore'}"></model-explorer>
+            ${this._subpage == 'home' ? this._renderHome() : html`` }
+        </div>`
+    }
+
+    _renderHome () {
         return html`
             <wl-title level="3">Prepare Models</wl-title>
             <p>
                 This section allows you to:
                 <ul>
-                    <li>Browse models in the system</li>
+                    <li><a href="/models/explore">Browse models in the system</a></li>
                     <li>Incorporate new models</li>
                     <li>Configure existing models</li>
                     <li>Use automated methods to calibrate models for particular regions</li>
@@ -105,6 +103,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     }
 
     stateChanged(state: RootState) {
+        super.setSubPage(state);
         if(state.models && state.models.model) {
             this._model = state.models.model;
             //console.log(this._model);
