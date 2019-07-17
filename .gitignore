@@ -17,6 +17,9 @@ pids
 *.seed
 *.pid.lock
 
+# MacOS specific file
+.DS_Store
+
 # Server directory
 server
 
