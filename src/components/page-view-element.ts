@@ -9,13 +9,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 */
 
 import { LitElement, property } from 'lit-element';
+import { RootState } from '../app/store';
 
 export class PageViewElement extends LitElement {
+  @property({type: String})
+  protected _subpage: string = '';
+
+  @property({type: Boolean})
+  active = false;
+
   // Only render this page if it's actually visible.
   protected shouldUpdate() {
     return this.active;
   }
 
-  @property({type: Boolean})
-  active = false;
+  setSubPage(state: RootState) {
+    if(state.app && state.app.subpage)
+      this._subpage = state.app!.subpage;
+  }
 }

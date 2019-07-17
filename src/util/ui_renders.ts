@@ -1,5 +1,5 @@
 import { html } from "lit-element";
-import { StepUpdateInformation } from "../reducers/mint";
+import { StepUpdateInformation } from "../screens/modeling/reducers";
 import { VARIABLES } from "../offline_data/variable_list";
 
 export const renderVariables = () => {

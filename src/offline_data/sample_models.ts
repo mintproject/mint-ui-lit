@@ -186,7 +186,10 @@ export const EXAMPLE_MODEL_QUERY = [
         model_type: "Simulation", // DataDriven, Emulation, Hybrid
         parameter_assignment: "Calibration", //Auto-tuned, Expert-tuned, Trained
         target_variable_for_parameter_assignment: "Fertilizer & Land Use",
-        parameter_assignment_details: "",
+        parameter_assignment_details: "The model was configured using FAO production data, WFP price data and \
+        estimated elasticities from related literatures. The model was calibrated from national/regional observed \
+        data on land use and crop production level for behavior parameters, to produce optimal simulation outputs \
+        under various adjustment to variables within the model",
         modeled_processes: [
             "Constrained maximization of net revenue"
         ],
@@ -215,7 +218,10 @@ export const EXAMPLE_MODEL_QUERY = [
         category: "Economy",
         model_type: "Simulation", // DataDriven, Emulation, Hybrid
         parameter_assignment: "Calibration", //Auto-tuned, Expert-tuned, Trained
-        parameter_assignment_details: "",
+        parameter_assignment_details: "The model was configured using FAO production data, WFP price data and \
+        estimated elasticities from related literatures. The model was calibrated from national/regional observed \
+        data on land use and crop production level for behavior parameters, to produce optimal simulation outputs \
+        under various adjustment to variables within the model",
         target_variable_for_parameter_assignment: "Fertilizer & Land Use",
         modeled_processes: [
             "Constrained maximization of net revenue"
