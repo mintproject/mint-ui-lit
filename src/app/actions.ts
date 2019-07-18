@@ -13,6 +13,7 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from './store';
 import { queryDatasetDetail } from '../screens/datasets/actions';
 import { queryModelDetail } from '../screens/models/actions';
+import { explorerClearSelected, explorerSetSelected } from '../screens/models/model-explore/actions';
 import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection } from './ui-actions';
 import { auth } from '../config/firebase';
 import { User } from 'firebase';
@@ -132,7 +133,9 @@ const loadPage: ActionCreator<ThunkResult> =
         } else if (subpage == "explore") {
             import('../screens/models/model-explore/model-explore').then((_module) => {
                 if(params.length > 0) {
-                    //TODO: dispatch when model selected;
+                    store.dispatch(explorerSetSelected(params[0]));
+                } else {
+                    store.dispatch(explorerClearSelected());
                 }
             });
         }
