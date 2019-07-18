@@ -11,11 +11,11 @@ export interface FetchedModel {
     assumptions?: string
 }
 
-export type UriModels = Map<String, FetchedModel>;
+export type UriModels = Map<string, FetchedModel>;
 
 export interface ExplorerState {
     models: UriModels,
-    selected: String
+    selected: string
 }
 
 const INITIAL_STATE: ExplorerState = { 
@@ -30,13 +30,6 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
             break;
         case EXPLORER_SELECT:
             //FIXME: this dont work if EXPLORER_FETCH wasnt called before
-            /*let filtered = state.models.filter( (m : FetchedModel) => {
-                let sp = m.model.split('/')
-                return (sp[sp.length-1] == action.key)
-            })
-            if (filtered.length == 1) {
-                state.selected = filtered[0]
-            }*/
             state.selected = action.key
             break;
     }

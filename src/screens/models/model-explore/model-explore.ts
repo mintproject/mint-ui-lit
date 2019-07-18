@@ -15,9 +15,8 @@ import './model-facet'
 import './model-facet-big'
 
 import "weightless/card";
-//import "@cwmr/paper-search";
-//import '@polymer/paper-input/paper-input.js';
-//import { search } from '../actions/search';
+import "weightless/textfield";
+import "weightless/icon";
 
 store.addReducers({
     explorer
@@ -29,7 +28,12 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     private _models : UriModels = {} as UriModels;
 
     @property({type: String})
-    private _selected : String = '';
+    private _selected : string = '';
+
+    @property({type: String})
+    private filter : string = '';
+
+    private _lastInput : string = '';
 
     static get styles() {
         return [
@@ -119,10 +123,25 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 `
                 : html `
                 <div class="small-card">
-                    <paper-search-panel 
-                        placeholder="Search models...">
-                    </paper-search-panel>
-                    ${Object.keys(this._models).map( (key:string) => {
+                    <!-- FIXME: This is not working due to https://github.com/Polymer/lit-html/issues/399
+                    <wl-textfield 
+                            label="Search models"
+                            type="search">
+                    </wl-textfield>-->
+
+                    <div class="search_input input_full">
+                        <label>Model Search</label>
+                        <input value="${this.filter}"
+                            type="search"
+                            @keyup="${this.filterUpdate}"
+                            name="filter"></input>
+                    </div>
+
+                    ${Object.keys(this._models)
+                            .filter( (key:string) => { 
+                                return key.toLowerCase().includes(this.filter)
+                            })
+                            .map( (key:string) => {
                         return html`
                         <model-facet 
                             ?active="${true}"
@@ -134,6 +153,17 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             `
             }
         `;
+    }
+
+    filterUpdate (ev:any) {
+        //console.log(ev.path[0].value)
+        let input : string = ev.path[0].value;
+        if (this._lastInput != input) {
+            //TODO: some time between event and filter?
+            //Filter is case insensitive
+            this._lastInput = input.toLowerCase();
+            this.filter = this._lastInput;
+        }
     }
 
     firstUpdated() {

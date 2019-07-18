@@ -7,7 +7,7 @@ export const EXPLORER_FETCH = 'EXPLORER_FETCH';
 export const EXPLORER_SELECT = 'EXPLORER_SELECT'
 
 export interface ExplorerActionFetch extends Action<'EXPLORER_FETCH'> { models: UriModels };
-export interface ExplorerActionSelect extends Action<'EXPLORER_SELECT'> { key: String };
+export interface ExplorerActionSelect extends Action<'EXPLORER_SELECT'> { key: string };
 
 export type ExplorerAction = ExplorerActionFetch | ExplorerActionSelect; // ModelsActionList | ModelsActionVariablesQuery |  ModelsActionDetail ;
 
@@ -32,6 +32,9 @@ export const explorerFetch: ActionCreator<ExplorerThunkResult> = () => (dispatch
                     categories: [obj['categories']['value']],
                     versions: [obj['versions']['value']],
                 } as FetchedModel;
+                if (obj['doc']) {
+                    curModel.doc = obj['doc']['value'];
+                }
                 models[obj['model']['value']] = curModel;
             })
 
