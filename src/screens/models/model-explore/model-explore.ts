@@ -9,7 +9,7 @@ import { store, RootState } from '../../../app/store';
 import { goToPage } from '../../../app/actions';
 
 import { explorerFetch } from './actions';
-import explorer, {UriModels} from "./reducers";
+import explorer, { UriModels, FetchedModel } from "./reducers";
 
 import './model-facet'
 import './model-facet-big'
@@ -27,8 +27,10 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _models : UriModels = {} as UriModels;
 
-    @property({type: String})
-    private _selected : string = '';
+    @property({type: Object})
+    private _selected : FetchedModel | null = null;
+
+    private _selectedUri : string = '';
 
     @property({type: String})
     private filter : string = '';
@@ -113,12 +115,12 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 <div class="right">
                 </div>
             </div>-->
-            ${this._selected != ''? 
+            ${this._selected? 
                 //BIG MODEL
                 html`
                     <model-facet-big
                         style="width:75%;"
-                        name="${this._selected}">
+                        name="${this._selected.label}">
                     </model-facet-big>
                 `
                 : html `
@@ -175,8 +177,15 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             if (state.explorer.models) {
                 this._models = state.explorer.models;
             }
-            if (state.explorer.selected != this._selected) {
-                this._selected = state.explorer.selected;
+            if (state.explorer.selected != this._selectedUri) {
+                if (state.explorer.models[state.explorer.selected]) {
+                    this._selectedUri = state.explorer.selected;
+                    this._selected = state.explorer.models[this._selectedUri];
+                } else {
+                    if (state.explorer.selected == '') {
+                        this._selected = null;
+                    }
+                }
             }
         }
     }

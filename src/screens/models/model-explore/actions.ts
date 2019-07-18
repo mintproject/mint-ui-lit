@@ -13,6 +13,7 @@ export type ExplorerAction = ExplorerActionFetch | ExplorerActionSelect; // Mode
 
 //const MODEL_CATALOG_URI = "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries";
 const API_URI = "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries/" //getModels?
+const URI_PREFIX = "https://w3id.org/mint/instance/"
 
 // List all Model Configurations
 type ExplorerThunkResult = ThunkAction<void, RootState, undefined, ExplorerAction>;
@@ -50,7 +51,7 @@ export const explorerFetch: ActionCreator<ExplorerThunkResult> = () => (dispatch
 export const explorerSetSelected: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
     dispatch({
         type: EXPLORER_SELECT,
-        key: id
+        key: URI_PREFIX + id
     })
 };
 
