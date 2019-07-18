@@ -9,7 +9,7 @@ import { store, RootState } from '../../../app/store';
 import { goToPage } from '../../../app/actions';
 
 import { explorerFetch } from './actions';
-import explorer, {UriModels, FetchedModel} from "./reducers";
+import explorer, {UriModels} from "./reducers";
 
 import './model-facet'
 import './model-facet-big'
@@ -82,7 +82,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     }
 
     protected render() {
-        console.log(this._selected)
         return html`
             <div class="cltrow scenariorow">
                 <wl-button flat inverted @click="${()=> goToPage('models')}">
@@ -124,13 +123,11 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                         placeholder="Search models...">
                     </paper-search-panel>
                     ${Object.keys(this._models).map( (key:string) => {
-                        let mod : FetchedModel = this._models[key];
                         return html`
                         <model-facet 
-                            class="padd"
-                            desc="${mod.desc}"
-                            id="${mod.model}"
-                            name="${mod.label}">
+                            ?active="${true}"
+                            uri="${key}"
+                            class="padd">
                         </model-facet>
                         `
                     })}
@@ -144,7 +141,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     }
 
     stateChanged(state: RootState) {
-        console.log(state)
         if (state.explorer) {
             if (state.explorer.models) {
                 this._models = state.explorer.models;

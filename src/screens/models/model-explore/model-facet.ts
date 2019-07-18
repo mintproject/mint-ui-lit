@@ -1,22 +1,25 @@
 
 // These are the shared styles needed by this element.
 //import { SharedStyles } from '../components/shared-styles.js';
+import { PageViewElement } from '../../../components/page-view-element.js';
+import { connect } from 'pwa-helpers/connect-mixin';
+import { store, RootState } from '../../../app/store';
 
-import { LitElement, html, property, customElement, css } from 'lit-element';
+import { html, property, customElement, css } from 'lit-element';
 
 import { goToPage } from '../../../app/actions';
-//import'fa-icons';
+
+import {FetchedModel} from "./reducers";
 
 @customElement('model-facet')
-export class ModelFacet extends LitElement {
+export class ModelFacet extends connect(store)(PageViewElement) {
     @property({type: String})
-        name : string = "";
+        uri : string = "";
 
-    @property({type: String})
-        category : string = "";
+    @property({type: Object})
+    private _model! : FetchedModel;
 
-    @property({type: String})
-        id : string = "";
+    private _id : String = '';
 
     static get styles() {
         return [
@@ -137,17 +140,18 @@ export class ModelFacet extends LitElement {
     }
 
     protected render() {
+        if (this._model) {
         return html`
             <table>
               <tr>
                 <td class="left">
-                  <div class="text-centered one-line">2 vers, 2 configs</div>
+                  <div class="text-centered one-line">${this._model.versions.length} vers, 2 configs</div>
                   <div>
                     <span class="helper"></span>
                     <img src="https://research.ifas.ufl.edu/media/researchifasufledu/images/sliders/GUA_DSSAT2.jpg"/>
                   </div>
                   <div class="text-centered two-lines">
-                    Category: ${this.category}
+                    Category: ${ this._model.categories.join(', ') }
                     <br/>
                     Type: NumericalModel
                   </div>
@@ -155,24 +159,40 @@ export class ModelFacet extends LitElement {
 
                 <td class="right">
                   <div class="header"> 
-                    <span class="title"> ${this.name} </span>
+                    <span class="title"> ${this._model.label} </span>
                     <span class="icon">1</span>
                     <span class="icon">2</span>
                   </div>
                   <div class="content"> 
-                    Software application program that comprises dynamic crop growth simulation models for over 40 crops. DSSAT is supported by a range of utilities and apps for weather, soil, genetic, crop management, and observational experimental data, and includes example data sets for all crop models.
+                    ${this._model.desc}
                   </div>
                   <div class="footer one-line">
                     <span class="keywords"> <b>Keywords:</b> 
                         Agriculture, soil, crop, model, climate
                     </span>
                     <span class="details-button"
-                          @click="${()=>{goToPage('models/' + this.id)}}"
+                          @click="${()=>{goToPage('models/explore/' + this._id)}}"
                            > More details </span>
                   </div>
                 </td>
               </tr>
             </table>
         `;
+        } else {
+            return html`? Something when wrong`
+        }
+    }
+
+    firstUpdated() {
+        let sp = this.uri.split('/');
+        if (sp.length > 1) {
+            this._id = sp[sp.length - 1];
+        }
+    }
+
+    stateChanged(state: RootState) {
+        if (state.explorer && state.explorer.models) {
+            this._model = state.explorer.models[this.uri];
+        }
     }
 }

@@ -3,7 +3,6 @@ import { RootAction } from "../../../app/store";
 import { EXPLORER_FETCH, EXPLORER_SELECT } from './actions'
 
 export interface FetchedModel {
-    model: string,
     label: string,
     desc: string,
     categories: string[],
