@@ -1,6 +1,4 @@
 
-// These are the shared styles needed by this element.
-//import { SharedStyles } from '../components/shared-styles.js';
 import { PageViewElement } from '../../../components/page-view-element.js';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from '../../../app/store';
@@ -9,7 +7,7 @@ import { html, property, customElement, css } from 'lit-element';
 
 import { goToPage } from '../../../app/actions';
 
-import {FetchedModel} from "./reducers";
+import { FetchedModel } from "./reducers";
 
 @customElement('model-facet')
 export class ModelFacet extends connect(store)(PageViewElement) {
@@ -21,6 +19,11 @@ export class ModelFacet extends connect(store)(PageViewElement) {
 
     private _id : String = '';
 
+    constructor () {
+        super();
+        this.active = true;
+    }
+
     static get styles() {
         return [
             css `
@@ -28,6 +31,7 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                 }
 
                 table {
+                    table-layout: fixed;
                     border: 1px solid black;
                     width: 100%;
                     border-spacing: 0;
@@ -55,11 +59,11 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                 }
 
                 td.left div:nth-child(1) { height: 1.2em; }
-                td.left div:nth-child(2) { height: calc(150px - 3.6em); }
+                td.left div:nth-child(2) { height: calc(150px - 3.6em); text-align: center;}
                 td.left div:nth-child(3) { height: 2.4em; }
 
                 td.right div:nth-child(1) { height: 1.3em; }
-                td.right div:nth-child(2) { height: calc(150px - 2.5em); }
+                td.right div:nth-child(2) { height: calc(150px - 2.5em - 15px); }
                 td.right div:nth-child(3) { height: 1.2em; }
 
                 .one-line {
@@ -85,8 +89,9 @@ export class ModelFacet extends connect(store)(PageViewElement) {
 
                 img {
                     vertical-align: middle;
-                    max-width: calc(100% - 8px);
                     border: 1px solid black;
+                    max-width: calc(100% - 8px);
+                    max-height: calc(150px - 3.6em - 2px);
                 }
 
                 .helper {
@@ -107,14 +112,16 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                 .icon {
                     cursor: pointer;
                     display: inline-block;
-                    background-color: red;
-                    width: 1.3em;
                     overflow: hidden;
                     float: right;
+                    font-size: 1em;
+                    width: 1.4em;
+                    margin-right: 7px;
+                    margin-top: -5px;
                 }
 
                 .content {
-                    padding: 0px 10px;
+                    padding: 5px 10px 0px 10px;
                     text-align: justify;
                 }
 
@@ -144,14 +151,17 @@ export class ModelFacet extends connect(store)(PageViewElement) {
         return html`
             <table>
               <tr>
-                <td class="left">
-                  <div class="text-centered one-line">${this._model.versions.length} vers, 2 configs</div>
+                <td class="left"> 
+                  <div class="text-centered one-line">
+                    ${this._model.versions? html`${this._model.versions.length}`: html`0`} vers,
+                    2 configs
+                  </div>
                   <div>
-                    <span class="helper"></span>
-                    <img src="https://research.ifas.ufl.edu/media/researchifasufledu/images/sliders/GUA_DSSAT2.jpg"/>
+                    <span class="helper"></span><!--
+                    --><img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>
                   </div>
                   <div class="text-centered two-lines">
-                    Category: ${ this._model.categories.join(', ') }
+                    Category: ${this._model.categories? html`${this._model.categories[0]}` : html`-`}
                     <br/>
                     Type: NumericalModel
                   </div>
@@ -160,15 +170,17 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                 <td class="right">
                   <div class="header"> 
                     <span class="title"> ${this._model.label} </span>
-                    <span class="icon">1</span>
-                    <span class="icon">2</span>
+                    <span class="icon"><wl-icon>insert_link</wl-icon></span>
                   </div>
                   <div class="content"> 
                     ${this._model.desc}
                   </div>
                   <div class="footer one-line">
                     <span class="keywords"> <b>Keywords:</b> 
-                        Agriculture, soil, crop, model, climate
+                        ${this._model.keywords? 
+                            html`${this._model.keywords}`
+                            : html `No keywords`
+                        }
                     </span>
                     <span class="details-button"
                           @click="${()=>{goToPage('models/explore/' + this._id)}}"

@@ -1,28 +1,38 @@
 
-// These are the shared styles needed by this element.
-//import { SharedStyles } from '../components/shared-styles.js';
+import { html, property, customElement, css } from 'lit-element';
 
-import { LitElement, html, property, customElement, css } from 'lit-element';
+import { PageViewElement } from '../../../components/page-view-element.js';
+import { connect } from 'pwa-helpers/connect-mixin';
+import { store, RootState } from '../../../app/store';
+
+import { FetchedModel } from "./reducers";
+import { explorerFetchDetails } from './actions';
 
 import { goToPage } from '../../../app/actions';
-//import'fa-icons';
 
 @customElement('model-facet-big')
-export class ModelFacetBig extends LitElement {
+export class ModelFacetBig extends connect(store)(PageViewElement) {
     @property({type: String})
-        name : string = "";
+        uri : string = "";
 
-    @property({type: String})
-        category : string = "";
+    @property({type: Object})
+    private _model! : FetchedModel;
 
-    @property({type: String})
-        id : string = "";
+    constructor () {
+        super();
+        this.active = true;
+    }
 
     static get styles() {
         return [
             css `
                 :host {
                 }
+
+                .clickable {
+                    cursor: pointer;
+                }
+
                 table {
                   border: 1px solid black;
                   width: 100%;
@@ -117,9 +127,9 @@ export class ModelFacetBig extends LitElement {
             <table>
               <tr>
                 <td class="header" colspan="2">
-                  <div @click="${()=>{goToPage('models')}}"
+                  <div @click="${()=>{goToPage('models/explorer')}}"
                         class="details-button">/models/</div><!--
-                  --><div class="title text-centered">${this.name}</div><!--
+                  --><div class="title text-centered">${this._model.label}</div><!--
                   --><div class="links"><span class="icon">1</span> <span class="icon">2</span></div>
                 </td>
               </tr>
@@ -153,6 +163,22 @@ Cycles needs inputs of initial soil properties, climate forcings at a daily time
                 </td>
               </tr>
             </table>
+            <hr/>
+            ${this._model.io ? this._model.io.map( io => { return html`${io.label}`; }) : html``}
         `;
+    }
+
+    firstUpdated() {
+        store.dispatch(explorerFetchDetails(this.uri));
+        /*let sp = this.uri.split('/');
+        if (sp.length > 1) {
+            this._id = sp[sp.length - 1];
+        }*/
+    }
+
+    stateChanged(state: RootState) {
+        if (state.explorer && state.explorer.models) {
+            this._model = state.explorer.models[this.uri];
+        }
     }
 }

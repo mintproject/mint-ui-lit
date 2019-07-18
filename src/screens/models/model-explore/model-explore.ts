@@ -120,7 +120,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 html`
                     <model-facet-big
                         style="width:75%;"
-                        name="${this._selected.label}">
+                        uri="${this._selected.uri}">
                     </model-facet-big>
                 `
                 : html `
@@ -141,12 +141,15 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
                     ${Object.keys(this._models)
                             .filter( (key:string) => { 
-                                return key.toLowerCase().includes(this.filter)
+                                let text : string = key;
+                                if (this._models[key].desc) text +=     this._models[key].desc;
+                                if (this._models[key].label) text +=    this._models[key].label;
+                                if (this._models[key].keywords) text += this._models[key].keywords;
+                                return text.toLowerCase().includes(this.filter)
                             })
                             .map( (key:string) => {
                         return html`
                         <model-facet 
-                            ?active="${true}"
                             uri="${key}"
                             class="padd">
                         </model-facet>
@@ -158,7 +161,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     }
 
     filterUpdate (ev:any) {
-        //console.log(ev.path[0].value)
         let input : string = ev.path[0].value;
         if (this._lastInput != input) {
             //TODO: some time between event and filter?
