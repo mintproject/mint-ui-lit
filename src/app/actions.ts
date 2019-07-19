@@ -13,6 +13,7 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from './store';
 import { queryDatasetDetail } from '../screens/datasets/actions';
 import { queryModelDetail } from '../screens/models/actions';
+import { explorerClearSelected, explorerSetSelected } from '../screens/models/model-explore/actions';
 import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection } from './ui-actions';
 import { auth } from '../config/firebase';
 import { User } from 'firebase';
@@ -122,11 +123,22 @@ const loadPage: ActionCreator<ThunkResult> =
       }
       break;
     case 'models':
-        import('../screens/models/models-home').then((_module) => {
-          if(params.length > 0) {
-            store.dispatch(queryModelDetail(params[0]));
-          }
-        });
+        if (subpage == 'home') {
+            // No parameters. Load Model Home
+            import('../screens/models/models-home').then((_module) => {
+                if(params.length > 0) {
+                    store.dispatch(queryModelDetail(params[0]));
+                }
+            });
+        } else if (subpage == "explore") {
+            import('../screens/models/model-explore/model-explore').then((_module) => {
+                if(params.length > 0) {
+                    store.dispatch(explorerSetSelected(params[0]));
+                } else {
+                    store.dispatch(explorerClearSelected());
+                }
+            });
+        }
         break;
     case 'regions':
         import('../screens/regions/regions-home').then((_module) => {
