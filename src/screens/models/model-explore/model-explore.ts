@@ -94,7 +94,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     <wl-icon>arrow_back_ios</wl-icon>
                 </wl-button>
                 <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                    <wl-title level="3" style="margin: 0px">Model Explorer</wl-title>
+                    <wl-title level="3" style="margin: 0px; cursor: pointer;" @click="${()=> goToPage('models/explore')}">Model Explorer</wl-title>
                 </div>
                 <!--<wl-icon 
                     class="actionIcon editIcon bigActionIcon">edit</wl-icon>
@@ -139,18 +139,19 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                             name="filter"></input>
                     </div>
 
-                    ${Object.keys(this._models)
-                            .filter( (key:string) => { 
-                                let text : string = key;
-                                if (this._models[key].desc) text +=     this._models[key].desc;
-                                if (this._models[key].label) text +=    this._models[key].label;
-                                if (this._models[key].keywords) text += this._models[key].keywords;
-                                return text.toLowerCase().includes(this.filter)
-                            })
-                            .map( (key:string) => {
+                    ${Object.keys(this._models).map( (key:string) => {
+                        let text : string = key;
+                        if (this._models[key].desc) text +=     this._models[key].desc;
+                        if (this._models[key].label) text +=    this._models[key].label;
+                        if (this._models[key].keywords) text += this._models[key].keywords;
+                        let st = ''
+                        if (!text.toLowerCase().includes(this.filter)) {
+                            st = 'display: none;'
+                        }
                         return html`
                         <model-facet 
                             uri="${key}"
+                            style="${st}"
                             class="padd">
                         </model-facet>
                         `
