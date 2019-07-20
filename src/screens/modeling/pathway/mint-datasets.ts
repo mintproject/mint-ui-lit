@@ -8,7 +8,6 @@ import { SharedStyles } from "../../../styles/shared-styles";
 import { Model } from "../../models/reducers";
 import { queryDatasetsByVariables } from "../../datasets/actions";
 import { updatePathway } from "../actions";
-import { BASE_HREF } from "../../../app/actions";
 import { createPathwayExecutableEnsembles, removeDatasetFromPathway, matchVariables, getPathwayDatasetsStatus, TASK_DONE } from "../../../util/state_functions";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
 import { showNotification, showDialog } from "../../../util/ui_functions";
@@ -139,7 +138,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                         let dataset = this.pathway.datasets![binding];
                                         return html`
                                         <li>
-                                        <a href="${BASE_HREF}datasets/${dataset.id}">${dataset.name}</a>
+                                        <a href="datasets/browse/${dataset.id}">${dataset.name}</a>
                                         </li>
                                         `;
                                     })}
@@ -175,7 +174,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                                     type="checkbox" data-datasetid="${dataset.id}"
                                                     ?checked="${(bindings || []).indexOf(dataset.id!) >= 0}"></input></td>
                                                 <td class="${matched ? 'matched': ''}">
-                                                    <a href="${BASE_HREF}datasets/${dataset.id}">${dataset.name}</a>
+                                                    <a href="datasets/browse/${dataset.id}">${dataset.name}</a>
                                                 </td>
                                                 <td>${dataset.categories!.join(", ")}</td>
                                                 <td>${dataset.region}</td>

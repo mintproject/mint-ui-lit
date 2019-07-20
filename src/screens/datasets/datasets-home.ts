@@ -1,13 +1,16 @@
 
-import { html, customElement, property, css } from 'lit-element';
+import { html, customElement, css } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
 import { SharedStyles } from '../../styles/shared-styles';
-import { RootState, store } from '../../app/store';
-import datasets, { DatasetDetail, Dataset } from './reducers';
+import { store, RootState } from '../../app/store';
+import datasets from './reducers';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { listAllDatasets } from './actions';
 
+import './datasets-browse';
+import './datasets-register';
+import './datasets-quality-workflows';
+import './datasets-rs-workflows';
 
 store.addReducers({
     datasets
@@ -15,11 +18,6 @@ store.addReducers({
 
 @customElement('datasets-home')
 export class DatasetsHome extends connect(store)(PageViewElement) {
-    @property({type: Object})
-    private _dataset!: DatasetDetail | null;
-    
-    @property({type: Array})
-    private _datasets: Dataset[] = []
 
     static get styles() {
         return [
@@ -31,60 +29,34 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
-            <wl-title level="3">Gather Data</wl-title>
-            <p>
-                This section allows you to:
-                <ul>
-                    <li>Browse datasets in the system</li>
-                    <li>Incorporate datasets from other sources</li>
-                    <li>Use automated methods to improve the quality of existing datasets</li>
-                    <li>Use automated methods to generate new datasets (eg from remote sensing data)</li>
-                </ul>
-            </p>
-            ${this._dataset && this._dataset.name ? 
-                html`
-                <h2>${this._dataset.name}</h2>
-                Details about the dataset here
-                `
-                : html ``
-            }
-            <wl-title level="4">Browse Datasets</wl-title>
-            <table class="pure-table pure-table-bordered">  
-                <thead>
-                    <th>Dataset</th>
-                    <th>Dataset Description</th>
-                    <th>Dataset Categories</th>
-                    <th>Region</th>
-                    <th>Time Period</th>
-                </thead>
-                <tbody>
-                ${this._datasets.map((ds) => {
-                    return html`
-                    <tr>
-                        <td>${ds.name}</td>
-                        <td>${ds.description}</td>
-                        <td>${ds.categories!.join(", ")}</td>
-                        <td>${ds.region}</td>
-                        <td>${ds.time_period}</td>
-                    </tr>
-                    `;
-                })}
-                </tbody>
-            </table>
+            <wl-title level="3">Explore Data</wl-title>
+            <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
+                <a href="datasets/browse">
+                    <wl-icon>search</wl-icon>
+                    <div>Browse Datasets</div>
+                </a>
+                <a href="datasets/register">
+                    <wl-icon>library_add</wl-icon>
+                    <div>Add Datasets</div>
+                </a>
+                <a href="datasets/quality-workflows">
+                    <wl-icon>high_quality</wl-icon>
+                    <div>Improve Quality</div>
+                </a>
+                <a href="datasets/rs-workflows">
+                    <wl-icon>satellite</wl-icon>
+                    <div>Remote Sensing</div>
+                </a>
+            </div>
+
+            <datasets-browse class="page fullpage" ?active="${this._subpage == 'browse'}"></datasets-browse>
+            <datasets-register class="page fullpage" ?active="${this._subpage == 'register'}"></datasets-register>
+            <datasets-quality-workflows class="page fullpage" ?active="${this._subpage == 'quality-workflows'}"></datasets-quality-workflows>
+            <datasets-rs-workflows class="page fullpage" ?active="${this._subpage == 'rs-workflows'}"></datasets-rs-workflows>
         `
     }
 
-    firstUpdated() {
-        store.dispatch(listAllDatasets());
-    }    
-
     stateChanged(state: RootState) {
-        if(state.datasets && state.datasets.dataset) {
-            this._dataset = state.datasets.dataset;
-        }
-        if(state.datasets && state.datasets.datasets && state.datasets.datasets["*"]) {
-            this._dataset = state.datasets.dataset;
-            this._datasets = state.datasets.datasets["*"]["*"];
-        }
+        super.setSubPage(state);
     }
 }
