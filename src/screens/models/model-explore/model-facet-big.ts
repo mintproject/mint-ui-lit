@@ -1,14 +1,19 @@
-
 import { html, property, customElement, css } from 'lit-element';
 
 import { PageViewElement } from '../../../components/page-view-element.js';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from '../../../app/store';
 
-import { FetchedModel } from "./reducers";
-import { explorerFetchDetails } from './actions';
+import { FetchedModel, IODetail, VersionDetail } from "./reducers";
+//import { explorerFetchDetails, explorerFetchVersions } from './actions';
+import { explorerFetchVersions, explorerFetchIO } from './actions';
+import { SharedStyles } from '../../../styles/shared-styles';
 
-import { goToPage } from '../../../app/actions';
+//import { goToPage } from '../../../app/actions';
+import "weightless/select";
+import "weightless/tab";
+import "weightless/tab-group";
+import "weightless/card";
 
 @customElement('model-facet-big')
 export class ModelFacetBig extends connect(store)(PageViewElement) {
@@ -18,15 +23,34 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _model! : FetchedModel;
 
+    @property({type: Object})
+    private _io! : IODetail[];
+
+    @property({type: Object})
+    private _versions! : VersionDetail[];
+
+    @property({type: String})
+    private _selectedVersion! : string;
+
+    @property({type: String})
+    private _selectedConfig! : string;
+
+    //@property({type: String})
+    //private _selectedCalibration! : string;
+
+    @property({type: String})
+    private _tab : string = 'overview';
+
     constructor () {
         super();
         this.active = true;
     }
 
     static get styles() {
-        return [
+        return [SharedStyles, 
             css `
                 :host {
+                    width: 100%;
                 }
 
                 .clickable {
@@ -34,8 +58,9 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 }
 
                 table {
+                    margin: 0 auto;
                   border: 1px solid black;
-                  width: 100%;
+                  width: 80%;
                   min-width: 600px;
                   border-spacing: 0;
                   border-collapse: collapse;
@@ -50,11 +75,11 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 }
 
                 td.left {
-                  width: 35%;
+                  width: 25%;
                 }
 
                 td.right {
-                  width: 65%;
+                  width: 75%;
                 }
 
                 td div {
@@ -79,9 +104,11 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 }
 
                 .header {
-                  font-size: 1.3em;
-                  line-height: 1.4em;
-                  height: 1.4em;
+                    color: rgb(6, 67, 108);
+                    font-weight: bold;
+                  font-size: 1.4em;
+                  line-height: 1.5em;
+                  height: 1.5em;
                 }
 
                 .title {
@@ -123,62 +150,158 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     }
 
     protected render() {
+        /*console.log('Selected Version', this._selectedVersion);
+        if (this._selectedVersion) console.log(this._versions[this._selectedVersion]);
+        console.log('Selected Config', this._selectedConfig);
+        if (this._selectedConfig) console.log(this._versions[this._selectedVersion][this._selectedConfig]);*/
+
         return html`
             <table>
-              <tr>
-                <td class="header" colspan="2">
-                  <div @click="${()=>{goToPage('models/explorer')}}"
-                        class="details-button">/models/</div><!--
-                  --><div class="title text-centered">${this._model.label}</div><!--
-                  --><div class="links"><span class="icon">1</span> <span class="icon">2</span></div>
-                </td>
-              </tr>
-              <tr>
-                <td class="left">
-                  <span class="helper"></span>
-                  <!--<img src="http://jsfiddle.net/img/logo.png"/>-->
-                  <img src="https://research.ifas.ufl.edu/media/researchifasufledu/images/sliders/GUA_DSSAT2.jpg"/>
-                </td>
-                <td class="right content">
-                  Cycles is an agroecosystem simulation model. It is a multi-year, multi-crop, multi-soil-layered, one-dimensional, daily or sub-daily time step platform that simulates water, carbon and nitrogen balance of the soil-crop system subject to climate conditions and a large array of management forcings. It belongs to the family of mechanistic or process-based models.
-Cycles needs inputs of initial soil properties, climate forcings at a daily time step, and the management practices or forcings imposed by the farm operator such as crop sequence, fertilization rates and timing, irrigation and tillage. Based on these inputs, Cycles simulates crop growth and nutrient cycling and predicts agricultural performance metrics for annual and perennial crops (grain and forage yield, nutrient and water use efficiency), and environmental performance metrics such as nutrient losses through different pathways to the environment.
-                </td>
-              </tr>
-              <tr>
-                <td class="content" colspan="2">
-                  <b>Author:</b> Armen Kemanian <br/>
-                  <b>Contact:</b> Armen Kemanian <br/>
-                  <b>Email:</b> <a href="mailto:armen@psu.edu">armen@psu.edu</a> <br/>
-                  <b>Phone:</b> 321321312 <br/>
-                  <b>Institution:</b> Penn State University <br/>
-                  <b>Address:</b> 321 Street, USA <br/>
-                  <b>Website:</b> 
-                    <a href="https://plantscience.psu.edu/research/labs/kemanian/models-and-tools/cycles"
-                       target="_blank">
-                        https://plantscience.psu.edu/research/labs/kemanian/models-and-tools/cycles 
-                    </a><br/>
-                  <b>Preferred citation: </b> Kemanian, A. In Journal of ….. <br/>
-                  <b>Code:</b> <a href="https://github.com/cycles" target="_blank">https://github.com/cycles</a>
-                                (License: CC-BY-2.0)
-                </td>
-              </tr>
-            </table>
-            <hr/>
-            ${this._model.io ? this._model.io.map( io => { return html`${io.label}`; }) : html``}
+                <tr>
+                    <td class="header" colspan="2">
+                        <div class="details-button"></div><!--
+                        --><div class="title text-centered">${this._model.label}</div><!--
+                        <div class="links"><span class="icon">1</span> <span class="icon">2</span></div>-->
+                    </td>
+                </tr>
+                <tr>
+                    <td class="left text-centered">
+                    <span class="helper"></span>${this._model.logo ? 
+                        html`<img src="${this._model.logo}"/>`
+                        : html`<img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>`}
+                    </td>
+                    <td class="right content">
+                        ${this._model.desc}
+                        <br/>
+                        <br/>
+                        ${this._model.authors ?
+                            html`<b>Authors:</b> ${this._model.authors}<br/>`
+                            : ``}
+                        ${this._model.contactP ?
+                            html`<b>Contact:</b> ${this._model.contactP}<br/>`
+                            : ``}
+                        ${this._model.publisher ?
+                            html`<b>publisher:</b> ${this._model.publisher}<br/>`
+                            : ``}
+                        ${this._model.referenceP ?
+                            html`<b>Preferred citation:</b> ${this._model.referenceP}<br/>`
+                            : ``}
+                        ${this._model.doc ?
+                            html`<b>Documentation:</b> 
+                                <a href="${this._model.doc}" target="_blank">${this._model.doc}</a><br/>`
+                            : ``}
+                        <br/>
+
+                        <br/>
+                        ${(this._versions && Object.keys(this._versions).length > 0) ?
+                            html`
+                            <wl-select label="Select version" @change="${this.changeVersion}">
+                                <option value="" selected>Base</option>
+                                ${Object.keys(this._versions).map( uri => html`<option value="${uri}">${uri}</option>`)}
+                            </wl-select>
+                            ${(this._selectedVersion &&
+                               Object.keys(this._versions[this._selectedVersion]).length > 0) ? 
+                                html`
+                                <wl-select label="Select configuration" @change="${this.changeConfig}">
+                                    <option value="" selected>Base</option>
+                                    ${Object.keys(this._versions[this._selectedVersion]).map( uri => 
+                                        html`<option value="${uri}">${uri}</option>`
+                                    )}
+                                </wl-select>
+                                `
+                                : html``
+                            }
+                            `
+                            :html``
+                        }
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="content" colspan="2">
+                    <br/>
+                    <wl-tab-group>
+                        <wl-tab @click="${() => {this.changeTab('overview')}}">Overview</wl-tab>
+                        <wl-tab @click="${() => {this.changeTab('io')}}">Input/Output</wl-tab>
+                        <wl-tab @click="${() => {this.changeTab('variables')}}">Variables</wl-tab>
+                    </wl-tab-group>
+                ${this.renderTab(this._tab)}
+                <br/>
         `;
     }
 
+    changeTab (tabName: string) {
+        this._tab = tabName;
+    }
+
+    renderTab (tabName : string) {
+        switch (tabName) {
+            case 'overview':
+                return html`${this._model.sampleVisualization ?
+                    html`<img src="${this._model.sampleVisualization}"></img>` : html``}`
+            case 'io':
+                return html`
+                ${this._io ? html`
+                <table class="pure-table pure-table-bordered">
+                    <thead>
+                        <th>I/O</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Type</th>
+                        <th>Format</th>
+                    </thead>
+                    <tbody>
+                    ${this._io.map( io => html`
+                        <tr>
+                            <td>${io.kind.split('#')[1]}</td>
+                            <td>${io.label}</td>
+                            <td>${io.desc}</td>
+                            <td>${io.type.split('#')[1]}</td>
+                            <td>${io.format}</td>
+                        </tr>
+                    `)}
+                    </tbody>
+                </table>
+                    
+                    </td>
+                </tr>
+            </table>`: html `<h3 style="margin-left:30px">Please select a configuration.</h3>`}
+                `;
+            default:
+                return html``
+        }
+    }
+
+    changeVersion (ev:any) {
+        this._selectedConfig = '';
+        this._selectedVersion = ev.path[0].value;
+    }
+
+    changeConfig (ev:any) {
+        this._selectedConfig = ev.path[0].value;
+        if (this._selectedConfig) {
+            store.dispatch(explorerFetchIO(this._selectedConfig));
+        }
+    }
+
     firstUpdated() {
-        store.dispatch(explorerFetchDetails(this.uri));
-        /*let sp = this.uri.split('/');
-        if (sp.length > 1) {
-            this._id = sp[sp.length - 1];
-        }*/
+        //store.dispatch(explorerFetchDetails(this.uri));
+        store.dispatch(explorerFetchVersions(this.uri));
     }
 
     stateChanged(state: RootState) {
-        if (state.explorer && state.explorer.models) {
-            this._model = state.explorer.models[this.uri];
+        if (state.explorer) {
+            if (state.explorer.models) {
+                this._model = state.explorer.models[this.uri];
+            } 
+            if (state.explorer.io) {
+                if (this._selectedConfig) {
+                    this._io = state.explorer.io[this._selectedConfig];
+                }
+            }
+            if (state.explorer.version && state.explorer.version[this.uri]) {
+                this._versions = state.explorer.version[this.uri];
+            }
         }
     }
 }
