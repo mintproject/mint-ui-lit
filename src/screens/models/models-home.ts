@@ -26,6 +26,31 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     static get styles() {
         return [
             css `
+                wl-card.card-button {
+                    border: 2px solid rgba(98, 155, 48, 0.5);
+                    text-align: center;
+                    color: rgb(6, 67, 108);
+                    font-size: 1.2em;
+                    font-weight: bold;
+                    padding: 10px;
+                    cursor: pointer;
+                }
+
+                wl-card.card-button a {
+                    color: rgb(6, 67, 108);
+                    text-decoration: none;
+                }
+
+                wl-card.card-button a:hover {
+                    background-color: inherit;
+                }
+
+                wl-card.card-button img {
+                    padding: 15px;
+                    width: 150px;
+                    display:block;
+                    margin:auto;
+                }
             `,
             SharedStyles
         ];
@@ -43,12 +68,28 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             <wl-title level="3">Prepare Models</wl-title>
             <p>
                 This section allows you to:
-                <ul>
-                    <li><a href="/models/explore">Browse models in the system</a></li>
-                    <li>Incorporate new models</li>
-                    <li>Configure existing models</li>
-                    <li>Use automated methods to calibrate models for particular regions</li>
-                </ul>
+                <table style="width:50%;">
+                    <tr>
+                        <td><a href="/models/explore"><wl-card class="card-button">
+                            <img src="/images/browse.png">
+                            Browse models
+                        </wl-card></a></td>
+                        <td><wl-card class="card-button">
+                            <img src="/images/add.png">
+                            Add models
+                        </wl-card></td>
+                    </tr>
+                    <tr>
+                        <td><wl-card class="card-button">
+                            <img src="/images/config.png">
+                            Configure models
+                        </wl-card></td>
+                        <td><wl-card class="card-button">
+                            <img src="/images/calibrate.png">
+                            Calibrate models
+                        </wl-card></td>
+                    </tr>
+                </table>
             </p>        
             ${this._model && this._model.name ? 
                 html`

@@ -157,20 +157,25 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                     2 configs
                   </div>
                   <div>
-                    <span class="helper"></span><!--
-                    --><img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>
+                    <span class="helper"></span>${this._model.logo ? 
+                        html`<img src="${this._model.logo}"/>`
+                        : html`<img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>`}
                   </div>
                   <div class="text-centered two-lines">
                     Category: ${this._model.categories? html`${this._model.categories[0]}` : html`-`}
                     <br/>
-                    Type: NumericalModel
+                    Type: ${this._model.type? html`${this._model.type}`: html`-`}
                   </div>
                 </td>
 
                 <td class="right">
                   <div class="header"> 
                     <span class="title"> ${this._model.label} </span>
-                    <span class="icon"><wl-icon>insert_link</wl-icon></span>
+                    ${this._model.doc ?
+                        html`<span class="icon"><a target="_blank" 
+                            href="${this._model.doc}"><wl-icon>insert_link</wl-icon></a></span>`
+                        : html``
+                    }
                   </div>
                   <div class="content"> 
                     ${this._model.desc}
