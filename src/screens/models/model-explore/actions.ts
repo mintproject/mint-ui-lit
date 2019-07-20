@@ -6,14 +6,18 @@ import { UriModels, FetchedModel } from "./reducers";
 export const EXPLORER_FETCH = 'EXPLORER_FETCH';
 export const EXPLORER_SELECT = 'EXPLORER_SELECT'
 export const EXPLORER_DETAILS = 'EXPLORER_DETAILS'
+export const EXPLORER_VERSIONS = 'EXPLORER_VERSIONS'
+export const EXPLORER_IO = 'EXPLORER_IO'
 
 export interface ExplorerActionFetch extends Action<'EXPLORER_FETCH'> { models: UriModels };
 export interface ExplorerActionSelect extends Action<'EXPLORER_SELECT'> { key: string };
 export interface ExplorerActionDetails extends Action<'EXPLORER_DETAILS'> { uri: string, details: Array<any> };
+export interface ExplorerActionVersions extends Action<'EXPLORER_VERSIONS'> { uri: string, details: Array<any> };
+export interface ExplorerActionIO extends Action<'EXPLORER_IO'> { uri: string, details: Array<any> };
 
-export type ExplorerAction = ExplorerActionFetch | ExplorerActionSelect | ExplorerActionDetails;
+export type ExplorerAction = ExplorerActionFetch | ExplorerActionSelect | ExplorerActionDetails |
+                             ExplorerActionVersions | ExplorerActionIO;
 
-//const MODEL_CATALOG_URI = "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries";
 //const API_URI = "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries/"
 const API_URI = "https://query.mint.isi.edu/api/dgarijo/MINT-ModelCatalogQueries/"
 //const URI_PREFIX = "https://w3id.org/mint/instance/"
@@ -39,8 +43,14 @@ export const explorerFetch: ActionCreator<ExplorerThunkResult> = () => (dispatch
 
                 if (obj['doc']) { curModel.doc = obj['doc']['value']; }
                 if (obj['desc']) { curModel.desc = obj['desc']['value']; }
+                if (obj['logo']) { curModel.logo = obj['logo']['value']; }
                 if (obj['keywords']) { curModel.keywords = obj['keywords']['value']; }
                 if (obj['assumptions']) { curModel.assumptions = obj['assumptions']['value']; }
+                if (obj['authors']) { curModel.authors = obj['authors']['value'] }
+                if (obj['referenceP']) { curModel.referenceP = obj['referenceP']['value'] }
+                if (obj['contactP']) { curModel.contactP = obj['contactP']['value'] }
+                if (obj['publisher']) { curModel.publisher = obj['publisher']['value'] }
+                if (obj['sampleVisualization']) { curModel.sampleVisualization = obj['sampleVisualization']['value'] }
                 if (obj['versions']) { 
                     curModel.versions = obj['versions']['value'].split(', ');
                 }
@@ -49,6 +59,10 @@ export const explorerFetch: ActionCreator<ExplorerThunkResult> = () => (dispatch
                 }
                 if (obj['screenshots']) { 
                     curModel.screenshots = obj['screenshots']['value'].split(', ');
+                }
+                if (obj['modelType']) { 
+                    let tmp = obj['modelType']['value'].split('#');
+                    curModel.type = tmp[tmp.length -1]
                 }
 
                 models[obj['model']['value']] = curModel;
@@ -78,7 +92,6 @@ export const explorerFetchDetails: ActionCreator<ExplorerThunkResult> = (uri:str
     fetch(String(url)).then((response) => {
         response.json().then((obj) => {
             let bindings = obj["results"]["bindings"];
-            console.log(bindings)
 
             /*bindings.map( (obj: Object) => {
                 let curModel : FetchedModel = {
@@ -96,6 +109,47 @@ export const explorerFetchDetails: ActionCreator<ExplorerThunkResult> = (uri:str
 
             dispatch({
                 type: EXPLORER_DETAILS,
+                uri: uri,
+                details: bindings
+            });
+
+        })
+    });
+}
+
+export const explorerFetchVersions: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
+    console.log('Fetching version for', uri);
+
+    let url = new URL(API_URI + "getModelVersionAndConfigsForModel")
+    url.searchParams.append('model', uri)
+
+    fetch(String(url)).then((response) => {
+        response.json().then((obj) => {
+            let bindings = obj["results"]["bindings"];
+
+            dispatch({
+                type: EXPLORER_VERSIONS,
+                uri: uri,
+                details: bindings
+            });
+
+        })
+    });
+}
+
+export const explorerFetchIO: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
+    console.log('Fetching version for', uri);
+
+    let url = new URL(API_URI + "getConfigI_OVariables")
+    url.searchParams.append('config', uri)
+
+    fetch(String(url)).then((response) => {
+        response.json().then((obj) => {
+            let bindings = obj["results"]["bindings"];
+            console.log(bindings)
+
+            dispatch({
+                type: EXPLORER_IO,
                 uri: uri,
                 details: bindings
             });
