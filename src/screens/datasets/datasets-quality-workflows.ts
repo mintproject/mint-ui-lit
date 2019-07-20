@@ -41,6 +41,10 @@ export class DatasetsQualityWorkflows extends connect(store)(PageViewElement) {
                 >Ethiopia relief boundary</a></li>
             <li><a href="https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Guder_relief_rivers_boundary.png"
                 >Guder relief rivers boundary</a></li>
+            <li><a href="https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Jamma_relief_river_boundary.png"
+                >Jamma relief river boundary</a></li>
+            <li><a href="https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Muger_relief_rivers_boundary.png"
+                >Muger relief rivers boundary</a></li>
         </ul>
         `
     }
