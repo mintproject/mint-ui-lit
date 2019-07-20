@@ -18,7 +18,7 @@ export interface ModelsActionDetail extends Action<'MODELS_DETAIL'> { model: Mod
 
 export type ModelsAction = ModelsActionList | ModelsActionVariablesQuery |  ModelsActionDetail ;
 
-//const MODEL_CATALOG_URI = "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries";
+//const MODEL_CATALOG_URI = "https://query.mint.isi.edu/api/dgarijo/MINT-ModelCatalogQueries";
 
 // List all Model Configurations
 type ListModelsThunkResult = ThunkAction<void, RootState, undefined, ModelsActionList>;
@@ -58,8 +58,20 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
     let models = [] as Model[];
 
     /*
-    fetch(MODEL_CATALOG_URI + "/getModelConfigurationsForVariable?std=" + response_variables).then((response) => {
-        console.log(response.json);
+    fetch(MODEL_CATALOG_URI + "/getCalibratedModelConfigurationsForVariable?std=" + response_variables).then((response) => {
+        response.json().then((json) => {
+            json.results.bindings.map((binding: Object) => {
+                let model = {} as Model;
+                model.id = binding["calibration"]["value"];
+                model.description = binding["desc"]["value"];
+                model.original_model = binding["model"]["value"];
+                fetch(MODEL_CATALOG_URI + "/getModelConfigurationMetadata?modelConfig=" + model.id).then((mresponse) => {
+                    mresponse.json().then((mjson) => {
+                        console.log(mjson);
+                    });
+                });
+            })
+        });
     });
     */
 
