@@ -12,7 +12,7 @@ import { explorerSetVersion, explorerSetConfig, explorerSetCalibration,
 import { SharedStyles } from '../../../styles/shared-styles';
 
 //import { goToPage } from '../../../app/actions';
-import "weightless/select";
+import "weightless/expansion";
 import "weightless/tab";
 import "weightless/tab-group";
 import "weightless/card";
@@ -21,6 +21,9 @@ import "weightless/card";
 export class ModelFacetBig extends connect(store)(PageViewElement) {
     @property({type: String})
         uri : string = "";
+
+    @property({type: Number})
+        _count : number = 0;
 
     @property({type: Object})
     private _model! : FetchedModel;
@@ -62,6 +65,10 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             css `
                 :host {
                     width: 100%;
+                }
+
+                #hack {
+                    display: none;
                 }
 
                 .clickable {
@@ -359,98 +366,57 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     </thead>
                     <tbody>
                     ${this._io.map( io => html`
-                        <tr @click="${()=>{this.showIODetails(io)}}">
+                        <tr>
                             <td>${io.kind}</td>
                             <td>${io.label}</td>
                             <td>${io.desc}</td>
                             <td>${io.format}</td>
-                        </tr>
-                        ${io.active ? 
-                            html`
-                            <tr>
-                                <td colspan="4">
-                                <table class="pure-table pure-table-bordered">
-                                    <thead>
-                                        <th>Label</th>
-                                        <th>Long Name</th>
-                                        <th>Description</th>
-                                        <th>Units</th>
-                                    </thead>
-                                    <tbody>
-                                    ${io.variables.map( v => html`
-                                        <tr>
-                                            <td>${v.label}</td>
-                                            <td>${v.longName}</td>
-                                            <td>${v.desc}</td>
-                                            <td>${v.unit}</td>
-                                        </tr>`)}
-                                    </tbody>
-                                                </td>
-                                            </tr>`
-                                            : html``}
-                                    `)}
-                                    </tbody>
-                                </table>
-                    
-                            </td>
-                        </tr>
+                        </tr>`)}
+                    </tbody>
                 </table>`: html `${this._io?
                     html`<h3 style="margin-left:30px">
                         Sorry! The selected configuration does not have input/output yet.</h3>`
-                    :html`<h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`}`}`;
+                    :html`<br/><h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`}`}`;
 
             case 'variables':
-                return html`
-                ${(this._io && this._io.length>0) ? html`
-                <table class="pure-table pure-table-bordered">
-                    <thead>
-                        <th>I/O</th>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Format</th>
-                    </thead>
-                    <tbody>
-                    ${this._io.map( io => html`
-                        <tr @click="${()=>{this.showIODetails(io)}}">
-                            <td>${io.kind}</td>
-                            <td>${io.label}</td>
-                            <td>${io.desc}</td>
-                            <td>${io.format}</td>
-                        </tr>
-                        ${io.active ? 
-                            html`
-                            <tr>
-                                <td colspan="4">
-                                <table class="pure-table pure-table-bordered">
-                                    <thead>
-                                        <th>Label</th>
-                                        <th>Long Name</th>
-                                        <th>Description</th>
-                                        <th>Units</th>
-                                    </thead>
-                                    <tbody>
-                                    ${io.variables.map( v => html`
-                                        <tr>
-                                            <td>${v.label}</td>
-                                            <td>${v.longName}</td>
-                                            <td>${v.desc}</td>
-                                            <td>${v.unit}</td>
-                                        </tr>`)}
-                                    </tbody>
-                                                </td>
-                                            </tr>`
-                                            : html``}
-                                    `)}
-                                    </tbody>
-                                </table>
-                    
-                            </td>
-                        </tr>
-                </table>`: html `${this._io?
-                    html`<h3 style="margin-left:30px">
-                        Sorry! The selected configuration does not have input/output yet.</h3>`
-                    :html`<h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`}`}`;
-
+                return html`<div id="hack">${this._count}</div><br/>
+                    ${(this._io && this._io.length>0) ? 
+                    html`${this._io.map((io) => {
+                        let cont = html``;
+                        if (io.variables && io.variables.length>0) 
+                            cont = html`
+                    <wl-expansion name="group">
+                        <span slot="title">${io.label}</span>
+                        <span slot="description">${io.desc}</span>
+                        <table class="pure-table pure-table-bordered">
+                            <thead>
+                                <th>Label</th>
+                                <th>Long Name</th>
+                                <th>Description</th>
+                                <th>Units</th>
+                            </thead>
+                            <tbody>
+                            ${io.variables.map( v => 
+                                html`
+                                <tr>
+                                    <td>${v.label}</td>
+                                    <td>${v.longName}</td>
+                                    <td>${v.desc}</td>
+                                    <td>${v.unit}</td>
+                                </tr>`)}
+                            </tbody>
+                        </table>
+                    </wl-expansion>`
+                        return cont
+                    })}`
+                    : html`${(!this._selectedConfig)? html`
+                    <h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>
+                    `
+                    : html`<br/><h3 style="margin-left:30px">
+                        Sorry! The selected configuration does not have software compatible inputs/outputs yet.
+                    </h3>`}
+                    `}
+                `
 
             case 'software':
                 return html`${(this._selectedVersion && this._selectedConfig)?
@@ -458,27 +424,27 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                            (this._compOutput && this._compOutput.length>0) ?
                         html`
                             ${(this._compInput && this._compInput.length>0)?
-                                html`<h3> This software uses variables that can be produced from:</h3>
+                                html`<h3> This model configuration uses variables that can be produced from:</h3>
                                 <ul>${this._compInput.map(i=>{
                                     return html`<li><b>${i.label}:</b> With variables: ${i.vars.join(', ')}</li>`
                                 })}</ul>`: html``
                             }
                             ${(this._compOutput && this._compOutput.length>0)?
-                                html`<h3> This software produces variables that can be used by:</h3>
+                                html`<h3> This model configuraion produces variables that can be used by:</h3>
                                 <ul>${this._compOutput.map(i=>{
                                     return html`<li><b>${i.label}:</b> With variables: ${i.vars.join(', ')}</li>`
                                 })}</ul>`: html``
                             }`
-                        : html`<h3 style="margin-left:30px">
+                        : html`<br/><h3 style="margin-left:30px">
                             Sorry! The selected configuration does not have software compatible inputs/outputs yet.
                         </h3>
                         `
                     }`
-                    : html`<h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`
+                    : html`<br/><h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`
                 }`
 
             default:
-                return html`<h3 style="margin-left:30px">Sorry! We are currently working in this feature.</h3>`
+                return html`<br/><h3 style="margin-left:30px">Sorry! We are currently working in this feature.</h3>`
         }
     }
 
@@ -489,6 +455,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         } else {
             io.active = false;
         }
+        return null;
     }
 
     changeVersion (ev:any) {
@@ -522,6 +489,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     }
 
     stateChanged(state: RootState) {
+        let lastConfig = this._selectedConfig? this._selectedConfig.uri : '';
         if (state.explorer) {
             if (state.explorer.models) {
                 this._model = state.explorer.models[this.uri];
@@ -550,11 +518,18 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
 
             if (this._selectedConfig) {
                 if (state.explorer.io) {
+                    if ((!this._io || this._selectedConfig.uri != lastConfig) &&
+                        state.explorer.io[this._selectedConfig.uri]) {
+                        state.explorer.io[this._selectedConfig.uri].forEach((u:any) => {
+                            store.dispatch(explorerFetchIOVarsAndUnits(u.uri));
+                        });
+                    }
                     this._io = state.explorer.io[this._selectedConfig.uri];
                     if (this._io && state.explorer.variables) {
                         for (let i = 0; i < this._io.length; i++) {
                             if (state.explorer.variables[this._io[i].uri]) {
                                 this._io[i].variables = state.explorer.variables[this._io[i].uri];
+                                this._count += 1;
                             }
                         }
                     }
@@ -569,18 +544,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 }
             }
 
-            if (state.explorer.io) {
-                if (this._selectedConfig) {
-                    this._io = state.explorer.io[this._selectedConfig.uri];
-                }
-                if (this._io && state.explorer.variables) {
-                    for (let i = 0; i < this._io.length; i++) {
-                        if (state.explorer.variables[this._io[i].uri]) {
-                            this._io[i].variables = state.explorer.variables[this._io[i].uri];
-                        }
-                    }
-                }
-            }
         }
     }
 }
