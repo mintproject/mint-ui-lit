@@ -25,6 +25,10 @@ export interface FetchedModel {
     fundS?: string;
     downloadURL?: string;
     dateC?: string;
+    installInstr?: string;
+    pl?: string[];
+    sourceC?: string;
+    os?: string[];
 
     io?: IODetail[];
     version?: VersionDetail[];

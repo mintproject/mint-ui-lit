@@ -328,6 +328,25 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 return html`${this._model.sampleVisualization ?
                     html`<img src="${this._model.sampleVisualization}"></img>` : html``}`
 
+            case 'tech':
+                return html`${(this._model.installInstr || (this._model.os && this._model.os.length>0) ||
+                               this._model.sourceC || (this._model.pl && this._model.pl.length>0))?
+                    html`<ul>
+                        ${(this._model.os && this._model.os.length>0)?
+                            html`<li><b>Operating system:</b> ${this._model.os.join(', ')}</li>`: html``}
+                        ${this._model.sourceC?  
+                            html`<li><b>Source code:</b> 
+                                <a target="_blank" href="${this._model.sourceC}">${this._model.sourceC}</a>
+                            </li>`: html``}
+                        ${(this._model.pl && this._model.pl.length>0)?
+                            html`<li><b>Programming language:</b> ${this._model.pl.join(', ')}</li>`: html``}
+                        ${this._model.installInstr? 
+                            html`<li><b>Installation instructions:</b>
+                                <a target="_blank" href="${this._model.installInstr}">${this._model.installInstr}</a>
+                            </li>`: html``}
+                    </ul>`
+                    : html`<h3 style="margin-left:30px">Sorry! We are currently working in this feature.</h3>`}`
+
             case 'io':
                 return html`
                 ${(this._io && this._io.length>0) ? html`
@@ -474,7 +493,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
 
     changeVersion (ev:any) {
         let versionUri : string = ev.path[0].value;
-        console.log('change version', versionUri);
         if (this._selectedVersion) {
             let v = this._model.version![versionUri];
             this.changeConfig({path: [{value: v.config[0].uri}]})
@@ -484,7 +502,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
 
     changeConfig (ev:any) {
         let configUri : string = ev.path[0].value;
-        console.log('change config', configUri);
         if (configUri) {
             store.dispatch(explorerFetchIO(configUri));
             store.dispatch(explorerFetchCompatibleSoftware(configUri));
@@ -495,7 +512,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
 
     changeCalibration (ev:any) {
         let calibUri : string = ev.path[0].value;
-        console.log('change calib', calibUri);
         store.dispatch(explorerSetCalibration(calibUri));
         console.log(this._selectedCalibration);
     }
