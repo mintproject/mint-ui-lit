@@ -352,7 +352,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                                 <a target="_blank" href="${this._model.installInstr}">${this._model.installInstr}</a>
                             </li>`: html``}
                     </ul>`
-                    : html`<h3 style="margin-left:30px">Sorry! We are currently working in this feature.</h3>`}`
+                    : html`<br/><h3 style="margin-left:30px">Sorry! We are currently working in this feature.</h3>`}`
 
             case 'io':
                 return html`
@@ -374,7 +374,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         </tr>`)}
                     </tbody>
                 </table>`: html `${this._io?
-                    html`<h3 style="margin-left:30px">
+                    html`<br/><h3 style="margin-left:30px">
                         Sorry! The selected configuration does not have input/output yet.</h3>`
                     :html`<br/><h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`}`}`;
 
@@ -412,7 +412,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     : html`${(!this._selectedConfig)? html`
                     <h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>
                     `
-                    : html`<br/><h3 style="margin-left:30px">
+                    : html`<h3 style="margin-left:30px">
                         Sorry! The selected configuration does not have software compatible inputs/outputs yet.
                     </h3>`}
                     `}
