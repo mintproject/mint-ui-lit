@@ -4,19 +4,22 @@ import { RootState } from "../../../app/store";
 //import { UriModels, FetchedModel } from "./reducers";
 import { UriModels } from "./reducers";
 
-import { apiFetch, MODEL_PREFIX, VER_AND_CONF, MODELS, GET_IO } from './api-fetch';
+import { apiFetch, MODEL_PREFIX, VER_AND_CONF, MODELS, GET_IO, IO_VARS_AND_UNITS } from './api-fetch';
 
 export const EXPLORER_FETCH = 'EXPLORER_FETCH';
 export const EXPLORER_SELECT = 'EXPLORER_SELECT'
 export const EXPLORER_VERSIONS = 'EXPLORER_VERSIONS'
 export const EXPLORER_IO = 'EXPLORER_IO'
+export const EXPLORER_VAR_UNIT = 'EXPLORER_VAR_UNIT'
 
 export interface ExplorerActionFetch extends Action<'EXPLORER_FETCH'> { models: UriModels };
 export interface ExplorerActionSelect extends Action<'EXPLORER_SELECT'> { key: string };
 export interface ExplorerActionVersions extends Action<'EXPLORER_VERSIONS'> { uri: string, details: Array<any> };
 export interface ExplorerActionIO extends Action<'EXPLORER_IO'> { uri: string, details: Array<any> };
+export interface ExplorerActionVarUnit extends Action<'EXPLORER_VAR_UNIT'> { uri: string, details: Array<any> };
 
-export type ExplorerAction = ExplorerActionFetch | ExplorerActionSelect | ExplorerActionVersions | ExplorerActionIO;
+export type ExplorerAction = ExplorerActionFetch | ExplorerActionSelect | ExplorerActionVersions | ExplorerActionIO |
+                             ExplorerActionVarUnit;
 
 // List all Model Configurations
 type ExplorerThunkResult = ThunkAction<void, RootState, undefined, ExplorerAction>;
@@ -45,6 +48,7 @@ export const explorerFetch: ActionCreator<ExplorerThunkResult> = () => (dispatch
             type: EXPLORER_FETCH,
             models: data
         });
+        console.log(data);
     });
 };
 
@@ -54,6 +58,7 @@ export const explorerFetchVersions: ActionCreator<ExplorerThunkResult> = (uri:st
         type: VER_AND_CONF,
         model: uri
     }).then(fetched => {
+        console.log(fetched);
         let data = fetched.reduce((acc:any, obj:any) => {
             if (!acc[obj.version]) acc[obj.version] = {}
             if (obj.config && !acc[obj.version][obj.config]) acc[obj.version][obj.config] = {};
@@ -76,13 +81,34 @@ export const explorerFetchIO: ActionCreator<ExplorerThunkResult> = (uri:string) 
         config: uri,
         rules: {
             io: {newKey: 'uri'},
-            prop: {newKey: 'kind'},
+            prop: {newKey: 'kind', newValue: (value) => {
+                let sp = value.split('#');
+                return sp[sp.length -1].substring(3);
+            }},
             iolabel: {newKey: 'label'},
             ioDescription: {newKey: 'desc'}
         }
     }).then(fetched => {
         dispatch({
             type: EXPLORER_IO,
+            uri: uri,
+            details: fetched
+        })
+    })
+}
+
+export const explorerFetchIOVarsAndUnits: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
+    console.log('Fetching variables and units for', uri);
+    apiFetch({
+        type: IO_VARS_AND_UNITS,
+        io: uri,
+        rules: {
+            vp: {newKey: 'uri'},
+            description: {newKey: 'desc'}
+        }
+    }).then(fetched => {
+        dispatch({
+            type: EXPLORER_VAR_UNIT,
             uri: uri,
             details: fetched
         })

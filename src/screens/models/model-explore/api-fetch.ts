@@ -3,7 +3,10 @@ export const MODEL_PREFIX = "https://w3id.org/okn/i/mint/";
 
 export const VER_AND_CONF = "VER_AND_CONF";
 export const MODELS = "MODELS";
-export const GET_IO = "GET_IO";
+export const GET_IO = "GET_IO"; //change name?
+export const CONFIG_PARAMETERS = "CONFIG_PARAMETERS";
+export const IO_VARS_AND_UNITS = 'IO_VARS_AND_UNITS';
+export const CONFIG_EXPLANATION_DIAGRAMS = 'CONFIG_EXPLANATION_DIAGRAMS';
 
 interface ApiRule {
     newKey?: string; //could be a function
@@ -16,12 +19,17 @@ interface ApiBaseParam<T> {
 };
 interface ApiModelParam<T> extends ApiBaseParam<T> { model: string }
 interface ApiConfigParam<T> extends ApiBaseParam<T> { config: string }
+interface ApiIOParam<T> extends ApiBaseParam<T> {io: string};
 
 interface ApiModelsParams extends ApiBaseParam<'MODELS'> {};
 interface ApiVersionParams extends ApiModelParam<'VER_AND_CONF'> {};
 interface ApiIOParams extends ApiConfigParam<'GET_IO'> {};
+interface ModelParametersParams extends ApiConfigParam<'CONFIG_PARAMETERS'> {};
+interface IOVarUnitsParams extends ApiIOParam<'IO_VARS_AND_UNITS'> {};
+interface ConfExplDiagParams extends ApiBaseParam<'CONFIG_EXPLANATION_DIAGRAMS'> {v: string};
 
-type ApiParams = ApiVersionParams | ApiModelsParams | ApiIOParams;
+type ApiParams = ApiVersionParams | ApiModelsParams | ApiIOParams | ModelParametersParams |
+                 IOVarUnitsParams | ConfExplDiagParams ;
 
 interface ConfigEntry {
     path: string,
@@ -32,6 +40,9 @@ const config = {
     MODELS: {path: 'getModels', mandatory: []},
     VER_AND_CONF: {path: 'getModelVersionAndConfigsForModel', mandatory: ['model']},
     GET_IO: {path: 'getConfigI_OVariables', mandatory: ['config']},
+    CONFIG_PARAMETERS: {path: 'getConfigIParameters', mandatory: ['config']},
+    IO_VARS_AND_UNITS: {path: 'getI_OVariablesAndUnits', mandatory: ['io']},
+    CONFIG_EXPLANATION_DIAGRAMS: {path: 'getExplanationDiagramsForResource', mandatory: ['v']},
 }
 
 const createUrl = (params: ApiParams) : string => {
