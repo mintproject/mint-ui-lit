@@ -7,7 +7,6 @@ import models, { VariableModels, Model } from "../../models/reducers";
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { updatePathway } from "../actions";
-import { BASE_HREF } from "../../../app/actions";
 import { removeDatasetFromPathway, createPathwayExecutableEnsembles, matchVariables } from "../../../util/state_functions";
 
 import "weightless/tooltip";
@@ -49,7 +48,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         {
             name: "Original model",
             fn: (model:Model) => html `
-                <a target="_blank" href="http://models.mint.isi.edu/view-model/${model.original_model}">${model.original_model}</a>
+                <a target="_blank" href="models/explore/${model.original_model}">${model.original_model}</a>
                 `
         },        
         {
@@ -142,7 +141,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                         let model = this.pathway.models![modelid];
                         return html`
                         <li>
-                            <a href="${BASE_HREF}models/${model.id}">${model.name}</a>
+                            <a href="models/explore/${model.id}">${model.name}</a>
                         </li>
                         `
                     })}
@@ -199,7 +198,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                                     <tr>
                                         <td><input class="checkbox" type="checkbox" data-modelid="${model.id}"
                                             ?checked="${modelids.indexOf(model.id!) >= 0}"></input></td>
-                                        <td><a href="${BASE_HREF}models/${model.id}">${model.name}</a></td>
+                                        <td><a href="models/explore/${model.id}">${model.name}</a></td>
                                         <td>${model.category}</td>
                                         <td>${model.calibrated_region}</td>
                                         <td>

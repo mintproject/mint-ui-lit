@@ -28,6 +28,7 @@ export interface Source {
 export interface DatasetsState {
     datasets: ModelDatasets
     dataset: DatasetDetail
+    workflow_type?: String
 }
 export type ModelInputDatasets = Map<string, Dataset[]>
 export type ModelDatasets = Map<string, ModelInputDatasets>

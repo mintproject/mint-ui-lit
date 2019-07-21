@@ -37,6 +37,17 @@ export class GoogleMapJsonLayer extends GoogleMapChildElement {
       });
 
       this.map.data.loadGeoJson(this.url);
+
+      // Set mouseover event for each feature.
+      map.data.addListener('click', function(event) {
+        map.data.setStyle(function(feature) {
+          return {
+            fillColor: (feature == event.feature ? '#d51990' : '#1990d5'),
+            strokeColor: (feature == event.feature ? '#d51990' : '#1990d5'),
+            strokeWeight: 1
+          };
+        });
+      });      
     }
   }
 }

@@ -157,7 +157,9 @@ const loadPage: ActionCreator<ThunkResult> =
     case 'datasets':
         import('../screens/datasets/datasets-home').then((_module) => {
           if(params.length > 0) {
-            store.dispatch(queryDatasetDetail(params[0]));
+            if(subpage == "browse") {
+              store.dispatch(queryDatasetDetail(params[0]));
+            }
           }
         });
         break;
