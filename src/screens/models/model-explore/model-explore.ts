@@ -167,15 +167,15 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     </div>
 
                     ${Object.keys(this._models).map( (key:string) => {
-                        let text : string = key;
+                        let text : string = this._models[key].label
                         if (this._models[key].desc) text +=     this._models[key].desc;
-                        if (this._models[key].label) text +=    this._models[key].label;
                         if (this._models[key].keywords) text += this._models[key].keywords;
+                        if (this._models[key].categories) text +=    this._models[key].categories.join();
                         let st = ''
                         if (!text.toLowerCase().includes(this.filter)) {
                             st = 'display: none;'
                         }
-                        return html`<br/>
+                        return html`
                         <model-facet 
                             uri="${key}"
                             style="${st}">
