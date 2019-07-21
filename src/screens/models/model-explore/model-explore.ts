@@ -38,8 +38,33 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     private _lastInput : string = '';
 
     static get styles() {
-        return [
+        return [SharedStyles,
             css `
+            .noselect {
+                  -webkit-touch-callout: none; /* iOS Safari */
+                    -webkit-user-select: none; /* Safari */
+                     -khtml-user-select: none; /* Konqueror HTML */
+                       -moz-user-select: none; /* Firefox */
+                        -ms-user-select: none; /* Internet Explorer/Edge */
+                            user-select: none; /* Non-prefixed version, currently
+                                                  supported by Chrome and Opera */
+            }
+
+            .input_filter label {
+                margin-right: 6px;
+                padding: 0px;
+                font-size: 1.2em;
+                line-height: 1.2em;
+                display: inline-block;
+                vertical-align:middle;
+                width: 30px;
+            }
+
+            .input_filter input {
+                display: inline-block;
+                line-height: 1.3em;
+                width: calc(100% - 40px);
+            }
 
             .twocolumns {
                 position: absolute;
@@ -78,12 +103,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
             .small-card {
                 padding: 20px 150px 0px 150px;
-            }
-            .padd {
-                padding: 20px;
-            }
-            `,
-            SharedStyles
+            }`
         ];
     }
 
@@ -94,7 +114,10 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     <wl-icon>arrow_back_ios</wl-icon>
                 </wl-button>
                 <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                    <wl-title level="3" style="margin: 0px; cursor: pointer;" @click="${()=> goToPage('models/explore')}">Model Explorer</wl-title>
+                    ${this._selected? html`
+                    <wl-title level="3" style="margin: 0px; cursor: pointer;" 
+                            @click="${()=> goToPage('models/explore')}">Model Explorer</wl-title>`
+                    : html`<wl-title level="3" style="margin: 0px;"> Model Explorer</wl-title>`}
                 </div>
                 <!--<wl-icon 
                     class="actionIcon editIcon bigActionIcon">edit</wl-icon>
@@ -131,11 +154,15 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                             type="search">
                     </wl-textfield>-->
 
-                    <div class="search_input input_full">
-                        <label>Model Search</label>
+                    <div class="search_input input_full input_filter">
+                        <label for="filter" class='noselect'>
+                            <wl-icon>search</wl-icon>
+                        </label>
                         <input value="${this.filter}"
+                            placeholder="Search models here..."
                             type="search"
                             @keyup="${this.filterUpdate}"
+                            id="filter"
                             name="filter"></input>
                     </div>
 
@@ -148,11 +175,10 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                         if (!text.toLowerCase().includes(this.filter)) {
                             st = 'display: none;'
                         }
-                        return html`
+                        return html`<br/>
                         <model-facet 
                             uri="${key}"
-                            style="${st}"
-                            class="padd">
+                            style="${st}">
                         </model-facet>
                         `
                     })}
@@ -185,9 +211,8 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     this._selectedUri = state.explorer.selected;
                     this._selected = state.explorer.models[this._selectedUri];
                 } else {
-                    if (state.explorer.selected == '') {
-                        this._selected = null;
-                    }
+                    this._selectedUri = '';
+                    this._selected = null;
                 }
             }
         }
