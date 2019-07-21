@@ -48,7 +48,6 @@ export const explorerFetch: ActionCreator<ExplorerThunkResult> = () => (dispatch
             type: EXPLORER_FETCH,
             models: data
         });
-        console.log(data);
     });
 };
 
@@ -58,7 +57,6 @@ export const explorerFetchVersions: ActionCreator<ExplorerThunkResult> = (uri:st
         type: VER_AND_CONF,
         model: uri
     }).then(fetched => {
-        console.log(fetched);
         let data = fetched.reduce((acc:any, obj:any) => {
             if (!acc[obj.version]) acc[obj.version] = {}
             if (obj.config && !acc[obj.version][obj.config]) acc[obj.version][obj.config] = {};

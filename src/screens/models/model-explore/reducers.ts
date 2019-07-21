@@ -84,7 +84,6 @@ const INITIAL_STATE: ExplorerState = {
 const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, action) => {
     switch (action.type) {
         case EXPLORER_FETCH:
-            console.log(action.models)
             state.models = action.models;
             break;
         case EXPLORER_SELECT:
