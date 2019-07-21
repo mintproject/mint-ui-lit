@@ -206,9 +206,9 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             if (state.explorer.models) {
                 this._models = state.explorer.models;
             }
-            if (state.explorer.selected != this._selectedUri) {
-                if (state.explorer.models[state.explorer.selected]) {
-                    this._selectedUri = state.explorer.selected;
+            if (state.explorer.selectedModel != this._selectedUri) {
+                if (state.explorer.models[state.explorer.selectedModel]) {
+                    this._selectedUri = state.explorer.selectedModel;
                     this._selected = state.explorer.models[this._selectedUri];
                 } else {
                     this._selectedUri = '';

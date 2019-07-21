@@ -1,6 +1,8 @@
 import { Reducer } from "redux";
 import { RootAction } from "../../../app/store";
-import { EXPLORER_FETCH, EXPLORER_SELECT, EXPLORER_VERSIONS, EXPLORER_IO, EXPLORER_VAR_UNIT } from './actions'
+import { EXPLORER_SELECT_MODEL, EXPLORER_SELECT_VERSION, EXPLORER_SELECT_CONFIG, EXPLORER_SELECT_CALIBRATION,
+         EXPLORER_FETCH, EXPLORER_VERSIONS, EXPLORER_IO, EXPLORER_VAR_UNIT, EXPLORER_COMPATIBLE_INPUT,
+         EXPLORER_COMPATIBLE_OUTPUT} from './actions'
 
 export interface FetchedModel {
     uri: string,
@@ -11,7 +13,7 @@ export interface FetchedModel {
     logo?: string,
     keywords?: string, //FIXME can by an array if slit()
     assumptions?: string,
-    versions?: string[],
+    ver?: string[],
     categories?: string[],
     screenshots?: string[],
     authors?: string[],
@@ -20,7 +22,12 @@ export interface FetchedModel {
     publisher?: string,
     type?: string,
     sampleVisualization?: string,
-    io?: IODetail[]
+    fundS?: string;
+    downloadURL?: string;
+    dateC?: string;
+
+    io?: IODetail[];
+    version?: VersionDetail[];
 }
 
 export interface IODetail {
@@ -53,24 +60,43 @@ export interface VariableDetail {
 }
 
 export interface VersionDetail {
-    config?: ConfigDetail
+    uri: string;
+    config?: ConfigDetail[];
 }
 
-interface ConfigDetail {
-    calibration?: any,
+export interface ConfigDetail {
+    uri: string;
+    calibration?: CalibrationDetail[];
+}
+
+export interface CalibrationDetail {
+    uri: string;
+}
+
+export interface CompIODetail {
+    label: string;
+    desc: string;
+    vars: string[];
+    comp_config?: string;
 }
 
 export type UriModels = Map<string, FetchedModel>;
 type UriIO = Map<string, IODetail[]>;
 type UriVersion = Map<string, VersionDetail[]>;
 type UriVariable = Map<string, VariableDetail[]>;
+type UriCompIO = Map<string, CompIODetail[]>;
 
 export interface ExplorerState {
     models: UriModels,
     io: UriIO, 
     version: UriVersion,
     variables: UriVariable,
-    selected: string
+    compatibleInput: UriCompIO;
+    compatibleOutput: UriCompIO;
+    selectedModel: string;
+    selectedVersion: string;
+    selectedConfig: string;
+    selectedCalibration: string;
 }
 
 const INITIAL_STATE: ExplorerState = { 
@@ -78,19 +104,34 @@ const INITIAL_STATE: ExplorerState = {
     io: {} as UriIO,
     version: {} as UriVersion,
     variables: {} as UriVariable,
-    selected: ''
+    compatibleInput: {} as UriCompIO,
+    compatibleOutput: {} as UriCompIO,
+    selectedModel: '',
+    selectedVersion: '',
+    selectedConfig: '',
+    selectedCalibration: '',
 };
 
 const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, action) => {
     switch (action.type) {
+        case EXPLORER_SELECT_MODEL:
+            state.selectedModel = action.uri;
+            break;
+        case EXPLORER_SELECT_VERSION:
+            state.selectedVersion = action.uri;
+            break;
+        case EXPLORER_SELECT_CONFIG:
+            state.selectedConfig = action.uri;
+            break;
+        case EXPLORER_SELECT_CALIBRATION:
+            state.selectedCalibration = action.uri;
+            break;
         case EXPLORER_FETCH:
             state.models = action.models;
             break;
-        case EXPLORER_SELECT:
-            state.selected = action.key;
-            break;
         case EXPLORER_VERSIONS:
             state.version[action.uri] = action.details;
+            state.models[action.uri].version = action.details;
             break;
         case EXPLORER_VAR_UNIT:
             state.variables[action.uri] = action.details;
@@ -101,6 +142,12 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
                 ios.push( io as IODetail );
             })
             state.io[action.uri] = ios;
+            break;
+        case EXPLORER_COMPATIBLE_INPUT:
+            state.compatibleInput[action.uri] = action.details;
+            break;
+        case EXPLORER_COMPATIBLE_OUTPUT:
+            state.compatibleOutput[action.uri] = action.details;
             break;
     }
     return {
