@@ -1,14 +1,23 @@
 
-import { html, customElement, css } from 'lit-element';
+import { html, customElement, css, property } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
 import { SharedStyles } from '../../styles/shared-styles';
-import { store } from '../../app/store';
+import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
+import { listRegions } from '../regions/actions';
+import { RegionList } from '../regions/reducers';
+import { GOOGLE_API_KEY } from '../../config/google-api-key';
 
 @customElement('app-home')
 export class AppHome extends connect(store)(PageViewElement) {
   
+    @property({type: Object})
+    private _regions!: RegionList;
+
+    @property({type:Array})
+    private _mapStyles = '[{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"gamma":2.15},{"lightness":12}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"visibility":"on"},{"lightness":24}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]}]';
+    
     static get styles() {
       return [
         SharedStyles,
@@ -41,6 +50,10 @@ export class AppHome extends connect(store)(PageViewElement) {
             background: #FFFFFF;
             width: 100%;
           }
+
+          .middle2main {
+            height: calc(100% - 80px);
+          }
           
         `
       ];
@@ -58,12 +71,40 @@ export class AppHome extends connect(store)(PageViewElement) {
         </div>
   
         <div class="middle">
-            <wl-title level="3">MINT Home Page</wl-title>
+            <wl-title level="3">Welcome to MINT</wl-title>
             <p>
-                Information about MINT
+            Major societal and environmental challenges require forecasting how natural processes and human activities affect one another. 
+            There are many areas of the globe where climate affects water resources and therefore food availability, with major economic 
+            and social implications. Today, such analyses require significant effort to integrate highly heterogeneous models from 
+            separate disciplines, including geosciences, agriculture, economics, and social sciences. 
+            
+            Model integration requires resolving semantic, spatio-temporal, and execution mismatches, which are largely done by hand today 
+            and may take more than two years. The Model INTegration (MINT) project is developing a modeling environment to significantly 
+            reduce the time needed to develop new integrated models while ensuring their utility and accuracy.
             </p>
         </div>
+        <google-map class="middle2main" api-key="${GOOGLE_API_KEY}" 
+            latitude="5" longitude="40" zoom="4" disable-default-ui
+            styles="${this._mapStyles}">
+            ${Object.keys(this._regions || {}).map((regionid) => {
+            let region = this._regions![regionid];
+            return html`
+            <google-map-json-layer url="${region.geojson}"></google-map-json-layer>
+            `;
+            })}
+        </google-map>        
 
       `
     }
+
+    protected firstUpdated() {
+      store.dispatch(listRegions());
+    }
+
+    // This is called every time something is updated in the store.
+    stateChanged(state: RootState) {
+        if(state.regions && state.regions.regions) {
+            this._regions = state.regions.regions;
+        }
+    }    
 }

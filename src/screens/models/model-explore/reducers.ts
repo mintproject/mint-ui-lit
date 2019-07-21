@@ -20,6 +20,7 @@ export interface FetchedModel {
     publisher?: string,
     type?: string,
     sampleVisualization?: string,
+    io?: IODetail[]
 }
 
 export interface IODetail {

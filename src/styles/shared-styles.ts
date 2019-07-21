@@ -166,6 +166,42 @@ export const SharedStyles = css`
     color: #444;
   }
 
+  /* Big Icons view */
+  .hiddensection {
+    display: none;
+  }
+  .icongrid {
+      display: grid;
+      grid-template-columns: 160px 160px;
+      grid-template-rows: 160px 160px;
+      margin-left: calc(50% - 160px);
+      margin-top: 80px;
+  }
+  .icongrid a {
+      text-align: center;
+      vertical-align: middle;
+      border: 5px solid #0f7acf;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      margin: 5px;
+  }
+  .icongrid wl-icon {
+      --icon-size: 100px;
+      margin-top: 10px;
+  }
+  .svgicon {
+      width: 100px;
+      height: 100px;
+      display: inline-block;
+      margin-top: 10px;
+      text-align: center;
+  }
+  .svgicon svg {
+      fill: #0f7acf;
+  }
+  /* End of Big Icons view */
+
   /* Tree view */
   .clt, .clt ul, .clt li {
       /*color: #0f7acf;*/
