@@ -105,7 +105,11 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                                 <tr>
                                     <td>
                                         <wl-title level="5">${input.name}</wl-title>
-                                        <div class="caption">This is a ${input.type}. The range is from ${input.min} to ${input.max}</div>
+                                        <div class="caption">The units are ${input.type}. 
+                                        ${input.min && input.max ? 
+                                            html `The range is from ${input.min} to ${input.max}</div>` 
+                                            : html``
+                                        }
                                     </td>
                                     <td>
                                         <div class="input_full">

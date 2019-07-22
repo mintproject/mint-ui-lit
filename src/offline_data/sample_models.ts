@@ -144,12 +144,12 @@ export const EXAMPLE_MODEL_QUERY = [
         ],
         input_parameters: [
             {
-                id: "planting_date_adjustment",
-                name: "Adjustment to planting date",
+                id: "planting_date",
+                name: "Planting date",
                 type: "days",
-                min: "-20",
-                max: "20",
-                default: "0"
+                min: "0",
+                max: "365",
+                default: "100"
             },
             {
                 id: "fertilizer_level_adjustment",
@@ -161,19 +161,19 @@ export const EXAMPLE_MODEL_QUERY = [
             },
             {
                 id: "weed_fractions_adjustment",
-                name: "Adjustment to weed fractions",
-                type: "percentage",
-                min: "-20",
-                max: "20",
+                name: "Weed fractions",
+                type: "fraction",
+                min: "0.0",
+                max: "1.0",
                 default: "0"
             },
             {
-                id: "crops_adjustment",
-                name: "Adjustment to crops",
-                type: "percentage",
-                min: "-20",
-                max: "20",
-                default: "0"
+                id: "crops",
+                name: "Crops",
+                type: "Crop Names",
+                min: "",
+                max: "",
+                default: ""
             },
         ],
         output_files: [
