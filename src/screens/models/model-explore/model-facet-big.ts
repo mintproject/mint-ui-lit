@@ -16,6 +16,7 @@ import "weightless/expansion";
 import "weightless/tab";
 import "weightless/tab-group";
 import "weightless/card";
+import "weightless/icon";
 
 @customElement('model-facet-big')
 export class ModelFacetBig extends connect(store)(PageViewElement) {
@@ -173,8 +174,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     color: #444;
                     line-height: 1.2em;
                     padding: .3em .7em .25em .4em;
-                    width: calc(100% - 140px);
-                    max-width: calc(100%; - 140px);
+                    width: calc(100% - 180px);
+                    max-width: calc(100%; - 180px);
                     box-sizing: border-box;
                     margin: 0;
                     border: 1px solid #aaa;
@@ -221,6 +222,39 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     text-align: right;
                     margin-bottom: 10px;
                 }
+
+.tooltip {
+    display: inline-block;
+    position: relative;
+    float: right;
+    margin: 5px 5px 0px 5px;
+}
+
+.tooltip:hover:after {
+    background: #333;
+    background: rgba(0, 0, 0, .8);
+    border-radius: 5px;
+    bottom: 26px;
+    color: #fff;
+    content: attr(tip);
+    right: 20%;
+    padding: 5px 15px;
+    position: absolute;
+    z-index: 98;
+    width: 220px;
+}
+
+.tooltip:hover:before {
+    border: solid;
+    border-color: #333 transparent;
+    border-width: 6px 6px 0 6px;
+    bottom: 20px;
+    content: "";
+    right: 42%;
+    position: absolute;
+    z-index: 99;
+}
+
             `
         ];
     }
@@ -252,7 +286,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             html`<b>Contact:</b> ${this._model.contactP}<br/>`
                             : ``}
                         ${this._model.fundS ?
-                            html`<b>Fundation:</b> ${this._model.fundS}<br/>`
+                            html`<b>Funding:</b> ${this._model.fundS}<br/>`
                             : ``}
                         ${this._model.publisher ?
                             html`<b>Publisher:</b> ${this._model.publisher}<br/>`
@@ -271,18 +305,47 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             html`<b>Download:</b> 
                                 <a href="${this._model.downloadURL}" target="_blank">${this._model.downloadURL}</a><br/>`
                             : ``}
+                        ${(this._model.installInstr || (this._model.os && this._model.os.length>0) ||
+                               this._model.sourceC || (this._model.pl && this._model.pl.length>0))?
+                            html`<details style="margin-top: 10px;">
+                                <summary><b>Technical details</b></summary>
+                                <ul>
+                                    ${(this._model.os && this._model.os.length>0)?
+                                        html`<li><b>Operating system:</b> ${this._model.os.join(', ')}</li>`: html``}
+                                    ${this._model.sourceC?  
+                                        html`<li><b>Source code:</b> 
+                                            <a target="_blank" href="${this._model.sourceC}">${this._model.sourceC}</a>
+                                        </li>`: html``}
+                                    ${(this._model.pl && this._model.pl.length>0)?
+                                        html`<li><b>Programming language:</b> ${this._model.pl.join(', ')}</li>`: html``}
+                                    ${this._model.installInstr? 
+                                        html`<li><b>Installation instructions:</b>
+                                            <a target="_blank" href="${this._model.installInstr}">
+                                                ${this._model.installInstr}</a>
+                                        </li>`: html``}
+                                </ul>
+                            </details>`
+                            : ``}
                         <br/>
 
                         <br/>
                         ${this._version ?
-                            html`<!-- FIXME: load selected from state --><span class="select-label">Version:</span>
+                            html`<!-- FIXME: load selected from state -->
+                            <span tip="Currently selected model version" class="tooltip">
+                                <wl-icon>help_outline</wl-icon>
+                            </span>
+                            <span class="select-label">Version:</span>
                             <select class="select-css" label="Select version" @change="${this.changeVersion}">
                                 <option value="" disabled selected>Select version</option>
                                 ${Object.keys(this._version).map(uri => 
                                     html`<option value="${uri}">${uri}</option>`)}
                             </select>
                             ${(this._selectedVersion && this._selectedVersion.config)?
-                                html`<span class="select-label">Configuration:</span>
+                                html`
+                                <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" class="tooltip">
+                                    <wl-icon>help_outline</wl-icon>
+                                </span>
+                                <span class="select-label">Configuration:</span>
                                 <select class="select-css" label="Select configuration" @change="${this.changeConfig}">
                                     <option value="" selected>Select configuration</option>
                                     ${this._selectedVersion.config.map( c =>
@@ -290,7 +353,11 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                                     )}
                                 </select>
                                 ${(this._selectedConfig && this._selectedConfig.calibration) ?
-                                    html`<span class="select-label">Calibration:</span>
+                                    html`
+                                    <span tip="A model calibration represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region" class="tooltip">
+                                        <wl-icon>help_outline</wl-icon>
+                                    </span>
+                                    <span class="select-label">Calibration:</span>
                                     <select class="select-css" label="Select calibration" @change="${this.changeCalibration}">
                                         <option value="" disabled selected>Select calibration</option>
                                         ${this._selectedConfig.calibration.map( c =>
@@ -316,8 +383,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         <wl-tab checked @click="${() => {this.changeTab('overview')}}">Overview</wl-tab>
                         <wl-tab @click="${() => {this.changeTab('io')}}">Input/Output</wl-tab>
                         <wl-tab @click="${() => {this.changeTab('variables')}}">Variables</wl-tab>
-                        <wl-tab @click="${() => {this.changeTab('tech')}}">Technical Details</wl-tab>
-                        <wl-tab @click="${() => {this.changeTab('execut')}}">Execute</wl-tab>
+                        <!--<wl-tab @click="${() => {this.changeTab('tech')}}">Technical Details</wl-tab>-->
+                        <!--<wl-tab @click="${() => {this.changeTab('execut')}}">Execute</wl-tab>-->
                         <wl-tab @click="${() => {this.changeTab('software')}}">Compatible Software</wl-tab>
                     </wl-tab-group>
                 ${this.renderTab(this._tab)}
@@ -332,8 +399,14 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     renderTab (tabName : string) {
         switch (tabName) {
             case 'overview':
-                return html`${this._model.sampleVisualization ?
-                    html`<img src="${this._model.sampleVisualization}"></img>` : html``}`
+                return html`
+
+                    <ul>
+                        ${this._model.purpose? html`<li><b>Purpose:</b> ${this._model.purpose}</li>`:html``}
+                        ${this._model.assumptions? html`<li><b>Assumptions:</b> ${this._model.assumptions}</li>`:html``}
+                    </ul>
+                    ${this._model.sampleVisualization ?
+                        html`<img src="${this._model.sampleVisualization}"></img>` : html``}`
 
             case 'tech':
                 return html`${(this._model.installInstr || (this._model.os && this._model.os.length>0) ||

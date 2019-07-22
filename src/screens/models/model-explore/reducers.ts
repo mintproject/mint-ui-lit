@@ -29,6 +29,7 @@ export interface FetchedModel {
     pl?: string[];
     sourceC?: string;
     os?: string[];
+    purpose?: string[];
 
     io?: IODetail[];
     version?: VersionDetail[];
