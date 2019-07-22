@@ -28,7 +28,7 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
                 <wl-icon>arrow_back_ios</wl-icon>
             </wl-button>
             <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                <wl-title level="4" style="margin: 0px">Remote sensing workflows</wl-title>
+                <wl-title level="4" style="margin: 0px">Remote sensing</wl-title>
             </div>
         </div>   
 

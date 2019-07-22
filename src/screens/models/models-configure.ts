@@ -33,7 +33,8 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         </div>   
 
         <p>
-        This page is in progress, it will allow you to configure models from the Model Catalog to create expert-configured models for a particular area or region.
+        This page is in progress, it will allow you to configure models 
+        from the Model Catalog to create expert-configured models for a particular area or region
         </p>
         `
     }
