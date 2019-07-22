@@ -32,7 +32,7 @@ export class ModelsCalibrate extends connect(store)(PageViewElement) {
         </div>   
 
         <p>
-        This page is in progress, it will allow you to run workflows to Calibrate existing models for a particular region
+        This page is in progress, it will allow you to calibrate models from the Model Catalog for a particular area or region.
         </p>
         `
     }
