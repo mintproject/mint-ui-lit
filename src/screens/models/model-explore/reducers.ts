@@ -2,7 +2,7 @@ import { Reducer } from "redux";
 import { RootAction } from "../../../app/store";
 import { EXPLORER_SELECT_MODEL, EXPLORER_SELECT_VERSION, EXPLORER_SELECT_CONFIG, EXPLORER_SELECT_CALIBRATION,
          EXPLORER_FETCH, EXPLORER_VERSIONS, EXPLORER_IO, EXPLORER_VAR_UNIT, EXPLORER_COMPATIBLE_INPUT,
-         EXPLORER_COMPATIBLE_OUTPUT} from './actions'
+         EXPLORER_COMPATIBLE_OUTPUT, EXPLORER_MODEL_METADATA} from './actions'
 
 export interface FetchedModel {
     uri: string,
@@ -98,6 +98,7 @@ export interface ExplorerState {
     variables: UriVariable,
     compatibleInput: UriCompIO;
     compatibleOutput: UriCompIO;
+    modelMetadata: any;
     selectedModel: string;
     selectedVersion: string;
     selectedConfig: string;
@@ -111,6 +112,7 @@ const INITIAL_STATE: ExplorerState = {
     variables: {} as UriVariable,
     compatibleInput: {} as UriCompIO,
     compatibleOutput: {} as UriCompIO,
+    modelMetadata: {},
     selectedModel: '',
     selectedVersion: '',
     selectedConfig: '',
@@ -153,6 +155,12 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
             break;
         case EXPLORER_COMPATIBLE_OUTPUT:
             state.compatibleOutput[action.uri] = action.details;
+            break;
+        case EXPLORER_MODEL_METADATA:
+            console.log(action.details)
+            if (action.details.length>0) {
+                state.modelMetadata[action.uri] = action.details;
+            }
             break;
     }
     return {

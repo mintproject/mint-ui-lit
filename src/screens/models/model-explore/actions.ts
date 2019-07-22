@@ -5,7 +5,7 @@ import { RootState } from "../../../app/store";
 import { UriModels } from "./reducers";
 
 import { apiFetch, MODEL_PREFIX, VER_AND_CONF, MODELS, GET_IO, IO_VARS_AND_UNITS,
-         COMPATIBLE_INPUT, COMPATIBLE_OUTPUT} from './api-fetch';
+         COMPATIBLE_INPUT, COMPATIBLE_OUTPUT, MODEL_METADATA} from './api-fetch';
 
 export const EXPLORER_SELECT_MODEL = 'EXPLORER_SELECT_MODEL'
 export const EXPLORER_SELECT_VERSION = 'EXPLORER_SELECT_VERSION'
@@ -17,6 +17,7 @@ export const EXPLORER_IO = 'EXPLORER_IO'
 export const EXPLORER_VAR_UNIT = 'EXPLORER_VAR_UNIT'
 export const EXPLORER_COMPATIBLE_INPUT = 'EXPLORER_COMPATIBLE_INPUT'
 export const EXPLORER_COMPATIBLE_OUTPUT = 'EXPLORER_COMPATIBLE_OUTPUT'
+export const EXPLORER_MODEL_METADATA = 'EXPLORER_MODEL_METADATA'
 
 export interface ExplorerActionSelectModel extends Action<'EXPLORER_SELECT_MODEL'> { uri: string };
 export interface ExplorerActionSelectVersion extends Action<'EXPLORER_SELECT_VERSION'> { uri: string };
@@ -28,11 +29,12 @@ export interface ExplorerActionIO extends Action<'EXPLORER_IO'> { uri: string, d
 export interface ExplorerActionVarUnit extends Action<'EXPLORER_VAR_UNIT'> { uri: string, details: Array<any> };
 export interface ExplorerActionCompInput extends Action<'EXPLORER_COMPATIBLE_INPUT'> { uri: string, details: Array<any> };
 export interface ExplorerActionCompOutput extends Action<'EXPLORER_COMPATIBLE_OUTPUT'> { uri: string, details: Array<any> };
+export interface ExplorerActionModelMetadata extends Action<'EXPLORER_MODEL_METADATA'> { uri: string, details: Array<any> };
 
 export type ExplorerAction = ExplorerActionSelectModel | ExplorerActionSelectVersion | ExplorerActionSelectConfig |
                              ExplorerActionSelectCalibration | ExplorerActionFetch | ExplorerActionVersions | 
                              ExplorerActionIO | ExplorerActionVarUnit | ExplorerActionCompInput |
-                             ExplorerActionCompOutput;
+                             ExplorerActionCompOutput | ExplorerActionModelMetadata;
 
 // List all Model Configurations
 type ExplorerThunkResult = ThunkAction<void, RootState, undefined, ExplorerAction>;
@@ -42,11 +44,11 @@ export const explorerFetch: ActionCreator<ExplorerThunkResult> = () => (dispatch
         type: MODELS,
         rules: {
             'model': {newKey: 'uri'},
-            'versions': {newKey: 'ver',newValue: (value) => value.split(', ')},
-            'categories': {newValue: (value) => value.split(', ')},
+            'versions': {newKey: 'ver',newValue: (value:any) => value.split(', ')},
+            'categories': {newValue: (value:any) => value.split(', ')},
             'modelType': {
                 newKey: 'type', 
-                newValue: (value) => {
+                newValue: (value:any) => {
                     let sp = value.split('#');
                     return sp[sp.length-1];
                 }
@@ -110,7 +112,7 @@ export const explorerFetchIO: ActionCreator<ExplorerThunkResult> = (uri:string) 
         config: uri,
         rules: {
             io: {newKey: 'uri'},
-            prop: {newKey: 'kind', newValue: (value) => {
+            prop: {newKey: 'kind', newValue: (value:any) => {
                 let sp = value.split('#');
                 return sp[sp.length -1].substring(3);
             }},
@@ -175,6 +177,41 @@ export const explorerFetchCompatibleSoftware: ActionCreator<ExplorerThunkResult>
         })
     })
 }
+
+export const explorerFetchMetadata: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
+    console.log('Fetching metadata for', uri);
+    let parseUris = (v:any) => {
+        return v.split(', ').map((l:any)=>{
+            let sp = l.split('/');
+            return sp[sp.length-1];
+        })
+    };
+
+    apiFetch({
+        type: MODEL_METADATA,
+        modelConfig: uri,
+        rules: {
+            input_variables: {newValue: parseUris},
+            output_variables: {newValue: parseUris},
+            targetVariables: {newValue: parseUris},
+            adjustableVariables: {newValue: parseUris},
+            parameters: {newValue: parseUris},
+            processes: {newValue: parseUris},
+            gridType: {newValue: (old:any) => {
+                let sp = old.split('#');
+                return sp[sp.length-1];
+            }},
+        }
+    }).then(fetched => {
+        console.log(fetched)
+        dispatch({
+            type: EXPLORER_MODEL_METADATA,
+            uri: uri,
+            details: fetched
+        })
+    })
+}
+
 
 export const explorerSetModel: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
     dispatch({ type: EXPLORER_SELECT_MODEL, uri: MODEL_PREFIX + id })

@@ -8,7 +8,7 @@ import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
          CompIODetail } from "./reducers";
 import { explorerSetVersion, explorerSetConfig, explorerSetCalibration,
          explorerClearCalibration, explorerFetchCompatibleSoftware,
-         explorerFetchVersions, explorerFetchIO, explorerFetchIOVarsAndUnits } from './actions';
+         explorerFetchVersions, explorerFetchIO, explorerFetchIOVarsAndUnits, explorerFetchMetadata } from './actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 
 //import { goToPage } from '../../../app/actions';
@@ -25,6 +25,9 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
 
     @property({type: Number})
         _count : number = 0;
+
+    @property({type: Object})
+    private _metadata: any = null;
 
     @property({type: Object})
     private _model! : FetchedModel;
@@ -380,9 +383,12 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     <td class="content" colspan="2">
                     <br/>
                     <wl-tab-group>
-                        <wl-tab checked @click="${() => {this.changeTab('overview')}}">Overview</wl-tab>
-                        <wl-tab @click="${() => {this.changeTab('io')}}">Input/Output</wl-tab>
-                        <wl-tab @click="${() => {this.changeTab('variables')}}">Variables</wl-tab>
+                        <wl-tab ?checked=${this._tab=='overview'}
+                            @click="${() => {this.changeTab('overview')}}">Overview</wl-tab>
+                        <wl-tab ?checked=${this._tab=='io'}
+                            @click="${() => {this.changeTab('io')}}">Input/Output</wl-tab>
+                        <wl-tab ?checked=${this._tab=='variables'}
+                            @click="${() => {this.changeTab('variables')}}">Variables</wl-tab>
                         <!--<wl-tab @click="${() => {this.changeTab('tech')}}">Technical Details</wl-tab>-->
                         <!--<wl-tab @click="${() => {this.changeTab('execut')}}">Execute</wl-tab>-->
                         <wl-tab @click="${() => {this.changeTab('software')}}">Compatible Software</wl-tab>
@@ -405,7 +411,51 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         ${this._model.purpose? html`<li><b>Purpose:</b> ${this._model.purpose}</li>`:html``}
                         ${this._model.assumptions? html`<li><b>Assumptions:</b> ${this._model.assumptions}</li>`:html``}
                     </ul>
-                    ${this._model.sampleVisualization ?
+                    ${this._metadata? 
+                        html`<h4> ${this._selectedCalibration? html`Calibration` : html`${this._selectedConfig?
+                            html`Configuration`:html`Model`
+                            }`}
+                        Metadata:
+                        </h4>
+                        <ul>
+                            ${this._metadata[0].label? html`<li><b>Name:</b> ${this._metadata[0].label}</li>`:html``}
+                            ${this._metadata[0].regionName? html`<li><b>Region name:</b>
+                                ${this._metadata[0].regionName}</li>`:html``}
+                            ${this._metadata[0].desc? html`<li><b>Description:</b>
+                                ${this._metadata[0].desc}</li>`:html``}
+                            ${this._metadata[0].input_variables? 
+                                html`<li class="clickable" @click="${()=>{this.changeTab('io')}}">
+                                <b>Input Variables:</b>
+                                ${this._metadata[0].input_variables.length}</li>`:html``}
+                            ${this._metadata[0].output_variables? 
+                                html`<li class="clickable" @click="${()=>{this.changeTab('io')}}">
+                                <b>Output Variables:</b>
+                                ${this._metadata[0].output_variables.length}</li>`:html``}
+                            ${this._metadata[0].parameters? 
+                                html`<li class="clickable" @click="${()=>{this.changeTab('io')}}">
+                                <b>Parameters:</b>
+                                ${this._metadata[0].parameters.length}</li>`:html``}
+                            ${this._metadata[0].processes? html`<li><b>Processes:</b>
+                                ${this._metadata[0].processes.join(', ')}</li>`:html``}
+                            ${this._metadata[0].gridType? html`<li><b>Grid Type:</b>
+                                ${this._metadata[0].gridType}</li>`:html``}
+                            ${this._metadata[0].gridDim? html`<li><b>Grid Dimentions:</b>
+                                ${this._metadata[0].gridDim}</li>`:html``}
+                            ${this._metadata[0].gridSpatial? html`<li><b>Spatial resolution:</b>
+                                ${this._metadata[0].gridSpatial}</li>`:html``}
+                            ${this._metadata[0].paramAssignMethod? html`<li><b>Parameter assignment method:</b>
+                                ${this._metadata[0].paramAssignMethod}</li>`:html``}
+                            ${this._metadata[0].adjustableVariables? html`<li><b>Adjustable variables:</b>
+                                ${this._metadata[0].adjustableVariables.join(', ')}</li>`:html``}
+                            ${this._metadata[0].targetVariables? html`<li><b>Target variables:</b>
+                                ${this._metadata[0].targetVariables.join(', ')}</li>`:html``}
+                            ${this._metadata[0].compLoc? html`<li><b>Download:</b>
+                                <a target="_blank" href="${this._metadata[0].compLoc}">
+                                    ${this._metadata[0].compLoc}</a></li>`:html``}
+                        </ul>`
+                        :html`<h4>Select a model configuration to display metadata.</h4>`
+                    }
+                    ${this._model.sampleVisualization && false ?
                         html`<img src="${this._model.sampleVisualization}"></img>` : html``}`
 
             case 'tech':
@@ -466,6 +516,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                                 <th>Label</th>
                                 <th>Long Name</th>
                                 <th>Description</th>
+                                <th>Standard Name</th>
                                 <th>Units</th>
                             </thead>
                             <tbody>
@@ -475,7 +526,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                                     <td>${v.label}</td>
                                     <td>${v.longName}</td>
                                     <td>${v.desc}</td>
-                                    <td>${v.unit}</td>
+                                    <td style="word-wrap: break-word;">${v.sn}</td>
+                                    <td style="min-width: 80px;">${v.unit}</td>
                                 </tr>`)}
                             </tbody>
                         </table>
@@ -521,16 +573,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         }
     }
 
-    showIODetails (io: IODetail) {
-        if (!io.active) {
-            io.active = true;
-            if (!io.variables) store.dispatch(explorerFetchIOVarsAndUnits(io.uri));
-        } else {
-            io.active = false;
-        }
-        return null;
-    }
-
     changeVersion (ev:any) {
         let versionUri : string = ev.path[0].value;
         if (this._selectedVersion) {
@@ -545,6 +587,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         if (configUri) {
             store.dispatch(explorerFetchIO(configUri));
             store.dispatch(explorerFetchCompatibleSoftware(configUri));
+            store.dispatch(explorerFetchMetadata(configUri));
         }
         store.dispatch(explorerClearCalibration());
         store.dispatch(explorerSetConfig(configUri));
@@ -553,12 +596,13 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     changeCalibration (ev:any) {
         let calibUri : string = ev.path[0].value;
         store.dispatch(explorerSetCalibration(calibUri));
+        store.dispatch(explorerFetchMetadata(calibUri));
         console.log(this._selectedCalibration);
     }
 
     firstUpdated() {
-        //store.dispatch(explorerFetchDetails(this.uri));
         store.dispatch(explorerFetchVersions(this.uri));
+        store.dispatch(explorerFetchMetadata(this.uri));
     }
 
     stateChanged(state: RootState) {
@@ -614,6 +658,16 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
 
                 if (state.explorer.compatibleOutput) {
                     this._compOutput = state.explorer.compatibleOutput[this._selectedConfig.uri];
+                }
+            }
+
+            if (state.explorer.modelMetadata) {
+                if (this._selectedCalibration && state.explorer.modelMetadata[this._selectedCalibration.uri]) {
+                    this._metadata = state.explorer.modelMetadata[this._selectedCalibration.uri];
+                } else if (this._selectedConfig && state.explorer.modelMetadata[this._selectedConfig.uri]) {
+                    this._metadata = state.explorer.modelMetadata[this._selectedConfig.uri];
+                } else if (state.explorer.modelMetadata[this._model.uri]){
+                    this._metadata = state.explorer.modelMetadata[this._model.uri];
                 }
             }
 
