@@ -110,15 +110,25 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     protected render() {
         return html`
             <div class="cltrow scenariorow">
+                ${this._selected?
+                html`
+                <wl-button flat inverted @click="${()=> goToPage('models/explore')}">
+                    <wl-icon>arrow_back_ios</wl-icon>
+                </wl-button>
+                <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
+                    <wl-title level="3" style="margin: 0px; cursor: pointer;" 
+                            @click="${()=> goToPage('models/explore')}">Model Catalog</wl-title>
+                </div>
+                `
+                : html`
                 <wl-button flat inverted @click="${()=> goToPage('models')}">
                     <wl-icon>arrow_back_ios</wl-icon>
                 </wl-button>
                 <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                    ${this._selected? html`
-                    <wl-title level="3" style="margin: 0px; cursor: pointer;" 
-                            @click="${()=> goToPage('models/explore')}">Model Explorer</wl-title>`
-                    : html`<wl-title level="3" style="margin: 0px;"> Model Explorer</wl-title>`}
+                    <wl-title level="3" style="margin: 0px;">Model Catalog</wl-title>
                 </div>
+                `}
+
                 <!--<wl-icon 
                     class="actionIcon editIcon bigActionIcon">edit</wl-icon>
                 <wl-icon 
@@ -206,9 +216,9 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             if (state.explorer.models) {
                 this._models = state.explorer.models;
             }
-            if (state.explorer.selected != this._selectedUri) {
-                if (state.explorer.models[state.explorer.selected]) {
-                    this._selectedUri = state.explorer.selected;
+            if (state.explorer.selectedModel != this._selectedUri) {
+                if (state.explorer.models[state.explorer.selectedModel]) {
+                    this._selectedUri = state.explorer.selectedModel;
                     this._selected = state.explorer.models[this._selectedUri];
                 } else {
                     this._selectedUri = '';
