@@ -33,13 +33,13 @@ export class RegionsHydrology extends connect(store)(PageViewElement) {
         </div>   
 
         <p>
-        This page is in progress, it will allow you to run workflows to identify hydrological regions of interest. 
+        This page is in progress, it will allow you to run tools to identify hydrological regions of interest. 
         Below are some example hydrological regions identified for South Sudan:
         <ul>
         <li><a href="https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/PIHMRiverBasin/2017.png"
-            >South Sudan River Basins (PIHM)</a>. The three river basins that we worked on earlier.</li>
+            >South Sudan River Basins (PIHM)</a>. The three river basins that were our focus in 2018.</li>
         <li><a href="https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/PIHMRiverBasin/POI.png"
-            >South Sudan River Basins - POI</a>. The three river basins that we worked on earlier (overlayed with points of interest).</li>
+            >South Sudan River Basins - POI</a>. The three river basins that were our focus in 2018 (overlayed with points of interest).</li>
         <li><a href="https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Ethiopia_relief_boundary.png"
             >Ethiopia relief boundary</a>. 
             <a href="http://mint.isi.edu/dev/data/Ethiopia_relief_subbasins_big.png">Ethiopia relief subbasins (BIG FILE !)</a>

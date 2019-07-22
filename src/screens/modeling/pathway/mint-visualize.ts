@@ -3,9 +3,10 @@ import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 
 import { SharedStyles } from "../../../styles/shared-styles";
-import { ExecutableEnsemble, Goal, SubGoal } from "../reducers";
+import { ExecutableEnsemble, Goal, SubGoal, DataEnsembleMap } from "../reducers";
 import { getUISelectedSubgoal, getUISelectedGoal } from "../../../util/state_functions";
 import { MintPathwayPage } from "./mint-pathway-page";
+import { getVariableLongName } from "../../../offline_data/variable_list";
 
 @customElement('mint-visualize')
 export class MintVisualize extends connect(store)(MintPathwayPage) {
@@ -33,6 +34,13 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
         }
         
         return html`
+        <style>
+        i {
+            display: block;
+            margin: 10px 0px;
+            color: #999;
+        }
+        </style>
 
         Visualization is still under development. For now, here is a report of the current analysis.
         <h1>${this.scenario.name}</h1>
@@ -46,10 +54,16 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                                 <li>
                                     Variables:
                                     <ul>
-                                        <li>Response: ${this.pathway.response_variables}</li>
-                                        <li>Driving: ${this.pathway.driving_variables}</li>
-                                        <li>Notes: ${this.pathway.notes!.variables}</li>
+                                        <li>Response: 
+                                            ${this.pathway.response_variables.map((v)=>
+                                                getVariableLongName(v) + " (" + v + ")").join(", ")}
+                                        </li>
+                                        <li>Driving: 
+                                            ${this.pathway.driving_variables.map((v)=>
+                                                getVariableLongName(v) + " (" + v + ")").join(", ")}
+                                        </li>
                                     </ul>
+                                    <i>Notes: ${this.pathway.notes!.variables}</i>
                                 </li>
                                 <li>
                                     Models:
@@ -61,36 +75,118 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                                             `;
                                         })}
                                     </ul>
+                                    <i>Notes: ${this.pathway.notes!.models}</i>
                                 </li>
                                 <li>
                                     Datasets:
                                     <ul>
-                                        ${Object.keys(this.pathway.datasets!).map((dsid: string) => {
-                                            let ds = this.pathway.datasets![dsid];
+                                        ${Object.keys(this.pathway.model_ensembles!).map((modelid) => {
+                                            let model_ensemble = this.pathway.model_ensembles![modelid] as DataEnsembleMap;
+                                            let model = this.pathway.models![modelid];
                                             return html`
-                                            <li>${ds.name}</li>
+                                            Datasets for model : ${model.name}
+                                            <ul>
+                                                ${model.input_files.map((io) => {
+                                                    let bindings = model_ensemble[io.id!];
+                                                    let blist = bindings.map((binding) => {
+                                                        let ds = this.pathway.datasets![binding];
+                                                        return ds.name;
+                                                    }).join(", ");
+
+                                                    return html`
+                                                        <li>${io.name} = ${blist}</li>
+                                                    `;
+                                                })}
+                                            </ul>
                                             `;
                                         })}
                                     </ul>
+                                    <i>Notes: ${this.pathway.notes!.datasets}</i>
                                 </li>
                                 <li>
-                                    Runs:
+                                    Setup:
+                                    <ul>
+                                        ${Object.keys(this.pathway.model_ensembles!).map((modelid) => {
+                                            let model_ensemble = this.pathway.model_ensembles![modelid] as DataEnsembleMap;
+                                            let model = this.pathway.models![modelid];
+                                            return html`
+                                            Adjustment Variables for model : ${model.name}
+                                            <ul>
+                                                ${model.input_parameters.map((io) => {
+                                                    let bindings = model_ensemble[io.id!];
+                                                    let blist = bindings.join(", ");
+                                                    return html`
+                                                        <li>${io.name} = ${blist}</li>
+                                                    `;
+                                                })}
+                                            </ul>
+                                            `;
+                                        })}
+                                    </ul>
+                                    <i>Notes: ${this.pathway.notes!.parameters}</i>
+                                </li>
+                                <li>
+                                    Selected Results:
+                                    <ul>
+                                        ${this.pathway.executable_ensembles!.map((ensemble: ExecutableEnsemble) => {
+                                            if(ensemble.selected) {
+                                                let model = this.pathway.models![ensemble.modelid];
+                                                return html`
+                                                <li>Model: ${model.name}
+                                                    <ul>
+                                                    ${model.input_files.map((input) => {
+                                                        let binding = ensemble.bindings[input.id!];
+                                                        return html`
+                                                        <li>${input.name} = ${binding}</li>
+                                                        `;
+                                                    })}
+                                                    ${model.input_parameters.map((input) => {
+                                                        let binding = ensemble.bindings[input.id!];
+                                                        return html`
+                                                        <li>${input.name} = ${binding}</li>
+                                                        `;
+                                                    })}
+                                                    </ul>
+                                                    Results: ${ensemble.results}
+                                                </li>
+                                                `
+                                            }
+                                            else {
+                                                return html``;
+                                            }
+                                        })}
+                                    </ul>
+                                    <i>Notes: ${this.pathway.notes!.results}</i>
+                                </li>                                
+                                <li>
+                                    Other Results that weren't selected:
                                     <ul>
                                         ${this.pathway.executable_ensembles!.map((ensemble: ExecutableEnsemble) => {
                                             let model = this.pathway.models![ensemble.modelid];
-                                            return html`
-                                            <li>Model: ${model.name}
-                                                <ul>
-                                                ${Object.keys(ensemble.bindings).map((inputid) => {
-                                                    let binding = ensemble.bindings[inputid];
-                                                    return html`
-                                                    <li>${inputid} = ${binding}</li>
-                                                    `;
-                                                })}
-                                                </ul>
-                                                Results: ${ensemble.results}
-                                            </li>
-                                            `
+                                            if(!ensemble.selected) {
+                                                return html`
+                                                <li>Model: ${model.name}
+                                                    <ul>
+                                                    ${model.input_files.map((input) => {
+                                                        let binding = ensemble.bindings[input.id!];
+                                                        return html`
+                                                        <li>${input.name} = ${binding}</li>
+                                                        `;
+                                                    })}
+                                                    ${model.input_parameters.map((input) => {
+                                                        let binding = ensemble.bindings[input.id!];
+                                                        return html`
+                                                        <li>${input.name} = ${binding}</li>
+                                                        `;
+                                                    })}
+                                                    </ul>
+                                                    Results: ${ensemble.results}
+                                                </li>
+                                                `
+                                            }
+                                            else {
+                                                return html``;
+                                            }
                                         })}
                                     </ul>
                                 </li>
