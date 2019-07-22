@@ -114,6 +114,119 @@ export const EXAMPLE_MODEL_QUERY = [
         ]
     },
     {
+        id: "Cycles_v9_4_0_alpha_Advanced_Configuration",
+        name: "Cycles v9.4.0-alpha - Advanced Configuration",
+        original_model: "CYCLES",
+        calibrated_region: "Pongo Basin (South Sudan)",
+        category: "Agriculture",
+        model_type: "Simulation", // DataDriven, Emulation, Hybrid
+        parameter_assignment: "Expert-Configured", //Auto-tuned, Expert-tuned, Trained
+        target_variable_for_parameter_assignment: "N/A",
+        parameter_assignment_details: "ISRIc soils data, GLDAS forcing, expert configured agricultural management",
+        modeled_processes: [
+            "Agricultural management practices, energy balance, water balance, \
+            nitrogen and other nutrients cycling including soil carbon"
+        ],
+        dimensionality: 1,
+        spatial_grid_type: "Point model",
+        spatial_grid_resolution: "N/A",
+        minimum_output_time_interval: "Daily",
+
+        input_files: [
+            {
+                id: "gldas_input",
+                name: "Precipitation Input File",
+                type: "GLDAS_Daily",
+                variables: [
+                    "atmosphere_water__one-day_time_integral_of_precipitation_leq_volume_flux"
+                ]
+            }
+        ],
+        input_parameters: [
+            {
+                id: "planting_date_adjustment",
+                name: "Adjustment to planting date",
+                type: "days",
+                min: "-20",
+                max: "20",
+                default: "0"
+            },
+            {
+                id: "fertilizer_level_adjustment",
+                name: "Adjustment to fertilizer level",
+                type: "percentage",
+                min: "-20",
+                max: "20",
+                default: "0"
+            },
+            {
+                id: "weed_fractions_adjustment",
+                name: "Adjustment to weed fractions",
+                type: "percentage",
+                min: "-20",
+                max: "20",
+                default: "0"
+            },
+            {
+                id: "crops_adjustment",
+                name: "Adjustment to crops",
+                type: "percentage",
+                min: "-20",
+                max: "20",
+                default: "0"
+            },
+        ],
+        output_files: [
+            {
+                id: "grain_yields",
+                name: "Grain Yields",
+                variables: [
+                    "grain~dry__mass-per-area_yield",
+                ]
+            }
+        ]
+    },
+    {
+        id: "Cycles_v9_4_0_alpha_Simple_Configuration",
+        name: "Cycles v9.4.0-alpha - Simple Configuration",
+        original_model: "CYCLES",
+        calibrated_region: "Pongo Basin (South Sudan)",
+        category: "Agriculture",
+        model_type: "Simulation", // DataDriven, Emulation, Hybrid
+        parameter_assignment: "Expert-Configured", //Auto-tuned, Expert-tuned, Trained
+        target_variable_for_parameter_assignment: "N/A",
+        parameter_assignment_details: "ISRIc soils data, GLDAS forcing, expert configured agricultural management",
+        modeled_processes: [
+            "Agricultural management practices, energy balance, water balance, \
+            nitrogen and other nutrients cycling including soil carbon"
+        ],
+        dimensionality: 1,
+        spatial_grid_type: "Point model",
+        spatial_grid_resolution: "N/A",
+        minimum_output_time_interval: "Daily",
+
+        input_files: [
+            {
+                id: "gldas_input",
+                name: "Precipitation Input File",
+                type: "GLDAS_Daily",
+                variables: [
+                    "atmosphere_water__one-day_time_integral_of_precipitation_leq_volume_flux"
+                ]
+            }
+        ],
+        input_parameters: [],
+        output_files: [
+            {
+                id: "grain_yields",
+                name: "Grain Yields File",
+                variables: [
+                    "grain~dry__mass-per-area_yield",
+                ]
+            }
+        ]
+    },    
+    {
         id: "TopoFlow_35_Pongo_Basin_Configuration",
         name: "TopoFlow 3.5 - Pongo Basin Configuration",
         original_model: "TOPOFLOW",
