@@ -7,7 +7,7 @@ import { store, RootState } from '../../../app/store';
 import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
          CompIODetail } from "./reducers";
 import { explorerSetVersion, explorerSetConfig, explorerSetCalibration,
-         explorerClearCalibration, explorerFetchCompatibleSoftware,
+         explorerClearCalibration, explorerFetchCompatibleSoftware, explorerFetchParameters,
          explorerFetchVersions, explorerFetchIO, explorerFetchIOVarsAndUnits, explorerFetchMetadata } from './actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 
@@ -28,6 +28,9 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _metadata: any = null;
+
+    @property({type: Object})
+    private _parameters: any = null;
 
     @property({type: Object})
     private _model! : FetchedModel;
@@ -451,7 +454,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                                 ${this._metadata[0].targetVariables.join(', ')}</li>`:html``}
                             ${this._metadata[0].compLoc? html`<li><b>Download:</b>
                                 <a target="_blank" href="${this._metadata[0].compLoc}">
-                                    ${this._metadata[0].compLoc}</a></li>`:html``}
+                                    ${this._metadata[0].compLoc.split('/')[
+                                    this._metadata[0].compLoc.split('/').length-1]}</a></li>`:html``}
                         </ul>`
                         :html`<h4>Select a model configuration to display metadata.</h4>`
                     }
@@ -496,7 +500,30 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             <td>${io.format}</td>
                         </tr>`)}
                     </tbody>
-                </table>`: html `${this._io?
+                </table>
+                ${(this._parameters && this._parameters.length>0)? 
+                html`
+                    <h3> Parameters: </h3>
+                    <table class="pure-table pure-table-bordered">
+                        <thead>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Datatype</th>
+                            <th>Default value</th>
+                        </thead>
+                        <tbody>
+                        ${this._parameters.map( (p:any) => html`
+                            <tr>
+                                <td>${p.paramlabel}</td>
+                                <td>${p.type}</td>
+                                <td>${p.pdatatype}</td>
+                                <td>${p.defaultvalue}</td>
+                            </tr>`)}
+                        </tbody>
+                    </table>
+                `
+                :html``}
+                `: html `${this._io?
                     html`<br/><h3 style="margin-left:30px">
                         Sorry! The selected configuration does not have input/output yet.</h3>`
                     :html`<br/><h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`}`}`;
@@ -586,6 +613,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         let configUri : string = ev.path[0].value;
         if (configUri) {
             store.dispatch(explorerFetchIO(configUri));
+            store.dispatch(explorerFetchParameters(configUri));
             store.dispatch(explorerFetchCompatibleSoftware(configUri));
             store.dispatch(explorerFetchMetadata(configUri));
         }
@@ -597,7 +625,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         let calibUri : string = ev.path[0].value;
         store.dispatch(explorerSetCalibration(calibUri));
         store.dispatch(explorerFetchMetadata(calibUri));
-        console.log(this._selectedCalibration);
     }
 
     firstUpdated() {
@@ -649,6 +676,12 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                                 this._count += 1;
                             }
                         }
+                    }
+                }
+
+                if (state.explorer.parameters) {
+                    if(state.explorer.parameters[this._selectedConfig.uri]) {
+                        this._parameters = state.explorer.parameters[this._selectedConfig.uri];
                     }
                 }
 

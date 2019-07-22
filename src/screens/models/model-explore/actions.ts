@@ -5,7 +5,7 @@ import { RootState } from "../../../app/store";
 import { UriModels } from "./reducers";
 
 import { apiFetch, MODEL_PREFIX, VER_AND_CONF, MODELS, GET_IO, IO_VARS_AND_UNITS,
-         COMPATIBLE_INPUT, COMPATIBLE_OUTPUT, MODEL_METADATA} from './api-fetch';
+         COMPATIBLE_INPUT, COMPATIBLE_OUTPUT, MODEL_METADATA, GET_PARAMETERS } from './api-fetch';
 
 export const EXPLORER_SELECT_MODEL = 'EXPLORER_SELECT_MODEL'
 export const EXPLORER_SELECT_VERSION = 'EXPLORER_SELECT_VERSION'
@@ -18,6 +18,7 @@ export const EXPLORER_VAR_UNIT = 'EXPLORER_VAR_UNIT'
 export const EXPLORER_COMPATIBLE_INPUT = 'EXPLORER_COMPATIBLE_INPUT'
 export const EXPLORER_COMPATIBLE_OUTPUT = 'EXPLORER_COMPATIBLE_OUTPUT'
 export const EXPLORER_MODEL_METADATA = 'EXPLORER_MODEL_METADATA'
+export const EXPLORER_GET_PARAMETERS = 'EXPLORER_GET_PARAMETERS'
 
 export interface ExplorerActionSelectModel extends Action<'EXPLORER_SELECT_MODEL'> { uri: string };
 export interface ExplorerActionSelectVersion extends Action<'EXPLORER_SELECT_VERSION'> { uri: string };
@@ -30,11 +31,12 @@ export interface ExplorerActionVarUnit extends Action<'EXPLORER_VAR_UNIT'> { uri
 export interface ExplorerActionCompInput extends Action<'EXPLORER_COMPATIBLE_INPUT'> { uri: string, details: Array<any> };
 export interface ExplorerActionCompOutput extends Action<'EXPLORER_COMPATIBLE_OUTPUT'> { uri: string, details: Array<any> };
 export interface ExplorerActionModelMetadata extends Action<'EXPLORER_MODEL_METADATA'> { uri: string, details: Array<any> };
+export interface ExplorerActionGetParameters extends Action<'EXPLORER_GET_PARAMETERS'> { uri: string, details: Array<any> };
 
 export type ExplorerAction = ExplorerActionSelectModel | ExplorerActionSelectVersion | ExplorerActionSelectConfig |
                              ExplorerActionSelectCalibration | ExplorerActionFetch | ExplorerActionVersions | 
                              ExplorerActionIO | ExplorerActionVarUnit | ExplorerActionCompInput |
-                             ExplorerActionCompOutput | ExplorerActionModelMetadata;
+                             ExplorerActionCompOutput | ExplorerActionModelMetadata | ExplorerActionGetParameters;
 
 // List all Model Configurations
 type ExplorerThunkResult = ThunkAction<void, RootState, undefined, ExplorerAction>;
@@ -203,7 +205,6 @@ export const explorerFetchMetadata: ActionCreator<ExplorerThunkResult> = (uri:st
             }},
         }
     }).then(fetched => {
-        console.log(fetched)
         dispatch({
             type: EXPLORER_MODEL_METADATA,
             uri: uri,
@@ -212,6 +213,24 @@ export const explorerFetchMetadata: ActionCreator<ExplorerThunkResult> = (uri:st
     })
 }
 
+export const explorerFetchParameters: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
+    console.log('Fetching parameters for', uri);
+
+    apiFetch({
+        type: GET_PARAMETERS,
+        config: uri,
+        rules: {ptype: {newKey:'type', newValue: (old:any) => {
+            let sp = old.split('#');
+            return sp[sp.length-1];
+        }}}
+    }).then(fetched => {
+        dispatch({
+            type: EXPLORER_GET_PARAMETERS,
+            uri: uri,
+            details: fetched
+        })
+    })
+}
 
 export const explorerSetModel: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
     dispatch({ type: EXPLORER_SELECT_MODEL, uri: MODEL_PREFIX + id })

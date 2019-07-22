@@ -10,6 +10,7 @@ export const CONFIG_EXPLANATION_DIAGRAMS = 'CONFIG_EXPLANATION_DIAGRAMS';
 export const COMPATIBLE_INPUT = 'COMPATIBLE_INPUT';
 export const COMPATIBLE_OUTPUT = 'COMPATIBLE_OUTPUT';
 export const MODEL_METADATA = 'MODEL_METADATA';
+export const GET_PARAMETERS = 'GET_PARAMETERS';
 
 interface ApiRule {
     newKey?: string; //could be a function
@@ -33,8 +34,9 @@ interface ConfExplDiagParams extends ApiBaseParam<'CONFIG_EXPLANATION_DIAGRAMS'>
 interface CompInputParams extends ApiConfigParam<'COMPATIBLE_INPUT'> {};
 interface CompOutputParams extends ApiConfigParam<'COMPATIBLE_OUTPUT'> {};
 interface ModelMetadataParams extends ApiBaseParam<'MODEL_METADATA'> {modelConfig: string};
+interface ConfigParametersParams extends ApiConfigParam<'GET_PARAMETERS'> {};
 
-type ApiParams = ApiVersionParams | ApiModelsParams | ApiIOParams | ModelParametersParams |
+type ApiParams = ApiVersionParams | ApiModelsParams | ApiIOParams | ModelParametersParams | ConfigParametersParams |
                  IOVarUnitsParams | ConfExplDiagParams | CompInputParams | CompOutputParams | ModelMetadataParams;
 
 interface ConfigEntry {
@@ -51,7 +53,8 @@ const config = {
     CONFIG_EXPLANATION_DIAGRAMS: {path: 'getExplanationDiagramsForResource', mandatory: ['v']},
     COMPATIBLE_OUTPUT: {path: 'getOutputCompatibleConfig', mandatory: ['config']},
     COMPATIBLE_INPUT: {path: 'getInputCompatibleConfig', mandatory: ['config']},
-    MODEL_METADATA: {path: 'getModelConfigurationMetadata', mandatory: ['modelConfig']}
+    MODEL_METADATA: {path: 'getModelConfigurationMetadata', mandatory: ['modelConfig']},
+    GET_PARAMETERS: {path: 'getConfigIParameters', mandatory: ['config']}
 }
 
 const createUrl = (params: ApiParams) : string => {
