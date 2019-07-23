@@ -94,14 +94,14 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                 let model = this.pathway.models![ensemble.modelid];
                                 return html`
                                 <tr>
-                                    <td><a href="${BASE_HREF}models/${model.id}">${model.name}</a></td>
+                                    <td><a href="${BASE_HREF}models/explore/${model.id}">${model.name}</a></td>
                                     <td>
                                     ${Object.keys(ensemble.bindings).map((inputid) => {
                                         let dsid = ensemble.bindings[inputid];
                                         let dataset = this.pathway.datasets![dsid];
                                         if(dataset) {
                                             return html`
-                                                ${inputid} = <a href="${BASE_HREF}datasets/${dataset.id}">${dataset.name}</a> <br />
+                                                ${inputid} = <a href="${BASE_HREF}datasets/browse/${dataset.id}">${dataset.name}</a> <br />
                                             `;
                                         }
                                         else {
@@ -141,14 +141,14 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                     return html`
                                     <tr>
                                         <td><input class="checkbox" type="checkbox" data-index="${index}"></input></td>                    
-                                        <td><a href="${BASE_HREF}models/${model.id}">${model.name}</a></td>
+                                        <td><a href="${BASE_HREF}models/explore/${model.id}">${model.name}</a></td>
                                         <td>
                                         ${Object.keys(ensemble.bindings).map((inputid) => {
                                             let dsid = ensemble.bindings[inputid];
                                             let dataset = this.pathway.datasets![dsid];
                                             if(dataset) {
                                                 return html`
-                                                    <a href="${BASE_HREF}datasets/${dataset.id}">${dataset.name}</a> <br />
+                                                    <a href="${BASE_HREF}datasets/browse/${dataset.id}">${dataset.name}</a> <br />
                                                 `;
                                             }
                                             else {

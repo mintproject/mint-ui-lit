@@ -135,28 +135,44 @@ export const EXAMPLE_MODEL_QUERY = [
         input_files: [
             {
                 id: "gldas_input",
-                name: "Precipitation Input File",
+                name: "Land Surface Input File",
                 type: "GLDAS_Daily",
                 variables: [
-                    "atmosphere_water__one-day_time_integral_of_precipitation_leq_volume_flux"
+                    "land_surface_groundwater__time_integral_of_baseflow_runoff_mass_flux"
                 ]
             }
         ],
         input_parameters: [
             {
-                id: "planting_date",
-                name: "Planting date",
+                id: "start_planting_date",
+                name: "Start Planting date",
                 type: "days",
-                min: "0",
-                max: "365",
+                min: "100",
+                max: "142",
                 default: "100"
             },
             {
-                id: "fertilizer_level_adjustment",
-                name: "Adjustment to fertilizer level",
-                type: "percentage",
-                min: "-20",
-                max: "20",
+                id: "end_planting_date",
+                name: "End Planting date",
+                type: "days",
+                min: "140",
+                max: "180",
+                default: "149"
+            },            
+            {
+                id: "fertilizer_mass",
+                name: "Fertilizer mass",
+                type: "mg/ha",
+                min: "0.0",
+                max: "1250.0",
+                default: "0"
+            },
+            {
+                id: "nitrogen_rate",
+                name: "Nitrogen rate",
+                type: "mg/ha",
+                min: "0",
+                max: "400",
                 default: "0"
             },
             {
@@ -208,10 +224,10 @@ export const EXAMPLE_MODEL_QUERY = [
         input_files: [
             {
                 id: "gldas_input",
-                name: "Precipitation Input File",
+                name: "Land Surface Input File",
                 type: "GLDAS_Daily",
                 variables: [
-                    "atmosphere_water__one-day_time_integral_of_precipitation_leq_volume_flux"
+                    "land_surface_groundwater__time_integral_of_baseflow_runoff_mass_flux"
                 ]
             }
         ],
@@ -219,7 +235,7 @@ export const EXAMPLE_MODEL_QUERY = [
         output_files: [
             {
                 id: "grain_yields",
-                name: "Grain Yields File",
+                name: "Grain Yields",
                 variables: [
                     "grain~dry__mass-per-area_yield",
                 ]
