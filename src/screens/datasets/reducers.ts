@@ -27,7 +27,7 @@ export interface Source {
 
 export interface DatasetsState {
     datasets: ModelDatasets
-    dataset: DatasetDetail
+    dataset: DatasetDetail | null
     workflow_type?: String
 }
 export type ModelInputDatasets = Map<string, Dataset[]>

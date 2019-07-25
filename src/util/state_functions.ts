@@ -50,7 +50,7 @@ export const createPathwayExecutableEnsembles = (pathway: Pathway) => {
 
             // Note: Keep executable ensembles with existing run ids
             let current_ensemble = _getMatchingEnsemble(current_ensembles, ensemble, current_hashes);
-            if (current_ensemble) {
+            if (current_ensemble && current_ensemble.runid) {
                 //console.log("Found a matching ensemble");
                 ensemble.runid = current_ensemble.runid;
                 ensemble.results = current_ensemble.results;

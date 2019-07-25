@@ -114,6 +114,135 @@ export const EXAMPLE_MODEL_QUERY = [
         ]
     },
     {
+        id: "Cycles_v9_4_0_alpha_Advanced_Configuration",
+        name: "Cycles v9.4.0-alpha - Advanced Configuration",
+        original_model: "CYCLES",
+        calibrated_region: "Pongo Basin (South Sudan)",
+        category: "Agriculture",
+        model_type: "Simulation", // DataDriven, Emulation, Hybrid
+        parameter_assignment: "Expert-Configured", //Auto-tuned, Expert-tuned, Trained
+        target_variable_for_parameter_assignment: "N/A",
+        parameter_assignment_details: "ISRIc soils data, GLDAS forcing, expert configured agricultural management",
+        modeled_processes: [
+            "Agricultural management practices, energy balance, water balance, \
+            nitrogen and other nutrients cycling including soil carbon"
+        ],
+        dimensionality: 1,
+        spatial_grid_type: "Point model",
+        spatial_grid_resolution: "N/A",
+        minimum_output_time_interval: "Daily",
+
+        input_files: [
+            {
+                id: "gldas_input",
+                name: "Land Surface Input File",
+                type: "GLDAS_Daily",
+                variables: [
+                    "land_surface_groundwater__time_integral_of_baseflow_runoff_mass_flux"
+                ]
+            }
+        ],
+        input_parameters: [
+            {
+                id: "start_planting_date",
+                name: "Start Planting date",
+                type: "days",
+                min: "100",
+                max: "142",
+                default: "100"
+            },
+            {
+                id: "end_planting_date",
+                name: "End Planting date",
+                type: "days",
+                min: "140",
+                max: "180",
+                default: "149"
+            },            
+            {
+                id: "fertilizer_mass",
+                name: "Fertilizer mass",
+                type: "mg/ha",
+                min: "0.0",
+                max: "1250.0",
+                default: "0"
+            },
+            {
+                id: "nitrogen_rate",
+                name: "Nitrogen rate",
+                type: "mg/ha",
+                min: "0",
+                max: "400",
+                default: "0"
+            },
+            {
+                id: "weed_fractions_adjustment",
+                name: "Weed fractions",
+                type: "fraction",
+                min: "0.0",
+                max: "1.0",
+                default: "0"
+            },
+            {
+                id: "crops",
+                name: "Crops",
+                type: "Crop Names",
+                min: "",
+                max: "",
+                default: ""
+            },
+        ],
+        output_files: [
+            {
+                id: "grain_yields",
+                name: "Grain Yields",
+                variables: [
+                    "grain~dry__mass-per-area_yield",
+                ]
+            }
+        ]
+    },
+    {
+        id: "Cycles_v9_4_0_alpha_Simple_Configuration",
+        name: "Cycles v9.4.0-alpha - Simple Configuration",
+        original_model: "CYCLES",
+        calibrated_region: "Pongo Basin (South Sudan)",
+        category: "Agriculture",
+        model_type: "Simulation", // DataDriven, Emulation, Hybrid
+        parameter_assignment: "Expert-Configured", //Auto-tuned, Expert-tuned, Trained
+        target_variable_for_parameter_assignment: "N/A",
+        parameter_assignment_details: "ISRIc soils data, GLDAS forcing, expert configured agricultural management",
+        modeled_processes: [
+            "Agricultural management practices, energy balance, water balance, \
+            nitrogen and other nutrients cycling including soil carbon"
+        ],
+        dimensionality: 1,
+        spatial_grid_type: "Point model",
+        spatial_grid_resolution: "N/A",
+        minimum_output_time_interval: "Daily",
+
+        input_files: [
+            {
+                id: "gldas_input",
+                name: "Land Surface Input File",
+                type: "GLDAS_Daily",
+                variables: [
+                    "land_surface_groundwater__time_integral_of_baseflow_runoff_mass_flux"
+                ]
+            }
+        ],
+        input_parameters: [],
+        output_files: [
+            {
+                id: "grain_yields",
+                name: "Grain Yields",
+                variables: [
+                    "grain~dry__mass-per-area_yield",
+                ]
+            }
+        ]
+    },    
+    {
         id: "TopoFlow_35_Pongo_Basin_Configuration",
         name: "TopoFlow 3.5 - Pongo Basin Configuration",
         original_model: "TOPOFLOW",

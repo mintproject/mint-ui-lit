@@ -70,5 +70,30 @@ export const EXAMPLE_DATASETS_QUERY = [
             "atmosphere_water__one-day_time_integral_of_precipitation_leq_volume_flux"
         ],
         time_period: "1979-01-02 to 2019-05-31"
+    },
+    {
+        id: "GLDAS_NIAH025_3H.2.1",
+        name: "GLDAS Noah Land Surface Model L4 3 hourly 0.25 x 0.25 degree V2.1",
+        datatype: "GLDAS",
+        limitations: "N/A",
+        version: "N/A",
+        description: "This data set, GLDAS-2.1 Noah 0.25 degree 3-hourly, \
+        simulated with the Noah Model 3.3 in Land Information System (LIS) Version 7, \
+        contains 36 land surface fields from January 2000 to present.",
+        region: "East Africa",
+        source: {
+            name: "LDAS",            
+            url: "https://ldas.gsfc.nasa.gov/fldas/specifications",
+            type: "Modeled",
+        },
+        categories: [
+            "Weather",
+            "Land Surface"
+        ],
+        variables: [
+            "atmosphere_water__one-day_time_integral_of_precipitation_leq_volume_flux",
+            "land_surface_groundwater__time_integral_of_baseflow_runoff_mass_flux"
+        ],
+        time_period: "2001-01-01 to 2019-05-31"
     }
 ]

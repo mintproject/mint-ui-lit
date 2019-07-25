@@ -44,7 +44,12 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
 
         <p>
         This page is in progress, it will give you access to the Data Catalog, where you can browse and search for
-        datasets
+        datasets.
+        </p>
+        <p>
+        The World Modelers Ethiopia Data Survey contains more than 120 data sources for modeling, 
+        it can be accessed at: <a href="https://docs.google.com/spreadsheets/d/1fWDNqJVo2LGa7h4wdepeI64eGvlCsdu2ueKLOuv98gw/edit#gid=0"
+            >https://docs.google.com/spreadsheets/d/1fWDNqJVo2LGa7h4wdepeI64eGvlCsdu2ueKLOuv98gw/edit#gid=0</a>
         </p>
         `
     }
@@ -56,6 +61,10 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         if(state.datasets && state.datasets.dataset) {
             this._dataset = state.datasets.dataset;
+            state.datasets.dataset = null;
+        }
+        else {
+            this._dataset = null;
         }
     }
 }

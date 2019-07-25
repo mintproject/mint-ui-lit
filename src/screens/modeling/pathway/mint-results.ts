@@ -120,7 +120,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                         html ``
                                     }
                                     <td>
-                                        <a href="${BASE_HREF}models/${model.id}">${model.name}</a>
+                                        <a href="${BASE_HREF}models/explore/${model.id}">${model.name}</a>
                                     </td>
                                     <td>
                                     ${Object.keys(ensemble.bindings).map((inputid) => {
@@ -128,7 +128,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                         let dataset = this.pathway.datasets![dsid];
                                         if(dataset) {
                                             return html`
-                                                ${inputid} = <a href="${BASE_HREF}datasets/${dataset.id}">${dataset.name}</a> <br />
+                                                ${inputid} = <a href="${BASE_HREF}datasets/browse/${dataset.id}">${dataset.name}</a> <br />
                                             `;
                                         }
                                         else {
@@ -145,7 +145,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                             `
                                         }
                                         return html`
-                                            <a href="${BASE_HREF}datasets/${result}">${result}</a> <br />
+                                            <a href="${BASE_HREF}datasets/browse/${result}">${result}</a> <br />
                                         `;
                                     })}
                                     </td>
