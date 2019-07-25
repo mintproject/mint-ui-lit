@@ -155,8 +155,7 @@ export class ModelFacet extends connect(store)(PageViewElement) {
               <tr>
                 <td class="left"> 
                   <div class="text-centered one-line">
-                    ${this._model.ver? html`${this._model.ver.length}`: html`0`} vers,
-                    2 configs
+                    ${this._model.ver? html`${this._model.ver.length}`: html`0`} versions
                   </div>
                   <div>
                     <span class="helper"></span>${this._model.logo ? 
