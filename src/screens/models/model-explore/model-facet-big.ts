@@ -11,6 +11,7 @@ import { explorerSetVersion, explorerSetConfig, explorerSetCalibration,
          explorerFetchVersions, explorerFetchIO, explorerFetchIOVarsAndUnits, explorerFetchMetadata } from './actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 
+import { showDialog } from "../../../util/ui_functions";
 //import { goToPage } from '../../../app/actions';
 import "weightless/expansion";
 import "weightless/tab";
@@ -55,6 +56,9 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     
     @property({type: Object})
     private _compOutput : CompIODetail[] | null = null;
+
+    @property({type: Object})
+    private _compModels? : FetchedModel[];
 
     //@property({type: String})
     //private _selectedCalibration! : string;
@@ -116,6 +120,22 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                   vertical-align: middle;
                   max-width: calc(100% - 8px);
                   border: 1px solid black;
+                }
+
+                .galery {
+                    max-width: 25%;
+                    text-align: center;
+                }
+
+                .galery img {
+                    display: inline-block;
+                    cursor: pointer;
+                }
+
+                .galery span {
+                    margin-top: 3px;
+                    font-weight: bold;
+                    display: inline-block;
                 }
 
                 .helper {
@@ -301,7 +321,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             html`<b>Preferred citation:</b> ${this._model.referenceP}<br/>`
                             : ``}
                         ${this._model.dateC ?
-                            html`<b>Date:</b> ${this._model.dateC}<br/>`
+                            html`<b>Creation date:</b> ${this._model.dateC}<br/>`
                             : ``}
                         ${this._model.doc ?
                             html`<b>Documentation:</b> 
@@ -459,8 +479,12 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         </ul>`
                         :html`<h4>Select a model configuration to display metadata.</h4>`
                     }
-                    ${this._model.sampleVisualization && false ?
-                        html`<img src="${this._model.sampleVisualization}"></img>` : html``}`
+                    ${this._model.sampleVisualization ?
+                        html`<div class="galery" @click="${()=>{this.openImg(this._model.sampleVisualization)}}">
+                            <img src="${this._model.sampleVisualization}"></img>
+                            <span> Sample visualization </span>
+                        </div> ${this._renderImgDialog()}`
+                        : html``}`
 
             case 'tech':
                 return html`${(this._model.installInstr || (this._model.os && this._model.os.length>0) ||
@@ -593,11 +617,47 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         `
                     }`
                     : html`<br/><h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`
-                }`
+                }
+                ${this._compModels? html`
+                <h3> Related models: </h3>
+                <table class="pure-table pure-table-bordered">
+                    <thead>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                    </thead>
+                    <tbody>
+                    ${this._compModels.map( (m:any) => html`
+                        <tr>
+                            <td><a href="models/explore/${m.uri.split('/').pop()}">${m.label}</a></td>
+                            <td>${m.categories.join(', ')}</td>
+                            <td>${m.desc}</td>
+                        </tr>`)}
+                    </tbody>
+                </table>
+                `:html``}`
 
             default:
                 return html`<br/><h3 style="margin-left:30px">Sorry! We are currently working in this feature.</h3>`
         }
+    }
+
+    _renderImgDialog () {
+        return html`
+        <wl-dialog id="dialog" fixed backdrop blockscrolling size="large" style="text-align: center;">
+           <h3 slot="header" style="margin-bottom: 4px;">Sample Visualization</h3>
+           <div slot="content" style="height: 800px;">
+             <img id="dialog-img" src=""></img>
+           </div>
+        </wl-dialog>
+        `
+    }
+
+    openImg (uri:any) {
+        console.log(uri)
+        let img = this.shadowRoot!.getElementById("dialog-img");
+        img!['src']=uri;
+        showDialog("dialog", this.shadowRoot!);
     }
 
     changeVersion (ev:any) {
@@ -636,7 +696,19 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         let lastConfig = this._selectedConfig? this._selectedConfig.uri : '';
         if (state.explorer) {
             if (state.explorer.models) {
+                if (state.explorer.models[this.uri] && this._model != state.explorer.models[this.uri]) {
+                    //TODO: fix this when models have more than one category:
+                    let myCat = state.explorer.models[this.uri].categories[0];
+                    let compModels : FetchedModel[] = [];
+                    Object.values(state.explorer.models).forEach(model => {
+                        if (model.categories.indexOf(myCat)>=0 && model.uri != this.uri) {
+                            compModels.push(model);
+                        }
+                    });
+                    this._compModels = (compModels.length>0)? compModels : undefined;
+                }
                 this._model = state.explorer.models[this.uri];
+                console.log(this._compModels)
             } 
             if (state.explorer.version && state.explorer.version[this.uri]) {
                 this._version = state.explorer.version[this.uri];
