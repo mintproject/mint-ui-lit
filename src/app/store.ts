@@ -40,7 +40,8 @@ import ui, { UIState } from './ui-reducers';
 import { UIAction } from './ui-actions';
 import { RegionsState } from '../screens/regions/reducers';
 import { ExplorerAction } from '../screens/models/model-explore/actions';
-import { ExplorerState } from '../screens/models/model-explore/reducers';
+import { ExplorerUIAction } from '../screens/models/model-explore/ui-actions';
+import { ExplorerState } from '../screens/models/model-explore/state';
 
 // Overall state extends static states and partials lazy states.
 export interface RootState {
@@ -53,8 +54,8 @@ export interface RootState {
   ui: UIState
 }
 
-export type RootAction = AppAction | ModelingAction | ModelsAction | 
-                         DatasetsAction | RegionsAction | UIAction | ExplorerAction;
+export type RootAction = AppAction | ModelingAction | ModelsAction | DatasetsAction |
+                         RegionsAction | UIAction | ExplorerAction | ExplorerUIAction;
 
 // Sets up a Chrome extension for time travel debugging.
 // See https://github.com/zalmoxisus/redux-devtools-extension for more information.

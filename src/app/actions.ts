@@ -13,7 +13,7 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from './store';
 import { queryDatasetDetail } from '../screens/datasets/actions';
 import { queryModelDetail } from '../screens/models/actions';
-import { explorerClearModel, explorerSetModel } from '../screens/models/model-explore/actions';
+import { explorerClearModel, explorerSetModel } from '../screens/models/model-explore/ui-actions';
 import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection } from './ui-actions';
 import { auth } from '../config/firebase';
 import { User } from 'firebase';

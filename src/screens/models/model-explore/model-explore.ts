@@ -9,7 +9,9 @@ import { store, RootState } from '../../../app/store';
 import { goToPage } from '../../../app/actions';
 
 import { explorerFetch } from './actions';
-import explorer, { UriModels, FetchedModel } from "./reducers";
+import explorerReducer from "./reducers";
+import explorerUIReducer from "./ui-reducers";
+import { UriModels, FetchedModel } from './state';
 
 import './model-facet'
 import './model-facet-big'
@@ -19,7 +21,8 @@ import "weightless/textfield";
 import "weightless/icon";
 
 store.addReducers({
-    explorer
+    explorerReducer,
+    explorerUIReducer
 });
 
 @customElement('model-explorer')
