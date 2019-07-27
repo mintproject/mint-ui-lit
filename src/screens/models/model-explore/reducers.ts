@@ -35,41 +35,62 @@ const INITIAL_STATE: ExplorerState = {
 const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, action) => {
     switch (action.type) {
         case EXPLORER_FETCH:
-            state.models = action.models;
-            break;
+            return {
+                ...state,
+                models: action.models
+            }
         case EXPLORER_VERSIONS:
-            state.versions[action.uri] = action.details;
-            state.models[action.uri].versions = action.details;
-            break;
+            let newVersions = {...state.versions};
+            newVersions[action.uri] = action.details;
+            return {
+                ...state,
+                versions: newVersions
+            }
         case EXPLORER_VAR_UNIT:
-            state.variables[action.uri] = action.details;
-            break;
+            let newVariables = {...state.variables};
+            newVariables[action.uri] = action.details;
+            return {
+                ...state,
+                variables: newVariables
+            }
         case EXPLORER_IO:
-            let ios : IODetail[] = [];
-            action.details.forEach( io => {
-                ios.push( io as IODetail );
-            })
-            state.io[action.uri] = ios;
-            break;
+            let newIOs = {...state.io};
+            newIOs[action.uri] = action.details;
+            return {
+                ...state,
+                io: newIOs
+            }
         case EXPLORER_COMPATIBLE_INPUT:
-            state.compatibleInput[action.uri] = action.details;
-            break;
+            let newCompInput = {...state.compatibleInput};
+            newCompInput[action.uri] = action.details;
+            return {
+                ...state,
+                compatibleInput: newCompInput
+            }
         case EXPLORER_COMPATIBLE_OUTPUT:
-            state.compatibleOutput[action.uri] = action.details;
-            break;
+            let newCompOutput = {...state.compatibleOutput};
+            newCompOutput[action.uri] = action.details;
+            return {
+                ...state,
+                compatibleOutput: newCompOutput
+            }
         case EXPLORER_MODEL_METADATA:
-            if (action.details.length>0) {
-                state.modelMetadata[action.uri] = action.details;
+            let newMetadata = {...state.modelMetadata};
+            if (action.details.length>0) newMetadata[action.uri] = action.details;
+            return {
+                ...state,
+                modelMetadata: newMetadata
             }
             break;
         case EXPLORER_GET_PARAMETERS:
-            if (action.details.length>0) {
-                state.parameters[action.uri] = action.details;
+            let newParams = {...state.parameters};
+            newParams[action.uri] = action.details;
+            return {
+                ...state,
+                parameters: newParams
             }
-            break;
-    }
-    return {
-      ...state
+        default:
+            return state;
     }
 };
 
