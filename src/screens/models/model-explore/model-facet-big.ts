@@ -41,7 +41,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     private _io! : IODetail[];
 
     @property({type: Object})
-    private _versions!: Map<string, VersionDetail>;
+    private _versions!: VersionDetail[];
 
     @property({type: Object})
     private _selectedVersion : VersionDetail | null = null;
@@ -357,47 +357,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
 
                         <br/>
                         ${this._versions ?
-                            html`<!-- FIXME: load selected from state -->
-                            <span tip="Currently selected model version" class="tooltip">
-                                <wl-icon>help_outline</wl-icon>
-                            </span>
-                            <span class="select-label">Version:</span>
-                            <select class="select-css" label="Select version" @change="${this.changeVersion}">
-                                <option value="" disabled selected>Select version</option>
-                                ${Object.keys(this._versions).map(uri => 
-                                    html`<option value="${uri}">${uri}</option>`)}
-                            </select>
-                            ${(this._selectedVersion && this._selectedVersion.configs)?
-                                html`
-                                <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" class="tooltip">
-                                    <wl-icon>help_outline</wl-icon>
-                                </span>
-                                <span class="select-label">Configuration:</span>
-                                <select class="select-css" label="Select configuration" @change="${this.changeConfig}">
-                                    <option value="" selected>Select configuration</option>
-                                    ${this._selectedVersion.configs.map( c =>
-                                        html`<option value="${c.uri}">${c.uri}</option>`
-                                    )}
-                                </select>
-                                ${(this._selectedConfig && this._selectedConfig.calibrations) ?
-                                    html`
-                                    <span tip="A model calibration represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region" class="tooltip">
-                                        <wl-icon>help_outline</wl-icon>
-                                    </span>
-                                    <span class="select-label">Calibration:</span>
-                                    <select class="select-css" label="Select calibration" @change="${this.changeCalibration}">
-                                        <option value="" disabled selected>Select calibration</option>
-                                        ${this._selectedConfig.calibrations.map( c =>
-                                            html`<option value="${c.uri}">${c.uri}</option>`
-                                        )}
-                                    </select>
-                                    `
-                                    :html``
-                                }
-                                `
-                                :html``
-                            }
-                            `
+                            this._renderSelector()
                             : html``
                         }
                     </td>
@@ -420,6 +380,57 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 ${this.renderTab(this._tab)}
                 <br/>
         `;
+    }
+
+    _renderSelector () {
+        return html`
+        <!-- FIXME: load selected from state -->
+        <span tip="Currently selected model version" class="tooltip">
+            <wl-icon>help_outline</wl-icon>
+        </span>
+        <span class="select-label">Version:</span>
+        <select class="select-css" label="Select version" @change="${this.changeVersion}">
+            <option value="" disabled selected>Select version</option>
+            ${this._versions.map(v => 
+                html`<option value="${v.uri}" ?selected=${this._selectedVersion && v.uri===this._selectedVersion.uri}>
+                    ${v.uri}
+                </option>`)}
+        </select>
+        ${(this._selectedVersion && this._selectedVersion.configs) ?
+            html`
+            <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" class="tooltip">
+                <wl-icon>help_outline</wl-icon>
+            </span>
+            <span class="select-label">Configuration:</span>
+            <select class="select-css" label="Select configuration" @change="${this.changeConfig}">
+                <option value="" selected>Select configuration</option>
+                ${this._selectedVersion.configs.map( c =>
+                    html`<option value="${c.uri}" ?selected=${this._selectedConfig && c.uri===this._selectedConfig.uri}>
+                        ${c.uri}
+                    </option>`
+                )}
+            </select>
+            ${(this._selectedConfig && this._selectedConfig.calibrations) ?
+                html`
+                <span tip="A model calibration represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region" class="tooltip">
+                    <wl-icon>help_outline</wl-icon>
+                </span>
+                <span class="select-label">Calibration:</span>
+                <select class="select-css" label="Select calibration" @change="${this.changeCalibration}">
+                    <option value="" disabled selected>Select calibration</option>
+                    ${this._selectedConfig.calibrations.map( c =>
+                        html`<option value="${c.uri}"
+                        ?selected="${this._selectedCalibration && c.uri===this._selectedCalibration.uri}">
+                            ${c.uri}
+                        </option>`
+                    )}
+                </select>
+                `
+                :html``
+            }
+            `
+            :html``
+        }`
     }
 
     changeTab (tabName: string) {
@@ -660,6 +671,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         showDialog("dialog", this.shadowRoot!);
     }
 
+    //FIXME change functions should only use explorerSet functions
     changeVersion (ev:any) {
         let versionUri : string = ev.path[0].value;
         if (this._selectedVersion) {
@@ -727,15 +739,31 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             if (state.explorer && state.explorer.versions && state.explorer.versions[this._model.uri] &&
                 this._versions != state.explorer.versions[this._model.uri]) {
                 this._versions = state.explorer.versions[this._model.uri];
+                //Autoset version, config and calibration when loaded.
+                if (this._versions.length > 0) {
+                    let firstVersion = this._versions[0];
+                    //TODO: change this store.dispatch for a method that updates the page.
+                    store.dispatch(explorerSetVersion(firstVersion.uri.split('/').pop()));
+                    if (firstVersion.configs && firstVersion.configs.length>0) {
+                        let firstConfig = firstVersion.configs[0]
+                        store.dispatch(explorerSetConfig(firstConfig.uri.split('/').pop()));
+                        if (firstConfig.calibrations && firstConfig.calibrations.length>0) {
+                            store.dispatch(explorerSetCalibration(
+                                    firstConfig.calibrations[0].uri.split('/').pop()));
+                        }
+                    }
+                }
             }
 
             if (state.explorerUI) {
                 // Set selected Version
-                if (state.explorerUI.selectedVersion && this._versions[state.explorerUI.selectedVersion] &&
-                    this._selectedVersion != this._versions[state.explorerUI.selectedVersion]) {
-                    this._selectedVersion = this._versions[state.explorerUI.selectedVersion];
-                    this._selectedConfig = null;
-                    this._selectedCalibration = null;
+                if (state.explorerUI.selectedVersion && this._versions) {
+                    let sVersion = this._versions.filter( (v:any) => v.uri === state.explorerUI!.selectedVersion);
+                    if (sVersion && sVersion.length > 0 && sVersion[0] != this._selectedVersion) {
+                        this._selectedVersion = sVersion[0];
+                        this._selectedConfig = null;
+                        this._selectedCalibration = null;
+                    }
                 }
 
                 if (this._selectedVersion) {

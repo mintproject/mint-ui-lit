@@ -90,11 +90,11 @@ export const explorerFetchVersions: ActionCreator<ExplorerThunkResult> = (uri:st
             }
             return acc;
         }, {})
-        console.log(data, Object.values(data));
+        //console.log(data, Object.values(data));
         dispatch({
             type: EXPLORER_VERSIONS,
             uri: uri,
-            details: data
+            details: Object.values(data)
         });
     })
 }
