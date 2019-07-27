@@ -39,9 +39,11 @@ import { RegionsAction } from '../screens/regions/actions';
 import ui, { UIState } from './ui-reducers';
 import { UIAction } from './ui-actions';
 import { RegionsState } from '../screens/regions/reducers';
+
 import { ExplorerAction } from '../screens/models/model-explore/actions';
 import { ExplorerUIAction } from '../screens/models/model-explore/ui-actions';
-import { ExplorerState } from '../screens/models/model-explore/state';
+import { ExplorerState } from '../screens/models/model-explore/reducers';
+import { ExplorerUIState } from '../screens/models/model-explore/ui-reducers';
 
 // Overall state extends static states and partials lazy states.
 export interface RootState {
@@ -51,6 +53,7 @@ export interface RootState {
   datasets?: DatasetsState;
   regions?: RegionsState;
   explorer?: ExplorerState;
+  explorerUI?: ExplorerUIState;
   ui: UIState
 }
 

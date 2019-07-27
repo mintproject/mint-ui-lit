@@ -1,3 +1,13 @@
+interface resource {
+    uri:    string;
+    label?: string;
+    desc?:  string;
+}
+
+export interface VersionDetail extends resource { configs?: ConfigDetail[] }
+export interface ConfigDetail extends resource { calibrations?: CalibrationDetail[] }
+export interface CalibrationDetail extends resource {}
+
 export interface FetchedModel {
     uri: string,
     label: string,
@@ -58,59 +68,9 @@ export interface VariableDetail {
     rl?: string;
 }
 
-export interface VersionDetail {
-    uri: string;
-    config?: ConfigDetail[];
-}
-
-export interface ConfigDetail {
-    uri: string;
-    calibration?: CalibrationDetail[];
-}
-
-export interface CalibrationDetail {
-    uri: string;
-}
-
 export interface CompIODetail {
     label: string;
     desc: string;
     vars: string[];
     comp_config?: string;
-}
-
-export type UriModels = Map<string, FetchedModel>;
-type UriIO = Map<string, IODetail[]>;
-type UriVersion = Map<string, VersionDetail[]>;
-type UriVariable = Map<string, VariableDetail[]>;
-type UriCompIO = Map<string, CompIODetail[]>;
-
-export interface ExplorerState {
-    models: UriModels,
-    io: UriIO, 
-    version: UriVersion,
-    variables: UriVariable,
-    compatibleInput: UriCompIO;
-    compatibleOutput: UriCompIO;
-    modelMetadata: any;
-    parameters: any;
-    selectedModel: string;
-    selectedVersion: string;
-    selectedConfig: string;
-    selectedCalibration: string;
-}
-
-export const INITIAL_STATE: ExplorerState = { 
-    models: {} as UriModels,
-    io: {} as UriIO,
-    version: {} as UriVersion,
-    variables: {} as UriVariable,
-    compatibleInput: {} as UriCompIO,
-    compatibleOutput: {} as UriCompIO,
-    modelMetadata: {},
-    parameters: {},
-    selectedModel: '',
-    selectedVersion: '',
-    selectedConfig: '',
-    selectedCalibration: '',
 }

@@ -13,7 +13,8 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from './store';
 import { queryDatasetDetail } from '../screens/datasets/actions';
 import { queryModelDetail } from '../screens/models/actions';
-import { explorerClearModel, explorerSetModel } from '../screens/models/model-explore/ui-actions';
+import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetConfig,
+         explorerSetCalibration } from '../screens/models/model-explore/ui-actions';
 import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection } from './ui-actions';
 import { auth } from '../config/firebase';
 import { User } from 'firebase';
@@ -134,6 +135,15 @@ const loadPage: ActionCreator<ThunkResult> =
             import('../screens/models/model-explore/model-explore').then((_module) => {
                 if(params.length > 0) {
                     store.dispatch(explorerSetModel(params[0]));
+                    if (params.length > 1) {
+                        store.dispatch(explorerSetVersion(params[1]));
+                        if (params.length > 2) {
+                            store.dispatch(explorerSetConfig(params[2]));
+                            if (params.length > 3) {
+                                store.dispatch(explorerSetCalibration(params[3]));
+                            }
+                        }
+                    }
                 } else {
                     store.dispatch(explorerClearModel());
                 }

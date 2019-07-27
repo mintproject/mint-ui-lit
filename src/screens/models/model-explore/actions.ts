@@ -2,7 +2,7 @@ import { Action, ActionCreator } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "../../../app/store";
 //import { UriModels, FetchedModel } from "./reducers";
-import { UriModels } from "./state";
+import { UriModels } from "./reducers";
 
 import { apiFetch, VER_AND_CONF, MODELS, GET_IO, IO_VARS_AND_UNITS,
          COMPATIBLE_INPUT, COMPATIBLE_OUTPUT, MODEL_METADATA, GET_PARAMETERS } from './api-fetch';
@@ -73,23 +73,24 @@ export const explorerFetchVersions: ActionCreator<ExplorerThunkResult> = (uri:st
             }
 
             if (obj.config) {
-                if (!acc[obj.version].config) {
-                    acc[obj.version].config = [{uri: obj.config}]
-                } else if (acc[obj.version].config.filter((c:any)=>(c.uri===obj.config)).length === 0) {
-                    acc[obj.version].config.push({uri: obj.config}) 
+                if (!acc[obj.version].configs) {
+                    acc[obj.version].configs = [{uri: obj.config}]
+                } else if (acc[obj.version].configs.filter((c:any)=>(c.uri===obj.config)).length === 0) {
+                    acc[obj.version].configs.push({uri: obj.config}) 
                 }
             }
 
             if (obj.calibration) {
-                let cfg = acc[obj.version].config.filter((c:any)=>(c.uri===obj.config))[0];
-                if (!cfg.calibration) {
-                    cfg.calibration = [{uri: obj.calibration}]
+                let cfg = acc[obj.version].configs.filter((c:any)=>(c.uri===obj.config))[0];
+                if (!cfg.calibrations) {
+                    cfg.calibrations = [{uri: obj.calibration}]
                 } else {
-                    cfg.calibration.push( {uri: obj.calibration})
+                    cfg.calibrations.push( {uri: obj.calibration})
                 }
             }
             return acc;
         }, {})
+        console.log(data, Object.values(data));
         dispatch({
             type: EXPLORER_VERSIONS,
             uri: uri,

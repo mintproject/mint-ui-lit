@@ -9,9 +9,9 @@ import { store, RootState } from '../../../app/store';
 import { goToPage } from '../../../app/actions';
 
 import { explorerFetch } from './actions';
-import explorerReducer from "./reducers";
-import explorerUIReducer from "./ui-reducers";
-import { UriModels, FetchedModel } from './state';
+import explorer from "./reducers";
+import explorerUI from "./ui-reducers";
+import { UriModels } from './reducers';
 
 import './model-facet'
 import './model-facet-big'
@@ -21,8 +21,8 @@ import "weightless/textfield";
 import "weightless/icon";
 
 store.addReducers({
-    explorerReducer,
-    explorerUIReducer
+    explorer,
+    explorerUI
 });
 
 @customElement('model-explorer')
@@ -30,9 +30,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _models : UriModels = {} as UriModels;
 
-    @property({type: Object})
-    private _selected : FetchedModel | null = null;
-
+    @property({type: String})
     private _selectedUri : string = '';
 
     @property({type: String})
@@ -113,7 +111,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     protected render() {
         return html`
             <div class="cltrow scenariorow">
-                ${this._selected?
+                ${this._selectedUri?
                 html`
                 <wl-button flat inverted @click="${()=> goToPage('models/explore')}">
                     <wl-icon>arrow_back_ios</wl-icon>
@@ -151,12 +149,12 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 <div class="right">
                 </div>
             </div>-->
-            ${this._selected? 
+            ${this._selectedUri? 
                 //BIG MODEL
                 html`
                     <model-facet-big
                         style="width:75%;"
-                        uri="${this._selected.uri}">
+                        uri="${this._selectedUri}">
                     </model-facet-big>
                 `
                 : html `
@@ -219,14 +217,12 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             if (state.explorer.models) {
                 this._models = state.explorer.models;
             }
-            if (state.explorer.selectedModel != this._selectedUri) {
-                if (state.explorer.models[state.explorer.selectedModel]) {
-                    this._selectedUri = state.explorer.selectedModel;
-                    this._selected = state.explorer.models[this._selectedUri];
-                } else {
-                    this._selectedUri = '';
-                    this._selected = null;
-                }
+        }
+        if (state.explorerUI && state.explorerUI.selectedModel != this._selectedUri) {
+            if (state.explorer && state.explorer.models[state.explorerUI.selectedModel]) {
+                this._selectedUri = state.explorerUI.selectedModel;
+            } else {
+                this._selectedUri = '';
             }
         }
     }

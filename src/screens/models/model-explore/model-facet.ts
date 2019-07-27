@@ -7,7 +7,7 @@ import { html, property, customElement, css } from 'lit-element';
 
 import { goToPage } from '../../../app/actions';
 
-import { FetchedModel } from "./state";
+import { FetchedModel } from "./api-interfaces";
 
 @customElement('model-facet')
 export class ModelFacet extends connect(store)(PageViewElement) {

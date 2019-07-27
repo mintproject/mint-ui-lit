@@ -1,32 +1,36 @@
 import { Action, ActionCreator } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "../../../app/store";
-import { MODEL_PREFIX } from './api-fetch';
+import { RESOURCE_PREFIX } from './api-fetch';
 
 export const EXPLORER_SELECT_MODEL = 'EXPLORER_SELECT_MODEL'
 export const EXPLORER_SELECT_VERSION = 'EXPLORER_SELECT_VERSION'
 export const EXPLORER_SELECT_CONFIG = 'EXPLORER_SELECT_CONFIG'
 export const EXPLORER_SELECT_CALIBRATION = 'EXPLORER_SELECT_CALIBRATION'
 
-export interface ExplorerActionSelectModel extends Action<'EXPLORER_SELECT_MODEL'> { uri: string };
-export interface ExplorerActionSelectVersion extends Action<'EXPLORER_SELECT_VERSION'> { uri: string };
-export interface ExplorerActionSelectConfig extends Action<'EXPLORER_SELECT_CONFIG'> { uri: string };
-export interface ExplorerActionSelectCalibration extends Action<'EXPLORER_SELECT_CALIBRATION'> { uri: string };
+interface ActionSelectUri<T> extends Action<T> { uri: string };
 
-export type ExplorerUIAction = ExplorerActionSelectModel | ExplorerActionSelectVersion | ExplorerActionSelectConfig |
-                               ExplorerActionSelectCalibration;
+export interface ExplorerActionSelectModel extends ActionSelectUri<'EXPLORER_SELECT_MODEL'> {};
+export interface ExplorerActionSelectVersion extends ActionSelectUri<'EXPLORER_SELECT_VERSION'> {};
+export interface ExplorerActionSelectConfig extends ActionSelectUri<'EXPLORER_SELECT_CONFIG'> {};
+export interface ExplorerActionSelectCalibration extends ActionSelectUri<'EXPLORER_SELECT_CALIBRATION'> {};
+
+export type ExplorerUIAction = ExplorerActionSelectModel | ExplorerActionSelectVersion | 
+                               ExplorerActionSelectConfig | ExplorerActionSelectCalibration;
 
 type ExplorerThunkResult = ThunkAction<void, RootState, undefined, ExplorerUIAction>;
 
 export const explorerSetModel: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
-    dispatch({ type: EXPLORER_SELECT_MODEL, uri: MODEL_PREFIX + id })
+    let uri : string = id ? RESOURCE_PREFIX + id : '';
+    dispatch({ type: EXPLORER_SELECT_MODEL, uri: uri })
 };
 
 export const explorerClearModel: ActionCreator<ExplorerThunkResult> = () => (dispatch) => {
     dispatch({ type: EXPLORER_SELECT_MODEL, uri: '' })
 };
 
-export const explorerSetVersion: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
+export const explorerSetVersion: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
+    let uri : string = id ? RESOURCE_PREFIX + id : '';
     dispatch({ type: EXPLORER_SELECT_VERSION, uri: uri})
 };
 
@@ -34,7 +38,8 @@ export const explorerClearVersion: ActionCreator<ExplorerThunkResult> = () => (d
     dispatch({ type: EXPLORER_SELECT_VERSION, uri: '' })
 };
 
-export const explorerSetConfig: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
+export const explorerSetConfig: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
+    let uri : string = id ? RESOURCE_PREFIX + id : '';
     dispatch({ type: EXPLORER_SELECT_CONFIG, uri: uri})
 };
 
@@ -42,7 +47,8 @@ export const explorerClearConfig: ActionCreator<ExplorerThunkResult> = () => (di
     dispatch({ type: EXPLORER_SELECT_CONFIG, uri: '' })
 };
 
-export const explorerSetCalibration: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
+export const explorerSetCalibration: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
+    let uri : string = id ? RESOURCE_PREFIX + id : '';
     dispatch({ type: EXPLORER_SELECT_CALIBRATION, uri: uri})
 };
 

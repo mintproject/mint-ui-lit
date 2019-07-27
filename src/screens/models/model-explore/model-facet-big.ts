@@ -5,7 +5,7 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from '../../../app/store';
 
 import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
-         CompIODetail } from "./state";
+         CompIODetail } from "./api-interfaces";
 import { explorerFetchCompatibleSoftware, explorerFetchParameters, explorerFetchVersions,
          explorerFetchIO, explorerFetchIOVarsAndUnits, explorerFetchMetadata } from './actions';
 import { explorerSetVersion, explorerSetConfig, explorerSetCalibration,
@@ -22,6 +22,9 @@ import "weightless/icon";
 
 @customElement('model-facet-big')
 export class ModelFacetBig extends connect(store)(PageViewElement) {
+    @property({type: Object})
+    private _model! : FetchedModel;
+
     @property({type: String})
         uri : string = "";
 
@@ -35,13 +38,10 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     private _parameters: any = null;
 
     @property({type: Object})
-    private _model! : FetchedModel;
-
-    @property({type: Object})
     private _io! : IODetail[];
 
     @property({type: Object})
-    private _version!: Map<string, VersionDetail>;
+    private _versions!: Map<string, VersionDetail>;
 
     @property({type: Object})
     private _selectedVersion : VersionDetail | null = null;
@@ -356,7 +356,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         <br/>
 
                         <br/>
-                        ${this._version ?
+                        ${this._versions ?
                             html`<!-- FIXME: load selected from state -->
                             <span tip="Currently selected model version" class="tooltip">
                                 <wl-icon>help_outline</wl-icon>
@@ -364,10 +364,10 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             <span class="select-label">Version:</span>
                             <select class="select-css" label="Select version" @change="${this.changeVersion}">
                                 <option value="" disabled selected>Select version</option>
-                                ${Object.keys(this._version).map(uri => 
+                                ${Object.keys(this._versions).map(uri => 
                                     html`<option value="${uri}">${uri}</option>`)}
                             </select>
-                            ${(this._selectedVersion && this._selectedVersion.config)?
+                            ${(this._selectedVersion && this._selectedVersion.configs)?
                                 html`
                                 <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" class="tooltip">
                                     <wl-icon>help_outline</wl-icon>
@@ -375,11 +375,11 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                                 <span class="select-label">Configuration:</span>
                                 <select class="select-css" label="Select configuration" @change="${this.changeConfig}">
                                     <option value="" selected>Select configuration</option>
-                                    ${this._selectedVersion.config.map( c =>
+                                    ${this._selectedVersion.configs.map( c =>
                                         html`<option value="${c.uri}">${c.uri}</option>`
                                     )}
                                 </select>
-                                ${(this._selectedConfig && this._selectedConfig.calibration) ?
+                                ${(this._selectedConfig && this._selectedConfig.calibrations) ?
                                     html`
                                     <span tip="A model calibration represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region" class="tooltip">
                                         <wl-icon>help_outline</wl-icon>
@@ -387,7 +387,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                                     <span class="select-label">Calibration:</span>
                                     <select class="select-css" label="Select calibration" @change="${this.changeCalibration}">
                                         <option value="" disabled selected>Select calibration</option>
-                                        ${this._selectedConfig.calibration.map( c =>
+                                        ${this._selectedConfig.calibrations.map( c =>
                                             html`<option value="${c.uri}">${c.uri}</option>`
                                         )}
                                     </select>
@@ -655,7 +655,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     }
 
     openImg (uri:any) {
-        console.log(uri)
         let img = this.shadowRoot!.getElementById("dialog-img");
         img!['src']=uri;
         showDialog("dialog", this.shadowRoot!);
@@ -667,7 +666,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             let v = this._model.version![versionUri];
             this.changeConfig({path: [{value: v.config[0].uri}]})
         }
-        store.dispatch(explorerSetVersion(versionUri));
+        let id = versionUri.split('/').pop();
+        store.dispatch(explorerSetVersion(id));
     }
 
     changeConfig (ev:any) {
@@ -678,13 +678,15 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             store.dispatch(explorerFetchCompatibleSoftware(configUri));
             store.dispatch(explorerFetchMetadata(configUri));
         }
+        let id = configUri.split('/').pop();
         store.dispatch(explorerClearCalibration());
-        store.dispatch(explorerSetConfig(configUri));
+        store.dispatch(explorerSetConfig(id));
     }
 
     changeCalibration (ev:any) {
         let calibUri : string = ev.path[0].value;
-        store.dispatch(explorerSetCalibration(calibUri));
+        let id = calibUri.split('/').pop();
+        store.dispatch(explorerSetCalibration(id));
         store.dispatch(explorerFetchMetadata(calibUri));
     }
 
@@ -694,89 +696,131 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     }
 
     stateChanged(state: RootState) {
-        let lastConfig = this._selectedConfig? this._selectedConfig.uri : '';
-        if (state.explorer) {
-            if (state.explorer.models) {
-                if (state.explorer.models[this.uri] && this._model != state.explorer.models[this.uri]) {
-                    //TODO: fix this when models have more than one category:
-                    let myCat = state.explorer.models[this.uri].categories[0];
-                    let compModels : FetchedModel[] = [];
-                    Object.values(state.explorer.models).forEach(model => {
-                        if (model.categories.indexOf(myCat)>=0 && model.uri != this.uri) {
+        // Load model
+        if (state.explorer && state.explorer.models && state.explorer.models[this.uri] &&
+            this._model != state.explorer.models[this.uri]) {
+            // Set new model
+            this._model = state.explorer.models[this.uri];
+            if (this._model.categories) {
+                // Set related models (by category)
+                let compModels : FetchedModel[] = [];
+                this._model.categories.forEach( (cat:string) =>  {
+                    Object.values(state.explorer!.models).forEach( (model:FetchedModel) => {
+                        if (model.categories && model.categories.indexOf(cat)>=0 && model.uri != this.uri) {
                             compModels.push(model);
                         }
                     });
-                    this._compModels = (compModels.length>0)? compModels : undefined;
-                }
-                this._model = state.explorer.models[this.uri];
-                console.log(this._compModels)
-            } 
-            if (state.explorer.version && state.explorer.version[this.uri]) {
-                this._version = state.explorer.version[this.uri];
-                if (state.explorer.selectedVersion) {
-                    this._selectedVersion = this._version[state.explorer.selectedVersion];
-                    if (state.explorer.selectedConfig && this._selectedVersion && this._selectedVersion.config) {
-                        this._selectedConfig = this._selectedVersion.config
-                                                   .filter((c:any) => (c.uri === state.explorer!.selectedConfig))[0];
-                        if (state.explorer.selectedCalibration &&
-                            this._selectedConfig && this._selectedConfig.calibration) {
-                            this._selectedCalibration = this._selectedConfig.calibration
-                                    .filter((c:any) => (c.uri===state.explorer!.selectedCalibration))[0];
-                        } else {
-                            this._selectedCalibration = null;
-                        }
-                    } else {
-                        this._selectedConfig = null;
-                    }
-                } else {
-                    this._selectedVersion = null;
-                }
-            } 
+                });
+                this._compModels = (compModels.length>0) ? compModels : undefined;
+            }
+            // Reset data
+            //this._versions = undefined;
+            this._selectedVersion = null;
+            this._selectedConfig = null;
+            this._selectedCalibration = null;
+            this._metadata = null;
+            this._parameters = null;
+        }
 
-            if (this._selectedConfig) {
-                if (state.explorer.io) {
-                    if ((!this._io || this._selectedConfig.uri != lastConfig) &&
-                        state.explorer.io[this._selectedConfig.uri]) {
-                        state.explorer.io[this._selectedConfig.uri].forEach((u:any) => {
-                            store.dispatch(explorerFetchIOVarsAndUnits(u.uri));
-                        });
+        if (this._model) {
+            // Load model versions
+            if (state.explorer && state.explorer.versions && state.explorer.versions[this._model.uri] &&
+                this._versions != state.explorer.versions[this._model.uri]) {
+                this._versions = state.explorer.versions[this._model.uri];
+            }
+
+            if (state.explorerUI) {
+                // Set selected Version
+                if (state.explorerUI.selectedVersion && this._versions[state.explorerUI.selectedVersion] &&
+                    this._selectedVersion != this._versions[state.explorerUI.selectedVersion]) {
+                    this._selectedVersion = this._versions[state.explorerUI.selectedVersion];
+                    this._selectedConfig = null;
+                    this._selectedCalibration = null;
+                }
+
+                if (this._selectedVersion) {
+                    // Set selected Config
+                    if (state.explorerUI.selectedConfig && this._selectedVersion.configs) {
+                        let sConfig = this._selectedVersion.configs.filter( (c:any) => 
+                            c.uri === state.explorerUI!.selectedConfig);
+                        if (sConfig && sConfig.length > 0 && sConfig[0] != this._selectedConfig) {
+                            this._selectedConfig = sConfig[0];
+                            this._selectedCalibration = null;
+                            this._parameters = null;
+                            this._compOutput = null;
+                            this._compInput = null;
+                        }
                     }
-                    this._io = state.explorer.io[this._selectedConfig.uri];
-                    if (this._io && state.explorer.variables) {
-                        for (let i = 0; i < this._io.length; i++) {
-                            if (state.explorer.variables[this._io[i].uri]) {
-                                this._io[i].variables = state.explorer.variables[this._io[i].uri];
-                                this._count += 1;
+
+                    // Set selected Calibration
+                    if (this._selectedConfig && state.explorerUI.selectedCalibration &&
+                        this._selectedConfig.calibrations) {
+                        let sCalib = this._selectedConfig.calibrations.filter( (c:any) => 
+                            c.uri === state.explorerUI!.selectedCalibration);
+                        if (sCalib && sCalib.length > 0 && sCalib[0] != this._selectedCalibration) {
+                            this._selectedCalibration = sCalib[0];
+                        }
+                    }
+                }
+            }
+
+            
+            if (state.explorer) {
+                // Set metadata
+                if (state.explorer.modelMetadata) {
+                    //TODO: maybe save metadata for each: model, version and calibration.
+                    if (this._selectedCalibration && state.explorer.modelMetadata[this._selectedCalibration.uri]) {
+                        this._metadata = state.explorer.modelMetadata[this._selectedCalibration.uri];
+                    } else if (this._selectedConfig && state.explorer.modelMetadata[this._selectedConfig.uri]) {
+                        this._metadata = state.explorer.modelMetadata[this._selectedConfig.uri];
+                    } else if (state.explorer.modelMetadata[this._model.uri]){
+                        this._metadata = state.explorer.modelMetadata[this._model.uri];
+                    }
+                }
+
+                if (this._selectedConfig) {
+                    //Set parameters
+                    if (state.explorer.parameters && state.explorer.parameters[this._selectedConfig.uri] &&
+                        this._parameters != state.explorer.parameters[this._selectedConfig.uri]) {
+                        this._parameters = state.explorer.parameters[this._selectedConfig.uri];
+                    }
+
+                    //Set compatible Inputs
+                    if (state.explorer.compatibleInput &&
+                        state.explorer.compatibleInput[this._selectedConfig.uri] &&
+                        this._compInput != state.explorer.compatibleInput[this._selectedConfig.uri]) {
+                        this._compInput = state.explorer.compatibleInput[this._selectedConfig.uri];
+                    }
+
+                    //Set compatible Outputs
+                    if (state.explorer.compatibleOutput &&
+                        state.explorer.compatibleOutput[this._selectedConfig.uri] &&
+                        this._compOutput != state.explorer.compatibleOutput[this._selectedConfig.uri]) {
+                        this._compOutput = state.explorer.compatibleOutput[this._selectedConfig.uri];
+                    }
+
+                    if (state.explorer.io) {
+                        //Set IO
+                        if (state.explorer.io[this._selectedConfig.uri] &&
+                            this._io != state.explorer.io[this._selectedConfig.uri]) {
+                            this._io = state.explorer.io[this._selectedConfig.uri];
+                            this._io.forEach( (u:any) =>{
+                                store.dispatch(explorerFetchIOVarsAndUnits(u.uri));
+                            })
+                        }
+
+                        //Set Variables
+                        if (this._io && state.explorer.variables) {
+                            for (let i = 0; i < this._io.length; i++) {
+                                if (state.explorer.variables[this._io[i].uri]) {
+                                    this._io[i].variables = state.explorer.variables[this._io[i].uri];
+                                    this._count += 1;//FIXME
+                                }
                             }
                         }
                     }
                 }
-
-                if (state.explorer.parameters) {
-                    if(state.explorer.parameters[this._selectedConfig.uri]) {
-                        this._parameters = state.explorer.parameters[this._selectedConfig.uri];
-                    }
-                }
-
-                if (state.explorer.compatibleInput) {
-                    this._compInput = state.explorer.compatibleInput[this._selectedConfig.uri];
-                }
-
-                if (state.explorer.compatibleOutput) {
-                    this._compOutput = state.explorer.compatibleOutput[this._selectedConfig.uri];
-                }
             }
-
-            if (state.explorer.modelMetadata) {
-                if (this._selectedCalibration && state.explorer.modelMetadata[this._selectedCalibration.uri]) {
-                    this._metadata = state.explorer.modelMetadata[this._selectedCalibration.uri];
-                } else if (this._selectedConfig && state.explorer.modelMetadata[this._selectedConfig.uri]) {
-                    this._metadata = state.explorer.modelMetadata[this._selectedConfig.uri];
-                } else if (state.explorer.modelMetadata[this._model.uri]){
-                    this._metadata = state.explorer.modelMetadata[this._model.uri];
-                }
-            }
-
         }
     }
 }
