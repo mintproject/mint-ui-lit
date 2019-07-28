@@ -12,7 +12,8 @@ type UriCompIO   = Map<string, CompIODetail[]>;
 
 export interface ExplorerState {
     models:             UriModels,
-    io:                 UriIO, 
+    inputs:             UriIO, 
+    outputs:            UriIO, 
     versions:           UriVersion,
     variables:          UriVariable,
     compatibleInput:    UriCompIO;
@@ -23,7 +24,8 @@ export interface ExplorerState {
 
 const INITIAL_STATE: ExplorerState = { 
     models:             {} as UriModels,
-    io:                 {} as UriIO,
+    inputs:             {} as UriIO, 
+    outputs:            {} as UriIO, 
     versions:           {} as UriVersion,
     variables:          {} as UriVariable,
     compatibleInput:    {} as UriCompIO,
@@ -54,11 +56,14 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
                 variables: newVariables
             }
         case EXPLORER_IO:
-            let newIOs = {...state.io};
-            newIOs[action.uri] = action.details;
+            let newInputs = {...state.inputs};
+            newInputs[action.uri] = action.details.filter((i:any)=> i.kind==="Input");
+            let newOutputs = {...state.outputs};
+            newOutputs[action.uri] = action.details.filter((o:any)=> o.kind==="Output");
             return {
                 ...state,
-                io: newIOs
+                inputs: newInputs,
+                outputs: newOutputs
             }
         case EXPLORER_COMPATIBLE_INPUT:
             let newCompInput = {...state.compatibleInput};

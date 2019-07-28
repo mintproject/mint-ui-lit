@@ -7,7 +7,7 @@ import { store, RootState } from '../../../app/store';
 import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
          CompIODetail } from "./api-interfaces";
 import { explorerFetchCompatibleSoftware, explorerFetchParameters, explorerFetchVersions,
-         explorerFetchIO, explorerFetchIOVarsAndUnits, explorerFetchMetadata } from './actions';
+         explorerFetchIOVarsAndUnits, explorerFetchIO, explorerFetchMetadata } from './actions';
 import { explorerSetVersion, explorerSetConfig, explorerSetCalibration } from './ui-actions'
 import { SharedStyles } from '../../../styles/shared-styles';
 
@@ -18,6 +18,7 @@ import "weightless/tab";
 import "weightless/tab-group";
 import "weightless/card";
 import "weightless/icon";
+import "weightless/progress-spinner";
 
 @customElement('model-facet-big')
 export class ModelFacetBig extends connect(store)(PageViewElement) {
@@ -37,7 +38,15 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     private _parameters: any = null;
 
     @property({type: Object})
-    private _io! : IODetail[];
+    private _inputs : IODetail[] | null = null;
+
+    @property({type: Object})
+    private _outputs : IODetail[] | null = null;
+
+    @property({type: Object}) //map IO_URI -> [Variables...]
+    private _variables : any = {};
+
+    private _IOStatus : Set<string> = new Set();
 
     @property({type: Object})
     private _versions!: VersionDetail[];
@@ -58,10 +67,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     private _compOutput : CompIODetail[] | null = null;
 
     @property({type: Object})
-    private _compModels? : FetchedModel[];
-
-    //@property({type: String})
-    //private _selectedCalibration! : string;
+    private _compModels : FetchedModel[] | null = null;
 
     @property({type: String})
     private _tab : string = 'overview';
@@ -400,7 +406,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             </span>
             <span class="select-label">Configuration:</span>
             <select class="select-css" label="Select configuration" @change="${this.changeConfig}">
-                <option value="" selected>Select configuration</option>
+                <option value="" disabled selected>Select configuration</option>
                 ${this._selectedVersion.configs.map( c =>
                     html`<option value="${c.uri}" ?selected=${this._selectedConfig && c.uri===this._selectedConfig.uri}>
                         ${c.uri}
@@ -516,7 +522,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
 
             case 'io':
                 return html`
-                ${(this._io && this._io.length>0) ? html`
+                ${(this._inputs) ? html`
+                <h3> Inputs: </h3>
                 <table class="pure-table pure-table-bordered">
                     <thead>
                         <th>I/O</th>
@@ -525,7 +532,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         <th>Format</th>
                     </thead>
                     <tbody>
-                    ${this._io.map( io => html`
+                    ${this._inputs.map( io => html`
                         <tr>
                             <td>${io.kind}</td>
                             <td>${io.label}</td>
@@ -533,8 +540,28 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             <td>${io.format}</td>
                         </tr>`)}
                     </tbody>
-                </table>
-                ${(this._parameters && this._parameters.length>0)? 
+                </table>` : html``}
+
+                ${(this._outputs) ? html`
+                <h3> Outputs: </h3>
+                <table class="pure-table pure-table-bordered">
+                    <thead>
+                        <th>I/O</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Format</th>
+                    </thead>
+                    <tbody>
+                    ${this._outputs.map( io => html`
+                        <tr>
+                            <td>${io.kind}</td>
+                            <td>${io.label}</td>
+                            <td>${io.desc}</td>
+                            <td>${io.format}</td>
+                        </tr>`)}
+                    </tbody>
+                </table>` : html``}
+                ${(this._parameters)? 
                 html`
                     <h3> Parameters: </h3>
                     <table class="pure-table pure-table-bordered">
@@ -556,52 +583,90 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     </table>
                 `
                 :html``}
-                `: html `${this._io?
-                    html`<br/><h3 style="margin-left:30px">
-                        Sorry! The selected configuration does not have input/output yet.</h3>`
-                    :html`<br/><h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`}`}`;
+                ${(!this._inputs && !this._outputs && !this._parameters)? html`
+                <br/>
+                <h3 style="margin-left:30px">
+                    Sorry! The selected configuration does not have input/output yet.
+                </h3>`
+                :html ``}
+                `;
 
             case 'variables':
                 return html`<div id="hack">${this._count}</div><br/>
-                    ${(this._io && this._io.length>0) ? 
-                    html`${this._io.map((io) => {
-                        let cont = html``;
-                        if (io.variables && io.variables.length>0) 
-                            cont = html`
-                    <wl-expansion name="group">
-                        <span slot="title">${io.label}</span>
-                        <span slot="description">${io.desc}</span>
-                        <table class="pure-table pure-table-bordered">
-                            <thead>
-                                <th>Label</th>
-                                <th>Long Name</th>
-                                <th>Description</th>
-                                <th>Standard Name</th>
-                                <th>Units</th>
-                            </thead>
-                            <tbody>
-                            ${io.variables.map( v => 
-                                html`
-                                <tr>
-                                    <td>${v.label}</td>
-                                    <td>${v.longName}</td>
-                                    <td>${v.desc}</td>
-                                    <td style="word-wrap: break-word;">${v.sn}</td>
-                                    <td style="min-width: 80px;">${v.unit}</td>
-                                </tr>`)}
-                            </tbody>
-                        </table>
-                    </wl-expansion>`
-                        return cont
-                    })}`
-                    : html`${(!this._selectedConfig)? html`
-                    <h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>
-                    `
-                    : html`<h3 style="margin-left:30px">
+                    ${(this._inputs) ? html`<h3>Inputs:</h3>${this._inputs.map(input => html`
+                    <wl-expansion name="groupInput" @click="${()=>{this.expandIO(input.uri)}}">
+                        <span slot="title">${input.label}</span>
+                        <span slot="description">${input.desc}</span>
+                        ${this._variables[input.uri] ? 
+                        html`${this._variables[input.uri].length>0?
+                            html`
+                            <table class="pure-table pure-table-bordered">
+                                <thead>
+                                    <th>Label</th>
+                                    <th>Long Name</th>
+                                    <th>Description</th>
+                                    <th>Standard Name</th>
+                                    <th>Units</th>
+                                </thead>
+                                <tbody>
+                                ${this._variables[input.uri].map((v:any) => 
+                                    html`
+                                    <tr>
+                                        <td>${v.label}</td>
+                                        <td>${v.longName}</td>
+                                        <td>${v.desc}</td>
+                                        <td style="word-wrap: break-word;">${v.sn}</td>
+                                        <td style="min-width: 80px;">${v.unit}</td>
+                                    </tr>`)}
+                                </tbody>
+                            </table>`
+                            : html`
+                            <div class="text-centered"><h4>Sorry! This input does not have variables yet.</h4></div>
+                            `
+                        }`
+                        : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
+                    </wl-expansion>`)}`
+                    : html``}
+
+                    ${(this._outputs) ? html`<h3>Outputs:</h3>${this._outputs.map(output => html`
+                    <wl-expansion name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}">
+                        <span slot="title">${output.label}</span>
+                        <span slot="description">${output.desc}</span>
+                        ${this._variables[output.uri] ? 
+                        html`${this._variables[output.uri].length>0?
+                            html`
+                            <table class="pure-table pure-table-bordered">
+                                <thead>
+                                    <th>Label</th>
+                                    <th>Long Name</th>
+                                    <th>Description</th>
+                                    <th>Standard Name</th>
+                                    <th>Units</th>
+                                </thead>
+                                <tbody>
+                                ${this._variables[output.uri].map((v:any) => 
+                                    html`
+                                    <tr>
+                                        <td>${v.label}</td>
+                                        <td>${v.longName}</td>
+                                        <td>${v.desc}</td>
+                                        <td style="word-wrap: break-word;">${v.sn}</td>
+                                        <td style="min-width: 80px;">${v.unit}</td>
+                                    </tr>`)}
+                                </tbody>
+                            </table>`
+                            : html`
+                            <div class="text-centered"><h4>Sorry! This output does not have variables yet.</h4></div>
+                            `
+                        }`
+                        : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
+                    </wl-expansion>`)}`
+                    : html``}
+                    
+                    ${(!this._inputs && !this._outputs) ? html`<h3 style="margin-left:30px">
                         Sorry! The selected configuration does not have software compatible inputs/outputs yet.
-                    </h3>`}
-                    `}
-                `
+                    </h3>`
+                    : html``}`;
 
             case 'software':
                 return html`${(this._selectedVersion && this._selectedConfig)?
@@ -668,7 +733,14 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         showDialog("dialog", this.shadowRoot!);
     }
 
-    //FIXME change functions should only use explorerSet functions
+    expandIO (uri:string) {
+        if (!this._variables[uri]) {
+            //Dont call this on click! FIXME
+            store.dispatch(explorerFetchIOVarsAndUnits(uri)); 
+            this._IOStatus.add(uri);
+        }
+    }
+
     changeVersion (ev:any) {
         let versionUri : string = ev.path[0].value;
         let id = versionUri.split('/').pop();
@@ -709,7 +781,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         }
                     });
                 });
-                this._compModels = (compModels.length>0) ? compModels : undefined;
+                this._compModels = (compModels.length>0) ? compModels : null;
             }
             // Reset data
             //this._versions = undefined;
@@ -718,18 +790,22 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             this._selectedCalibration = null;
             this._metadata = null;
             this._parameters = null;
+            this._inputs = null;
+            this._outputs = null;
+            this._variables = {};
+            this._IOStatus = new Set();
+            this._compInput  = null;
+            this._compOutput = null;
         }
 
         if (this._model) {
             // Load model versions
             if (state.explorer && state.explorer.versions && state.explorer.versions[this._model.uri] &&
                 this._versions != state.explorer.versions[this._model.uri]) {
-                console.log('SET VERSIONS')
                 this._versions = state.explorer.versions[this._model.uri];
                 //Autoset version, config and calibration when loaded.
                 if (this._versions.length > 0) {
                     let firstVersion = this._versions[0];
-                    //TODO: change this store.dispatch for a method that updates the page.
                     store.dispatch(explorerSetVersion(firstVersion.uri.split('/').pop()));
                     if (firstVersion.configs && firstVersion.configs.length>0) {
                         let firstConfig = firstVersion.configs[0]
@@ -766,6 +842,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             this._parameters = null;
                             this._compOutput = null;
                             this._compInput = null;
+                            this._variables = {};
+                            this._IOStatus = new Set();
 
                             // Load config related data.
                             store.dispatch(explorerFetchIO(this._selectedConfig.uri));
@@ -782,6 +860,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             c.uri === state.explorerUI!.selectedCalibration);
                         if (sCalib && sCalib.length > 0 && sCalib[0] != this._selectedCalibration) {
                             this._selectedCalibration = sCalib[0];
+                            console.log('SET NEW CALIBRATION')
                             //FIXME: think a way to display metadata from calibrations.
                             store.dispatch(explorerFetchMetadata(this._selectedCalibration.uri));
                         }
@@ -806,6 +885,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 if (this._selectedConfig) {
                     //Set parameters
                     if (state.explorer.parameters && state.explorer.parameters[this._selectedConfig.uri] &&
+                        state.explorer.parameters[this._selectedConfig.uri].length > 0 &&
                         this._parameters != state.explorer.parameters[this._selectedConfig.uri]) {
                         this._parameters = state.explorer.parameters[this._selectedConfig.uri];
                     }
@@ -813,6 +893,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     //Set compatible Inputs
                     if (state.explorer.compatibleInput &&
                         state.explorer.compatibleInput[this._selectedConfig.uri] &&
+                        state.explorer.compatibleInput[this._selectedConfig.uri].length > 0 &&
                         this._compInput != state.explorer.compatibleInput[this._selectedConfig.uri]) {
                         this._compInput = state.explorer.compatibleInput[this._selectedConfig.uri];
                     }
@@ -820,30 +901,31 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     //Set compatible Outputs
                     if (state.explorer.compatibleOutput &&
                         state.explorer.compatibleOutput[this._selectedConfig.uri] &&
+                        state.explorer.compatibleOutput[this._selectedConfig.uri].length > 0 &&
                         this._compOutput != state.explorer.compatibleOutput[this._selectedConfig.uri]) {
                         this._compOutput = state.explorer.compatibleOutput[this._selectedConfig.uri];
                     }
 
-                    if (state.explorer.io) {
-                        //Set IO
-                        if (state.explorer.io[this._selectedConfig.uri] &&
-                            this._io != state.explorer.io[this._selectedConfig.uri]) {
-                            this._io = state.explorer.io[this._selectedConfig.uri];
-                            this._io.forEach( (u:any) =>{
-                                store.dispatch(explorerFetchIOVarsAndUnits(u.uri));
-                            })
-                        }
+                    if (state.explorer.inputs && state.explorer.inputs[this._selectedConfig.uri] &&
+                        state.explorer.inputs[this._selectedConfig.uri].length > 0  &&
+                        this._inputs != state.explorer.inputs[this._selectedConfig.uri]) {
+                        this._inputs = state.explorer.inputs[this._selectedConfig.uri];
+                    }
 
-                        //Set Variables
-                        //FIXME: save variables on this to watch for render 
-                        if (this._io && state.explorer.variables) {
-                            for (let i = 0; i < this._io.length; i++) {
-                                if (state.explorer.variables[this._io[i].uri]) {
-                                    this._io[i].variables = state.explorer.variables[this._io[i].uri];
-                                    this._count += 1;//FIXME
-                                }
+                    if (state.explorer.outputs && state.explorer.outputs[this._selectedConfig.uri] &&
+                        state.explorer.outputs[this._selectedConfig.uri].length > 0  &&
+                        this._outputs != state.explorer.outputs[this._selectedConfig.uri]) {
+                        this._outputs = state.explorer.outputs[this._selectedConfig.uri];
+                    }
+
+                    if (state.explorer.variables && this._IOStatus.size > 0) {
+                        this._IOStatus.forEach((uri:string) => {
+                            if (state.explorer!.variables[uri]) {
+                                this._variables[uri] = state.explorer!.variables[uri];
+                                this._IOStatus.delete(uri);
+                                this._count += 1;//FIXME
                             }
-                        }
+                        });
                     }
                 }
             }
