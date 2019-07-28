@@ -592,7 +592,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 `;
 
             case 'variables':
-                return html`<div id="hack">${this._count}</div><br/>
+                return html`<div id="hack">${this._count}</div>
                     ${(this._inputs) ? html`<h3>Inputs:</h3>${this._inputs.map(input => html`
                     <wl-expansion name="groupInput" @click="${()=>{this.expandIO(input.uri)}}">
                         <span slot="title">${input.label}</span>
@@ -663,7 +663,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     </wl-expansion>`)}`
                     : html``}
                     
-                    ${(!this._inputs && !this._outputs) ? html`<h3 style="margin-left:30px">
+                    ${(!this._inputs && !this._outputs) ? html`<br/><h3 style="margin-left:30px">
                         Sorry! The selected configuration does not have software compatible inputs/outputs yet.
                     </h3>`
                     : html``}`;
