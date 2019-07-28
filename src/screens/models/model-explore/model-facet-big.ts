@@ -8,8 +8,7 @@ import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
          CompIODetail } from "./api-interfaces";
 import { explorerFetchCompatibleSoftware, explorerFetchParameters, explorerFetchVersions,
          explorerFetchIO, explorerFetchIOVarsAndUnits, explorerFetchMetadata } from './actions';
-import { explorerSetVersion, explorerSetConfig, explorerSetCalibration,
-         explorerClearCalibration } from './ui-actions'
+import { explorerSetVersion, explorerSetConfig, explorerSetCalibration } from './ui-actions'
 import { SharedStyles } from '../../../styles/shared-styles';
 
 import { showDialog } from "../../../util/ui_functions";
@@ -250,39 +249,37 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     margin-bottom: 10px;
                 }
 
-.tooltip {
-    display: inline-block;
-    position: relative;
-    float: right;
-    margin: 5px 5px 0px 5px;
-}
+                .tooltip {
+                    display: inline-block;
+                    position: relative;
+                    float: right;
+                    margin: 5px 5px 0px 5px;
+                }
 
-.tooltip:hover:after {
-    background: #333;
-    background: rgba(0, 0, 0, .8);
-    border-radius: 5px;
-    bottom: 26px;
-    color: #fff;
-    content: attr(tip);
-    right: 20%;
-    padding: 5px 15px;
-    position: absolute;
-    z-index: 98;
-    width: 220px;
-}
+                .tooltip:hover:after {
+                    background: #333;
+                    background: rgba(0, 0, 0, .8);
+                    border-radius: 5px;
+                    bottom: 26px;
+                    color: #fff;
+                    content: attr(tip);
+                    right: 20%;
+                    padding: 5px 15px;
+                    position: absolute;
+                    z-index: 98;
+                    width: 220px;
+                }
 
-.tooltip:hover:before {
-    border: solid;
-    border-color: #333 transparent;
-    border-width: 6px 6px 0 6px;
-    bottom: 20px;
-    content: "";
-    right: 42%;
-    position: absolute;
-    z-index: 99;
-}
-
-            `
+                .tooltip:hover:before {
+                    border: solid;
+                    border-color: #333 transparent;
+                    border-width: 6px 6px 0 6px;
+                    bottom: 20px;
+                    content: "";
+                    right: 42%;
+                    position: absolute;
+                    z-index: 99;
+                }`
         ];
     }
 
@@ -674,24 +671,13 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     //FIXME change functions should only use explorerSet functions
     changeVersion (ev:any) {
         let versionUri : string = ev.path[0].value;
-        if (this._selectedVersion) {
-            let v = this._model.version![versionUri];
-            this.changeConfig({path: [{value: v.config[0].uri}]})
-        }
         let id = versionUri.split('/').pop();
         store.dispatch(explorerSetVersion(id));
     }
 
     changeConfig (ev:any) {
         let configUri : string = ev.path[0].value;
-        if (configUri) {
-            store.dispatch(explorerFetchIO(configUri));
-            store.dispatch(explorerFetchParameters(configUri));
-            store.dispatch(explorerFetchCompatibleSoftware(configUri));
-            store.dispatch(explorerFetchMetadata(configUri));
-        }
         let id = configUri.split('/').pop();
-        store.dispatch(explorerClearCalibration());
         store.dispatch(explorerSetConfig(id));
     }
 
@@ -699,7 +685,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         let calibUri : string = ev.path[0].value;
         let id = calibUri.split('/').pop();
         store.dispatch(explorerSetCalibration(id));
-        store.dispatch(explorerFetchMetadata(calibUri));
     }
 
     firstUpdated() {
@@ -712,6 +697,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         if (state.explorer && state.explorer.models && state.explorer.models[this.uri] &&
             this._model != state.explorer.models[this.uri]) {
             // Set new model
+            console.log('SET NEW MODEL')
             this._model = state.explorer.models[this.uri];
             if (this._model.categories) {
                 // Set related models (by category)
@@ -738,6 +724,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             // Load model versions
             if (state.explorer && state.explorer.versions && state.explorer.versions[this._model.uri] &&
                 this._versions != state.explorer.versions[this._model.uri]) {
+                console.log('SET VERSIONS')
                 this._versions = state.explorer.versions[this._model.uri];
                 //Autoset version, config and calibration when loaded.
                 if (this._versions.length > 0) {
@@ -761,22 +748,30 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     let sVersion = this._versions.filter( (v:any) => v.uri === state.explorerUI!.selectedVersion);
                     if (sVersion && sVersion.length > 0 && sVersion[0] != this._selectedVersion) {
                         this._selectedVersion = sVersion[0];
+                        console.log('SET NEW VERSION')
                         this._selectedConfig = null;
                         this._selectedCalibration = null;
                     }
                 }
 
-                if (this._selectedVersion) {
+            if (this._selectedVersion) {
                     // Set selected Config
                     if (state.explorerUI.selectedConfig && this._selectedVersion.configs) {
                         let sConfig = this._selectedVersion.configs.filter( (c:any) => 
                             c.uri === state.explorerUI!.selectedConfig);
                         if (sConfig && sConfig.length > 0 && sConfig[0] != this._selectedConfig) {
                             this._selectedConfig = sConfig[0];
+                            console.log('SET NEW CONFIG')
                             this._selectedCalibration = null;
                             this._parameters = null;
                             this._compOutput = null;
                             this._compInput = null;
+
+                            // Load config related data.
+                            store.dispatch(explorerFetchIO(this._selectedConfig.uri));
+                            store.dispatch(explorerFetchParameters(this._selectedConfig.uri));
+                            store.dispatch(explorerFetchCompatibleSoftware(this._selectedConfig.uri));
+                            store.dispatch(explorerFetchMetadata(this._selectedConfig.uri));
                         }
                     }
 
@@ -787,6 +782,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             c.uri === state.explorerUI!.selectedCalibration);
                         if (sCalib && sCalib.length > 0 && sCalib[0] != this._selectedCalibration) {
                             this._selectedCalibration = sCalib[0];
+                            //FIXME: think a way to display metadata from calibrations.
+                            store.dispatch(explorerFetchMetadata(this._selectedCalibration.uri));
                         }
                     }
                 }
@@ -838,6 +835,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         }
 
                         //Set Variables
+                        //FIXME: save variables on this to watch for render 
                         if (this._io && state.explorer.variables) {
                             for (let i = 0; i < this._io.length; i++) {
                                 if (state.explorer.variables[this._io[i].uri]) {
