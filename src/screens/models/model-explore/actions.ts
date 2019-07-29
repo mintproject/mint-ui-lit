@@ -144,7 +144,8 @@ export const explorerFetchCompatibleSoftware: ActionCreator<ExplorerThunkResult>
     console.log('Fetching compatible software for', uri);
     let compRule = {
         description: {newKey: 'desc'},
-        comp_var: {newKey: 'vars', newValue: (old:any) => [old] }
+        comp_var: {newKey: 'vars', newValue: (old:any) => [old] },
+        comp_config: {newKey: 'uri'}
     }
 
     apiFetch({
