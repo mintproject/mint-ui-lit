@@ -1,5 +1,5 @@
 const API_URI = "https://query.mint.isi.edu/api/dgarijo/MINT-ModelCatalogQueries/";
-export const MODEL_PREFIX = "https://w3id.org/okn/i/mint/";
+export const RESOURCE_PREFIX = "https://w3id.org/okn/i/mint/";
 
 export const VER_AND_CONF = "VER_AND_CONF";
 export const MODELS = "MODELS";

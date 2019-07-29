@@ -5,10 +5,10 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from '../../../app/store';
 
 import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
-         CompIODetail } from "./reducers";
-import { explorerSetVersion, explorerSetConfig, explorerSetCalibration,
-         explorerClearCalibration, explorerFetchCompatibleSoftware, explorerFetchParameters,
-         explorerFetchVersions, explorerFetchIO, explorerFetchIOVarsAndUnits, explorerFetchMetadata } from './actions';
+         CompIODetail } from "./api-interfaces";
+import { explorerFetchCompatibleSoftware, explorerFetchParameters, explorerFetchVersions,
+         explorerFetchIOVarsAndUnits, explorerFetchIO, explorerFetchMetadata } from './actions';
+import { explorerSetVersion, explorerSetConfig, explorerSetCalibration } from './ui-actions'
 import { SharedStyles } from '../../../styles/shared-styles';
 
 import { showDialog } from "../../../util/ui_functions";
@@ -18,9 +18,13 @@ import "weightless/tab";
 import "weightless/tab-group";
 import "weightless/card";
 import "weightless/icon";
+import "weightless/progress-spinner";
 
 @customElement('model-facet-big')
 export class ModelFacetBig extends connect(store)(PageViewElement) {
+    @property({type: Object})
+    private _model! : FetchedModel;
+
     @property({type: String})
         uri : string = "";
 
@@ -34,13 +38,18 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     private _parameters: any = null;
 
     @property({type: Object})
-    private _model! : FetchedModel;
+    private _inputs : IODetail[] | null = null;
 
     @property({type: Object})
-    private _io! : IODetail[];
+    private _outputs : IODetail[] | null = null;
+
+    @property({type: Object}) //map IO_URI -> [Variables...]
+    private _variables : any = {};
+
+    private _IOStatus : Set<string> = new Set();
 
     @property({type: Object})
-    private _version!: Map<string, VersionDetail>;
+    private _versions!: VersionDetail[];
 
     @property({type: Object})
     private _selectedVersion : VersionDetail | null = null;
@@ -58,10 +67,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     private _compOutput : CompIODetail[] | null = null;
 
     @property({type: Object})
-    private _compModels? : FetchedModel[];
-
-    //@property({type: String})
-    //private _selectedCalibration! : string;
+    private _compModels : FetchedModel[] | null = null;
 
     @property({type: String})
     private _tab : string = 'overview';
@@ -249,39 +255,37 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     margin-bottom: 10px;
                 }
 
-.tooltip {
-    display: inline-block;
-    position: relative;
-    float: right;
-    margin: 5px 5px 0px 5px;
-}
+                .tooltip {
+                    display: inline-block;
+                    position: relative;
+                    float: right;
+                    margin: 5px 5px 0px 5px;
+                }
 
-.tooltip:hover:after {
-    background: #333;
-    background: rgba(0, 0, 0, .8);
-    border-radius: 5px;
-    bottom: 26px;
-    color: #fff;
-    content: attr(tip);
-    right: 20%;
-    padding: 5px 15px;
-    position: absolute;
-    z-index: 98;
-    width: 220px;
-}
+                .tooltip:hover:after {
+                    background: #333;
+                    background: rgba(0, 0, 0, .8);
+                    border-radius: 5px;
+                    bottom: 26px;
+                    color: #fff;
+                    content: attr(tip);
+                    right: 20%;
+                    padding: 5px 15px;
+                    position: absolute;
+                    z-index: 98;
+                    width: 220px;
+                }
 
-.tooltip:hover:before {
-    border: solid;
-    border-color: #333 transparent;
-    border-width: 6px 6px 0 6px;
-    bottom: 20px;
-    content: "";
-    right: 42%;
-    position: absolute;
-    z-index: 99;
-}
-
-            `
+                .tooltip:hover:before {
+                    border: solid;
+                    border-color: #333 transparent;
+                    border-width: 6px 6px 0 6px;
+                    bottom: 20px;
+                    content: "";
+                    right: 42%;
+                    position: absolute;
+                    z-index: 99;
+                }`
         ];
     }
 
@@ -355,48 +359,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         <br/>
 
                         <br/>
-                        ${this._version ?
-                            html`<!-- FIXME: load selected from state -->
-                            <span tip="Currently selected model version" class="tooltip">
-                                <wl-icon>help_outline</wl-icon>
-                            </span>
-                            <span class="select-label">Version:</span>
-                            <select class="select-css" label="Select version" @change="${this.changeVersion}">
-                                <option value="" disabled selected>Select version</option>
-                                ${Object.keys(this._version).map(uri => 
-                                    html`<option value="${uri}">${uri}</option>`)}
-                            </select>
-                            ${(this._selectedVersion && this._selectedVersion.config)?
-                                html`
-                                <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" class="tooltip">
-                                    <wl-icon>help_outline</wl-icon>
-                                </span>
-                                <span class="select-label">Configuration:</span>
-                                <select class="select-css" label="Select configuration" @change="${this.changeConfig}">
-                                    <option value="" selected>Select configuration</option>
-                                    ${this._selectedVersion.config.map( c =>
-                                        html`<option value="${c.uri}">${c.uri}</option>`
-                                    )}
-                                </select>
-                                ${(this._selectedConfig && this._selectedConfig.calibration) ?
-                                    html`
-                                    <span tip="A model calibration represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region" class="tooltip">
-                                        <wl-icon>help_outline</wl-icon>
-                                    </span>
-                                    <span class="select-label">Calibration:</span>
-                                    <select class="select-css" label="Select calibration" @change="${this.changeCalibration}">
-                                        <option value="" disabled selected>Select calibration</option>
-                                        ${this._selectedConfig.calibration.map( c =>
-                                            html`<option value="${c.uri}">${c.uri}</option>`
-                                        )}
-                                    </select>
-                                    `
-                                    :html``
-                                }
-                                `
-                                :html``
-                            }
-                            `
+                        ${this._versions ?
+                            this._renderSelector()
                             : html``
                         }
                     </td>
@@ -419,6 +383,57 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 ${this.renderTab(this._tab)}
                 <br/>
         `;
+    }
+
+    _renderSelector () {
+        return html`
+        <!-- FIXME: load selected from state -->
+        <span tip="Currently selected model version" class="tooltip">
+            <wl-icon>help_outline</wl-icon>
+        </span>
+        <span class="select-label">Version:</span>
+        <select class="select-css" label="Select version" @change="${this.changeVersion}">
+            <option value="" disabled selected>Select version</option>
+            ${this._versions.map(v => 
+                html`<option value="${v.uri}" ?selected=${this._selectedVersion && v.uri===this._selectedVersion.uri}>
+                    ${v.uri}
+                </option>`)}
+        </select>
+        ${(this._selectedVersion && this._selectedVersion.configs) ?
+            html`
+            <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" class="tooltip">
+                <wl-icon>help_outline</wl-icon>
+            </span>
+            <span class="select-label">Configuration:</span>
+            <select class="select-css" label="Select configuration" @change="${this.changeConfig}">
+                <option value="" disabled selected>Select configuration</option>
+                ${this._selectedVersion.configs.map( c =>
+                    html`<option value="${c.uri}" ?selected=${this._selectedConfig && c.uri===this._selectedConfig.uri}>
+                        ${c.uri}
+                    </option>`
+                )}
+            </select>
+            ${(this._selectedConfig && this._selectedConfig.calibrations) ?
+                html`
+                <span tip="A model calibration represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region" class="tooltip">
+                    <wl-icon>help_outline</wl-icon>
+                </span>
+                <span class="select-label">Calibration:</span>
+                <select class="select-css" label="Select calibration" @change="${this.changeCalibration}">
+                    <option value="" disabled selected>Select calibration</option>
+                    ${this._selectedConfig.calibrations.map( c =>
+                        html`<option value="${c.uri}"
+                        ?selected="${this._selectedCalibration && c.uri===this._selectedCalibration.uri}">
+                            ${c.uri}
+                        </option>`
+                    )}
+                </select>
+                `
+                :html``
+            }
+            `
+            :html``
+        }`
     }
 
     changeTab (tabName: string) {
@@ -507,7 +522,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
 
             case 'io':
                 return html`
-                ${(this._io && this._io.length>0) ? html`
+                ${(this._inputs) ? html`
+                <h3> Inputs: </h3>
                 <table class="pure-table pure-table-bordered">
                     <thead>
                         <th>I/O</th>
@@ -516,7 +532,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         <th>Format</th>
                     </thead>
                     <tbody>
-                    ${this._io.map( io => html`
+                    ${this._inputs.map( io => html`
                         <tr>
                             <td>${io.kind}</td>
                             <td>${io.label}</td>
@@ -524,8 +540,28 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             <td>${io.format}</td>
                         </tr>`)}
                     </tbody>
-                </table>
-                ${(this._parameters && this._parameters.length>0)? 
+                </table>` : html``}
+
+                ${(this._outputs) ? html`
+                <h3> Outputs: </h3>
+                <table class="pure-table pure-table-bordered">
+                    <thead>
+                        <th>I/O</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Format</th>
+                    </thead>
+                    <tbody>
+                    ${this._outputs.map( io => html`
+                        <tr>
+                            <td>${io.kind}</td>
+                            <td>${io.label}</td>
+                            <td>${io.desc}</td>
+                            <td>${io.format}</td>
+                        </tr>`)}
+                    </tbody>
+                </table>` : html``}
+                ${(this._parameters)? 
                 html`
                     <h3> Parameters: </h3>
                     <table class="pure-table pure-table-bordered">
@@ -547,52 +583,90 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     </table>
                 `
                 :html``}
-                `: html `${this._io?
-                    html`<br/><h3 style="margin-left:30px">
-                        Sorry! The selected configuration does not have input/output yet.</h3>`
-                    :html`<br/><h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`}`}`;
+                ${(!this._inputs && !this._outputs && !this._parameters)? html`
+                <br/>
+                <h3 style="margin-left:30px">
+                    Sorry! The selected configuration does not have input/output yet.
+                </h3>`
+                :html ``}
+                `;
 
             case 'variables':
-                return html`<div id="hack">${this._count}</div><br/>
-                    ${(this._io && this._io.length>0) ? 
-                    html`${this._io.map((io) => {
-                        let cont = html``;
-                        if (io.variables && io.variables.length>0) 
-                            cont = html`
-                    <wl-expansion name="group">
-                        <span slot="title">${io.label}</span>
-                        <span slot="description">${io.desc}</span>
-                        <table class="pure-table pure-table-bordered">
-                            <thead>
-                                <th>Label</th>
-                                <th>Long Name</th>
-                                <th>Description</th>
-                                <th>Standard Name</th>
-                                <th>Units</th>
-                            </thead>
-                            <tbody>
-                            ${io.variables.map( v => 
-                                html`
-                                <tr>
-                                    <td>${v.label}</td>
-                                    <td>${v.longName}</td>
-                                    <td>${v.desc}</td>
-                                    <td style="word-wrap: break-word;">${v.sn}</td>
-                                    <td style="min-width: 80px;">${v.unit}</td>
-                                </tr>`)}
-                            </tbody>
-                        </table>
-                    </wl-expansion>`
-                        return cont
-                    })}`
-                    : html`${(!this._selectedConfig)? html`
-                    <h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>
-                    `
-                    : html`<h3 style="margin-left:30px">
+                return html`<div id="hack">${this._count}</div>
+                    ${(this._inputs) ? html`<h3>Inputs:</h3>${this._inputs.map(input => html`
+                    <wl-expansion name="groupInput" @click="${()=>{this.expandIO(input.uri)}}">
+                        <span slot="title">${input.label}</span>
+                        <span slot="description">${input.desc}</span>
+                        ${this._variables[input.uri] ? 
+                        html`${this._variables[input.uri].length>0?
+                            html`
+                            <table class="pure-table pure-table-bordered">
+                                <thead>
+                                    <th>Label</th>
+                                    <th>Long Name</th>
+                                    <th>Description</th>
+                                    <th>Standard Name</th>
+                                    <th>Units</th>
+                                </thead>
+                                <tbody>
+                                ${this._variables[input.uri].map((v:any) => 
+                                    html`
+                                    <tr>
+                                        <td>${v.label}</td>
+                                        <td>${v.longName}</td>
+                                        <td>${v.desc}</td>
+                                        <td style="word-wrap: break-word;">${v.sn}</td>
+                                        <td style="min-width: 80px;">${v.unit}</td>
+                                    </tr>`)}
+                                </tbody>
+                            </table>`
+                            : html`
+                            <div class="text-centered"><h4>Sorry! This input does not have variables yet.</h4></div>
+                            `
+                        }`
+                        : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
+                    </wl-expansion>`)}`
+                    : html``}
+
+                    ${(this._outputs) ? html`<h3>Outputs:</h3>${this._outputs.map(output => html`
+                    <wl-expansion name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}">
+                        <span slot="title">${output.label}</span>
+                        <span slot="description">${output.desc}</span>
+                        ${this._variables[output.uri] ? 
+                        html`${this._variables[output.uri].length>0?
+                            html`
+                            <table class="pure-table pure-table-bordered">
+                                <thead>
+                                    <th>Label</th>
+                                    <th>Long Name</th>
+                                    <th>Description</th>
+                                    <th>Standard Name</th>
+                                    <th>Units</th>
+                                </thead>
+                                <tbody>
+                                ${this._variables[output.uri].map((v:any) => 
+                                    html`
+                                    <tr>
+                                        <td>${v.label}</td>
+                                        <td>${v.longName}</td>
+                                        <td>${v.desc}</td>
+                                        <td style="word-wrap: break-word;">${v.sn}</td>
+                                        <td style="min-width: 80px;">${v.unit}</td>
+                                    </tr>`)}
+                                </tbody>
+                            </table>`
+                            : html`
+                            <div class="text-centered"><h4>Sorry! This output does not have variables yet.</h4></div>
+                            `
+                        }`
+                        : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
+                    </wl-expansion>`)}`
+                    : html``}
+                    
+                    ${(!this._inputs && !this._outputs) ? html`<br/><h3 style="margin-left:30px">
                         Sorry! The selected configuration does not have software compatible inputs/outputs yet.
-                    </h3>`}
-                    `}
-                `
+                    </h3>`
+                    : html``}`;
 
             case 'software':
                 return html`${(this._selectedVersion && this._selectedConfig)?
@@ -654,37 +728,35 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     }
 
     openImg (uri:any) {
-        console.log(uri)
         let img = this.shadowRoot!.getElementById("dialog-img");
         img!['src']=uri;
         showDialog("dialog", this.shadowRoot!);
     }
 
+    expandIO (uri:string) {
+        if (!this._variables[uri]) {
+            //Dont call this on click! FIXME
+            store.dispatch(explorerFetchIOVarsAndUnits(uri)); 
+            this._IOStatus.add(uri);
+        }
+    }
+
     changeVersion (ev:any) {
         let versionUri : string = ev.path[0].value;
-        if (this._selectedVersion) {
-            let v = this._model.version![versionUri];
-            this.changeConfig({path: [{value: v.config[0].uri}]})
-        }
-        store.dispatch(explorerSetVersion(versionUri));
+        let id = versionUri.split('/').pop();
+        store.dispatch(explorerSetVersion(id));
     }
 
     changeConfig (ev:any) {
         let configUri : string = ev.path[0].value;
-        if (configUri) {
-            store.dispatch(explorerFetchIO(configUri));
-            store.dispatch(explorerFetchParameters(configUri));
-            store.dispatch(explorerFetchCompatibleSoftware(configUri));
-            store.dispatch(explorerFetchMetadata(configUri));
-        }
-        store.dispatch(explorerClearCalibration());
-        store.dispatch(explorerSetConfig(configUri));
+        let id = configUri.split('/').pop();
+        store.dispatch(explorerSetConfig(id));
     }
 
     changeCalibration (ev:any) {
         let calibUri : string = ev.path[0].value;
-        store.dispatch(explorerSetCalibration(calibUri));
-        store.dispatch(explorerFetchMetadata(calibUri));
+        let id = calibUri.split('/').pop();
+        store.dispatch(explorerSetCalibration(id));
     }
 
     firstUpdated() {
@@ -693,89 +765,170 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     }
 
     stateChanged(state: RootState) {
-        let lastConfig = this._selectedConfig? this._selectedConfig.uri : '';
-        if (state.explorer) {
-            if (state.explorer.models) {
-                if (state.explorer.models[this.uri] && this._model != state.explorer.models[this.uri]) {
-                    //TODO: fix this when models have more than one category:
-                    let myCat = state.explorer.models[this.uri].categories[0];
-                    let compModels : FetchedModel[] = [];
-                    Object.values(state.explorer.models).forEach(model => {
-                        if (model.categories.indexOf(myCat)>=0 && model.uri != this.uri) {
+        // Load model
+        if (state.explorer && state.explorer.models && state.explorer.models[this.uri] &&
+            this._model != state.explorer.models[this.uri]) {
+            // Set new model
+            console.log('SET NEW MODEL')
+            this._model = state.explorer.models[this.uri];
+            if (this._model.categories) {
+                // Set related models (by category)
+                let compModels : FetchedModel[] = [];
+                this._model.categories.forEach( (cat:string) =>  {
+                    Object.values(state.explorer!.models).forEach( (model:FetchedModel) => {
+                        if (model.categories && model.categories.indexOf(cat)>=0 && model.uri != this.uri) {
                             compModels.push(model);
                         }
                     });
-                    this._compModels = (compModels.length>0)? compModels : undefined;
-                }
-                this._model = state.explorer.models[this.uri];
-                console.log(this._compModels)
-            } 
-            if (state.explorer.version && state.explorer.version[this.uri]) {
-                this._version = state.explorer.version[this.uri];
-                if (state.explorer.selectedVersion) {
-                    this._selectedVersion = this._version[state.explorer.selectedVersion];
-                    if (state.explorer.selectedConfig && this._selectedVersion && this._selectedVersion.config) {
-                        this._selectedConfig = this._selectedVersion.config
-                                                   .filter((c:any) => (c.uri === state.explorer!.selectedConfig))[0];
-                        if (state.explorer.selectedCalibration &&
-                            this._selectedConfig && this._selectedConfig.calibration) {
-                            this._selectedCalibration = this._selectedConfig.calibration
-                                    .filter((c:any) => (c.uri===state.explorer!.selectedCalibration))[0];
-                        } else {
-                            this._selectedCalibration = null;
+                });
+                this._compModels = (compModels.length>0) ? compModels : null;
+            }
+            // Reset data
+            //this._versions = undefined;
+            this._selectedVersion = null;
+            this._selectedConfig = null;
+            this._selectedCalibration = null;
+            this._metadata = null;
+            this._parameters = null;
+            this._inputs = null;
+            this._outputs = null;
+            this._variables = {};
+            this._IOStatus = new Set();
+            this._compInput  = null;
+            this._compOutput = null;
+        }
+
+        if (this._model) {
+            // Load model versions
+            if (state.explorer && state.explorer.versions && state.explorer.versions[this._model.uri] &&
+                this._versions != state.explorer.versions[this._model.uri]) {
+                this._versions = state.explorer.versions[this._model.uri];
+                //Autoset version, config and calibration when loaded.
+                if (this._versions.length > 0) {
+                    let firstVersion = this._versions[0];
+                    store.dispatch(explorerSetVersion(firstVersion.uri.split('/').pop()));
+                    if (firstVersion.configs && firstVersion.configs.length>0) {
+                        let firstConfig = firstVersion.configs[0]
+                        store.dispatch(explorerSetConfig(firstConfig.uri.split('/').pop()));
+                        if (firstConfig.calibrations && firstConfig.calibrations.length>0) {
+                            store.dispatch(explorerSetCalibration(
+                                    firstConfig.calibrations[0].uri.split('/').pop()));
                         }
-                    } else {
+                    }
+                }
+            }
+
+            if (state.explorerUI) {
+                // Set selected Version
+                if (state.explorerUI.selectedVersion && this._versions) {
+                    let sVersion = this._versions.filter( (v:any) => v.uri === state.explorerUI!.selectedVersion);
+                    if (sVersion && sVersion.length > 0 && sVersion[0] != this._selectedVersion) {
+                        this._selectedVersion = sVersion[0];
+                        console.log('SET NEW VERSION')
                         this._selectedConfig = null;
+                        this._selectedCalibration = null;
                     }
-                } else {
-                    this._selectedVersion = null;
                 }
-            } 
 
-            if (this._selectedConfig) {
-                if (state.explorer.io) {
-                    if ((!this._io || this._selectedConfig.uri != lastConfig) &&
-                        state.explorer.io[this._selectedConfig.uri]) {
-                        state.explorer.io[this._selectedConfig.uri].forEach((u:any) => {
-                            store.dispatch(explorerFetchIOVarsAndUnits(u.uri));
-                        });
+            if (this._selectedVersion) {
+                    // Set selected Config
+                    if (state.explorerUI.selectedConfig && this._selectedVersion.configs) {
+                        let sConfig = this._selectedVersion.configs.filter( (c:any) => 
+                            c.uri === state.explorerUI!.selectedConfig);
+                        if (sConfig && sConfig.length > 0 && sConfig[0] != this._selectedConfig) {
+                            this._selectedConfig = sConfig[0];
+                            console.log('SET NEW CONFIG')
+                            this._selectedCalibration = null;
+                            this._parameters = null;
+                            this._compOutput = null;
+                            this._compInput = null;
+                            this._variables = {};
+                            this._IOStatus = new Set();
+
+                            // Load config related data.
+                            store.dispatch(explorerFetchIO(this._selectedConfig.uri));
+                            store.dispatch(explorerFetchParameters(this._selectedConfig.uri));
+                            store.dispatch(explorerFetchCompatibleSoftware(this._selectedConfig.uri));
+                            store.dispatch(explorerFetchMetadata(this._selectedConfig.uri));
+                        }
                     }
-                    this._io = state.explorer.io[this._selectedConfig.uri];
-                    if (this._io && state.explorer.variables) {
-                        for (let i = 0; i < this._io.length; i++) {
-                            if (state.explorer.variables[this._io[i].uri]) {
-                                this._io[i].variables = state.explorer.variables[this._io[i].uri];
-                                this._count += 1;
-                            }
+
+                    // Set selected Calibration
+                    if (this._selectedConfig && state.explorerUI.selectedCalibration &&
+                        this._selectedConfig.calibrations) {
+                        let sCalib = this._selectedConfig.calibrations.filter( (c:any) => 
+                            c.uri === state.explorerUI!.selectedCalibration);
+                        if (sCalib && sCalib.length > 0 && sCalib[0] != this._selectedCalibration) {
+                            this._selectedCalibration = sCalib[0];
+                            console.log('SET NEW CALIBRATION')
+                            //FIXME: think a way to display metadata from calibrations.
+                            store.dispatch(explorerFetchMetadata(this._selectedCalibration.uri));
                         }
                     }
                 }
+            }
 
-                if (state.explorer.parameters) {
-                    if(state.explorer.parameters[this._selectedConfig.uri]) {
+            
+            if (state.explorer) {
+                // Set metadata
+                if (state.explorer.modelMetadata) {
+                    //TODO: maybe save metadata for each: model, version and calibration.
+                    if (this._selectedCalibration && state.explorer.modelMetadata[this._selectedCalibration.uri]) {
+                        this._metadata = state.explorer.modelMetadata[this._selectedCalibration.uri];
+                    } else if (this._selectedConfig && state.explorer.modelMetadata[this._selectedConfig.uri]) {
+                        this._metadata = state.explorer.modelMetadata[this._selectedConfig.uri];
+                    } else if (state.explorer.modelMetadata[this._model.uri]){
+                        this._metadata = state.explorer.modelMetadata[this._model.uri];
+                    }
+                }
+
+                if (this._selectedConfig) {
+                    //Set parameters
+                    if (state.explorer.parameters && state.explorer.parameters[this._selectedConfig.uri] &&
+                        state.explorer.parameters[this._selectedConfig.uri].length > 0 &&
+                        this._parameters != state.explorer.parameters[this._selectedConfig.uri]) {
                         this._parameters = state.explorer.parameters[this._selectedConfig.uri];
                     }
-                }
 
-                if (state.explorer.compatibleInput) {
-                    this._compInput = state.explorer.compatibleInput[this._selectedConfig.uri];
-                }
+                    //Set compatible Inputs
+                    if (state.explorer.compatibleInput &&
+                        state.explorer.compatibleInput[this._selectedConfig.uri] &&
+                        state.explorer.compatibleInput[this._selectedConfig.uri].length > 0 &&
+                        this._compInput != state.explorer.compatibleInput[this._selectedConfig.uri]) {
+                        this._compInput = state.explorer.compatibleInput[this._selectedConfig.uri];
+                    }
 
-                if (state.explorer.compatibleOutput) {
-                    this._compOutput = state.explorer.compatibleOutput[this._selectedConfig.uri];
+                    //Set compatible Outputs
+                    if (state.explorer.compatibleOutput &&
+                        state.explorer.compatibleOutput[this._selectedConfig.uri] &&
+                        state.explorer.compatibleOutput[this._selectedConfig.uri].length > 0 &&
+                        this._compOutput != state.explorer.compatibleOutput[this._selectedConfig.uri]) {
+                        this._compOutput = state.explorer.compatibleOutput[this._selectedConfig.uri];
+                    }
+
+                    if (state.explorer.inputs && state.explorer.inputs[this._selectedConfig.uri] &&
+                        state.explorer.inputs[this._selectedConfig.uri].length > 0  &&
+                        this._inputs != state.explorer.inputs[this._selectedConfig.uri]) {
+                        this._inputs = state.explorer.inputs[this._selectedConfig.uri];
+                    }
+
+                    if (state.explorer.outputs && state.explorer.outputs[this._selectedConfig.uri] &&
+                        state.explorer.outputs[this._selectedConfig.uri].length > 0  &&
+                        this._outputs != state.explorer.outputs[this._selectedConfig.uri]) {
+                        this._outputs = state.explorer.outputs[this._selectedConfig.uri];
+                    }
+
+                    if (state.explorer.variables && this._IOStatus.size > 0) {
+                        this._IOStatus.forEach((uri:string) => {
+                            if (state.explorer!.variables[uri]) {
+                                this._variables[uri] = state.explorer!.variables[uri];
+                                this._IOStatus.delete(uri);
+                                this._count += 1;//FIXME
+                            }
+                        });
+                    }
                 }
             }
-
-            if (state.explorer.modelMetadata) {
-                if (this._selectedCalibration && state.explorer.modelMetadata[this._selectedCalibration.uri]) {
-                    this._metadata = state.explorer.modelMetadata[this._selectedCalibration.uri];
-                } else if (this._selectedConfig && state.explorer.modelMetadata[this._selectedConfig.uri]) {
-                    this._metadata = state.explorer.modelMetadata[this._selectedConfig.uri];
-                } else if (state.explorer.modelMetadata[this._model.uri]){
-                    this._metadata = state.explorer.modelMetadata[this._model.uri];
-                }
-            }
-
         }
     }
 }
