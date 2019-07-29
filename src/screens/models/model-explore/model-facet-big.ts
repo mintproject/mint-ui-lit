@@ -396,7 +396,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             <option value="" disabled selected>Select version</option>
             ${this._versions.map(v => 
                 html`<option value="${v.uri}" ?selected=${this._selectedVersion && v.uri===this._selectedVersion.uri}>
-                    ${v.uri}
+                    ${v.label}
                 </option>`)}
         </select>
         ${(this._selectedVersion && this._selectedVersion.configs) ?
@@ -409,7 +409,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 <option value="" disabled selected>Select configuration</option>
                 ${this._selectedVersion.configs.map( c =>
                     html`<option value="${c.uri}" ?selected=${this._selectedConfig && c.uri===this._selectedConfig.uri}>
-                        ${c.uri}
+                        ${c.label}
                     </option>`
                 )}
             </select>
@@ -424,7 +424,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     ${this._selectedConfig.calibrations.map( c =>
                         html`<option value="${c.uri}"
                         ?selected="${this._selectedCalibration && c.uri===this._selectedCalibration.uri}">
-                            ${c.uri}
+                            ${c.label}
                         </option>`
                     )}
                 </select>

@@ -69,28 +69,27 @@ export const explorerFetchVersions: ActionCreator<ExplorerThunkResult> = (uri:st
     }).then(fetched => {
         let data = fetched.reduce((acc:any, obj:any) => {
             if (!acc[obj.version]) {
-                acc[obj.version] = {uri: obj.version};
+                acc[obj.version] = {uri: obj.version, label: obj.versionLabel};
             }
 
             if (obj.config) {
                 if (!acc[obj.version].configs) {
-                    acc[obj.version].configs = [{uri: obj.config}]
+                    acc[obj.version].configs = [{uri: obj.config, label: obj.configLabel}]
                 } else if (acc[obj.version].configs.filter((c:any)=>(c.uri===obj.config)).length === 0) {
-                    acc[obj.version].configs.push({uri: obj.config}) 
+                    acc[obj.version].configs.push({uri: obj.config, label: obj.configLabel}) 
                 }
             }
 
             if (obj.calibration) {
                 let cfg = acc[obj.version].configs.filter((c:any)=>(c.uri===obj.config))[0];
                 if (!cfg.calibrations) {
-                    cfg.calibrations = [{uri: obj.calibration}]
+                    cfg.calibrations = [{uri: obj.calibration, label: obj.calibrationLabel}]
                 } else {
-                    cfg.calibrations.push( {uri: obj.calibration})
+                    cfg.calibrations.push( {uri: obj.calibration, label: obj.calibrationLabel})
                 }
             }
             return acc;
         }, {})
-        //console.log(data, Object.values(data));
         dispatch({
             type: EXPLORER_VERSIONS,
             uri: uri,
