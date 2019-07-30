@@ -4,7 +4,7 @@ import { RootState } from "../../../app/store";
 //import { UriModels, FetchedModel } from "./reducers";
 import { UriModels } from "./reducers";
 
-import { apiFetch, VER_AND_CONF, MODELS, GET_IO, IO_VARS_AND_UNITS,
+import { apiFetch, VER_AND_CONF, MODELS, GET_IO, IO_VARS_AND_UNITS, EXPLANATION_DIAGRAMS,
          COMPATIBLE_INPUT, COMPATIBLE_OUTPUT, MODEL_METADATA, GET_PARAMETERS } from './api-fetch';
 
 export const EXPLORER_FETCH = 'EXPLORER_FETCH';
@@ -15,6 +15,7 @@ export const EXPLORER_COMPATIBLE_INPUT = 'EXPLORER_COMPATIBLE_INPUT'
 export const EXPLORER_COMPATIBLE_OUTPUT = 'EXPLORER_COMPATIBLE_OUTPUT'
 export const EXPLORER_MODEL_METADATA = 'EXPLORER_MODEL_METADATA'
 export const EXPLORER_GET_PARAMETERS = 'EXPLORER_GET_PARAMETERS'
+export const EXPLORER_GET_EXPL_DIAGS = 'EXPLORER_GET_EXPL_DIAGS'
 
 export interface ExplorerActionFetch extends Action<'EXPLORER_FETCH'> { models: UriModels };
 export interface ExplorerActionVersions extends Action<'EXPLORER_VERSIONS'> { uri: string, details: Array<any> };
@@ -24,8 +25,9 @@ export interface ExplorerActionCompInput extends Action<'EXPLORER_COMPATIBLE_INP
 export interface ExplorerActionCompOutput extends Action<'EXPLORER_COMPATIBLE_OUTPUT'> { uri: string, details: Array<any> };
 export interface ExplorerActionModelMetadata extends Action<'EXPLORER_MODEL_METADATA'> { uri: string, details: Array<any> };
 export interface ExplorerActionGetParameters extends Action<'EXPLORER_GET_PARAMETERS'> { uri: string, details: Array<any> };
+export interface ExplorerActionGetExplDiags extends Action<'EXPLORER_GET_EXPL_DIAGS'> { uri: string, details: Array<any> };
 
-export type ExplorerAction = ExplorerActionFetch | ExplorerActionVersions | 
+export type ExplorerAction = ExplorerActionFetch | ExplorerActionVersions | ExplorerActionGetExplDiags |
                              ExplorerActionIO | ExplorerActionVarUnit | ExplorerActionCompInput |
                              ExplorerActionCompOutput | ExplorerActionModelMetadata | ExplorerActionGetParameters;
 
@@ -218,6 +220,23 @@ export const explorerFetchParameters: ActionCreator<ExplorerThunkResult> = (uri:
     }).then(fetched => {
         dispatch({
             type: EXPLORER_GET_PARAMETERS,
+            uri: uri,
+            details: fetched
+        })
+    })
+}
+
+export const explorerFetchExplDiags: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
+    console.log('Fetching exploration diagrams for', uri);
+    apiFetch({
+        type: EXPLANATION_DIAGRAMS,
+        v: uri,
+        rules: {
+            img: {newKey: 'uri'},
+        }
+    }).then(fetched => {
+        dispatch({
+            type: EXPLORER_GET_EXPL_DIAGS,
             uri: uri,
             details: fetched
         })

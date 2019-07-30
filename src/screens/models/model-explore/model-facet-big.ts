@@ -4,10 +4,10 @@ import { PageViewElement } from '../../../components/page-view-element.js';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from '../../../app/store';
 
-import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
-         CompIODetail } from "./api-interfaces";
-import { explorerFetchCompatibleSoftware, explorerFetchParameters, explorerFetchVersions,
-         explorerFetchIOVarsAndUnits, explorerFetchIO, explorerFetchMetadata } from './actions';
+import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail, CompIODetail,
+         ExplanationDiagramDetail } from "./api-interfaces";
+import { explorerFetchCompatibleSoftware, explorerFetchParameters, explorerFetchVersions, explorerFetchIO,
+         explorerFetchIOVarsAndUnits, explorerFetchExplDiags, explorerFetchMetadata } from './actions';
 import { explorerSetVersion, explorerSetConfig, explorerSetCalibration } from './ui-actions'
 import { SharedStyles } from '../../../styles/shared-styles';
 
@@ -69,6 +69,9 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _compModels : FetchedModel[] | null = null;
 
+    @property({type: Object})
+    private _explDiagrams : ExplanationDiagramDetail[] | null = null;
+
     @property({type: String})
     private _tab : string = 'overview';
 
@@ -128,17 +131,27 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                   border: 1px solid black;
                 }
 
-                .galery {
-                    max-width: 25%;
+                #dialog {
+                    --dialog-height-l: auto;
                     text-align: center;
                 }
 
-                .galery img {
+                #dialog img {
+                    max-height: 100%;
+                }
+
+                .gallery {
+                    max-width: 25%;
+                    text-align: center;
+                    display: inline-block;
+                }
+
+                .gallery img {
                     display: inline-block;
                     cursor: pointer;
                 }
 
-                .galery span {
+                .gallery span {
                     margin-top: 3px;
                     font-weight: bold;
                     display: inline-block;
@@ -494,12 +507,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         </ul>`
                         :html`<h4>Select a model configuration to display metadata.</h4>`
                     }
-                    ${this._model.sampleVisualization ?
-                        html`<div class="galery" @click="${()=>{this.openImg(this._model.sampleVisualization)}}">
-                            <img src="${this._model.sampleVisualization}"></img>
-                            <span> Sample visualization </span>
-                        </div> ${this._renderImgDialog()}`
-                        : html``}`
+                    ${this._renderGallery()}`
 
             case 'tech':
                 return html`${(this._model.installInstr || (this._model.os && this._model.os.length>0) ||
@@ -716,20 +724,53 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         }
     }
 
+    _renderGallery () {
+        return html `
+        ${this._renderImgDialog()}
+        ${(this._model.sampleVisualization || (this._explDiagrams && this._explDiagrams.length>0))?
+           html`<h3>Gallery:</h3>`:html``}
+        ${this._model.sampleVisualization ? html`
+            <div class="gallery" @click="${()=>{this.openImg({
+                uri: this._model.sampleVisualization as string,
+                label: 'Sample Visualization'
+            })}}">
+                <img src="${this._model.sampleVisualization}"></img>
+                <span> Sample visualization </span>
+            </div>`
+        : html``}
+        ${(this._explDiagrams && this._explDiagrams.length > 0)? 
+        html`${this._explDiagrams.map((ed:any) => html`
+            <div class="gallery" @click="${()=>{this.openImg({
+                uri: ed.url,
+                label: ed.label,
+                desc: ed.desc
+            })}}">
+                <img src="${ed.url}"></img>
+                <span>${ed.label}</span>
+            </div>
+        `)}`
+        : html``}`
+    }
+
     _renderImgDialog () {
         return html`
-        <wl-dialog id="dialog" fixed backdrop blockscrolling size="large" style="text-align: center;">
-           <h3 slot="header" style="margin-bottom: 4px;">Sample Visualization</h3>
-           <div slot="content" style="height: 800px;">
+        <wl-dialog id="dialog" fixed backdrop blockscrolling size="large">
+           <h3 id="dialog-title" slot="header" style="margin-bottom: 4px;">Sample Visualization</h3>
+           <div slot="content">
              <img id="dialog-img" src=""></img>
            </div>
+           <h4 id="dialog-desc"></h4>
         </wl-dialog>
         `
     }
 
-    openImg (uri:any) {
-        let img = this.shadowRoot!.getElementById("dialog-img");
-        img!['src']=uri;
+    openImg (obj:{uri:string, label?:string, desc?:string}) {
+        let title   = this.shadowRoot!.getElementById("dialog-title");
+        let img     = this.shadowRoot!.getElementById("dialog-img");
+        let descrip = this.shadowRoot!.getElementById("dialog-desc");
+        img!['src']=obj.uri;
+        title!['innerHTML']=obj.label ? obj.label : '';
+        descrip!['innerHTML']=obj.desc ? obj.desc : '';
         showDialog("dialog", this.shadowRoot!);
     }
 
@@ -762,6 +803,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     firstUpdated() {
         store.dispatch(explorerFetchVersions(this.uri));
         store.dispatch(explorerFetchMetadata(this.uri));
+        store.dispatch(explorerFetchExplDiags(this.uri));
     }
 
     stateChanged(state: RootState) {
@@ -816,6 +858,12 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         }
                     }
                 }
+            }
+
+            // Set explanation diagrams
+            if (state.explorer && state.explorer.explDiagrams && state.explorer.explDiagrams[this._model.uri] &&
+                this._explDiagrams != state.explorer.explDiagrams[this._model.uri]) {
+                this._explDiagrams = state.explorer.explDiagrams[this._model.uri];
             }
 
             if (state.explorerUI) {

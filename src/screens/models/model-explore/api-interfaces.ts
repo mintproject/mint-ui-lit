@@ -7,6 +7,7 @@ interface Resource {
 export interface VersionDetail extends Resource { configs?: ConfigDetail[] }
 export interface ConfigDetail extends Resource { calibrations?: CalibrationDetail[] }
 export interface CalibrationDetail extends Resource {}
+export interface ExplanationDiagramDetail extends Resource { url: string, source?: string }
 
 export interface FetchedModel extends Resource {
     doc?:                   string;

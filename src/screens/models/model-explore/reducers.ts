@@ -1,14 +1,17 @@
 import { Reducer } from "redux";
 import { RootAction } from "../../../app/store";
 import { EXPLORER_FETCH, EXPLORER_VERSIONS, EXPLORER_IO, EXPLORER_VAR_UNIT, EXPLORER_COMPATIBLE_INPUT,
-         EXPLORER_COMPATIBLE_OUTPUT, EXPLORER_MODEL_METADATA, EXPLORER_GET_PARAMETERS } from './actions'
-import { FetchedModel, IODetail, VersionDetail, VariableDetail, CompIODetail } from './api-interfaces'
+         EXPLORER_COMPATIBLE_OUTPUT, EXPLORER_MODEL_METADATA, EXPLORER_GET_PARAMETERS, 
+         EXPLORER_GET_EXPL_DIAGS } from './actions'
+import { FetchedModel, IODetail, VersionDetail, VariableDetail, CompIODetail,
+         ExplanationDiagramDetail } from './api-interfaces'
 
 export type UriModels   = Map<string, FetchedModel>;
 type UriIO       = Map<string, IODetail[]>;
 type UriVersion  = Map<string, VersionDetail[]>;
 type UriVariable = Map<string, VariableDetail[]>;
 type UriCompIO   = Map<string, CompIODetail[]>;
+type UriExplDiag = Map<string, ExplanationDiagramDetail[]>;
 
 export interface ExplorerState {
     models:             UriModels,
@@ -20,6 +23,7 @@ export interface ExplorerState {
     compatibleOutput:   UriCompIO;
     modelMetadata:      any;
     parameters:         any;
+    explDiagrams:       UriExplDiag;
 }
 
 const INITIAL_STATE: ExplorerState = { 
@@ -32,6 +36,7 @@ const INITIAL_STATE: ExplorerState = {
     compatibleOutput:   {} as UriCompIO,
     modelMetadata:      {},
     parameters:         {},
+    explDiagrams:       {} as UriExplDiag
 }
 
 const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -93,6 +98,13 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
             return {
                 ...state,
                 parameters: newParams
+            }
+        case EXPLORER_GET_EXPL_DIAGS:
+            let newExplDiags = {...state.explDiagrams};
+            newExplDiags[action.uri] = action.details;
+            return { 
+                ...state,
+                explDiagrams: newExplDiags
             }
         default:
             return state;

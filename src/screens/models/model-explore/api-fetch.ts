@@ -6,7 +6,7 @@ export const MODELS = "MODELS";
 export const GET_IO = "GET_IO"; //change name?
 export const CONFIG_PARAMETERS = "CONFIG_PARAMETERS";
 export const IO_VARS_AND_UNITS = 'IO_VARS_AND_UNITS';
-export const CONFIG_EXPLANATION_DIAGRAMS = 'CONFIG_EXPLANATION_DIAGRAMS';
+export const EXPLANATION_DIAGRAMS = 'EXPLANATION_DIAGRAMS';
 export const COMPATIBLE_INPUT = 'COMPATIBLE_INPUT';
 export const COMPATIBLE_OUTPUT = 'COMPATIBLE_OUTPUT';
 export const MODEL_METADATA = 'MODEL_METADATA';
@@ -30,7 +30,7 @@ interface ApiVersionParams extends ApiModelParam<'VER_AND_CONF'> {};
 interface ApiIOParams extends ApiConfigParam<'GET_IO'> {};
 interface ModelParametersParams extends ApiConfigParam<'CONFIG_PARAMETERS'> {};
 interface IOVarUnitsParams extends ApiIOParam<'IO_VARS_AND_UNITS'> {};
-interface ConfExplDiagParams extends ApiBaseParam<'CONFIG_EXPLANATION_DIAGRAMS'> {v: string};
+interface ConfExplDiagParams extends ApiBaseParam<'EXPLANATION_DIAGRAMS'> {v: string};
 interface CompInputParams extends ApiConfigParam<'COMPATIBLE_INPUT'> {};
 interface CompOutputParams extends ApiConfigParam<'COMPATIBLE_OUTPUT'> {};
 interface ModelMetadataParams extends ApiBaseParam<'MODEL_METADATA'> {modelConfig: string};
@@ -50,7 +50,7 @@ const config = {
     GET_IO: {path: 'getConfigI_OVariables', mandatory: ['config']},
     CONFIG_PARAMETERS: {path: 'getConfigIParameters', mandatory: ['config']},
     IO_VARS_AND_UNITS: {path: 'getI_OVariablesAndUnits', mandatory: ['io']},
-    CONFIG_EXPLANATION_DIAGRAMS: {path: 'getExplanationDiagramsForResource', mandatory: ['v']},
+    EXPLANATION_DIAGRAMS: {path: 'getExplanationDiagramsForResource', mandatory: ['v']},
     COMPATIBLE_OUTPUT: {path: 'getOutputCompatibleConfig', mandatory: ['config']},
     COMPATIBLE_INPUT: {path: 'getInputCompatibleConfig', mandatory: ['config']},
     MODEL_METADATA: {path: 'getModelConfigurationMetadata', mandatory: ['modelConfig']},
