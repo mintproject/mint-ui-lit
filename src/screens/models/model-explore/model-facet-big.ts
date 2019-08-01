@@ -743,7 +743,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             <div class="gallery" @click="${()=>{this.openImg({
                 uri: ed.url,
                 label: ed.label,
-                desc: ed.desc
+                desc: ed.desc,
+                source: ed.source
             })}}">
                 <img src="${ed.url}"></img>
                 <span>${ed.label}</span>
@@ -759,18 +760,21 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
            <div slot="content">
              <img id="dialog-img" src=""></img>
            </div>
-           <h4 id="dialog-desc"></h4>
+           <h4 id="dialog-desc" style="margin-bottom:1em;"></h4>
+           <h5 id="dialog-source" style="margin-top:0;"></h5>
         </wl-dialog>
         `
     }
 
-    openImg (obj:{uri:string, label?:string, desc?:string}) {
+    openImg (obj:{uri:string, label?:string, desc?:string, source?:string}) {
         let title   = this.shadowRoot!.getElementById("dialog-title");
         let img     = this.shadowRoot!.getElementById("dialog-img");
         let descrip = this.shadowRoot!.getElementById("dialog-desc");
+        let source  = this.shadowRoot!.getElementById("dialog-source");
         img!['src']=obj.uri;
         title!['innerHTML']=obj.label ? obj.label : '';
         descrip!['innerHTML']=obj.desc ? obj.desc : '';
+        source!['innerHTML']=obj.source ? 'Source: ' + obj.source : '';
         showDialog("dialog", this.shadowRoot!);
     }
 
