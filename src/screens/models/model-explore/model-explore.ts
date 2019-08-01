@@ -55,6 +55,12 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 padding: 6px 10px;
             }
 
+            .input_filter {
+                padding: 1em 0;
+                width: 75%;
+                margin: 0 auto;
+            }
+
             .input_filter label {
                 margin-right: 6px;
                 padding: 0px;
@@ -71,43 +77,11 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 width: calc(100% - 40px);
             }
 
-            .twocolumns {
-                position: absolute;
-                top: 120px;
-                bottom: 25px;
-                left: 25px;
-                right: 25px;
-                display: flex;
-                border: 1px solid #F0F0F0;
-            }
-
-            .left {
-                width: 30%;
-                padding-top: 0px;
-                border-right: 1px solid #F0F0F0;
-                padding-right: 5px;
-                overflow: auto;
+            .search-results {
+                margin: 0 auto;
+                overflow: scroll;
                 height: 100%;
-            }
-
-            .left_closed {
-                width: 0px;
-                overflow: hidden;
-            }
-
-            .right, .right_full {
-                width: 70%;
-                padding-top: 0px;
-                overflow: auto;
-                height: 100%;
-            }
-
-            .right_full {
-                width: 100%;
-            }
-
-            .small-card {
-                padding: 20px 150px 0px 150px;
+                width: 75%;
             }`
         ];
     }
@@ -133,54 +107,30 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     <wl-title level="3" style="margin: 0px;">Model Catalog</wl-title>
                 </div>
                 `}
-
-                <!--<wl-icon 
-                    class="actionIcon editIcon bigActionIcon">edit</wl-icon>
-                <wl-icon 
-                    class="actionIcon deleteIcon bigActionIcon">delete</wl-icon>-->
             </div>
 
-            <!--<div class="twocolumns">
-                <div class="left">
-                    <div class="clt">
-                        <div class="cltrow_padded scenariorow">
-                            <div class="cltmain">
-                                <wl-title level="4" style="margin: 0px">TITLE</wl-title>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="right">
-                </div>
-            </div>-->
             ${this._selectedUri? 
-                //BIG MODEL
+                //Display only selected model
                 html`
                     <model-facet-big
                         style="width:75%;"
                         uri="${this._selectedUri}">
                     </model-facet-big>
-                `
+                ` // Display search results
                 : html `
-                <div class="small-card">
-                    <!-- FIXME: This is not working due to https://github.com/Polymer/lit-html/issues/399
-                    <wl-textfield 
-                            label="Search models"
-                            type="search">
-                    </wl-textfield>-->
+                <div class="search_input input_full input_filter">
+                    <label for="filter" class='noselect'>
+                        <wl-icon>search</wl-icon>
+                    </label>
+                    <input value="${this.filter}"
+                        placeholder="Search models here..."
+                        type="search"
+                        @keyup="${this.filterUpdate}"
+                        id="filter"
+                        name="filter"></input>
+                </div>
 
-                    <div class="search_input input_full input_filter">
-                        <label for="filter" class='noselect'>
-                            <wl-icon>search</wl-icon>
-                        </label>
-                        <input value="${this.filter}"
-                            placeholder="Search models here..."
-                            type="search"
-                            @keyup="${this.filterUpdate}"
-                            id="filter"
-                            name="filter"></input>
-                    </div>
-
+                <div class="search-results">
                     ${Object.keys(this._models).map( (key:string) => {
                         let text : string = this._models[key].label
                         if (this._models[key].desc) text +=     this._models[key].desc;
@@ -197,6 +147,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                         </model-facet>
                         `
                     })}
+                </div>
             `
             }
         `;
