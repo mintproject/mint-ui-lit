@@ -51,6 +51,10 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                                                   supported by Chrome and Opera */
             }
 
+            wl-button {
+                padding: 6px 10px;
+            }
+
             .input_filter label {
                 margin-right: 6px;
                 padding: 0px;

@@ -308,7 +308,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 <tr>
                     <td class="header" colspan="2">
                         <div class="details-button"></div><!--
-                        --><div class="title text-centered">${this._model.label}</div><!--
+                        --><wl-title level="2" class="text-centered">${this._model.label}</div><!--
                         <div class="links"><span class="icon">1</span> <span class="icon">2</span></div>-->
                     </td>
                 </tr>
@@ -319,7 +319,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         : html`<img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>`}
                     </td>
                     <td class="right content">
-                        ${this._model.desc}
+                        <wl-text>${this._model.desc}</wl-text>
                         <br/>
                         <br/>
                         ${this._model.authors ?
