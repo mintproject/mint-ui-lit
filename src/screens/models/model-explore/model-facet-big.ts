@@ -140,20 +140,23 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 }
 
                 .gallery {
-                    max-width: 25%;
+                    height:200px;
                     text-align: center;
                     display: inline-block;
+                    padding: 2px 2px 2em 2px;
                 }
 
                 .gallery img {
-                    display: inline-block;
+                    max-width: 100%;
+                    max-height: 100%;
+                    display: block;
                     cursor: pointer;
                 }
 
                 .gallery span {
                     margin-top: 3px;
                     font-weight: bold;
-                    display: inline-block;
+                    display: block;
                 }
 
                 .helper {
