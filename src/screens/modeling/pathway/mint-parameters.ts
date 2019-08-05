@@ -73,23 +73,24 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                 let model = this.pathway.models![modelid];
                 // Get any existing ensemble selection for the model
                 let ensembles:DataEnsembleMap = this.pathway.model_ensembles![modelid] || {};
+                let input_parameters = model.input_parameters.filter((input) => !input.value);
 
                 return html`
                 <li>
                     <wl-title level="4">Model: ${model.name}</wl-title>
-                    ${model.input_parameters.length > 0 ? 
+                    ${input_parameters.length > 0 ? 
                         html `
                         <p>
                             Setup the model by specifying values below. You can enter more than one value (comma separated) if you want several runs
                         </p>
-                        <form id="form_${model.id}">
+                        <form id="form_${(model.localname || model.id)}">
                         <table class="pure-table pure-table-striped">
                         <thead>
                             <th><b>Adjustable Variable</b></th>
                             <th>Values</th>
                         </thead>
                         <tbody>
-                        ${model.input_parameters.map((input) => {
+                        ${input_parameters.map((input) => {
                             let bindings:string[] = ensembles[input.id!];
                             if(bindings && bindings.length > 0 && !this._editMode) {
                                 // Already present: Show selections
@@ -184,8 +185,8 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         this._editMode = mode;
     }
 
-    _getParameterSelections(modelid: string, inputid: string) {
-        let form = this.shadowRoot!.querySelector<HTMLFormElement>("#form_"+modelid)!;
+    _getParameterSelections(model: Model, inputid: string) {
+        let form = this.shadowRoot!.querySelector<HTMLFormElement>("#form_"+(model.localname || model.id))!;
         let inputstr = (form.elements[inputid] as HTMLInputElement).value;
         return inputstr.split(",");
     }
@@ -193,7 +194,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
     _setPathwayParametersAndRun() {
         Object.keys(this.pathway.models!).map((modelid) => {
             let model = this.pathway.models![modelid];
-            model.input_parameters.map((input) => {
+            model.input_parameters.filter((input) => !input.value).map((input) => {
                 let inputid = input.id!;
                 // If not in edit mode, then check if we already have bindings for this
                 // -If so, return
@@ -202,7 +203,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                     return;
                 }
 
-                let new_parameters = this._getParameterSelections(modelid, inputid);
+                let new_parameters = this._getParameterSelections(model, inputid);
         
                 // Now add the rest of the new datasets
                 let model_ensembles: ModelEnsembleMap = this.pathway.model_ensembles || {};

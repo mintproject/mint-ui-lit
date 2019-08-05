@@ -11,6 +11,7 @@ export interface Dataset extends IdNameObject {
     version: string,
     limitations: string,
     source: Source,
+    url?: string,
     categories?: string[]
 };
 
@@ -28,12 +29,19 @@ export interface Source {
 export interface DatasetsState {
     datasets: ModelDatasets
     dataset: DatasetDetail | null
-    workflow_type?: String
+    workflow_type?: String,
 }
-export type ModelInputDatasets = Map<string, Dataset[]>
+export interface DatasetsWithStatus {
+    loading: boolean,
+    datasets: Dataset[]
+}
+export type ModelInputDatasets = Map<string, DatasetsWithStatus[]>
 export type ModelDatasets = Map<string, ModelInputDatasets>
 
-const INITIAL_STATE: DatasetsState = { datasets: {} as ModelDatasets, dataset: {} as DatasetDetail };
+const INITIAL_STATE: DatasetsState = { 
+    datasets: {} as ModelDatasets, 
+    dataset: {} as DatasetDetail,
+};
 
 const datasets: Reducer<DatasetsState, RootAction> = (state = INITIAL_STATE, action) => {
 
@@ -42,7 +50,10 @@ const datasets: Reducer<DatasetsState, RootAction> = (state = INITIAL_STATE, act
             // Return datasets
             state.datasets = { ...state.datasets };
             state.datasets[action.modelid] = state.datasets[action.modelid] || {};
-            state.datasets[action.modelid][action.inputid] = action.datasets;
+            state.datasets[action.modelid][action.inputid] = {
+                loading: action.loading,
+                datasets: action.datasets
+            }
             return {
                 ...state
             };

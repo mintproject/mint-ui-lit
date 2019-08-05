@@ -113,6 +113,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
             <ul>
             ${(Object.keys(this.pathway.models) || {}).map((modelid) => {
                 let model = this.pathway.models![modelid];
+                let input_files = model.input_files.filter((input) => !input.value);
                 
                 // Get any existing ensemble selection for the model
                 let ensembles:DataEnsembleMap = this.pathway.model_ensembles![modelid] || {};
@@ -120,12 +121,12 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                 return html`
                 <li>
                     <wl-title level="4">Datasets for ${model.name}</wl-title>
-                    ${model.input_files.length == 0 ? 
+                    ${input_files.length == 0 ? 
                     html `<ul><li>No datasets needed</li></ul>`
                     :
                     html`
                     <ul>
-                    ${model.input_files.map((input) => {
+                    ${input_files.map((input) => {
                         let bindings:string[] = ensembles[input.id!];
 
                         if((bindings && bindings.length > 0) && !this._editMode) {
@@ -147,12 +148,18 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                             `;
                         }
                         else {
-                            let queriedInputDatasets = (this._queriedDatasets[modelid] || {})[input.id!];
+                            let queriedInputDatasetStatuses = (this._queriedDatasets[modelid] || {})[input.id!];
+                            let loading = queriedInputDatasetStatuses.loading;
+                            let queriedInputDatasets = queriedInputDatasetStatuses.datasets;
                             return html `
                             <li>
                                 Select an input dataset for <b>${input.name}</b>. (You can select more than one dataset if you want several runs). 
                                 Datasets matching the driving variable specied (if any) are in <b>bold</b>.
                                 <p />
+                                ${loading ? 
+                                html`<wl-progress-bar></wl-progress-bar>`
+                                :
+                                html`
                                 <table class="pure-table pure-table-striped">
                                     <thead>
                                         <tr>
@@ -170,7 +177,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                             let matched = matchVariables(this.pathway.driving_variables, dataset.variables, false); // Partial match
                                             return html`
                                             <tr>
-                                                <td><input class="${modelid}_${input.id}_checkbox" 
+                                                <td><input class="${this._valid(modelid)}_${this._valid(input.id!)}_checkbox" 
                                                     type="checkbox" data-datasetid="${dataset.id}"
                                                     ?checked="${(bindings || []).indexOf(dataset.id!) >= 0}"></input></td>
                                                 <td class="${matched ? 'matched': ''}">
@@ -190,6 +197,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                         @click="${() => this._compareDatasets(modelid, input.id!)}">Compare Selected Data</wl-button>
                                     <div style="flex-grow: 1">&nbsp;</div>
                                 </div>
+                                `}
                             </li>
                             `;
                         }
@@ -286,19 +294,25 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         }
     }
 
+    _valid(id: string) {
+        return id.replace(/(\/|\.|\:)/g, '_');
+    }
+
     _getDatasetSelections(modelid: string, inputid: string) {
         let selected_datasets: DatasetMap = {};
-        this.shadowRoot!.querySelectorAll("input."+modelid+"_"+inputid+"_checkbox").forEach((cbox) => {
-            let cboxinput = (cbox as HTMLInputElement);
-            let datasetid = cboxinput.dataset["datasetid"];
-            if(cboxinput.checked) {
-                this._queriedDatasets[modelid!][inputid].map((dataset:Dataset) => {
-                    if(dataset.id == datasetid) {
-                        selected_datasets[dataset.id!] = dataset;
-                        return;
+        this.shadowRoot!.querySelectorAll("input."+
+                this._valid(modelid) + "_" + this._valid(inputid) +"_checkbox" )
+                .forEach((cbox) => {
+                    let cboxinput = (cbox as HTMLInputElement);
+                    let datasetid = cboxinput.dataset["datasetid"];
+                    if(cboxinput.checked) {
+                        this._queriedDatasets[modelid!][inputid].datasets.map((dataset:Dataset) => {
+                            if(dataset.id == datasetid) {
+                                selected_datasets[dataset.id!] = dataset;
+                                return;
+                            }
+                        });
                     }
-                });
-            }
         });   
         return selected_datasets;     
     }
@@ -312,7 +326,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     _selectPathwayDatasets() {
         Object.keys(this.pathway.models!).map((modelid) => {
             let model = this.pathway.models![modelid];
-            model.input_files.map((input) => {
+            model.input_files.filter((input) => !input.value).map((input) => {
                 let inputid = input.id!;
                 // If not in edit mode, then check if we already have bindings for this
                 // -If so, return
@@ -405,7 +419,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
             Object.keys(this._models || {}).map((modelid) => {
                 let model = this._models[modelid];
                 this._queriedDatasets[modelid] = {};
-                model.input_files.map((input) => {
+                model.input_files.filter((input) => !input.value).map((input) => {
                     // Only query for model inputs that we haven't already made a selection for
                     // Unless we're in edit more, then get all datasets
                     if(!this.pathway.model_ensembles![modelid] || 
@@ -414,10 +428,13 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                         //console.log("Querying datasets for model: " + modelid+", input: " + input.id);
                         store.dispatch(queryDatasetsByVariables(modelid, input.id, input.variables));
                     } else {
-                        this._queriedDatasets[modelid][input.id!] = [];
+                        this._queriedDatasets[modelid][input.id!] = {
+                            loading: false,
+                            datasets: []
+                        };
                         this.pathway.model_ensembles![modelid][input.id!].map((datasetid) => {
                             let dataset = this.pathway.datasets![datasetid];
-                            this._queriedDatasets[modelid][input.id!].push(dataset);
+                            this._queriedDatasets[modelid][input.id!].datasets.push(dataset);
                         });
                     }
                 });
