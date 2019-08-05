@@ -851,18 +851,11 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             if (state.explorer && state.explorer.versions && state.explorer.versions[this._model.uri] &&
                 this._versions != state.explorer.versions[this._model.uri]) {
                 this._versions = state.explorer.versions[this._model.uri];
+
                 //Autoset version, config and calibration when loaded.
                 if (this._versions.length > 0) {
                     let firstVersion = this._versions[0];
                     store.dispatch(explorerSetVersion(firstVersion.uri.split('/').pop()));
-                    if (firstVersion.configs && firstVersion.configs.length>0) {
-                        let firstConfig = firstVersion.configs[0]
-                        store.dispatch(explorerSetConfig(firstConfig.uri.split('/').pop()));
-                        if (firstConfig.calibrations && firstConfig.calibrations.length>0) {
-                            store.dispatch(explorerSetCalibration(
-                                    firstConfig.calibrations[0].uri.split('/').pop()));
-                        }
-                    }
                 }
             }
 
@@ -881,6 +874,12 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         console.log('SET NEW VERSION')
                         this._selectedConfig = null;
                         this._selectedCalibration = null;
+
+                        //Autoset config
+                        if (this._selectedVersion.configs && this._selectedVersion.configs.length>0) {
+                            let firstConfig = this._selectedVersion.configs[0];
+                            store.dispatch(explorerSetConfig(firstConfig.uri.split('/').pop()));
+                        }
                     }
                 }
 
@@ -904,6 +903,12 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             store.dispatch(explorerFetchParameters(this._selectedConfig.uri));
                             store.dispatch(explorerFetchCompatibleSoftware(this._selectedConfig.uri));
                             store.dispatch(explorerFetchMetadata(this._selectedConfig.uri));
+
+                            // Auto set calibration
+                            if (this._selectedConfig.calibrations && this._selectedConfig.calibrations.length>0) {
+                                let firstCalib = this._selectedConfig.calibrations[0];
+                                store.dispatch(explorerSetCalibration(firstCalib.uri.split('/').pop()));
+                            }
                         }
                     }
 
