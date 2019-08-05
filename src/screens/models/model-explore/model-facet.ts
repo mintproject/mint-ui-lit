@@ -183,7 +183,7 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                   <div class="footer one-line">
                     <span class="keywords"> <b>Keywords:</b> 
                         ${this._model.keywords? 
-                            html`${this._model.keywords}`
+                            html`${this._model.keywords.join(', ')}`
                             : html `No keywords`
                         }
                     </span>

@@ -19,6 +19,7 @@ import './model-facet-big'
 import "weightless/card";
 import "weightless/textfield";
 import "weightless/icon";
+import 'multiselect-combo-box/multiselect-combo-box'
 
 store.addReducers({
     explorer,
@@ -130,11 +131,16 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                         name="filter"></input>
                 </div>
 
+                <div class="input_filter">
+                    <multiselect-combo-box id="search" label="Search" item-value-path="id"
+                    item-label-path="id"></multiselect-combo-box>
+                </div>
+
                 <div class="search-results">
                     ${Object.keys(this._models).map( (key:string) => {
                         let text : string = this._models[key].label
                         if (this._models[key].desc) text +=     this._models[key].desc;
-                        if (this._models[key].keywords) text += this._models[key].keywords;
+                        if (this._models[key].keywords) text += this._models[key].keywords.join();
                         if (this._models[key].categories) text +=    this._models[key].categories.join();
                         let st = ''
                         if (!text.toLowerCase().includes(this.filter)) {
@@ -163,6 +169,26 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         }
     }
 
+    _updateSelector() {
+        let qs = this.shadowRoot!.getElementById('search');
+        if (qs) {
+            let items = new Set();
+            if (this._models) {
+                Object.values(this._models).forEach((model) => {
+                    if (model.categories) {
+                        model.categories.forEach((cat:string) => items.add(cat));
+                    }
+                    if (model.keywords) {
+                        model.keywords.forEach((keyword:string) => items.add(keyword));
+                    }
+                });
+            }
+            if (items.size > 0) {
+                qs!['items'] = Array.from(items).map((x)=>{return {id:x}});
+            }
+        }
+    }
+
     firstUpdated() {
         store.dispatch(explorerFetch());
     }
@@ -171,6 +197,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         if (state.explorer) {
             if (state.explorer.models) {
                 this._models = state.explorer.models;
+                this._updateSelector();
             }
         }
         if (state.explorerUI && state.explorerUI.selectedModel != this._selectedUri) {

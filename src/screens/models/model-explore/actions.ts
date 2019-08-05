@@ -49,7 +49,8 @@ export const explorerFetch: ActionCreator<ExplorerThunkResult> = () => (dispatch
                 }
             },
             'os': {newValue: (old:any)=>old.split('; ')},
-            'pl': {newValue: (old:any)=>old.split(';')}
+            'pl': {newValue: (old:any)=>old.split(';')},
+            'keywords': {newValue: (old:any)=>old.split('; ')}
         }
     }).then( (fetched) => {
         let data : UriModels = fetched.reduce((acc:UriModels, obj:any) => {

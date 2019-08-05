@@ -12,7 +12,7 @@ export interface ExplanationDiagramDetail extends Resource { url: string, source
 export interface FetchedModel extends Resource {
     doc?:                   string;
     logo?:                  string;
-    keywords?:              string; //FIXME can by an array if slit()
+    keywords?:              string[];
     assumptions?:           string;
     ver?:                   string[];
     categories?:            string[];
