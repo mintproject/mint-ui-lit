@@ -65,7 +65,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
 
     <div class="cltrow scenariorow">
         <div class="cltmain">
-            <wl-title level="3" style="margin: 0px">Model Scenarios</wl-title>
+            <wl-title level="3" style="margin: 0px">Use Models</wl-title>
         </div>
         <wl-icon @click="${this._addScenarioDialog}" 
         class="actionIcon bigActionIcon" id="addScenarioIcon">note_add</wl-icon>

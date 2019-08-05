@@ -86,7 +86,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                                             return html`
                                             Datasets for model : ${model.name}
                                             <ul>
-                                                ${model.input_files.map((io) => {
+                                                ${model.input_files.filter((input) => !input.value).map((io) => {
                                                     let bindings = model_ensemble[io.id!];
                                                     let blist = bindings.map((binding) => {
                                                         let ds = this.pathway.datasets![binding];
@@ -112,7 +112,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                                             return html`
                                             Adjustment Variables for model : ${model.name}
                                             <ul>
-                                                ${model.input_parameters.map((io) => {
+                                                ${model.input_parameters.filter((input) => !input.value).map((io) => {
                                                     let bindings = model_ensemble[io.id!];
                                                     let blist = bindings.join(", ");
                                                     return html`
@@ -134,13 +134,13 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                                                 return html`
                                                 <li>Model: ${model.name}
                                                     <ul>
-                                                    ${model.input_files.map((input) => {
+                                                    ${model.input_files.filter((input) => !input.value).map((input) => {
                                                         let binding = ensemble.bindings[input.id!];
                                                         return html`
                                                         <li>${input.name} = ${binding}</li>
                                                         `;
                                                     })}
-                                                    ${model.input_parameters.map((input) => {
+                                                    ${model.input_parameters.filter((input) => !input.value).map((input) => {
                                                         let binding = ensemble.bindings[input.id!];
                                                         return html`
                                                         <li>${input.name} = ${binding}</li>
@@ -167,13 +167,13 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                                                 return html`
                                                 <li>Model: ${model.name}
                                                     <ul>
-                                                    ${model.input_files.map((input) => {
+                                                    ${model.input_files.filter((input) => !input.value).map((input) => {
                                                         let binding = ensemble.bindings[input.id!];
                                                         return html`
                                                         <li>${input.name} = ${binding}</li>
                                                         `;
                                                     })}
-                                                    ${model.input_parameters.map((input) => {
+                                                    ${model.input_parameters.filter((input) => !input.value).map((input) => {
                                                         let binding = ensemble.bindings[input.id!];
                                                         return html`
                                                         <li>${input.name} = ${binding}</li>

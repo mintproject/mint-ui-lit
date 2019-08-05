@@ -2,11 +2,13 @@ import { IdNameObject } from "../../app/reducers";
 import { Reducer } from "redux";
 import { RootAction } from "../../app/store";
 import { MODELS_DETAIL, MODELS_VARIABLES_QUERY, MODELS_LIST } from "./actions";
+import { Dataset } from "../datasets/reducers";
 
 
 export interface Model extends IdNameObject {
+    localname?: string,
     calibrated_region: string,
-    description: string,
+    description?: string,
     category: string,
     input_files: ModelIO[],
     input_parameters: ModelParameter[],
@@ -24,15 +26,16 @@ export interface Model extends IdNameObject {
 };
 
 export interface ModelIO extends IdNameObject {
-    type: string,
-    variables: string[]
+    type?: string,
+    variables: string[],
+    value?: Dataset,
 }
 
 export interface ModelParameter extends IdNameObject {
     type: string,
-    min: string,
-    max: string,
-    default: string
+    min?: string,
+    max?: string,
+    value?: string
 }
 
 export interface ModelDetail extends Model {
@@ -43,13 +46,15 @@ export interface ModelDetail extends Model {
 
 export interface ModelsState {
     models: VariableModels,
-    model: ModelDetail | null
+    model: ModelDetail | null,
+    loading: boolean
 }
 
 export type VariableModels = Map<string, Model[]> // Map of response variable to models
 
 const INITIAL_STATE: ModelsState = { 
     models: {} as VariableModels, 
+    loading: false,
     model: null
 };
 
@@ -62,6 +67,7 @@ const models: Reducer<ModelsState, RootAction> = (state = INITIAL_STATE, action)
             // Return models list
             state.models = { ...state.models };
             state.models[action.variables.join(",")] = action.models;
+            state.loading = action.loading;
             return {
                 ...state
             };

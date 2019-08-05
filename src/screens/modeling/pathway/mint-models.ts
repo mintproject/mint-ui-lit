@@ -55,7 +55,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             name: "Adjustable variables",
             fn: (model:Model) => {
                 return (model.input_parameters.length > 0) ? 
-                    model.input_parameters.map((ip) => { return ip.name; }).join(", ")
+                    model.input_parameters.filter((ip) => !ip.value).map((ip) => ip.name).join(", ")
                     :
                     "None";
             }
@@ -182,6 +182,10 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                 </p>
                 <ul>
                     <li>
+                    ${this._dispatched ? 
+                        html`<wl-progress-bar></wl-progress-bar>`
+                    :
+                        html`
                         <table class="pure-table pure-table-striped">
                             <thead>
                                 <tr>
@@ -220,6 +224,8 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                             ${this._editMode ? html `<wl-button @click="${()=>{this._editMode=false}}" flat inverted>CANCEL</wl-button>`: html``}
                             <wl-button type="button" class="submit" @click="${this._selectPathwayModels}">Select &amp; Continue</wl-button>
                         </div>
+                        `
+                    }
 
                     </li>
                 </ul>
@@ -407,7 +413,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             this._setEditMode(false);
         }
 
-        if(state.models && this._dispatched) {
+        if(state.models && !state.models.loading && this._dispatched) {
             this._queriedModels = state.models!.models;
             this._dispatched = false;
         }

@@ -166,7 +166,7 @@ export const getPathwayDatasetsStatus = (pathway:Pathway) => {
     if(pathway.models) {
         for(let modelid in pathway.models) {
             let model = pathway.models![modelid];
-            number_of_inputs_needed += model.input_files.length;
+            number_of_inputs_needed += model.input_files.filter((input) => !input.value).length;
         }
     }
 
@@ -186,8 +186,9 @@ export const getPathwayParametersStatus = (pathway:Pathway) => {
         if(!model_ensemble) {
             return TASK_PARTLY_DONE;
         }
-        for(let i=0; i<model.input_parameters.length; i++) {
-            let input = model.input_parameters[i];
+        let input_parameters = model.input_parameters.filter((input) => !input.value);
+        for(let i=0; i<input_parameters.length; i++) {
+            let input = input_parameters[i];
             if(!model_ensemble[input.id!] || !model_ensemble[input.id!].length) {
                 return TASK_PARTLY_DONE;
             }

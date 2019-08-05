@@ -124,15 +124,16 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                     </td>
                                     <td>
                                     ${Object.keys(ensemble.bindings).map((inputid) => {
+                                        let inputname = inputid.substr(inputid.lastIndexOf('/') + 1);
                                         let dsid = ensemble.bindings[inputid];
                                         let dataset = this.pathway.datasets![dsid];
                                         if(dataset) {
                                             return html`
-                                                ${inputid} = <a href="${BASE_HREF}datasets/browse/${dataset.id}">${dataset.name}</a> <br />
+                                                ${inputname} = <a href="${BASE_HREF}datasets/browse/${dataset.id}">${dataset.name}</a> <br />
                                             `;
                                         }
                                         else {
-                                            return html `${inputid} = ${dsid} <br />`
+                                            return html `${inputname} = ${dsid} <br />`
                                         }
                                     })}
                                     </td>
