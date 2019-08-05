@@ -7,3 +7,5 @@ services:
     image: "mint-project/ui:latest"
     volumes:
       - ./build:/home/node/app
+    ports:
+      - 12122:80        
