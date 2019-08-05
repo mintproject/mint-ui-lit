@@ -4,8 +4,6 @@ services:
   ui:
     build: 
       context: .
-      args:
-        - NODE_OPTIONS="--max-old-space-size=4096"
     image: "mint-project/ui:latest"
     volumes:
       - ./build:/home/node/app
