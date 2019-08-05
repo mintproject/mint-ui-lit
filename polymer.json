@@ -1,6 +1,6 @@
 {
   "entrypoint": "index.html",
-  "shell": "src/components/mint-app.js",
+  "shell": "src/app/mint-app.js",
   "sources": [
     "images/**/*"
   ],
