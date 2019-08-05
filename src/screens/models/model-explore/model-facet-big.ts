@@ -125,7 +125,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 }
 
                 img {
-                  background: #3A6F9A;
                   vertical-align: middle;
                   max-width: calc(100% - 8px);
                   border: 1px solid black;
