@@ -34,7 +34,16 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         _count : number = 0;
 
     @property({type: Object})
-    private _metadata: any = null;
+    private _modelMetadata: any = null;
+
+    @property({type: Object})
+    private _versionMetadata: any = null;
+
+    @property({type: Object})
+    private _configMetadata: any = null;
+
+    @property({type: Object})
+    private _calibrationMetadata: any = null;
 
     @property({type: Object})
     private _parameters: any = null;
@@ -457,6 +466,52 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         this._tab = tabName;
     }
 
+    _renderMetadata (title: string, metadata:any) {
+        console.log(metadata)
+        let meta = metadata[0];
+        return html`
+        <details style="margin-top: 10px;">
+            <summary><b>${title}</b></summary>
+            <ul>
+                ${meta.label? html`<li><b>Name:</b> ${meta.label}</li>`:html``}
+                ${meta.regionName? html`<li><b>Region name:</b>
+                    ${meta.regionName}</li>`:html``}
+                ${meta.desc? html`<li><b>Description:</b>
+                    ${meta.desc}</li>`:html``}
+                ${meta.input_variables? 
+                    html`<li class="clickable" @click="${()=>{this.changeTab('io')}}">
+                    <b>Input Variables:</b>
+                    ${meta.input_variables.length}</li>`:html``}
+                ${meta.output_variables? 
+                    html`<li class="clickable" @click="${()=>{this.changeTab('io')}}">
+                    <b>Output Variables:</b>
+                    ${meta.output_variables.length}</li>`:html``}
+                ${meta.parameters? 
+                    html`<li class="clickable" @click="${()=>{this.changeTab('io')}}">
+                    <b>Parameters:</b>
+                    ${meta.parameters.length}</li>`:html``}
+                ${meta.processes? html`<li><b>Processes:</b>
+                    ${meta.processes.join(', ')}</li>`:html``}
+                ${meta.gridType? html`<li><b>Grid Type:</b>
+                    ${meta.gridType}</li>`:html``}
+                ${meta.gridDim? html`<li><b>Grid Dimentions:</b>
+                    ${meta.gridDim}</li>`:html``}
+                ${meta.gridSpatial? html`<li><b>Spatial resolution:</b>
+                    ${meta.gridSpatial}</li>`:html``}
+                ${meta.paramAssignMethod? html`<li><b>Parameter assignment method:</b>
+                    ${meta.paramAssignMethod}</li>`:html``}
+                ${meta.adjustableVariables? html`<li><b>Adjustable variables:</b>
+                    ${meta.adjustableVariables.join(', ')}</li>`:html``}
+                ${meta.targetVariables? html`<li><b>Target variables:</b>
+                    ${meta.targetVariables.join(', ')}</li>`:html``}
+                ${meta.compLoc? html`<li><b>Download:</b>
+                    <a target="_blank" href="${meta.compLoc}">
+                        ${meta.compLoc.split('/')[
+                        meta.compLoc.split('/').length-1]}</a></li>`:html``}
+            </ul>
+        </details>`;
+    }
+
     renderTab (tabName : string) {
         switch (tabName) {
             case 'overview':
@@ -466,51 +521,11 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         ${this._model.purpose? html`<li><b>Purpose:</b> ${this._model.purpose}</li>`:html``}
                         ${this._model.assumptions? html`<li><b>Assumptions:</b> ${this._model.assumptions}</li>`:html``}
                     </ul>
-                    ${this._metadata? 
-                        html`<h4> ${this._selectedCalibration? html`Calibration` : html`${this._selectedConfig?
-                            html`Configuration`:html`Model`
-                            }`}
-                        Metadata:
-                        </h4>
-                        <ul>
-                            ${this._metadata[0].label? html`<li><b>Name:</b> ${this._metadata[0].label}</li>`:html``}
-                            ${this._metadata[0].regionName? html`<li><b>Region name:</b>
-                                ${this._metadata[0].regionName}</li>`:html``}
-                            ${this._metadata[0].desc? html`<li><b>Description:</b>
-                                ${this._metadata[0].desc}</li>`:html``}
-                            ${this._metadata[0].input_variables? 
-                                html`<li class="clickable" @click="${()=>{this.changeTab('io')}}">
-                                <b>Input Variables:</b>
-                                ${this._metadata[0].input_variables.length}</li>`:html``}
-                            ${this._metadata[0].output_variables? 
-                                html`<li class="clickable" @click="${()=>{this.changeTab('io')}}">
-                                <b>Output Variables:</b>
-                                ${this._metadata[0].output_variables.length}</li>`:html``}
-                            ${this._metadata[0].parameters? 
-                                html`<li class="clickable" @click="${()=>{this.changeTab('io')}}">
-                                <b>Parameters:</b>
-                                ${this._metadata[0].parameters.length}</li>`:html``}
-                            ${this._metadata[0].processes? html`<li><b>Processes:</b>
-                                ${this._metadata[0].processes.join(', ')}</li>`:html``}
-                            ${this._metadata[0].gridType? html`<li><b>Grid Type:</b>
-                                ${this._metadata[0].gridType}</li>`:html``}
-                            ${this._metadata[0].gridDim? html`<li><b>Grid Dimentions:</b>
-                                ${this._metadata[0].gridDim}</li>`:html``}
-                            ${this._metadata[0].gridSpatial? html`<li><b>Spatial resolution:</b>
-                                ${this._metadata[0].gridSpatial}</li>`:html``}
-                            ${this._metadata[0].paramAssignMethod? html`<li><b>Parameter assignment method:</b>
-                                ${this._metadata[0].paramAssignMethod}</li>`:html``}
-                            ${this._metadata[0].adjustableVariables? html`<li><b>Adjustable variables:</b>
-                                ${this._metadata[0].adjustableVariables.join(', ')}</li>`:html``}
-                            ${this._metadata[0].targetVariables? html`<li><b>Target variables:</b>
-                                ${this._metadata[0].targetVariables.join(', ')}</li>`:html``}
-                            ${this._metadata[0].compLoc? html`<li><b>Download:</b>
-                                <a target="_blank" href="${this._metadata[0].compLoc}">
-                                    ${this._metadata[0].compLoc.split('/')[
-                                    this._metadata[0].compLoc.split('/').length-1]}</a></li>`:html``}
-                        </ul>`
-                        :html`<h4>Select a model configuration to display metadata.</h4>`
-                    }
+
+                    ${this._modelMetadata? html`${this._renderMetadata('Model Metadata', this._modelMetadata)}`:html``}
+                    ${this._versionMetadata? html`${this._renderMetadata('Version Metadata', this._versionMetadata)}`:html``}
+                    ${this._configMetadata? html`${this._renderMetadata('Configuration Metadata', this._configMetadata)}`:html``}
+                    ${this._calibrationMetadata? html`${this._renderMetadata('Calibration Metadata', this._calibrationMetadata)}`:html``}
                     ${this._renderGallery()}`
 
             case 'tech':
@@ -845,7 +860,10 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             this._selectedVersion = null;
             this._selectedConfig = null;
             this._selectedCalibration = null;
-            this._metadata = null;
+            this._modelMetadata = null;
+            this._versionMetadata = null;
+            this._configMetadata = null;
+            this._calibrationMetadata = null;
             this._parameters = null;
             this._inputs = null;
             this._outputs = null;
@@ -918,6 +936,10 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             this._IOStatus = new Set();
                             this._inputs = null;
                             this._outputs = null;
+                            this._modelMetadata = null;
+                            this._versionMetadata = null;
+                            this._configMetadata = null;
+                            this._calibrationMetadata = null;
 
                             // Load config related data.
                             store.dispatch(explorerFetchIO(this._selectedConfig.uri));
@@ -947,7 +969,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         if (sCalib && sCalib.length > 0 && sCalib[0] != this._selectedCalibration) {
                             this._selectedCalibration = sCalib[0];
                             console.log('SET NEW CALIBRATION')
-                            //FIXME: think a way to display metadata from calibrations.
                             store.dispatch(explorerFetchMetadata(this._selectedCalibration.uri));
                         }
                     }
@@ -958,14 +979,18 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             if (state.explorer) {
                 // Set metadata
                 if (state.explorer.modelMetadata) {
-                    //TODO: maybe save metadata for each: model, version and calibration.
-                    if (this._selectedCalibration && state.explorer.modelMetadata[this._selectedCalibration.uri]) {
-                        this._metadata = state.explorer.modelMetadata[this._selectedCalibration.uri];
-                    } else if (this._selectedConfig && state.explorer.modelMetadata[this._selectedConfig.uri]) {
-                        this._metadata = state.explorer.modelMetadata[this._selectedConfig.uri];
-                    } else if (state.explorer.modelMetadata[this._model.uri]){
-                        this._metadata = state.explorer.modelMetadata[this._model.uri];
+                    if (this._model && state.explorer.modelMetadata[this._model.uri]){
+                        this._modelMetadata = state.explorer.modelMetadata[this._model.uri];
                     }
+                    if (this._selectedVersion && state.explorer.modelMetadata[this._selectedVersion.uri]){
+                        this._versionMetadata = state.explorer.modelMetadata[this._model.uri];
+                    }
+                    if (this._selectedConfig && state.explorer.modelMetadata[this._selectedConfig.uri]) {
+                        this._configMetadata = state.explorer.modelMetadata[this._selectedConfig.uri];
+                    }
+                    if (this._selectedCalibration && state.explorer.modelMetadata[this._selectedCalibration.uri]) {
+                        this._calibrationMetadata = state.explorer.modelMetadata[this._selectedCalibration.uri];
+                    } 
                 }
 
                 if (this._selectedConfig) {
