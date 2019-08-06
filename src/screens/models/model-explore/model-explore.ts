@@ -131,10 +131,10 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                         name="filter"></input>
                 </div>
 
-                <div class="input_filter">
+                <!--div class="input_filter">
                     <multiselect-combo-box id="search" label="Search" item-value-path="id"
                     item-label-path="id"></multiselect-combo-box>
-                </div>
+                </div-->
 
                 <div class="search-results">
                     ${Object.keys(this._models).map( (key:string) => {
