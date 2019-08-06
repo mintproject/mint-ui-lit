@@ -19,7 +19,7 @@ import './model-facet-big'
 import "weightless/card";
 import "weightless/textfield";
 import "weightless/icon";
-import 'multiselect-combo-box/multiselect-combo-box'
+//import 'multiselect-combo-box/multiselect-combo-box'
 
 store.addReducers({
     explorer,
@@ -149,7 +149,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                         return html`
                         <model-facet 
                             uri="${key}"
-                            style .= "${st}">
+                            style="${st}">
                         </model-facet>
                         `
                     })}
