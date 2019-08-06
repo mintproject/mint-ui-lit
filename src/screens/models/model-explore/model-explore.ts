@@ -149,7 +149,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                         return html`
                         <model-facet 
                             uri="${key}"
-                            style .= "${st}">
+                            style="${st}">
                         </model-facet>
                         `
                     })}
