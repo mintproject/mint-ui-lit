@@ -24,6 +24,12 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
           h1, h2, h3 {
               margin: 4px;
           }
+
+          iframe {
+              width:100%;
+              border: 0px solid black;
+              height: 70vh;
+          }
           `
         ]
     }
@@ -41,6 +47,14 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
             color: #999;
         }
         </style>
+
+        ${this.pathway.id === "eBzD5YQiwpW0nbjdthoM"?
+        html`<iframe src="https://viz.mint.isi.edu/bokeh/econ_viz_live"></iframe>`
+        : html``}
+
+        ${this.pathway.id === "PcFcTdadrAaU3xAJI17D"?
+        html`<iframe src="https://viz.mint.isi.edu/bokeh/cycles_viz"></iframe>`
+        : html``}
 
         Visualization is still under development. For now, here is a report of the current analysis.
         <h1>${this.scenario.name}</h1>

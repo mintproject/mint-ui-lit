@@ -7,7 +7,7 @@ import { html, property, customElement, css } from 'lit-element';
 
 import { goToPage } from '../../../app/actions';
 
-import { FetchedModel } from "./reducers";
+import { FetchedModel } from "./api-interfaces";
 
 @customElement('model-facet')
 export class ModelFacet extends connect(store)(PageViewElement) {
@@ -31,8 +31,7 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                 }
 
                 table {
-                    margin-top: 10px;
-                    margin-bottom: 5px;
+                    margin-bottom: 1em;
                     table-layout: fixed;
                     border: 1px solid black;
                     width: 100%;
@@ -155,8 +154,7 @@ export class ModelFacet extends connect(store)(PageViewElement) {
               <tr>
                 <td class="left"> 
                   <div class="text-centered one-line">
-                    ${this._model.ver? html`${this._model.ver.length}`: html`0`} vers,
-                    2 configs
+                    ${this._model.ver? html`${this._model.ver.length}`: html`0`} versions
                   </div>
                   <div>
                     <span class="helper"></span>${this._model.logo ? 
@@ -185,7 +183,7 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                   <div class="footer one-line">
                     <span class="keywords"> <b>Keywords:</b> 
                         ${this._model.keywords? 
-                            html`${this._model.keywords}`
+                            html`${this._model.keywords.join(', ')}`
                             : html `No keywords`
                         }
                     </span>
