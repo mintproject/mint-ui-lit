@@ -136,7 +136,7 @@ const loadPage: ActionCreator<ThunkResult> =
                 if(params.length > 0) {
                     store.dispatch(explorerSetModel(params[0]));
                     if (params.length > 1) {
-                        store.dispatch(explorerSetVersion(params[1]));
+                        store.dispatch(explorerSetVersion(params[1].replace('+','.')));
                         if (params.length > 2) {
                             store.dispatch(explorerSetConfig(params[2]));
                             if (params.length > 3) {

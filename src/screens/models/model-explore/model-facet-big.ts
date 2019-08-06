@@ -8,11 +8,10 @@ import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
          ExplanationDiagramDetail } from "./api-interfaces";
 import { explorerFetchCompatibleSoftware, explorerFetchParameters, explorerFetchVersions, explorerFetchIO,
          explorerFetchIOVarsAndUnits, explorerFetchExplDiags, explorerFetchMetadata } from './actions';
-import { explorerSetVersion, explorerSetConfig, explorerSetCalibration } from './ui-actions'
 import { SharedStyles } from '../../../styles/shared-styles';
 
 import { showDialog } from "../../../util/ui_functions";
-//import { goToPage } from '../../../app/actions';
+import { goToPage } from '../../../app/actions';
 import "weightless/expansion";
 import "weightless/tab";
 import "weightless/tab-group";
@@ -24,6 +23,9 @@ import "weightless/progress-spinner";
 export class ModelFacetBig extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _model! : FetchedModel;
+    _modelId: string = '';
+    _versionId: string = '';
+    _configId: string = '';
 
     @property({type: String})
         uri : string = "";
@@ -791,19 +793,25 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     changeVersion (ev:any) {
         let versionUri : string = ev.path[0].value;
         let id = versionUri.split('/').pop();
-        store.dispatch(explorerSetVersion(id));
+        id = id!.replace('.','+');
+        //store.dispatch(explorerSetVersion(id));
+        goToPage('models/explore/' + this._modelId + '/' + id);
     }
 
     changeConfig (ev:any) {
         let configUri : string = ev.path[0].value;
         let id = configUri.split('/').pop();
-        store.dispatch(explorerSetConfig(id));
+        id = id!.replace('.','+');
+        goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + id);
+        //store.dispatch(explorerSetConfig(id));
     }
 
     changeCalibration (ev:any) {
         let calibUri : string = ev.path[0].value;
         let id = calibUri.split('/').pop();
-        store.dispatch(explorerSetCalibration(id));
+        id = id!.replace('.','+');
+        goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + this._configId + '/' + id);
+        //store.dispatch(explorerSetCalibration(id));
     }
 
     firstUpdated() {
@@ -819,6 +827,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             // Set new model
             console.log('SET NEW MODEL')
             this._model = state.explorer.models[this.uri];
+            this._modelId = this.uri.split('/').pop() as string;
             if (this._model.categories) {
                 // Set related models (by category)
                 let compModels : FetchedModel[] = [];
@@ -852,10 +861,12 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 this._versions != state.explorer.versions[this._model.uri]) {
                 this._versions = state.explorer.versions[this._model.uri];
 
-                //Autoset version, config and calibration when loaded.
-                if (this._versions.length > 0) {
+                //Autoset version
+                if (this._versions.length > 0 && (!state.explorerUI || !state.explorerUI.selectedVersion)) {
                     let firstVersion = this._versions[0];
-                    store.dispatch(explorerSetVersion(firstVersion.uri.split('/').pop()));
+                    let id = firstVersion.uri.split('/').pop();
+                    id = id!.replace('.','+');
+                    goToPage('models/explore/' + this._modelId + '/' + id);
                 }
             }
 
@@ -871,14 +882,21 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     let sVersion = this._versions.filter( (v:any) => v.uri === state.explorerUI!.selectedVersion);
                     if (sVersion && sVersion.length > 0 && sVersion[0] != this._selectedVersion) {
                         this._selectedVersion = sVersion[0];
+                        this._versionId = this._selectedVersion.uri.split('/').pop() as string;
+                        this._versionId = this._versionId.replace('.', '+');
                         console.log('SET NEW VERSION')
                         this._selectedConfig = null;
                         this._selectedCalibration = null;
 
                         //Autoset config
-                        if (this._selectedVersion.configs && this._selectedVersion.configs.length>0) {
+                        if (this._selectedVersion.configs && this._selectedVersion.configs.length>0 &&
+                            (!state.explorerUI.selectedConfig || this._selectedVersion.configs.filter((x:any) =>
+                            x.uri===state.explorerUI!.selectedConfig).length===0)) {
                             let firstConfig = this._selectedVersion.configs[0];
-                            store.dispatch(explorerSetConfig(firstConfig.uri.split('/').pop()));
+                            let id = firstConfig.uri.split('/').pop();
+                            id = id!.replace('.','+');
+                            goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + id);
+                            //store.dispatch(explorerSetConfig(firstConfig.uri.split('/').pop()));
                         }
                     }
                 }
@@ -890,6 +908,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             c.uri === state.explorerUI!.selectedConfig);
                         if (sConfig && sConfig.length > 0 && sConfig[0] != this._selectedConfig) {
                             this._selectedConfig = sConfig[0];
+                            this._configId = this._selectedConfig.uri.split('/').pop() as string;
                             console.log('SET NEW CONFIG')
                             this._selectedCalibration = null;
                             this._parameters = null;
@@ -897,6 +916,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             this._compInput = null;
                             this._variables = {};
                             this._IOStatus = new Set();
+                            this._inputs = null;
+                            this._outputs = null;
 
                             // Load config related data.
                             store.dispatch(explorerFetchIO(this._selectedConfig.uri));
@@ -905,9 +926,15 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             store.dispatch(explorerFetchMetadata(this._selectedConfig.uri));
 
                             // Auto set calibration
-                            if (this._selectedConfig.calibrations && this._selectedConfig.calibrations.length>0) {
+                            if (this._selectedConfig.calibrations && this._selectedConfig.calibrations.length>0 &&
+                                (!state.explorerUI.selectedCalibration ||
+                                this._selectedConfig.calibrations.filter((x:any) => x.uri ===
+                                state.explorerUI!.selectedCalibration).length === 0)) {
                                 let firstCalib = this._selectedConfig.calibrations[0];
-                                store.dispatch(explorerSetCalibration(firstCalib.uri.split('/').pop()));
+                                let id = firstCalib.uri.split('/').pop();
+                                id = id!.replace('.','+');
+                                goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + this._configId + '/' + id);
+                                //store.dispatch(explorerSetCalibration(firstCalib.uri.split('/').pop()));
                             }
                         }
                     }
