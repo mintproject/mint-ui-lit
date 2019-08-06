@@ -31,19 +31,19 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
         return html`
             <wl-title level="3">Explore Data</wl-title>
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
-                <a href="datasets/browse">
+                <a href="${this._regionid}/datasets/browse">
                     <wl-icon>search</wl-icon>
                     <div>Browse Datasets</div>
                 </a>
-                <a href="datasets/register">
+                <a href="${this._regionid}/datasets/register">
                     <wl-icon>library_add</wl-icon>
                     <div>Add Datasets</div>
                 </a>
-                <a href="datasets/quality-workflows">
+                <a href="${this._regionid}/datasets/quality-workflows">
                     <wl-icon>high_quality</wl-icon>
                     <div>Improve Quality</div>
                 </a>
-                <a href="datasets/rs-workflows">
+                <a href="${this._regionid}/datasets/rs-workflows">
                     <wl-icon>satellite</wl-icon>
                     <div>Remote Sensing</div>
                 </a>
@@ -58,5 +58,6 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
 
     stateChanged(state: RootState) {
         super.setSubPage(state);
+        super.setRegionId(state);
     }
 }

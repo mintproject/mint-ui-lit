@@ -52,5 +52,6 @@ export class ModelingHome extends connect(store)(PageViewElement) {
   
   stateChanged(state: RootState) {
     super.setSubPage(state);
+    super.setRegionId(state);
   }
 }

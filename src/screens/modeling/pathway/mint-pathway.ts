@@ -182,7 +182,8 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
 
         // TODO: Change the url to reflect mode change.
         if(this.subgoal) {
-          let page = "modeling/scenario/" + this.scenario.id + "/" + this.subgoal!.id + "/" + this.pathway.id + "/" + mode;
+          let page = this._regionid + "/modeling/scenario/" + 
+                this.scenario.id + "/" + this.subgoal!.id + "/" + this.pathway.id + "/" + mode;
           window.history.pushState({}, mode, BASE_HREF + page);
         }
     }
@@ -232,6 +233,7 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
     }
 
     stateChanged(state: RootState) {
+        super.setRegionId(state);
         if(super.setPathway(state)) {
             // If pathway changed
             console.log("mint-pathway: Pathway changed !");

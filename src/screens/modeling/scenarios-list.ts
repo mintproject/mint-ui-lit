@@ -30,10 +30,6 @@ import "weightless/tooltip";
 import "weightless/popover-card";
 import "weightless/snackbar";
 
-import "../../components/stats-blurb";
-import "../../thirdparty/google-map/src/google-map";
-import "../../components/google-map-json-layer";
-
 import "./mint-scenario";
 
 import { navigate, BASE_HREF, goToPage } from '../../app/actions.js';
@@ -50,6 +46,9 @@ export class ScenariosList extends connect(store)(PageViewElement) {
 
   @property({type: Object})
   private _list!: ScenarioList;
+
+  @property({type: String})
+  private _top_regionid?: string;
 
   static get styles() {
     return [
@@ -74,16 +73,19 @@ export class ScenariosList extends connect(store)(PageViewElement) {
     ${this._list && this._list.scenarioids.map((scenarioid) => {
         let scenario = this._list.scenarios[scenarioid];
         let region = this._regions[scenario.regionid];
-        return html`
-        <wl-list-item class="active"
-            @click="${this._onSelectScenario}"
-            data-index="${scenario.id}">
-            <wl-title level="4" style="margin: 0">${scenario.name}</wl-title>
-            <wl-title level="5">${region.name}</wl-title>
-            <span>Dates: ${scenario.dates.start_date} to ${scenario.dates.end_date}</span>
-            <!--wl-progress-bar mode="determinate" value="${Math.random()}"></wl-progress-bar-->
-        </wl-list-item>
-        `
+        if(region.id == this._top_regionid) {
+          return html`
+          <wl-list-item class="active"
+              @click="${this._onSelectScenario}"
+              data-index="${scenario.id}">
+              <wl-title level="4" style="margin: 0">${scenario.name}</wl-title>
+              <wl-title level="5">${region.name}</wl-title>
+              <span>Dates: ${scenario.dates.start_date} to ${scenario.dates.end_date}</span>
+              <!--wl-progress-bar mode="determinate" value="${Math.random()}"></wl-progress-bar-->
+          </wl-list-item>
+          `
+        }
+        return html``;
     })}
     
     ${this._renderTooltips()}
@@ -257,5 +259,9 @@ export class ScenariosList extends connect(store)(PageViewElement) {
         this._regions = state.regions!.regions;
       }
     }
+    if(state.ui && state.ui.selected_top_regionid) {
+      this._top_regionid = state.ui.selected_top_regionid;
+    }
+    super.setRegionId(state);
   }
 }

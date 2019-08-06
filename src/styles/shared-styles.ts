@@ -30,6 +30,7 @@ export const SharedStyles = css`
     /*--nav-bg: #F0F0F0;*/
     --nav-color: #232323;
     --nav-height: 50px;
+    --nav-title-margin: 0px;
     border-bottom: 1px solid #E6E6E6;
   }   
 
@@ -530,7 +531,7 @@ export const SharedStyles = css`
     width: 100%;
     padding:0px;
     margin:0px;
-    margin-left: 20px;
+    margin-left: 0px;
   }
   .breadcrumbs .icon {
     font-size: 14px;
@@ -580,6 +581,17 @@ export const SharedStyles = css`
   .breadcrumbs li:hover:after {
     border-left-color: #e0e0e0;
   }
+
+  .breadcrumbs li:first-child {
+    padding-left: 8px;
+    -moz-border-radius: 2px 0 0 2px;
+    -webkit-border-radius: 4px;
+    border-radius: 2px 0 0 2px;
+  }
+  .breadcrumbs li:first-child:before {
+    border: none;
+  }
+  
 
   @media (max-width: 768px) {
     .breadcrumbs li {

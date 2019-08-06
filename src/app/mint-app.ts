@@ -18,7 +18,7 @@ import { store, RootState } from './store';
 
 // These are the actions needed by this element.
 import {
-  navigate, BASE_HREF, fetchUser, signOut, signIn, goToPage,
+  navigate, fetchUser, signOut, signIn, goToPage,
 } from './actions';
 
 import '../screens/modeling/modeling-home';
@@ -45,6 +45,9 @@ export class MintApp extends connect(store)(LitElement) {
 
   @property({type: Object})
   private user!: User;
+
+  @property({type: Object})
+  private _selectedRegion? : string;
 
   static get styles() {
     return [
@@ -95,7 +98,7 @@ export class MintApp extends connect(store)(LitElement) {
       }
       
       .breadcrumbs {
-        margin-left: 40px;
+        margin-left: 0px;
       }
 
       .breadcrumbs li.active {
@@ -107,6 +110,18 @@ export class MintApp extends connect(store)(LitElement) {
         border-left-color: transparent;
       }
       .breadcrumbs li.active:after {
+        border-left-color: #629b30;
+      }
+
+      .breadcrumbs li:first {
+        background-color: #629b30;
+        color: white;
+      }
+      .breadcrumbs li:first:before {
+        border-color: #629b30;
+        border-left-color: transparent;
+      }
+      .breadcrumbs li:first:after {
         border-left-color: #629b30;
       }
       `
@@ -122,26 +137,37 @@ export class MintApp extends connect(store)(LitElement) {
       <!-- Navigation Bar -->
       <wl-nav>
         <div slot="title">
-          <a class="title" href="${BASE_HREF}"><img height="40" src="/images/logo.png"></a>
-
+        
           ${this.user ? 
             html `
             <ul class="breadcrumbs">
-              <li @click="${()=>goToPage('datasets')}"
-                  class=${(this._page == 'datasets'? 'active': '')}
-                >Explore Data</li>
-              <li @click="${()=>goToPage('regions')}"
-                  class=${(this._page == 'regions'? 'active': '')}
-                >Define Regions</li>
-              <li @click="${()=>goToPage('models')}"
-                  class=${(this._page == 'models'? 'active': '')}
-                >Prepare Models</li>
-              <li @click="${()=>goToPage('modeling')}"
-                  class=${(this._page == 'modeling') ? 'active': ''}
-                class="active">Use Models</li>
-              <li @click="${()=>goToPage('analysis')}"
-                  class=${(this._page == 'analysis'? 'active': '')}
-                >Prepare Reports</li>
+              <li @click="${()=>goToPage('home')}"
+                  class=${(this._page == 'home' ? 'active' : '')}>
+                  <div style="vertical-align:middle">
+                    ▶
+                    ${this._selectedRegion ?  this._selectedRegion : "Select Country"}
+                  </div>
+              </li>
+              ${!this._selectedRegion ? 
+                "" : 
+                html`
+                <li @click="${()=>goToPage('datasets')}"
+                    class=${(this._page == 'datasets'? 'active': '')}
+                  >Explore Data</li>
+                <li @click="${()=>goToPage('regions')}"
+                    class=${(this._page == 'regions'? 'active': '')}
+                  >Define Regions</li>
+                <li @click="${()=>goToPage('models')}"
+                    class=${(this._page == 'models'? 'active': '')}
+                  >Prepare Models</li>
+                <li @click="${()=>goToPage('modeling')}"
+                    class=${(this._page == 'modeling') ? 'active': ''}
+                  class="active">Use Models</li>
+                <li @click="${()=>goToPage('analysis')}"
+                    class=${(this._page == 'analysis'? 'active': '')}
+                  >Prepare Reports</li>
+                `
+              }
             </ul>
             `
             : html ``
@@ -266,5 +292,9 @@ export class MintApp extends connect(store)(LitElement) {
   stateChanged(state: RootState) {
     this._page = state.app!.page;
     this.user = state.app!.user!;
+    let regionid = state.ui.selected_top_regionid;
+    if(regionid) {
+      this._selectedRegion = regionid.replace(/_/g, ' ').toUpperCase();
+    }
   }
 }
