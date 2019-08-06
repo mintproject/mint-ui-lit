@@ -8,7 +8,7 @@
   "repository": "Polymer/pwa-starter-kit",
   "scripts": {
     "start": "gulp serve",
-    "build": "tsc && polymer build --auto-base-path && gulp prpl-server",
+    "build": "tsc && NODE_OPTIONS='--max-old-space-size=4096' polymer build --auto-base-path && gulp prpl-server",
     "build:static": "tsc && polymer build",
     "serve": "prpl-server --root server/build",
     "serve:static": "polymer serve --port 5000 build/es5-bundled"
