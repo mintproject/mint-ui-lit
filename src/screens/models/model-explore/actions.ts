@@ -5,7 +5,7 @@ import { RootState } from "../../../app/store";
 import { UriModels } from "./reducers";
 
 import { apiFetch, VER_AND_CONF, MODELS, GET_IO, IO_VARS_AND_UNITS, EXPLANATION_DIAGRAMS,
-         COMPATIBLE_INPUT, COMPATIBLE_OUTPUT, MODEL_METADATA, GET_PARAMETERS } from './api-fetch';
+         COMPATIBLE_INPUT, COMPATIBLE_OUTPUT, MODEL_METADATA, GET_PARAMETERS, SEARCH_BY_VAR_NAME } from './api-fetch';
 
 export const EXPLORER_FETCH = 'EXPLORER_FETCH';
 export const EXPLORER_VERSIONS = 'EXPLORER_VERSIONS'
@@ -16,6 +16,7 @@ export const EXPLORER_COMPATIBLE_OUTPUT = 'EXPLORER_COMPATIBLE_OUTPUT'
 export const EXPLORER_MODEL_METADATA = 'EXPLORER_MODEL_METADATA'
 export const EXPLORER_GET_PARAMETERS = 'EXPLORER_GET_PARAMETERS'
 export const EXPLORER_GET_EXPL_DIAGS = 'EXPLORER_GET_EXPL_DIAGS'
+export const EXPLORER_SEARCH_BY_VAR_NAME = 'EXPLORER_SEARCH_BY_VAR_NAME'
 
 export interface ExplorerActionFetch extends Action<'EXPLORER_FETCH'> { models: UriModels };
 export interface ExplorerActionVersions extends Action<'EXPLORER_VERSIONS'> { uri: string, details: Array<any> };
@@ -26,9 +27,10 @@ export interface ExplorerActionCompOutput extends Action<'EXPLORER_COMPATIBLE_OU
 export interface ExplorerActionModelMetadata extends Action<'EXPLORER_MODEL_METADATA'> { uri: string, details: Array<any> };
 export interface ExplorerActionGetParameters extends Action<'EXPLORER_GET_PARAMETERS'> { uri: string, details: Array<any> };
 export interface ExplorerActionGetExplDiags extends Action<'EXPLORER_GET_EXPL_DIAGS'> { uri: string, details: Array<any> };
+export interface ExplorerActionSearchByVarName extends Action<'EXPLORER_SEARCH_BY_VAR_NAME'> { text: string, details: Array<any> };
 
 export type ExplorerAction = ExplorerActionFetch | ExplorerActionVersions | ExplorerActionGetExplDiags |
-                             ExplorerActionIO | ExplorerActionVarUnit | ExplorerActionCompInput |
+                             ExplorerActionIO | ExplorerActionVarUnit | ExplorerActionCompInput | ExplorerActionSearchByVarName |
                              ExplorerActionCompOutput | ExplorerActionModelMetadata | ExplorerActionGetParameters;
 
 // List all Model Configurations
@@ -239,6 +241,20 @@ export const explorerFetchExplDiags: ActionCreator<ExplorerThunkResult> = (uri:s
         dispatch({
             type: EXPLORER_GET_EXPL_DIAGS,
             uri: uri,
+            details: fetched
+        })
+    })
+}
+
+export const explorerSearchByVarName: ActionCreator<ExplorerThunkResult> = (text:string) => (dispatch) => {
+    console.log('Searching models by variable name:', text);
+    apiFetch({
+        type: SEARCH_BY_VAR_NAME,
+        text: text
+    }).then(fetched => {
+        dispatch({
+            type: EXPLORER_SEARCH_BY_VAR_NAME,
+            text: text,
             details: fetched
         })
     })
