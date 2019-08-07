@@ -7,7 +7,7 @@ import { store, RootState } from '../../../app/store';
 
 import { goToPage } from '../../../app/actions';
 
-import { explorerFetch } from './actions';
+import { explorerFetch, explorerSearchByVarName } from './actions';
 import explorer from "./reducers";
 import explorerUI from "./ui-reducers";
 import { UriModels } from './reducers';
@@ -18,7 +18,6 @@ import './model-facet-big'
 import "weightless/textfield";
 import "weightless/icon";
 import "weightless/select";
-//import 'multiselect-combo-box/multiselect-combo-box'
 
 store.addReducers({
     explorer,
@@ -43,6 +42,12 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _activeModels : {[s: string]: boolean} = {};
+
+    @property({type: Number})
+    private _activeCount : number = 0;
+
+    @property({type: Boolean})
+    private _loading : boolean = true;
 
     static get styles() {
         return [SharedStyles,
@@ -161,17 +166,19 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 </wl-textfield><!--
                 --><wl-select label="Search on" @input="${this._onSearchTypeChange}" value="${this._searchType}">
                    <option value="full-text"}">Full text</option>
-                   <option value="categories">Categories and keywords</option>
                    <option value="variables">Variable names</option>
                 </wl-select>
             </div>
 
-            <!--div class="input_filter">
-                <multiselect-combo-box id="search" label="Search" item-value-path="id"
-                item-label-path="id"></multiselect-combo-box>
-            </div-->
-
             <div class="search-results">
+                <div style="padding-bottom: 1em; text-align:center;">
+                ${this._loading? html`
+                    <wl-progress-spinner></wl-progress-spinner>`
+                : html`
+                ${this._activeCount == 0? html`<wl-text style="font-size: 1.4em;">No model fits the search parameters</wl-text>`: html``}
+                `}
+                </div>
+
                 ${Object.keys(this._models).map( (key:string) => html`
                     <model-facet 
                         uri="${key}"
@@ -187,14 +194,18 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         let input : string = ev.path[0].value.toLowerCase();
         switch (this._searchType) {
             case 'full-text':
+                let count = 0;
                 Object.keys(this._models).forEach((key:string) => {
                     this._activeModels[key] = this._fullText[key].includes(input);
+                    if (this._activeModels[key]) count += 1;
                 });
+                this._activeCount = count;
                 break;
-            case 'categories':
             case 'variables':
+                this._searchByVariableName(input);
+                break;
             default:
-                console.log('Nothing to search')
+                console.log('Invalid search type')
         }
 
         this._filter = input;
@@ -202,39 +213,34 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     _clearSearchInput () {
         this._filter = '';
+        let count = 0;
         Object.keys(this._models).forEach((key:string) => {
             this._activeModels[key] = true;
+            count += 1;
         });
+        this._activeCount = count;
     }
 
     _onSearchTypeChange (ev:any) {
         this._searchType = ev.path[0].value;
         this._clearSearchInput();
-
-        /*let wlIn = this.shadowRoot!.getElementById("wl-input");
-        let input = wlIn!.getElementsByTagName('input')[0];
-        input.setAttribute('list', 'datalist')*/
     }
 
-    /*_updateSelector() {
-        let qs = this.shadowRoot!.getElementById('search');
-        if (qs) {
-            let items = new Set();
-            if (this._models) {
-                Object.values(this._models).forEach((model) => {
-                    if (model.categories) {
-                        model.categories.forEach((cat:string) => items.add(cat));
-                    }
-                    if (model.keywords) {
-                        model.keywords.forEach((keyword:string) => items.add(keyword));
-                    }
-                });
-            }
-            if (items.size > 0) {
-                qs!['items'] = Array.from(items).map((x)=>{return {id:x}});
-            }
+    _lastTimeout:any;
+    _searchByVariableName (input:string) {
+        this._loading=true;
+        if (this._lastTimeout) {
+            clearTimeout(this._lastTimeout);
         }
-    }*/
+        if (input) {
+            this._lastTimeout = setTimeout(
+                ()=>{ store.dispatch(explorerSearchByVarName(input)); },
+                1000);
+        } else {
+            this._loading=false;
+            this._clearSearchInput();
+        }
+    }
 
     firstUpdated() {
         store.dispatch(explorerFetch());
@@ -246,7 +252,8 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 this._models = state.explorer.models;
                 this._fullText = {};
                 this._activeModels = {};
-                Object.keys(this._models).forEach( (key:string) => {
+                let count = 0;
+                Object.keys(this._models).forEach((key:string) => {
                     let model = this._models[key];
                     this._fullText[key] = (model.label
                                            + (model.desc? model.desc : '')
@@ -254,8 +261,21 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                                            + (model.type? model.type : '')).toLowerCase();
                     this._filter = '';
                     this._activeModels[key] = true;
+                    count += 1;
                 });
-                //this._updateSelector();
+                this._activeCount = count;
+                this._loading = false;
+            }
+
+            if (state.explorer.search && state.explorer.search[this._filter]) {
+                Object.keys(this._models).forEach((key:string) => {
+                    this._activeModels[key] = false;
+                });
+                state.explorer.search[this._filter].forEach((key:string) =>{
+                    this._activeModels[key] = true;
+                });
+                this._activeCount = state.explorer.search[this._filter].length;
+                this._loading = false;
             }
         }
         if (state.explorerUI && state.explorerUI.selectedModel != this._selectedUri) {
