@@ -11,6 +11,7 @@ export const COMPATIBLE_INPUT = 'COMPATIBLE_INPUT';
 export const COMPATIBLE_OUTPUT = 'COMPATIBLE_OUTPUT';
 export const MODEL_METADATA = 'MODEL_METADATA';
 export const GET_PARAMETERS = 'GET_PARAMETERS';
+export const SEARCH_BY_VAR_NAME = 'SEARCH_BY_VAR_NAME';
 // Added by Varun
 export const GET_CALIBRATIONS_FOR_VARIABLE = 'GET_CALIBRATIONS_FOR_VARIABLE';
 export const CONFIG_IO_VARS_STDNAMES = 'CONFIG_IO_VARS_STDNAMES';
@@ -38,13 +39,14 @@ interface CompInputParams extends ApiConfigParam<'COMPATIBLE_INPUT'> {};
 interface CompOutputParams extends ApiConfigParam<'COMPATIBLE_OUTPUT'> {};
 interface ModelMetadataParams extends ApiBaseParam<'MODEL_METADATA'> {modelConfig: string};
 interface ConfigParametersParams extends ApiConfigParam<'GET_PARAMETERS'> {};
+interface SearchByVariableName extends ApiBaseParam<'SEARCH_BY_VAR_NAME'> {text: string};
 // Added by Varun
 interface CalibrationsForVariable extends ApiBaseParam<'GET_CALIBRATIONS_FOR_VARIABLE'> {std: string};
 interface ConfigIOVarsStandardNames extends ApiConfigParam<'CONFIG_IO_VARS_STDNAMES'> {};
 
 type ApiParams = ApiVersionParams | ApiModelsParams | ApiIOParams | ModelParametersParams | ConfigParametersParams |
                  IOVarUnitsParams | ConfExplDiagParams | CompInputParams | CompOutputParams | ModelMetadataParams |
-                 CalibrationsForVariable | ConfigIOVarsStandardNames;
+                 CalibrationsForVariable | ConfigIOVarsStandardNames | SearchByVariableName;
 
 interface ConfigEntry {
     path: string,
@@ -62,6 +64,7 @@ const config = {
     COMPATIBLE_INPUT: {path: 'getInputCompatibleConfig', mandatory: ['config']},
     MODEL_METADATA: {path: 'getModelConfigurationMetadata', mandatory: ['modelConfig']},
     GET_PARAMETERS: {path: 'getConfigIParameters', mandatory: ['config']},
+    SEARCH_BY_VAR_NAME : {path: 'searchVariablesAndReturnModel', mandatory: ['text']},
     // Added by Varun
     CONFIG_IO_VARS_STDNAMES: {path: 'getConfigI_OVariablesAndStandardNames', mandatory: ['config']},
     GET_CALIBRATIONS_FOR_VARIABLE: {path: 'getCalibratedModelConfigurationsForVariable', mandatory: ['std']}

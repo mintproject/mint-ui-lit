@@ -2,7 +2,7 @@ import { Reducer } from "redux";
 import { RootAction } from "../../../app/store";
 import { EXPLORER_FETCH, EXPLORER_VERSIONS, EXPLORER_IO, EXPLORER_VAR_UNIT, EXPLORER_COMPATIBLE_INPUT,
          EXPLORER_COMPATIBLE_OUTPUT, EXPLORER_MODEL_METADATA, EXPLORER_GET_PARAMETERS, 
-         EXPLORER_GET_EXPL_DIAGS } from './actions'
+         EXPLORER_GET_EXPL_DIAGS, EXPLORER_SEARCH_BY_VAR_NAME } from './actions'
 import { FetchedModel, IODetail, VersionDetail, VariableDetail, CompIODetail,
          ExplanationDiagramDetail } from './api-interfaces'
 
@@ -12,6 +12,7 @@ type UriVersion  = Map<string, VersionDetail[]>;
 type UriVariable = Map<string, VariableDetail[]>;
 type UriCompIO   = Map<string, CompIODetail[]>;
 type UriExplDiag = Map<string, ExplanationDiagramDetail[]>;
+type SearchResult = Map<string, string[]>;
 
 export interface ExplorerState {
     models:             UriModels,
@@ -24,6 +25,7 @@ export interface ExplorerState {
     modelMetadata:      any;
     parameters:         any;
     explDiagrams:       UriExplDiag;
+    search:             SearchResult;
 }
 
 const INITIAL_STATE: ExplorerState = { 
@@ -36,7 +38,8 @@ const INITIAL_STATE: ExplorerState = {
     compatibleOutput:   {} as UriCompIO,
     modelMetadata:      {},
     parameters:         {},
-    explDiagrams:       {} as UriExplDiag
+    explDiagrams:       {} as UriExplDiag,
+    search:             {} as SearchResult
 }
 
 const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -105,6 +108,13 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
             return { 
                 ...state,
                 explDiagrams: newExplDiags
+            }
+        case EXPLORER_SEARCH_BY_VAR_NAME:
+            let newSearchResults = { ...state.search };
+            newSearchResults[action.text] = action.details;
+            return {
+                ...state,
+                search: newSearchResults
             }
         default:
             return state;

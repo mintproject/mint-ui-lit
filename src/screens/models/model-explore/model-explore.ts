@@ -1,14 +1,14 @@
-
 import { html, customElement, property, css } from 'lit-element';
 import { PageViewElement } from '../../../components/page-view-element.js';
 import { connect } from 'pwa-helpers/connect-mixin';
 
+import { ExplorerStyles } from './explorer-styles'
 import { SharedStyles } from '../../../styles/shared-styles';
 import { store, RootState } from '../../../app/store';
 
 import { goToPage } from '../../../app/actions';
 
-import { explorerFetch } from './actions';
+import { explorerFetch, explorerSearchByVarName } from './actions';
 import explorer from "./reducers";
 import explorerUI from "./ui-reducers";
 import { UriModels } from './reducers';
@@ -16,10 +16,9 @@ import { UriModels } from './reducers';
 import './model-facet'
 import './model-facet-big'
 
-import "weightless/card";
 import "weightless/textfield";
 import "weightless/icon";
-//import 'multiselect-combo-box/multiselect-combo-box'
+import "weightless/select";
 
 store.addReducers({
     explorer,
@@ -29,53 +28,34 @@ store.addReducers({
 @customElement('model-explorer')
 export class ModelExplorer extends connect(store)(PageViewElement) {
     @property({type: Object})
-    private _models : UriModels = {} as UriModels;
+    private _models! : UriModels;// = {} as UriModels;
 
     @property({type: String})
     private _selectedUri : string = '';
 
     @property({type: String})
-    private filter : string = '';
+    private _filter : string = '';
 
-    private _lastInput : string = '';
+    @property({type: String})
+    private _searchType : string = 'full-text';
+
+    private _fullText : {[s: string]: string} = {};
+    private _variables : {[s: string]: string} = {};
+
+    @property({type: Object})
+    private _activeModels : {[s: string]: boolean} = {};
+
+    @property({type: Number})
+    private _activeCount : number = 0;
+
+    @property({type: Boolean})
+    private _loading : boolean = true;
 
     static get styles() {
-        return [SharedStyles,
+        return [SharedStyles, ExplorerStyles,
             css `
-            .noselect {
-                  -webkit-touch-callout: none; /* iOS Safari */
-                    -webkit-user-select: none; /* Safari */
-                     -khtml-user-select: none; /* Konqueror HTML */
-                       -moz-user-select: none; /* Firefox */
-                        -ms-user-select: none; /* Internet Explorer/Edge */
-                            user-select: none; /* Non-prefixed version, currently
-                                                  supported by Chrome and Opera */
-            }
-
             wl-button {
                 padding: 6px 10px;
-            }
-
-            .input_filter {
-                padding: 1em 0;
-                width: 75%;
-                margin: 0 auto;
-            }
-
-            .input_filter label {
-                margin-right: 6px;
-                padding: 0px;
-                font-size: 1.2em;
-                line-height: 1.2em;
-                display: inline-block;
-                vertical-align:middle;
-                width: 30px;
-            }
-
-            .input_filter input {
-                display: inline-block;
-                line-height: 1.3em;
-                width: calc(100% - 40px);
             }
 
             .search-results {
@@ -83,7 +63,33 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 overflow: scroll;
                 height: 100%;
                 width: 75%;
-            }`
+            }
+
+            #model-search-form {
+                margin: 0 auto;
+                overflow: scroll;
+                width: 75%;
+                padding-bottom: 1em;
+            }
+
+            #model-search-form > * {
+                display: inline-block;
+                vertical-align: middle;
+            }
+
+            #model-search-form > wl-textfield {
+                width:70%;
+            }
+
+            #model-search-form > wl-select {
+                width: calc(30% - 10px);
+                padding-left: 10px;
+            }
+
+            #model-search-form > wl-textfield > div[slot="after"] > wl-icon {
+                cursor: pointer;
+            }
+            `
         ];
     }
 
@@ -111,81 +117,110 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             </div>
 
             ${this._selectedUri? 
-                //Display only selected model
-                html`
-                    <model-facet-big
-                        style="width:75%;"
-                        uri="${this._selectedUri}">
-                    </model-facet-big>
-                ` // Display search results
-                : html `
-                <div class="search_input input_full input_filter">
-                    <label for="filter" class='noselect'>
-                        <wl-icon>search</wl-icon>
-                    </label>
-                    <input value="${this.filter}"
-                        placeholder="Search models here..."
-                        type="search"
-                        @keyup="${this.filterUpdate}"
-                        id="filter"
-                        name="filter"></input>
-                </div>
-
-                <!--div class="input_filter">
-                    <multiselect-combo-box id="search" label="Search" item-value-path="id"
-                    item-label-path="id"></multiselect-combo-box>
-                </div-->
-
-                <div class="search-results">
-                    ${Object.keys(this._models).map( (key:string) => {
-                        let text : string = this._models[key].label
-                        if (this._models[key].desc) text +=     this._models[key].desc;
-                        if (this._models[key].keywords) text += this._models[key].keywords.join();
-                        if (this._models[key].categories) text +=    this._models[key].categories.join();
-                        let st = ''
-                        if (!text.toLowerCase().includes(this.filter)) {
-                            st = 'display: none;'
-                        }
-                        return html`
-                        <model-facet 
-                            uri="${key}"
-                            style="${st}">
-                        </model-facet>
-                        `
-                    })}
-                </div>
-            `
+                //Display only selected model or the search
+                html`<model-facet-big style="width:75%;" uri="${this._selectedUri}"></model-facet-big>`
+                : this._renderSearch()
             }
         `;
     }
 
-    filterUpdate (ev:any) {
-        let input : string = ev.path[0].value;
-        if (this._lastInput != input) {
-            //TODO: some time between event and filter?
-            //Filter is case insensitive
-            this._lastInput = input.toLowerCase();
-            this.filter = this._lastInput;
-        }
+    _renderSearch () {
+        return html`
+            <div id="model-search-form">
+                <!-- https://github.com/andreasbm/weightless/issues/58 -->
+                <wl-textfield id="search-input" label="Search models" @input=${this._onSearchInput} value="${this._filter}">
+                    <div slot="after"> 
+                        <wl-icon style="${this._filter == '' ? 'display:none;' : ''}" @click="${this._clearSearchInput}">clear</wl-icon> 
+                    </div>
+                    <div slot="before"> <wl-icon>search</wl-icon> </div>
+                </wl-textfield><!--
+                --><wl-select id="search-type-selector" label="Search on" @input="${this._onSearchTypeChange}" value="${this._searchType}">
+                   <option value="full-text"}">Full text</option>
+                   <option value="variables">Variable names</option>
+                </wl-select>
+            </div>
+
+            <div class="search-results">
+                <div style="padding-bottom: 1em; text-align:center;">
+                ${this._loading? html`
+                    <wl-progress-spinner></wl-progress-spinner>`
+                : html`
+                ${this._activeCount == 0? html`<wl-text style="font-size: 1.4em;">No model fits the search parameters</wl-text>`: html``}
+                `}
+                </div>
+
+                ${Object.keys(this._models).map( (key:string) => html`
+                    <model-facet 
+                        uri="${key}"
+                        altDesc="${this._variables[key] ? this._variables[key] : ''}"
+                        altTitle="${this._variables[key] ? 'With Variables ('+this._variables[key].split(';').length+'):' : ''}"
+                        style="${!this._activeModels[key]? 'display: none;' : ''}">
+                    </model-facet>
+                    `
+                )}
+            </div>
+        `
     }
 
-    _updateSelector() {
-        let qs = this.shadowRoot!.getElementById('search');
-        if (qs) {
-            let items = new Set();
-            if (this._models) {
-                Object.values(this._models).forEach((model) => {
-                    if (model.categories) {
-                        model.categories.forEach((cat:string) => items.add(cat));
-                    }
-                    if (model.keywords) {
-                        model.keywords.forEach((keyword:string) => items.add(keyword));
-                    }
+    _onSearchInput () {
+        let inputElement : HTMLElement | null = this.shadowRoot!.getElementById('search-input');
+        if (!inputElement) return;
+
+        let input : string = inputElement['value'].toLowerCase();
+        switch (this._searchType) {
+            case 'full-text':
+                let count = 0;
+                Object.keys(this._models).forEach((key:string) => {
+                    this._activeModels[key] = this._fullText[key].includes(input);
+                    if (this._activeModels[key]) count += 1;
                 });
-            }
-            if (items.size > 0) {
-                qs!['items'] = Array.from(items).map((x)=>{return {id:x}});
-            }
+                this._activeCount = count;
+                break;
+            case 'variables':
+                this._searchByVariableName(input);
+                break;
+            default:
+                console.log('Invalid search type')
+        }
+
+        this._filter = input;
+    }
+
+    _clearSearchInput () {
+        this._filter = '';
+        let count = 0;
+        Object.keys(this._models).forEach((key:string) => {
+            this._activeModels[key] = true;
+            count += 1;
+        });
+        this._activeCount = count;
+    }
+
+    _onSearchTypeChange () {
+        let selectElement : HTMLElement | null = this.shadowRoot!.getElementById('search-type-selector');
+        if (!selectElement) return;
+
+        this._searchType = selectElement['value'].toLowerCase();
+        this._clearSearchInput();
+    }
+
+    _lastTimeout:any;
+    _searchByVariableName (input:string) {
+        this._loading=true;
+        if (this._lastTimeout) {
+            clearTimeout(this._lastTimeout);
+        }
+        if (input) {
+            Object.keys(this._models).forEach((key:string) => {
+                this._activeModels[key] = false;
+            })
+            this._activeCount = 0;
+            this._lastTimeout = setTimeout(
+                ()=>{ store.dispatch(explorerSearchByVarName(input)); },
+                750);
+        } else {
+            this._loading=false;
+            this._clearSearchInput();
         }
     }
 
@@ -195,9 +230,39 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     stateChanged(state: RootState) {
         if (state.explorer) {
-            if (state.explorer.models) {
+            if (state.explorer.models && this._models != state.explorer.models) {
                 this._models = state.explorer.models;
-                this._updateSelector();
+                this._fullText = {};
+                this._activeModels = {};
+                let count = 0;
+                Object.keys(this._models).forEach((key:string) => {
+                    let model = this._models[key];
+                    this._fullText[key] = (model.label
+                                           + (model.desc? model.desc : '')
+                                           + (model.keywords? model.keywords : '') 
+                                           + (model.type? model.type : '')).toLowerCase();
+                    this._filter = '';
+                    this._activeModels[key] = true;
+                    count += 1;
+                });
+                this._activeCount = count;
+                if (count > 0)
+                    this._loading = false;
+            }
+
+            if (state.explorer.search && state.explorer.search[this._filter]) {
+                Object.keys(this._models).forEach((key:string) => {
+                    this._activeModels[key] = false;
+                });
+                let count = 0;
+                this._variables = {};
+                Object.keys(state.explorer.search[this._filter]).forEach((key:string) =>{
+                    this._activeModels[key] = true;
+                    this._variables[key] = state.explorer!.search[this._filter][key].join(';');
+                    count += 1;
+                });
+                this._activeCount = count;
+                this._loading = false;
             }
         }
         if (state.explorerUI && state.explorerUI.selectedModel != this._selectedUri) {
