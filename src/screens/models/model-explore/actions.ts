@@ -52,7 +52,7 @@ export const explorerFetch: ActionCreator<ExplorerThunkResult> = () => (dispatch
             },
             'os': {newValue: (old:any)=>old.split('; ')},
             'pl': {newValue: (old:any)=>old.split(';')},
-            'keywords': {newValue: (old:any)=>old.split('; ')}
+            'keywords': {newValue: (old:any)=>old.split(/ *; */)}
         }
     }).then( (fetched) => {
         let data : UriModels = fetched.reduce((acc:UriModels, obj:any) => {
@@ -148,7 +148,7 @@ export const explorerFetchCompatibleSoftware: ActionCreator<ExplorerThunkResult>
     console.log('Fetching compatible software for', uri);
     let compRule = {
         description: {newKey: 'desc'},
-        comp_var: {newKey: 'vars', newValue: (old:any) => [old] },
+        comp_var: {newKey: 'vars', newValue: (old:any) => old.split(/ *, */) },
         comp_config: {newKey: 'uri'}
     }
 

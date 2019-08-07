@@ -2,6 +2,7 @@ import { html, customElement, property, css } from 'lit-element';
 import { PageViewElement } from '../../../components/page-view-element.js';
 import { connect } from 'pwa-helpers/connect-mixin';
 
+import { ExplorerStyles } from './explorer-styles'
 import { SharedStyles } from '../../../styles/shared-styles';
 import { store, RootState } from '../../../app/store';
 
@@ -51,18 +52,8 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     private _loading : boolean = true;
 
     static get styles() {
-        return [SharedStyles,
+        return [SharedStyles, ExplorerStyles,
             css `
-            .noselect {
-                  -webkit-touch-callout: none; /* iOS Safari */
-                    -webkit-user-select: none; /* Safari */
-                     -khtml-user-select: none; /* Konqueror HTML */
-                       -moz-user-select: none; /* Firefox */
-                        -ms-user-select: none; /* Internet Explorer/Edge */
-                            user-select: none; /* Non-prefixed version, currently
-                                                  supported by Chrome and Opera */
-            }
-
             wl-button {
                 padding: 6px 10px;
             }
@@ -95,7 +86,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 height: 100%;
                 width: 75%;
             }
-            
+
             #model-search-form {
                 margin: 0 auto;
                 overflow: scroll;
@@ -107,11 +98,11 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 display: inline-block;
                 vertical-align: middle;
             }
-            
+
             #model-search-form > wl-textfield {
                 width:70%;
             }
-            
+
             #model-search-form > wl-select {
                 width: calc(30% - 10px);
                 padding-left: 10px;
@@ -184,7 +175,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     <model-facet 
                         uri="${key}"
                         altDesc="${this._variables[key] ? this._variables[key] : ''}"
-                        altTitle="${this._variables[key] ? 'With Variables ('+this._variables[key].split(',').length+'):' : ''}"
+                        altTitle="${this._variables[key] ? 'With Variables ('+this._variables[key].split(';').length+'):' : ''}"
                         style="${!this._activeModels[key]? 'display: none;' : ''}">
                     </model-facet>
                     `
@@ -283,7 +274,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 this._variables = {};
                 Object.keys(state.explorer.search[this._filter]).forEach((key:string) =>{
                     this._activeModels[key] = true;
-                    this._variables[key] = state.explorer!.search[this._filter][key].join(', ');
+                    this._variables[key] = state.explorer!.search[this._filter][key].join(';');
                     count += 1;
                 });
                 this._activeCount = count;

@@ -8,6 +8,7 @@ import { html, property, customElement, css } from 'lit-element';
 import { goToPage } from '../../../app/actions';
 
 import { FetchedModel } from "./api-interfaces";
+import { ExplorerStyles } from './explorer-styles'
 
 @customElement('model-facet')
 export class ModelFacet extends connect(store)(PageViewElement) {
@@ -31,11 +32,8 @@ export class ModelFacet extends connect(store)(PageViewElement) {
     }
 
     static get styles() {
-        return [
+        return [ExplorerStyles,
             css `
-                :host {
-                }
-
                 table {
                     margin-bottom: 1em;
                     table-layout: fixed;
@@ -139,6 +137,10 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                     -webkit-line-clamp: 6;
                     -webkit-box-orient: vertical;
                 }
+
+                .content > code {
+                    line-height: 19px;
+                }
                 
                 .footer {
                     padding: 5px 10px 0px 10px;
@@ -170,7 +172,7 @@ export class ModelFacet extends connect(store)(PageViewElement) {
               <tr>
                 <td class="left"> 
                   <div class="text-centered one-line">
-                    ${this._model.ver? html`${this._model.ver.length}`: html`0`} versions
+                    ${this._model.ver? html`${this._model.ver.length} version${this._model.ver.length>1?'s':''}`: html`No versions`}
                   </div>
                   <div>
                     <span class="helper"></span>${this._model.logo ? 
@@ -195,7 +197,10 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                   </div>
                   <div class="content" style="${this.altDesc? '' : 'text-align: justify;'}">
                     ${this.altDesc ? 
-                        html`<b>${this.altTitle}</b><br/> ${this.altDesc}`: 
+                        html`<b>${this.altTitle}</b> ${this.altDesc.split(';').map((v, i) => {
+                            if (i===0) return html`<code>${v}</code>`;
+                            else return html`, <code>${v}</code>`;
+                        })}`: 
                         this._model.desc}
                   </div>
                   <div class="footer one-line">
@@ -212,7 +217,7 @@ export class ModelFacet extends connect(store)(PageViewElement) {
             </table>
         `;
         } else {
-            return html`? Something when wrong`
+            return html`Something when wrong!`
         }
     }
 

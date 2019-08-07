@@ -9,6 +9,7 @@ import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
 import { explorerFetchCompatibleSoftware, explorerFetchParameters, explorerFetchVersions, explorerFetchIO,
          explorerFetchIOVarsAndUnits, explorerFetchExplDiags, explorerFetchMetadata } from './actions';
 import { SharedStyles } from '../../../styles/shared-styles';
+import { ExplorerStyles } from './explorer-styles'
 
 import { showDialog } from "../../../util/ui_functions";
 import { goToPage } from '../../../app/actions';
@@ -92,7 +93,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     }
 
     static get styles() {
-        return [SharedStyles, 
+        return [SharedStyles, ExplorerStyles,
             css `
                 :host {
                     width: 100%;
@@ -102,12 +103,16 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     display: none;
                 }
 
-                .clickable {
-                    cursor: pointer;
+                ul {
+                    text-align: left;
+                }
+
+                li {
+                    margin-bottom: 0.3em;
                 }
 
                 table {
-                    margin: 0 auto;
+                  margin: 0 auto;
                   border: 0px solid black;
                   width: 80%;
                   min-width: 600px;
@@ -467,7 +472,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     }
 
     _renderMetadata (title: string, metadata:any) {
-        console.log(metadata)
         let meta = metadata[0];
         return html`
         <details style="margin-top: 10px;">
@@ -703,13 +707,19 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             ${(this._compInput && this._compInput.length>0)?
                                 html`<h3> This model configuration uses variables that can be produced from:</h3>
                                 <ul>${this._compInput.map(i=>{
-                                    return html`<li><b>${i.label}:</b> With variables: ${i.vars.join(', ')}</li>`
+                                    return html`<li><b>${i.label}:</b> With variables: ${i.vars.map((v, i) => {
+                                        if (i==0) return html`<code>${v}</code>`;
+                                        else return html`, <code>${v}</code>`;
+                                    })}</li>`
                                 })}</ul>`: html``
                             }
                             ${(this._compOutput && this._compOutput.length>0)?
                                 html`<h3> This model configuraion produces variables that can be used by:</h3>
                                 <ul>${this._compOutput.map(i=>{
-                                    return html`<li><b>${i.label}:</b> With variables: ${i.vars.join(', ')}</li>`
+                                    return html`<li><b>${i.label}:</b> With variables: ${i.vars.map((v, i) => {
+                                        if (i==0) return html`<code>${v}</code>`;
+                                        else return html`, <code>${v}</code>`;
+                                    })}</li>`
                                 })}</ul>`: html``
                             }`
                         : html`<br/><h3 style="margin-left:30px">
