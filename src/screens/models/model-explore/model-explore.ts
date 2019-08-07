@@ -58,28 +58,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 padding: 6px 10px;
             }
 
-            .input_filter {
-                padding: 1em 0;
-                width: 75%;
-                margin: 0 auto;
-            }
-
-            .input_filter label {
-                margin-right: 6px;
-                padding: 0px;
-                font-size: 1.2em;
-                line-height: 1.2em;
-                display: inline-block;
-                vertical-align:middle;
-                width: 30px;
-            }
-
-            .input_filter input {
-                display: inline-block;
-                line-height: 1.3em;
-                width: calc(100% - 40px);
-            }
-
             .search-results {
                 margin: 0 auto;
                 overflow: scroll;
@@ -150,13 +128,13 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         return html`
             <div id="model-search-form">
                 <!-- https://github.com/andreasbm/weightless/issues/58 -->
-                <wl-textfield id="wl-input" label="Search models" @input=${this._onSearchInput} value="${this._filter}">
+                <wl-textfield id="search-input" label="Search models" @input=${this._onSearchInput} value="${this._filter}">
                     <div slot="after"> 
                         <wl-icon style="${this._filter == '' ? 'display:none;' : ''}" @click="${this._clearSearchInput}">clear</wl-icon> 
                     </div>
                     <div slot="before"> <wl-icon>search</wl-icon> </div>
                 </wl-textfield><!--
-                --><wl-select label="Search on" @input="${this._onSearchTypeChange}" value="${this._searchType}">
+                --><wl-select id="search-type-selector" label="Search on" @input="${this._onSearchTypeChange}" value="${this._searchType}">
                    <option value="full-text"}">Full text</option>
                    <option value="variables">Variable names</option>
                 </wl-select>
@@ -184,8 +162,11 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         `
     }
 
-    _onSearchInput (ev: any) { //InputEvent) { FIXME
-        let input : string = ev.path[0].value.toLowerCase();
+    _onSearchInput () {
+        let inputElement : HTMLElement | null = this.shadowRoot!.getElementById('search-input');
+        if (!inputElement) return;
+
+        let input : string = inputElement['value'].toLowerCase();
         switch (this._searchType) {
             case 'full-text':
                 let count = 0;
@@ -215,8 +196,11 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         this._activeCount = count;
     }
 
-    _onSearchTypeChange (ev:any) {
-        this._searchType = ev.path[0].value;
+    _onSearchTypeChange () {
+        let selectElement : HTMLElement | null = this.shadowRoot!.getElementById('search-type-selector');
+        if (!selectElement) return;
+
+        this._searchType = selectElement['value'].toLowerCase();
         this._clearSearchInput();
     }
 
