@@ -233,6 +233,10 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             clearTimeout(this._lastTimeout);
         }
         if (input) {
+            Object.keys(this._models).forEach((key:string) => {
+                this._activeModels[key] = false;
+            })
+            this._activeCount = 0;
             this._lastTimeout = setTimeout(
                 ()=>{ store.dispatch(explorerSearchByVarName(input)); },
                 1000);
