@@ -1,4 +1,3 @@
-
 import { html, customElement, property, css } from 'lit-element';
 import { PageViewElement } from '../../../components/page-view-element.js';
 import { connect } from 'pwa-helpers/connect-mixin';
@@ -16,9 +15,9 @@ import { UriModels } from './reducers';
 import './model-facet'
 import './model-facet-big'
 
-import "weightless/card";
 import "weightless/textfield";
 import "weightless/icon";
+import "weightless/select";
 //import 'multiselect-combo-box/multiselect-combo-box'
 
 store.addReducers({
@@ -29,15 +28,21 @@ store.addReducers({
 @customElement('model-explorer')
 export class ModelExplorer extends connect(store)(PageViewElement) {
     @property({type: Object})
-    private _models : UriModels = {} as UriModels;
+    private _models! : UriModels;// = {} as UriModels;
 
     @property({type: String})
     private _selectedUri : string = '';
 
     @property({type: String})
-    private filter : string = '';
+    private _filter : string = '';
 
-    private _lastInput : string = '';
+    @property({type: String})
+    private _searchType : string = 'full-text';
+
+    private _fullText : {[s: string]: string} = {};
+
+    @property({type: Object})
+    private _activeModels : {[s: string]: boolean} = {};
 
     static get styles() {
         return [SharedStyles,
@@ -83,7 +88,33 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 overflow: scroll;
                 height: 100%;
                 width: 75%;
-            }`
+            }
+            
+            #model-search-form {
+                margin: 0 auto;
+                overflow: scroll;
+                width: 75%;
+                padding-bottom: 1em;
+            }
+
+            #model-search-form > * {
+                display: inline-block;
+                vertical-align: middle;
+            }
+            
+            #model-search-form > wl-textfield {
+                width:70%;
+            }
+            
+            #model-search-form > wl-select {
+                width: calc(30% - 10px);
+                padding-left: 10px;
+            }
+
+            #model-search-form > wl-textfield > div[slot="after"] > wl-icon {
+                cursor: pointer;
+            }
+            `
         ];
     }
 
@@ -111,65 +142,81 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             </div>
 
             ${this._selectedUri? 
-                //Display only selected model
-                html`
-                    <model-facet-big
-                        style="width:75%;"
-                        uri="${this._selectedUri}">
-                    </model-facet-big>
-                ` // Display search results
-                : html `
-                <div class="search_input input_full input_filter">
-                    <label for="filter" class='noselect'>
-                        <wl-icon>search</wl-icon>
-                    </label>
-                    <input value="${this.filter}"
-                        placeholder="Search models here..."
-                        type="search"
-                        @keyup="${this.filterUpdate}"
-                        id="filter"
-                        name="filter"></input>
-                </div>
-
-                <!--div class="input_filter">
-                    <multiselect-combo-box id="search" label="Search" item-value-path="id"
-                    item-label-path="id"></multiselect-combo-box>
-                </div-->
-
-                <div class="search-results">
-                    ${Object.keys(this._models).map( (key:string) => {
-                        let text : string = this._models[key].label
-                        if (this._models[key].desc) text +=     this._models[key].desc;
-                        if (this._models[key].keywords) text += this._models[key].keywords.join();
-                        if (this._models[key].categories) text +=    this._models[key].categories.join();
-                        let st = ''
-                        if (!text.toLowerCase().includes(this.filter)) {
-                            st = 'display: none;'
-                        }
-                        return html`
-                        <model-facet 
-                            uri="${key}"
-                            style="${st}">
-                        </model-facet>
-                        `
-                    })}
-                </div>
-            `
+                //Display only selected model or the search
+                html`<model-facet-big style="width:75%;" uri="${this._selectedUri}"></model-facet-big>`
+                : this._renderSearch()
             }
         `;
     }
 
-    filterUpdate (ev:any) {
-        let input : string = ev.path[0].value;
-        if (this._lastInput != input) {
-            //TODO: some time between event and filter?
-            //Filter is case insensitive
-            this._lastInput = input.toLowerCase();
-            this.filter = this._lastInput;
-        }
+    _renderSearch () {
+        return html`
+            <div id="model-search-form">
+                <!-- https://github.com/andreasbm/weightless/issues/58 -->
+                <wl-textfield id="wl-input" label="Search models" @input=${this._onSearchInput} value="${this._filter}">
+                    <div slot="after"> 
+                        <wl-icon style="${this._filter == '' ? 'display:none;' : ''}" @click="${this._clearSearchInput}">clear</wl-icon> 
+                    </div>
+                    <div slot="before"> <wl-icon>search</wl-icon> </div>
+                </wl-textfield><!--
+                --><wl-select label="Search on" @input="${this._onSearchTypeChange}" value="${this._searchType}">
+                   <option value="full-text"}">Full text</option>
+                   <option value="categories">Categories and keywords</option>
+                   <option value="variables">Variable names</option>
+                </wl-select>
+            </div>
+
+            <!--div class="input_filter">
+                <multiselect-combo-box id="search" label="Search" item-value-path="id"
+                item-label-path="id"></multiselect-combo-box>
+            </div-->
+
+            <div class="search-results">
+                ${Object.keys(this._models).map( (key:string) => html`
+                    <model-facet 
+                        uri="${key}"
+                        style="${!this._activeModels[key]? 'display: none;' : ''}">
+                    </model-facet>
+                    `
+                )}
+            </div>
+        `
     }
 
-    _updateSelector() {
+    _onSearchInput (ev: any) { //InputEvent) { FIXME
+        let input : string = ev.path[0].value.toLowerCase();
+        switch (this._searchType) {
+            case 'full-text':
+                Object.keys(this._models).forEach((key:string) => {
+                    this._activeModels[key] = this._fullText[key].includes(input);
+                });
+                break;
+            case 'categories':
+            case 'variables':
+            default:
+                console.log('Nothing to search')
+        }
+
+        this._filter = input;
+    }
+
+    _clearSearchInput () {
+        this._filter = '';
+        Object.keys(this._models).forEach((key:string) => {
+            this._activeModels[key] = true;
+        });
+    }
+
+    _onSearchTypeChange (ev:any) {
+        this._searchType = ev.path[0].value;
+        this._clearSearchInput();
+
+        /*let wlIn = this.shadowRoot!.getElementById("wl-input");
+        let input = wlIn!.getElementsByTagName('input')[0];
+        input.setAttribute('list', 'datalist')*/
+    }
+
+    /*_updateSelector() {
         let qs = this.shadowRoot!.getElementById('search');
         if (qs) {
             let items = new Set();
@@ -187,7 +234,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 qs!['items'] = Array.from(items).map((x)=>{return {id:x}});
             }
         }
-    }
+    }*/
 
     firstUpdated() {
         store.dispatch(explorerFetch());
@@ -195,9 +242,20 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     stateChanged(state: RootState) {
         if (state.explorer) {
-            if (state.explorer.models) {
+            if (state.explorer.models && this._models != state.explorer.models) {
                 this._models = state.explorer.models;
-                this._updateSelector();
+                this._fullText = {};
+                this._activeModels = {};
+                Object.keys(this._models).forEach( (key:string) => {
+                    let model = this._models[key];
+                    this._fullText[key] = (model.label
+                                           + (model.desc? model.desc : '')
+                                           + (model.keywords? model.keywords : '') 
+                                           + (model.type? model.type : '')).toLowerCase();
+                    this._filter = '';
+                    this._activeModels[key] = true;
+                });
+                //this._updateSelector();
             }
         }
         if (state.explorerUI && state.explorerUI.selectedModel != this._selectedUri) {
