@@ -13,6 +13,9 @@ import { RootState } from '../app/store';
 
 export class PageViewElement extends LitElement {
   @property({type: String})
+  protected _regionid: string | undefined;
+  
+  @property({type: String})
   protected _subpage: string = '';
 
   @property({type: Boolean})
@@ -26,5 +29,10 @@ export class PageViewElement extends LitElement {
   setSubPage(state: RootState) {
     if(state.app && state.app.subpage)
       this._subpage = state.app!.subpage;
+  }
+
+  setRegionId(state: RootState) {
+    if(state.ui && state.ui)
+      this._regionid = state.ui.selected_top_regionid;
   }
 }

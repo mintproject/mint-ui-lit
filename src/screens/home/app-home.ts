@@ -9,6 +9,12 @@ import { listRegions } from '../regions/actions';
 import { RegionList } from '../regions/reducers';
 import { GOOGLE_API_KEY } from '../../config/google-api-key';
 
+import "../../components/stats-blurb";
+import "../../thirdparty/google-map/src/google-map";
+import "../../components/google-map-json-layer";
+import "../../components/google-map-kml-layer";
+import { selectTopRegion } from '../../app/ui-actions';
+
 @customElement('app-home')
 export class AppHome extends connect(store)(PageViewElement) {
   
@@ -83,18 +89,26 @@ export class AppHome extends connect(store)(PageViewElement) {
             reduce the time needed to develop new integrated models while ensuring their utility and accuracy.
             </p>
         </div>
+        
         <google-map class="middle2main" api-key="${GOOGLE_API_KEY}" 
-            latitude="5" longitude="40" zoom="4" disable-default-ui
-            styles="${this._mapStyles}">
+            latitude="8" longitude="40" zoom="5" disable-default-ui="true" draggable="true"
+            mapTypeId="terrain" styles="${this._mapStyles}">
+
             ${Object.keys(this._regions || {}).map((regionid) => {
-            let region = this._regions![regionid];
-            return html`
-            <google-map-json-layer url="${region.geojson}"></google-map-json-layer>
-            `;
+              let region = this._regions![regionid];
+              return html`
+                <google-map-json-layer id="${region.id}" url="${region.geojson}" 
+                  .selected="${region.id == this._regionid}"
+                  .onClick=${(rid: string) => this.regionSelected(rid)}></google-map-json-layer>
+              `;
             })}
-        </google-map>        
+        </google-map>
 
       `
+    }
+
+    protected regionSelected(regionid: string) {
+      store.dispatch(selectTopRegion(regionid));
     }
 
     protected firstUpdated() {
@@ -106,5 +120,6 @@ export class AppHome extends connect(store)(PageViewElement) {
         if(state.regions && state.regions.regions) {
             this._regions = state.regions.regions;
         }
+        super.setRegionId(state);
     }    
 }
