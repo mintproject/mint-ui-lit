@@ -111,8 +111,7 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
             }
         case EXPLORER_SEARCH_BY_VAR_NAME:
             let newSearchResults = { ...state.search };
-            newSearchResults[action.text] = Array.from(action.details.reduce((s, d) => s.add(d.model), new Set()))
-            console.log(action.text, ':', action.details);
+            newSearchResults[action.text] = action.details;
             return {
                 ...state,
                 search: newSearchResults

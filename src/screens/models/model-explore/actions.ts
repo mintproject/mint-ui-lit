@@ -250,12 +250,24 @@ export const explorerSearchByVarName: ActionCreator<ExplorerThunkResult> = (text
     console.log('Searching models by variable name:', text);
     apiFetch({
         type: SEARCH_BY_VAR_NAME,
-        text: text
+        text: text,
+        rules: {
+            c: {newKey: 'config'},
+            modelV: {newKey: 'version'}
+        }
     }).then(fetched => {
+        let data = fetched.reduce((acc:any, obj:any) => {
+            if (!acc[obj.model]) acc[obj.model] = new Set();
+            acc[obj.model].add(obj.desc);
+            return acc;
+        }, {});
+        Object.keys(data).forEach((key:string) => {
+            data[key] = Array.from(data[key]);
+        });
         dispatch({
             type: EXPLORER_SEARCH_BY_VAR_NAME,
             text: text,
-            details: fetched
+            details: data
         })
     })
 }

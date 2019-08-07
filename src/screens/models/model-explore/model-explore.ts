@@ -39,6 +39,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     private _searchType : string = 'full-text';
 
     private _fullText : {[s: string]: string} = {};
+    private _variables : {[s: string]: string} = {};
 
     @property({type: Object})
     private _activeModels : {[s: string]: boolean} = {};
@@ -182,6 +183,8 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 ${Object.keys(this._models).map( (key:string) => html`
                     <model-facet 
                         uri="${key}"
+                        altDesc="${this._variables[key] ? this._variables[key] : ''}"
+                        altTitle="${this._variables[key] ? 'With Variables ('+this._variables[key].split(',').length+'):' : ''}"
                         style="${!this._activeModels[key]? 'display: none;' : ''}">
                     </model-facet>
                     `
@@ -239,7 +242,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             this._activeCount = 0;
             this._lastTimeout = setTimeout(
                 ()=>{ store.dispatch(explorerSearchByVarName(input)); },
-                1000);
+                750);
         } else {
             this._loading=false;
             this._clearSearchInput();
@@ -268,17 +271,22 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     count += 1;
                 });
                 this._activeCount = count;
-                this._loading = false;
+                if (count > 0)
+                    this._loading = false;
             }
 
             if (state.explorer.search && state.explorer.search[this._filter]) {
                 Object.keys(this._models).forEach((key:string) => {
                     this._activeModels[key] = false;
                 });
-                state.explorer.search[this._filter].forEach((key:string) =>{
+                let count = 0;
+                this._variables = {};
+                Object.keys(state.explorer.search[this._filter]).forEach((key:string) =>{
                     this._activeModels[key] = true;
+                    this._variables[key] = state.explorer!.search[this._filter][key].join(', ');
+                    count += 1;
                 });
-                this._activeCount = state.explorer.search[this._filter].length;
+                this._activeCount = count;
                 this._loading = false;
             }
         }
