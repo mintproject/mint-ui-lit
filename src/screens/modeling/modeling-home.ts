@@ -21,7 +21,7 @@ import modeling from './reducers';
 import "./scenarios-list";
 import "./mint-scenario";
 
-import { PageViewElement } from '../../components/page-view-element.js';
+import { PageViewElement } from '../../components/page-view-element';
 
 
 store.addReducers({
@@ -52,5 +52,6 @@ export class ModelingHome extends connect(store)(PageViewElement) {
   
   stateChanged(state: RootState) {
     super.setSubPage(state);
+    super.setRegionId(state);
   }
 }

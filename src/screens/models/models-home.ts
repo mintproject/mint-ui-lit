@@ -54,21 +54,23 @@ export class ModelsHome extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
-            <wl-title level="3">Prepare Models</wl-title>
+            <wl-title level="3" class="${this._subpage == 'explore' ? 'hiddensection' : ''}">
+                Prepare Models
+            </wl-title>
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
-                <a href="models/explore">
+                <a href="${this._regionid}/models/explore">
                     <wl-icon>search</wl-icon>
                     <div>Browse Models</div>
                 </a>
-                <a href="models/register">
+                <a href="${this._regionid}/models/register">
                     <wl-icon>library_add</wl-icon>
                     <div>Add Models</div>
                 </a>
-                <a href="models/configure">
+                <a href="${this._regionid}/models/configure">
                     <wl-icon>perm_data_settings</wl-icon>
                     <div>Configure Models</div>
                 </a>
-                <a href="models/calibrate">
+                <a href="${this._regionid}/models/calibrate">
                     <wl-icon>settings_input_composite</wl-icon>
                     <div>Calibrate Models</div>
                 </a>
@@ -83,5 +85,6 @@ export class ModelsHome extends connect(store)(PageViewElement) {
 
     stateChanged(state: RootState) {
         super.setSubPage(state);
+        super.setRegionId(state);
     }
 }

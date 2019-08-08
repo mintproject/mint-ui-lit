@@ -601,6 +601,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
         let subgoalid = (e.currentTarget as HTMLButtonElement).dataset['subgoalid'];
         let subgoal = this._scenario_details!.subgoals[subgoalid!];
         if(subgoal && (!this._selectedSubgoal || (this._selectedSubgoal.id != subgoalid))) {
+            console.log("%%%%% "  + this._regionid);
             goToPage("modeling/scenario/" + this._scenario!.id + "/" + subgoal.id + "/" + subgoal.pathwayids![0]);
             //store.dispatch(selectSubgoal(subgoal.id));
             //store.dispatch(selectPathway(subgoal.pathwayids![0])); 
@@ -617,6 +618,8 @@ export class MintScenario extends connect(store)(PageViewElement) {
     }
 
     stateChanged(state: RootState) {
+        super.setRegionId(state);
+        
         // If a scenario has been selected, fetch scenario details
         let scenarioid = state.ui!.selected_scenarioid;
         let user = state.app.user;

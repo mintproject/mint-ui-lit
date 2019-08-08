@@ -33,23 +33,23 @@ export class RegionsHome extends connect(store)(PageViewElement) {
         return html`
             <wl-title level="3">Define Regions</wl-title>
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
-                <a href="regions/manual">
+                <a href="${this._regionid}/regions/manual">
                     <wl-icon>edit</wl-icon>
                     <div>Manual Outline</div>
                 </a>
-                <a href="regions/administrative">
+                <a href="${this._regionid}/regions/administrative">
                     <div class="svgicon">
                         ${adminIcon}
                     </div> 
                     <div>Administrative</div>
                 </a>
-                <a href="regions/hydrology">
+                <a href="${this._regionid}/regions/hydrology">
                     <div class="svgicon">
                         ${mountainRiverIcon}
                     </div>                
                     <div>Hydrology</div>
                 </a>
-                <a href="regions/agriculture">
+                <a href="${this._regionid}/regions/agriculture">
                     <div class="svgicon">
                         ${cropsIcon}
                     </div>
@@ -66,5 +66,6 @@ export class RegionsHome extends connect(store)(PageViewElement) {
 
     stateChanged(state: RootState) {
         super.setSubPage(state);
+        super.setRegionId(state);
     }
 }

@@ -2,52 +2,72 @@ import { GoogleMapChildElement, customElement, property } from '../thirdparty/go
 
 @customElement('google-map-json-layer')
 export class GoogleMapJsonLayer extends GoogleMapChildElement {
-  @property()
+  static initialSetup: boolean;
+
+  @property({type: String})
+  id!: string;
+
+  @property({type: String})
   url?: string;
+
+  @property({type: Boolean})
+  selected?: boolean;
+
+  @property({type: Array})
+  features?: google.maps.Data.Feature[];
 
   constructor() {
     super();
-    console.log('google-map-marker');
   }
 
   update(changedProperties: Map<PropertyKey, any>) {
     if (changedProperties.has('map')) {
       this._mapChanged();
     }
-    /*
-    if (changedProperties.has('open')) {
-      this._openChanged();
-    }
-    */
     super.update(changedProperties);
   }
 
   _mapChanged() {
     if (this.map && this.map instanceof google.maps.Map && this.url) {
-      this.map.data.setStyle({
-        fillColor: '#1990d5',
-        strokeColor: '#1990d5',
-        strokeWeight: 1
-      });
-
-      // Remove existing layers
+      let layer = this;
       var map = this.map;
-      map.data.forEach(function (feature) {
-        map.data.remove(feature);
+
+      this.map.data.loadGeoJson(this.url, {}, (features) => {
+        layer.features = features;
+        features.map((feature) => {
+          feature.setProperty("id", this.id);
+          feature.setProperty("selected", this.selected);
+        })
       });
 
-      this.map.data.loadGeoJson(this.url);
-
-      // Set mouseover event for each feature.
-      map.data.addListener('click', function(event) {
-        map.data.setStyle(function(feature) {
+      // Do initial setup if already not done
+      if(!GoogleMapJsonLayer.initialSetup) {
+        // Initial style
+        this.map.data.setStyle(function(feature) {
+          let selected = feature.getProperty("selected");
           return {
-            fillColor: (feature == event.feature ? '#d51990' : '#1990d5'),
-            strokeColor: (feature == event.feature ? '#d51990' : '#1990d5'),
+            fillColor: selected ? '#d51990' : '#1990d5',
+            strokeColor: selected ? '#d51990' : '#1990d5',
             strokeWeight: 1
-          };
+          }
         });
-      });      
+
+        map.data.addListener('click', function(event) {
+          // Deselect all features
+          map.data.forEach((feature) => {
+            feature.setProperty("selected", false);
+          });
+          // Select the clicked feature
+          event.feature.setProperty("selected", true);
+
+          let myEvent = new CustomEvent("click", { 
+            detail: {id: event.feature.getProperty("id") },
+            bubbles: true, 
+            composed: true });
+          layer.dispatchEvent(myEvent);
+        });
+        GoogleMapJsonLayer.initialSetup = true;
+      }
     }
   }
 }

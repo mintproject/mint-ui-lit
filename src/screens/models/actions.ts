@@ -95,6 +95,14 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
             'model': { 
                 newKey: 'modelName',
                 newValue: (value: string) => value.substr(value.lastIndexOf('/')+1) 
+            },
+            'version': { 
+                newKey: 'versionName',
+                newValue: (value: string) => value.substr(value.lastIndexOf('/')+1) 
+            },
+            'configuration': { 
+                newKey: 'configurationName',
+                newValue: (value: string) => value.substr(value.lastIndexOf('/')+1) 
             }
         }
     }).then((calibrations: Array<Object>) => {
@@ -181,6 +189,8 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                         input_parameters: parameters,
                         output_files: outputs,
                         original_model: row["modelName"],
+                        model_version: row["versionName"],
+                        model_configuration: row["configurationName"],
                         model_type: "",
                         parameter_assignment: meta["paramAssignMethod"],
                         parameter_assignment_details: "",

@@ -13,8 +13,9 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from './store';
 import { queryDatasetDetail } from '../screens/datasets/actions';
 import { queryModelDetail } from '../screens/models/actions';
-import { explorerClearModel, explorerSetModel } from '../screens/models/model-explore/actions';
-import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection } from './ui-actions';
+import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetConfig,
+         explorerSetCalibration } from '../screens/models/model-explore/ui-actions';
+import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion } from './ui-actions';
 import { auth } from '../config/firebase';
 import { User } from 'firebase';
 
@@ -25,10 +26,10 @@ export const LOGIN = 'LOGIN';
 export const LOGOUT = 'LOGOUT';
 export const FETCH_USER = 'FETCH_USER';
 
-export interface AppActionUpdatePage extends Action<'UPDATE_PAGE'> { page?: string, subpage?:string };
+export interface AppActionUpdatePage extends Action<'UPDATE_PAGE'> { regionid?: string, page?: string, subpage?:string };
 export interface AppActionFetchUser extends Action<'FETCH_USER'> { user?: User | null };
 
-export type AppAction = AppActionUpdatePage | AppActionFetchUser;
+export type AppAction = AppActionUpdatePage | AppActionFetchUser ;
 
 type ThunkResult = ThunkAction<void, RootState, undefined, AppAction>;
 
@@ -61,14 +62,25 @@ export const signOut = () => {
   auth.signOut();
 };
 
+
 export const goToPage = (page:string) => {
-  window.history.pushState({}, page, BASE_HREF + page);
+  let state: any = store.getState();
+  let regionid = state.ui ? state.ui.selected_top_regionid : "";
+  let url = BASE_HREF + (regionid ? regionid + "/" : "") + page;
+  window.history.pushState({}, page, url);
   store.dispatch(navigate(decodeURIComponent(location.pathname)));    
 }
 
 export const navigate: ActionCreator<ThunkResult> = (path: string) => (dispatch) => {
+  console.log(path);
   // Extract the page name from path.
-  let page = path === BASE_HREF ? 'home' : path.slice(BASE_HREF.length);
+  let cpath = path === BASE_HREF ? '/home' : path.slice(BASE_HREF.length);
+  let regionIndex = cpath.indexOf("/");
+
+  let regionid = cpath.substr(0, regionIndex);
+  store.dispatch(selectTopRegion(regionid));
+
+  let page = cpath.substr(regionIndex + 1);
   let subpage = 'home';
 
   let params = page.split("/");
@@ -76,15 +88,10 @@ export const navigate: ActionCreator<ThunkResult> = (path: string) => (dispatch)
     page = params[0];
     params.splice(0, 1);
   }
-
   if(params.length > 0) {
     subpage = params[0];
     params.splice(0, 1);
   }
-
-  // console.log(page);
-  // console.log(subpage);
-  // console.log(params);
 
   dispatch(loadPage(page, subpage, params));
 };
@@ -134,6 +141,15 @@ const loadPage: ActionCreator<ThunkResult> =
             import('../screens/models/model-explore/model-explore').then((_module) => {
                 if(params.length > 0) {
                     store.dispatch(explorerSetModel(params[0]));
+                    if (params.length > 1) {
+                        store.dispatch(explorerSetVersion(params[1].replace(/\+/g,'.')));
+                        if (params.length > 2) {
+                            store.dispatch(explorerSetConfig(params[2].replace(/\+/g,'.')));
+                            if (params.length > 3) {
+                                store.dispatch(explorerSetCalibration(params[3].replace(/\+/g,'.')));
+                            }
+                        }
+                    }
                 } else {
                     store.dispatch(explorerClearModel());
                 }

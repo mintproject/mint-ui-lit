@@ -1,5 +1,5 @@
 
-import { PageViewElement } from '../../../components/page-view-element.js';
+import { PageViewElement } from '../../../components/page-view-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from '../../../app/store';
 
@@ -7,12 +7,19 @@ import { html, property, customElement, css } from 'lit-element';
 
 import { goToPage } from '../../../app/actions';
 
-import { FetchedModel } from "./reducers";
+import { FetchedModel } from "./api-interfaces";
+import { ExplorerStyles } from './explorer-styles'
 
 @customElement('model-facet')
 export class ModelFacet extends connect(store)(PageViewElement) {
     @property({type: String})
         uri : string = "";
+
+    @property({type: String})
+        altDesc : string = '';
+
+    @property({type: String})
+        altTitle : string = '';
 
     @property({type: Object})
     private _model! : FetchedModel;
@@ -25,14 +32,10 @@ export class ModelFacet extends connect(store)(PageViewElement) {
     }
 
     static get styles() {
-        return [
+        return [ExplorerStyles,
             css `
-                :host {
-                }
-
                 table {
-                    margin-top: 10px;
-                    margin-bottom: 5px;
+                    margin-bottom: 1em;
                     table-layout: fixed;
                     border: 1px solid black;
                     width: 100%;
@@ -65,8 +68,8 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                 td.left div:nth-child(3) { height: 2.4em; }
 
                 td.right div:nth-child(1) { height: 1.3em; }
-                td.right div:nth-child(2) { height: calc(150px - 2.5em - 15px); }
-                td.right div:nth-child(3) { height: 1.2em; }
+                td.right div:nth-child(2) { height: 96px; }
+                td.right div:nth-child(3) { height: calc(44px - 1.3em); }
 
                 .one-line {
                     height: 1.2em;
@@ -124,22 +127,36 @@ export class ModelFacet extends connect(store)(PageViewElement) {
 
                 .content {
                     padding: 5px 10px 0px 10px;
-                    text-align: justify;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    display: -webkit-box;
+                    line-height: 16px;
+                    max-height: 96px;
+
+                    /* The number of lines to be displayed */
+                    -webkit-line-clamp: 6;
+                    -webkit-box-orient: vertical;
+                }
+
+                .content > code {
+                    line-height: 19px;
+                }
+                
+                .footer {
+                    padding: 5px 10px 0px 10px;
                 }
 
                 .keywords {
                     display: inline-block;
-                    width: calc(100% - 120px);
+                    width: calc(100% - 100px);
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
-                    padding: 0px 10px;
                 }
 
                 .details-button {
                     display: inline-block;
                     float: right;
-                    margin-right: 5px;
                     color: rgb(15, 122, 207);
                     cursor: pointer;
                     font-weight: bold;
@@ -155,8 +172,7 @@ export class ModelFacet extends connect(store)(PageViewElement) {
               <tr>
                 <td class="left"> 
                   <div class="text-centered one-line">
-                    ${this._model.ver? html`${this._model.ver.length}`: html`0`} vers,
-                    2 configs
+                    ${this._model.ver? html`${this._model.ver.length} version${this._model.ver.length>1?'s':''}`: html`No versions`}
                   </div>
                   <div>
                     <span class="helper"></span>${this._model.logo ? 
@@ -179,15 +195,18 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                         : html``
                     }
                   </div>
-                  <div class="content"> 
-                    ${this._model.desc}
+                  <div class="content" style="${this.altDesc? '' : 'text-align: justify;'}">
+                    ${this.altDesc ? 
+                        html`<b>${this.altTitle}</b> ${this.altDesc.split(';').map((v, i) => {
+                            if (i===0) return html`<code>${v}</code>`;
+                            else return html`, <code>${v}</code>`;
+                        })}`: 
+                        this._model.desc}
                   </div>
                   <div class="footer one-line">
-                    <span class="keywords"> <b>Keywords:</b> 
-                        ${this._model.keywords? 
-                            html`${this._model.keywords}`
-                            : html `No keywords`
-                        }
+                    <span class="keywords"> 
+                        <b>Keywords:</b> 
+                        ${this._model.keywords?  html`${this._model.keywords.join(', ')}` : html`No keywords`}
                     </span>
                     <span class="details-button"
                           @click="${()=>{goToPage('models/explore/' + this._id)}}"
@@ -198,7 +217,7 @@ export class ModelFacet extends connect(store)(PageViewElement) {
             </table>
         `;
         } else {
-            return html`? Something when wrong`
+            return html`Something when wrong!`
         }
     }
 
