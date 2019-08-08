@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>MINT</title>
+    <meta name="generator" content="PWA Starter Kit">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="World Modelers Model INTegration (MINT) User Interface">
+
+    <base href="<%= htmlWebpackPlugin.options.buildName && !htmlWebpackPlugin.options.static ? `/${htmlWebpackPlugin.options.buildName}/` : '/' %>">
+
+    <link href="https://fonts.googleapis.com/css?family=Raleway:700,500,200" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <%- include fragments/icons -%>
+    <%- include fragments/critical-css -%>
+    <%- include fragments/critical-js -%>
+  </head>
+  <body>
+    <mint-app appTitle="MINT"></mint-app>
+    <noscript>
+      Please enable JavaScript to view this website.
+    </noscript>
+    <!-- Built with love using PWA Webpack Starter Kit -->
+  </body>
+</html>

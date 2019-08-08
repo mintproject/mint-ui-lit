@@ -407,8 +407,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             @click="${() => {this.changeTab('io')}}">Input/Output</wl-tab>
                         <wl-tab ?checked=${this._tab=='variables'}
                             @click="${() => {this.changeTab('variables')}}">Variables</wl-tab>
-                        <!--<wl-tab @click="${() => {this.changeTab('tech')}}">Technical Details</wl-tab>-->
-                        <!--<wl-tab @click="${() => {this.changeTab('execut')}}">Execute</wl-tab>-->
                         <wl-tab @click="${() => {this.changeTab('software')}}">Compatible Software</wl-tab>
                     </wl-tab-group>
                 ${this.renderTab(this._tab)}

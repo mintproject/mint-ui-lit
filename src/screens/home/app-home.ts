@@ -99,7 +99,7 @@ export class AppHome extends connect(store)(PageViewElement) {
               return html`
                 <google-map-json-layer id="${region.id}" url="${region.geojson}" 
                   .selected="${region.id == this._regionid}"
-                  .onClick=${(rid: string) => this.regionSelected(rid)}></google-map-json-layer>
+                  @click=${(e: CustomEvent) => this.regionSelected(e.detail.id)}></google-map-json-layer>
               `;
             })}
         </google-map>

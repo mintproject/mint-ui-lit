@@ -81,7 +81,6 @@ export class ScenariosList extends connect(store)(PageViewElement) {
               <wl-title level="4" style="margin: 0">${scenario.name}</wl-title>
               <wl-title level="5">${region.name}</wl-title>
               <span>Dates: ${scenario.dates.start_date} to ${scenario.dates.end_date}</span>
-              <!--wl-progress-bar mode="determinate" value="${Math.random()}"></wl-progress-bar-->
           </wl-list-item>
           `
         }
