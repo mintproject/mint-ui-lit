@@ -9,6 +9,7 @@ import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
 import { explorerFetchCompatibleSoftware, explorerFetchParameters, explorerFetchVersions, explorerFetchIO,
          explorerFetchIOVarsAndUnits, explorerFetchExplDiags, explorerFetchMetadata } from './actions';
 import { SharedStyles } from '../../../styles/shared-styles';
+import { ExplorerStyles } from './explorer-styles'
 
 import { showDialog } from "../../../util/ui_functions";
 import { goToPage } from '../../../app/actions';
@@ -92,7 +93,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     }
 
     static get styles() {
-        return [SharedStyles, 
+        return [SharedStyles, ExplorerStyles,
             css `
                 :host {
                     width: 100%;
@@ -102,12 +103,16 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     display: none;
                 }
 
-                .clickable {
-                    cursor: pointer;
+                ul {
+                    text-align: left;
+                }
+
+                li {
+                    margin-bottom: 0.3em;
                 }
 
                 table {
-                    margin: 0 auto;
+                  margin: 0 auto;
                   border: 0px solid black;
                   width: 80%;
                   min-width: 600px;
@@ -418,7 +423,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             <wl-icon>help_outline</wl-icon>
         </span>
         <span class="select-label">Version:</span>
-        <select class="select-css" label="Select version" @change="${this.changeVersion}">
+        <select id="select-version" class="select-css" label="Select version" @change="${this.changeVersion}">
             <option value="" disabled selected>Select version</option>
             ${this._versions.map(v => 
                 html`<option value="${v.uri}" ?selected=${this._selectedVersion && v.uri===this._selectedVersion.uri}>
@@ -431,7 +436,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 <wl-icon>help_outline</wl-icon>
             </span>
             <span class="select-label">Configuration:</span>
-            <select class="select-css" label="Select configuration" @change="${this.changeConfig}">
+            <select id="select-config" class="select-css" label="Select configuration" @change="${this.changeConfig}">
                 <option value="" disabled selected>Select configuration</option>
                 ${this._selectedVersion.configs.map( c =>
                     html`<option value="${c.uri}" ?selected=${this._selectedConfig && c.uri===this._selectedConfig.uri}>
@@ -445,7 +450,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     <wl-icon>help_outline</wl-icon>
                 </span>
                 <span class="select-label">Calibration:</span>
-                <select class="select-css" label="Select calibration" @change="${this.changeCalibration}">
+                <select id="select-calibration" class="select-css" label="Select calibration" @change="${this.changeCalibration}">
                     <option value="" disabled selected>Select calibration</option>
                     ${this._selectedConfig.calibrations.map( c =>
                         html`<option value="${c.uri}"
@@ -467,7 +472,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     }
 
     _renderMetadata (title: string, metadata:any) {
-        console.log(metadata)
         let meta = metadata[0];
         return html`
         <details style="margin-top: 10px;">
@@ -703,13 +707,19 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             ${(this._compInput && this._compInput.length>0)?
                                 html`<h3> This model configuration uses variables that can be produced from:</h3>
                                 <ul>${this._compInput.map(i=>{
-                                    return html`<li><b>${i.label}:</b> With variables: ${i.vars.join(', ')}</li>`
+                                    return html`<li><b>${i.label}:</b> With variables: ${i.vars.map((v, i) => {
+                                        if (i==0) return html`<code>${v}</code>`;
+                                        else return html`, <code>${v}</code>`;
+                                    })}</li>`
                                 })}</ul>`: html``
                             }
                             ${(this._compOutput && this._compOutput.length>0)?
                                 html`<h3> This model configuraion produces variables that can be used by:</h3>
                                 <ul>${this._compOutput.map(i=>{
-                                    return html`<li><b>${i.label}:</b> With variables: ${i.vars.join(', ')}</li>`
+                                    return html`<li><b>${i.label}:</b> With variables: ${i.vars.map((v, i) => {
+                                        if (i==0) return html`<code>${v}</code>`;
+                                        else return html`, <code>${v}</code>`;
+                                    })}</li>`
                                 })}</ul>`: html``
                             }`
                         : html`<br/><h3 style="margin-left:30px">
@@ -805,28 +815,31 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         }
     }
 
-    changeVersion (ev:any) {
-        let versionUri : string = ev.path[0].value;
-        let id = versionUri.split('/').pop();
-        id = id!.replace('.','+');
-        //store.dispatch(explorerSetVersion(id));
+    changeVersion () {
+        let selectElement : HTMLElement | null = this.shadowRoot!.getElementById('select-version');
+        if (!selectElement) return;
+
+        let id = selectElement['value'].split('/').pop();
+        id = id!.replace(/\./g,'+');
         goToPage('models/explore/' + this._modelId + '/' + id);
     }
 
-    changeConfig (ev:any) {
-        let configUri : string = ev.path[0].value;
-        let id = configUri.split('/').pop();
-        id = id!.replace('.','+');
+    changeConfig () {
+        let selectElement : HTMLElement | null = this.shadowRoot!.getElementById('select-config');
+        if (!selectElement) return;
+
+        let id = selectElement['value'].split('/').pop();
+        id = id!.replace(/\./g,'+');
         goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + id);
-        //store.dispatch(explorerSetConfig(id));
     }
 
-    changeCalibration (ev:any) {
-        let calibUri : string = ev.path[0].value;
-        let id = calibUri.split('/').pop();
-        id = id!.replace('.','+');
+    changeCalibration () {
+        let selectElement : HTMLElement | null = this.shadowRoot!.getElementById('select-calibration');
+        if (!selectElement) return;
+
+        let id = selectElement['value'].split('/').pop();
+        id = id!.replace(/\./g,'+');
         goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + this._configId + '/' + id);
-        //store.dispatch(explorerSetCalibration(id));
     }
 
     firstUpdated() {
@@ -883,7 +896,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 if (this._versions.length > 0 && (!state.explorerUI || !state.explorerUI.selectedVersion)) {
                     let firstVersion = this._versions[0];
                     let id = firstVersion.uri.split('/').pop();
-                    id = id!.replace('.','+');
+                    id = id!.replace(/\./g,'+');
                     goToPage('models/explore/' + this._modelId + '/' + id);
                 }
             }
@@ -901,7 +914,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     if (sVersion && sVersion.length > 0 && sVersion[0] != this._selectedVersion) {
                         this._selectedVersion = sVersion[0];
                         this._versionId = this._selectedVersion.uri.split('/').pop() as string;
-                        this._versionId = this._versionId.replace('.', '+');
+                        this._versionId = this._versionId.replace(/\./g, '+');
                         console.log('SET NEW VERSION')
                         this._selectedConfig = null;
                         this._selectedCalibration = null;
@@ -912,7 +925,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             x.uri===state.explorerUI!.selectedConfig).length===0)) {
                             let firstConfig = this._selectedVersion.configs[0];
                             let id = firstConfig.uri.split('/').pop();
-                            id = id!.replace('.','+');
+                            id = id!.replace(/\./g,'+');
                             goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + id);
                             //store.dispatch(explorerSetConfig(firstConfig.uri.split('/').pop()));
                         }
