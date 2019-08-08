@@ -1333,11 +1333,6 @@
     "@types/minimatch" "*"
     "@types/node" "*"
 
-"@types/googlemaps@^3.30.16":
-  version "3.37.3"
-  resolved "https://registry.yarnpkg.com/@types/googlemaps/-/googlemaps-3.37.3.tgz#ad7a49c594512fad13e05237d2849afb11872c57"
-  integrity sha512-4J1fYJhLnzsfZgeAgrzBfNHFVoZHcWp/rK7oImeV7ZhplL19T1kxCoA4xJTuPfS+sKiN06E+xTvj2K13L7Wc1g==
-
 "@types/gulp@^4.0.5":
   version "4.0.6"
   resolved "https://registry.yarnpkg.com/@types/gulp/-/gulp-4.0.6.tgz#68fe0e1f0ff3657cfca46fb564806b744a1bf899"
@@ -5150,13 +5145,6 @@ gonzales-pe@^4.2.3:
   integrity sha512-v0Ts/8IsSbh9n1OJRnSfa7Nlxi4AkXIsWB6vPept8FDbL4bXn3FNuxjYtO/nmBGu7GDkL9MFeGebeSu6l55EPQ==
   dependencies:
     minimist "1.1.x"
-
-"google-map@git+https://github.com/justinfagnani/google-map.git#lit-element":
-  version "1.0.0"
-  resolved "git+https://github.com/justinfagnani/google-map.git#8570781d718f02bc2abb0d77235406b5287db42b"
-  dependencies:
-    "@types/googlemaps" "^3.30.16"
-    lit-element "^2.0.1"
 
 graceful-fs@^4.0.0, graceful-fs@^4.1.11, graceful-fs@^4.1.15, graceful-fs@^4.1.2, graceful-fs@^4.1.6:
   version "4.2.1"

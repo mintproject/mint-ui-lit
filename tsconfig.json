@@ -2,6 +2,7 @@
   "compilerOptions": {
     "baseUrl": "src",
     "rootDir": ".",
+    "allowSyntheticDefaultImports": true,
     "strict": true,
     "strictNullChecks": false,
     "allowJs": true,
@@ -9,20 +10,18 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "esModuleInterop": true,
-    "lib": [ "dom", "esnext" ],
+    "lib": [
+      "dom",
+      "esnext"
+    ],
     "target": "es5",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "noImplicitAny": false,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "allowSyntheticDefaultImports": true,
     "suppressImplicitAnyIndexErrors": true
-
   },
   "include": [
+    "typings/**/*.d.ts",
     "src/**/*.ts"
   ]
 }

@@ -13,9 +13,6 @@ export class GoogleMapJsonLayer extends GoogleMapChildElement {
   @property({type: Boolean})
   selected?: boolean;
 
-  @property({type: Function})
-  handleClick?: Function;
-
   @property({type: Array})
   features?: google.maps.Data.Feature[];
 

@@ -32,8 +32,8 @@ import "weightless/snackbar";
 
 import "./mint-scenario";
 
-import { navigate, BASE_HREF, goToPage } from '../../app/actions.js';
-import { PageViewElement } from '../../components/page-view-element.js';
+import { navigate, BASE_HREF, goToPage } from '../../app/actions';
+import { PageViewElement } from '../../components/page-view-element';
 import { renderNotifications } from '../../util/ui_renders';
 import { formElementsComplete, showDialog, hideDialog, showNotification, resetForm } from '../../util/ui_functions';
 import { listRegions } from '../regions/actions';

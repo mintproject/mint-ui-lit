@@ -1,5 +1,5 @@
 import { html, customElement, property, css } from 'lit-element';
-import { PageViewElement } from '../../../components/page-view-element.js';
+import { PageViewElement } from '../../../components/page-view-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 
 import { ExplorerStyles } from './explorer-styles'
