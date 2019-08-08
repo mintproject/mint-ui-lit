@@ -10,6 +10,7 @@ src/**/*.js
 
 # Except third party items
 !src/thirdparty/**/*.js
+!src/service-worker.js
 
 # Don't commit latest google api key
 google-api-key.ts
