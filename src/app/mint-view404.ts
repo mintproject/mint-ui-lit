@@ -9,10 +9,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 */
 
 import { html, customElement } from 'lit-element';
-import { PageViewElement } from '../components/page-view-element';
+import { PageViewElement } from '../components/page-view-element.js';
 
 // These are the shared styles needed by this element.
-import { SharedStyles } from '../styles/shared-styles';
+import { SharedStyles } from '../styles/shared-styles.js';
 
 @customElement('mint-view404')
 export class MintView404 extends PageViewElement {

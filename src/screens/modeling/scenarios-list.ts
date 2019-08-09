@@ -32,8 +32,8 @@ import "weightless/snackbar";
 
 import "./mint-scenario";
 
-import { navigate, BASE_HREF, goToPage } from '../../app/actions';
-import { PageViewElement } from '../../components/page-view-element';
+import { navigate, BASE_HREF, goToPage } from '../../app/actions.js';
+import { PageViewElement } from '../../components/page-view-element.js';
 import { renderNotifications } from '../../util/ui_renders';
 import { formElementsComplete, showDialog, hideDialog, showNotification, resetForm } from '../../util/ui_functions';
 import { listRegions } from '../regions/actions';
@@ -81,6 +81,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
               <wl-title level="4" style="margin: 0">${scenario.name}</wl-title>
               <wl-title level="5">${region.name}</wl-title>
               <span>Dates: ${scenario.dates.start_date} to ${scenario.dates.end_date}</span>
+              <!--wl-progress-bar mode="determinate" value="${Math.random()}"></wl-progress-bar-->
           </wl-list-item>
           `
         }

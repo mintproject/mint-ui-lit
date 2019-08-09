@@ -1,27 +1,21 @@
 {
   "compilerOptions": {
-    "baseUrl": "src",
-    "rootDir": ".",
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "strictNullChecks": false,
-    "allowJs": true,
-    "checkJs": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "esModuleInterop": true,
-    "lib": [
-      "dom",
-      "esnext"
-    ],
-    "target": "es5",
+    "target": "es2017",
+    "module": "esnext",
     "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "noImplicitAny": false,
+    "lib": ["es2017", "dom"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "suppressImplicitAnyIndexErrors": true
   },
   "include": [
-    "typings/**/*.d.ts",
     "src/**/*.ts"
-  ]
+  ],
+  "exclude": [],
 }

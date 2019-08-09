@@ -111,7 +111,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
             </wl-tooltip>
 
             <ul>
-            ${(Object.keys(this.pathway.models) || []).map((modelid) => {
+            ${(Object.keys(this.pathway.models) || {}).map((modelid) => {
                 let model = this.pathway.models![modelid];
                 let input_files = model.input_files.filter((input) => !input.value);
                 

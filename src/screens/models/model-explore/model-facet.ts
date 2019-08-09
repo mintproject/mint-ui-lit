@@ -1,5 +1,5 @@
 
-import { PageViewElement } from '../../../components/page-view-element';
+import { PageViewElement } from '../../../components/page-view-element.js';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from '../../../app/store';
 
