@@ -29,10 +29,10 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     _configId: string = '';
 
     @property({type: String})
-        uri : string = "";
+    private _uri : string = "-";
 
     @property({type: Number})
-        _count : number = 0;
+    private _count : number = 0;
 
     @property({type: Object})
     private _modelMetadata: any = null;
@@ -740,7 +740,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     <tbody>
                     ${this._compModels.map( (m:any) => html`
                         <tr>
-                            <td><a href="models/explore/${m.uri.split('/').pop()}">${m.label}</a></td>
+                            <td><a @click="${() => {this._goToModel(m)}}">${m.label}</a></td>
                             <td>${m.categories.join(', ')}</td>
                             <td>${m.desc}</td>
                         </tr>`)}
@@ -751,6 +751,11 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             default:
                 return html`<br/><h3 style="margin-left:30px">Sorry! We are currently working in this feature.</h3>`
         }
+    }
+
+    _goToModel (model:any) {
+        let id : string = model.uri.split('/').pop();
+        goToPage('models/explore/' + id);
     }
 
     _renderGallery () {
@@ -842,26 +847,28 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + this._configId + '/' + id);
     }
 
-    firstUpdated() {
-        store.dispatch(explorerFetchVersions(this.uri));
-        store.dispatch(explorerFetchMetadata(this.uri));
-        store.dispatch(explorerFetchExplDiags(this.uri));
-    }
-
     stateChanged(state: RootState) {
+        // Set this model
+        if (state.explorerUI && state.explorerUI.selectedModel != this._uri) {
+            this._uri = state.explorerUI.selectedModel;
+            store.dispatch(explorerFetchVersions(this._uri));
+            store.dispatch(explorerFetchMetadata(this._uri));
+            store.dispatch(explorerFetchExplDiags(this._uri));
+        }
+
         // Load model
-        if (state.explorer && state.explorer.models && state.explorer.models[this.uri] &&
-            this._model != state.explorer.models[this.uri]) {
+        if (state.explorer && state.explorer.models && state.explorer.models[this._uri] &&
+            this._model != state.explorer.models[this._uri]) {
             // Set new model
             console.log('SET NEW MODEL')
-            this._model = state.explorer.models[this.uri];
-            this._modelId = this.uri.split('/').pop() as string;
+            this._model = state.explorer.models[this._uri];
+            this._modelId = this._uri.split('/').pop() as string;
             if (this._model.categories) {
                 // Set related models (by category)
                 let compModels : FetchedModel[] = [];
                 this._model.categories.forEach( (cat:string) =>  {
                     Object.values(state.explorer!.models).forEach( (model:FetchedModel) => {
-                        if (model.categories && model.categories.indexOf(cat)>=0 && model.uri != this.uri) {
+                        if (model.categories && model.categories.indexOf(cat)>=0 && model.uri != this._uri) {
                             compModels.push(model);
                         }
                     });

@@ -118,7 +118,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
             ${this._selectedUri? 
                 //Display only selected model or the search
-                html`<model-facet-big style="width:75%;" uri="${this._selectedUri}"></model-facet-big>`
+                html`<model-facet-big style="width:75%;"></model-facet-big>`
                 : this._renderSearch()
             }
         `;
