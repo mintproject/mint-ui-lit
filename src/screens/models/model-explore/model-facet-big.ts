@@ -85,7 +85,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     private _explDiagrams : ExplanationDiagramDetail[] | null = null;
 
     @property({type: String})
-    private _tab : string = 'overview';
+    private _tab : 'overview'|'io'|'variables'|'software' = 'overview';
 
     constructor () {
         super();
@@ -396,23 +396,9 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         }
                     </td>
                 </tr>
-
-                <tr>
-                    <td class="content" colspan="2">
-                    <br/>
-                    <wl-tab-group>
-                        <wl-tab ?checked=${this._tab=='overview'}
-                            @click="${() => {this._setTab('overview')}}">Overview</wl-tab>
-                        <wl-tab ?checked=${this._tab=='io'} id="tab-io"
-                            @click="${() => {this._setTab('io')}}">Input/Output</wl-tab>
-                        <wl-tab ?checked=${this._tab=='variables'} id="tab-variable"
-                            @click="${() => {this._setTab('variables')}}">Variables</wl-tab>
-                        <!--<wl-tab @click="${() => {this._setTab('tech')}}">Technical Details</wl-tab>-->
-                        <!--<wl-tab @click="${() => {this._setTab('execut')}}">Execute</wl-tab>-->
-                        <wl-tab @click="${() => {this._setTab('software')}}">Compatible Software</wl-tab>
-                    </wl-tab-group>
-                ${this._renderTab(this._tab)}
-                <br/>
+                ${this._renderTabs()}
+            </table>
+            <br/>
         `;
     }
 
@@ -466,7 +452,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         }`
     }
 
-    _setTab (tabName: string) {
+    _setTab (tabName: 'overview'|'io'|'variables'|'software') {
         this._tab = tabName;
     }
 
@@ -487,22 +473,251 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         }
     }
 
-    _expandVariable (varLabel:string, type:'input'|'output') {
-        let groupName : string = '';
-        switch (type) {
-            case 'input':
-                groupName = 'groupInput';
-                break;
-            case 'input':
-                groupName = 'groupOutput';
-                break;
-            default: return;
+    _expandVariable (varLabel:string) {
+        if (varLabel) {
+            this._changeTab('variable');
+            setTimeout(() => {
+                let exp : HTMLElement | null = this.shadowRoot!.getElementById(varLabel);
+                if (exp) {
+                    exp.click();
+                }
+                }, 200)
         }
-        this._changeTab('variable');
-        let groupElement: HTMLElement | null = this.shadowRoot!.getElementById(groupName);
-        if (groupElement && varLabel) {
-          console.log('TODO: open expansion')
+    }
+
+    _renderTabs () {
+        return html`
+            <tr>
+                <td class="content" colspan="2">
+                    <br/>
+                    <wl-tab-group>
+                        <wl-tab ?checked=${this._tab=='overview'}
+                            @click="${() => {this._setTab('overview')}}">Overview</wl-tab>
+                        <wl-tab ?checked=${this._tab=='io'} id="tab-io"
+                            @click="${() => {this._setTab('io')}}">Input/Output</wl-tab>
+                        <wl-tab ?checked=${this._tab=='variables'} id="tab-variable"
+                            @click="${() => {this._setTab('variables')}}">Variables</wl-tab>
+                        <wl-tab @click="${() => {this._setTab('software')}}">Compatible Software</wl-tab>
+                    </wl-tab-group>
+                    <div>${this._renderTab(this._tab)}<div>
+                </td>
+            </tr>
+        `
+    }
+    
+    _renderTabOverview () {
+        return html`
+            <ul>
+                ${this._model.purpose? html`<li><b>Purpose:</b> ${this._model.purpose}</li>`:html``}
+                ${this._model.assumptions? html`<li><b>Assumptions:</b> ${this._model.assumptions}</li>`:html``}
+            </ul>
+
+            ${this._modelMetadata? html`${this._renderMetadata('Model Metadata', this._modelMetadata)}`:html``}
+            ${this._versionMetadata? html`${this._renderMetadata('Version Metadata', this._versionMetadata)}`:html``}
+            ${this._configMetadata? html`${this._renderMetadata('Configuration Metadata', this._configMetadata)}`:html``}
+            ${this._calibrationMetadata? html`${this._renderMetadata('Calibration Metadata', this._calibrationMetadata)}`:html``}
+            ${this._renderGallery()}`
+    }
+
+    _renderTabIO () {
+        return html`
+            ${(this._inputs) ? html`
+            <h3> Inputs: </h3>
+            <table class="pure-table pure-table-bordered">
+                <thead>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Format</th>
+                </thead>
+                <tbody>
+                ${this._inputs.map( io => html`
+                    <tr>
+                        <td><span class="clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
+                            ${io.label}
+                        </span></td>
+                        <td>${io.desc}</td>
+                        <td>${io.format}</td>
+                    </tr>`)}
+                </tbody>
+            </table>` : html``}
+
+            ${(this._outputs) ? html`
+            <h3> Outputs: </h3>
+            <table class="pure-table pure-table-bordered">
+                <thead>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Format</th>
+                </thead>
+                <tbody>
+                ${this._outputs.map( io => html`
+                    <tr>
+                        <td><span class="clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
+                            ${io.label}
+                        </span></td>
+                        <td>${io.desc}</td>
+                        <td>${io.format}</td>
+                    </tr>`)}
+                </tbody>
+            </table>` : html``}
+
+            ${(this._parameters)? 
+            html`
+                <h3> Parameters: </h3>
+                <table class="pure-table pure-table-bordered">
+                    <thead>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Datatype</th>
+                        <th>Default value</th>
+                    </thead>
+                    <tbody>
+                    ${this._parameters.map( (p:any) => html`
+                        <tr>
+                            <td>${p.paramlabel}</td>
+                            <td>${p.type}</td>
+                            <td>${p.pdatatype}</td>
+                            <td>${p.defaultvalue}</td>
+                        </tr>`)}
+                    </tbody>
+                </table>
+            `
+            :html``}
+            ${(!this._inputs && !this._outputs && !this._parameters)? html`
+            <br/>
+            <h3 style="margin-left:30px">
+                Sorry! The selected configuration does not have input/output yet.
+            </h3>`
+            :html ``}
+            `;
+    }
+
+    _renderTabVariables () {
+        return html`<div id="hack">${this._count}</div>
+            ${(this._inputs) ? html`<h3>Inputs:</h3>${this._inputs.map(input => html`
+            <wl-expansion id="${input.label}" name="groupInput" @click="${()=>{this.expandIO(input.uri)}}">
+                <span slot="title">${input.label}</span>
+                <span slot="description">${input.desc}</span>
+                ${this._variables[input.uri] ? 
+                html`${this._variables[input.uri].length>0?
+                    html`
+                    <table class="pure-table pure-table-bordered">
+                        <thead>
+                            <th>Label</th>
+                            <th>Long Name</th>
+                            <th>Description</th>
+                            <th>Standard Name</th>
+                            <th>Units</th>
+                        </thead>
+                        <tbody>
+                        ${this._variables[input.uri].map((v:any) => 
+                            html`
+                            <tr>
+                                <td>${v.label}</td>
+                                <td>${v.longName}</td>
+                                <td>${v.desc}</td>
+                                <td style="word-wrap: break-word;">${v.sn}</td>
+                                <td style="min-width: 80px;">${v.unit}</td>
+                            </tr>`)}
+                        </tbody>
+                    </table>`
+                    : html`
+                    <div class="text-centered"><h4>Sorry! This input does not have variables yet.</h4></div>
+                    `
+                }`
+                : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
+            </wl-expansion>`)}`
+            : html``}
+
+            ${(this._outputs) ? html`<h3>Outputs:</h3>${this._outputs.map(output => html`
+            <wl-expansion id="${output.label}" name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}">
+                <span slot="title">${output.label}</span>
+                <span slot="description">${output.desc}</span>
+                ${this._variables[output.uri] ? 
+                html`${this._variables[output.uri].length>0?
+                    html`
+                    <table class="pure-table pure-table-bordered">
+                        <thead>
+                            <th>Label</th>
+                            <th>Long Name</th>
+                            <th>Description</th>
+                            <th>Standard Name</th>
+                            <th>Units</th>
+                        </thead>
+                        <tbody>
+                        ${this._variables[output.uri].map((v:any) => 
+                            html`
+                            <tr>
+                                <td>${v.label}</td>
+                                <td>${v.longName}</td>
+                                <td>${v.desc}</td>
+                                <td style="word-wrap: break-word;">${v.sn}</td>
+                                <td style="min-width: 80px;">${v.unit}</td>
+                            </tr>`)}
+                        </tbody>
+                    </table>`
+                    : html`
+                    <div class="text-centered"><h4>Sorry! This output does not have variables yet.</h4></div>
+                    `
+                }`
+                : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
+            </wl-expansion>`)}`
+            : html``}
+
+            ${(!this._inputs && !this._outputs) ? html`<br/><h3 style="margin-left:30px">
+                Sorry! The selected configuration does not have software compatible inputs/outputs yet.
+            </h3>`
+            : html``}`;
+    }
+
+    _renderTabSoftware () {
+        return html`${(this._selectedVersion && this._selectedConfig)?
+            html`${(this._compInput && this._compInput.length>0) || 
+                   (this._compOutput && this._compOutput.length>0) ?
+                html`
+                    ${(this._compInput && this._compInput.length>0)?
+                        html`<h3> This model configuration uses variables that can be produced from:</h3>
+                        <ul>${this._compInput.map(i=>{
+                            return html`<li><b>${i.label}:</b> With variables: ${i.vars.map((v, i) => {
+                                if (i==0) return html`<code>${v}</code>`;
+                                else return html`, <code>${v}</code>`;
+                            })}</li>`
+                        })}</ul>`: html``
+                    }
+                    ${(this._compOutput && this._compOutput.length>0)?
+                        html`<h3> This model configuraion produces variables that can be used by:</h3>
+                        <ul>${this._compOutput.map(i=>{
+                            return html`<li><b>${i.label}:</b> With variables: ${i.vars.map((v, i) => {
+                                if (i==0) return html`<code>${v}</code>`;
+                                else return html`, <code>${v}</code>`;
+                            })}</li>`
+                        })}</ul>`: html``
+                    }`
+                : html`<br/><h3 style="margin-left:30px">
+                    Sorry! The selected configuration does not have software compatible inputs/outputs yet.
+                </h3>
+                `
+            }`
+            : html`<br/><h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`
         }
+        ${this._compModels? html`
+        <h3> Related models: </h3>
+        <table class="pure-table pure-table-bordered">
+            <thead>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Description</th>
+            </thead>
+            <tbody>
+            ${this._compModels.map( (m:any) => html`
+                <tr>
+                    <td><a @click="${() => {this._goToModel(m)}}">${m.label}</a></td>
+                    <td>${m.categories.join(', ')}</td>
+                    <td>${m.desc}</td>
+                </tr>`)}
+            </tbody>
+        </table>
+        `:html``}`
     }
 
     _renderMetadata (title: string, metadata:any) {
@@ -550,242 +765,16 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         </details>`;
     }
 
-    _renderTab (tabName : string) {
+    _renderTab (tabName : 'overview'|'io'|'variables'|'software') {
         switch (tabName) {
             case 'overview':
-                return html`
-
-                    <ul>
-                        ${this._model.purpose? html`<li><b>Purpose:</b> ${this._model.purpose}</li>`:html``}
-                        ${this._model.assumptions? html`<li><b>Assumptions:</b> ${this._model.assumptions}</li>`:html``}
-                    </ul>
-
-                    ${this._modelMetadata? html`${this._renderMetadata('Model Metadata', this._modelMetadata)}`:html``}
-                    ${this._versionMetadata? html`${this._renderMetadata('Version Metadata', this._versionMetadata)}`:html``}
-                    ${this._configMetadata? html`${this._renderMetadata('Configuration Metadata', this._configMetadata)}`:html``}
-                    ${this._calibrationMetadata? html`${this._renderMetadata('Calibration Metadata', this._calibrationMetadata)}`:html``}
-                    ${this._renderGallery()}`
-
-            case 'tech':
-                return html`${(this._model.installInstr || (this._model.os && this._model.os.length>0) ||
-                               this._model.sourceC || (this._model.pl && this._model.pl.length>0))?
-                    html`<ul>
-                        ${(this._model.os && this._model.os.length>0)?
-                            html`<li><b>Operating system:</b> ${this._model.os.join(', ')}</li>`: html``}
-                        ${this._model.sourceC?  
-                            html`<li><b>Source code:</b> 
-                                <a target="_blank" href="${this._model.sourceC}">${this._model.sourceC}</a>
-                            </li>`: html``}
-                        ${(this._model.pl && this._model.pl.length>0)?
-                            html`<li><b>Programming language:</b> ${this._model.pl.join(', ')}</li>`: html``}
-                        ${this._model.installInstr? 
-                            html`<li><b>Installation instructions:</b>
-                                <a target="_blank" href="${this._model.installInstr}">${this._model.installInstr}</a>
-                            </li>`: html``}
-                    </ul>`
-                    : html`<br/><h3 style="margin-left:30px">Sorry! We are currently working in this feature.</h3>`}`
-
+                return this._renderTabOverview(); 
             case 'io':
-                return html`
-                ${(this._inputs) ? html`
-                <h3> Inputs: </h3>
-                <table class="pure-table pure-table-bordered">
-                    <thead>
-                        <th>I/O</th>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Format</th>
-                    </thead>
-                    <tbody>
-                    ${this._inputs.map( io => html`
-                        <tr>
-                            <td>${io.kind}</td>
-                            <td><span class="clickable" @click="${()=>{this._expandVariable(io.label as string, 'input')}}">
-                                ${io.label}
-                            </span></td>
-                            <td>${io.desc}</td>
-                            <td>${io.format}</td>
-                        </tr>`)}
-                    </tbody>
-                </table>` : html``}
-
-                ${(this._outputs) ? html`
-                <h3> Outputs: </h3>
-                <table class="pure-table pure-table-bordered">
-                    <thead>
-                        <th>I/O</th>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Format</th>
-                    </thead>
-                    <tbody>
-                    ${this._outputs.map( io => html`
-                        <tr>
-                            <td>${io.kind}</td>
-                            <td><span class="clickable" @click="${()=>{this._expandVariable(io.label as string, 'output')}}">
-                                ${io.label}
-                            </span></td>
-                            <td>${io.desc}</td>
-                            <td>${io.format}</td>
-                        </tr>`)}
-                    </tbody>
-                </table>` : html``}
-                ${(this._parameters)? 
-                html`
-                    <h3> Parameters: </h3>
-                    <table class="pure-table pure-table-bordered">
-                        <thead>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>Datatype</th>
-                            <th>Default value</th>
-                        </thead>
-                        <tbody>
-                        ${this._parameters.map( (p:any) => html`
-                            <tr>
-                                <td>${p.paramlabel}</td>
-                                <td>${p.type}</td>
-                                <td>${p.pdatatype}</td>
-                                <td>${p.defaultvalue}</td>
-                            </tr>`)}
-                        </tbody>
-                    </table>
-                `
-                :html``}
-                ${(!this._inputs && !this._outputs && !this._parameters)? html`
-                <br/>
-                <h3 style="margin-left:30px">
-                    Sorry! The selected configuration does not have input/output yet.
-                </h3>`
-                :html ``}
-                `;
-
+                return this._renderTabIO();
             case 'variables':
-                return html`<div id="hack">${this._count}</div>
-                    ${(this._inputs) ? html`<h3>Inputs:</h3>${this._inputs.map(input => html`
-                    <wl-expansion id="groupInput" name="groupInput" @click="${()=>{this.expandIO(input.uri)}}">
-                        <span slot="title">${input.label}</span>
-                        <span slot="description">${input.desc}</span>
-                        ${this._variables[input.uri] ? 
-                        html`${this._variables[input.uri].length>0?
-                            html`
-                            <table class="pure-table pure-table-bordered">
-                                <thead>
-                                    <th>Label</th>
-                                    <th>Long Name</th>
-                                    <th>Description</th>
-                                    <th>Standard Name</th>
-                                    <th>Units</th>
-                                </thead>
-                                <tbody>
-                                ${this._variables[input.uri].map((v:any) => 
-                                    html`
-                                    <tr>
-                                        <td>${v.label}</td>
-                                        <td>${v.longName}</td>
-                                        <td>${v.desc}</td>
-                                        <td style="word-wrap: break-word;">${v.sn}</td>
-                                        <td style="min-width: 80px;">${v.unit}</td>
-                                    </tr>`)}
-                                </tbody>
-                            </table>`
-                            : html`
-                            <div class="text-centered"><h4>Sorry! This input does not have variables yet.</h4></div>
-                            `
-                        }`
-                        : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
-                    </wl-expansion>`)}`
-                    : html``}
-
-                    ${(this._outputs) ? html`<h3>Outputs:</h3>${this._outputs.map(output => html`
-                    <wl-expansion id="groupOutput" name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}">
-                        <span slot="title">${output.label}</span>
-                        <span slot="description">${output.desc}</span>
-                        ${this._variables[output.uri] ? 
-                        html`${this._variables[output.uri].length>0?
-                            html`
-                            <table class="pure-table pure-table-bordered">
-                                <thead>
-                                    <th>Label</th>
-                                    <th>Long Name</th>
-                                    <th>Description</th>
-                                    <th>Standard Name</th>
-                                    <th>Units</th>
-                                </thead>
-                                <tbody>
-                                ${this._variables[output.uri].map((v:any) => 
-                                    html`
-                                    <tr>
-                                        <td>${v.label}</td>
-                                        <td>${v.longName}</td>
-                                        <td>${v.desc}</td>
-                                        <td style="word-wrap: break-word;">${v.sn}</td>
-                                        <td style="min-width: 80px;">${v.unit}</td>
-                                    </tr>`)}
-                                </tbody>
-                            </table>`
-                            : html`
-                            <div class="text-centered"><h4>Sorry! This output does not have variables yet.</h4></div>
-                            `
-                        }`
-                        : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
-                    </wl-expansion>`)}`
-                    : html``}
-                    
-                    ${(!this._inputs && !this._outputs) ? html`<br/><h3 style="margin-left:30px">
-                        Sorry! The selected configuration does not have software compatible inputs/outputs yet.
-                    </h3>`
-                    : html``}`;
-
+                return this._renderTabVariables();
             case 'software':
-                return html`${(this._selectedVersion && this._selectedConfig)?
-                    html`${(this._compInput && this._compInput.length>0) || 
-                           (this._compOutput && this._compOutput.length>0) ?
-                        html`
-                            ${(this._compInput && this._compInput.length>0)?
-                                html`<h3> This model configuration uses variables that can be produced from:</h3>
-                                <ul>${this._compInput.map(i=>{
-                                    return html`<li><b>${i.label}:</b> With variables: ${i.vars.map((v, i) => {
-                                        if (i==0) return html`<code>${v}</code>`;
-                                        else return html`, <code>${v}</code>`;
-                                    })}</li>`
-                                })}</ul>`: html``
-                            }
-                            ${(this._compOutput && this._compOutput.length>0)?
-                                html`<h3> This model configuraion produces variables that can be used by:</h3>
-                                <ul>${this._compOutput.map(i=>{
-                                    return html`<li><b>${i.label}:</b> With variables: ${i.vars.map((v, i) => {
-                                        if (i==0) return html`<code>${v}</code>`;
-                                        else return html`, <code>${v}</code>`;
-                                    })}</li>`
-                                })}</ul>`: html``
-                            }`
-                        : html`<br/><h3 style="margin-left:30px">
-                            Sorry! The selected configuration does not have software compatible inputs/outputs yet.
-                        </h3>
-                        `
-                    }`
-                    : html`<br/><h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`
-                }
-                ${this._compModels? html`
-                <h3> Related models: </h3>
-                <table class="pure-table pure-table-bordered">
-                    <thead>
-                        <th>Name</th>
-                        <th>Category</th>
-                        <th>Description</th>
-                    </thead>
-                    <tbody>
-                    ${this._compModels.map( (m:any) => html`
-                        <tr>
-                            <td><a @click="${() => {this._goToModel(m)}}">${m.label}</a></td>
-                            <td>${m.categories.join(', ')}</td>
-                            <td>${m.desc}</td>
-                        </tr>`)}
-                    </tbody>
-                </table>
-                `:html``}`
-
+                return this._renderTabSoftware();
             default:
                 return html`<br/><h3 style="margin-left:30px">Sorry! We are currently working in this feature.</h3>`
         }
