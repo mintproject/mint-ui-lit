@@ -202,6 +202,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
         this._searchType = selectElement['value'].toLowerCase();
         this._clearSearchInput();
+        this._variables = {};
     }
 
     _lastTimeout:any;
