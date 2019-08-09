@@ -1,8 +1,8 @@
 
 import { html, customElement } from 'lit-element';
-import { PageViewElement } from '../../components/page-view-element.js';
+import { PageViewElement } from '../../components/page-view-element';
 
-import { SharedStyles } from '../../styles/shared-styles.js';
+import { SharedStyles } from '../../styles/shared-styles';
 
 /*
 store.addReducers({
