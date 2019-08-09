@@ -418,13 +418,12 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
 
     _renderSelector () {
         return html`
-        <!-- FIXME: load selected from state -->
         <span tip="Currently selected model version" class="tooltip">
             <wl-icon>help_outline</wl-icon>
         </span>
         <span class="select-label">Version:</span>
         <select id="select-version" class="select-css" label="Select version" @change="${this.changeVersion}">
-            <option value="" disabled selected>Select version</option>
+            <option value="" disabled ?selected="${this._selectedVersion === null}">Select version</option>
             ${this._versions.map(v => 
                 html`<option value="${v.uri}" ?selected=${this._selectedVersion && v.uri===this._selectedVersion.uri}>
                     ${v.label}
@@ -437,7 +436,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             </span>
             <span class="select-label">Configuration:</span>
             <select id="select-config" class="select-css" label="Select configuration" @change="${this.changeConfig}">
-                <option value="" disabled selected>Select configuration</option>
+                <option value="" disabled ?selected="${this._selectedConfig === null}">Select configuration</option>
                 ${this._selectedVersion.configs.map( c =>
                     html`<option value="${c.uri}" ?selected=${this._selectedConfig && c.uri===this._selectedConfig.uri}>
                         ${c.label}
@@ -451,7 +450,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 </span>
                 <span class="select-label">Calibration:</span>
                 <select id="select-calibration" class="select-css" label="Select calibration" @change="${this.changeCalibration}">
-                    <option value="" disabled selected>Select calibration</option>
+                    <option value="" disabled ?selected="${this._selectedCalibration===null}">Select calibration</option>
                     ${this._selectedConfig.calibrations.map( c =>
                         html`<option value="${c.uri}"
                         ?selected="${this._selectedCalibration && c.uri===this._selectedCalibration.uri}">
@@ -976,20 +975,23 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                                 let id = firstCalib.uri.split('/').pop();
                                 id = id!.replace('.','+');
                                 goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + this._configId + '/' + id);
-                                //store.dispatch(explorerSetCalibration(firstCalib.uri.split('/').pop()));
                             }
                         }
                     }
 
                     // Set selected Calibration
-                    if (this._selectedConfig && state.explorerUI.selectedCalibration &&
-                        this._selectedConfig.calibrations) {
-                        let sCalib = this._selectedConfig.calibrations.filter( (c:any) => 
-                            c.uri === state.explorerUI!.selectedCalibration);
-                        if (sCalib && sCalib.length > 0 && sCalib[0] != this._selectedCalibration) {
-                            this._selectedCalibration = sCalib[0];
-                            console.log('SET NEW CALIBRATION')
-                            store.dispatch(explorerFetchMetadata(this._selectedCalibration.uri));
+                    if (this._selectedConfig) {
+                        if (state.explorerUI.selectedCalibration && this._selectedConfig.calibrations) {
+                            let sCalib = this._selectedConfig.calibrations.filter((c:any) => 
+                                         c.uri === state.explorerUI!.selectedCalibration);
+                            if (sCalib && sCalib.length > 0 && sCalib[0] != this._selectedCalibration) {
+                                this._selectedCalibration = sCalib[0];
+                                console.log('SET NEW CALIBRATION')
+                                store.dispatch(explorerFetchMetadata(this._selectedCalibration.uri));
+                            }
+                        } else if (state.explorerUI.selectedCalibration === "") {
+                            this._selectedCalibration = null;
+                            this._calibrationMetadata = null;
                         }
                     }
                 }
