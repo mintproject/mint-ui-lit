@@ -41,4 +41,8 @@ pre code {
 .clickable {
     cursor: pointer;
 }
+
+b.clickable, span.clickable {
+    border-bottom: 1px dotted;
+}
 `

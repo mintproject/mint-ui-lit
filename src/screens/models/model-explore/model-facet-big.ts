@@ -402,16 +402,16 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     <br/>
                     <wl-tab-group>
                         <wl-tab ?checked=${this._tab=='overview'}
-                            @click="${() => {this.changeTab('overview')}}">Overview</wl-tab>
-                        <wl-tab ?checked=${this._tab=='io'}
-                            @click="${() => {this.changeTab('io')}}">Input/Output</wl-tab>
-                        <wl-tab ?checked=${this._tab=='variables'}
-                            @click="${() => {this.changeTab('variables')}}">Variables</wl-tab>
-                        <!--<wl-tab @click="${() => {this.changeTab('tech')}}">Technical Details</wl-tab>-->
-                        <!--<wl-tab @click="${() => {this.changeTab('execut')}}">Execute</wl-tab>-->
-                        <wl-tab @click="${() => {this.changeTab('software')}}">Compatible Software</wl-tab>
+                            @click="${() => {this._setTab('overview')}}">Overview</wl-tab>
+                        <wl-tab ?checked=${this._tab=='io'} id="tab-io"
+                            @click="${() => {this._setTab('io')}}">Input/Output</wl-tab>
+                        <wl-tab ?checked=${this._tab=='variables'} id="tab-variable"
+                            @click="${() => {this._setTab('variables')}}">Variables</wl-tab>
+                        <!--<wl-tab @click="${() => {this._setTab('tech')}}">Technical Details</wl-tab>-->
+                        <!--<wl-tab @click="${() => {this._setTab('execut')}}">Execute</wl-tab>-->
+                        <wl-tab @click="${() => {this._setTab('software')}}">Compatible Software</wl-tab>
                     </wl-tab-group>
-                ${this.renderTab(this._tab)}
+                ${this._renderTab(this._tab)}
                 <br/>
         `;
     }
@@ -466,8 +466,43 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         }`
     }
 
-    changeTab (tabName: string) {
+    _setTab (tabName: string) {
         this._tab = tabName;
+    }
+
+    _changeTab (tabName: string) {
+        let tabId : string = '';
+        switch (tabName) {
+            case 'io':
+                tabId = 'tab-io';
+                break;
+            case 'variable':
+                tabId = 'tab-variable';
+                break;
+            default: return;
+        }
+        let ioElement : HTMLElement | null = this.shadowRoot!.getElementById(tabId);
+        if (ioElement && tabId) {
+            ioElement.click();
+        }
+    }
+
+    _expandVariable (varLabel:string, type:'input'|'output') {
+        let groupName : string = '';
+        switch (type) {
+            case 'input':
+                groupName = 'groupInput';
+                break;
+            case 'input':
+                groupName = 'groupOutput';
+                break;
+            default: return;
+        }
+        this._changeTab('variable');
+        let groupElement: HTMLElement | null = this.shadowRoot!.getElementById(groupName);
+        if (groupElement && varLabel) {
+          console.log('TODO: open expansion')
+        }
     }
 
     _renderMetadata (title: string, metadata:any) {
@@ -482,16 +517,16 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 ${meta.desc? html`<li><b>Description:</b>
                     ${meta.desc}</li>`:html``}
                 ${meta.input_variables? 
-                    html`<li class="clickable" @click="${()=>{this.changeTab('io')}}">
-                    <b>Input Variables:</b>
+                    html`<li>
+                    <b class="clickable" @click="${()=>{this._changeTab('io')}}">Input Variables:</b>
                     ${meta.input_variables.length}</li>`:html``}
                 ${meta.output_variables? 
-                    html`<li class="clickable" @click="${()=>{this.changeTab('io')}}">
-                    <b>Output Variables:</b>
+                    html`<li>
+                    <b class="clickable" @click="${()=>{this._changeTab('io')}}">Output Variables:</b>
                     ${meta.output_variables.length}</li>`:html``}
                 ${meta.parameters? 
-                    html`<li class="clickable" @click="${()=>{this.changeTab('io')}}">
-                    <b>Parameters:</b>
+                    html`<li>
+                    <b class="clickable" @click="${()=>{this._changeTab('io')}}">Parameters:</b>
                     ${meta.parameters.length}</li>`:html``}
                 ${meta.processes? html`<li><b>Processes:</b>
                     ${meta.processes.join(', ')}</li>`:html``}
@@ -515,7 +550,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         </details>`;
     }
 
-    renderTab (tabName : string) {
+    _renderTab (tabName : string) {
         switch (tabName) {
             case 'overview':
                 return html`
@@ -565,7 +600,9 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     ${this._inputs.map( io => html`
                         <tr>
                             <td>${io.kind}</td>
-                            <td>${io.label}</td>
+                            <td><span class="clickable" @click="${()=>{this._expandVariable(io.label as string, 'input')}}">
+                                ${io.label}
+                            </span></td>
                             <td>${io.desc}</td>
                             <td>${io.format}</td>
                         </tr>`)}
@@ -585,7 +622,9 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     ${this._outputs.map( io => html`
                         <tr>
                             <td>${io.kind}</td>
-                            <td>${io.label}</td>
+                            <td><span class="clickable" @click="${()=>{this._expandVariable(io.label as string, 'output')}}">
+                                ${io.label}
+                            </span></td>
                             <td>${io.desc}</td>
                             <td>${io.format}</td>
                         </tr>`)}
@@ -624,7 +663,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             case 'variables':
                 return html`<div id="hack">${this._count}</div>
                     ${(this._inputs) ? html`<h3>Inputs:</h3>${this._inputs.map(input => html`
-                    <wl-expansion name="groupInput" @click="${()=>{this.expandIO(input.uri)}}">
+                    <wl-expansion id="groupInput" name="groupInput" @click="${()=>{this.expandIO(input.uri)}}">
                         <span slot="title">${input.label}</span>
                         <span slot="description">${input.desc}</span>
                         ${this._variables[input.uri] ? 
@@ -659,7 +698,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     : html``}
 
                     ${(this._outputs) ? html`<h3>Outputs:</h3>${this._outputs.map(output => html`
-                    <wl-expansion name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}">
+                    <wl-expansion id="groupOutput" name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}">
                         <span slot="title">${output.label}</span>
                         <span slot="description">${output.desc}</span>
                         ${this._variables[output.uri] ? 
