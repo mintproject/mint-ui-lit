@@ -21,7 +21,7 @@ import modeling from './reducers';
 import "./scenarios-list";
 import "./mint-scenario";
 
-import { PageViewElement } from '../../components/page-view-element';
+import { PageViewElement } from '../../components/page-view-element.js';
 
 
 store.addReducers({

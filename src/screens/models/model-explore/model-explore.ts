@@ -1,5 +1,5 @@
 import { html, customElement, property, css } from 'lit-element';
-import { PageViewElement } from '../../../components/page-view-element';
+import { PageViewElement } from '../../../components/page-view-element.js';
 import { connect } from 'pwa-helpers/connect-mixin';
 
 import { ExplorerStyles } from './explorer-styles'
@@ -135,7 +135,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     <div slot="before"> <wl-icon>search</wl-icon> </div>
                 </wl-textfield><!--
                 --><wl-select id="search-type-selector" label="Search on" @input="${this._onSearchTypeChange}" value="${this._searchType}">
-                   <option value="full-text">Full text</option>
+                   <option value="full-text"}">Full text</option>
                    <option value="variables">Variable names</option>
                 </wl-select>
             </div>
@@ -154,7 +154,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                         uri="${key}"
                         altDesc="${this._variables[key] ? this._variables[key] : ''}"
                         altTitle="${this._variables[key] ? 'With Variables ('+this._variables[key].split(';').length+'):' : ''}"
-                        .style="${!this._activeModels[key]? 'display: none;' : ''}">
+                        style="${!this._activeModels[key]? 'display: none;' : ''}">
                     </model-facet>
                     `
                 )}

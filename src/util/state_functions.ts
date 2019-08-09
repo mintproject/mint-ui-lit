@@ -36,7 +36,7 @@ export const createPathwayExecutableEnsembles = (pathway: Pathway) => {
     });
     pathway.executable_ensembles = [];
     
-    (Object.keys(pathway.model_ensembles!) || []).map((modelid) => {
+    (Object.keys(pathway.model_ensembles!) || {}).map((modelid) => {
         // Get any existing ensemble selection for the model
         let dataEnsemble: DataEnsembleMap = pathway.model_ensembles![modelid] || {};
 

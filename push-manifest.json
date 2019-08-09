@@ -1,0 +1,13 @@
+{
+  "/": {
+    "src/app/mint-app.js": {
+      "crossorigin": "anonymous",
+      "type": "script",
+      "weight": 1
+    },
+    "node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js": {
+      "type": "script",
+      "weight": 1
+    }
+  }
+}

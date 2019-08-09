@@ -69,7 +69,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                 Change Adjustable Variable Values
             </wl-tooltip>
             <ul>
-            ${(Object.keys(this.pathway.models) || []).map((modelid) => {
+            ${(Object.keys(this.pathway.models) || {}).map((modelid) => {
                 let model = this.pathway.models![modelid];
                 // Get any existing ensemble selection for the model
                 let ensembles:DataEnsembleMap = this.pathway.model_ensembles![modelid] || {};
