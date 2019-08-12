@@ -1,6 +1,6 @@
 import { html, property, customElement, css } from 'lit-element';
 
-import { PageViewElement } from '../../../components/page-view-element.js';
+import { PageViewElement } from '../../../components/page-view-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from '../../../app/store';
 
