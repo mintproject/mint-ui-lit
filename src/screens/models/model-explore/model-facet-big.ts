@@ -436,7 +436,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 </span>
                 <span class="select-label">Calibration:</span>
                 <select id="select-calibration" class="select-css" label="Select calibration" @change="${this.changeCalibration}">
-                    <option value="" disabled ?selected="${this._selectedCalibration===null}">Select calibration</option>
+                    <option value="" ?selected="${this._selectedCalibration===null}">Select calibration</option>
                     ${this._selectedConfig.calibrations.map( c =>
                         html`<option value="${c.uri}"
                         ?selected="${this._selectedCalibration && c.uri===this._selectedCalibration.uri}">
@@ -570,6 +570,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         <th>Type</th>
                         <th>Datatype</th>
                         <th>Default value</th>
+                        ${this._selectedCalibration? html`<th>Fixed value</th>` : html``}
                     </thead>
                     <tbody>
                     ${this._parameters.map( (p:any) => html`
@@ -578,6 +579,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             <td>${p.type}</td>
                             <td>${p.pdatatype}</td>
                             <td>${p.defaultvalue}</td>
+                            ${this._selectedCalibration? html`<td>${p.fixedValue}</td>` : html``}
                         </tr>`)}
                     </tbody>
                 </table>
@@ -1016,6 +1018,10 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                                 this._selectedCalibration = sCalib[0];
                                 console.log('SET NEW CALIBRATION')
                                 store.dispatch(explorerFetchMetadata(this._selectedCalibration.uri));
+
+                                //store.dispatch(explorerFetchIO(this._selectedCalibration.uri));
+                                store.dispatch(explorerFetchParameters(this._selectedCalibration.uri));
+
                             }
                         } else if (state.explorerUI.selectedCalibration === "") {
                             this._selectedCalibration = null;
@@ -1045,10 +1051,13 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
 
                 if (this._selectedConfig) {
                     //Set parameters
-                    if (state.explorer.parameters && state.explorer.parameters[this._selectedConfig.uri] &&
-                        state.explorer.parameters[this._selectedConfig.uri].length > 0 &&
-                        this._parameters != state.explorer.parameters[this._selectedConfig.uri]) {
-                        this._parameters = state.explorer.parameters[this._selectedConfig.uri];
+                    if (state.explorer.parameters) {
+                        let selectedUri : string = this._selectedCalibration ? 
+                                this._selectedCalibration.uri : this._selectedConfig.uri;
+                        if (state.explorer.parameters[selectedUri] && state.explorer.parameters[selectedUri].length > 0 
+                            && this._parameters != state.explorer.parameters[selectedUri]) {
+                            this._parameters = state.explorer.parameters[selectedUri];
+                        }
                     }
 
                     //Set compatible Inputs
@@ -1067,16 +1076,22 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         this._compOutput = state.explorer.compatibleOutput[this._selectedConfig.uri];
                     }
 
-                    if (state.explorer.inputs && state.explorer.inputs[this._selectedConfig.uri] &&
-                        state.explorer.inputs[this._selectedConfig.uri].length > 0  &&
-                        this._inputs != state.explorer.inputs[this._selectedConfig.uri]) {
-                        this._inputs = state.explorer.inputs[this._selectedConfig.uri];
+                    //Set Inputs
+                    if (state.explorer.inputs) {
+                        let selectedUri : string = this._selectedConfig.uri;
+                        if (state.explorer.inputs[selectedUri] && state.explorer.inputs[selectedUri].length > 0
+                            && this._inputs != state.explorer.inputs[selectedUri]) {
+                            this._inputs = state.explorer.inputs[selectedUri];
+                        }
                     }
 
-                    if (state.explorer.outputs && state.explorer.outputs[this._selectedConfig.uri] &&
-                        state.explorer.outputs[this._selectedConfig.uri].length > 0  &&
-                        this._outputs != state.explorer.outputs[this._selectedConfig.uri]) {
-                        this._outputs = state.explorer.outputs[this._selectedConfig.uri];
+                    //Set Outputs
+                    if (state.explorer.outputs) {
+                        let selectedUri : string = this._selectedConfig.uri;
+                        if (state.explorer.outputs[selectedUri] && state.explorer.outputs[selectedUri].length > 0
+                            && this._outputs != state.explorer.outputs[selectedUri]) {
+                            this._outputs = state.explorer.outputs[selectedUri];
+                        }
                     }
 
                     if (state.explorer.variables && this._IOStatus.size > 0) {
