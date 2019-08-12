@@ -7,6 +7,8 @@ export const EXPLORER_SELECT_MODEL = 'EXPLORER_SELECT_MODEL'
 export const EXPLORER_SELECT_VERSION = 'EXPLORER_SELECT_VERSION'
 export const EXPLORER_SELECT_CONFIG = 'EXPLORER_SELECT_CONFIG'
 export const EXPLORER_SELECT_CALIBRATION = 'EXPLORER_SELECT_CALIBRATION'
+export const EXPLORER_SELECT_COMPARE_FIRST = 'EXPLORER_SELECT_COMPARE_FIRST'
+export const EXPLORER_SELECT_COMPARE_SECOND = 'EXPLORER_SELECT_COMPARE_SECOND'
 
 interface ActionSelectUri<T> extends Action<T> { uri: string };
 
@@ -14,9 +16,12 @@ export interface ExplorerActionSelectModel extends ActionSelectUri<'EXPLORER_SEL
 export interface ExplorerActionSelectVersion extends ActionSelectUri<'EXPLORER_SELECT_VERSION'> {};
 export interface ExplorerActionSelectConfig extends ActionSelectUri<'EXPLORER_SELECT_CONFIG'> {};
 export interface ExplorerActionSelectCalibration extends ActionSelectUri<'EXPLORER_SELECT_CALIBRATION'> {};
+export interface ExplorerActionSelectCompareFirst extends ActionSelectUri<'EXPLORER_SELECT_COMPARE_FIRST'> {};
+export interface ExplorerActionSelectCompareSecond extends ActionSelectUri<'EXPLORER_SELECT_COMPARE_SECOND'> {};
 
-export type ExplorerUIAction = ExplorerActionSelectModel | ExplorerActionSelectVersion | 
-                               ExplorerActionSelectConfig | ExplorerActionSelectCalibration;
+export type ExplorerUIAction = ExplorerActionSelectModel | ExplorerActionSelectVersion | ExplorerActionSelectConfig | 
+                               ExplorerActionSelectCalibration | ExplorerActionSelectCompareFirst |
+                               ExplorerActionSelectCompareSecond;
 
 type ExplorerThunkResult = ThunkAction<void, RootState, undefined, ExplorerUIAction>;
 
@@ -55,4 +60,22 @@ export const explorerSetCalibration: ActionCreator<ExplorerThunkResult> = (id:st
 
 export const explorerClearCalibration: ActionCreator<ExplorerThunkResult> = () => (dispatch) => {
     dispatch({ type: EXPLORER_SELECT_CALIBRATION, uri: '' })
+};
+
+export const explorerSetComparisonFirst: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
+    let uri : string = id ? RESOURCE_PREFIX + id : '';
+    dispatch({ type: EXPLORER_SELECT_COMPARE_FIRST, uri: uri })
+};
+
+export const explorerClearComparisonFirst: ActionCreator<ExplorerThunkResult> = () => (dispatch) => {
+    dispatch({ type: EXPLORER_SELECT_COMPARE_FIRST, uri: '' })
+};
+
+export const explorerSetComparisonSecond: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
+    let uri : string = id ? RESOURCE_PREFIX + id : '';
+    dispatch({ type: EXPLORER_SELECT_COMPARE_SECOND, uri: uri })
+};
+
+export const explorerClearComparisonSecond: ActionCreator<ExplorerThunkResult> = () => (dispatch) => {
+    dispatch({ type: EXPLORER_SELECT_COMPARE_SECOND, uri: '' })
 };
