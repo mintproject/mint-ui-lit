@@ -527,6 +527,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 <thead>
                     <th>Name</th>
                     <th>Description</th>
+                    ${this._selectedCalibration? html`<th>Fixed value</th>` : html``}
                     <th>Format</th>
                 </thead>
                 <tbody>
@@ -536,6 +537,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             ${io.label}
                         </span></td>
                         <td>${io.desc}</td>
+                        ${this._selectedCalibration? html`<td>${io.fixedValueDCId}</td>` : html``}
                         <td>${io.format}</td>
                     </tr>`)}
                 </tbody>
@@ -547,6 +549,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 <thead>
                     <th>Name</th>
                     <th>Description</th>
+                    ${this._selectedCalibration? html`<th>Fixed value</th>` : html``}
                     <th>Format</th>
                 </thead>
                 <tbody>
@@ -556,6 +559,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             ${io.label}
                         </span></td>
                         <td>${io.desc}</td>
+                        ${this._selectedCalibration? html`<td>${io.fixedValueDCId}</td>` : html``}
                         <td>${io.format}</td>
                     </tr>`)}
                 </tbody>
@@ -1019,7 +1023,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                                 console.log('SET NEW CALIBRATION')
                                 store.dispatch(explorerFetchMetadata(this._selectedCalibration.uri));
 
-                                //store.dispatch(explorerFetchIO(this._selectedCalibration.uri));
+                                store.dispatch(explorerFetchIO(this._selectedCalibration.uri));
                                 store.dispatch(explorerFetchParameters(this._selectedCalibration.uri));
 
                             }
@@ -1078,7 +1082,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
 
                     //Set Inputs
                     if (state.explorer.inputs) {
-                        let selectedUri : string = this._selectedConfig.uri;
+                        let selectedUri : string = this._selectedCalibration ? 
+                                this._selectedCalibration.uri : this._selectedConfig.uri;
                         if (state.explorer.inputs[selectedUri] && state.explorer.inputs[selectedUri].length > 0
                             && this._inputs != state.explorer.inputs[selectedUri]) {
                             this._inputs = state.explorer.inputs[selectedUri];
@@ -1087,7 +1092,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
 
                     //Set Outputs
                     if (state.explorer.outputs) {
-                        let selectedUri : string = this._selectedConfig.uri;
+                        let selectedUri : string = this._selectedCalibration ? 
+                                this._selectedCalibration.uri : this._selectedConfig.uri;
                         if (state.explorer.outputs[selectedUri] && state.explorer.outputs[selectedUri].length > 0
                             && this._outputs != state.explorer.outputs[selectedUri]) {
                             this._outputs = state.explorer.outputs[selectedUri];

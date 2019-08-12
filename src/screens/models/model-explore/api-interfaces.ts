@@ -42,6 +42,7 @@ export interface IODetail extends Resource {
     vp?:        string;
     sv?:        string;
     rl?:        string;
+    fixedValueDCId?: string;
 }
 
 export interface VariableDetail extends Resource {
