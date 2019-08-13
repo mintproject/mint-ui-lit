@@ -54,7 +54,7 @@ interface ConfigEntry {
 const config = {
     MODELS: {path: 'getModels', mandatory: []},
     VER_AND_CONF: {path: 'getModelVersionAndConfigsForModel', mandatory: ['model']},
-    GET_IO: {path: 'getConfigI_OVariables', mandatory: ['config']},
+    GET_IO: {path: 'getConfigI_OVariablesAndStandardNames', mandatory: ['config']},
     IO_VARS_AND_UNITS: {path: 'getI_OVariablesAndUnits', mandatory: ['io']},
     EXPLANATION_DIAGRAMS: {path: 'getExplanationDiagramsForResource', mandatory: ['v']},
     COMPATIBLE_OUTPUT: {path: 'getOutputCompatibleConfig', mandatory: ['config']},

@@ -118,10 +118,19 @@ export const explorerFetchIO: ActionCreator<ExplorerThunkResult> = (uri:string) 
             ioDescription: {newKey: 'desc'}
         }
     }).then(fetched => {
+        let data = fetched.reduce((acc:any, item:any) => {
+            if (!acc[item.uri]) {
+                acc[item.uri] = { ...item, st: [], units: [], vp :[] };
+            }
+            if (item.st)    acc[item.uri].st.push(item.st);
+            if (item.units) acc[item.uri].units.push(item.units);
+            if (item.vp)    acc[item.uri].vp.push(item.vp);
+            return acc;
+        }, {});
         dispatch({
             type: EXPLORER_IO,
             uri: uri,
-            details: fetched
+            details: Object.values(data)
         })
     })
 }
