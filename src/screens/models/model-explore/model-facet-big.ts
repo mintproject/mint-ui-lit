@@ -596,7 +596,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             ${(!this._inputs && !this._outputs && !this._parameters)? html`
             <br/>
             <h3 style="margin-left:30px">
-                Sorry! The selected configuration does not have input/output yet.
+                This information has not been specified yet.
             </h3>`
             :html ``}
             `;
@@ -632,7 +632,9 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         </tbody>
                     </table>`
                     : html`
-                    <div class="text-centered"><h4>Sorry! This input does not have variables yet.</h4></div>
+                    <div class="text-centered"><h4>
+                    This information has not been specified yet.
+                    </h4></div>
                     `
                 }`
                 : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
@@ -667,7 +669,9 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         </tbody>
                     </table>`
                     : html`
-                    <div class="text-centered"><h4>Sorry! This output does not have variables yet.</h4></div>
+                    <div class="text-centered"><h4>
+                        This information has not been specified yet.
+                    </h4></div>
                     `
                 }`
                 : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
@@ -675,7 +679,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             : html``}
 
             ${(!this._inputs && !this._outputs) ? html`<br/><h3 style="margin-left:30px">
-                Sorry! The selected configuration does not have software compatible inputs/outputs yet.
+                This information has not been specified yet
             </h3>`
             : html``}`;
     }
@@ -703,10 +707,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             })}</li>`
                         })}</ul>`: html``
                     }`
-                : html`<br/><h3 style="margin-left:30px">
-                    Sorry! The selected configuration does not have software compatible inputs/outputs yet.
-                </h3>
-                `
+                : html``
             }`
             : html`<br/><h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`
         }
@@ -727,7 +728,16 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 </tr>`)}
             </tbody>
         </table>
-        `:html``}`
+        `:html``}
+        ${(!this._compModels && (!this._compInput || this._compInput.length == 0) && (!this._compOutput || this._compOutput.length == 0))?
+            html`
+                <br/><h3 style="margin-left:30px">
+                    This information has not been specified yet.
+                </h3>
+            `
+            :html``
+        }
+        `
     }
 
     _renderMetadata (title: string, metadata:any) {
