@@ -9,6 +9,7 @@ import { goToPage } from '../../../app/actions';
 
 import { FetchedModel } from "./api-interfaces";
 import { ExplorerStyles } from './explorer-styles'
+import { explorerCompareModel } from './ui-actions'
 
 @customElement('model-facet')
 export class ModelFacet extends connect(store)(PageViewElement) {
@@ -196,7 +197,7 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                         ${this._model.label}
                         ${this._model.doc ? html`<a target="_blank" href="${this._model.doc}"><wl-icon>open_in_new</wl-icon></a>`: html``}
                     </span>
-                    <span class="icon"><wl-icon @click="${()=>{this._setCompare(this._model.uri)}}">compare_arrows</wl-icon></span>
+                    <span class="icon"><wl-icon @click="${()=>{this._compare(this._model.uri)}}">compare_arrows</wl-icon></span>
                   </div>
                   <div class="content" style="${this.altDesc? '' : 'text-align: justify;'}">
                     ${this.altDesc ? 
@@ -224,9 +225,8 @@ export class ModelFacet extends connect(store)(PageViewElement) {
         }
     }
 
-    _setCompare (uri:string) {
-        //Connect with actions
-        console.log(uri);
+    _compare (uri:string) {
+        store.dispatch(explorerCompareModel(uri));
     }
 
     firstUpdated() {
