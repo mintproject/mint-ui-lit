@@ -331,8 +331,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     </td>
                 </tr>
                 <tr>
-                    <td class="left text-centered">
-                    <span class="helper"></span>${this._model.logo ? 
+                    <td class="left text-centered" style="padding-top: 1.5em;">
+                        ${this._model.logo ? 
                         html`<img src="${this._model.logo}"/>`
                         : html`<img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>`}
                     </td>
