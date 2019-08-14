@@ -176,27 +176,30 @@ export class ModelCompare extends connect(store)(PageViewElement) {
                             <div class="title">${this._modelA.label}</div>
                         </div>
                         <div class="selectors">
-                            ${this._versionsA ? html`
-                            <wl-select id="selector-version-a" label="Version:" @input="${this._onVersionAChange}"
+                            ${this._versionsA? html`
+                            ${(this._versionsA && this._versionsA.length === 0)? html`
+                            <wl-text style="font-size: 1.1em;">- This model has no versions -</wl-text>
+                            ` : html`
+                            <wl-select id="selector-version-a" label="Select version" @input="${this._onVersionAChange}"
                                        value="${this._compareA.version}">
-                                <option value="">Any version</option>
+                                <option value="">Select a version</option>
                                 ${this._versionsA.map((v:any) => html`<option value="${v.uri}">${v.label}</option>`)}
                             </wl-select>
                             ${(this._compareA.version && this._configsA)? html`
-                            <wl-select id="selector-config-a" label="Configuration:" @input="${this._onConfigAChange}"
+                            <wl-select id="selector-config-a" label="Select configuration" @input="${this._onConfigAChange}"
                                        value="${this._compareA.config}">
-                                <option value="">Any configuration</option>
+                                <option value="">No configuration</option>
                                 ${this._configsA.map((c:any) => html`<option value="${c.uri}">${c.label}</option>`)}
                             </wl-select>
                             `:html``}
                             ${(this._compareA.config && this._calibrationsA)? html`
-                            <wl-select id="selector-calibration-a" label="Calibration:" @input="${this._onCalibrationAChange}"
+                            <wl-select id="selector-calibration-a" label="Select calibration" @input="${this._onCalibrationAChange}"
                                        value="${this._compareA.calibration}">
-                                <option value="">Any calibration</option>
+                                <option value="">No calibration</option>
                                 ${this._calibrationsA.map((c:any) => html`<option value="${c.uri}">${c.label}</option>`)}
                             </wl-select>
                             ` :html``}
-                            `
+                            `}`
                             : html`<wl-progress-spinner></wl-progress-spinner>`}
                         </div>
                     </td>
@@ -214,22 +217,22 @@ export class ModelCompare extends connect(store)(PageViewElement) {
 
                         <div class="selectors">
                             ${this._versionsB ? html`
-                            <wl-select id="selector-version-b" label="Version:" @input="${this._onVersionBChange}"
+                            <wl-select id="selector-version-b" label="Select version" @input="${this._onVersionBChange}"
                                        value="${this._compareB.version}">
-                                <option value="">Any version</option>
+                                <option value="">Select a version</option>
                                 ${this._versionsB.map((v:any) => html`<option value="${v.uri}">${v.label}</option>`)}
                             </wl-select>
                             ${(this._compareB.version && this._configsB)? html`
-                            <wl-select id="selector-config-b" label="Configuration:" @input="${this._onConfigBChange}"
+                            <wl-select id="selector-config-b" label="Select configuration" @input="${this._onConfigBChange}"
                                        value="${this._compareB.config}">
-                                <option value="">Any configuration</option>
+                                <option value="">No configuration</option>
                                 ${this._configsB.map((c:any) => html`<option value="${c.uri}">${c.label}</option>`)}
                             </wl-select>
                             `:html``}
                             ${(this._compareB.config && this._calibrationsB)? html`
-                            <wl-select id="selector-calibration-b" label="Calibration:" @input="${this._onCalibrationBChange}"
+                            <wl-select id="selector-calibration-b" label="Select calibration" @input="${this._onCalibrationBChange}"
                                        value="${this._compareB.calibration}">
-                                <option value="">Any calibration</option>
+                                <option value="">No calibration</option>
                                 ${this._calibrationsB.map((c:any) => html`<option value="${c.uri}">${c.label}</option>`)}
                             </wl-select>
                             ` :html``}
@@ -335,6 +338,8 @@ export class ModelCompare extends connect(store)(PageViewElement) {
     _onVersionAChange () {
         let selector : HTMLElement | null = this.shadowRoot!.getElementById('selector-version-a');
         if (selector && this._modelA) {
+            this._configMetadataA = null;
+            this._calibrationMetadataA = null;
             store.dispatch(explorerSetCompareA({model: this._modelA.uri, version: selector['value']? selector['value'] : ''}));
         }
     }
@@ -342,7 +347,9 @@ export class ModelCompare extends connect(store)(PageViewElement) {
     _onConfigAChange () {
         let selector : HTMLElement | null = this.shadowRoot!.getElementById('selector-config-a');
         if (selector) {
-            store.dispatch(explorerFetchMetadata(selector['value']));
+            this._configMetadataA = null;
+            this._calibrationMetadataA = null;
+            if (selector['value']) store.dispatch(explorerFetchMetadata(selector['value']));
             store.dispatch(explorerSetCompareA({...this._compareA, config: selector['value']? selector['value'] : '', calibration: ''}));
         }
     }
@@ -350,13 +357,16 @@ export class ModelCompare extends connect(store)(PageViewElement) {
     _onCalibrationAChange () {
         let selector : HTMLElement | null = this.shadowRoot!.getElementById('selector-calibration-a');
         if (selector) {
-            store.dispatch(explorerFetchMetadata(selector['value']));
+            this._calibrationMetadataA = null;
+            if (selector['value']) store.dispatch(explorerFetchMetadata(selector['value']));
             store.dispatch(explorerSetCompareA({...this._compareA, calibration: selector['value'] ? selector['value'] : ''}));
         }
     }
     _onVersionBChange () {
         let selector : HTMLElement | null = this.shadowRoot!.getElementById('selector-version-b');
         if (selector && this._modelB) {
+            this._configMetadataB = null;
+            this._calibrationMetadataB = null;
             store.dispatch(explorerSetCompareB({model: this._modelB.uri, version: selector['value']? selector['value'] : ''}));
         }
     }
@@ -364,7 +374,9 @@ export class ModelCompare extends connect(store)(PageViewElement) {
     _onConfigBChange () {
         let selector : HTMLElement | null = this.shadowRoot!.getElementById('selector-config-b');
         if (selector) {
-            store.dispatch(explorerFetchMetadata(selector['value']));
+            this._configMetadataB = null;
+            this._calibrationMetadataB = null;
+            if (selector['value']) store.dispatch(explorerFetchMetadata(selector['value']));
             store.dispatch(explorerSetCompareB({...this._compareB, config: selector['value']? selector['value'] : '', calibration: ''}));
         }
     }
@@ -372,7 +384,8 @@ export class ModelCompare extends connect(store)(PageViewElement) {
     _onCalibrationBChange () {
         let selector : HTMLElement | null = this.shadowRoot!.getElementById('selector-calibration-b');
         if (selector) {
-            store.dispatch(explorerFetchMetadata(selector['value']));
+            this._calibrationMetadataB = null;
+            if (selector['value']) store.dispatch(explorerFetchMetadata(selector['value']));
             store.dispatch(explorerSetCompareB({...this._compareB, calibration: selector['value'] ? selector['value'] : ''}));
         }
     }
@@ -384,15 +397,17 @@ export class ModelCompare extends connect(store)(PageViewElement) {
             while (mySelect.options.length > 1) {
                 mySelect.remove(mySelect.options.length - 1);
             }
-            for (let i = 0; i < data.length; i++) {
-                let opt = document.createElement('option');
-                opt.text = data[i].label;
-                opt.value = data[i].uri;
-                if (data[i].uri === selectedValue) {
-                    opt.selected = true;
-                }
+            if (data) {
+                for (let i = 0; i < data.length; i++) {
+                    let opt = document.createElement('option');
+                    opt.text = data[i].label;
+                    opt.value = data[i].uri;
+                    if (data[i].uri === selectedValue) {
+                        opt.selected = true;
+                    }
 
-                mySelect.add(opt, null);
+                    mySelect.add(opt, null);
+                }
             }
         }
     }
@@ -475,7 +490,6 @@ export class ModelCompare extends connect(store)(PageViewElement) {
 
                     if (state.explorer.modelMetadata && state.explorer.modelMetadata[this._compareA.config]) {
                         this._configMetadataA = state.explorer.modelMetadata[this._compareA.config][0];
-                        console.log(this._configMetadataA);
                     } else {
                         this._configMetadataA = null;
                     }
@@ -513,7 +527,6 @@ export class ModelCompare extends connect(store)(PageViewElement) {
 
                     if (state.explorer.modelMetadata && state.explorer.modelMetadata[this._compareB.config]) {
                         this._configMetadataB = state.explorer.modelMetadata[this._compareB.config][0];
-                        console.log(this._configMetadataB);
                     } else {
                         this._configMetadataB = null;
                     }
