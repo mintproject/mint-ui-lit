@@ -9,7 +9,7 @@ import { ExplorerStyles } from './explorer-styles'
 
 import { ComparisonEntry } from './ui-reducers';
 import { FetchedModel, VersionDetail } from './api-interfaces';
-import { explorerFetchVersions } from './actions';
+import { explorerFetchVersions, explorerFetchMetadata } from './actions';
 import { explorerSetCompareA, explorerSetCompareB } from './ui-actions'
 
 //import { goToPage } from '../../../app/actions';
@@ -54,12 +54,44 @@ export class ModelCompare extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _calibrationsB: any = null;
 
-    private _features = [
-        {key: 'doc', label: 'Page:', fn: (uri:string) => html`<a taget="_blank" href="${uri}">Model documentation</a>`},
+    @property({type: Object})
+    private _configMetadataA: any = null;
+
+    @property({type: Object})
+    private _configMetadataB: any = null;
+
+    @property({type: Object})
+    private _calibrationMetadataA: any = null;
+
+    @property({type: Object})
+    private _calibrationMetadataB: any = null;
+
+    private _modelFeatures = [
+        {key: 'doc', label: 'Page:', fn: (uri:string) => html`<a target="_blank" href="${uri}">Model documentation</a>`},
         {key: 'dateC', label: 'Creation date:'},
         {key: 'fundS', label: 'Funding:'},
         {key: 'publisher', label: 'Publisher:'},
         {key: 'type', label: 'Type:'},
+    ]
+
+    private _metadataFeatures = [
+        {key: 'desc', label: 'Description'},
+        {key: 'regionName', label: 'Region name'},
+        {key: 'input_variables', label: 'Input variables', fn: (input:any) => input.join(', ')},
+        {key: 'output_variables', label: 'Output variables', fn: (output:any) => output.join(', ')},
+        {key: 'parameters', label: 'Parameters', fn: (param:any) => param.join(', ')},
+        {key: 'processes', label: 'Processes', fn: (proc:any) => proc.join(', ')},
+
+        {key: 'paramAssignMethod', label: 'Parameter assignment method'},
+        {key: 'adjustableVariables', label: 'Adjustable variables', fn: (av:any) => av.join(', ')},
+        {key: 'targetVariables', label: 'Target variables', fn: (av:any) => av.join(', ')},
+
+        {key: 'gridDim', label: 'Spatial dimensionality'},
+        {key: 'gridType', label: 'Spatial grid type'},
+        {key: 'gridSpatial', label: 'Spatial grid resolution'},
+
+        {key: 'compLoc', label: 'Download', fn: (uri:string) => 
+            html`<a target="_blank" href="${uri}"> ${uri?uri.split('/').pop():''}</a>`}
     ]
 
     constructor () {
@@ -70,6 +102,10 @@ export class ModelCompare extends connect(store)(PageViewElement) {
     static get styles() {
         return [SharedStyles, ExplorerStyles,
             css`
+            wl-title {
+                padding-top: 1em;
+            }
+
             wl-select {
                 --input-font-size: 1em;
                 --input-label-font-size: 0.8em;
@@ -212,7 +248,18 @@ export class ModelCompare extends connect(store)(PageViewElement) {
                 <tr></tr>
                 <tr>
                     <td colspan="3">
+                        <wl-title level="4">Model comparison:</wl-title>
                         ${this._renderModelTable()}
+                        ${(this._configMetadataA || this._configMetadataB) ? html`
+                        <wl-title level="4">Configuration comparison:</wl-title>
+                        ${this._renderMetadataTable(this._configMetadataA, this._configMetadataB)}
+                        `
+                        : html``}
+                        ${(this._calibrationMetadataA || this._calibrationMetadataB) ? html`
+                        <wl-title level="4">Calibration comparison:</wl-title>
+                        ${this._renderMetadataTable(this._calibrationMetadataA, this._calibrationMetadataB)}
+                        `
+                        : html``}
                     </td>
                 </tr>
                 `: html``}
@@ -236,10 +283,9 @@ export class ModelCompare extends connect(store)(PageViewElement) {
                     <th><b>${this._modelB!.label}</b></th>
                 </thead>
                 <tbody>
-                ${this._features.map((f:any) => {
+                ${this._modelFeatures.map((f:any) => {
                     if (this._modelA![f.key] || this._modelB![f.key]) {
-                        return html`<tr>${this._renderFeature(f)}</tr>`
-                        return this._renderFeature(f);
+                        return html`<tr>${this._renderFeature(f, this._modelA, this._modelB)}</tr>`
                     } else {
                         return html``;
                     }
@@ -249,11 +295,40 @@ export class ModelCompare extends connect(store)(PageViewElement) {
         `
     }
 
-    _renderFeature (f:any) {
+    _renderMetadataTable (A:any, B:any) {
+        A = A || {};
+        B = B || {};
+        return html`
+            <table class="pure-table pure-table-striped" style="width: 100%">
+                <colgroup>
+                    <col span="1" style="width: 20%;">
+                    <col span="1" style="width: 40%;">
+                    <col span="1" style="width: 40%;">
+                </colgroup>
+
+                <thead>
+                    <th></th>
+                    <th><b>${A.label ? A.label : html`No selected`}</b></th>
+                    <th><b>${B.label ? B.label : html`No selected`}</b></th>
+                </thead>
+                <tbody>
+                ${this._metadataFeatures.map((f:any) => {
+                    if (A[f.key] || B[f.key]) {
+                        return html`<tr>${this._renderFeature(f, A, B)}</tr>`
+                    } else {
+                        return html``;
+                    }
+                })}
+                </tbody>
+            </table>
+        `
+    }
+
+    _renderFeature (f:any, A:any, B:any) {
         return html`
             <td><b>${f.label}</b></td>
-            <td>${f.fn ? f.fn(this._modelA![f.key]) : this._modelA![f.key]}</td>
-            <td>${f.fn ? f.fn(this._modelB![f.key]) : this._modelB![f.key]}</td>
+            <td>${(f.fn && A[f.key])? f.fn(A[f.key]) : A[f.key]}</td>
+            <td>${(f.fn && B[f.key])? f.fn(B[f.key]) : B[f.key]}</td>
         `;
     }
 
@@ -267,6 +342,7 @@ export class ModelCompare extends connect(store)(PageViewElement) {
     _onConfigAChange () {
         let selector : HTMLElement | null = this.shadowRoot!.getElementById('selector-config-a');
         if (selector) {
+            store.dispatch(explorerFetchMetadata(selector['value']));
             store.dispatch(explorerSetCompareA({...this._compareA, config: selector['value']? selector['value'] : '', calibration: ''}));
         }
     }
@@ -274,6 +350,7 @@ export class ModelCompare extends connect(store)(PageViewElement) {
     _onCalibrationAChange () {
         let selector : HTMLElement | null = this.shadowRoot!.getElementById('selector-calibration-a');
         if (selector) {
+            store.dispatch(explorerFetchMetadata(selector['value']));
             store.dispatch(explorerSetCompareA({...this._compareA, calibration: selector['value'] ? selector['value'] : ''}));
         }
     }
@@ -287,6 +364,7 @@ export class ModelCompare extends connect(store)(PageViewElement) {
     _onConfigBChange () {
         let selector : HTMLElement | null = this.shadowRoot!.getElementById('selector-config-b');
         if (selector) {
+            store.dispatch(explorerFetchMetadata(selector['value']));
             store.dispatch(explorerSetCompareB({...this._compareB, config: selector['value']? selector['value'] : '', calibration: ''}));
         }
     }
@@ -294,6 +372,7 @@ export class ModelCompare extends connect(store)(PageViewElement) {
     _onCalibrationBChange () {
         let selector : HTMLElement | null = this.shadowRoot!.getElementById('selector-calibration-b');
         if (selector) {
+            store.dispatch(explorerFetchMetadata(selector['value']));
             store.dispatch(explorerSetCompareB({...this._compareB, calibration: selector['value'] ? selector['value'] : ''}));
         }
     }
@@ -371,47 +450,82 @@ export class ModelCompare extends connect(store)(PageViewElement) {
             }
         }
 
-        if (this._compareA && state.explorer) {
-            if (this._compareA.model && state.explorer.versions) {
-                this._versionsA = state.explorer.versions[this._compareA.model] || null;
-                this._configsA = null;
-                this._calibrationsA = null;
+        if (state.explorer) {
+            if (this._compareA) {
+                if (this._compareA.model && state.explorer.versions) {
+                    this._versionsA = state.explorer.versions[this._compareA.model] || null;
+                    this._configsA = null;
+                    this._calibrationsA = null;
+                }
+
+                if (this._compareA.version && this._versionsA) {
+                    let thisVersion = this._versionsA.filter((v:any) => v.uri===this._compareA!.version)[0];
+                    this._configsA = thisVersion.configs || null;
+                    this._updateSelectOptions('selector-config-a', this._configsA, this._compareA.config);
+                    this._calibrationsA = null;
+                }
+
+                if (this._compareA.config) {
+                    if (this._configsA) {
+                        let thisConfig = this._configsA.filter((c:any) => c.uri===this._compareA!.config)[0];
+                        //this._calibrationsA = thisConfig.calibrations ? thisConfig.calibrations :null;
+                        this._calibrationsA = thisConfig.calibrations || null;
+                        this._updateSelectOptions('selector-calibration-a', this._calibrationsA, this._compareA.calibration);
+                    }
+
+                    if (state.explorer.modelMetadata && state.explorer.modelMetadata[this._compareA.config]) {
+                        this._configMetadataA = state.explorer.modelMetadata[this._compareA.config][0];
+                        console.log(this._configMetadataA);
+                    } else {
+                        this._configMetadataA = null;
+                    }
+                }
+
+                if (this._compareA.calibration && state.explorer.modelMetadata &&
+                    state.explorer.modelMetadata[this._compareA.calibration]) {
+                    this._calibrationMetadataA = state.explorer.modelMetadata[this._compareA.calibration][0];
+                } else {
+                    this._calibrationMetadataA = null;
+                }
             }
 
-            if (this._compareA.version && this._versionsA) {
-                let thisVersion = this._versionsA.filter((v:any) => v.uri===this._compareA!.version)[0];
-                this._configsA = thisVersion.configs || null;
-                this._updateSelectOptions('selector-config-a', this._configsA, this._compareA.config);
-                this._calibrationsA = null;
-            }
+            if (this._compareB) {
+                if (this._compareB.model && state.explorer.versions) {
+                    this._versionsB = state.explorer.versions[this._compareB.model] || null;
+                    this._configsB = null;
+                    this._calibrationsB = null;
+                }
 
-            if (this._compareA.config && this._configsA) {
-                let thisConfig = this._configsA.filter((c:any) => c.uri===this._compareA!.config)[0];
-                this._calibrationsA = thisConfig.calibrations ? thisConfig.calibrations :null;
-                this._updateSelectOptions('selector-calibration-a', this._calibrationsA, this._compareA.calibration);
+                if (this._compareB.version && this._versionsB) {
+                    let thisVersion = this._versionsB.filter((v:any) => v.uri===this._compareB!.version)[0];
+                    this._configsB = thisVersion.configs || null;
+                    this._updateSelectOptions('selector-config-b', this._configsB, this._compareB.config);
+                    this._calibrationsB = null;
+                }
+
+                if (this._compareB.config) {
+                    if (this._configsB) {
+                        let thisConfig = this._configsB.filter((c:any) => c.uri===this._compareB!.config)[0];
+                        //this._calibrationsB = thisConfig.calibrations ? thisConfig.calibrations :null;
+                        this._calibrationsB = thisConfig.calibrations || null;
+                        this._updateSelectOptions('selector-calibration-b', this._calibrationsB, this._compareB.calibration);
+                    }
+
+                    if (state.explorer.modelMetadata && state.explorer.modelMetadata[this._compareB.config]) {
+                        this._configMetadataB = state.explorer.modelMetadata[this._compareB.config][0];
+                        console.log(this._configMetadataB);
+                    } else {
+                        this._configMetadataB = null;
+                    }
+                }
+
+                if (this._compareB.calibration && state.explorer.modelMetadata &&
+                    state.explorer.modelMetadata[this._compareB.calibration]) {
+                    this._calibrationMetadataB = state.explorer.modelMetadata[this._compareB.calibration][0];
+                } else {
+                    this._calibrationMetadataB = null;
+                }
             }
         }
-
-        if (this._compareB && state.explorer) {
-            if (this._compareB.model && state.explorer.versions) {
-                this._versionsB = state.explorer.versions[this._compareB.model] || null;
-                this._configsB = null;
-                this._calibrationsB = null;
-            }
-
-            if (this._compareB.version && this._versionsB) {
-                let thisVersion = this._versionsB.filter((v:any) => v.uri===this._compareB!.version)[0];
-                this._configsB = thisVersion.configs || null;
-                this._updateSelectOptions('selector-config-b', this._configsB, this._compareB.config);
-                this._calibrationsB = null;
-            }
-
-            if (this._compareB.config && this._configsB) {
-                let thisConfig = this._configsB.filter((c:any) => c.uri===this._compareB!.config)[0];
-                this._calibrationsB = thisConfig.calibrations ? thisConfig.calibrations :null;
-                this._updateSelectOptions('selector-calibration-b', this._calibrationsB, this._compareB.calibration);
-            }
-        }
-
     }
 }
