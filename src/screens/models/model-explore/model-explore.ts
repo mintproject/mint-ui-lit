@@ -1,5 +1,5 @@
 import { html, customElement, property, css } from 'lit-element';
-import { PageViewElement } from '../../../components/page-view-element.js';
+import { PageViewElement } from '../../../components/page-view-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 
 import { ExplorerStyles } from './explorer-styles'
@@ -180,7 +180,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                         uri="${key}"
                         altDesc="${this._variables[key] ? this._variables[key] : ''}"
                         altTitle="${this._variables[key] ? 'With Variables ('+this._variables[key].split(';').length+'):' : ''}"
-                        style="${!this._activeModels[key]? 'display: none;' : ''}">
+                        .style="${!this._activeModels[key]? 'display: none;' : ''}">
                     </model-facet>
                     `
                 )}

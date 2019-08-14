@@ -13,9 +13,7 @@ export class GoogleMapJsonLayer extends GoogleMapChildElement {
   @property({type: Boolean})
   selected?: boolean;
 
-  @property({type: Function})
-  onClick?: Function;
-
+  @property({type: Array})
   features?: google.maps.Data.Feature[];
 
   constructor() {
@@ -55,17 +53,18 @@ export class GoogleMapJsonLayer extends GoogleMapChildElement {
         });
 
         map.data.addListener('click', function(event) {
-          // Change style on click
-          map.data.setStyle(function(feature) {
-            return {
-              fillColor: (feature == event.feature ? '#d51990' : '#1990d5'),
-              strokeColor: (feature == event.feature ? '#d51990' : '#1990d5'),
-              strokeWeight: 1
-            };
+          // Deselect all features
+          map.data.forEach((feature) => {
+            feature.setProperty("selected", false);
           });
-          if(layer.onClick) {
-            layer.onClick(event.feature.getProperty("id"));
-          }
+          // Select the clicked feature
+          event.feature.setProperty("selected", true);
+
+          let myEvent = new CustomEvent("click", { 
+            detail: {id: event.feature.getProperty("id") },
+            bubbles: true, 
+            composed: true });
+          layer.dispatchEvent(myEvent);
         });
         GoogleMapJsonLayer.initialSetup = true;
       }

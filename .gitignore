@@ -8,6 +8,10 @@ yarn-error.log*
 # Use TypeScript. Don't commit js files in source
 src/**/*.js
 
+# Except third party items
+!src/thirdparty/**/*.js
+!src/service-worker.js
+
 # Don't commit latest google api key
 google-api-key.ts
 
@@ -36,7 +40,7 @@ build/
 node_modules/
 
 # TypeScript v1 declaration files
-typings/
+#typings/
 
 # Optional npm cache directory
 .npm
