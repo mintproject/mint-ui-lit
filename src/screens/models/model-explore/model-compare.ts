@@ -54,6 +54,14 @@ export class ModelCompare extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _calibrationsB: any = null;
 
+    private _features = [
+        {key: 'doc', label: 'Page:', fn: (uri:string) => html`<a taget="_blank" href="${uri}">Model documentation</a>`},
+        {key: 'dateC', label: 'Creation date:'},
+        {key: 'fundS', label: 'Funding:'},
+        {key: 'publisher', label: 'Publisher:'},
+        {key: 'type', label: 'Type:'},
+    ]
+
     constructor () {
         super();
         this.active = true;
@@ -200,9 +208,53 @@ export class ModelCompare extends connect(store)(PageViewElement) {
                     </td>
 
                 </tr>
+                ${(this._modelA && this._modelB) ? html`
+                <tr></tr>
+                <tr>
+                    <td colspan="3">
+                        ${this._renderModelTable()}
+                    </td>
+                </tr>
+                `: html``}
             </table>
         `
         : html``}`;
+    }
+
+    _renderModelTable () {
+        return html`
+            <table class="pure-table pure-table-striped" style="width: 100%">
+                <colgroup>
+                    <col span="1" style="width: 20%;">
+                    <col span="1" style="width: 40%;">
+                    <col span="1" style="width: 40%;">
+                </colgroup>
+
+                <thead>
+                    <th></th>
+                    <th><b>${this._modelA!.label}</b></th>
+                    <th><b>${this._modelB!.label}</b></th>
+                </thead>
+                <tbody>
+                ${this._features.map((f:any) => {
+                    if (this._modelA![f.key] || this._modelB![f.key]) {
+                        return html`<tr>${this._renderFeature(f)}</tr>`
+                        return this._renderFeature(f);
+                    } else {
+                        return html``;
+                    }
+                })}
+                </tbody>
+            </table>
+        `
+    }
+
+    _renderFeature (f:any) {
+        return html`
+            <td><b>${f.label}</b></td>
+            <td>${f.fn ? f.fn(this._modelA![f.key]) : this._modelA![f.key]}</td>
+            <td>${f.fn ? f.fn(this._modelB![f.key]) : this._modelB![f.key]}</td>
+        `;
     }
 
     _onVersionAChange () {
