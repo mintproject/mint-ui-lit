@@ -10,7 +10,7 @@ export const MODELS_VARIABLES_QUERY = 'MODELS_VARIABLES_QUERY';
 export const MODELS_LIST = 'MODELS_LIST';
 export const MODELS_DETAIL = 'MODELS_DETAIL';
 
-import { apiFetch,  GET_CALIBRATIONS_FOR_VARIABLE, MODEL_METADATA, GET_PARAMETERS, CONFIG_IO_VARS_STDNAMES } from './model-explore/api-fetch';
+import { apiFetch,  GET_CALIBRATIONS_FOR_VARIABLE, MODEL_METADATA_NOIO, GET_PARAMETERS, CONFIG_IO_VARS_STDNAMES } from './model-explore/api-fetch';
 import { Dataset } from "../datasets/reducers";
 
 export interface ModelsActionList extends Action<'MODELS_LIST'> { models: Model[] };
@@ -112,7 +112,7 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                 let modelid = row['calibration'];
                 return Promise.all([
                     apiFetch({
-                        type: MODEL_METADATA,
+                        type: MODEL_METADATA_NOIO,
                         modelConfig: modelid,
                         rules: {
                             'targetVariables': {

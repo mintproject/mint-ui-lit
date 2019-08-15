@@ -11,6 +11,7 @@ import { selectPathwaySection } from "../../../app/ui-actions";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { showNotification } from "util/ui_functions";
 import { renderNotifications } from "util/ui_renders";
+import { Model } from "screens/models/reducers";
 
 @customElement('mint-runs')
 export class MintRuns extends connect(store)(MintPathwayPage) {
@@ -184,7 +185,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
     }
 
     _getModelURL (model:Model) {
-        return this._selectedRegion + '/models/explore/' + model.original_model + '/'
+        return this._regionid + '/models/explore/' + model.original_model + '/'
                + model.model_version + '/' + model.model_configuration + '/'
                + model.localname;
     }
