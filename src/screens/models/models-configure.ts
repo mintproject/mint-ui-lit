@@ -20,13 +20,17 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     private _models : any = null;
 
     @property({type: Object})
-    private _params : any = {};
+    private _versions : any = {};
+    private _waitingVersions : Set<string>= new Set();
+
+    @property({type: String})
+    private _selectedUri : string = "";
+
+    @property({type: String})
+    private _selectedLabel : string = "";
 
     @property({type: Object})
-    private _selectedModel : any = null;
-
-    @property({type: Object})
-    private _version : any = null;
+    private _parameters : any[] | null = [];
 
     static get styles() {
         return [
@@ -133,43 +137,70 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                             <wl-title level="4" style="margin: 0px">Models:</wl-title>
                         </div>
                     </div>                    
-                    ${this._models ? html`<ul>
-                    ${Object.values(this._models).map((m:any) => html`<li><a @click="${()=>{this._selectModel(m.uri)}}">${m.label}</a></li>`)}
-                    </ul>`
+                    ${this._models ? 
+                    html`
+                        <ul>
+                        ${Object.values(this._models).filter((m) => (!this._versions[m.uri] || this._versions[m.uri].length>0)).map((m:any) => 
+                            html`
+                            <li>
+                                ${m.label}
+                                ${this._versions[m.uri] ? 
+                                (this._versions[m.uri].length === 0? html``: 
+                                html`
+                                <ul>
+                                    ${this._versions[m.uri].map((v) => html`
+                                    <li>
+                                        ${v.label}
+                                        ${v.configs? html`
+                                        <ul>
+                                            ${v.configs.map((cfg) => html`
+                                            <li>
+                                                <a @click="${()=>{this._select(cfg.uri, cfg.label)}}">${cfg.label}</a>
+                                                ${cfg.calibrations? html`
+                                                <ul>
+                                                    ${cfg.calibrations.map((c) => html`
+                                                    <li><a @click="${()=>{this._select(c.uri, c.label)}}">${c.label}</a></li>
+                                                    `)}
+                                                </ul>`: html``}
+                                            </li>`)}
+                                        </ul>` : ``}
+                                    </li>`)}
+                                </ul>`)
+                                : html`
+                                <div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>
+                                `}
+                            </li>`
+                        )}
+                        </ul>`
                     : html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`}
                 </div>
             </div>
+
             <div class="${this._hideModels ? 'right_full' : 'right'}">
-                    <div class="card2">
-                        <wl-icon @click="${() => this._hideModels = !this._hideModels}"
-                            class="actionIcon bigActionIcon" style="float:right">
-                            ${!this._hideModels ? "fullscreen" : "fullscreen_exit"}
-                        </wl-icon>
-                        <div class="cltrow_padded">
-                            <div class="cltmain">
-                                <wl-title level="4" style="margin: 0px">
-                                    ${this._selectedModel? 
-                                    html`Configurable parameters for ${this._selectedModel.label}:`
-                                    : html`Select a model on the left panel.`}
-                                </wl-title>
-                            </div>
+                <div class="card2">
+                    <wl-icon @click="${() => this._hideModels = !this._hideModels}"
+                        class="actionIcon bigActionIcon" style="float:right">
+                        ${!this._hideModels ? "fullscreen" : "fullscreen_exit"}
+                    </wl-icon>
+                    <div class="cltrow_padded">
+                        <div class="cltmain">
+                            <wl-title level="4" style="margin: 0px">
+                                ${this._selectedLabel? 
+                                html`Configurable parameters for ${this._selectedLabel}:`
+                                : html`Select a configuration or calibration on the left panel.`}
+                            </wl-title>
                         </div>
-                        ${this._version ? this._version.map((v:any) => html`
-                            ${v.configs ? v.configs.map((cfg:any) => html`
-                                ${(this._params[cfg.uri] && this._params[cfg.uri].length>0 && (count += 1))? html`
-                                <wl-title level="5">${v.label}/${cfg.label}:</wl-title>
-                                ${this._renderTable(this._params[cfg.uri])}
-                                `: html``}
-                                ${cfg.calibrations ? cfg.calibrations.map((c:any) => html`
-                                    ${(this._params[c.uri] && this._params[c.uri].length>0 && (count += 1))? html`
-                                    <wl-title level="5">${v.label}/${cfg.label}/${c.label}:</wl-title>
-                                    ${this._renderTable(this._params[c.uri])}
-                                    ` : html``}
-                                `) : html``}
-                            `): html``}
-                        `) : html``}
-                        ${(this._selectedModel && count==0) ? html`This model does not have configurable parameters yet.`: html``}
                     </div>
+
+                    ${(this._selectedUri && this._parameters) ? 
+                        (this._parameters.length > 0 ?
+                            this._renderTable(this._parameters)
+                            : html`<p>${this._selectedLabel} has no parameters.</p>·`)
+                        : (this._selectedUri? 
+                            html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
+                            : html``)
+                    }
+                </div>
             </div>
         </div>
         `
@@ -182,7 +213,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     <th><b>Label</b></th>
                     <th><b>Type</b></th>
                     <th><b>Datatype</b></th>
-                    <th style="text-align: right;"><b>Default Value</b></th>
+                    <th style="text-align: right;"><b>Default Value</b><wl-icon>edit</wl-icon></th>
                     <th style="text-align: right;"><b>Min Value</b><wl-icon>edit</wl-icon></th>
                     <th style="text-align: right;"><b>Max Value</b><wl-icon>edit</wl-icon></th>
                 </thead>
@@ -191,7 +222,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     <td>${p.paramlabel}</td>
                     <td>${p.type}</td>
                     <td>${p.pdatatype}</td>
-                    <td style="text-align: right;">${p.defaultvalue || '-'}</td>
+                    <td><input class="value-edit" type="text" placeholder="-" value="${p.defaultvalue}"></input></td>
                     <td><input class="value-edit" type="number" placeholder="-" value="${p.minVal}"></input></td>
                     <td><input class="value-edit" type="number" placeholder="-" value="${p.maxVal}"></input></td>
                 </tr>`)}
@@ -205,16 +236,13 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             `
     }
 
-    _selectModel (uri:string) {
-        if (this._models && this._selectedModel != this._models[uri]) {
-            if (uri) {
-                //store.dispatch(explorerFetchParameters(uri));
-                store.dispatch(explorerFetchVersions(uri));
-                this._selectedModel = this._models[uri];
-            } else {
-                this._selectedModel = null;
-            }
-            this._version = null;
+    _select (uri:string, label:string) {
+        console.log(uri, label)
+        if (uri && this._selectedUri != uri) {
+            this._selectedUri = uri;
+            this._selectedLabel = label;
+            this._parameters = null;
+            store.dispatch(explorerFetchParameters(uri));
         }
     }
 
@@ -224,23 +252,28 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
 
     stateChanged(state: RootState) {
         if (state.explorer) {
-            if (state.explorer.models && state.explorer.models != this._models &&
-                Object.values(state.explorer.models).length >0) {
+            if (state.explorer.models && Object.values(state.explorer.models).length >0 && this._models == null) {
                 this._models = state.explorer.models;
-            }
-            if (this._selectedModel && state.explorer.versions && state.explorer.versions[this._selectedModel.uri] != this._version) {
-                this._version = state.explorer.versions[this._selectedModel.uri];
-                this._version.forEach((v:any) => { 
-                    if (v.configs) v.configs.forEach((cfg:any) => {
-                        store.dispatch(explorerFetchParameters(cfg.uri));
-                        if (cfg.calibrations) cfg.calibrations.forEach((c:any) => {
-                            store.dispatch(explorerFetchParameters(c.uri));
-                        });
-                    });
+                Object.keys(this._models).forEach((uri) =>{
+                    store.dispatch(explorerFetchVersions(uri));
+                    this._waitingVersions.add(uri);
                 });
             }
-            if (state.explorer.parameters) {
-                this._params = state.explorer.parameters;
+
+            //Save versions only first time
+            if (this._waitingVersions.size > 0 && state.explorer.versions) {
+                this._waitingVersions.forEach((uri:string) => {
+                    if (state.explorer.versions[uri]) {
+                        this._versions = { ...this._versions }
+                        this._versions[uri] = state.explorer.versions[uri];
+                        
+                        this._waitingVersions.delete(uri);
+                    }
+                });
+            }
+
+            if (this._selectedUri && state.explorer.parameters[this._selectedUri]) {
+                this._parameters = state.explorer.parameters[this._selectedUri];
             }
         }
     }

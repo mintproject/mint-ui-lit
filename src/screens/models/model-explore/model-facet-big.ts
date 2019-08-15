@@ -537,9 +537,11 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             ${io.label}
                         </span></td>
                         <td>${io.desc}</td>
-                        ${(this._selectedCalibration && io.fixedValueURL)? html`<td>
+                        ${this._selectedCalibration? html`
+                        <td>${io.fixedValueURL ? html`
                             <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
-                        </td>` : html``}
+                        ` : html``}</td>
+                        ` : html``}
                         <td>${io.format}</td>
                     </tr>`)}
                 </tbody>
@@ -561,9 +563,11 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             ${io.label}
                         </span></td>
                         <td>${io.desc}</td>
-                        ${(this._selectedCalibration && io.fixedValueURL)? html`<td>
+                        ${this._selectedCalibration? html`
+                        <td>${io.fixedValueURL ? html`
                             <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
-                        </td>` : html``}
+                        ` : html``}</td>
+                        ` : html``}
                         <td>${io.format}</td>
                     </tr>`)}
                 </tbody>

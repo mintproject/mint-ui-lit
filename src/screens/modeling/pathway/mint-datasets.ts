@@ -122,7 +122,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                 <li>
                     <wl-title level="4">Datasets for ${model.name}</wl-title>
                     ${input_files.length == 0 ? 
-                    html `<ul><li>No datasets needed</li></ul>`
+                    html `<ul><li>No additional datasets were needed for this model.</li></ul>`
                     :
                     html`
                     <ul>

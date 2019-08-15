@@ -96,7 +96,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                 let model = this.pathway.models![ensemble.modelid];
                                 return html`
                                 <tr>
-                                    <td><a href="${BASE_HREF}models/explore/${model.id}">${model.name}</a></td>
+                                    <td><a href="${this._getModelURL(model)}">${model.name}</a></td>
                                     <td>
                                     ${Object.keys(ensemble.bindings).map((inputid) => {
                                         let inputname = inputid.substr(inputid.lastIndexOf('/') + 1);
@@ -147,7 +147,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                     return html`
                                     <tr>
                                         <td><input class="checkbox" type="checkbox" data-index="${index}"></input></td>                    
-                                        <td><a href="${BASE_HREF}models/explore/${model.id}">${model.name}</a></td>
+                                        <td><a href="${this._getModelURL(model)}">${model.name}</a></td>
                                         <td>
                                         ${Object.keys(ensemble.bindings).map((inputid) => {
                                             let inputname = inputid.substr(inputid.lastIndexOf('/') + 1);
@@ -182,7 +182,13 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         
         `;
     }
-    
+
+    _getModelURL (model:Model) {
+        return this._selectedRegion + '/models/explore/' + model.original_model + '/'
+               + model.model_version + '/' + model.model_configuration + '/'
+               + model.localname;
+    }
+
     _runSelectedEnsembles() {
         let selected_indices: number[] = [];
         
