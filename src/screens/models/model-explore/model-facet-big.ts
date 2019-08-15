@@ -29,10 +29,10 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     _configId: string = '';
 
     @property({type: String})
-        uri : string = "";
+    private _uri : string = "-";
 
     @property({type: Number})
-        _count : number = 0;
+    private _count : number = 0;
 
     @property({type: Object})
     private _modelMetadata: any = null;
@@ -85,7 +85,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     private _explDiagrams : ExplanationDiagramDetail[] | null = null;
 
     @property({type: String})
-    private _tab : string = 'overview';
+    private _tab : 'overview'|'io'|'variables'|'software' = 'overview';
 
     constructor () {
         super();
@@ -331,8 +331,8 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     </td>
                 </tr>
                 <tr>
-                    <td class="left text-centered">
-                    <span class="helper"></span>${this._model.logo ? 
+                    <td class="left text-centered" style="padding-top: 1.5em;">
+                        ${this._model.logo ? 
                         html`<img src="${this._model.logo}"/>`
                         : html`<img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>`}
                     </td>
@@ -396,33 +396,20 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         }
                     </td>
                 </tr>
-
-                <tr>
-                    <td class="content" colspan="2">
-                    <br/>
-                    <wl-tab-group>
-                        <wl-tab ?checked=${this._tab=='overview'}
-                            @click="${() => {this.changeTab('overview')}}">Overview</wl-tab>
-                        <wl-tab ?checked=${this._tab=='io'}
-                            @click="${() => {this.changeTab('io')}}">Input/Output</wl-tab>
-                        <wl-tab ?checked=${this._tab=='variables'}
-                            @click="${() => {this.changeTab('variables')}}">Variables</wl-tab>
-                        <wl-tab @click="${() => {this.changeTab('software')}}">Compatible Software</wl-tab>
-                    </wl-tab-group>
-                ${this.renderTab(this._tab)}
-                <br/>
+                ${this._renderTabs()}
+            </table>
+            <br/>
         `;
     }
 
     _renderSelector () {
         return html`
-        <!-- FIXME: load selected from state -->
         <span tip="Currently selected model version" class="tooltip">
             <wl-icon>help_outline</wl-icon>
         </span>
         <span class="select-label">Version:</span>
         <select id="select-version" class="select-css" label="Select version" @change="${this.changeVersion}">
-            <option value="" disabled selected>Select version</option>
+            <option value="" disabled ?selected="${this._selectedVersion === null}">Select version</option>
             ${this._versions.map(v => 
                 html`<option value="${v.uri}" ?selected=${this._selectedVersion && v.uri===this._selectedVersion.uri}>
                     ${v.label}
@@ -435,7 +422,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             </span>
             <span class="select-label">Configuration:</span>
             <select id="select-config" class="select-css" label="Select configuration" @change="${this.changeConfig}">
-                <option value="" disabled selected>Select configuration</option>
+                <option value="" disabled ?selected="${this._selectedConfig === null}">Select configuration</option>
                 ${this._selectedVersion.configs.map( c =>
                     html`<option value="${c.uri}" ?selected=${this._selectedConfig && c.uri===this._selectedConfig.uri}>
                         ${c.label}
@@ -449,7 +436,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 </span>
                 <span class="select-label">Calibration:</span>
                 <select id="select-calibration" class="select-css" label="Select calibration" @change="${this.changeCalibration}">
-                    <option value="" disabled selected>Select calibration</option>
+                    <option value="" ?selected="${this._selectedCalibration===null}">Select calibration</option>
                     ${this._selectedConfig.calibrations.map( c =>
                         html`<option value="${c.uri}"
                         ?selected="${this._selectedCalibration && c.uri===this._selectedCalibration.uri}">
@@ -465,8 +452,292 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         }`
     }
 
-    changeTab (tabName: string) {
+    _setTab (tabName: 'overview'|'io'|'variables'|'software') {
         this._tab = tabName;
+    }
+
+    _changeTab (tabName: string) {
+        let tabId : string = '';
+        switch (tabName) {
+            case 'io':
+                tabId = 'tab-io';
+                break;
+            case 'variable':
+                tabId = 'tab-variable';
+                break;
+            default: return;
+        }
+        let ioElement : HTMLElement | null = this.shadowRoot!.getElementById(tabId);
+        if (ioElement && tabId) {
+            ioElement.click();
+        }
+    }
+
+    _expandVariable (varLabel:string) {
+        if (varLabel) {
+            this._changeTab('variable');
+            setTimeout(() => {
+                let exp : HTMLElement | null = this.shadowRoot!.getElementById(varLabel);
+                if (exp) {
+                    exp.click();
+                }
+                }, 200)
+        }
+    }
+
+    _renderTabs () {
+        return html`
+            <tr>
+                <td class="content" colspan="2">
+                    <br/>
+                    <wl-tab-group>
+                        <wl-tab ?checked=${this._tab=='overview'}
+                            @click="${() => {this._setTab('overview')}}">Overview</wl-tab>
+                        <wl-tab ?checked=${this._tab=='io'} id="tab-io"
+                            @click="${() => {this._setTab('io')}}">Input/Output</wl-tab>
+                        <wl-tab ?checked=${this._tab=='variables'} id="tab-variable"
+                            @click="${() => {this._setTab('variables')}}">Variables</wl-tab>
+                        <wl-tab @click="${() => {this._setTab('software')}}">Compatible Software</wl-tab>
+                    </wl-tab-group>
+                    <div>${this._renderTab(this._tab)}<div>
+                </td>
+            </tr>
+        `
+    }
+    
+    _renderTabOverview () {
+        return html`
+            <ul>
+                ${this._model.purpose? html`<li><b>Purpose:</b> ${this._model.purpose}</li>`:html``}
+                ${this._model.assumptions? html`<li><b>Assumptions:</b> ${this._model.assumptions}</li>`:html``}
+            </ul>
+
+            ${this._modelMetadata? html`${this._renderMetadata('Model Metadata', this._modelMetadata)}`:html``}
+            ${this._versionMetadata? html`${this._renderMetadata('Version Metadata', this._versionMetadata)}`:html``}
+            ${this._configMetadata? html`${this._renderMetadata('Configuration Metadata', this._configMetadata)}`:html``}
+            ${this._calibrationMetadata? html`${this._renderMetadata('Calibration Metadata', this._calibrationMetadata)}`:html``}
+            ${this._renderGallery()}`
+    }
+
+    _renderTabIO () {
+        return html`
+            ${(this._inputs) ? html`
+            <h3> Inputs: </h3>
+            <table class="pure-table pure-table-bordered">
+                <thead>
+                    <th>Name</th>
+                    <th>Description</th>
+                    ${this._selectedCalibration? html`<th>Fixed value</th>` : html``}
+                    <th>Format</th>
+                </thead>
+                <tbody>
+                ${this._inputs.map( io => html`
+                    <tr>
+                        <td><span class="clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
+                            ${io.label}
+                        </span></td>
+                        <td>${io.desc}</td>
+                        ${(this._selectedCalibration && io.fixedValueURL)? html`<td>
+                            <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
+                        </td>` : html``}
+                        <td>${io.format}</td>
+                    </tr>`)}
+                </tbody>
+            </table>` : html``}
+
+            ${(this._outputs) ? html`
+            <h3> Outputs: </h3>
+            <table class="pure-table pure-table-bordered">
+                <thead>
+                    <th>Name</th>
+                    <th>Description</th>
+                    ${this._selectedCalibration? html`<th>Fixed value</th>` : html``}
+                    <th>Format</th>
+                </thead>
+                <tbody>
+                ${this._outputs.map( io => html`
+                    <tr>
+                        <td><span class="clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
+                            ${io.label}
+                        </span></td>
+                        <td>${io.desc}</td>
+                        ${(this._selectedCalibration && io.fixedValueURL)? html`<td>
+                            <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
+                        </td>` : html``}
+                        <td>${io.format}</td>
+                    </tr>`)}
+                </tbody>
+            </table>` : html``}
+
+            ${(this._parameters)? 
+            html`
+                <h3> Parameters: </h3>
+                <table class="pure-table pure-table-bordered">
+                    <thead>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Datatype</th>
+                        <th>Default value</th>
+                        ${this._selectedCalibration? html`<th>Fixed value</th>` : html``}
+                    </thead>
+                    <tbody>
+                    ${this._parameters.map( (p:any) => html`
+                        <tr>
+                            <td>${p.paramlabel}</td>
+                            <td>${p.type}</td>
+                            <td>${p.pdatatype}</td>
+                            <td>${p.defaultvalue}</td>
+                            ${this._selectedCalibration? html`<td>${p.fixedValue}</td>` : html``}
+                        </tr>`)}
+                    </tbody>
+                </table>
+            `
+            :html``}
+            ${(!this._inputs && !this._outputs && !this._parameters)? html`
+            <br/>
+            <h3 style="margin-left:30px">
+                This information has not been specified yet.
+            </h3>`
+            :html ``}
+            `;
+    }
+
+    _renderTabVariables () {
+        return html`<div id="hack">${this._count}</div>
+            ${(this._inputs) ? html`<h3>Inputs:</h3>${this._inputs.map(input => html`
+            <wl-expansion id="${input.label}" name="groupInput" @click="${()=>{this.expandIO(input.uri)}}">
+                <span slot="title">${input.label}</span>
+                <span slot="description">${input.desc}</span>
+                ${this._variables[input.uri] ? 
+                html`${this._variables[input.uri].length>0?
+                    html`
+                    <table class="pure-table pure-table-bordered">
+                        <thead>
+                            <th>Label</th>
+                            <th>Long Name</th>
+                            <th>Description</th>
+                            <th>Standard Name</th>
+                            <th>Units</th>
+                        </thead>
+                        <tbody>
+                        ${this._variables[input.uri].map((v:any) => 
+                            html`
+                            <tr>
+                                <td>${v.label}</td>
+                                <td>${v.longName}</td>
+                                <td>${v.desc}</td>
+                                <td style="word-wrap: break-word;">${v.sn}</td>
+                                <td style="min-width: 80px;">${v.unit}</td>
+                            </tr>`)}
+                        </tbody>
+                    </table>`
+                    : html`
+                    <div class="text-centered"><h4>
+                    This information has not been specified yet.
+                    </h4></div>
+                    `
+                }`
+                : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
+            </wl-expansion>`)}`
+            : html``}
+
+            ${(this._outputs) ? html`<h3>Outputs:</h3>${this._outputs.map(output => html`
+            <wl-expansion id="${output.label}" name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}">
+                <span slot="title">${output.label}</span>
+                <span slot="description">${output.desc}</span>
+                ${this._variables[output.uri] ? 
+                html`${this._variables[output.uri].length>0?
+                    html`
+                    <table class="pure-table pure-table-bordered">
+                        <thead>
+                            <th>Label</th>
+                            <th>Long Name</th>
+                            <th>Description</th>
+                            <th>Standard Name</th>
+                            <th>Units</th>
+                        </thead>
+                        <tbody>
+                        ${this._variables[output.uri].map((v:any) => 
+                            html`
+                            <tr>
+                                <td>${v.label}</td>
+                                <td>${v.longName}</td>
+                                <td>${v.desc}</td>
+                                <td style="word-wrap: break-word;">${v.sn}</td>
+                                <td style="min-width: 80px;">${v.unit}</td>
+                            </tr>`)}
+                        </tbody>
+                    </table>`
+                    : html`
+                    <div class="text-centered"><h4>
+                        This information has not been specified yet.
+                    </h4></div>
+                    `
+                }`
+                : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
+            </wl-expansion>`)}`
+            : html``}
+
+            ${(!this._inputs && !this._outputs) ? html`<br/><h3 style="margin-left:30px">
+                This information has not been specified yet
+            </h3>`
+            : html``}`;
+    }
+
+    _renderTabSoftware () {
+        return html`${(this._selectedVersion && this._selectedConfig)?
+            html`${(this._compInput && this._compInput.length>0) || 
+                   (this._compOutput && this._compOutput.length>0) ?
+                html`
+                    ${(this._compInput && this._compInput.length>0)?
+                        html`<h3> This model configuration uses variables that can be produced from:</h3>
+                        <ul>${this._compInput.map(i=>{
+                            return html`<li><b>${i.label}:</b> With variables: ${i.vars.map((v, i) => {
+                                if (i==0) return html`<code>${v}</code>`;
+                                else return html`, <code>${v}</code>`;
+                            })}</li>`
+                        })}</ul>`: html``
+                    }
+                    ${(this._compOutput && this._compOutput.length>0)?
+                        html`<h3> This model configuraion produces variables that can be used by:</h3>
+                        <ul>${this._compOutput.map(i=>{
+                            return html`<li><b>${i.label}:</b> With variables: ${i.vars.map((v, i) => {
+                                if (i==0) return html`<code>${v}</code>`;
+                                else return html`, <code>${v}</code>`;
+                            })}</li>`
+                        })}</ul>`: html``
+                    }`
+                : html``
+            }`
+            : html`<br/><h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`
+        }
+        ${this._compModels? html`
+        <h3> Related models: </h3>
+        <table class="pure-table pure-table-bordered">
+            <thead>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Description</th>
+            </thead>
+            <tbody>
+            ${this._compModels.map( (m:any) => html`
+                <tr>
+                    <td><a @click="${() => {this._goToModel(m)}}">${m.label}</a></td>
+                    <td>${m.categories.join(', ')}</td>
+                    <td>${m.desc}</td>
+                </tr>`)}
+            </tbody>
+        </table>
+        `:html``}
+        ${(!this._compModels && (!this._compInput || this._compInput.length == 0) && (!this._compOutput || this._compOutput.length == 0))?
+            html`
+                <br/><h3 style="margin-left:30px">
+                    This information has not been specified yet.
+                </h3>
+            `
+            :html``
+        }
+        `
     }
 
     _renderMetadata (title: string, metadata:any) {
@@ -481,16 +752,16 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 ${meta.desc? html`<li><b>Description:</b>
                     ${meta.desc}</li>`:html``}
                 ${meta.input_variables? 
-                    html`<li class="clickable" @click="${()=>{this.changeTab('io')}}">
-                    <b>Input Variables:</b>
+                    html`<li>
+                    <b class="clickable" @click="${()=>{this._changeTab('io')}}">Input Variables:</b>
                     ${meta.input_variables.length}</li>`:html``}
                 ${meta.output_variables? 
-                    html`<li class="clickable" @click="${()=>{this.changeTab('io')}}">
-                    <b>Output Variables:</b>
+                    html`<li>
+                    <b class="clickable" @click="${()=>{this._changeTab('io')}}">Output Variables:</b>
                     ${meta.output_variables.length}</li>`:html``}
                 ${meta.parameters? 
-                    html`<li class="clickable" @click="${()=>{this.changeTab('io')}}">
-                    <b>Parameters:</b>
+                    html`<li>
+                    <b class="clickable" @click="${()=>{this._changeTab('io')}}">Parameters:</b>
                     ${meta.parameters.length}</li>`:html``}
                 ${meta.processes? html`<li><b>Processes:</b>
                     ${meta.processes.join(', ')}</li>`:html``}
@@ -514,241 +785,24 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         </details>`;
     }
 
-    renderTab (tabName : string) {
+    _renderTab (tabName : 'overview'|'io'|'variables'|'software') {
         switch (tabName) {
             case 'overview':
-                return html`
-
-                    <ul>
-                        ${this._model.purpose? html`<li><b>Purpose:</b> ${this._model.purpose}</li>`:html``}
-                        ${this._model.assumptions? html`<li><b>Assumptions:</b> ${this._model.assumptions}</li>`:html``}
-                    </ul>
-
-                    ${this._modelMetadata? html`${this._renderMetadata('Model Metadata', this._modelMetadata)}`:html``}
-                    ${this._versionMetadata? html`${this._renderMetadata('Version Metadata', this._versionMetadata)}`:html``}
-                    ${this._configMetadata? html`${this._renderMetadata('Configuration Metadata', this._configMetadata)}`:html``}
-                    ${this._calibrationMetadata? html`${this._renderMetadata('Calibration Metadata', this._calibrationMetadata)}`:html``}
-                    ${this._renderGallery()}`
-
-            case 'tech':
-                return html`${(this._model.installInstr || (this._model.os && this._model.os.length>0) ||
-                               this._model.sourceC || (this._model.pl && this._model.pl.length>0))?
-                    html`<ul>
-                        ${(this._model.os && this._model.os.length>0)?
-                            html`<li><b>Operating system:</b> ${this._model.os.join(', ')}</li>`: html``}
-                        ${this._model.sourceC?  
-                            html`<li><b>Source code:</b> 
-                                <a target="_blank" href="${this._model.sourceC}">${this._model.sourceC}</a>
-                            </li>`: html``}
-                        ${(this._model.pl && this._model.pl.length>0)?
-                            html`<li><b>Programming language:</b> ${this._model.pl.join(', ')}</li>`: html``}
-                        ${this._model.installInstr? 
-                            html`<li><b>Installation instructions:</b>
-                                <a target="_blank" href="${this._model.installInstr}">${this._model.installInstr}</a>
-                            </li>`: html``}
-                    </ul>`
-                    : html`<br/><h3 style="margin-left:30px">Sorry! We are currently working in this feature.</h3>`}`
-
+                return this._renderTabOverview(); 
             case 'io':
-                return html`
-                ${(this._inputs) ? html`
-                <h3> Inputs: </h3>
-                <table class="pure-table pure-table-bordered">
-                    <thead>
-                        <th>I/O</th>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Format</th>
-                    </thead>
-                    <tbody>
-                    ${this._inputs.map( io => html`
-                        <tr>
-                            <td>${io.kind}</td>
-                            <td>${io.label}</td>
-                            <td>${io.desc}</td>
-                            <td>${io.format}</td>
-                        </tr>`)}
-                    </tbody>
-                </table>` : html``}
-
-                ${(this._outputs) ? html`
-                <h3> Outputs: </h3>
-                <table class="pure-table pure-table-bordered">
-                    <thead>
-                        <th>I/O</th>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Format</th>
-                    </thead>
-                    <tbody>
-                    ${this._outputs.map( io => html`
-                        <tr>
-                            <td>${io.kind}</td>
-                            <td>${io.label}</td>
-                            <td>${io.desc}</td>
-                            <td>${io.format}</td>
-                        </tr>`)}
-                    </tbody>
-                </table>` : html``}
-                ${(this._parameters)? 
-                html`
-                    <h3> Parameters: </h3>
-                    <table class="pure-table pure-table-bordered">
-                        <thead>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>Datatype</th>
-                            <th>Default value</th>
-                        </thead>
-                        <tbody>
-                        ${this._parameters.map( (p:any) => html`
-                            <tr>
-                                <td>${p.paramlabel}</td>
-                                <td>${p.type}</td>
-                                <td>${p.pdatatype}</td>
-                                <td>${p.defaultvalue}</td>
-                            </tr>`)}
-                        </tbody>
-                    </table>
-                `
-                :html``}
-                ${(!this._inputs && !this._outputs && !this._parameters)? html`
-                <br/>
-                <h3 style="margin-left:30px">
-                    Sorry! The selected configuration does not have input/output yet.
-                </h3>`
-                :html ``}
-                `;
-
+                return this._renderTabIO();
             case 'variables':
-                return html`<div id="hack">${this._count}</div>
-                    ${(this._inputs) ? html`<h3>Inputs:</h3>${this._inputs.map(input => html`
-                    <wl-expansion name="groupInput" @click="${()=>{this.expandIO(input.uri)}}">
-                        <span slot="title">${input.label}</span>
-                        <span slot="description">${input.desc}</span>
-                        ${this._variables[input.uri] ? 
-                        html`${this._variables[input.uri].length>0?
-                            html`
-                            <table class="pure-table pure-table-bordered">
-                                <thead>
-                                    <th>Label</th>
-                                    <th>Long Name</th>
-                                    <th>Description</th>
-                                    <th>Standard Name</th>
-                                    <th>Units</th>
-                                </thead>
-                                <tbody>
-                                ${this._variables[input.uri].map((v:any) => 
-                                    html`
-                                    <tr>
-                                        <td>${v.label}</td>
-                                        <td>${v.longName}</td>
-                                        <td>${v.desc}</td>
-                                        <td style="word-wrap: break-word;">${v.sn}</td>
-                                        <td style="min-width: 80px;">${v.unit}</td>
-                                    </tr>`)}
-                                </tbody>
-                            </table>`
-                            : html`
-                            <div class="text-centered"><h4>Sorry! This input does not have variables yet.</h4></div>
-                            `
-                        }`
-                        : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
-                    </wl-expansion>`)}`
-                    : html``}
-
-                    ${(this._outputs) ? html`<h3>Outputs:</h3>${this._outputs.map(output => html`
-                    <wl-expansion name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}">
-                        <span slot="title">${output.label}</span>
-                        <span slot="description">${output.desc}</span>
-                        ${this._variables[output.uri] ? 
-                        html`${this._variables[output.uri].length>0?
-                            html`
-                            <table class="pure-table pure-table-bordered">
-                                <thead>
-                                    <th>Label</th>
-                                    <th>Long Name</th>
-                                    <th>Description</th>
-                                    <th>Standard Name</th>
-                                    <th>Units</th>
-                                </thead>
-                                <tbody>
-                                ${this._variables[output.uri].map((v:any) => 
-                                    html`
-                                    <tr>
-                                        <td>${v.label}</td>
-                                        <td>${v.longName}</td>
-                                        <td>${v.desc}</td>
-                                        <td style="word-wrap: break-word;">${v.sn}</td>
-                                        <td style="min-width: 80px;">${v.unit}</td>
-                                    </tr>`)}
-                                </tbody>
-                            </table>`
-                            : html`
-                            <div class="text-centered"><h4>Sorry! This output does not have variables yet.</h4></div>
-                            `
-                        }`
-                        : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
-                    </wl-expansion>`)}`
-                    : html``}
-                    
-                    ${(!this._inputs && !this._outputs) ? html`<br/><h3 style="margin-left:30px">
-                        Sorry! The selected configuration does not have software compatible inputs/outputs yet.
-                    </h3>`
-                    : html``}`;
-
+                return this._renderTabVariables();
             case 'software':
-                return html`${(this._selectedVersion && this._selectedConfig)?
-                    html`${(this._compInput && this._compInput.length>0) || 
-                           (this._compOutput && this._compOutput.length>0) ?
-                        html`
-                            ${(this._compInput && this._compInput.length>0)?
-                                html`<h3> This model configuration uses variables that can be produced from:</h3>
-                                <ul>${this._compInput.map(i=>{
-                                    return html`<li><b>${i.label}:</b> With variables: ${i.vars.map((v, i) => {
-                                        if (i==0) return html`<code>${v}</code>`;
-                                        else return html`, <code>${v}</code>`;
-                                    })}</li>`
-                                })}</ul>`: html``
-                            }
-                            ${(this._compOutput && this._compOutput.length>0)?
-                                html`<h3> This model configuraion produces variables that can be used by:</h3>
-                                <ul>${this._compOutput.map(i=>{
-                                    return html`<li><b>${i.label}:</b> With variables: ${i.vars.map((v, i) => {
-                                        if (i==0) return html`<code>${v}</code>`;
-                                        else return html`, <code>${v}</code>`;
-                                    })}</li>`
-                                })}</ul>`: html``
-                            }`
-                        : html`<br/><h3 style="margin-left:30px">
-                            Sorry! The selected configuration does not have software compatible inputs/outputs yet.
-                        </h3>
-                        `
-                    }`
-                    : html`<br/><h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`
-                }
-                ${this._compModels? html`
-                <h3> Related models: </h3>
-                <table class="pure-table pure-table-bordered">
-                    <thead>
-                        <th>Name</th>
-                        <th>Category</th>
-                        <th>Description</th>
-                    </thead>
-                    <tbody>
-                    ${this._compModels.map( (m:any) => html`
-                        <tr>
-                            <td><a href="models/explore/${m.uri.split('/').pop()}">${m.label}</a></td>
-                            <td>${m.categories.join(', ')}</td>
-                            <td>${m.desc}</td>
-                        </tr>`)}
-                    </tbody>
-                </table>
-                `:html``}`
-
+                return this._renderTabSoftware();
             default:
                 return html`<br/><h3 style="margin-left:30px">Sorry! We are currently working in this feature.</h3>`
         }
+    }
+
+    _goToModel (model:any) {
+        let id : string = model.uri.split('/').pop();
+        goToPage('models/explore/' + id);
     }
 
     _renderGallery () {
@@ -840,26 +894,28 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + this._configId + '/' + id);
     }
 
-    firstUpdated() {
-        store.dispatch(explorerFetchVersions(this.uri));
-        store.dispatch(explorerFetchMetadata(this.uri));
-        store.dispatch(explorerFetchExplDiags(this.uri));
-    }
-
     stateChanged(state: RootState) {
+        // Set this model
+        if (state.explorerUI && state.explorerUI.selectedModel != this._uri) {
+            this._uri = state.explorerUI.selectedModel;
+            store.dispatch(explorerFetchVersions(this._uri));
+            store.dispatch(explorerFetchMetadata(this._uri));
+            store.dispatch(explorerFetchExplDiags(this._uri));
+        }
+
         // Load model
-        if (state.explorer && state.explorer.models && state.explorer.models[this.uri] &&
-            this._model != state.explorer.models[this.uri]) {
+        if (state.explorer && state.explorer.models && state.explorer.models[this._uri] &&
+            this._model != state.explorer.models[this._uri]) {
             // Set new model
             console.log('SET NEW MODEL')
-            this._model = state.explorer.models[this.uri];
-            this._modelId = this.uri.split('/').pop() as string;
+            this._model = state.explorer.models[this._uri];
+            this._modelId = this._uri.split('/').pop() as string;
             if (this._model.categories) {
                 // Set related models (by category)
                 let compModels : FetchedModel[] = [];
                 this._model.categories.forEach( (cat:string) =>  {
                     Object.values(state.explorer!.models).forEach( (model:FetchedModel) => {
-                        if (model.categories && model.categories.indexOf(cat)>=0 && model.uri != this.uri) {
+                        if (model.categories && model.categories.indexOf(cat)>=0 && model.uri != this._uri) {
                             compModels.push(model);
                         }
                     });
@@ -967,20 +1023,27 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                                 let id = firstCalib.uri.split('/').pop();
                                 id = id!.replace('.','+');
                                 goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + this._configId + '/' + id);
-                                //store.dispatch(explorerSetCalibration(firstCalib.uri.split('/').pop()));
                             }
                         }
                     }
 
                     // Set selected Calibration
-                    if (this._selectedConfig && state.explorerUI.selectedCalibration &&
-                        this._selectedConfig.calibrations) {
-                        let sCalib = this._selectedConfig.calibrations.filter( (c:any) => 
-                            c.uri === state.explorerUI!.selectedCalibration);
-                        if (sCalib && sCalib.length > 0 && sCalib[0] != this._selectedCalibration) {
-                            this._selectedCalibration = sCalib[0];
-                            console.log('SET NEW CALIBRATION')
-                            store.dispatch(explorerFetchMetadata(this._selectedCalibration.uri));
+                    if (this._selectedConfig) {
+                        if (state.explorerUI.selectedCalibration && this._selectedConfig.calibrations) {
+                            let sCalib = this._selectedConfig.calibrations.filter((c:any) => 
+                                         c.uri === state.explorerUI!.selectedCalibration);
+                            if (sCalib && sCalib.length > 0 && sCalib[0] != this._selectedCalibration) {
+                                this._selectedCalibration = sCalib[0];
+                                console.log('SET NEW CALIBRATION')
+                                store.dispatch(explorerFetchMetadata(this._selectedCalibration.uri));
+
+                                store.dispatch(explorerFetchIO(this._selectedCalibration.uri));
+                                store.dispatch(explorerFetchParameters(this._selectedCalibration.uri));
+
+                            }
+                        } else if (state.explorerUI.selectedCalibration === "") {
+                            this._selectedCalibration = null;
+                            this._calibrationMetadata = null;
                         }
                     }
                 }
@@ -1006,10 +1069,13 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
 
                 if (this._selectedConfig) {
                     //Set parameters
-                    if (state.explorer.parameters && state.explorer.parameters[this._selectedConfig.uri] &&
-                        state.explorer.parameters[this._selectedConfig.uri].length > 0 &&
-                        this._parameters != state.explorer.parameters[this._selectedConfig.uri]) {
-                        this._parameters = state.explorer.parameters[this._selectedConfig.uri];
+                    if (state.explorer.parameters) {
+                        let selectedUri : string = this._selectedCalibration ? 
+                                this._selectedCalibration.uri : this._selectedConfig.uri;
+                        if (state.explorer.parameters[selectedUri] && state.explorer.parameters[selectedUri].length > 0 
+                            && this._parameters != state.explorer.parameters[selectedUri]) {
+                            this._parameters = state.explorer.parameters[selectedUri];
+                        }
                     }
 
                     //Set compatible Inputs
@@ -1028,16 +1094,24 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                         this._compOutput = state.explorer.compatibleOutput[this._selectedConfig.uri];
                     }
 
-                    if (state.explorer.inputs && state.explorer.inputs[this._selectedConfig.uri] &&
-                        state.explorer.inputs[this._selectedConfig.uri].length > 0  &&
-                        this._inputs != state.explorer.inputs[this._selectedConfig.uri]) {
-                        this._inputs = state.explorer.inputs[this._selectedConfig.uri];
+                    //Set Inputs
+                    if (state.explorer.inputs) {
+                        let selectedUri : string = this._selectedCalibration ? 
+                                this._selectedCalibration.uri : this._selectedConfig.uri;
+                        if (state.explorer.inputs[selectedUri] && state.explorer.inputs[selectedUri].length > 0
+                            && this._inputs != state.explorer.inputs[selectedUri]) {
+                            this._inputs = state.explorer.inputs[selectedUri];
+                        }
                     }
 
-                    if (state.explorer.outputs && state.explorer.outputs[this._selectedConfig.uri] &&
-                        state.explorer.outputs[this._selectedConfig.uri].length > 0  &&
-                        this._outputs != state.explorer.outputs[this._selectedConfig.uri]) {
-                        this._outputs = state.explorer.outputs[this._selectedConfig.uri];
+                    //Set Outputs
+                    if (state.explorer.outputs) {
+                        let selectedUri : string = this._selectedCalibration ? 
+                                this._selectedCalibration.uri : this._selectedConfig.uri;
+                        if (state.explorer.outputs[selectedUri] && state.explorer.outputs[selectedUri].length > 0
+                            && this._outputs != state.explorer.outputs[selectedUri]) {
+                            this._outputs = state.explorer.outputs[selectedUri];
+                        }
                     }
 
                     if (state.explorer.variables && this._IOStatus.size > 0) {

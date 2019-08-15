@@ -34,14 +34,16 @@ export interface FetchedModel extends Resource {
 }
 
 export interface IODetail extends Resource {
-    kind:       string; //prop (model:hasInput or mode:hasOutput)
-    format?:    string; //format
-    dim?:       string; //dim
-    type:       string; //type (URI)
-    units?:     string; //units
-    vp?:        string;
-    sv?:        string;
-    rl?:        string;
+    kind:               string; //prop (model:hasInput or mode:hasOutput)
+    format?:            string; //format
+    dim?:               string; //dim
+    type:               string; //type (URI)
+    units?:             string[]; //units
+    vp?:                string[];
+    st?:                string[];
+    rl?:                string;
+    fixedValueDCId?:    string;
+    fixedValueURL?:     string;
 }
 
 export interface VariableDetail extends Resource {

@@ -9,12 +9,14 @@ import { store, RootState } from '../../../app/store';
 import { goToPage } from '../../../app/actions';
 
 import { explorerFetch, explorerSearchByVarName } from './actions';
+import { explorerSetCompareA, explorerSetCompareB } from "./ui-actions";
 import explorer from "./reducers";
 import explorerUI from "./ui-reducers";
 import { UriModels } from './reducers';
 
 import './model-facet'
 import './model-facet-big'
+import './model-compare'
 
 import "weightless/textfield";
 import "weightless/icon";
@@ -51,14 +53,26 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     @property({type: Boolean})
     private _loading : boolean = true;
 
+    @property({type: Number})
+    private _comparing : number = 0;
+
     static get styles() {
         return [SharedStyles, ExplorerStyles,
             css `
+            .cltrow {
+                padding-bottom: 1em;
+            }
+
             wl-button {
                 padding: 6px 10px;
             }
 
-            .search-results {
+            #model-comparison {
+                margin: 0 auto;
+                width: 75%;
+            }
+
+            #model-search-results {
                 margin: 0 auto;
                 overflow: scroll;
                 height: 100%;
@@ -93,17 +107,25 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         ];
     }
 
+    _goToExplorer () {
+        goToPage('models/explore');
+        if (this._comparing === 2) {
+            store.dispatch(explorerSetCompareA({}));
+            store.dispatch(explorerSetCompareB({}));
+        }
+    }
+
     protected render() {
         return html`
-            <div class="cltrow scenariorow">
-                ${this._selectedUri?
+            <div class="cltrow">
+                ${(this._selectedUri || this._comparing == 2)?
                 html`
-                <wl-button flat inverted @click="${()=> goToPage('models/explore')}">
+                <wl-button flat inverted @click="${this._goToExplorer}">
                     <wl-icon>arrow_back_ios</wl-icon>
                 </wl-button>
                 <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
                     <wl-title level="3" style="margin: 0px; cursor: pointer;" 
-                            @click="${()=> goToPage('models/explore')}">Model Catalog</wl-title>
+                            @click="${this._goToExplorer}">Model Catalog</wl-title>
                 </div>
                 `
                 : html`
@@ -118,7 +140,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
             ${this._selectedUri? 
                 //Display only selected model or the search
-                html`<model-facet-big style="width:75%;" uri="${this._selectedUri}"></model-facet-big>`
+                html`<model-facet-big style="width:75%;"></model-facet-big>`
                 : this._renderSearch()
             }
         `;
@@ -126,6 +148,10 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     _renderSearch () {
         return html`
+            ${this._comparing>0? html`
+            <div id="model-comparison" style="padding-bottom: 1em;"> <model-compare></model-compare> </div>
+            ` :html``}
+            ${this._comparing<2? html`
             <div id="model-search-form">
                 <!-- https://github.com/andreasbm/weightless/issues/58 -->
                 <wl-textfield id="search-input" label="Search models" @input=${this._onSearchInput} value="${this._filter}">
@@ -140,7 +166,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 </wl-select>
             </div>
 
-            <div class="search-results">
+            <div id="model-search-results">
                 <div style="padding-bottom: 1em; text-align:center;">
                 ${this._loading? html`
                     <wl-progress-spinner></wl-progress-spinner>`
@@ -159,6 +185,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     `
                 )}
             </div>
+            ` : html``}
         `
     }
 
@@ -202,6 +229,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
         this._searchType = selectElement['value'].toLowerCase();
         this._clearSearchInput();
+        this._variables = {};
     }
 
     _lastTimeout:any;
@@ -271,6 +299,12 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             } else {
                 this._selectedUri = '';
             }
+        }
+
+        if (state.explorerUI) {
+            this._comparing = 0;
+            if ( state.explorerUI.compareA && state.explorerUI.compareA.model) this._comparing += 1;
+            if ( state.explorerUI.compareB && state.explorerUI.compareB.model) this._comparing += 1;
         }
     }
 }

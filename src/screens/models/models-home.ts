@@ -54,7 +54,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
-            <wl-title level="3" class="${this._subpage == 'explore' ? 'hiddensection' : ''}">
+            <wl-title level="3" class="${(this._subpage == 'explore' || this._subpage == 'configure') ? 'hiddensection' : ''}">
                 Prepare Models
             </wl-title>
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
