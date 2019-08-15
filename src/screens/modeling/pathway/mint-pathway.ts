@@ -11,8 +11,10 @@ import "./mint-runs";
 import "./mint-results";
 import "./mint-visualize";
 
-import { getPathwayVariablesStatus, TASK_NOT_STARTED, getPathwayModelsStatus, getPathwayDatasetsStatus, 
-    getPathwayRunsStatus, getPathwayResultsStatus, TASK_DONE, TASK_PARTLY_DONE, getUISelectedSubgoal, getPathwayParametersStatus } from "../../../util/state_functions";
+import { getPathwayVariablesStatus, TASK_NOT_STARTED, getPathwayModelsStatus, 
+    getPathwayDatasetsStatus, getPathwayRunsStatus, getPathwayResultsStatus, 
+    TASK_DONE, TASK_PARTLY_DONE, 
+    getUISelectedSubgoal, getPathwayParametersStatus } from "../../../util/state_functions";
 import { SubGoal } from "../reducers";
 import { BASE_HREF } from "../../../app/actions";
 import { MintPathwayPage } from "./mint-pathway-page";
@@ -238,6 +240,9 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
             // If pathway changed
             console.log("mint-pathway: Pathway changed !");
             this._selectMode(this._getNextMode());
+            
+            //FIXME: Add this back later
+            //checkPathwayEnsembleStatus(this.scenario, this.pathway, this.prefs);
         }
 
         this.subgoal = getUISelectedSubgoal(state);
