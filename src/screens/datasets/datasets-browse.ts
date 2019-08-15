@@ -19,6 +19,29 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
             .cltrow wl-button {
                 padding: 2px;
             }
+
+            #iframe-container {
+                padding: 15px;
+            }
+
+            #sheet {
+                width: 100%;
+                height: calc(100vh - 250px);
+            }
+
+            @media (min-width: 1025px) {
+                .content {
+                    width: 75%;
+                }
+            }
+            @media (max-width: 1024) {
+                .content {
+                    width: 100%;
+                }
+            }
+            .content {
+                margin: 0 auto;
+            }
             `,
             SharedStyles
         ];
@@ -42,15 +65,16 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
             </div>
         </div>   
 
-        <p>
-        This page is in progress, it will give you access to the Data Catalog, where you can browse and search for
-        datasets.
-        </p>
-        <p>
-        The World Modelers Ethiopia Data Survey contains more than 120 data sources for modeling, 
-        it can be accessed at: <a href="https://docs.google.com/spreadsheets/d/1fWDNqJVo2LGa7h4wdepeI64eGvlCsdu2ueKLOuv98gw/edit#gid=0"
-            >https://docs.google.com/spreadsheets/d/1fWDNqJVo2LGa7h4wdepeI64eGvlCsdu2ueKLOuv98gw/edit#gid=0</a>
-        </p>
+        <div class="content">
+            <p> This page is in progress, it will give you access to the Data Catalog,
+                where you can browse and search for datasets.</p>
+            <p> The World Modelers Ethiopia Data Survey contains more than 120 data sources for modeling,
+                it can be accessed here:
+                <div id="iframe-container">
+                    <iframe id="sheet" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vRYHXh4tMlnnwPauNvoeTPV0jdyTqamVc34B_-m24r-pqchtoh1joYVTr_g7RST-9sGSUGv-0IVyZGR/pubhtml?widget=true&amp;headers=false"></iframe>
+                </div>
+            </p>
+        </div>
         `
     }
 
