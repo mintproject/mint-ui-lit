@@ -50,7 +50,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         {
             name: "Original model",
             fn: (model:Model) => html `
-                <a target="_blank" href="models/explore/${model.original_model}">${model.original_model}</a>
+                <a target="_blank" href="${this._getModelURL(model)}">${model.original_model}</a>
                 `
         },        
         {
@@ -143,7 +143,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                         let model = this.pathway.models![modelid];
                         return html`
                         <li>
-                            <a href="models/explore/${model.id}">${model.name}</a>
+                            <a href="${this._getModelURL(model)}">${model.name}</a>
                         </li>
                         `
                     })}
@@ -201,14 +201,11 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                             </thead>
                             <tbody>
                                 ${(this._queriedModels[this._responseVariables.join(",")] || []).map((model: Model) => {
-                                    let loc : string = this._selectedRegion + '/models/explore/' + model.original_model + '/'
-                                                     + model.model_version + '/' + model.model_configuration + '/'
-                                                     + model.localname;
                                     return html`
                                     <tr>
                                         <td><input class="checkbox" type="checkbox" data-modelid="${model.id}"
                                             ?checked="${modelids.indexOf(model.id!) >= 0}"></input></td>
-                                        <td><a href="${loc}">${model.name}</a></td>
+                                        <td><a href="${this._getModelURL(model)}">${model.name}</a></td> 
                                         <td>${model.category}</td>
                                         <td>${model.calibrated_region}</td>
                                         <td>
@@ -280,6 +277,12 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             </table>
         </wl-dialog>
         `;
+    }
+
+    _getModelURL (model:Model) {
+        return this._selectedRegion + '/models/explore/' + model.original_model + '/'
+               + model.model_version + '/' + model.model_configuration + '/'
+               + model.localname;
     }
 
     _getSelectedModels() {
