@@ -30,6 +30,11 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
               border: 0px solid black;
               height: 70vh;
           }
+
+          #notes {
+              border: 0px;
+              resize: none;
+          }
           `
         ]
     }
@@ -70,6 +75,11 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                 ${drivingV? 'to explore driving variable ' + drivingV : ''}
             </h2>
             <iframe src="${externalViz}"></iframe>
+            <fieldset class="notes">
+                <legend>Notes</legend>
+                <textarea id="notes">Write some notes here.</textarea>
+            </fieldset>
+            <br/>
             <details>
                 <summary>Summary of models explored to generate visualizations</summary>
                 ${this._renderSummary()}
