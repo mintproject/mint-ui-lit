@@ -31,16 +31,16 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
             <wl-title level="3">Explore Data</wl-title>
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
                 <a href="analysis/compare">
-                    <wl-icon>compare</wl-icon>
-                    <div>Compare runs</div>
+                    <wl-icon style="--icon-size: 81px;">compare</wl-icon>
+                    <div>Sensitivity analysis</div>
                 </a>
                 <a href="analysis/visualize">
-                    <wl-icon>insert_chart</wl-icon>
-                    <div>Visualize results</div>
+                    <wl-icon style="--icon-size: 81px;">collections_bookmark</wl-icon>
+                    <div>Aggregate questions</div>
                 </a>
                 <a href="analysis/aggregate">
-                    <wl-icon>collections_bookmark</wl-icon>
-                    <div>Aggregate results</div>
+                    <wl-icon style="--icon-size: 81px;">insert_chart</wl-icon>
+                    <div>Compose visualizations</div>
                 </a>
                 <a href="analysis/report">
                     <wl-icon>attachment</wl-icon>
@@ -48,6 +48,7 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
                 </a>
             </div>
 
+            <!--TODO: Change the name of the files too -->
             <analysis-compare class="page fullpage" ?active="${this._subpage == 'compare'}"></analysis-compare>
             <analysis-visualize class="page fullpage" ?active="${this._subpage == 'visualize'}"></analysis-visualize>
             <analysis-aggregate class="page fullpage" ?active="${this._subpage == 'aggregate'}"></analysis-aggregate>

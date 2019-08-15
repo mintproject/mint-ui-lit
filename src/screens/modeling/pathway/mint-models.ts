@@ -38,6 +38,8 @@ export class MintModels extends connect(store)(MintPathwayPage) {
 
     private _responseVariables: string[] = [];
 
+    private _selectedRegion: string = "";
+
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
             name: "More information",
@@ -48,7 +50,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         {
             name: "Original model",
             fn: (model:Model) => html `
-                <a target="_blank" href="models/explore/${model.original_model}">${model.original_model}</a>
+                <a target="_blank" href="${this._getModelURL(model)}">${model.original_model}</a>
                 `
         },        
         {
@@ -141,7 +143,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                         let model = this.pathway.models![modelid];
                         return html`
                         <li>
-                            <a href="models/explore/${model.id}">${model.name}</a>
+                            <a href="${this._getModelURL(model)}">${model.name}</a>
                         </li>
                         `
                     })}
@@ -179,6 +181,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                     The models below generate data that includes the response variables that you selected earlier: 
                     "${this.pathway.response_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
                     Other models that are available in the system do not generate that kind of result.
+                    The column “Relevant Output File” shows the output file that contains the response variable.
                 </p>
                 <ul>
                     <li>
@@ -193,7 +196,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                                     <th><b>Model</b></th>
                                     <th>Category</th>
                                     <th>Calibration Region</th>
-                                    <th>Relevant Output</th>
+                                    <th>Relevant Output File</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -202,7 +205,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                                     <tr>
                                         <td><input class="checkbox" type="checkbox" data-modelid="${model.id}"
                                             ?checked="${modelids.indexOf(model.id!) >= 0}"></input></td>
-                                        <td><a href="models/explore/${model.id}">${model.name}</a></td>
+                                        <td><a href="${this._getModelURL(model)}">${model.name}</a></td> 
                                         <td>${model.category}</td>
                                         <td>${model.calibrated_region}</td>
                                         <td>
@@ -274,6 +277,12 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             </table>
         </wl-dialog>
         `;
+    }
+
+    _getModelURL (model:Model) {
+        return this._selectedRegion + '/models/explore/' + model.original_model + '/'
+               + model.model_version + '/' + model.model_configuration + '/'
+               + model.localname;
     }
 
     _getSelectedModels() {
@@ -416,6 +425,10 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         if(state.models && !state.models.loading && this._dispatched) {
             this._queriedModels = state.models!.models;
             this._dispatched = false;
+        }
+
+        if (state.ui && state.ui.selected_top_regionid) {
+            this._selectedRegion = state.ui.selected_top_regionid;
         }
     }
 }
