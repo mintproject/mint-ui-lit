@@ -39,10 +39,10 @@ export class DatasetsQualityWorkflows extends connect(store)(PageViewElement) {
         <ul>
             <li><a href="https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Ethiopia_relief_boundary.png"
                 >Ethiopia relief boundary</a>. 
-                <a href="http://mint.isi.edu/dev/data/Ethiopia_relief_subbasins_big.png">Ethiopia relief subbasins (BIG FILE !)</a>
+                <a href="http://mint.isi.edu/dev/data/Ethiopia_relief_subbasins_big.png">Ethiopia relief subbasins (94MB)</a>
             </li>
             <li><a href="http://mint.isi.edu/dev/data/Blue_Nile_Tribs_relief_and_boundaries_big.png"
-                >Blue Nile Tributaries relief and boundaries (BIG FILE !)</a></li>
+                >Blue Nile Tributaries relief and boundaries (76MB)</a></li>
             <li><a href="https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Guder_relief_rivers_boundary.png"
                 >Guder relief rivers boundary</a></li>
             <li><a href="https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Jamma_relief_river_boundary.png"
