@@ -876,7 +876,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         if (!selectElement) return;
 
         let id = selectElement['value'].split('/').pop();
-        id = id!.replace(/\./g,'+');
         goToPage('models/explore/' + this._modelId + '/' + id);
     }
 
@@ -885,7 +884,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         if (!selectElement) return;
 
         let id = selectElement['value'].split('/').pop();
-        id = id!.replace(/\./g,'+');
         goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + id);
     }
 
@@ -894,7 +892,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         if (!selectElement) return;
 
         let id = selectElement['value'].split('/').pop();
-        id = id!.replace(/\./g,'+');
         goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + this._configId + '/' + id);
     }
 
@@ -954,7 +951,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 if (this._versions.length > 0 && (!state.explorerUI || !state.explorerUI.selectedVersion)) {
                     let firstVersion = this._versions[0];
                     let id = firstVersion.uri.split('/').pop();
-                    id = id!.replace(/\./g,'+');
                     goToPage('models/explore/' + this._modelId + '/' + id);
                 }
             }
@@ -972,7 +968,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     if (sVersion && sVersion.length > 0 && sVersion[0] != this._selectedVersion) {
                         this._selectedVersion = sVersion[0];
                         this._versionId = this._selectedVersion.uri.split('/').pop() as string;
-                        this._versionId = this._versionId.replace(/\./g, '+');
                         console.log('SET NEW VERSION')
                         this._selectedConfig = null;
                         this._selectedCalibration = null;
@@ -983,7 +978,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                             x.uri===state.explorerUI!.selectedConfig).length===0)) {
                             let firstConfig = this._selectedVersion.configs[0];
                             let id = firstConfig.uri.split('/').pop();
-                            id = id!.replace(/\./g,'+');
                             goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + id);
                             //store.dispatch(explorerSetConfig(firstConfig.uri.split('/').pop()));
                         }
@@ -1025,7 +1019,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                                 state.explorerUI!.selectedCalibration).length === 0)) {
                                 let firstCalib = this._selectedConfig.calibrations[0];
                                 let id = firstCalib.uri.split('/').pop();
-                                id = id!.replace('.','+');
                                 goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + this._configId + '/' + id);
                             }
                         }

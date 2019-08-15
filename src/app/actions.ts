@@ -167,11 +167,11 @@ const loadPage: ActionCreator<ThunkResult> =
                 if(params.length > 0) {
                     store.dispatch(explorerSetModel(params[0]));
                     if (params.length > 1) {
-                        store.dispatch(explorerSetVersion(params[1].replace(/\+/g,'.')));
+                        store.dispatch(explorerSetVersion(params[1]));
                         if (params.length > 2) {
-                            store.dispatch(explorerSetConfig(params[2].replace(/\+/g,'.')));
+                            store.dispatch(explorerSetConfig(params[2]));
                             if (params.length > 3) {
-                                store.dispatch(explorerSetCalibration(params[3].replace(/\+/g,'.')));
+                                store.dispatch(explorerSetCalibration(params[3]));
                             }
                         }
                     }
