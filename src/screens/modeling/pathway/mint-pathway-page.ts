@@ -5,6 +5,7 @@ import { PageViewElement } from "../../../components/page-view-element";
 import { Pathway, Scenario } from "../reducers";
 import { getUISelectedPathway } from "../../../util/state_functions";
 import { User } from "firebase";
+import { UserPreferences } from "app/reducers";
 
 export class MintPathwayPage extends PageViewElement {
     @property({type: Object})
@@ -15,6 +16,9 @@ export class MintPathwayPage extends PageViewElement {
 
     @property({type: Object})
     protected user: User | null = null;
+
+    @property({type: Object})
+    protected prefs: UserPreferences | null = null;
 
     setPathway(state: RootState): Boolean {
         let pathway: Pathway = getUISelectedPathway(state)!;
@@ -28,5 +32,6 @@ export class MintPathwayPage extends PageViewElement {
 
     setUser(state: RootState) {
         this.user = state.app.user!;
+        this.prefs = state.app.prefs!;
     }
 }

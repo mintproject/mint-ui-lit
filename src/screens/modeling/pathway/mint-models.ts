@@ -363,7 +363,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                 user: this.user!.email
             } as StepUpdateInformation
         };        
-                
+
         updatePathway(this.scenario, this.pathway); 
         
         this._editMode = false;

@@ -81,6 +81,7 @@ export interface Goal extends IdNameObject {
 }
 
 export interface SubGoal extends IdNameObject {
+    dates?: DateRange,
     pathwayids?: string[]
 }
 
@@ -98,6 +99,7 @@ export interface ExecutableEnsemble {
     modelid: string
     bindings: InputBindings
     runid?: string
+    status: "FAILED" | "SUCCESSFUL" | "ONGOING",
     run_progress?: number // 0 to 100 (percentage done)
     results: string[] // Chosen results after completed run
     selected: boolean

@@ -170,7 +170,11 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                         let param: ModelParameter =  {
                             id: value.p,
                             name: value.paramlabel,
-                            type: value.pdatatype
+                            type: value.pdatatype,
+                            min: value.minVal || "",
+                            max: value.maxVal || "",
+                            default: value.defaultvalue || "",
+                            description: value.description || ""
                         };
                         if(value.fixedValue)
                             param.value = value.fixedValue;
@@ -182,25 +186,27 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                         id: modelid,
                         localname: modelid.substr(modelid.lastIndexOf("/") + 1),
                         name: meta['label'],
-                        calibrated_region: meta["regionName"],
-                        description: row["desc"],
-                        category: "",
+                        calibrated_region: meta["regionName"] || "",
+                        description: row["desc"] || "",
+                        category: row["category"] || "",
+                        wcm_uri: row["compLoc"] || "",
                         input_files: inputs,
                         input_parameters: parameters,
                         output_files: outputs,
-                        original_model: row["modelName"],
-                        model_version: row["versionName"],
-                        model_configuration: row["configurationName"],
+                        original_model: row["modelName"] || "",
+                        model_version: row["versionName"] || "",
+                        model_configuration: row["configurationName"] || "",
                         model_type: "",
-                        parameter_assignment: meta["paramAssignMethod"],
+                        parameter_assignment: meta["paramAssignMethod"] || "",
                         parameter_assignment_details: "",
-                        target_variable_for_parameter_assignment: meta["targetVariables"].join(", "),
-                        modeled_processes: meta["processes"],
-                        dimensionality: 0,
-                        spatial_grid_type: "",
-                        spatial_grid_resolution: "",
+                        target_variable_for_parameter_assignment: (meta["targetVariables"] || []).join(", "),
+                        modeled_processes: meta["processes"] || "",
+                        dimensionality: meta['gridDim'] || "",
+                        spatial_grid_type: (meta['gridType'] || "").replace(/.*#/, ''),
+                        spatial_grid_resolution: meta['gridSpatial'] || "",
                         minimum_output_time_interval: ""
                     };
+                    console.log(model);
                     return model;
                 });
             });

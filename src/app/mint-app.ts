@@ -18,7 +18,7 @@ import { store, RootState } from './store';
 
 // These are the actions needed by this element.
 import {
-  navigate, fetchUser, signOut, signIn, goToPage,
+  navigate, fetchUser, signOut, signIn, goToPage, fetchUserPreferences,
 } from './actions';
 
 import '../screens/modeling/modeling-home';
@@ -31,6 +31,7 @@ import '../screens/variables/variables-home';
 import { SharedStyles } from '../styles/shared-styles';
 import { showDialog, hideDialog, formElementsComplete } from '../util/ui_functions';
 import { User } from 'firebase';
+import { runPathwayExecutableEnsembles } from 'util/state_functions';
 
 @customElement('mint-app')
 export class MintApp extends connect(store)(LitElement) {
@@ -48,6 +49,8 @@ export class MintApp extends connect(store)(LitElement) {
 
   @property({type: Object})
   private _selectedRegion? : string;
+
+  _once = false;
 
   static get styles() {
     return [
@@ -275,6 +278,7 @@ export class MintApp extends connect(store)(LitElement) {
   protected firstUpdated() {
     installRouter((location) => store.dispatch(navigate(decodeURIComponent(location.pathname))));
     store.dispatch(fetchUser());
+    store.dispatch(fetchUserPreferences());
   }
 
   protected updated(changedProps: PropertyValues) {
@@ -292,6 +296,13 @@ export class MintApp extends connect(store)(LitElement) {
   stateChanged(state: RootState) {
     this._page = state.app!.page;
     this.user = state.app!.user!;
+    /*
+    if(state.app!.prefs && !this._once) {
+      this._once = true;
+      console.log(state.app!.prefs);
+      runPathwayExecutableEnsembles(null, null, state.app!.prefs, null);
+    }*/
+
     let regionid = state.ui.selected_top_regionid;
     if(regionid) {
       this._selectedRegion = regionid.replace(/_/g, ' ').toUpperCase();

@@ -183,7 +183,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                                 <td class="${matched ? 'matched': ''}">
                                                     <a href="datasets/browse/${dataset.id}">${dataset.name}</a>
                                                 </td>
-                                                <td>${dataset.categories!.join(", ")}</td>
+                                                <td>${(dataset.categories || []).join(", ")}</td>
                                                 <td>${dataset.region}</td>
                                                 <td>${dataset.time_period}</td>
                                                 <td><a href="'${dataset.source.url}'">${dataset.source.name}</a></td>
@@ -394,6 +394,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         };    
 
         // Update pathway itself
+        console.log(this.pathway);
         updatePathway(this.scenario, this.pathway);
         showNotification("saveNotification", this.shadowRoot!);
     }
@@ -426,7 +427,9 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                             !this.pathway.model_ensembles![modelid][input.id!] ||
                             this._editMode) {
                         //console.log("Querying datasets for model: " + modelid+", input: " + input.id);
-                        store.dispatch(queryDatasetsByVariables(modelid, input.id, input.variables));
+                        store.dispatch(queryDatasetsByVariables(
+                            modelid, input.id, input.variables,
+                            this.scenario.dates.start_date, this.scenario.dates.end_date));
                     } else {
                         this._queriedDatasets[modelid][input.id!] = {
                             loading: false,

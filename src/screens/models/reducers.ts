@@ -13,6 +13,7 @@ export interface Model extends IdNameObject {
     input_files: ModelIO[],
     input_parameters: ModelParameter[],
     output_files: ModelIO[],
+    wcm_uri?: string,
     model_type?: string,
     original_model?: string,
     model_version?: string,
@@ -35,8 +36,10 @@ export interface ModelIO extends IdNameObject {
 
 export interface ModelParameter extends IdNameObject {
     type: string,
+    description?: string,
     min?: string,
     max?: string,
+    default?: string,
     value?: string
 }
 

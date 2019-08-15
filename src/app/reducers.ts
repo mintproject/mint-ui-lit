@@ -11,7 +11,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 import { Reducer } from 'redux';
 import { RootAction } from './store';
 import { User } from 'firebase';
-import { UPDATE_PAGE, FETCH_USER } from './actions';
+import { UPDATE_PAGE, FETCH_USER, FETCH_USER_PREFERENCES } from './actions';
 
 
 export interface IdMap<T> {
@@ -20,13 +20,30 @@ export interface IdMap<T> {
 
 export interface IdNameObject {
   id?: string
-  name: string
+  name?: string
 }
 
 export interface AppState {
   page: string,
   subpage: string,
-  user?: User
+  user?: User,
+  prefs?: UserPreferences
+}
+
+export interface UserPreferences {
+  wings: WingsPreferences
+}
+
+export interface WingsPreferences {
+  server: string,
+  export_url: string,
+  domain: string,
+  username: string,
+  password: string,
+  storage: string,
+  dotpath: string,
+  onturl: string,
+  api: string
 }
 
 const INITIAL_STATE: AppState = {
@@ -46,6 +63,11 @@ const app: Reducer<AppState, RootAction> = (state = INITIAL_STATE, action) => {
       return {
         ...state,
         user: action.user!
+      };
+    case FETCH_USER_PREFERENCES:
+      return {
+        ...state,
+        prefs: action.prefs!
       };
     default:
       return state;
