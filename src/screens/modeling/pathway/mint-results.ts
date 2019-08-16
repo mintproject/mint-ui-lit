@@ -202,13 +202,14 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     }
 
     _getModelURL (model:Model) {
-        return this._selectedRegion + '/models/explore/' + model.original_model + '/'
+        return this._regionid + '/models/explore/' + model.original_model + '/'
                + model.model_version + '/' + model.model_configuration + '/'
                + model.localname;
     }
 
     stateChanged(state: RootState) {
         super.setUser(state);
+        super.setRegionId(state);
         super.setPathway(state);
     }
 
