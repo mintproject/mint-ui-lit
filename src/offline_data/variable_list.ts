@@ -126,7 +126,7 @@ export const VARIABLES = {
                 "SVO_name": "plant_at-grain-or-forage-harvest-or-death__mass-per-area_density"
             },
             "var3": {
-                "long_name": "Grain Yields",
+                "long_name": "Grain Yield",
                 "SVO_name": "grain~dry__mass-per-area_yield"
             },
             "var4": {

@@ -194,8 +194,8 @@ export const EXAMPLE_MODEL_QUERY = [
         ],
         output_files: [
             {
-                id: "grain_yields",
-                name: "Grain Yields",
+                id: "grain_yield",
+                name: "Grain Yield",
                 variables: [
                     "grain~dry__mass-per-area_yield",
                 ]

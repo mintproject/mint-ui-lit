@@ -32,7 +32,8 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         if(!this.pathway.executable_ensembles || !this.pathway.executable_ensembles.length) {
             return html `
             <p>
-                This step is for monitoring model runs. You can view results of these runs in the next step
+                This step is for monitoring model runs. You can view results of these runs in the next step.  You can
+                also see if runs failed, and look into the reasons so the model can be used properly.
             </p>
             Please setup and run some models first
             `
