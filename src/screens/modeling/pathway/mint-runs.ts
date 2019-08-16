@@ -84,6 +84,12 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 <li>
                     <wl-title level="4">Model Runs executed</wl-title>
                     <table class="pure-table pure-table-striped">
+                        <colgroup>
+                            <col span="1" style="width: 35%;">
+                            <col span="1" style="width: 65%;">
+                            <col span="1" style="width: 176px;">
+                        </colgroup>
+
                         <thead>
                             <tr>
                                 <th>Model</th>

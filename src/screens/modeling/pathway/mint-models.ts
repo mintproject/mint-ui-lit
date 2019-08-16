@@ -91,7 +91,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         },
         {
             name: "Spatial dimensionality",
-            fn: (model:Model) => model.dimensionality
+            fn: (model:Model) => html`<span style="font-family: system-ui;"> ${model.dimensionality} </span>`
         },
         {
             name: "Spatial grid type",

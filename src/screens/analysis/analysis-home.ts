@@ -28,7 +28,7 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
-            <wl-title level="3">Explore Data</wl-title>
+            <wl-title level="3">Prepare Reports</wl-title>
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
                 <a href="analysis/compare">
                     <wl-icon style="--icon-size: 81px;">compare</wl-icon>
