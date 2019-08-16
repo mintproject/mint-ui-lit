@@ -56,10 +56,13 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         {
             name: "Adjustable variables",
             fn: (model:Model) => {
-                return (model.input_parameters.length > 0) ? 
-                    model.input_parameters.filter((ip) => !ip.value).map((ip) => ip.name).join(", ")
-                    :
-                    "None";
+                if (model.input_parameters.length > 0) {
+                    let values = model.input_parameters.filter((ip) => !ip.value);
+                    if (values.length > 0) {
+                        return values.map((ip) => ip.name).join(', ');
+                    }
+                }
+                return "None";
             }
         },
         {
