@@ -1,4 +1,6 @@
 language: generic
+addons:
+  ssh_known_hosts: mint.isi.edu
 env:
 - DOCKER_COMPOSE_VERSION=1.23.2
 services:
@@ -12,3 +14,18 @@ before_install:
 - chmod +x docker-compose
 - sudo mv docker-compose /usr/local/bin
 - docker-compose build
+- docker-compose up -d prod 
+- docker cp $(docker-compose ps -q prod):/usr/share/nginx/html/ $TRAVIS_BUILD_DIR/mint-ui-lit/
+deploy:
+  provider: script
+  skip_cleanup: true
+  script: bash scripts/deploy.sh $TRAVIS_BUILD_DIR/mint-ui-lit mintui_$TRAVIS_BRANCH
+  on:
+    condition: $TRAVIS_BRANCH =~ ^(master|mint-demo|travis2)$
+deploy:
+  provider: script
+  skip_cleanup: true
+  script: bash scripts/deploy.sh $TRAVIS_BUILD_DIR/mint-ui-lit mintui_$TRAVIS_TAG
+  on:
+    tags: true
+    all_branches: true
