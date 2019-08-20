@@ -11,6 +11,7 @@ import './datasets-browse';
 import './datasets-register';
 import './datasets-quality-workflows';
 import './datasets-rs-workflows';
+import '../../components/nav-title';
 
 store.addReducers({
     datasets
@@ -28,8 +29,27 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
     }
 
     protected render() {
+        let nav = [{label:'Explore Data', url:'datasets'}] 
+        switch (this._subpage) {
+            case 'browse':
+                nav.push({label: 'Browse Datasets', url: 'datasets/browse'});
+                break;
+            case 'register':
+                nav.push({label: 'Add Datasets', url: 'datasets/register'});
+                break;
+            case 'quality-workflows':
+                nav.push({label: 'Improve Quality of Datasets', url: 'datasets/quality-workflows'});
+                break;
+            case 'rs-workflows':
+                nav.push({label: 'Remote Sensing', url: 'datasets/rs-workflows'});
+                break;
+            default:
+                break;
+        }
+
         return html`
-            <wl-title level="3">Explore Data</wl-title>
+            <nav-title .nav="${nav}"></nav-title>
+
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
                 <a href="${this._regionid}/datasets/browse">
                     <wl-icon>search</wl-icon>

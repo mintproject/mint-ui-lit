@@ -6,7 +6,6 @@ import { SharedStyles } from '../../styles/shared-styles';
 import { RootState, store } from '../../app/store';
 import { DatasetDetail } from './reducers';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { goToPage } from '../../app/actions';
 
 @customElement('datasets-browse')
 export class DatasetsBrowse extends connect(store)(PageViewElement) {
@@ -56,15 +55,6 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
             `
             : html ``
         }
-        <div class="cltrow">
-            <wl-button flat inverted @click="${()=> goToPage('datasets')}">
-                <wl-icon>arrow_back_ios</wl-icon>
-            </wl-button>
-            <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                <wl-title level="4" style="margin: 0px">Browse Datasets</wl-title>
-            </div>
-        </div>   
-
         <div class="content">
             <p> This page is in progress, it will give you access to the Data Catalog,
                 where you can browse and search for datasets.</p>
