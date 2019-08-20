@@ -1,4 +1,4 @@
-# mint-ui-lit [![Build Status](https://travis-ci.org/mintproject/mint-ui-lit.svg?branch=master)](https://travis-ci.org/mintproject/mint-ui-lit)
+# mint-ui-lit [![Build Status](https://travis-ci.com/mintproject/mint-ui-lit.svg?branch=master)](https://travis-ci.com/mintproject/mint-ui-lit)
 
 New version of the MINT-UI 
 
