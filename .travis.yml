@@ -23,7 +23,7 @@ before_deploy:
 - echo $key_pass | gpg --passphrase-fd 0 id_travis_rsa.gpg
 - eval "$(ssh-agent -s)"
 - chmod 600 id_travis_rsa
-- ssh-add id_travis_rsa  
+- ssh-add id_travis_rsa
 deploy:
 - provider: script
   skip_cleanup: true
