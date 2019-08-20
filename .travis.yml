@@ -17,15 +17,15 @@ before_install:
 - docker-compose up -d prod 
 - docker cp $(docker-compose ps -q prod):/usr/share/nginx/html/ $TRAVIS_BUILD_DIR/mint-ui-lit/
 deploy:
-  provider: script
-  skip_cleanup: true
-  script: bash scripts/deploy.sh $TRAVIS_BUILD_DIR/mint-ui-lit mintui_$TRAVIS_BRANCH
-  on:
-    condition: $TRAVIS_BRANCH =~ ^(master|mint-demo|travis2)$
-deploy:
-  provider: script
-  skip_cleanup: true
-  script: bash scripts/deploy.sh $TRAVIS_BUILD_DIR/mint-ui-lit mintui_$TRAVIS_TAG
-  on:
-    tags: true
-    all_branches: true
+  - provider: script
+    skip_cleanup: true
+    script: bash scripts/deploy.sh $TRAVIS_BUILD_DIR/mint-ui-lit mintui_$TRAVIS_BRANCH
+    on:
+      all_branches: true
+      condition: $TRAVIS_BRANCH =~ ^(master|mint-demo)$
+  - provider: script
+    skip_cleanup: true
+    script: bash scripts/deploy.sh $TRAVIS_BUILD_DIR/mint-ui-lit mintui_$TRAVIS_TAG
+    on:
+      tags: true
+      all_branches: true
