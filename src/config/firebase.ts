@@ -1,10 +1,10 @@
 import firebase from "firebase/app";
 import "firebase/auth";
 import "firebase/firestore";
-import { GOOGLE_API_KEY } from "./google-api-key";
+import { FIREBASE_GOOGLE_API_KEY } from "./google-api-key";
 
 const firebaseConfig = {
-    apiKey: GOOGLE_API_KEY,
+    apiKey: FIREBASE_GOOGLE_API_KEY,
     authDomain: "mint-demo-9bf45.firebaseapp.com",
     databaseURL: "https://mint-demo-9bf45.firebaseio.com",
     projectId: "mint-demo-9bf45",
