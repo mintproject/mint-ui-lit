@@ -147,11 +147,12 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                                 type: value.type,
                                 variables: []
                             };
-                            if(value.fixedValueURL)
+                            if(value.fixedValueURL && value.iolabel != "cycles_weather") {
                                 io.value = {
                                     id: value.fixedValueDCId,
                                     url: value.fixedValueURL
                                 } as Dataset;
+                            }
                             fileio[value.io] = io;
                             if(value.prop.match(/#hasInput$/)) {
                                 inputs.push(io);
