@@ -30,6 +30,11 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
               border: 0px solid black;
               height: 70vh;
           }
+
+          #notes {
+              border: 0px;
+              resize: none;
+          }
           `
         ]
     }
@@ -38,6 +43,23 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
         if(!this.pathway) {
             return html ``;
         }
+
+        //TODO: This should be done by API
+        let externalViz : string;
+        switch (this.pathway.id) {
+            case 'eBzD5YQiwpW0nbjdthoM':
+                externalViz = 'https://viz.mint.isi.edu/bokeh/econ_viz_live'
+                break;
+            case 'PcFcTdadrAaU3xAJI17D':
+                externalViz = 'https://viz.mint.isi.edu/bokeh/cycles_viz'
+                break;
+        }
+
+        // TODO: select an apropiate title.
+        let responseV = this.pathway.response_variables.length > 0?
+                            getVariableLongName(this.pathway.response_variables[0]) : '';
+        let drivingV = this.pathway.driving_variables.length > 0?
+                            getVariableLongName(this.pathway.driving_variables[0]) : '';
         
         return html`
         <style>
@@ -47,17 +69,30 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
             color: #999;
         }
         </style>
+        ${externalViz? html`
+            <h2>Visualizations 
+                ${responseV? 'of response variable ' + responseV : ''}
+                ${drivingV? 'to explore driving variable ' + drivingV : ''}
+            </h2>
+            <iframe src="${externalViz}"></iframe>
+            <fieldset class="notes">
+                <legend>Notes</legend>
+                <textarea id="notes">Write some notes here.</textarea>
+            </fieldset>
+            <br/>
+            <details>
+                <summary>Summary of models explored to generate visualizations</summary>
+                ${this._renderSummary()}
+            </details>
+        ` : html`
+            ${this._renderSummary()}
+        `}
+        `;
+    }
 
-        ${this.pathway.id === "eBzD5YQiwpW0nbjdthoM"?
-        html`<iframe src="https://viz.mint.isi.edu/bokeh/econ_viz_live"></iframe>`
-        : html``}
-
-        ${this.pathway.id === "PcFcTdadrAaU3xAJI17D"?
-        html`<iframe src="https://viz.mint.isi.edu/bokeh/cycles_viz"></iframe>`
-        : html``}
-
-        Visualization is still under development. For now, here is a report of the current analysis.
-        <h1>${this.scenario.name}</h1>
+    _renderSummary () {
+        return html`
+        <h2>${this.scenario.name}</h2>
         <div class="clt">
             <ul>
                 <li><h2>${this._goal.name}</h2>
@@ -173,7 +208,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                                     <i>Notes: ${this.pathway.notes!.results}</i>
                                 </li>                                
                                 <li>
-                                    Other Results that weren't selected:
+                                    Model execution results that were not recorded:
                                     <ul>
                                         ${this.pathway.executable_ensembles!.map((ensemble: ExecutableEnsemble) => {
                                             let model = this.pathway.models![ensemble.modelid];
@@ -210,7 +245,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                 </li>
             </ul>
         </div>
-        `;
+        `
     }
 
     stateChanged(state: RootState) {

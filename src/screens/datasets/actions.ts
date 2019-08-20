@@ -58,7 +58,8 @@ export const listAllDatasets: ActionCreator<ListDatasetsThunkResult> = () => (di
 // Query Data Catalog by Variables
 type QueryDatasetsThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionVariablesQuery>;
 export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> = 
-        (modelid: string, inputid: string, driving_variables: string[]) => (dispatch) => {
+        (modelid: string, inputid: string, driving_variables: string[],
+            start_date: string, end_date: string) => (dispatch) => {
     
     if(OFFLINE_DEMO_MODE) {
         let datasets = [] as Dataset[];
@@ -83,7 +84,7 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
         }
     }
     else {
-        console.log(driving_variables);
+        //console.log(driving_variables);
         
         dispatch({
             type: DATASETS_VARIABLES_QUERY,
@@ -96,9 +97,12 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
         fetch(DATA_CATALOG_URI + "/datasets/find", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(
-                {standard_variable_names__in: driving_variables}
-            )
+            body: JSON.stringify({
+                standard_variable_names__in: driving_variables,
+                start_time__lte: end_date + "T00:00:00",
+                end_time__gte: start_date + "T00:00:00",
+                limit: 50
+            })
         }).then((response) => {
             response.json().then((obj) => {
                 let datasets: Dataset[] = [];
@@ -109,24 +113,24 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
                     //let scover = rmeta["spatial_coverage"];
 
                     let ds: Dataset = {
-                        id: row["dataset_id"],
-                        name: row["dataset_name"],
+                        id: row["resource_id"],
+                        name: row["resource_name"],
                         region: "",
                         variables: driving_variables,
                         time_period: 
                             tcover["start_time"].replace(/T.+$/, '') + 
                             " to " + 
                             tcover["end_time"].replace(/T.+$/, ''),
-                        description: "",
-                        version: dmeta["version"],
-                        limitations: dmeta["limitataions"],
+                        description: row["description"] || "",
+                        version: dmeta["version"] || "",
+                        limitations: dmeta["limitataions"] || "",
                         source: {
-                            name: dmeta["source"],
-                            url: dmeta["source_url"],
-                            type: dmeta["source_type"]
+                            name: dmeta["source"] || "",
+                            url: dmeta["source_url"] || "",
+                            type: dmeta["source_type"] || ""
                         },
                         url: row["resource_data_url"],
-                        categories: []
+                        categories: dmeta["category_tags"] || []
                     };
                     datasets.push(ds);
                 });
@@ -137,7 +141,7 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
                     datasets: datasets,
                     loading: false
                 });
-                console.log(datasets);
+                //console.log(datasets);
             })
         });
     }

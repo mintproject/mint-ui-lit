@@ -97,6 +97,9 @@ export const SharedStyles = css`
     --progress-bar-color: #629b30;
     width: 150px;
   }  
+  wl-progress-bar.FAILURE {
+    --progress-bar-color: red;
+  }
 
   wl-tooltip {
     font-size: 12px;
@@ -343,7 +346,7 @@ export const SharedStyles = css`
     color: #666;
   }
   fieldset.notes div.notepage {
-    white-space: pre;
+    white-space: pre-wrap;
     border: 0px;
   }
 

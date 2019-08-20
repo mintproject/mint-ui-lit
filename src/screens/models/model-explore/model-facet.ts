@@ -9,6 +9,7 @@ import { goToPage } from '../../../app/actions';
 
 import { FetchedModel } from "./api-interfaces";
 import { ExplorerStyles } from './explorer-styles'
+import { explorerCompareModel } from './ui-actions'
 
 @customElement('model-facet')
 export class ModelFacet extends connect(store)(PageViewElement) {
@@ -107,11 +108,15 @@ export class ModelFacet extends connect(store)(PageViewElement) {
 
                 .title {
                     display: inline-block;
-                    padding: 0px 10px;
+                    padding: 0px 10px 3px 10px;
                     width: calc(100% - 2.6em - 20px);
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
+                }
+
+                .title > a > wl-icon {
+                    font-size: 1em;
                 }
 
                 .icon {
@@ -188,12 +193,11 @@ export class ModelFacet extends connect(store)(PageViewElement) {
 
                 <td class="right">
                   <div class="header"> 
-                    <span class="title"> ${this._model.label} </span>
-                    ${this._model.doc ?
-                        html`<span class="icon"><a target="_blank" 
-                            href="${this._model.doc}"><wl-icon>insert_link</wl-icon></a></span>`
-                        : html``
-                    }
+                    <span class="title">
+                        ${this._model.label}
+                        ${this._model.doc ? html`<a target="_blank" href="${this._model.doc}"><wl-icon>open_in_new</wl-icon></a>`: html``}
+                    </span>
+                    <span class="icon"><wl-icon @click="${()=>{this._compare(this._model.uri)}}">compare_arrows</wl-icon></span>
                   </div>
                   <div class="content" style="${this.altDesc? '' : 'text-align: justify;'}">
                     ${this.altDesc ? 
@@ -219,6 +223,10 @@ export class ModelFacet extends connect(store)(PageViewElement) {
         } else {
             return html`Something when wrong!`
         }
+    }
+
+    _compare (uri:string) {
+        store.dispatch(explorerCompareModel(uri));
     }
 
     firstUpdated() {

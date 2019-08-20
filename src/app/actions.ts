@@ -18,6 +18,8 @@ import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetCo
 import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion } from './ui-actions';
 import { auth } from '../config/firebase';
 import { User } from 'firebase';
+import { UserPreferences } from './reducers';
+import { SAMPLE_USER_PREFERENCES, SAMPLE_USER } from 'offline_data/sample_user';
 
 export const BASE_HREF = document.getElementsByTagName("base")[0].href.replace(/^http(s)?:\/\/.*?\//, "/");
 
@@ -25,11 +27,15 @@ export const UPDATE_PAGE = 'UPDATE_PAGE';
 export const LOGIN = 'LOGIN';
 export const LOGOUT = 'LOGOUT';
 export const FETCH_USER = 'FETCH_USER';
+export const FETCH_USER_PREFERENCES = 'FETCH_USER_PREFERENCES';
 
 export interface AppActionUpdatePage extends Action<'UPDATE_PAGE'> { regionid?: string, page?: string, subpage?:string };
 export interface AppActionFetchUser extends Action<'FETCH_USER'> { user?: User | null };
+export interface AppActionFetchUserPreferences extends Action<'FETCH_USER_PREFERENCES'> { 
+  prefs?: UserPreferences | null 
+};
 
-export type AppAction = AppActionUpdatePage | AppActionFetchUser ;
+export type AppAction = AppActionUpdatePage | AppActionFetchUser | AppActionFetchUserPreferences;
 
 type ThunkResult = ThunkAction<void, RootState, undefined, AppAction>;
 
@@ -37,6 +43,14 @@ export const OFFLINE_DEMO_MODE = false;
 
 type UserThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchUser>;
 export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
+  if(OFFLINE_DEMO_MODE) {
+    dispatch({
+      type: FETCH_USER,
+      user: SAMPLE_USER as User
+    });
+    return;
+  }
+  
   //console.log("Subscribing to user authentication updates");
   auth.onAuthStateChanged(user => {
     if (user) {
@@ -51,6 +65,17 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
       });
     }
   });
+};
+
+type UserPrefsThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchUserPreferences>;
+export const fetchUserPreferences: ActionCreator<UserPrefsThunkResult> = () => (dispatch) => {
+  //if(OFFLINE_DEMO_MODE) {
+    dispatch({
+      type: FETCH_USER_PREFERENCES,
+      prefs: SAMPLE_USER_PREFERENCES
+    });
+    return;
+  //}
 };
 
 export const signIn = (email: string, password: string) => {
@@ -142,11 +167,11 @@ const loadPage: ActionCreator<ThunkResult> =
                 if(params.length > 0) {
                     store.dispatch(explorerSetModel(params[0]));
                     if (params.length > 1) {
-                        store.dispatch(explorerSetVersion(params[1].replace(/\+/g,'.')));
+                        store.dispatch(explorerSetVersion(params[1]));
                         if (params.length > 2) {
-                            store.dispatch(explorerSetConfig(params[2].replace(/\+/g,'.')));
+                            store.dispatch(explorerSetConfig(params[2]));
                             if (params.length > 3) {
-                                store.dispatch(explorerSetCalibration(params[3].replace(/\+/g,'.')));
+                                store.dispatch(explorerSetCalibration(params[3]));
                             }
                         }
                     }

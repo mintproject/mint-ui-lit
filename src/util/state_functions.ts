@@ -1,6 +1,8 @@
 import { Pathway, DatasetMap, ModelEnsembleMap, DataEnsembleMap, InputBindings, ExecutableEnsemble, Scenario, SubGoal } from "../screens/modeling/reducers";
 import { RootState } from "../app/store";
 import { updatePathway } from "../screens/modeling/actions";
+import { UserPreferences } from "app/reducers";
+import { loginToWings, fetchWingsTemplate, fetchWingsTemplatesList, fetchWingsComponent, createSingleComponentTemplate, saveWingsTemplate, WingsTemplatePackage, layoutWingsTemplate, getWingsExpandedTemplates, WingsParameterBindings, WingsDataBindings, WingsParameterTypes, executeWingsWorkflow, registerWingsComponent, registerWingsDataset, fetchWingsRunStatus } from "./wings_functions";
 
 export const removeDatasetFromPathway = (pathway: Pathway,
         datasetid: string, modelid: string, inputid: string) => {
@@ -53,9 +55,9 @@ export const createPathwayExecutableEnsembles = (pathway: Pathway) => {
             if (current_ensemble && current_ensemble.runid) {
                 //console.log("Found a matching ensemble");
                 ensemble.runid = current_ensemble.runid;
-                ensemble.results = current_ensemble.results;
+                ensemble.results = current_ensemble.results || [];
                 ensemble.run_progress = current_ensemble.run_progress;
-                ensemble.selected = current_ensemble.selected;
+                ensemble.selected = current_ensemble.selected || false;
             }
 
             pathway.executable_ensembles!.push(ensemble);
@@ -64,7 +66,173 @@ export const createPathwayExecutableEnsembles = (pathway: Pathway) => {
     return pathway;
 }
 
-export const runPathwayExecutableEnsembles = (scenario: Scenario, pathway: Pathway, indices: number[]) => {
+const _createTemplateAndRunWorkflow = (
+        cname: string,
+        datasets: Object,
+        parameters: Object,
+        paramtypes: Object,
+        prefs: UserPreferences) : Promise<string> => {
+
+    return new Promise((resolve, reject) => {
+        loginToWings(prefs).then(() => {
+            console.log("Promise fulfilled, logged in");
+    
+            let config = prefs.wings;
+            let expfx = config.export_url + "/export/users/" + config.username + "/" + config.domain;
+    
+            let tname = "workflow_" + cname;
+            let tns = expfx + "/workflows/" + tname + ".owl#";
+            let tid = tns + tname;
+            let dataBindings = {} as WingsDataBindings;
+            let parameterBindings = {} as WingsParameterBindings;
+            let parameterTypes = {} as WingsParameterTypes;
+            for(let varname in datasets) {
+                let varid = tns + varname;
+                dataBindings[varid] = [expfx + "/data/library.owl#" + datasets[varname]];
+            }
+            for(let varname in parameters) {
+                let varid = tns + varname;
+                parameterBindings[varid] = parameters[varname];
+                parameterTypes[varid] = "http://www.w3.org/2001/XMLSchema#" + paramtypes[varname];
+            }
+    
+            fetchWingsTemplatesList(prefs).then((list) => {
+                if(list.indexOf(tid) >= 0) {
+                    let tname = tid.replace(/^.+#/, '');
+                    console.log(tname + " template already exists");
+                    // Template already in list
+                    fetchWingsTemplate(tname, prefs).then((tpl_package) => {
+                        executeWingsWorkflow(tpl_package, dataBindings, parameterBindings, 
+                            parameterTypes, prefs).then((runid) => {
+                                resolve(runid);
+                            })
+                    });
+                }
+                else {
+                    // Create template
+                    console.log(cname);
+                    fetchWingsComponent(cname, prefs).then((comp) => {
+                        console.log(comp);
+                        let tpl = createSingleComponentTemplate(comp, prefs);
+                        layoutWingsTemplate(tpl, prefs).then((tpl_package) => {
+                            saveWingsTemplate(tpl_package, prefs).then(() => {
+                                console.log("Template saved as " + tpl.id);
+                                executeWingsWorkflow(tpl_package, dataBindings, parameterBindings, 
+                                    parameterTypes, prefs).then((runid) => {
+                                        resolve(runid);
+                                    })
+                            })
+                        });
+                        //console.log(tpl);
+                    });
+                }
+            });
+        }).catch((reason) => {
+            console.log("Could not login: " + reason);
+        });
+    });
+}
+
+export const runPathwayExecutableEnsembles_new = async(
+        scenario: Scenario, pathway: Pathway, 
+        prefs: UserPreferences, indices: number[]) => {
+
+    let registered_datasets = {};
+    let model_indices = {};
+    
+    let i=0;
+    Promise.all(
+        Object.keys(pathway.models).map((modelid) => {
+            let model = pathway.models[modelid];
+            model_indices[modelid] = i;
+            i++;
+            let cname = model.model_configuration;
+            return registerWingsComponent(cname, model.wcm_uri, prefs);
+        })
+    ).then((values) => {
+        Promise.all(
+            indices.map((index) => {
+                let ensemble = pathway.executable_ensembles[index];
+                let model = pathway.models[ensemble.modelid];
+                let model_index = model_indices[model.id];
+                let compid = values[model_index];
+                let cname = compid.replace(/^.*#/, '');
+
+                let bindings = ensemble.bindings;
+                let datasets = {};
+                let parameters = {};
+                let paramtypes = {};
+
+                // Get input datasets
+                model.input_files.map((io) => {
+                    let dsurl = null;
+                    let dsid = null;
+                    if(io.value) {
+                        dsid = io.value.id;
+                        dsurl = io.value.url;
+                    }
+                    else if(bindings[io.id]) {
+                        // We have a dataset binding from the user for it
+                        let ds = pathway.datasets[bindings[io.id]];
+                        dsid = ds.id;
+                        dsurl = ds.url;
+                    }
+                    if(dsurl) {
+                        let dsname = dsurl.replace(/^.*\//, '');
+                        let type = io.type.replace(/^.*#/, '');
+                        if(!registered_datasets[dsid]) {
+                            registered_datasets[dsid] = [dsname, type, dsurl];
+                        }
+                        datasets[io.name] = dsname;
+                    }
+                });
+
+                // Get Input parameters
+                model.input_parameters.map((ip) => {
+                    if(ip.value) {
+                        let value = ip.value;
+                        if(value == "https://w3id.org/okn/i/mint/econ_zero") {
+                            value = "0";
+                        }
+                        parameters[ip.name] = value;
+                    }
+                    else if(bindings[ip.id]) {
+                        let value = bindings[ip.id];
+                        parameters[ip.name] = value;
+                    }
+                    paramtypes[ip.name] = ip.type;
+                });
+
+                // Register any datasets that need to be registered
+                let promises = [];
+                for(let dsid in registered_datasets) {
+                    let args = registered_datasets[dsid];
+                    promises.push(registerWingsDataset(dsid, args[0], args[1], args[2], prefs));
+                }
+                return Promise.all(promises).then(() => {
+                    return _createTemplateAndRunWorkflow(cname, datasets, parameters, paramtypes, prefs);
+                });
+            })
+        ).then((runids) => {
+            let i=0;
+            indices.map((index) => {
+                // Set run ids of each ensemble, and initialize the status
+                let ensemble = pathway.executable_ensembles[index];
+                ensemble.runid = runids[i];
+                ensemble.status = "ONGOING";
+                ensemble.run_progress = 0;
+                pathway.executable_ensembles[index] = ensemble;
+                i++;
+            });
+            updatePathway(scenario, pathway);
+            checkPathwayEnsembleStatus(scenario, pathway, prefs);
+        });
+    });
+};
+
+export const runPathwayExecutableEnsembles = (
+        scenario: Scenario, pathway: Pathway, 
+        prefs: UserPreferences, indices: number[]) => {
     let clearTimer = setInterval(() => {
         let alldone = true;
         indices.map((index) => {
@@ -106,6 +274,88 @@ export const runPathwayExecutableEnsembles = (scenario: Scenario, pathway: Pathw
         updatePathway(scenario, pathway);        
     }, 1000);
 };
+
+export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway, prefs: UserPreferences) => {
+    let clearTimer = setInterval(() => {
+        let alldone = true;
+        let changed = false;
+        Promise.all(
+            pathway.executable_ensembles.map((ensemble) => {
+                if(!ensemble.status || ensemble.status == "ONGOING") {
+                    return fetchWingsRunStatus(ensemble, prefs);
+                }
+            })
+        ).then((nensembles) => {
+            let i=0;
+            pathway.executable_ensembles.map((ensemble) => {
+                if(!ensemble.status || ensemble.status == "ONGOING") {
+                    let nensemble = nensembles[i];
+                    i++;
+                    if(nensemble.run_progress != ensemble.run_progress ||
+                            nensemble.status != ensemble.status) {
+                        ensemble.status = nensemble.status;
+                        ensemble.run_progress = nensemble.run_progress;
+                        ensemble.results = nensemble.results;
+                        changed = true;
+                    }
+                    if(!nensemble.status || nensemble.status == "ONGOING") 
+                        alldone = false;
+                }
+            })
+        })
+        if(changed) {
+            console.log("Changed.. updating pathway");
+            updatePathway(scenario, pathway);
+        }
+        if(alldone) {
+            console.log("All done.. stop polling");
+            clearInterval(clearTimer);
+        }
+    }, 1000);
+
+       /*
+    let clearTimer = setInterval(() => {
+        let alldone = true;
+        indices.map((index) => {
+            let ensemble = pathway.executable_ensembles![index];
+            if(!ensemble.runid) {
+                ensemble.runid = Math.random() + "";
+            }
+            if (!ensemble.run_progress) {
+                ensemble.run_progress = 0;
+            }
+            ensemble.run_progress += Math.random() * 0.25;
+            if(ensemble.run_progress >= 1) {
+                ensemble.run_progress = 1;
+                let model = pathway.models![ensemble.modelid];
+                ensemble.results = 
+                Object.keys(model.output_files).filter((ioid) => {
+                    let ok = false;
+                    pathway.response_variables.map((response_variable) => {
+                        if (model.output_files[ioid].variables.indexOf(response_variable) >= 0) {
+                            ok = true;
+                        }
+                    });
+                    return ok;
+                })
+                .map((ioid) => { return model.output_files[ioid].id + "_" + Math.floor(Math.random()*10000) + ".tar.gz" });
+                // FIXME: HACK
+                if(ensemble.modelid.match(/PIHM/)) {
+                    ensemble.results.push("http://ontosoft.isi.edu/animations/flooding_2341.gif");
+                }
+            }
+            else {
+                alldone = false;
+            }
+        });
+        if(alldone) {
+            clearInterval(clearTimer);
+        }
+
+        updatePathway(scenario, pathway);        
+    }, 1000);
+    */
+}
 
 export const matchVariables = (variables1: string[], variables2: string[], fullmatch: boolean) => {
     let matched = fullmatch ? true: false;

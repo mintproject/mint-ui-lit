@@ -88,7 +88,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                     ${!readmode ? 
                         html `
                         <p>
-                            These results have been produced by running these models with the inputs. You can select the results that you would like to publish.
+                            These results have been produced by running these models with the input combinations indicated.
                         </p>
                         ` : 
                         html``
@@ -120,7 +120,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                         html ``
                                     }
                                     <td>
-                                        <a href="${BASE_HREF}models/explore/${model.id}">${model.name}</a>
+                                        <a href="${this._getModelURL(model)}">${model.name}</a>
                                     </td>
                                     <td>
                                     ${Object.keys(ensemble.bindings).map((inputid) => {
@@ -194,6 +194,12 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             `
         }   
         `;
+    }
+
+    _getModelURL (model:Model) {
+        return this._selectedRegion + '/models/explore/' + model.original_model + '/'
+               + model.model_version + '/' + model.model_configuration + '/'
+               + model.localname;
     }
 
     stateChanged(state: RootState) {

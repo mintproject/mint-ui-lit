@@ -130,10 +130,6 @@ export const VARIABLES = {
                 "SVO_name": "grain~dry__mass-per-area_yield"
             },
             "var4": {
-                "long_name": "Crop Yields",
-                "SVO_name": "land_crop__simulated_mass-per-area_yield"
-            },
-            "var5": {
                 "long_name": "Tops Dry Weight",
                 "SVO_name": "crop~mature~dry_tops__mass-per-area_yield"
             }

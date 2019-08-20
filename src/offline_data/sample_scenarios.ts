@@ -107,8 +107,107 @@ export const EXAMPLE_SCENARIO_DETAILS = {
         "pathway1": {
             "id": "pathway1",
             "driving_variables": [],
-            "response_variables": [],
-            "models": {},
+            "response_variables": ["crop__simulated_produced_mass"],
+            "model_ensembles": {
+                "Aggregate_crop_supply_response_model_v2_simple": {
+
+                },
+                "Aggregate_crop_supply_response_model_v2_advanced": {
+                    
+                }
+            },
+            "models": {
+                "Aggregate_crop_supply_response_model_v2_simple": {
+                    id: "Aggregate_crop_supply_response_model_v2_simple",
+                    name: "Aggregate crop supply response model v2.0 - Simple Configuration",
+                    original_model: "ECONOMIC_AGGREGATE_CROP_SUPPLY",
+                    calibrated_region: "Pongo Basin",
+                    category: "Economy",
+                    model_type: "Simulation", // DataDriven, Emulation, Hybrid
+                    parameter_assignment: "Calibration", //Auto-tuned, Expert-tuned, Trained
+                    target_variable_for_parameter_assignment: "Fertilizer & Land Use",
+                    parameter_assignment_details: "The model was configured using FAO production data, WFP price data and \
+                    estimated elasticities from related literatures. The model was calibrated from national/regional observed \
+                    data on land use and crop production level for behavior parameters, to produce optimal simulation outputs \
+                    under various adjustment to variables within the model",
+                    modeled_processes: [
+                        "Constrained maximization of net revenue"
+                    ],
+                    dimensionality: 0,
+                    spatial_grid_type: "Point model",
+                    spatial_grid_resolution: "N/A",
+                    minimum_output_time_interval: "Harvest Cycles/year",
+            
+                    input_files: [],
+                    input_parameters: [],
+                    output_files: [
+                        {
+                            id: "crop_production",
+                            name: "Crop Production",
+                            variables: [
+                                "crop__simulated_produced_mass",
+                            ]
+                        }
+                    ]
+                },
+                "Aggregate_crop_supply_response_model_v2_advanced": {
+                    id: "Aggregate_crop_supply_response_model_v2_advanced",
+                    name: "Aggregate crop supply response model v2.0 - Advanced Configuration",
+                    original_model: "ECONOMIC_AGGREGATE_CROP_SUPPLY",
+                    calibrated_region: "Pongo Basin",
+                    category: "Economy",
+                    model_type: "Simulation", // DataDriven, Emulation, Hybrid
+                    parameter_assignment: "Calibration", //Auto-tuned, Expert-tuned, Trained
+                    parameter_assignment_details: "The model was configured using FAO production data, WFP price data and \
+                    estimated elasticities from related literatures. The model was calibrated from national/regional observed \
+                    data on land use and crop production level for behavior parameters, to produce optimal simulation outputs \
+                    under various adjustment to variables within the model",
+                    target_variable_for_parameter_assignment: "Fertilizer & Land Use",
+                    modeled_processes: [
+                        "Constrained maximization of net revenue"
+                    ],
+                    dimensionality: 0,
+                    spatial_grid_type: "Point model",
+                    spatial_grid_resolution: "N/A",
+                    minimum_output_time_interval: "Harvest Cycles/year",
+            
+                    input_files: [],
+                    input_parameters: [
+                        {
+                            id: "crop_price_adjustment",
+                            name: "Adjustment to crop price",
+                            type: "percentage",
+                            min: "-50",
+                            max: "50"
+                        },
+                        {
+                            id: "land_cost_adjustment",
+                            name: "Adjustment to land cost",
+                            type: "percentage",
+                            min: "-50",
+                            max: "50",
+                            default: "0"
+                        },
+                        {
+                            id: "fertilizer_cost_adjustment",
+                            name: "Adjustment to fertilizer cost",
+                            type: "percentage",
+                            min: "-50",
+                            max: "50",
+                            default: "0"
+                        }
+                    ],
+                    output_files: [
+                        {
+                            id: "crop_production",
+                            name: "Crop Production",
+                            variables: [
+                                "crop__simulated_produced_mass",
+                            ]
+                        }
+                    ]
+                },  
+            },
             "datasets": {}
         },
         "pathway2": {
