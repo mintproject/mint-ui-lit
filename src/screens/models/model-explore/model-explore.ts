@@ -117,27 +117,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
-            <div class="cltrow">
-                ${(this._selectedUri || this._comparing == 2)?
-                html`
-                <wl-button flat inverted @click="${this._goToExplorer}">
-                    <wl-icon>arrow_back_ios</wl-icon>
-                </wl-button>
-                <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                    <wl-title level="3" style="margin: 0px; cursor: pointer;" 
-                            @click="${this._goToExplorer}">Model Catalog</wl-title>
-                </div>
-                `
-                : html`
-                <wl-button flat inverted @click="${()=> goToPage('models')}">
-                    <wl-icon>arrow_back_ios</wl-icon>
-                </wl-button>
-                <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                    <wl-title level="3" style="margin: 0px;">Model Catalog</wl-title>
-                </div>
-                `}
-            </div>
-
             ${this._selectedUri? 
                 //Display only selected model or the search
                 html`<model-facet-big style="width:75%;"></model-facet-big>`
