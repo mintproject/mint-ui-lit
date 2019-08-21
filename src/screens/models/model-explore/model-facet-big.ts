@@ -96,7 +96,9 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
         return [SharedStyles, ExplorerStyles,
             css `
                 :host {
-                    width: 100%;
+                    display: block;
+                    height: 100%;
+                    overflow-y: scroll;
                 }
 
                 #hack {

@@ -50,6 +50,10 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     display:block;
                     margin:auto;
                 }
+
+                model-explorer {
+                    height: calc(100% - 40px);
+                }
             `,
             SharedStyles
         ];
@@ -100,10 +104,10 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                 </a>
             </div>
 
-            <model-explorer class="page fullpage" ?active="${this._subpage == 'explore'}"></model-explorer>
-            <models-register class="page fullpage" ?active="${this._subpage == 'register'}"></models-register>
-            <models-configure class="page fullpage" ?active="${this._subpage == 'configure'}"></models-configure>
-            <models-calibrate class="page fullpage" ?active="${this._subpage == 'calibrate'}"></models-calibrate>
+            <model-explorer class="page" ?active="${this._subpage == 'explore'}"></model-explorer>
+            <models-register class="page" ?active="${this._subpage == 'register'}"></models-register>
+            <models-configure class="page" ?active="${this._subpage == 'configure'}"></models-configure>
+            <models-calibrate class="page" ?active="${this._subpage == 'calibrate'}"></models-calibrate>
         `
     }
 

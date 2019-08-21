@@ -59,6 +59,12 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     static get styles() {
         return [SharedStyles, ExplorerStyles,
             css `
+            :host {
+                display: block;
+                height: 100%;
+                overflow: hidden;
+            }
+
             .cltrow {
                 padding-bottom: 1em;
             }
@@ -75,7 +81,13 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             #model-search-results {
                 margin: 0 auto;
                 overflow: scroll;
-                height: 100%;
+                height: calc(100% - 64px);
+                width: 100%;
+            }
+
+            #model-search-results > model-facet {
+                margin: 0 auto;
+                display: block;
                 width: 75%;
             }
 
@@ -119,7 +131,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         return html`
             ${this._selectedUri? 
                 //Display only selected model or the search
-                html`<model-facet-big style="width:75%;"></model-facet-big>`
+                html`<model-facet-big></model-facet-big>`
                 : this._renderSearch()
             }
         `;

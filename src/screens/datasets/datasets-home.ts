@@ -69,10 +69,10 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
                 </a>
             </div>
 
-            <datasets-browse class="page fullpage" ?active="${this._subpage == 'browse'}"></datasets-browse>
-            <datasets-register class="page fullpage" ?active="${this._subpage == 'register'}"></datasets-register>
-            <datasets-quality-workflows class="page fullpage" ?active="${this._subpage == 'quality-workflows'}"></datasets-quality-workflows>
-            <datasets-rs-workflows class="page fullpage" ?active="${this._subpage == 'rs-workflows'}"></datasets-rs-workflows>
+            <datasets-browse class="page" ?active="${this._subpage == 'browse'}"></datasets-browse>
+            <datasets-register class="page" ?active="${this._subpage == 'register'}"></datasets-register>
+            <datasets-quality-workflows class="page" ?active="${this._subpage == 'quality-workflows'}"></datasets-quality-workflows>
+            <datasets-rs-workflows class="page" ?active="${this._subpage == 'rs-workflows'}"></datasets-rs-workflows>
         `
     }
 

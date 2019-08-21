@@ -68,10 +68,10 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
             </div>
 
             <!--TODO: Change the name of the files too -->
-            <analysis-compare class="page fullpage" ?active="${this._subpage == 'compare'}"></analysis-compare>
-            <analysis-visualize class="page fullpage" ?active="${this._subpage == 'visualize'}"></analysis-visualize>
-            <analysis-aggregate class="page fullpage" ?active="${this._subpage == 'aggregate'}"></analysis-aggregate>
-            <analysis-report class="page fullpage" ?active="${this._subpage == 'report'}"></analysis-report>
+            <analysis-compare class="page" ?active="${this._subpage == 'compare'}"></analysis-compare>
+            <analysis-visualize class="page" ?active="${this._subpage == 'visualize'}"></analysis-visualize>
+            <analysis-aggregate class="page" ?active="${this._subpage == 'aggregate'}"></analysis-aggregate>
+            <analysis-report class="page" ?active="${this._subpage == 'report'}"></analysis-report>
         `
     }
 

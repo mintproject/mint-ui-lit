@@ -77,10 +77,10 @@ export class RegionsHome extends connect(store)(PageViewElement) {
                 </a>
             </div>
 
-            <regions-manual class="page fullpage" ?active="${this._subpage == 'manual'}"></regions-manual>
-            <regions-administrative class="page fullpage" ?active="${this._subpage == 'administrative'}"></regions-administrative>
-            <regions-hydrology class="page fullpage" ?active="${this._subpage == 'hydrology'}"></regions-hydrology>
-            <regions-agriculture class="page fullpage" ?active="${this._subpage == 'agriculture'}"></regions-agriculture>
+            <regions-manual class="page" ?active="${this._subpage == 'manual'}"></regions-manual>
+            <regions-administrative class="page" ?active="${this._subpage == 'administrative'}"></regions-administrative>
+            <regions-hydrology class="page" ?active="${this._subpage == 'hydrology'}"></regions-hydrology>
+            <regions-agriculture class="page" ?active="${this._subpage == 'agriculture'}"></regions-agriculture>
         `
     }
 
