@@ -397,13 +397,15 @@ export const getPathwayDatasetsStatus = (pathway:Pathway) => {
     if (pathway.datasets) {
         if (Object.keys(pathway.datasets).length > 0) {
             for(let modelid in pathway.models) {
-                let model = pathway.models![modelid];
                 let model_ensemble = pathway.model_ensembles![modelid];
                 if(!model_ensemble) {
                     return TASK_PARTLY_DONE;
                 }
+                let model = pathway.models![modelid];
                 for(let i=0; i<model.input_files.length; i++) {
                     let input = model.input_files[i];
+                    if(input.value)
+                        continue;
                     if(!model_ensemble[input.id!] || !model_ensemble[input.id!].length) {
                         return TASK_PARTLY_DONE;
                     }
