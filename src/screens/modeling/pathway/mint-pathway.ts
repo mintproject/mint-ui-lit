@@ -212,6 +212,7 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
                 </mint-models>
                 <mint-datasets class="page" 
                     .scenario="${this.scenario}"
+                    .subgoal="${this.subgoal}"
                     ?active="${this._currentMode == 'datasets'}">
                 </mint-datasets>
                 <mint-parameters class="page" 

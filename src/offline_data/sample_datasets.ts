@@ -1,3 +1,5 @@
+import { toTimeStamp } from "util/date-utils";
+
 export const EXAMPLE_DATASETS_QUERY = [
     {
         id: "FLDAS_NOAH01_A_EA_D.001",
@@ -9,6 +11,11 @@ export const EXAMPLE_DATASETS_QUERY = [
         with a daily timescale",
         version: "LIS 7 Regional daily runs",
         region: "East Africa",
+        resources: [{
+            id: "FLDAS_NOAH01_A_EA_D.001.Resource",
+            name: "FLDAS_NOAH01_A_EA_D.001.Resource",
+            url: "http://path/to/resource"
+        }],
         source: {
             name: "FLDAS",            
             url: "https://ldas.gsfc.nasa.gov/fldas/specifications",
@@ -21,7 +28,10 @@ export const EXAMPLE_DATASETS_QUERY = [
         variables: [
             "atmosphere_water__one-day_time_integral_of_precipitation_leq_volume_flux"
         ],
-        time_period: "2001-01-01 to 2018-11-15"
+        time_period: {
+            start_date: toTimeStamp("2001-01-01"),
+            end_date: toTimeStamp("2018-11-15")
+        }
     },
     {
         id: "FLDAS_VIC025_A_EA_D.001",
@@ -38,6 +48,11 @@ export const EXAMPLE_DATASETS_QUERY = [
             url: "https://ldas.gsfc.nasa.gov/fldas/specifications",
             type: "Model, reanalysis",
         },
+        resources: [{
+            id: "FLDAS_NOAH01_A_EA_D.001.Resource",
+            name: "FLDAS_NOAH01_A_EA_D.001.Resource",
+            url: "http://path/to/resource"
+        }],
         categories: [
             "Weather",
             "Land Surface"
@@ -45,7 +60,10 @@ export const EXAMPLE_DATASETS_QUERY = [
         variables: [
             "atmosphere_water__one-day_time_integral_of_precipitation_leq_volume_flux"
         ],
-        time_period: "2001-01-01 to 2018-11-15"
+        time_period: {
+            start_date: toTimeStamp("2001-01-01"),
+            end_date: toTimeStamp("2018-11-15")
+        }
     },
     {
         id: "GLDAS_NOAH10SUBP_3H.001",
@@ -62,6 +80,11 @@ export const EXAMPLE_DATASETS_QUERY = [
             url: "https://ldas.gsfc.nasa.gov/fldas/specifications",
             type: "Modeled",
         },
+        resources: [{
+            id: "FLDAS_NOAH01_A_EA_D.001.Resource",
+            name: "FLDAS_NOAH01_A_EA_D.001.Resource",
+            url: "http://path/to/resource"
+        }],
         categories: [
             "Weather",
             "Land Surface"
@@ -69,7 +92,10 @@ export const EXAMPLE_DATASETS_QUERY = [
         variables: [
             "atmosphere_water__one-day_time_integral_of_precipitation_leq_volume_flux"
         ],
-        time_period: "1979-01-02 to 2019-05-31"
+        time_period: {
+            start_date: toTimeStamp("1979-01-02"),
+            end_date: toTimeStamp("2019-05-31")
+        }
     },
     {
         id: "GLDAS_NIAH025_3H.2.1",
@@ -86,6 +112,11 @@ export const EXAMPLE_DATASETS_QUERY = [
             url: "https://ldas.gsfc.nasa.gov/fldas/specifications",
             type: "Modeled",
         },
+        resources: [{
+            id: "FLDAS_NOAH01_A_EA_D.001.Resource",
+            name: "FLDAS_NOAH01_A_EA_D.001.Resource",
+            url: "http://path/to/resource"
+        }],
         categories: [
             "Weather",
             "Land Surface"
@@ -94,6 +125,9 @@ export const EXAMPLE_DATASETS_QUERY = [
             "atmosphere_water__one-day_time_integral_of_precipitation_leq_volume_flux",
             "land_surface_groundwater__time_integral_of_baseflow_runoff_mass_flux"
         ],
-        time_period: "2001-01-01 to 2019-05-31"
+        time_period: {
+            start_date: toTimeStamp("2001-01-01"),
+            end_date: toTimeStamp("2018-11-15")
+        }
     }
 ]

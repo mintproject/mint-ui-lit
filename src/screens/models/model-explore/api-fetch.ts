@@ -9,10 +9,11 @@ export const EXPLANATION_DIAGRAMS = 'EXPLANATION_DIAGRAMS';
 export const COMPATIBLE_INPUT = 'COMPATIBLE_INPUT';
 export const COMPATIBLE_OUTPUT = 'COMPATIBLE_OUTPUT';
 export const MODEL_METADATA = 'MODEL_METADATA';
-export const MODEL_METADATA_NOIO = 'MODEL_METADATA_NOIO';
 export const GET_PARAMETERS = 'GET_PARAMETERS';
 export const SEARCH_BY_VAR_NAME = 'SEARCH_BY_VAR_NAME';
 // Added by Varun
+export const MODEL_METADATA_NOIO = 'MODEL_METADATA_NOIO';
+export const GET_CONFIGS_FOR_VARIABLE = 'GET_CONFIGS_FOR_VARIABLE';
 export const GET_CALIBRATIONS_FOR_VARIABLE = 'GET_CALIBRATIONS_FOR_VARIABLE';
 export const CONFIG_IO_VARS_STDNAMES = 'CONFIG_IO_VARS_STDNAMES';
 
@@ -37,16 +38,18 @@ interface ConfExplDiagParams extends ApiBaseParam<'EXPLANATION_DIAGRAMS'> {v: st
 interface CompInputParams extends ApiConfigParam<'COMPATIBLE_INPUT'> {};
 interface CompOutputParams extends ApiConfigParam<'COMPATIBLE_OUTPUT'> {};
 interface ModelMetadataParams extends ApiBaseParam<'MODEL_METADATA'> {modelConfig: string};
-interface ModelMetadataNOIOParams extends ApiBaseParam<'MODEL_METADATA_NOIO'> {modelConfig: string};
 interface ConfigParametersParams extends ApiConfigParam<'GET_PARAMETERS'> {};
 interface SearchByVariableName extends ApiBaseParam<'SEARCH_BY_VAR_NAME'> {text: string};
 // Added by Varun
+interface ModelMetadataNOIOParams extends ApiBaseParam<'MODEL_METADATA_NOIO'> {modelConfig: string};
+interface ConfigsForVariable extends ApiBaseParam<'GET_CONFIGS_FOR_VARIABLE'> {std: string};
 interface CalibrationsForVariable extends ApiBaseParam<'GET_CALIBRATIONS_FOR_VARIABLE'> {std: string};
 interface ConfigIOVarsStandardNames extends ApiConfigParam<'CONFIG_IO_VARS_STDNAMES'> {};
 
 type ApiParams = ApiVersionParams | ApiModelsParams | ApiIOParams | ConfigParametersParams |
                  IOVarUnitsParams | ConfExplDiagParams | CompInputParams | CompOutputParams | ModelMetadataParams |
-                 ModelMetadataNOIOParams | CalibrationsForVariable | ConfigIOVarsStandardNames | SearchByVariableName;
+                 ModelMetadataNOIOParams | CalibrationsForVariable | ConfigsForVariable | 
+                 ConfigIOVarsStandardNames | SearchByVariableName;
 
 interface ConfigEntry {
     path: string,
@@ -62,12 +65,13 @@ const config = {
     COMPATIBLE_OUTPUT: {path: 'getOutputCompatibleConfig', mandatory: ['config']},
     COMPATIBLE_INPUT: {path: 'getInputCompatibleConfig', mandatory: ['config']},
     MODEL_METADATA: {path: 'getModelConfigurationMetadata', mandatory: ['modelConfig']},
-    MODEL_METADATA_NOIO: {path: 'getModelConfigurationMetadata_NoIO', mandatory: ['modelConfig']},
     GET_PARAMETERS: {path: 'getConfigIParameters', mandatory: ['config']},
     SEARCH_BY_VAR_NAME : {path: 'searchVariablesAndReturnModel', mandatory: ['text']},
     // Added by Varun
+    MODEL_METADATA_NOIO: {path: 'getModelConfigurationMetadata_NoIO', mandatory: ['modelConfig']},
     CONFIG_IO_VARS_STDNAMES: {path: 'getConfigI_OVariablesAndStandardNames', mandatory: ['config']},
-    GET_CALIBRATIONS_FOR_VARIABLE: {path: 'getCalibratedModelConfigurationsForVariable', mandatory: ['std']}
+    GET_CALIBRATIONS_FOR_VARIABLE: {path: 'getCalibratedModelConfigurationsForVariable', mandatory: ['std']},
+    GET_CONFIGS_FOR_VARIABLE: {path: 'getModelConfigurationsForVariable', mandatory: ['std']}
 }
 
 const createUrl = (params: ApiParams) : string => {

@@ -8,7 +8,7 @@ export const renderVariables = () => {
         Please select a driving and a response variable. A response variable indicates the kind of results that you're interested in. 
         An optional driving variable indicates the kind of inputs that you want to use to drive the results. 
         </p>        
-        <div class="formRow">                                      
+        <div class="formRow">
             <div class="input_half">
                 <label>Response Variable</label>
                 ${renderResponseVariables("")}

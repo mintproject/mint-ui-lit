@@ -2,18 +2,24 @@ import { IdNameObject } from "../../app/reducers";
 import { Reducer } from "redux";
 import { RootAction } from "../../app/store";
 import { DATASETS_VARIABLES_QUERY, DATASETS_DETAIL, DATASETS_LIST } from "./actions";
+import { DateRange } from "screens/modeling/reducers";
 
 export interface Dataset extends IdNameObject {
     region: string,
     variables: string[],
-    time_period: string,
+    time_period: DateRange,
     description: string,
     version: string,
     limitations: string,
     source: Source,
-    url?: string,
-    categories?: string[]
+    categories?: string[],
+    resources: DataResource[]
 };
+
+export interface DataResource extends IdNameObject {
+    url: string
+    time_period?: DateRange
+}
 
 export interface DatasetDetail extends Dataset {
     documentation: string,
