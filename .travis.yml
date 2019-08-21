@@ -9,7 +9,7 @@ env:
 services:
 - docker
 before_install:
-- openssl aes-256-cbc -K $encrypted_b0be83d31c08_key -iv $encrypted_b0be83d31c08_iv
+- openssl aes-256-cbc -K $encrypted_33cc758fcc55_key -iv $encrypted_33cc758fcc55_iv 
   -in google-api-key.ts.enc -out src/config/google-api-key.ts -d
 - sudo rm /usr/local/bin/docker-compose
 - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname
