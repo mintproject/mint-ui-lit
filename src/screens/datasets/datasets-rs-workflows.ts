@@ -6,6 +6,8 @@ import { SharedStyles } from '../../styles/shared-styles';
 import { store } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 
+import '../../components/image-gallery'
+
 @customElement('datasets-rs-workflows')
 export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewElement) {
 
@@ -48,7 +50,7 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
                 margin: 0 auto;
                 overflow: hidden; /* Removing this will break the effects */
                 width: 90%;
-                height: 300px;
+                height: 250px;
             }
             .img-hover-zoom img {
                 transition: transform 1s, filter 1s ease-in-out;
@@ -66,7 +68,7 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
                 right: 0;
                 bottom: 0;
                 left: 0;
-                line-height: 300px;
+                line-height: 250px;
                 text-align: center;
                 font-weight: bold;
                 color: #fff;
@@ -88,12 +90,22 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
                 --icon-size: 30px;
                 margin-left: 10px;
             }
+
+            image-gallery {
+                --width: 300px;
+                --height: 160px;
+            }
             `,
             SharedStyles
         ];
     }
 
     protected render() {
+        let items = [
+            {label: "Virtual Gauge 1", src: "/videos/VirtualGage1.mp4", thumbnail: "images/thumbnails/virtual-gauge-1.png"},
+            {label: "Virtual Gauge 2", src: "/videos/VirtualGage2.mp4", thumbnail: "images/thumbnails/virtual-gauge-2.png"},
+            {label: "Virtual Gauge 3", src: "/videos/VirtualGage3.mp4", thumbnail: "images/thumbnails/virtual-gauge-3.png"}
+        ]
         return html`
         <div class="content">
             <p>
@@ -120,26 +132,9 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
                 This represents river width/depth variation for a single cross section. The background in this animation is SRTM based elevation.
             </p>
 
-            <div style="text-align: center;"> 
-                <h3>Virtual Gauge 1:</h3>
-                <video autoplay loop controls>
-                  <source src="/videos/VirtualGage1.mp4" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-                <wl-divider></wl-divider>
-                <br/>
-                <h3>Virtual Gauge 2:</h3>
-                <video autoplay loop controls>
-                  <source src="/videos/VirtualGage2.mp4" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-                <wl-divider></wl-divider>
-                <br/>
-                <h3>Virtual Gauge 3:</h3>
-                <video autoplay loop controls>
-                  <source src="/videos/VirtualGage3.mp4" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
+            <div style="width: 90%; margin: 0px auto;">
+                <image-gallery .items="${items}"></image-gallery>
+            <div>
 
         </div>`
     }
