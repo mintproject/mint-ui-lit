@@ -3,6 +3,7 @@ import { RootState } from "../app/store";
 import { updatePathway } from "../screens/modeling/actions";
 import { UserPreferences } from "app/reducers";
 import { loginToWings, fetchWingsTemplate, fetchWingsTemplatesList, fetchWingsComponent, createSingleComponentTemplate, saveWingsTemplate, WingsTemplatePackage, layoutWingsTemplate, getWingsExpandedTemplates, WingsParameterBindings, WingsDataBindings, WingsParameterTypes, executeWingsWorkflow, registerWingsComponent, registerWingsDataset, fetchWingsRunStatus } from "./wings_functions";
+import { DataResource } from "screens/datasets/reducers";
 
 export const removeDatasetFromPathway = (pathway: Pathway,
         datasetid: string, modelid: string, inputid: string) => {
@@ -88,7 +89,7 @@ const _createTemplateAndRunWorkflow = (
             let parameterTypes = {} as WingsParameterTypes;
             for(let varname in datasets) {
                 let varid = tns + varname;
-                dataBindings[varid] = [expfx + "/data/library.owl#" + datasets[varname]];
+                dataBindings[varid] = datasets[varname].map((ds: string)=> expfx + "/data/library.owl#" + ds);
             }
             for(let varname in parameters) {
                 let varid = tns + varname;
@@ -137,7 +138,7 @@ export const runPathwayExecutableEnsembles_new = async(
         scenario: Scenario, pathway: Pathway, 
         prefs: UserPreferences, indices: number[]) => {
 
-    let registered_datasets = {};
+    let registered_resources = {};
     let model_indices = {};
     
     let i=0;
@@ -165,25 +166,25 @@ export const runPathwayExecutableEnsembles_new = async(
 
                 // Get input datasets
                 model.input_files.map((io) => {
-                    let dsurl = null;
+                    let resources : DataResource[] = [];
                     let dsid = null;
                     if(io.value) {
                         dsid = io.value.id;
-                        dsurl = io.value.url;
+                        resources = io.value.resources;
                     }
                     else if(bindings[io.id]) {
                         // We have a dataset binding from the user for it
                         let ds = pathway.datasets[bindings[io.id]];
                         dsid = ds.id;
-                        dsurl = ds.url;
+                        resources = io.value.resources;
                     }
-                    if(dsurl) {
-                        let dsname = dsurl.replace(/^.*\//, '');
+                    if(resources.length > 0) {
                         let type = io.type.replace(/^.*#/, '');
-                        if(!registered_datasets[dsid]) {
-                            registered_datasets[dsid] = [dsname, type, dsurl];
-                        }
-                        datasets[io.name] = dsname;
+                        resources.map((res) => {
+                            if(!registered_resources[res.id])
+                                registered_resources[res.id] = [res.name, type, res.url];
+                        })
+                        datasets[io.name] = resources.map((res) => res.name);
                     }
                 });
 
@@ -205,9 +206,9 @@ export const runPathwayExecutableEnsembles_new = async(
 
                 // Register any datasets that need to be registered
                 let promises = [];
-                for(let dsid in registered_datasets) {
-                    let args = registered_datasets[dsid];
-                    promises.push(registerWingsDataset(dsid, args[0], args[1], args[2], prefs));
+                for(let resid in registered_resources) {
+                    let args = registered_resources[resid];
+                    promises.push(registerWingsDataset(resid, args[0], args[1], args[2], prefs));
                 }
                 return Promise.all(promises).then(() => {
                     return _createTemplateAndRunWorkflow(cname, datasets, parameters, paramtypes, prefs);
@@ -247,21 +248,12 @@ export const runPathwayExecutableEnsembles = (
             if(ensemble.run_progress >= 1) {
                 ensemble.run_progress = 1;
                 let model = pathway.models![ensemble.modelid];
+                
                 ensemble.results = 
                 Object.keys(model.output_files).filter((ioid) => {
-                    let ok = false;
-                    pathway.response_variables.map((response_variable) => {
-                        if (model.output_files[ioid].variables.indexOf(response_variable) >= 0) {
-                            ok = true;
-                        }
-                    });
-                    return ok;
+                    return matchVariables(pathway.response_variables, model.output_files[ioid].variables, false); // Partial match
                 })
                 .map((ioid) => { return model.output_files[ioid].id + "_" + Math.floor(Math.random()*10000) + ".tar.gz" });
-                // FIXME: HACK
-                if(ensemble.modelid.match(/PIHM/)) {
-                    ensemble.results.push("http://ontosoft.isi.edu/animations/flooding_2341.gif");
-                }
             }
             else {
                 alldone = false;
@@ -312,60 +304,19 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
             clearInterval(clearTimer);
         }
     }, 1000);
-
-       /*
-    let clearTimer = setInterval(() => {
-        let alldone = true;
-        indices.map((index) => {
-            let ensemble = pathway.executable_ensembles![index];
-            if(!ensemble.runid) {
-                ensemble.runid = Math.random() + "";
-            }
-            if (!ensemble.run_progress) {
-                ensemble.run_progress = 0;
-            }
-            ensemble.run_progress += Math.random() * 0.25;
-            if(ensemble.run_progress >= 1) {
-                ensemble.run_progress = 1;
-                let model = pathway.models![ensemble.modelid];
-                ensemble.results = 
-                Object.keys(model.output_files).filter((ioid) => {
-                    let ok = false;
-                    pathway.response_variables.map((response_variable) => {
-                        if (model.output_files[ioid].variables.indexOf(response_variable) >= 0) {
-                            ok = true;
-                        }
-                    });
-                    return ok;
-                })
-                .map((ioid) => { return model.output_files[ioid].id + "_" + Math.floor(Math.random()*10000) + ".tar.gz" });
-                // FIXME: HACK
-                if(ensemble.modelid.match(/PIHM/)) {
-                    ensemble.results.push("http://ontosoft.isi.edu/animations/flooding_2341.gif");
-                }
-            }
-            else {
-                alldone = false;
-            }
-        });
-        if(alldone) {
-            clearInterval(clearTimer);
-        }
-
-        updatePathway(scenario, pathway);        
-    }, 1000);
-    */
 }
 
 export const matchVariables = (variables1: string[], variables2: string[], fullmatch: boolean) => {
     let matched = fullmatch ? true: false;
-    variables1.map((var1) => {
-        if (!fullmatch && variables2.indexOf(var1) >= 0) {
-            matched = true;
-        }
-        if(fullmatch && variables2.indexOf(var1) < 0) {
-            matched = false;
-        }
+    variables1.map((var1compound) => {
+        var1compound.split(/\s*,\s/).map((var1) => {
+            if (!fullmatch && variables2.indexOf(var1) >= 0) {
+                matched = true;
+            }
+            if(fullmatch && variables2.indexOf(var1) < 0) {
+                matched = false;
+            }
+        });
     });
     return matched;
 }
@@ -397,13 +348,15 @@ export const getPathwayDatasetsStatus = (pathway:Pathway) => {
     if (pathway.datasets) {
         if (Object.keys(pathway.datasets).length > 0) {
             for(let modelid in pathway.models) {
-                let model = pathway.models![modelid];
                 let model_ensemble = pathway.model_ensembles![modelid];
                 if(!model_ensemble) {
                     return TASK_PARTLY_DONE;
                 }
+                let model = pathway.models![modelid];
                 for(let i=0; i<model.input_files.length; i++) {
                     let input = model.input_files[i];
+                    if(input.value)
+                        continue;
                     if(!model_ensemble[input.id!] || !model_ensemble[input.id!].length) {
                         return TASK_PARTLY_DONE;
                     }

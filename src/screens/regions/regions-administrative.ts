@@ -3,38 +3,25 @@ import { html, customElement, css } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
 import { SharedStyles } from '../../styles/shared-styles';
-import { store } from '../../app/store';
-import { connect } from 'pwa-helpers/connect-mixin';
-import { goToPage } from '../../app/actions';
+import './regions-editor';
 
 @customElement('regions-administrative')
-export class RegionsAdministrative extends connect(store)(PageViewElement) {
+export class RegionsAdministrative extends PageViewElement {
 
     static get styles() {
         return [
+            SharedStyles,
             css `
-            .cltrow wl-button {
-                padding: 2px;
-            }
-            `,
-            SharedStyles
+            `
         ];
     }
 
     protected render() {
         return html`
-        <div class="cltrow">
-            <wl-button flat inverted @click="${()=> goToPage('regions')}">
-                <wl-icon>arrow_back_ios</wl-icon>
-            </wl-button>
-            <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                <wl-title level="4" style="margin: 0px">Administrative Regions</wl-title>
-            </div>
-        </div>   
-
-        <p>
-        This page is in progress, it will show you the administrative region boundaries.
-        </p>
-        `
+            <regions-editor active
+                regionType="Administrative" 
+                parentRegionId="${this._regionid}"
+            ></regions-editor>
+        `;
     }
 }

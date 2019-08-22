@@ -3,17 +3,18 @@ import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 import datasets, { Dataset, ModelDatasets } from "../../datasets/reducers";
 
-import { DatasetMap, DataEnsembleMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation } from "../reducers";
+import { DatasetMap, DataEnsembleMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, SubGoal } from "../reducers";
 import { SharedStyles } from "../../../styles/shared-styles";
 import { Model } from "../../models/reducers";
 import { queryDatasetsByVariables } from "../../datasets/actions";
 import { updatePathway } from "../actions";
-import { createPathwayExecutableEnsembles, removeDatasetFromPathway, matchVariables, getPathwayDatasetsStatus, TASK_DONE } from "../../../util/state_functions";
+import { createPathwayExecutableEnsembles, removeDatasetFromPathway, matchVariables, getPathwayDatasetsStatus, TASK_DONE, getUISelectedSubgoal } from "../../../util/state_functions";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
 import { showNotification, showDialog } from "../../../util/ui_functions";
 import { selectPathwaySection } from "../../../app/ui-actions";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { IdMap } from "../../../app/reducers";
+import { fromTimeStampToDateString } from "util/date-utils";
 
 store.addReducers({
     datasets
@@ -33,6 +34,9 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
 
     @property({type: Array})
     private _datasetsToCompare: Dataset[] = [];
+
+    @property({type: Object})
+    subgoal: SubGoal;
 
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
@@ -139,7 +143,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                         let dataset = this.pathway.datasets![binding];
                                         return html`
                                         <li>
-                                        <a href="datasets/browse/${dataset.id}">${dataset.name}</a>
+                                        <a href="datasets/browse/${dataset.id}">${dataset.name}</a> (${dataset.resources.length} resources)
                                         </li>
                                         `;
                                     })}
@@ -182,11 +186,15 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                                     ?checked="${(bindings || []).indexOf(dataset.id!) >= 0}"></input></td>
                                                 <td class="${matched ? 'matched': ''}">
                                                     <a href="datasets/browse/${dataset.id}">${dataset.name}</a>
+                                                    (${dataset.resources.length} resources)
                                                 </td>
                                                 <td>${(dataset.categories || []).join(", ")}</td>
                                                 <td>${dataset.region}</td>
-                                                <td>${dataset.time_period}</td>
-                                                <td><a href="'${dataset.source.url}'">${dataset.source.name}</a></td>
+                                                <td>
+                                                    ${fromTimeStampToDateString(dataset.time_period.start_date)} to 
+                                                    ${fromTimeStampToDateString(dataset.time_period.end_date)}
+                                                </td>
+                                                <td><a href="${dataset.source.url}">${dataset.source.name}</a></td>
                                             </tr>
                                             `;
                                         })}
@@ -413,6 +421,8 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
 
     queryDataCatalog() {
         //console.log("Querying data catalog again");
+        let dates = this.subgoal.dates || this.scenario.dates;
+
         if(this._models) {
             if(!this._queriedDatasets) {
                 this._queriedDatasets = {} as ModelDatasets;
@@ -428,8 +438,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                             this._editMode) {
                         //console.log("Querying datasets for model: " + modelid+", input: " + input.id);
                         store.dispatch(queryDatasetsByVariables(
-                            modelid, input.id, input.variables,
-                            this.scenario.dates.start_date, this.scenario.dates.end_date));
+                            modelid, input.id, input.variables, dates));
                     } else {
                         this._queriedDatasets[modelid][input.id!] = {
                             loading: false,
@@ -457,6 +466,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
             if(this.pathway.id != pathwayid) 
                 this._resetEditMode();
         }
+
         if(state.datasets) {
             //console.log(state.datasets.datasets);
             this._queriedDatasets = state.datasets.datasets;

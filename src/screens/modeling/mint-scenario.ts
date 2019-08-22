@@ -18,6 +18,8 @@ import { getUISelectedSubgoal } from "../../util/state_functions";
 import { navigate, BASE_HREF, goToPage } from "../../app/actions";
 import { renderVariables, renderNotifications } from "../../util/ui_renders";
 import { resetForm, showDialog, formElementsComplete, showNotification, hideDialog, hideNotification } from "../../util/ui_functions";
+import { firestore } from "firebase";
+import { toTimeStamp, fromTimeStampToDateString } from "util/date-utils";
 
 
 @customElement('mint-scenario')
@@ -35,6 +37,9 @@ export class MintScenario extends connect(store)(PageViewElement) {
     @property({type: Boolean})
     private _hideObjectives: Boolean = false;
     
+    @property({type: Boolean})
+    private _subgoalEditMode: Boolean = false;
+
     private _dispatched: Boolean = false;
 
     static get styles() {
@@ -155,7 +160,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                                         @click="${this._onSelectSubgoal}"
                                                         data-subgoalid="${subgoal.id}">
                                                     <div class="cltmain">${subgoal.name}</div>
-                                                    <wl-icon @click="${this._onEditSubGoal}" 
+                                                    <wl-icon @click="${this._editSubGoalDialog}" 
                                                         data-subgoalid="${subgoal.id}"
                                                         class="actionIcon editIcon">edit</wl-icon>
                                                     <wl-icon @click="${this._onDeleteSubGoal}" 
@@ -179,6 +184,8 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 </div>
                 <div class="${this._hideObjectives ? 'right_full' : 'right'}">
                         <div class="card2">
+                            <wl-icon @click="${this._onAddPathway}" 
+                                class="actionIcon bigActionIcon" style="float:right">note_add</wl-icon>
                             <wl-icon @click="${() => this._hideObjectives = !this._hideObjectives}"
                                 class="actionIcon bigActionIcon" style="float:right">
                                 ${!this._hideObjectives ? "fullscreen" : "fullscreen_exit"}
@@ -299,8 +306,8 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 </form>
             </div>
             <div slot="footer">
-                <wl-button @click="${this._onAddSubGoalCancel}" inverted flat>Cancel</wl-button>
-                <wl-button @click="${this._onAddSubGoalSubmit}" class="submit" id="dialog-submit-button">Submit</wl-button>
+                <wl-button @click="${this._onEditSubGoalCancel}" inverted flat>Cancel</wl-button>
+                <wl-button @click="${this._onEditSubGoalSubmit}" class="submit" id="dialog-submit-button">Submit</wl-button>
             </div>
         </wl-dialog>
         `;
@@ -313,6 +320,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 A Sub-objective is an actionable objective that one can run analyses for and get results.
             </p>
             <input type="hidden" name="goalid"></input>
+            <input type="hidden" name="subgoalid"></input>
             
             <!-- Sub-Objective name -->
             <div class="input_full">
@@ -336,8 +344,8 @@ export class MintScenario extends connect(store)(PageViewElement) {
             </div>
             <br />
 
-            <!-- Variables -->       
-            ${renderVariables()}
+            <!-- Variables --> 
+            ${!this._subgoalEditMode ? renderVariables() : ''}
         `;        
     }
     
@@ -389,34 +397,83 @@ export class MintScenario extends connect(store)(PageViewElement) {
         let goalid = (e.currentTarget as HTMLButtonElement).dataset['goalid']; 
         let form = this.shadowRoot!.querySelector<HTMLFormElement>("#subObjectiveForm")!;
         resetForm(form);
+        this._subgoalEditMode = false;
+        let dates = this._scenario.dates;
         (form.elements["goalid"] as HTMLInputElement).value = goalid!;
+        (form.elements["subgoal_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
+        (form.elements["subgoal_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
         showDialog("subObjectiveDialog", this.shadowRoot!);
     }
 
-    _onAddSubGoalSubmit() {
+    _editSubGoalDialog(e: Event) {
+        let subgoalid = (e.currentTarget as HTMLButtonElement).dataset['subgoalid'];
+        if(subgoalid) {
+            let subgoal = this._scenario_details!.subgoals[subgoalid];
+            if(subgoal) {
+                let form = this.shadowRoot!.querySelector<HTMLFormElement>("#subObjectiveForm")!;
+                resetForm(form);
+                this._subgoalEditMode = true;
+                let dates = subgoal.dates ? subgoal.dates : this._scenario.dates;
+                (form.elements["subgoalid"] as HTMLInputElement).value = subgoal.id;
+                (form.elements["subgoal_name"] as HTMLInputElement).value = subgoal.name;
+                (form.elements["subgoal_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
+                (form.elements["subgoal_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
+                showDialog("subObjectiveDialog", this.shadowRoot!);
+            }
+        }
+        e.stopPropagation();
+        e.preventDefault();
+        return false;
+    }
+
+    _onEditSubGoalSubmit() {
         let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#subObjectiveForm")!;
         if(formElementsComplete(form, ["subgoal_name"])) {
             let goalid = (form.elements["goalid"] as HTMLInputElement).value;
+            let subgoalid = (form.elements["subgoalid"] as HTMLInputElement).value;
             let subgoal_name = (form.elements["subgoal_name"] as HTMLInputElement).value;
-            let response_variable = (form.elements["response_variable"] as HTMLInputElement).value;
-            let driving_variable = (form.elements["driving_variable"] as HTMLInputElement).value || "";
-            let subgoal = {
-                name: subgoal_name,
-                pathwayids: []
-            } as SubGoal;
-            let pathway = {
-                driving_variables: [driving_variable],
-                response_variables: [response_variable],
-                models: {},
-                datasets: {},
-                model_ensembles: {},
-                executable_ensembles: [],
-                notes: {} as Notes
-            } as Pathway;
+            let subgoal_from = (form.elements["subgoal_from"] as HTMLInputElement).value;
+            let subgoal_to = (form.elements["subgoal_to"] as HTMLInputElement).value;
 
-            addSubGoalFull(this._scenario!, goalid, subgoal, pathway);
+            // If no subgoalid, but goalid is there, then this is a new subgoal
+            let subgoal : SubGoal = null;
+            if(subgoalid) {
+                // Edit Subgoal 
+                subgoal = this._scenario_details!.subgoals[subgoalid];
+                subgoal.name = subgoal_name;
+                subgoal.dates = {
+                    start_date: firestore.Timestamp.fromDate(new Date(subgoal_from)),
+                    end_date: firestore.Timestamp.fromDate(new Date(subgoal_to))
+                };
+                updateSubGoal(this._scenario!, subgoal);
+            }
+            else if(goalid) {
+                // Add Subgoal
+                let response_variable = (form.elements["response_variable"] as HTMLInputElement).value;
+                let driving_variable = (form.elements["driving_variable"] as HTMLInputElement).value || "";
+                subgoal = {
+                    name: subgoal_name,
+                    dates: {
+                        start_date: toTimeStamp(subgoal_from),
+                        end_date: toTimeStamp(subgoal_to)
+                    },
+                    pathwayids: []
+                } as SubGoal;
 
-            showNotification("save", this.shadowRoot!);
+                let pathway = {
+                    driving_variables: [driving_variable],
+                    response_variables: [response_variable],
+                    models: {},
+                    datasets: {},
+                    model_ensembles: {},
+                    executable_ensembles: [],
+                    notes: {} as Notes
+                } as Pathway;
+
+                addSubGoalFull(this._scenario!, goalid, subgoal, pathway);
+            }
+
+            showNotification("saveNotification", this.shadowRoot!);
             hideDialog("subObjectiveDialog", this.shadowRoot!);
         }
         else {
@@ -424,7 +481,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
         }
     }
 
-    _onAddSubGoalCancel() {
+    _onEditSubGoalCancel() {
         hideDialog("subObjectiveDialog", this.shadowRoot!);
     }
     
@@ -444,6 +501,11 @@ export class MintScenario extends connect(store)(PageViewElement) {
         let subgoalid = addSubGoal(this._scenario!, goalid, subgoal);
         this._addPathway(subgoalid);
     }
+
+    _onAddPathway() {
+        this._addPathway(this._selectedSubgoal.id);
+    }
+
     _addPathway(subgoalid:string) {
         let pathway = {
             driving_variables: [],
@@ -531,25 +593,6 @@ export class MintScenario extends connect(store)(PageViewElement) {
         }
     }
 
-    _onEditSubGoal(e: Event) {
-        e.preventDefault();
-        e.stopPropagation();        
-
-        let subgoalid = (e.currentTarget as HTMLButtonElement).dataset['subgoalid'];
-        if(subgoalid) {
-            let subgoal = this._scenario_details!.subgoals[subgoalid];
-            if(subgoal) {
-                let newname = prompt("Enter new name for the sub-objective", subgoal.name);
-                if(newname) {
-                    subgoal.name = newname;
-                    updateSubGoal(this._scenario!, subgoal);
-                    showNotification("saveNotification", this.shadowRoot!); 
-                }
-            }
-        }
-        return false;
-    }
-
     _onDeleteSubGoal(e: Event) {
         e.preventDefault();
         e.stopPropagation();        
@@ -598,16 +641,32 @@ export class MintScenario extends connect(store)(PageViewElement) {
 
 
     _onSelectSubgoal(e: Event) {
-        let subgoalid = (e.currentTarget as HTMLButtonElement).dataset['subgoalid'];
+        let subgoalid = (e.currentTarget as HTMLDivElement).dataset['subgoalid'];
         let subgoal = this._scenario_details!.subgoals[subgoalid!];
         if(subgoal && (!this._selectedSubgoal || (this._selectedSubgoal.id != subgoalid))) {
-            console.log("%%%%% "  + this._regionid);
+            //console.log("%%%%% "  + this._regionid);
             goToPage("modeling/scenario/" + this._scenario!.id + "/" + subgoal.id + "/" + subgoal.pathwayids![0]);
             //store.dispatch(selectSubgoal(subgoal.id));
             //store.dispatch(selectPathway(subgoal.pathwayids![0])); 
             // Selecting the first pathway of the subgoal by default
             // TODO: Think about handling multiple pathways in an elegant manner
         }
+    }
+
+    _onSelectPathway(e: Event) {
+        let pathwayid = (e.currentTarget as HTMLDivElement).dataset['pathwayid'];
+        // Change url to the new pathway
+        /*
+        let pathway = this._scenario_details!.pathways[pathwayid];
+        if(pathway && (!this._selectedPathway || (this._selectedPathway.id != pathwayid))) {
+            //console.log("%%%%% "  + this._regionid);
+            goToPage("modeling/scenario/" + this._scenario!.id + "/" + 
+                this._selectedSubgoal.id + "/" + pathway.id!
+            //store.dispatch(selectSubgoal(subgoal.id));
+            //store.dispatch(selectPathway(subgoal.pathwayids![0])); 
+            // Selecting the first pathway of the subgoal by default
+            // TODO: Think about handling multiple pathways in an elegant manner
+        }*/
     }
 
     _getSubgoalClass(subgoalid:string) {
