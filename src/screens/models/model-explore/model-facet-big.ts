@@ -11,7 +11,6 @@ import { explorerFetchCompatibleSoftware, explorerFetchParameters, explorerFetch
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
 
-import { showDialog } from "../../../util/ui_functions";
 import { goToPage } from '../../../app/actions';
 import "weightless/expansion";
 import "weightless/tab";
@@ -19,6 +18,7 @@ import "weightless/tab-group";
 import "weightless/card";
 import "weightless/icon";
 import "weightless/progress-spinner";
+import '../../../components/image-gallery'
 
 @customElement('model-facet-big')
 export class ModelFacetBig extends connect(store)(PageViewElement) {
@@ -146,35 +146,6 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                   vertical-align: middle;
                   max-width: calc(100% - 8px);
                   border: 1px solid black;
-                }
-
-                #dialog {
-                    --dialog-height-l: auto;
-                    text-align: center;
-                }
-
-                #dialog img {
-                    max-height: 100%;
-                }
-
-                .gallery {
-                    height:200px;
-                    text-align: center;
-                    display: inline-block;
-                    padding: 2px 2px 2em 2px;
-                }
-
-                .gallery img {
-                    max-width: 100%;
-                    max-height: 100%;
-                    display: block;
-                    cursor: pointer;
-                }
-
-                .gallery span {
-                    margin-top: 3px;
-                    font-weight: bold;
-                    display: block;
                 }
 
                 .helper {
@@ -812,57 +783,25 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
     }
 
     _renderGallery () {
-        return html `
-        ${this._renderImgDialog()}
-        ${(this._model.sampleVisualization || (this._explDiagrams && this._explDiagrams.length>0))?
-           html`<h3>Gallery:</h3>`:html``}
-        ${this._model.sampleVisualization ? html`
-            <div class="gallery" @click="${()=>{this.openImg({
-                uri: this._model.sampleVisualization as string,
-                label: 'Sample Visualization'
-            })}}">
-                <img src="${this._model.sampleVisualization}"></img>
-                <span> Sample visualization </span>
-            </div>`
-        : html``}
-        ${(this._explDiagrams && this._explDiagrams.length > 0)? 
-        html`${this._explDiagrams.map((ed:any) => html`
-            <div class="gallery" @click="${()=>{this.openImg({
-                uri: ed.url,
-                label: ed.label,
-                desc: ed.desc,
-                source: ed.source
-            })}}">
-                <img src="${ed.url}"></img>
-                <span>${ed.label}</span>
-            </div>
-        `)}`
-        : html``}`
-    }
-
-    _renderImgDialog () {
-        return html`
-        <wl-dialog id="dialog" fixed backdrop blockscrolling size="large">
-           <h3 id="dialog-title" slot="header" style="margin-bottom: 4px;">Sample Visualization</h3>
-           <div slot="content">
-             <img id="dialog-img" src=""></img>
-           </div>
-           <h4 id="dialog-desc" style="margin-bottom:1em;"></h4>
-           <h5 id="dialog-source" style="margin-top:0;"></h5>
-        </wl-dialog>
-        `
-    }
-
-    openImg (obj:{uri:string, label?:string, desc?:string, source?:string}) {
-        let title   = this.shadowRoot!.getElementById("dialog-title");
-        let img     = this.shadowRoot!.getElementById("dialog-img");
-        let descrip = this.shadowRoot!.getElementById("dialog-desc");
-        let source  = this.shadowRoot!.getElementById("dialog-source");
-        img!['src']=obj.uri;
-        title!['innerHTML']=obj.label ? obj.label : '';
-        descrip!['innerHTML']=obj.desc ? obj.desc : '';
-        source!['innerHTML']=obj.source ? 'Source: ' + obj.source : '';
-        showDialog("dialog", this.shadowRoot!);
+        let items = [];
+        if (this._model.sampleVisualization) {
+            items.push({label: "Sample Visualization", src: this._model.sampleVisualization})
+        }
+        if (this._explDiagrams) {
+            this._explDiagrams.forEach((ed) => {
+                let newItem = {label: ed.label, src: ed.url, desc: ed.desc};
+                if (ed.source) {
+                    newItem.source = {label: ed.source.split('/').pop(), url: ed.source}
+                }
+                items.push(newItem);
+            })
+        }
+        if (items.length > 0) {
+            return html`<h3>Gallery:</h3>
+                <image-gallery style="--width: 300px; --height: 160px;" .items="${items}"></image-gallery>`;
+        } else {
+            return html``;
+        }
     }
 
     expandIO (uri:string) {

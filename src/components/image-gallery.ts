@@ -8,7 +8,7 @@ import "weightless/icon";
 import "weightless/dialog";
 
 interface Resource {
-    uri: string;
+    url: string;
     label: string;
 }
 
@@ -116,7 +116,7 @@ export class ImageGallery extends LitElement {
                     <p id="dialog-source">
                         <b>Source:</b>
                         <span id="dialog-source-text"></span>
-                        <a id="dialog-source-link" href=""></a>
+                        <a target="_blank" id="dialog-source-link" href=""></a>
                     </p>
                 </div>
             </wl-dialog>
