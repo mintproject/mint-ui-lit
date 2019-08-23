@@ -37,14 +37,17 @@ export class DatasetsQualityWorkflows extends connect(store)(PageViewElement) {
 
     protected render() {
         let items = [
-            /*{ FIXME: these url does not work now.
+            {   
                 label: "Ethiopia relief subbasins (94MB)",
-                src: "http://mint.isi.edu/dev/data/Ethiopia_relief_subbasins_big.png"
+                src: "images/thumbnails/Ethiopia_relief_subbasins_med.png",
+                thumbnail: "images/thumbnails/Ethiopia_relief_subbasins_small.png",
+                external: "http://mint.isi.edu/data/Ethiopia_relief_subbasins_big.png"
             },
-            {
+            {   
                 label: "Blue Nile Tributaries relief and boundaries (76MB)",
-                src: "http://mint.isi.edu/dev/data/Blue_Nile_Tribs_relief_and_boundaries_big.png"
-            },*/
+                src: "images/thumbnails/Blue_Nile_Tribs_relief_and_boundaries_med.png",
+                thumbnail: "images/thumbnails/Blue_Nile_Tribs_relief_and_boundaries_small.png",
+                external: "http://mint.isi.edu/data/Blue_Nile_Tribs_relief_and_boundaries_big.png"},
             {
                 label: "Ethiopia relief boundary",
                 src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Ethiopia_relief_boundary.png"
