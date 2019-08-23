@@ -10,7 +10,7 @@ export const MODELS_VARIABLES_QUERY = 'MODELS_VARIABLES_QUERY';
 export const MODELS_LIST = 'MODELS_LIST';
 export const MODELS_DETAIL = 'MODELS_DETAIL';
 
-import { apiFetch,  GET_CALIBRATIONS_FOR_VARIABLE, MODEL_METADATA_NOIO, GET_PARAMETERS, CONFIG_IO_VARS_STDNAMES } from './model-explore/api-fetch';
+import { apiFetch,  GET_CALIBRATIONS_FOR_VARIABLE, MODEL_METADATA_NOIO, GET_PARAMETERS, CONFIG_IO_VARS_STDNAMES, GET_CONFIGS_FOR_VARIABLE } from './model-explore/api-fetch';
 import { Dataset } from "../datasets/reducers";
 
 export interface ModelsActionList extends Action<'MODELS_LIST'> { models: Model[] };
@@ -88,28 +88,39 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
         models: null,
         loading: true
     });
-    apiFetch({
-        type: GET_CALIBRATIONS_FOR_VARIABLE,
-        std: response_variables[0],
-        rules: {
-            'model': { 
-                newKey: 'modelName',
-                newValue: (value: string) => value.substr(value.lastIndexOf('/')+1) 
-            },
-            'version': { 
-                newKey: 'versionName',
-                newValue: (value: string) => value.substr(value.lastIndexOf('/')+1) 
-            },
-            'configuration': { 
-                newKey: 'configurationName',
-                newValue: (value: string) => value.substr(value.lastIndexOf('/')+1) 
-            }
-        }
-    }).then((calibrations: Array<Object>) => {
-        console.log(calibrations);
+
+    let variables = response_variables[0].split(/\s*,\s/);
+    Promise.all(
+        variables.map((variable) => {
+            return apiFetch({
+                type: GET_CALIBRATIONS_FOR_VARIABLE,
+                std: variable,
+                rules: {
+                    'model': { 
+                        newKey: 'modelName',
+                        newValue: (value: string) => value.substr(value.lastIndexOf('/')+1) 
+                    },
+                    'version': { 
+                        newKey: 'versionName',
+                        newValue: (value: string) => value.substr(value.lastIndexOf('/')+1) 
+                    },
+                    'configuration': { 
+                        newKey: 'configurationName',
+                        newValue: (value: string) => value.substr(value.lastIndexOf('/')+1) 
+                    }
+                }
+            });
+        })
+    ).then((callist: Array<Array<Object>>) => {
+        let modelrows: Array<Object> = [];
+        callist.map((cal) => {
+            modelrows = modelrows.concat(cal);
+        });
+        //console.log(modelrows);
         let calibrationPromises = 
-            calibrations.map((row: Object) => {
-                let modelid = row['calibration'];
+            modelrows.map((row: Object) => {
+                let modelid = row['calibration'] || row['configuration'];
+                //console.log(modelid);
                 return Promise.all([
                     apiFetch({
                         type: MODEL_METADATA_NOIO,
@@ -147,10 +158,13 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                                 type: value.type,
                                 variables: []
                             };
+                            // FIXME: Hack until we remove cycles_weather fixed value
                             if(value.fixedValueURL && value.iolabel != "cycles_weather") {
                                 io.value = {
                                     id: value.fixedValueDCId,
-                                    url: value.fixedValueURL
+                                    resources: [{
+                                        url: value.fixedValueURL
+                                    }]
                                 } as Dataset;
                             }
                             fileio[value.io] = io;

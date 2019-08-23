@@ -4,6 +4,9 @@ import { RootState } from "../../app/store";
 import { Dataset, DatasetDetail } from "./reducers";
 import { EXAMPLE_DATASETS_QUERY } from "../../offline_data/sample_datasets";
 import { OFFLINE_DEMO_MODE } from "../../app/actions";
+import { IdMap } from "app/reducers";
+import { DateRange } from "screens/modeling/reducers";
+import { toTimeStamp, fromTimeStampToString } from "util/date-utils";
 
 export const DATASETS_VARIABLES_QUERY = 'DATASETS_VARIABLES_QUERY';
 export const DATASETS_LIST = 'DATASETS_LIST';
@@ -58,8 +61,7 @@ export const listAllDatasets: ActionCreator<ListDatasetsThunkResult> = () => (di
 // Query Data Catalog by Variables
 type QueryDatasetsThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionVariablesQuery>;
 export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> = 
-        (modelid: string, inputid: string, driving_variables: string[],
-            start_date: string, end_date: string) => (dispatch) => {
+        (modelid: string, inputid: string, driving_variables: string[], dates: DateRange ) => (dispatch) => {
     
     if(OFFLINE_DEMO_MODE) {
         let datasets = [] as Dataset[];
@@ -99,40 +101,63 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 standard_variable_names__in: driving_variables,
-                start_time__lte: end_date + "T00:00:00",
-                end_time__gte: start_date + "T00:00:00",
-                limit: 50
+                start_time__gte: fromTimeStampToString(dates.start_date).replace(/\.\d{3}Z$/,''),
+                end_time__lte: fromTimeStampToString(dates.end_date).replace(/\.\d{3}Z$/,''),
+                limit: 5000
             })
         }).then((response) => {
             response.json().then((obj) => {
+                let dsmap: IdMap<Dataset> = {};
                 let datasets: Dataset[] = [];
                 obj.resources.map((row: any) => {
                     let dmeta = row["dataset_metadata"];
                     let rmeta = row["resource_metadata"];
                     let tcover = rmeta["temporal_coverage"];
                     //let scover = rmeta["spatial_coverage"];
-
-                    let ds: Dataset = {
+                    let dsid = row["dataset_id"];
+                    let ds : Dataset = dsmap[dsid];
+                    if(ds == null) {
+                        ds = {
+                            id: dsid,
+                            name: row["dataset_name"],
+                            region: "",
+                            variables: driving_variables,
+                            time_period: {
+                                start_date: null, //tcover["start_time"].replace(/T.+$/, ''),
+                                end_date: null
+                            } as DateRange,
+                            description: row["description"] || "",
+                            version: dmeta["version"] || "",
+                            limitations: dmeta["limitataions"] || "",
+                            source: {
+                                name: dmeta["source"] || "",
+                                url: dmeta["source_url"] || "",
+                                type: dmeta["source_type"] || ""
+                            },
+                            categories: dmeta["category_tags"] || [],
+                            resources: []
+                        };
+                        datasets.push(ds);
+                        dsmap[ds.id] = ds;
+                    }
+                    let tcoverstart = toTimeStamp(tcover["start_time"]);
+                    let tcoverend = toTimeStamp(tcover["end_time"]);
+                    if(!ds.time_period.start_date || ds.time_period.start_date > tcoverstart) {
+                        ds.time_period.start_date = tcoverstart;
+                    }
+                    if(!ds.time_period.end_date || ds.time_period.end_date < tcoverend) {
+                        ds.time_period.end_date = tcoverstart;
+                    }
+                    
+                    ds.resources.push({
                         id: row["resource_id"],
                         name: row["resource_name"],
-                        region: "",
-                        variables: driving_variables,
-                        time_period: 
-                            tcover["start_time"].replace(/T.+$/, '') + 
-                            " to " + 
-                            tcover["end_time"].replace(/T.+$/, ''),
-                        description: row["description"] || "",
-                        version: dmeta["version"] || "",
-                        limitations: dmeta["limitataions"] || "",
-                        source: {
-                            name: dmeta["source"] || "",
-                            url: dmeta["source_url"] || "",
-                            type: dmeta["source_type"] || ""
-                        },
                         url: row["resource_data_url"],
-                        categories: dmeta["category_tags"] || []
-                    };
-                    datasets.push(ds);
+                        time_period: {
+                            start_date: tcoverstart,
+                            end_date: tcoverend
+                        }
+                    });
                 });
                 dispatch({
                     type: DATASETS_VARIABLES_QUERY,
@@ -141,7 +166,7 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
                     datasets: datasets,
                     loading: false
                 });
-                //console.log(datasets);
+                console.log(datasets);
             })
         });
     }

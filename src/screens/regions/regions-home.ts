@@ -24,9 +24,17 @@ export class RegionsHome extends connect(store)(PageViewElement) {
 
     static get styles() {
         return [
+            SharedStyles,
             css `
+            .card {
+                height: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+            .page.fullpage[active]  {
+                height: 100%;
+            }
             `,
-            SharedStyles
         ];
     }
 

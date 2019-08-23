@@ -36,8 +36,9 @@ import { navigate, BASE_HREF, goToPage } from '../../app/actions';
 import { PageViewElement } from '../../components/page-view-element';
 import { renderNotifications } from '../../util/ui_renders';
 import { formElementsComplete, showDialog, hideDialog, showNotification, resetForm } from '../../util/ui_functions';
-import { listRegions } from '../regions/actions';
+import { listTopRegions } from '../regions/actions';
 import { RegionList } from '../regions/reducers';
+import { toTimeStamp } from 'util/date-utils';
 
 @customElement('scenarios-list')
 export class ScenariosList extends connect(store)(PageViewElement) {
@@ -184,8 +185,8 @@ export class ScenariosList extends connect(store)(PageViewElement) {
           name: scenario_name,
           regionid: scenario_region,
           dates: {
-            start_date: scenario_from,
-            end_date: scenario_to
+            start_date: toTimeStamp(scenario_from),
+            end_date: toTimeStamp(scenario_to)
           }
         } as Scenario;        
 
@@ -244,7 +245,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
   }
 
   protected firstUpdated() {    
-    store.dispatch(listRegions());
+    store.dispatch(listTopRegions());
     store.dispatch(listScenarios());
     // list summaries of datasets, models, etc
   }

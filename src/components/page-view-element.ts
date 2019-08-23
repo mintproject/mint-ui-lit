@@ -31,8 +31,14 @@ export class PageViewElement extends LitElement {
       this._subpage = state.app!.subpage;
   }
 
-  setRegionId(state: RootState) {
-    if(state.ui && state.ui)
+  setRegionId(state: RootState): boolean {
+    if(state.ui && state.ui) {
+      let curregionid = this._regionid;
       this._regionid = state.ui.selected_top_regionid;
+      if( curregionid != state.ui.selected_top_regionid) {
+        return true;
+      }
+    }
+    return false;
   }
 }
