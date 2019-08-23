@@ -5,7 +5,8 @@ import { PageViewElement } from '../../components/page-view-element';
 import { SharedStyles } from '../../styles/shared-styles';
 import { store } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { goToPage } from '../../app/actions';
+
+import '../../components/image-gallery'
 
 @customElement('datasets-rs-workflows')
 export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewElement) {
@@ -39,56 +40,102 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
             .content {
                 margin: 0 auto;
             }
+            wl-title > wl-icon {
+                --icon-size: 18px;
+                padding-left: 4px;
+            }
+
+            .img-hover-zoom {
+                position: relative;
+                margin: 0 auto;
+                overflow: hidden; /* Removing this will break the effects */
+                width: 90%;
+                height: 250px;
+            }
+            .img-hover-zoom img {
+                transition: transform 1s, filter 1s ease-in-out;
+                transform-origin: center center;
+                filter: brightness(100%);
+            }
+            .img-hover-zoom:hover img {
+                filter: brightness(65%);
+                transform: scale(1.05);
+            }
+
+            .img-hover-zoom a {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                line-height: 250px;
+                text-align: center;
+                font-weight: bold;
+                color: #fff;
+                text-shadow: 0 0 1px black;
+                visibility: hidden;
+                opacity: 0;
+                font-size: 40px;
+
+                /* transition effect. not necessary */
+                transition: opacity .5s, visibility .5s;
+            }
+            .img-hover-zoom:hover a {
+                background-color: transparent;
+                visibility: visible;
+                opacity: 1;
+            }
+
+            .img-hover-zoom a > wl-icon {
+                --icon-size: 30px;
+                margin-left: 10px;
+            }
+
+            image-gallery {
+                --width: 300px;
+                --height: 160px;
+            }
             `,
             SharedStyles
         ];
     }
 
     protected render() {
+        let items = [
+            {label: "Virtual Gauge 1", src: "/videos/VirtualGage1.mp4", thumbnail: "images/thumbnails/virtual-gauge-1.png"},
+            {label: "Virtual Gauge 2", src: "/videos/VirtualGage2.mp4", thumbnail: "images/thumbnails/virtual-gauge-2.png"},
+            {label: "Virtual Gauge 3", src: "/videos/VirtualGage3.mp4", thumbnail: "images/thumbnails/virtual-gauge-3.png"}
+        ]
         return html`
-        <div class="cltrow">
-            <wl-button flat inverted @click="${()=> goToPage('datasets')}">
-                <wl-icon>arrow_back_ios</wl-icon>
-            </wl-button>
-            <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                <wl-title level="4" style="margin: 0px">Remote sensing</wl-title>
-            </div>
-        </div>   
-
         <div class="content">
             <p>
             This page is in progress, it will allow you to run tools that create datasets from raw remote sensing data, that can be then used 
             in hydrological or other models.
             Below are some example results of a tool that simulates river guage data by processing remote sensing data for Ethiopia.
             </p>
-            <ul>
-                <li><a href="http://umnlcc.cs.umn.edu/carto-test/">Ethiopia river width visualisation</a>. Each dot represents a location on the river. 
-                    Size and color of the point changes based on the river depth as the slider is changed.</li>
-                <li><b>Virtual Gauge Videos.</b>
-                    This represents river width/depth variation for a single cross section. The background in this animation is SRTM based elevation.
-                    <div style="text-align: center;"> 
-                        <h3>Virtual Gauge 1:</h3>
-                        <video autoplay loop controls>
-                          <source src="/images/VirtualGage1.mp4" type="video/mp4">
-                            Your browser does not support the video tag.
-                        </video>
-                        <wl-divider></wl-divider>
-                        <br/>
-                        <h3>Virtual Gauge 2:</h3>
-                        <video autoplay loop controls>
-                          <source src="/images/VirtualGage2.mp4" type="video/mp4">
-                            Your browser does not support the video tag.
-                        </video>
-                        <wl-divider></wl-divider>
-                        <br/>
-                        <h3>Virtual Gauge 3:</h3>
-                        <video autoplay loop controls>
-                          <source src="/images/VirtualGage3.mp4" type="video/mp4">
-                            Your browser does not support the video tag.
-                        </video>
-                    </div>
-                </li>
-            </ul>
+            <a target="_blank" href="http://umnlcc.cs.umn.edu/carto-test/"><wl-title level="4">
+                Ethiopia River Width Visualization
+            <wl-icon>open_in_new</wl-icon></wl-title></a>
+            <p>
+                Each dot represents a location on the river. 
+                Size and color of the point changes based on the river depth as the slider is changed.
+            </p>
+            <div class="img-hover-zoom">
+                <img src="/images/thumbnails/ethiopia-river-width-visualization.png"></img>
+                <a target="_blank" href="http://umnlcc.cs.umn.edu/carto-test/">Open visualization <wl-icon>open_in_new</wl-icon></a>
+            </div>
+            
+            <wl-divider style="margin: 20px 0px;"></wl-divider>
+
+            <wl-title level="4">Virtual Gauge Videos</wl-title>
+            <p>
+                This represents river width/depth variation for a single cross section. The background in this animation is SRTM based elevation.
+            </p>
+
+            <div style="width: 90%; margin: 0px auto;">
+                <image-gallery .items="${items}"></image-gallery>
+            <div>
+
         </div>`
     }
 }

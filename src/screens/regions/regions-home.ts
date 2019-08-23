@@ -13,6 +13,7 @@ import './regions-agriculture';
 import './regions-hydrology';
 import '../../styles/mint-icons';
 import { cropsIcon, mountainRiverIcon, adminIcon } from '../../styles/mint-icons';
+import '../../components/nav-title'
 
 store.addReducers({
     regions
@@ -30,8 +31,27 @@ export class RegionsHome extends connect(store)(PageViewElement) {
     }
 
     protected render() {
+        let nav = [{label:'Define Regions', url:'regions'}] 
+        switch (this._subpage) {
+            case 'manual':
+                nav.push({label: 'Manual Outline', url: 'regions/manual'});
+                break;
+            case 'administrative':
+                nav.push({label: 'Administrative Regions', url: 'regions/administrative'});
+                break;
+            case 'hydrology':
+                nav.push({label: 'Hydrology Regions', url: 'regions/hydrology'});
+                break;
+            case 'agriculture':
+                nav.push({label: 'Agriculture Regions', url: 'regions/agriculture'});
+                break;
+            default:
+                break;
+        }
+
         return html`
-            <wl-title level="3">Define Regions</wl-title>
+            <nav-title .nav="${nav}"></nav-title>
+
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
                 <a href="${this._regionid}/regions/manual">
                     <wl-icon>edit</wl-icon>
@@ -57,10 +77,10 @@ export class RegionsHome extends connect(store)(PageViewElement) {
                 </a>
             </div>
 
-            <regions-manual class="page fullpage" ?active="${this._subpage == 'manual'}"></regions-manual>
-            <regions-administrative class="page fullpage" ?active="${this._subpage == 'administrative'}"></regions-administrative>
-            <regions-hydrology class="page fullpage" ?active="${this._subpage == 'hydrology'}"></regions-hydrology>
-            <regions-agriculture class="page fullpage" ?active="${this._subpage == 'agriculture'}"></regions-agriculture>
+            <regions-manual class="page" ?active="${this._subpage == 'manual'}"></regions-manual>
+            <regions-administrative class="page" ?active="${this._subpage == 'administrative'}"></regions-administrative>
+            <regions-hydrology class="page" ?active="${this._subpage == 'hydrology'}"></regions-hydrology>
+            <regions-agriculture class="page" ?active="${this._subpage == 'agriculture'}"></regions-agriculture>
         `
     }
 

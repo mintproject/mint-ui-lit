@@ -23,15 +23,6 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
-        <div class="cltrow">
-            <wl-button flat inverted @click="${()=> goToPage('models')}">
-                <wl-icon>arrow_back_ios</wl-icon>
-            </wl-button>
-            <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                <wl-title level="4" style="margin: 0px">Add Models</wl-title>
-            </div>
-        </div>   
-
         <p>
         This page is in progress, it will give you write access to the Model Catalog, where you can add new models to the catalog
         </p>
