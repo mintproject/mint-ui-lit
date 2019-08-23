@@ -38,8 +38,6 @@ export class MintModels extends connect(store)(MintPathwayPage) {
 
     private _responseVariables: string[] = [];
 
-    private _selectedRegion: string = "";
-
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
             name: "More information",
@@ -56,10 +54,13 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         {
             name: "Adjustable variables",
             fn: (model:Model) => {
-                return (model.input_parameters.length > 0) ? 
-                    model.input_parameters.filter((ip) => !ip.value).map((ip) => ip.name).join(", ")
-                    :
-                    "None";
+                if (model.input_parameters.length > 0) {
+                    let values = model.input_parameters.filter((ip) => !ip.value);
+                    if (values.length > 0) {
+                        return values.map((ip) => ip.name).join(', ');
+                    }
+                }
+                return "None";
             }
         },
         {
@@ -88,7 +89,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         },
         {
             name: "Spatial dimensionality",
-            fn: (model:Model) => model.dimensionality
+            fn: (model:Model) => html`<span style="font-family: system-ui;"> ${model.dimensionality} </span>`
         },
         {
             name: "Spatial grid type",
@@ -280,7 +281,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     }
 
     _getModelURL (model:Model) {
-        return this._selectedRegion + '/models/explore/' + model.original_model + '/'
+        return this._regionid + '/models/explore/' + model.original_model + '/'
                + model.model_version + '/' + model.model_configuration + '/'
                + model.localname;
     }
@@ -412,7 +413,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
 
     stateChanged(state: RootState) {
         super.setUser(state);
-
+        super.setRegionId(state);
         //let pathwayid = this.pathway ? this.pathway.id : null;
         super.setPathway(state);
 
@@ -425,10 +426,6 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         if(state.models && !state.models.loading && this._dispatched) {
             this._queriedModels = state.models!.models;
             this._dispatched = false;
-        }
-
-        if (state.ui && state.ui.selected_top_regionid) {
-            this._selectedRegion = state.ui.selected_top_regionid;
         }
     }
 }

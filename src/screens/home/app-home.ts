@@ -56,7 +56,7 @@ export class AppHome extends connect(store)(PageViewElement) {
           }
 
           .middle2main {
-            height: calc(100% - 80px);
+            height: calc(100% - 110px);
           }
           
         `

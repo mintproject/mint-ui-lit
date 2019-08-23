@@ -1,5 +1,5 @@
 
-import { html, customElement, css } from 'lit-element';
+import { property, html, customElement, css } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
 import { SharedStyles } from '../../styles/shared-styles';
@@ -11,6 +11,7 @@ import './model-explore/model-explore';
 import './models-register';
 import './models-calibrate';
 import './models-configure';
+import '../../components/nav-title'
 
 store.addReducers({
     models
@@ -18,6 +19,8 @@ store.addReducers({
 
 @customElement('models-home')
 export class ModelsHome extends connect(store)(PageViewElement) {
+    @property({type: String})
+    private _selectedModelId : string = '';
 
     static get styles() {
         return [
@@ -47,16 +50,41 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     display:block;
                     margin:auto;
                 }
+
+                model-explorer {
+                    height: calc(100% - 40px);
+                }
             `,
             SharedStyles
         ];
     }
 
     protected render() {
+        let nav = [{label:'Prepare Models', url:'models'}] 
+        switch (this._subpage) {
+            case 'explore':
+                nav.push({label: 'Model Catalog', url: 'models/explore'});
+                break;
+            case 'register':
+                nav.push({label: 'Add Models', url: 'models/register'});
+                break;
+            case 'configure':
+                nav.push({label: 'Configure Models', url: 'models/configure'});
+                break;
+            case 'calibrate':
+                nav.push({label: 'Calibrate Models', url: 'models/calibrate'});
+                break;
+            default:
+                break;
+        }
+
+        if (this._selectedModelId) {
+            nav.push({label: this._selectedModelId, url: 'models/explore/'+this._selectedModelId });
+        }
+
         return html`
-            <wl-title level="3" class="${(this._subpage == 'explore' || this._subpage == 'configure') ? 'hiddensection' : ''}">
-                Prepare Models
-            </wl-title>
+            <nav-title .nav="${nav}" max="2"></nav-title>
+
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
                 <a href="${this._regionid}/models/explore">
                     <wl-icon>search</wl-icon>
@@ -76,15 +104,18 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                 </a>
             </div>
 
-            <model-explorer class="page fullpage" ?active="${this._subpage == 'explore'}"></model-explorer>
-            <models-register class="page fullpage" ?active="${this._subpage == 'register'}"></models-register>
-            <models-configure class="page fullpage" ?active="${this._subpage == 'configure'}"></models-configure>
-            <models-calibrate class="page fullpage" ?active="${this._subpage == 'calibrate'}"></models-calibrate>
+            <model-explorer class="page" ?active="${this._subpage == 'explore'}"></model-explorer>
+            <models-register class="page" ?active="${this._subpage == 'register'}"></models-register>
+            <models-configure class="page" ?active="${this._subpage == 'configure'}"></models-configure>
+            <models-calibrate class="page" ?active="${this._subpage == 'calibrate'}"></models-calibrate>
         `
     }
 
     stateChanged(state: RootState) {
         super.setSubPage(state);
         super.setRegionId(state);
+        if (state && state.explorerUI) {
+            this._selectedModelId = state.explorerUI.selectedModel.split('/').pop();
+        }
     }
 }

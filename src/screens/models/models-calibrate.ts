@@ -22,15 +22,6 @@ export class ModelsCalibrate extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
-        <div class="cltrow">
-            <wl-button flat inverted @click="${()=> goToPage('models')}">
-                <wl-icon>arrow_back_ios</wl-icon>
-            </wl-button>
-            <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                <wl-title level="4" style="margin: 0px">Calibrate Models</wl-title>
-            </div>
-        </div>   
-
         <p>
         This page is in progress, it will allow you to calibrate models from the Model Catalog for a particular area or region
         </p>

@@ -35,6 +35,10 @@ export class ModelFacet extends connect(store)(PageViewElement) {
     static get styles() {
         return [ExplorerStyles,
             css `
+                :host {
+                    display: block;
+                }
+
                 table {
                     margin-bottom: 1em;
                     table-layout: fixed;
