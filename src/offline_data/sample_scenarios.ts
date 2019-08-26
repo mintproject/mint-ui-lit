@@ -1,6 +1,7 @@
 import { Goal, SubGoal, Pathway } from "../screens/modeling/reducers";
 import { IdMap } from "../app/reducers";
 import { Region } from "../screens/regions/reducers";
+import { toTimeStamp } from "util/date-utils";
 
 export const EXAMPLE_REGION_DATA = {
     "south_sudan": {
@@ -23,8 +24,8 @@ export const EXAMPLE_SCENARIOS_LIST_DATA = {
             "name": "Check on Food Security in South Sudan",
             "regionid": "south_sudan",
             "dates": {
-                "start_date": (new Date()).toDateString(),
-                "end_date": (new Date()).toDateString(),
+                "start_date": toTimeStamp(new Date().toDateString()),
+                "end_date": toTimeStamp(new Date().toDateString()),
             }
         },
         "scenario2": {
@@ -32,8 +33,8 @@ export const EXAMPLE_SCENARIOS_LIST_DATA = {
             "name": "Check up on Flooding issues in South Sudan",
             "regionid": "south_sudan",
             "dates": {
-                "start_date": (new Date()).toDateString(),
-                "end_date": (new Date()).toDateString(),
+                "start_date": toTimeStamp(new Date().toDateString()),
+                "end_date": toTimeStamp(new Date().toDateString()),
             }
         },
         "scenario3": {
@@ -41,8 +42,8 @@ export const EXAMPLE_SCENARIOS_LIST_DATA = {
             "name": "Investigate the evolving refugee crisis in Ethipia",
             "regionid": "ethiopia",
             "dates": {
-                "start_date": (new Date()).toDateString(),
-                "end_date": (new Date()).toDateString(),
+                "start_date": toTimeStamp(new Date().toDateString()),
+                "end_date":toTimeStamp (new Date().toDateString()),
             }
         },
         "scenario4": {
@@ -50,8 +51,8 @@ export const EXAMPLE_SCENARIOS_LIST_DATA = {
             "name": "Check up on Flooding issues in Ethiopia",
             "regionid": "ethiopia",
             "dates": {
-                "start_date": (new Date()).toDateString(),
-                "end_date": (new Date()).toDateString(),
+                "start_date": toTimeStamp(new Date().toDateString()),
+                "end_date": toTimeStamp(new Date().toDateString()),
             }
         },
         "scenario5": {
@@ -59,8 +60,8 @@ export const EXAMPLE_SCENARIOS_LIST_DATA = {
             "name": "Check up on Flooding issues in Ethiopia",
             "regionid": "ethiopia",
             "dates": {
-                "start_date": (new Date()).toDateString(),
-                "end_date": (new Date()).toDateString(),
+                "start_date":toTimeStamp(new Date().toDateString()),
+                "end_date":toTimeStamp(new Date().toDateString()),
             }
         }
     }
@@ -71,8 +72,8 @@ export const EXAMPLE_SCENARIO_DETAILS = {
     "name": "Check on Food Security in South Sudan",
     "regionid": "south_sudan",
     "dates": {
-        "start_date": "2017-01-01",
-        "end_date": "2018-01-01"
+        "start_date": toTimeStamp("2017-01-01"),
+        "end_date": toTimeStamp("2018-01-01")
     },
     "goals": {
         "goal1": {

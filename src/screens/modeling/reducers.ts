@@ -23,8 +23,8 @@ export interface Scenario extends IdNameObject {
 }
 
 export interface DateRange {
-    start_date: string
-    end_date: string
+    start_date: firebase.firestore.Timestamp
+    end_date: firebase.firestore.Timestamp
 }
 
 export interface ScenarioDetails extends Scenario {

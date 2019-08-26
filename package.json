@@ -43,6 +43,7 @@
     "@types/clean-webpack-plugin": "0.1.2",
     "@types/copy-webpack-plugin": "^4.4.2",
     "@types/expect-puppeteer": "^3.3.1",
+    "@types/googlemaps": "^3.37.4",
     "@types/gulp": "^4.0.5",
     "@types/html-webpack-plugin": "^3.2.0",
     "@types/jest": "^24.0.0",

@@ -398,7 +398,8 @@ export const SharedStyles = css`
     outline: none;
     border-color: #909090;
   }
-  .input_half select {
+
+  .input_full select, .input_half select {
     display: block;
     width: 200px;
     border: 1px solid #D0D0D0;
@@ -416,6 +417,10 @@ export const SharedStyles = css`
     outline: none;
     border-color: #909090;
   }
+  .input_full select {
+    width: 100%;
+  }
+
   .input_full label,
   .input_half label {
     font-weight: bold;
@@ -595,6 +600,39 @@ export const SharedStyles = css`
     border: none;
   }
   
+  /* Input type = File styles */
+  [type="file"] {
+    border: 0;
+    clip: rect(0, 0, 0, 0);
+    height: 1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute !important;
+    white-space: nowrap;
+    width: 1px;
+  }
+   
+  [type="file"] + label {
+    background-color: #f1951b;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 13px;
+    box-shadow: 0 0.3125rem 0.625rem -0.125rem #cfcfcf;
+    cursor: pointer;
+    display: inline-block;
+    padding: 10px;
+  }
+    
+  [type="file"]:focus + label,
+  [type="file"] + label:hover {
+      background-color: #ffa52b;
+      box-shadow: 0 0.3125rem 0.625rem -0.125rem #aaa;
+  }
+    
+  [type="file"]:focus + label {
+    outline: 0px; // dotted #000;
+  }
+  /* End of input type = file */
 
   @media (max-width: 768px) {
     .breadcrumbs li {

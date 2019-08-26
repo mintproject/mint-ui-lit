@@ -10,4 +10,5 @@ fi
 echo "Tag: $TRAVIS_TAG"
 echo "Branch:  $TRAVIS_BRANCH"
 rsync -r --delete-after $SOURCE_DIR  mintui@mint.isi.edu:$DEST_DIR
+rsync -r --delete-after $SOURCE_DIR  mintui@54.148.90.74:$DEST_DIR
 exit $?	
