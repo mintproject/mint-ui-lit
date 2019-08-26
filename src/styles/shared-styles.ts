@@ -284,7 +284,7 @@ export const SharedStyles = css`
   }
 
   .page.fullpage[active] {
-    height: calc(100% - 50px);
+    height: 100%;
     left: 0px;
     right: 0px;
   }

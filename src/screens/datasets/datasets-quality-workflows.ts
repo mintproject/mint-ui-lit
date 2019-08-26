@@ -5,7 +5,8 @@ import { PageViewElement } from '../../components/page-view-element';
 import { SharedStyles } from '../../styles/shared-styles';
 import { store } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { goToPage } from '../../app/actions';
+
+import '../../components/image-gallery'
 
 @customElement('datasets-quality-workflows')
 export class DatasetsQualityWorkflows extends connect(store)(PageViewElement) {
@@ -16,42 +17,67 @@ export class DatasetsQualityWorkflows extends connect(store)(PageViewElement) {
             .cltrow wl-button {
                 padding: 2px;
             }
+            @media (min-width: 1025px) { 
+                .content {
+                    width: 75%;
+                }
+            }
+            @media (max-width: 1024) { 
+                .content {
+                    width: 100%;
+                }
+            }
+            .content {
+                margin: 0 auto;
+            }
             `,
             SharedStyles
         ];
     }
 
     protected render() {
+        let items = [
+            {   
+                label: "Ethiopia relief subbasins (94MB)",
+                src: "images/thumbnails/Ethiopia_relief_subbasins_med.png",
+                thumbnail: "images/thumbnails/Ethiopia_relief_subbasins_small.png",
+                external: "http://mint.isi.edu/data/Ethiopia_relief_subbasins_big.png"
+            },
+            {   
+                label: "Blue Nile Tributaries relief and boundaries (76MB)",
+                src: "images/thumbnails/Blue_Nile_Tribs_relief_and_boundaries_med.png",
+                thumbnail: "images/thumbnails/Blue_Nile_Tribs_relief_and_boundaries_small.png",
+                external: "http://mint.isi.edu/data/Blue_Nile_Tribs_relief_and_boundaries_big.png"},
+            {
+                label: "Ethiopia relief boundary",
+                src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Ethiopia_relief_boundary.png"
+            },
+            { 
+                label: "Guder relief rivers boundary",
+                src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Guder_relief_rivers_boundary.png"
+            },
+            { 
+                label: "Jamma relief river boundary",
+                src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Jamma_relief_river_boundary.png"
+            },
+            { 
+                label: "Muger relief rivers boundary",
+                src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Muger_relief_rivers_boundary.png"
+            },
+            {
+                label: "Dashilo relief river boundary",
+                src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Dashilo_relief_river_boundary.png"
+            },
+        ]
         return html`
-        <div class="cltrow">
-            <wl-button flat inverted @click="${()=> goToPage('datasets')}">
-                <wl-icon>arrow_back_ios</wl-icon>
-            </wl-button>
-            <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                <wl-title level="4" style="margin: 0px">Improve quality of datasets</wl-title>
-            </div>
-        </div>   
+        <div class="content">
+            <p>
+            This page is in progress, it will allow you to run tools that improve the quality of datasets. 
+            Below is an example of the results of a tool that improves the quality of elevation models for a small area of Ethiopia
+            </p>
+            <image-gallery style="--width: 300px; --height: 160px;" .items="${items}"></image-gallery>
+        </div>
 
-        <p>
-        This page is in progress, it will allow you to run tools that improve the quality of datasets. 
-        Below is an example of the results of a tool that improves the quality of elevation models for a small area of Ethiopia
-        </p>
-        <ul>
-            <li><a href="https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Ethiopia_relief_boundary.png"
-                >Ethiopia relief boundary</a>. 
-                <a href="http://mint.isi.edu/dev/data/Ethiopia_relief_subbasins_big.png">Ethiopia relief subbasins (94MB)</a>
-            </li>
-            <li><a href="http://mint.isi.edu/dev/data/Blue_Nile_Tribs_relief_and_boundaries_big.png"
-                >Blue Nile Tributaries relief and boundaries (76MB)</a></li>
-            <li><a href="https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Guder_relief_rivers_boundary.png"
-                >Guder relief rivers boundary</a></li>
-            <li><a href="https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Jamma_relief_river_boundary.png"
-                >Jamma relief river boundary</a></li>
-            <li><a href="https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Muger_relief_rivers_boundary.png"
-                >Muger relief rivers boundary</a></li>
-            <li><a href="https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Dashilo_relief_river_boundary.png"
-                >Dashilo relief river boundary</a></li>
-        </ul>
         `
     }
 }

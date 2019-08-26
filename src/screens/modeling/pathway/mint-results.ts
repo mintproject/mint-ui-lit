@@ -94,6 +94,11 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                         html``
                     }
                     <table class="pure-table pure-table-striped" id="results_table">
+                        <colgroup>
+                            <col span="1" style="width: 35%;">
+                            <col span="1" style="width: 65%;">
+                            <col span="1" style="width: 176px;">
+                        </colgroup>
                         <thead>
                             <tr>
                                 ${!readmode ? html`<th></th>`: html``}
@@ -146,7 +151,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                             `
                                         }
                                         return html`
-                                            <a href="${BASE_HREF}datasets/browse/${result}">${result}</a> <br />
+                                            <a href="${BASE_HREF}datasets/browse/${result}">${result.split('/').pop()}</a> <br />
                                         `;
                                     })}
                                     </td>
@@ -197,13 +202,14 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     }
 
     _getModelURL (model:Model) {
-        return this._selectedRegion + '/models/explore/' + model.original_model + '/'
+        return this._regionid + '/models/explore/' + model.original_model + '/'
                + model.model_version + '/' + model.model_configuration + '/'
                + model.localname;
     }
 
     stateChanged(state: RootState) {
         super.setUser(state);
+        super.setRegionId(state);
         super.setPathway(state);
     }
 
