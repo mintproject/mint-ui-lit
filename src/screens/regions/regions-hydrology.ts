@@ -67,12 +67,14 @@ export class RegionsHydrology extends PageViewElement {
                 src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Dashilo_relief_river_boundary.png"},
         ]
         return html`
-        <div class="content">
+        <div style="display:flex; width:100%; height: 100%">
             <regions-editor active style="flex-grow:1"
                 regionType="Hydrology" 
                 parentRegionId="${this._regionid}"
             ></regions-editor>
+        </div>
 
+        <div class="content">
             <p>
                 This page is in progress, it will allow you to run tools to identify hydrological regions of interest. 
                 Below are some example hydrological regions identified for South Sudan:

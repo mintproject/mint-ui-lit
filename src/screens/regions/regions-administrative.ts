@@ -21,10 +21,12 @@ export class RegionsAdministrative extends PageViewElement {
 
     protected render() {
         return html`
+        <div style="display:flex; width:100%; height: 100%">
             <regions-editor active
                 regionType="Administrative" 
                 parentRegionId="${this._regionid}"
             ></regions-editor>
+        </div>
         `;
     }
 }
