@@ -64,6 +64,9 @@ export class ModelsHome extends connect(store)(PageViewElement) {
         switch (this._subpage) {
             case 'explore':
                 nav.push({label: 'Model Catalog', url: 'models/explore'});
+                if (this._selectedModelId) {
+                    nav.push({label: this._selectedModelId, url: 'models/explore/'+this._selectedModelId });
+                }
                 break;
             case 'register':
                 nav.push({label: 'Add Models', url: 'models/register'});
@@ -76,10 +79,6 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                 break;
             default:
                 break;
-        }
-
-        if (this._selectedModelId) {
-            nav.push({label: this._selectedModelId, url: 'models/explore/'+this._selectedModelId });
         }
 
         return html`

@@ -25,7 +25,8 @@ export class ModelFacet extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _model! : FetchedModel;
 
-    private _id : String = '';
+    private _baseUrl : String = '';
+    private _optUrl : String = '';
 
     constructor () {
         super();
@@ -217,7 +218,7 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                         ${this._model.keywords?  html`${this._model.keywords.join(', ')}` : html`No keywords`}
                     </span>
                     <span class="details-button"
-                          @click="${()=>{goToPage('models/explore/' + this._id)}}"
+                          @click="${()=>{goToPage(this._optUrl || this._baseUrl)}}"
                            > More details </span>
                   </div>
                 </td>
@@ -234,15 +235,28 @@ export class ModelFacet extends connect(store)(PageViewElement) {
     }
 
     firstUpdated() {
-        let sp = this.uri.split('/');
-        if (sp.length > 1) {
-            this._id = sp[sp.length - 1];
-        }
+        this._baseUrl = 'models/explore/' + this.uri.split('/').pop();
     }
 
     stateChanged(state: RootState) {
-        if (state.explorer && state.explorer.models) {
-            this._model = state.explorer.models[this.uri];
+        if (state.explorer) {
+            if (state.explorer.models) {
+                this._model = state.explorer.models[this.uri];
+            }
+            if (state.explorer.versions && state.explorer.versions[this.uri] &&
+                state.explorer.versions[this.uri].length > 0) {
+                let ver = state.explorer.versions[this.uri][0];
+                this._optUrl = this._baseUrl + '/' + ver.uri.split('/').pop();
+                if (ver.configs && ver.configs.length > 0) {
+                    let cfg = ver.configs[0];
+                    this._optUrl += '/' + cfg.uri.split('/').pop();
+                    if (cfg.calibrations && cfg.calibrations.length > 0) {
+                        this._optUrl += '/' + cfg.calibrations[0].uri.split('/').pop();
+                    }
+                }
+            } else {
+                this._optUrl = '';
+            }
         }
     }
 }
