@@ -4,8 +4,8 @@ import { RootState } from "../../../app/store";
 //import { UriModels, FetchedModel } from "./reducers";
 import { UriModels } from "./reducers";
 
-import { apiFetch, VER_AND_CONF, MODELS, GET_IO, IO_VARS_AND_UNITS, EXPLANATION_DIAGRAMS,
-         COMPATIBLE_INPUT, COMPATIBLE_OUTPUT, MODEL_METADATA, GET_PARAMETERS, SEARCH_BY_VAR_NAME } from './api-fetch';
+import { apiFetch, VERSIONS_FOR_MODEL, MODELS, IO_AND_VARS_SN_FOR_CONFIG, VARS_SN_AND_UNITS_FOR_IO, DIAGRAMS_FOR_MODEL_CONFIG,
+         INPUT_COMPATIBLE_FOR_CONFIG, OUTPUT_COMPATIBLE_FOR_CONFIG, METADATA_FOR_MODEL_CONFIG, PARAMETERS_FOR_CONFIG, SEARCH_MODEL_BY_VAR_SN } from './api-fetch';
 
 export const EXPLORER_FETCH = 'EXPLORER_FETCH';
 export const EXPLORER_VERSIONS = 'EXPLORER_VERSIONS'
@@ -69,7 +69,7 @@ export const explorerFetch: ActionCreator<ExplorerThunkResult> = () => (dispatch
 export const explorerFetchVersions: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
     console.log('Fetching version for', uri);
     apiFetch({
-        type: VER_AND_CONF,
+        type: VERSIONS_FOR_MODEL,
         model: uri
     }).then(fetched => {
         let data = fetched.reduce((acc:any, obj:any) => {
@@ -106,7 +106,7 @@ export const explorerFetchVersions: ActionCreator<ExplorerThunkResult> = (uri:st
 export const explorerFetchIO: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
     console.log('Fetching IO for', uri);
     apiFetch({
-        type: GET_IO,
+        type: IO_AND_VARS_SN_FOR_CONFIG,
         config: uri,
         rules: {
             io: {newKey: 'uri'},
@@ -138,7 +138,7 @@ export const explorerFetchIO: ActionCreator<ExplorerThunkResult> = (uri:string) 
 export const explorerFetchIOVarsAndUnits: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
     console.log('Fetching variables and units for', uri);
     apiFetch({
-        type: IO_VARS_AND_UNITS,
+        type: VARS_SN_AND_UNITS_FOR_IO,
         io: uri,
         rules: {
             vp: {newKey: 'uri'},
@@ -162,7 +162,7 @@ export const explorerFetchCompatibleSoftware: ActionCreator<ExplorerThunkResult>
     }
 
     apiFetch({
-        type: COMPATIBLE_OUTPUT,
+        type: OUTPUT_COMPATIBLE_FOR_CONFIG,
         config: uri,
         rules: compRule
     }).then(fetched => {
@@ -174,7 +174,7 @@ export const explorerFetchCompatibleSoftware: ActionCreator<ExplorerThunkResult>
     })
 
     apiFetch({
-        type: COMPATIBLE_INPUT,
+        type: INPUT_COMPATIBLE_FOR_CONFIG,
         config: uri,
         rules: compRule
     }).then(fetched => {
@@ -196,7 +196,7 @@ export const explorerFetchMetadata: ActionCreator<ExplorerThunkResult> = (uri:st
     };
 
     apiFetch({
-        type: MODEL_METADATA,
+        type: METADATA_FOR_MODEL_CONFIG,
         modelConfig: uri,
         rules: {
             input_variables: {newValue: parseUris},
@@ -223,7 +223,7 @@ export const explorerFetchParameters: ActionCreator<ExplorerThunkResult> = (uri:
     console.log('Fetching parameters for', uri);
 
     apiFetch({
-        type: GET_PARAMETERS,
+        type: PARAMETERS_FOR_CONFIG,
         config: uri,
         rules: {ptype: {newKey:'type', newValue: (old:any) => {
             let sp = old.split('#');
@@ -241,7 +241,7 @@ export const explorerFetchParameters: ActionCreator<ExplorerThunkResult> = (uri:
 export const explorerFetchExplDiags: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
     console.log('Fetching exploration diagrams for', uri);
     apiFetch({
-        type: EXPLANATION_DIAGRAMS,
+        type: DIAGRAMS_FOR_MODEL_CONFIG,
         v: uri,
         rules: {
             img: {newKey: 'uri'},
@@ -258,7 +258,7 @@ export const explorerFetchExplDiags: ActionCreator<ExplorerThunkResult> = (uri:s
 export const explorerSearchByVarName: ActionCreator<ExplorerThunkResult> = (text:string) => (dispatch) => {
     console.log('Searching models by variable name:', text);
     apiFetch({
-        type: SEARCH_BY_VAR_NAME,
+        type: SEARCH_MODEL_BY_VAR_SN,
         text: text,
         rules: {
             c: {newKey: 'config'},

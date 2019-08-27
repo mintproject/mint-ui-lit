@@ -10,7 +10,7 @@ export const MODELS_VARIABLES_QUERY = 'MODELS_VARIABLES_QUERY';
 export const MODELS_LIST = 'MODELS_LIST';
 export const MODELS_DETAIL = 'MODELS_DETAIL';
 
-import { apiFetch,  GET_CALIBRATIONS_FOR_VARIABLE, MODEL_METADATA_NOIO, GET_PARAMETERS, CONFIG_IO_VARS_STDNAMES, GET_CONFIGS_FOR_VARIABLE } from './model-explore/api-fetch';
+import { apiFetch,  CALIBRATIONS_FOR_VAR_SN, METADATA_NOIO_FOR_MODEL_CONFIG, PARAMETERS_FOR_CONFIG, IO_AND_VARS_SN_FOR_CONFIG } from './model-explore/api-fetch';
 import { Dataset } from "../datasets/reducers";
 
 export interface ModelsActionList extends Action<'MODELS_LIST'> { models: Model[] };
@@ -93,7 +93,7 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
     Promise.all(
         variables.map((variable) => {
             return apiFetch({
-                type: GET_CALIBRATIONS_FOR_VARIABLE,
+                type: CALIBRATIONS_FOR_VAR_SN,
                 std: variable,
                 rules: {
                     'model': { 
@@ -123,7 +123,7 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                 //console.log(modelid);
                 return Promise.all([
                     apiFetch({
-                        type: MODEL_METADATA_NOIO,
+                        type: METADATA_NOIO_FOR_MODEL_CONFIG,
                         modelConfig: modelid,
                         rules: {
                             'targetVariables': {
@@ -134,11 +134,11 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                         }
                     }),
                     apiFetch({
-                        type: CONFIG_IO_VARS_STDNAMES,
+                        type: IO_AND_VARS_SN_FOR_CONFIG,
                         config: modelid
                     }),
                     apiFetch({
-                        type: GET_PARAMETERS,
+                        type: PARAMETERS_FOR_CONFIG,
                         config: modelid
                     }),
                 ]).then((values) => {
