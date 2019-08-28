@@ -20,6 +20,7 @@ import { store, RootState } from './store';
 import {
   navigate, fetchUser, signOut, signIn, goToPage, fetchUserPreferences,
 } from './actions';
+import { listTopRegions } from '../screens/regions/actions';
 
 import '../screens/modeling/modeling-home';
 import '../screens/datasets/datasets-home';
@@ -134,7 +135,7 @@ export class MintApp extends connect(store)(LitElement) {
   protected render() {
     // Anything that's related to rendering should be done in here.
     return html`
-      <!-- Overall app layout -->
+    <!-- Overall app layout -->
 
     <div class="appframe">
       <!-- Navigation Bar -->
@@ -148,7 +149,7 @@ export class MintApp extends connect(store)(LitElement) {
                   class=${(this._page == 'home' ? 'active' : '')}>
                   <div style="vertical-align:middle">
                     ▶
-                    ${this._selectedRegion ?  this._selectedRegion : "Select Country"}
+                    ${this._selectedRegion ?  this._selectedRegion.toUpperCase() : "Select Country"}
                   </div>
               </li>
               ${!this._selectedRegion ? 
@@ -198,7 +199,6 @@ export class MintApp extends connect(store)(LitElement) {
       ${this.user ? 
         html `
         <div class="sectionframe">
-
           <div id="right">
             <div class="card">
               <!-- Main Pages -->
@@ -279,6 +279,7 @@ export class MintApp extends connect(store)(LitElement) {
     installRouter((location) => store.dispatch(navigate(decodeURIComponent(location.pathname))));
     store.dispatch(fetchUser());
     store.dispatch(fetchUserPreferences());
+    store.dispatch(listTopRegions());
   }
 
   protected updated(changedProps: PropertyValues) {
@@ -304,8 +305,11 @@ export class MintApp extends connect(store)(LitElement) {
     }*/
 
     let regionid = state.ui.selected_top_regionid;
-    if(regionid) {
-      this._selectedRegion = regionid.replace(/_/g, ' ').toUpperCase();
+    if (state && state.regions && state.regions.regions && state.regions.regions[regionid]) {
+        this._selectedRegion = state.regions.regions[regionid].name;
     }
+    /*if(regionid) {
+      this._selectedRegion = regionid.replace(/_/g, ' ').toUpperCase();
+    }*/
   }
 }

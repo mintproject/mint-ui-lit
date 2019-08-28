@@ -245,7 +245,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
   }
 
   protected firstUpdated() {    
-    store.dispatch(listTopRegions());
+    //store.dispatch(listTopRegions()); done by mint-app
     store.dispatch(listScenarios());
     // list summaries of datasets, models, etc
   }

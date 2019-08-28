@@ -23,6 +23,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     @property({type: String})
     public regionType: string;
 
+    @property({type: String})
+    private _parentRegionName: string;
+
     @property({type: Object})
     private _regions: RegionList = {};
 
@@ -40,12 +43,16 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         return [
             SharedStyles,
             css `
+            :host {
+                width: 100%;
+            }
+
             .cltrow wl-button {
                 padding: 2px;
             }
 
             .map {
-                height: calc(100% - 45px);
+                height: var(--map-height, calc(100% - 45px));
                 width: 100%;
             }
             `
@@ -54,18 +61,15 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     protected render() {
         return html`
-        <div class="cltrow">
-            <wl-button flat inverted @click="${()=> goToPage('regions')}">
-                <wl-icon>arrow_back_ios</wl-icon>
-            </wl-button>
-            <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                <wl-title level="4" style="margin: 0px">${this.regionType} Regions</wl-title>
-            </div>
-            <wl-icon @click="${this._showAddRegionsDialog}" 
-                class="actionIcon bigActionIcon">note_add</wl-icon>
-        </div>
         ${this.regionType ? 
-            html`<p>The following shows the current ${this.regionType} areas of ${this.parentRegionId}</p>` : ""}
+        html`
+        <p>
+            The following map shows the current ${this.regionType} areas of ${this._parentRegionName || this._regionid}
+            <wl-icon @click="${this._showAddRegionsDialog}" style="float:right;"
+                class="actionIcon bigActionIcon">note_add</wl-icon>
+        </p>
+        `
+        : ""}
 
         <!-- FIXME: Latitude, Longitude, Zoom should be automatically generated from the regions -->
         <google-map class="map" api-key="${GOOGLE_API_KEY}" 
@@ -257,6 +261,11 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 this.clearMap();
                 this._regions = qr[this._regionid][this.regionType];
                 console.log(this._regions);
+            }
+
+            // Set parent region
+            if (state && state.regions && state.regions.regions && state.regions.regions[this._regionid]) {
+                this._parentRegionName = state.regions.regions[this._regionid].name;
             }
         }
     }
