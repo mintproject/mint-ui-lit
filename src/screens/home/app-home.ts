@@ -109,9 +109,10 @@ export class AppHome extends connect(store)(PageViewElement) {
       store.dispatch(selectTopRegion(regionid));
     }
 
+    /* This is done by mint-app now
     protected firstUpdated() {
       store.dispatch(listTopRegions());
-    }
+    }*/
 
     // This is called every time something is updated in the store.
     stateChanged(state: RootState) {
