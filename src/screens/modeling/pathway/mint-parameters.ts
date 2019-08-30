@@ -76,6 +76,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                 let input_parameters = model.input_parameters
                     .filter((input) => !input.value)
                     .sort((a, b) => a.name.localeCompare(b.name));
+                console.log(input_parameters);
 
                 return html`
                 <li>
@@ -98,7 +99,16 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                                 // Already present: Show selections
                                 return html`
                                 <tr>
-                                    <td>${input.name}</td>
+                                    <td>
+                                        <wl-title level="5">${input.name}</wl-title>
+                                        <div class="caption">${input.description}.</div>
+                                        <div class="caption">
+                                        ${input.min && input.max ? 
+                                            html `The range is from ${input.min} to ${input.max}.` : html``
+                                        }
+                                        ${input.default ? html` Default is ${input.default}` : html``}
+                                        </div>
+                                    </td>
                                     <td>${bindings.join(",")}</td>
                                 </tr>
                                 `;
