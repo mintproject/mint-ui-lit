@@ -44,23 +44,11 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
             return html ``;
         }
 
-        //TODO: This should be done by API
-        let externalViz : string;
-        switch (this.pathway.id) {
-            case 'eBzD5YQiwpW0nbjdthoM':
-                externalViz = 'https://viz.mint.isi.edu/bokeh/econ_viz_live'
-                break;
-            case 'PcFcTdadrAaU3xAJI17D':
-                externalViz = 'https://viz.mint.isi.edu/bokeh/cycles_viz'
-                break;
-        }
-
-        // TODO: select an apropiate title.
         let responseV = this.pathway.response_variables.length > 0?
                             getVariableLongName(this.pathway.response_variables[0]) : '';
         let drivingV = this.pathway.driving_variables.length > 0?
                             getVariableLongName(this.pathway.driving_variables[0]) : '';
-        
+
         return html`
         <style>
         i {
@@ -69,12 +57,12 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
             color: #999;
         }
         </style>
-        ${externalViz? html`
+        ${(this.pathway.visualizations && this.pathway.visualizations.length > 0)? html`
             <h2>Visualizations 
                 ${responseV? 'of response variable ' + responseV : ''}
                 ${drivingV? 'to explore driving variable ' + drivingV : ''}
             </h2>
-            <iframe src="${externalViz}"></iframe>
+            ${this.pathway.visualizations.map((viz) => this._renderVisualization(viz))}
             <fieldset class="notes">
                 <legend>Notes</legend>
                 <textarea id="notes">Write some notes here.</textarea>
@@ -88,6 +76,15 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
             ${this._renderSummary()}
         `}
         `;
+    }
+
+    _renderVisualization (visualization: {[type:string]: string, [url:string]: string}) {
+        switch (visualization.type) {
+            case 'web':
+                return html`<iframe src="${visualization.url}"></iframe>`;
+            default:
+                return html`<a href="${visualization.url}" target="_blank">${visualization.url}</a>`;
+        }
     }
 
     _renderSummary () {

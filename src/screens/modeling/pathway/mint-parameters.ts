@@ -76,7 +76,6 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                 let input_parameters = model.input_parameters
                     .filter((input) => !input.value)
                     .sort((a, b) => a.name.localeCompare(b.name));
-                console.log(input_parameters);
 
                 return html`
                 <li>
