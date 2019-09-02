@@ -66,18 +66,23 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
                             Response Variables
                         </wl-title>
                         <ul>
-                            ${responseids.map((responseid) => {
-                                return html`
-                                <li>
-                                    <a id="response_variable_href" href="${BASE_HREF}variables/${responseid}">${getVariableLongName(responseid)}</a>
-                                    <wl-tooltip anchor="#response_variable_href" 
-                                        .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
-                                        anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
-                                        Standard MINT name: ${responseid}
-                                    </wl-tooltip>                                    
-                                </li>
-                                `
-                            })}
+                            ${responseids.length > 0 ?
+                                responseids.map((responseid) => {
+                                    console.log('>', responseid);
+                                    return html`
+                                    <li>
+                                        <a id="response_variable_href" href="${BASE_HREF}variables/${responseid}">${getVariableLongName(responseid)}</a>
+                                        <wl-tooltip anchor="#response_variable_href" 
+                                            .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
+                                            anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
+                                            Standard MINT name: ${responseid}
+                                        </wl-tooltip>                                    
+                                    </li>
+                                    `
+                                })
+                                :
+                                html`None Selected`
+                            }
                         </ul>
                     </li>
                     <li>
