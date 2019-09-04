@@ -94,36 +94,31 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                         <tbody>
                         ${input_parameters.map((input) => {
                             let bindings:string[] = ensembles[input.id!];
-                            if(bindings && bindings.length > 0 && !this._editMode) {
-                                // Already present: Show selections
-                                return html`
-                                <tr>
-                                    <td>${input.name}</td>
-                                    <td>${bindings.join(",")}</td>
-                                </tr>
-                                `;
-                            }
-                            else {
-                                return html `
-                                <tr>
-                                    <td>
-                                        <wl-title level="5">${input.name}</wl-title>
-                                        <div class="caption">${input.description}.</div>
-                                        <div class="caption">
-                                        ${input.min && input.max ? 
-                                            html `The range is from ${input.min} to ${input.max}.` : html``
-                                        }
-                                        ${input.default ? html` Default is ${input.default}` : html``}
-                                        </div>
-                                    </td>
-                                    <td>
+                            return html`
+                            <tr>
+                                <td>
+                                    <wl-title level="5">${input.name}</wl-title>
+                                    <div class="caption">${input.description}.</div>
+                                    <div class="caption">
+                                    ${input.min && input.max ? 
+                                        html `The range is from ${input.min} to ${input.max}.` : html``
+                                    }
+                                    ${input.default ? html` Default is ${input.default}` : html``}
+                                    </div>
+                                </td>
+                                <td>
+                                    ${(bindings && bindings.length > 0 && !this._editMode) ? 
+                                        bindings.join(",")
+                                        :
+                                        html`
                                         <div class="input_full">
                                             <input type="text" name="${input.id}" value="${(bindings||[]).join(",")}"></input>
                                         </div>
-                                    </td>
-                                </tr>
-                                `;
-                            }
+                                        `
+                                    }
+                                </td>
+                            </tr>
+                            `
                         })}
                         </tbody>
                         </table>
