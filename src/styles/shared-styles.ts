@@ -75,7 +75,7 @@ export const SharedStyles = css`
     color: #06436c;
   }
   wl-title[level="4"] {
-    color: #06436c
+    color: #0f7acf
   }
 
   wl-list-item.active {

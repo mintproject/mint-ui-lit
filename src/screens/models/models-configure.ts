@@ -10,7 +10,6 @@ import { goToPage } from '../../app/actions';
 import { explorerFetch, explorerFetchVersions, explorerFetchParameters } from './model-explore/actions';
 
 import "weightless/progress-spinner";
-import { UriModels } from './model-explore/reducers';
 
 @customElement('models-configure')
 export class ModelsConfigure extends connect(store)(PageViewElement) {
@@ -18,7 +17,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     private _hideModels : boolean = false;
 
     @property({type: Object})
-    private _models : UriModels = null;
+    private _models : any = null;
 
     @property({type: Object})
     private _versions : any = {};
@@ -221,7 +220,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 </tbody>
             </table>
             <div style="height:50px;">
-                <wl-button style="float:right; padding: 10px; -button-padding: 5px;" 
+                <wl-button style="float:right; -button-padding: 5px;" 
                     @click="${()=>{alert('Sorry! Save function its not available yet.')}}">
                     <wl-icon>save</wl-icon>&ensp; Save</wl-button>
             </div>
