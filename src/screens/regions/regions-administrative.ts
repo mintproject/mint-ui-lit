@@ -21,8 +21,7 @@ export class RegionsAdministrative extends PageViewElement {
     protected render() {
         return html`
         <regions-editor active
-            regionType="Administrative" 
-            parentRegionId="${this._regionid}"
+            regionType="Administrative"
         ></regions-editor>
         `;
     }
