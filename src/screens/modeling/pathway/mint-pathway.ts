@@ -64,7 +64,7 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
             border: 1px solid #F0F0F0;
             left: 0px;
             right: 0px;
-            /*height: calc(100% - 62px);*/
+            height: calc(100% - 100px);
             overflow: auto;
             background: #FFFFFF;
         }
