@@ -34,8 +34,7 @@ export interface ScenarioDetails extends Scenario {
     unsubscribe?: Function    
 }
 
-export interface Pathway {
-    id?: string
+export interface Pathway extends IdNameObject {
     driving_variables: string[]
     response_variables: string[]
     models?: ModelMap
