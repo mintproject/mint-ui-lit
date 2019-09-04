@@ -64,7 +64,7 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
             border: 1px solid #F0F0F0;
             left: 0px;
             right: 0px;
-            height: calc(100% - 62px);
+            /*height: calc(100% - 62px);*/
             overflow: auto;
             background: #FFFFFF;
         }
@@ -196,9 +196,6 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
         }
 
         return html`
-            <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-              <wl-title level="4">${this.subgoal ? this.subgoal.name : ""}</wl-title>
-            </div>
             ${this._renderProgressBar()}
 
             <div class="card2">
