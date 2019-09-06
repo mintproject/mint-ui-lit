@@ -11,8 +11,8 @@ import { FetchedModel } from "./api-interfaces";
 import { ExplorerStyles } from './explorer-styles'
 import { explorerCompareModel } from './ui-actions'
 
-@customElement('model-facet')
-export class ModelFacet extends connect(store)(PageViewElement) {
+@customElement('model-preview')
+export class ModelPreview extends connect(store)(PageViewElement) {
     @property({type: String})
         uri : string = "";
 

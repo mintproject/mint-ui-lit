@@ -20,8 +20,8 @@ import "weightless/icon";
 import "weightless/progress-spinner";
 import '../../../components/image-gallery'
 
-@customElement('model-facet-big')
-export class ModelFacetBig extends connect(store)(PageViewElement) {
+@customElement('model-view')
+export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _model! : FetchedModel;
     _modelId: string = '';
@@ -97,6 +97,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
             css `
                 :host {
                     display: block;
+                    margin: 0 auto;
                     height: 100%;
                     overflow-y: scroll;
                 }
@@ -116,7 +117,7 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                 table {
                   margin: 0 auto;
                   border: 0px solid black;
-                  width: 80%;
+                  //width: 80%;
                   min-width: 600px;
                   border-spacing: 0;
                   border-collapse: collapse;
@@ -289,6 +290,35 @@ export class ModelFacetBig extends connect(store)(PageViewElement) {
                     right: 42%;
                     position: absolute;
                     z-index: 99;
+                }
+                
+                .wrapper {
+                    display:grid;
+                    grid-gap:10px;
+                    grid-template-columns: 1fr 1fr 1fr 1fr;
+                    //border: 1px dotted red;
+                }
+                
+                .one {
+                    //border:1px dotted blue;
+                    grid-column: 1 / 2;
+                    grid-row: 1;
+                    padding: 16px;
+                }
+
+                .one > img {
+                    max-height: 200px;
+                }
+
+                .two > wl-select {
+                    --input-border-width: 0px;
+                }
+
+                
+                .two {
+                    //border:1px dotted green;
+                    grid-column: 2 / 5;
+                    grid-row: 1;
                 }`
         ];
     }

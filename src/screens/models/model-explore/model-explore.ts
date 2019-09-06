@@ -14,8 +14,8 @@ import explorer from "./reducers";
 import explorerUI from "./ui-reducers";
 import { UriModels } from './reducers';
 
-import './model-facet'
-import './model-facet-big'
+import './model-preview'
+import './model-view'
 import './model-compare'
 
 import "weightless/textfield";
@@ -85,7 +85,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 width: 100%;
             }
 
-            #model-search-results > model-facet {
+            #model-search-results > model-preview {
                 margin: 0 auto;
                 display: block;
                 width: 75%;
@@ -131,7 +131,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         return html`
             ${this._selectedUri? 
                 //Display only selected model or the search
-                html`<model-facet-big></model-facet-big>`
+                html`<model-view></model-view>`
                 : this._renderSearch()
             }
         `;
@@ -167,12 +167,12 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 </div>
 
                 ${Object.keys(this._models).map( (key:string) => html`
-                    <model-facet 
+                    <model-preview 
                         uri="${key}"
                         altDesc="${this._variables[key] ? this._variables[key] : ''}"
                         altTitle="${this._variables[key] ? 'With Variables ('+this._variables[key].split(';').length+'):' : ''}"
                         .style="${!this._activeModels[key]? 'display: none;' : ''}">
-                    </model-facet>
+                    </model-preview>
                     `
                 )}
             </div>
