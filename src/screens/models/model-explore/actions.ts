@@ -45,14 +45,12 @@ export const explorerFetch: ActionCreator<ExplorerThunkResult> = () => (dispatch
             'categories': {newValue: (value:any) => value.split(', ')},
             'modelType': {
                 newKey: 'type', 
-                newValue: (value:any) => {
-                    let sp = value.split('#');
-                    return sp[sp.length-1];
-                }
+                newValue: (old:any) => old.replace(/(.*?#)(.*)(Model)/, '$2').replace('-', ' ')
             },
-            'os': {newValue: (old:any)=>old.split('; ')},
-            'pl': {newValue: (old:any)=>old.split(';')},
-            'keywords': {newValue: (old:any)=>old.split(/ *; */)}
+            'os': {newValue: (old:any)=>old.split(/ *; */)},
+            'pl': {newValue: (old:any)=>old.split(/ *; */)},
+            'keywords': {newValue: (old:any)=>old.split(/ *; */)},
+            'purpose': {newValue: (old:any)=>old.split(/ *; */)}
         }
     }).then( (fetched) => {
         let data : UriModels = fetched.reduce((acc:UriModels, obj:any) => {

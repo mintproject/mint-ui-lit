@@ -82,7 +82,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
         }
 
         return html`
-            <nav-title .nav="${nav}" max="2"></nav-title>
+            <nav-title .nav="${nav}"></nav-title>
 
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
                 <a href="${this._regionid}/models/explore">
