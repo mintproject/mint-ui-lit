@@ -1,7 +1,7 @@
 import { RootAction } from "./store";
 import { Reducer } from "redux";
 import { UI_SELECT_SUBGOAL, UI_SELECT_PATHWAY, UI_SELECT_PATHWAY_SECTION, 
-    UI_SELECT_SCENARIO, UI_SELECT_TOP_REGION } from "./ui-actions";
+    UI_SELECT_SCENARIO, UI_SELECT_TOP_REGION, UI_SELECT_THREAD } from "./ui-actions";
 
 export interface UIState {
     selected_top_regionid?:string
@@ -19,6 +19,11 @@ const ui: Reducer<UIState, RootAction> = (state = INITIAL_STATE, action) => {
             return {
                 ...state,
                 selected_top_regionid: action.regionid,
+            }
+        case UI_SELECT_THREAD:
+            return {
+                ...state,
+                selected_top_regionid: action.threadid,
             }
         case UI_SELECT_SCENARIO:
             return {

@@ -15,7 +15,7 @@ import { queryDatasetDetail } from '../screens/datasets/actions';
 import { queryModelDetail } from '../screens/models/actions';
 import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetConfig,
          explorerSetCalibration } from '../screens/models/model-explore/ui-actions';
-import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion } from './ui-actions';
+import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread } from './ui-actions';
 import { auth } from '../config/firebase';
 import { User } from 'firebase';
 import { UserPreferences } from './reducers';
@@ -123,6 +123,7 @@ export const navigate: ActionCreator<ThunkResult> = (path: string) => (dispatch)
 
 const loadPage: ActionCreator<ThunkResult> = 
     (page: string, subpage: string, params: Array<String>) => (dispatch) => {
+
   switch(page) {
     case 'home':
       import('../screens/home/app-home').then((_module) => {
@@ -210,6 +211,21 @@ const loadPage: ActionCreator<ThunkResult> =
             //store.dispatch(queryVariableDetail(params[0]));
           }
         });
+        break;
+    case 'messages':
+        if(subpage == 'home') {
+          // No parameters. Load Modeling Home (List of Scenarios)
+          import('../screens/messages/messages-home').then((_module) => {
+          });
+        }
+        else if(subpage == "thread") {
+          // Scenario passed in. Load scenario
+          import('../screens/messages/messages-thread').then((_module) => {
+            if(params.length > 0) {
+              store.dispatch(selectThread(params[0]));
+            }
+          });   
+        }
         break;
     default:
       page = 'view404';

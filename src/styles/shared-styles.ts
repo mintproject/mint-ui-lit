@@ -374,7 +374,7 @@ export const SharedStyles = css`
     font-size: 85%;
   }
 
-  .input_full input {
+  .input_full input, .input_full textarea {
     width: 100%;
     border: 0px;
     height: 30px;
@@ -384,6 +384,9 @@ export const SharedStyles = css`
     border-bottom: 1px solid #D9D9D9;
     padding-bottom: 2px;
     font-weight: bold;
+  }
+  .input_full textarea {
+    height: 90px;
   }
   .input_half input {
     width: 188px;
@@ -395,6 +398,7 @@ export const SharedStyles = css`
     color: #393939;
   }
   .input_full input:focus,
+  .input_full textarea:focus,
   .input_half input:focus {
     outline: none;
     border-color: #909090;
