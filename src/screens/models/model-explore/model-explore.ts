@@ -91,6 +91,19 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 width: 75%;
             }
 
+            #model-view-cont {
+                margin: 0 auto;
+                overflow: scroll;
+                height: 100%;
+                width: 100%;
+            }
+
+            #model-view-cont > model-view {
+                margin: 0 auto;
+                display: block;
+                width: 75%;
+            }
+
             #model-search-form {
                 margin: 0 auto;
                 overflow: scroll;
@@ -131,7 +144,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         return html`
             ${this._selectedUri? 
                 //Display only selected model or the search
-                html`<model-view></model-view>`
+                html`<div id="model-view-cont"><model-view></model-view></fiv>`
                 : this._renderSearch()
             }
         `;

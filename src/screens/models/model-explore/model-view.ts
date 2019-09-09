@@ -96,14 +96,6 @@ export class ModelView extends connect(store)(PageViewElement) {
     static get styles() {
         return [SharedStyles, ExplorerStyles,
             css `
-                :host {
-                    width: 75%;
-                    display: block;
-                    margin: 0 auto;
-                    height: 100%;
-                    overflow-y: scroll;
-                }
-
                 #hack {
                     display: none;
                 }
@@ -294,6 +286,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                     z-index: 99;
                 }
                 
+                #edit-model-icon {
+                    float: right;
+                    --icon-size: 26px;
+                    padding-top: 4px;
+                    cursor: pointer;
+                }
+
                 .wrapper {
                     display:grid;
                     grid-gap:4px;
@@ -305,7 +304,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     display:grid;
                     grid-gap:5px;
                     grid-template-columns: 1fr 1fr;
-                    margin-bottom: 1em;
+                    margin-bottom: 5px;
                 }
                 
                 .col-img {
@@ -441,8 +440,8 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (!this._versions) {
             return html`<wl-progress-bar></wl-progress-bar>`;
         }
-        let hasCalibrations = (this._config && this._config.calibrations);
         let hasVersions = (this._versions.length > 0);
+        let hasCalibrations = !!(this._config && this._config.calibrations);
         return html`
             <wl-select label="Select a configuration" id="config-selector" @input="${this._onConfigChange}"
                 class="${hasVersions? '' : 'hidden'}">
@@ -459,9 +458,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </div>
             </wl-select>
             <wl-divider style="width: calc(100% - 32px);" class="${hasCalibrations? '': 'hidden'}"></wl-divider>
-
-            <div class="info-center ${hasVersions? 'hidden' : ''}">- No version available -<div>
-            <div class="info-center ${(hasVersions && !hasCalibrations)? '': 'hidden'}">- No calibration available <a>add one</a> -<div>
+            <div class="info-center ${hasVersions? 'hidden' : ''}">- No version available -</div>
+            <div class="info-center ${(hasCalibrations || !hasVersions || (hasVersions && !this._config))? 'hidden': ''}">- No calibration available <a>add one</a> -</div>
         `
     }
 
@@ -474,7 +472,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                     : html`<img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>`}
                 </div>
                 <div class="col-desc"style="text-align: justify;">
-                    <wl-title level="2">${this._model.label}</wl-title>
+                    <wl-title level="2">
+                        ${this._model.label}
+                        <a><wl-icon id="edit-model-icon">edit</wl-icon></a>
+                    </wl-title>
                     <wl-divider style="margin-bottom: .5em;"></wl-divider>
                     <wl-text >${this._model.desc}</wl-text>
                     <div class="inline-info">
@@ -611,7 +612,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         `
     }
 
-    _fancyLink (url) {
+    _renderLink (url) {
         let sp = url.split('/')
         return html`<a target="_blank" href="${url}">${sp[sp.length-1] || sp[sp.length-2]}</a>`
     }
@@ -635,17 +636,24 @@ export class ModelView extends connect(store)(PageViewElement) {
     ${this._model.pl?  html`<li><b>Programing languages:</b> ${this._model.pl.join(', ')}</li>` : ''}
     ${this._model.memReq?  html`<li><b>Memory requirements:</b> ${this._model.memReq}</li>` : ''}
     ${this._model.procReq?  html`<li><b>Processor requirements:</b> ${this._model.procReq}</li>` : ''}
-    ${this._model.downloadURL?  html`<li><b>Download:</b> ${this._fancyLink(this._model.downloadURL)}</li>` : ''}
-    ${this._model.sourceC?  html`<li><b>Source code:</b> ${this._fancyLink(this._model.sourceC)}</li>` : ''}
-    ${this._model.doc?  html`<li><b>Documentation:</b> ${this._fancyLink(this._model.doc)}</li>` : ''}
-    ${this._model.installInstr?  html`<li><b>Installation instructions:</b> ${this._fancyLink(this._model.installInstr)}</li>` : ''}
+    ${this._model.downloadURL?  html`<li><b>Download:</b> ${this._renderLink(this._model.downloadURL)}</li>` : ''}
+    ${this._model.sourceC?  html`<li><b>Source code:</b> ${this._renderLink(this._model.sourceC)}</li>` : ''}
+    ${this._model.doc?  html`<li><b>Documentation:</b> ${this._renderLink(this._model.doc)}</li>` : ''}
+    ${this._model.installInstr?  html`<li><b>Installation instructions:</b> ${this._renderLink(this._model.installInstr)}</li>` : ''}
                 </div>
             </div>
 
-            ${this._model.purpose? html`<b>Purpose:</b> ${this._model.purpose}`:html``}
+            ${this._model.purpose? html`
+            <details style="margin-bottom: 6px;">
+                <summary><b>Purpose</b></summary>
+                <ul>
+                ${this._model.purpose.map(a => a? html`<li>${a}.</li>`: '')}
+                </ul>
+            </details>`
+            :html``}
 
             ${this._model.assumptions? html`
-            <details style="margin-top: 10px;">
+            <details style="margin-bottom: 6px;">
                 <summary><b>Assumptions</b></summary>
                 <ul>
                 ${this._model.assumptions.split('.').map(a=> a?html`<li>${a}.</li>`:'')}
@@ -653,11 +661,63 @@ export class ModelView extends connect(store)(PageViewElement) {
             </details>
             `:html``}
 
-            ${this._modelMetadata? html`${this._renderMetadata('Model Metadata', this._modelMetadata)}`:html``}
-            ${this._versionMetadata? html`${this._renderMetadata('Version Metadata', this._versionMetadata)}`:html``}
-            ${this._configMetadata? html`${this._renderMetadata('Configuration Metadata', this._configMetadata)}`:html``}
-            ${this._calibrationMetadata? html`${this._renderMetadata('Calibration Metadata', this._calibrationMetadata)}`:html``}
+            ${this._renderMetadataTable()}
             ${this._renderGallery()}`
+    }
+
+    _renderMetadataTable () {
+        let meta = [];
+        if (this._configMetadata && this._configMetadata.length>0) meta.push(this._configMetadata[0]);
+        if (this._calibrationMetadata && this._calibrationMetadata.length>0) meta.push(this._calibrationMetadata[0]);
+
+        let features = [];
+        if (meta.filter((m:any) => m['regionName']).length>0)
+            features.push({name: 'Region name', render: (m) => m['regionName']})
+        if (meta.filter((m:any) => m['desc']).length>0)
+            features.push({name: 'Description', render: (m) => m['desc']})
+        if (meta.filter((m:any) => m['input_variables']).length>0)
+            features.push({name: 'Input Variables', render: (m) => m['input_variables'].join(', ')})
+        if (meta.filter((m:any) => m['output_variables']).length>0)
+            features.push({name: 'Output Variables', render: (m) => m['output_variables'].join(', ')})
+        if (meta.filter((m:any) => m['parameters']).length>0)
+            features.push({name: 'Parameters', render: (m) => m['parameters'].join(', ')})
+        if (meta.filter((m:any) => m['processes']).length>0)
+            features.push({name: 'Processes', render: (m) => m['processes'].join(', ')})
+        if (meta.filter((m:any) => m['gridType']).length>0)
+            features.push({name: 'Grid Type', render: (m) => m['gridType']})
+        if (meta.filter((m:any) => m['gridDim']).length>0)
+            features.push({name: 'Grid Dimentions', render: (m) => m['gridDim']})
+        if (meta.filter((m:any) => m['gridSpatial']).length>0)
+            features.push({name: 'Spatial resolution', render: (m) => m['gridSpatial']})
+        if (meta.filter((m:any) => m['paramAssignMethod']).length>0)
+            features.push({name: 'Parameter assignment method', render: (m) => m['paramAssignMethod']})
+        if (meta.filter((m:any) => m['adjustableVariables']).length>0)
+            features.push({name: 'Adjustable variables', render: (m) => (m['adjustableVariables']||[]).join(', ')})
+        if (meta.filter((m:any) => m['targetVariables']).length>0)
+            features.push({name: 'Target variables', render: (m) => (m['targetVariables']||[]).join(', ')})
+        if (meta.filter((m:any) => m['compLoc']).length>0)
+            features.push({name: 'Download', render: (m) => this._renderLink(m['compLoc'])})
+
+        return html`
+            <table class="pure-table pure-table-bordered">
+                <thead>
+                    <th></th>
+                    ${meta.map((m:any) => {console.log(m); return html`<th>${m.label}</th>`;})}
+                </thead>
+                <tbody>
+                    ${features.map((ft:any) => html`
+                    <tr>
+                        <td><b>${ft.name}</b></td>
+                        ${meta.map((m:any) => html`<td>${ft.render(m)}</td>`)}
+                    </tr>
+                    `)}
+                    <tr>
+                        <td>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
     }
 
     _renderTabIO () {
