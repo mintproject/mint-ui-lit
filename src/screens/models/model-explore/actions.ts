@@ -36,6 +36,10 @@ export type ExplorerAction = ExplorerActionFetch | ExplorerActionVersions | Expl
 // List all Model Configurations
 type ExplorerThunkResult = ThunkAction<void, RootState, undefined, ExplorerAction>;
 
+function debug (...args) {
+    console.log(...arguments);
+}
+
 export const explorerFetch: ActionCreator<ExplorerThunkResult> = () => (dispatch) => {
     apiFetch({
         type: MODELS,
@@ -65,14 +69,14 @@ export const explorerFetch: ActionCreator<ExplorerThunkResult> = () => (dispatch
 };
 
 export const explorerFetchVersions: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
-    console.log('Fetching version for', uri);
+    debug('Fetching version for', uri);
     apiFetch({
         type: VER_AND_CONF,
         model: uri
     }).then(fetched => {
         let data = fetched.reduce((acc:any, obj:any) => {
             if (!acc[obj.version]) {
-                acc[obj.version] = {uri: obj.version, label: obj.versionLabel};
+                acc[obj.version] = {uri: obj.version, label: obj.versionLabel, id: obj.versionId};
             }
 
             if (obj.config) {
@@ -102,7 +106,7 @@ export const explorerFetchVersions: ActionCreator<ExplorerThunkResult> = (uri:st
 }
 
 export const explorerFetchIO: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
-    console.log('Fetching IO for', uri);
+    debug('Fetching IO for', uri);
     apiFetch({
         type: GET_IO,
         config: uri,
@@ -134,7 +138,7 @@ export const explorerFetchIO: ActionCreator<ExplorerThunkResult> = (uri:string) 
 }
 
 export const explorerFetchIOVarsAndUnits: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
-    console.log('Fetching variables and units for', uri);
+    debug('Fetching variables and units for', uri);
     apiFetch({
         type: IO_VARS_AND_UNITS,
         io: uri,
@@ -152,7 +156,7 @@ export const explorerFetchIOVarsAndUnits: ActionCreator<ExplorerThunkResult> = (
 }
 
 export const explorerFetchCompatibleSoftware: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
-    console.log('Fetching compatible software for', uri);
+    debug('Fetching compatible software for', uri);
     let compRule = {
         description: {newKey: 'desc'},
         comp_var: {newKey: 'vars', newValue: (old:any) => old.split(/ *, */) },
@@ -185,7 +189,7 @@ export const explorerFetchCompatibleSoftware: ActionCreator<ExplorerThunkResult>
 }
 
 export const explorerFetchMetadata: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
-    console.log('Fetching metadata for', uri);
+    debug('Fetching metadata for', uri);
     let parseUris = (v:any) => {
         return v.split(', ').map((l:any)=>{
             let sp = l.split('/');
@@ -218,7 +222,7 @@ export const explorerFetchMetadata: ActionCreator<ExplorerThunkResult> = (uri:st
 }
 
 export const explorerFetchParameters: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
-    console.log('Fetching parameters for', uri);
+    debug('Fetching parameters for', uri);
 
     apiFetch({
         type: GET_PARAMETERS,
@@ -237,7 +241,7 @@ export const explorerFetchParameters: ActionCreator<ExplorerThunkResult> = (uri:
 }
 
 export const explorerFetchExplDiags: ActionCreator<ExplorerThunkResult> = (uri:string) => (dispatch) => {
-    console.log('Fetching exploration diagrams for', uri);
+    debug('Fetching exploration diagrams for', uri);
     apiFetch({
         type: EXPLANATION_DIAGRAMS,
         v: uri,
@@ -254,7 +258,7 @@ export const explorerFetchExplDiags: ActionCreator<ExplorerThunkResult> = (uri:s
 }
 
 export const explorerSearchByVarName: ActionCreator<ExplorerThunkResult> = (text:string) => (dispatch) => {
-    console.log('Searching models by variable name:', text);
+    debug('Searching models by variable name:', text);
     apiFetch({
         type: SEARCH_BY_VAR_NAME,
         text: text,
