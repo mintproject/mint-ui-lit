@@ -18,6 +18,7 @@ import "weightless/tab-group";
 import "weightless/card";
 import "weightless/icon";
 import "weightless/progress-spinner";
+import "weightless/progress-bar";
 import '../../../components/image-gallery'
 
 @customElement('model-view')
@@ -64,13 +65,13 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _versions!: VersionDetail[];
 
     @property({type: Object})
-    private _selectedVersion : VersionDetail | null = null;
+    private _version : VersionDetail | null = null;
 
     @property({type: Object})
-    private _selectedConfig : ConfigDetail | null = null;
+    private _config : ConfigDetail | null = null;
 
     @property({type: Object})
-    private _selectedCalibration : CalibrationDetail | null = null;
+    private _calibration : CalibrationDetail | null = null;
 
     @property({type: Object})
     private _compInput : CompIODetail[] | null = null;
@@ -96,6 +97,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         return [SharedStyles, ExplorerStyles,
             css `
                 :host {
+                    width: 75%;
                     display: block;
                     margin: 0 auto;
                     height: 100%;
@@ -294,115 +296,215 @@ export class ModelView extends connect(store)(PageViewElement) {
                 
                 .wrapper {
                     display:grid;
-                    grid-gap:10px;
+                    grid-gap:4px;
                     grid-template-columns: 1fr 1fr 1fr 1fr;
                     //border: 1px dotted red;
                 }
+
+                .small-wrapper {
+                    display:grid;
+                    grid-gap:5px;
+                    grid-template-columns: 1fr 1fr;
+                    margin-bottom: 1em;
+                }
                 
-                .one {
+                .col-img {
                     //border:1px dotted blue;
                     grid-column: 1 / 2;
                     grid-row: 1;
                     padding: 16px;
                 }
 
-                .one > img {
+                .col-img > img {
                     max-height: 200px;
                 }
 
-                .two > wl-select {
-                    --input-border-width: 0px;
-                }
-
-                
-                .two {
+                .col-desc {
                     //border:1px dotted green;
                     grid-column: 2 / 5;
                     grid-row: 1;
+                }
+
+                .col-desc > wl-select {
+                    --input-border-width: 0px;
+                }
+                
+                .row-tab-header {
+                    grid-column: 1 / 5;
+                    grid-row: 2;
+                }
+                
+                .row-tab-content {
+                    grid-column: 1 / 5;
+                    grid-row: 3;
+                }
+                
+                .info-center {
+                    text-align: center;
+                    font-size: 13pt;
+                    height: 32px;
+                    line-height:32px;
+                    color: #999;
+                }
+
+                .inline-info {
+                    padding-top:4px;
+                    padding-left:5px;
+                }
+                .inline-info > span {
+                    display: inline-block;
+                    width: 33%;
+                }
+                .inline-info > span:before {
+                    content:"• ";
+                }
+                
+                .hidden {
+                    display: none;
                 }`
         ];
     }
 
+    _updateConfigSelector () {
+        let configSelectorWl = this.shadowRoot!.getElementById('config-selector');
+        let configSelector = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
+        if (configSelector) {
+            while (configSelector.options.length > 0) {
+                configSelector.remove(configSelector.options.length - 1);
+            }
+            this._versions.forEach((v:any) => {
+                let newOption = document.createElement('option');
+                newOption.text = v.label;
+                newOption.disabled = true;
+                configSelector.add(newOption, null);
+                (v.configs || []).forEach((c:any) => {
+                    let newOption = document.createElement('option');
+                    newOption.text = '\xA0\xA0' + c.label;
+                    newOption.value = c.uri;
+                    configSelector.add(newOption, null);
+                })
+            })
+            configSelector.value = this._config ? this._config.uri : '';
+            configSelectorWl.refreshAttributes();
+        }
+    }
+
+    _updateCalibrationSelector () {
+        let calibrationSelectorWl = this.shadowRoot!.getElementById('calibration-selector');
+        let calibrationSelector = calibrationSelectorWl? calibrationSelectorWl.getElementsByTagName('select')[0] : null;
+        if (calibrationSelector && this._config) {
+            while (calibrationSelector.options.length > 0) {
+                calibrationSelector.remove(calibrationSelector.options.length - 1);
+            }
+            (this._config.calibrations || []).forEach((c:any) => {
+                let newOption = document.createElement('option');
+                newOption.text = '\xA0\xA0' + c.label;
+                newOption.value = c.uri;
+                calibrationSelector.add(newOption, null);
+            })
+            calibrationSelector.value = this._calibration ? this._calibration.uri : '';
+            calibrationSelectorWl.refreshAttributes();
+        }
+    }
+
+    _onConfigChange () {
+        let configSelectorWl = this.shadowRoot!.getElementById('config-selector');
+        let configSelector = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
+        if (configSelector) {
+            let url = 'models/explore/' + this._modelId + '/';
+
+            let version = this._versions.filter((v) => 
+                v.configs && v.configs.filter((c)=> c.uri === configSelector.value).length>0
+            ).pop();
+            let config = (version && version.configs) ? version.configs.filter(c => c.uri === configSelector.value).pop() : null;
+            let calib = (config && config.calibrations) ? config.calibrations[0] : null;
+
+            url += version? version.id + '/' : 'noVer/';
+            url += config.uri.split('/').pop()
+            if (calib) {
+                url += '/' + calib.uri.split('/').pop();
+            }
+            goToPage(url);
+        }
+    }
+
+    _onCalibrationChange () {
+        let calibrationSelectorWl = this.shadowRoot!.getElementById('calibration-selector');
+        let calibrationSelector = calibrationSelectorWl? calibrationSelectorWl.getElementsByTagName('select')[0] : null;
+        if (calibrationSelector) {
+            let id = calibrationSelector.value.split('/').pop();
+            goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + this._configId + '/' + id);
+        }
+    }
+
+    _renderSelectors () {
+        if (!this._versions) {
+            return html`<wl-progress-bar></wl-progress-bar>`;
+        }
+        let hasCalibrations = (this._config && this._config.calibrations);
+        let hasVersions = (this._versions.length > 0);
+        return html`
+            <wl-select label="Select a configuration" id="config-selector" @input="${this._onConfigChange}"
+                class="${hasVersions? '' : 'hidden'}">
+                <div slot="after">
+                    <wl-icon>help_outline</wl-icon>
+                </div>
+            </wl-select>
+            <wl-divider style="width: calc(100% - 32px);" class="${hasVersions? '' : 'hidden'}"></wl-divider>
+
+            <wl-select label="Select a calibration" id="calibration-selector" @input="${this._onCalibrationChange}"
+                class="${hasCalibrations? '' : 'hidden'}">
+                <div slot="after">
+                    <wl-icon>help_outline</wl-icon>
+                </div>
+            </wl-select>
+            <wl-divider style="width: calc(100% - 32px);" class="${hasCalibrations? '': 'hidden'}"></wl-divider>
+
+            <div class="info-center ${hasVersions? 'hidden' : ''}">- No version available -<div>
+            <div class="info-center ${(hasVersions && !hasCalibrations)? '': 'hidden'}">- No calibration available <a>add one</a> -<div>
+        `
+    }
+
     protected render() {
         return html`
-            <table>
-                <tr>
-                    <td class="header" colspan="2">
-                        <div class="details-button"></div><!--
-                        --><wl-title level="2" class="text-centered">${this._model.label}</div><!--
-                        <div class="links"><span class="icon">1</span> <span class="icon">2</span></div>-->
-                    </td>
-                </tr>
-                <tr>
-                    <td class="left text-centered" style="padding-top: 1.5em;">
-                        ${this._model.logo ? 
-                        html`<img src="${this._model.logo}"/>`
-                        : html`<img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>`}
-                    </td>
-                    <td class="right content">
-                        <wl-text>${this._model.desc}</wl-text>
-                        <br/>
-                        <br/>
-                        ${this._model.authors ?
-                            html`<b>Authors:</b> ${this._model.authors}<br/>`
-                            : ``}
-                        ${this._model.contactP ?
-                            html`<b>Contact:</b> ${this._model.contactP}<br/>`
-                            : ``}
-                        ${this._model.fundS ?
-                            html`<b>Funding:</b> ${this._model.fundS}<br/>`
-                            : ``}
-                        ${this._model.publisher ?
-                            html`<b>Publisher:</b> ${this._model.publisher}<br/>`
-                            : ``}
-                        ${this._model.referenceP ?
-                            html`<b>Preferred citation:</b> ${this._model.referenceP}<br/>`
-                            : ``}
-                        ${this._model.dateC ?
-                            html`<b>Creation date:</b> ${this._model.dateC}<br/>`
-                            : ``}
-                        ${this._model.doc ?
-                            html`<b>Documentation:</b> 
-                                <a href="${this._model.doc}" target="_blank">${this._model.doc}</a><br/>`
-                            : ``}
-                        ${this._model.downloadURL ?
-                            html`<b>Download:</b> 
-                                <a href="${this._model.downloadURL}" target="_blank">${this._model.downloadURL}</a><br/>`
-                            : ``}
-                        ${(this._model.installInstr || (this._model.os && this._model.os.length>0) ||
-                               this._model.sourceC || (this._model.pl && this._model.pl.length>0))?
-                            html`<details style="margin-top: 10px;">
-                                <summary><b>Technical details</b></summary>
-                                <ul>
-                                    ${(this._model.os && this._model.os.length>0)?
-                                        html`<li><b>Operating system:</b> ${this._model.os.join(', ')}</li>`: html``}
-                                    ${this._model.sourceC?  
-                                        html`<li><b>Source code:</b> 
-                                            <a target="_blank" href="${this._model.sourceC}">${this._model.sourceC}</a>
-                                        </li>`: html``}
-                                    ${(this._model.pl && this._model.pl.length>0)?
-                                        html`<li><b>Programming language:</b> ${this._model.pl.join(', ')}</li>`: html``}
-                                    ${this._model.installInstr? 
-                                        html`<li><b>Installation instructions:</b>
-                                            <a target="_blank" href="${this._model.installInstr}">
-                                                ${this._model.installInstr}</a>
-                                        </li>`: html``}
-                                </ul>
-                            </details>`
-                            : ``}
-                        <br/>
+            <div class="wrapper">
+                <div class="col-img text-centered">
+                    ${this._model.logo ? 
+                    html`<img src="${this._model.logo}"/>`
+                    : html`<img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>`}
+                </div>
+                <div class="col-desc"style="text-align: justify;">
+                    <wl-title level="2">${this._model.label}</wl-title>
+                    <wl-divider style="margin-bottom: .5em;"></wl-divider>
+                    <wl-text >${this._model.desc}</wl-text>
+                    <div class="inline-info">
+                        ${this._model.categories ? html`<span><b>Category:</b> ${this._model.categories}</span>`:''}
+                        ${this._model.type ? html`<span><b>Model type:</b> ${this._model.type}</span>`:''}
+                        ${this._model.dateC ? html`<span><b>Creation date:</b> ${this._model.dateC}</span>`:''}
+                    </div>
+                    ${this._renderSelectors()}
+                </div>
 
-                        <br/>
-                        ${this._versions ?
-                            this._renderSelector()
-                            : html``
-                        }
-                    </td>
-                </tr>
-                ${this._renderTabs()}
-            </table>
-            <br/>
-        `;
+                <div class="row-tab-header">
+                    <wl-tab-group>
+                        <wl-tab id="tab-overview" ?checked=${this._tab=='overview'} @click="${() => {this._tab = 'overview'}}"
+                            >Overview</wl-tab>
+                        <wl-tab id="tab-io" ?checked=${this._tab=='io'} @click="${() => {this._tab = 'io'}}"
+                            >Input/Output</wl-tab>
+                        <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => {this._tab = 'variables'}}"
+                            >Variables</wl-tab>
+                        <wl-tab id="tab-software" @click="${() => {this._tab = 'software'}}"
+                            >Compatible Software</wl-tab>
+                    </wl-tab-group>
+                </div>
+
+                <div class="row-tab-content">
+                    ${(this._tab === 'overview') ? this._renderTabOverview() : ''}
+                    ${(this._tab === 'io') ? this._renderTabIO() : ''}
+                    ${(this._tab === 'variables') ? this._renderTabVariables() : ''}
+                    ${(this._tab === 'software') ? this._renderTabSoftware() : ''}
+                </div>
+            </div>`
     }
 
     _renderSelector () {
@@ -412,37 +514,38 @@ export class ModelView extends connect(store)(PageViewElement) {
         </span>
         <span class="select-label">Version:</span>
         <select id="select-version" class="select-css" label="Select version" @change="${this.changeVersion}">
-            <option value="" disabled ?selected="${this._selectedVersion === null}">Select version</option>
+            <option value="" disabled ?selected="${this._version === null}">Select version</option>
             ${this._versions.map(v => 
-                html`<option value="${v.uri}" ?selected=${this._selectedVersion && v.uri===this._selectedVersion.uri}>
+                html`<option value="${v.uri}" ?selected=${this._version && v.uri===this._version.uri}>
                     ${v.label}
                 </option>`)}
         </select>
-        ${(this._selectedVersion && this._selectedVersion.configs) ?
+        ${(this._version && this._version.configs) ?
             html`
             <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" class="tooltip">
                 <wl-icon>help_outline</wl-icon>
             </span>
             <span class="select-label">Configuration:</span>
             <select id="select-config" class="select-css" label="Select configuration" @change="${this.changeConfig}">
-                <option value="" disabled ?selected="${this._selectedConfig === null}">Select configuration</option>
-                ${this._selectedVersion.configs.map( c =>
-                    html`<option value="${c.uri}" ?selected=${this._selectedConfig && c.uri===this._selectedConfig.uri}>
+                <option value="" disabled ?selected="${this._config === null}">Select configuration</option>
+                ${this._version.configs.map( c =>
+                    html`<option value="${c.uri}" ?selected=${this._config && c.uri===this._config.uri}>
                         ${c.label}
                     </option>`
                 )}
             </select>
-            ${(this._selectedConfig && this._selectedConfig.calibrations) ?
+            ${(this._config && this._config.calibrations) ?
+
                 html`
                 <span tip="A model calibration represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region" class="tooltip">
                     <wl-icon>help_outline</wl-icon>
                 </span>
                 <span class="select-label">Calibration:</span>
                 <select id="select-calibration" class="select-css" label="Select calibration" @change="${this.changeCalibration}">
-                    <option value="" ?selected="${this._selectedCalibration===null}">Select calibration</option>
-                    ${this._selectedConfig.calibrations.map( c =>
+                    <option value="" ?selected="${this._calibration===null}">Select calibration</option>
+                    ${this._config.calibrations.map( c =>
                         html`<option value="${c.uri}"
-                        ?selected="${this._selectedCalibration && c.uri===this._selectedCalibration.uri}">
+                        ?selected="${this._calibration && c.uri===this._calibration.uri}">
                             ${c.label}
                         </option>`
                     )}
@@ -507,13 +610,48 @@ export class ModelView extends connect(store)(PageViewElement) {
             </tr>
         `
     }
-    
+
+    _fancyLink (url) {
+        let sp = url.split('/')
+        return html`<a target="_blank" href="${url}">${sp[sp.length-1] || sp[sp.length-2]}</a>`
+    }
+
     _renderTabOverview () {
         return html`
-            <ul>
-                ${this._model.purpose? html`<li><b>Purpose:</b> ${this._model.purpose}</li>`:html``}
-                ${this._model.assumptions? html`<li><b>Assumptions:</b> ${this._model.assumptions}</li>`:html``}
-            </ul>
+            <div class="small-wrapper">
+                <div><wl-title level="5">Publication Information:</wl-title>
+    ${this._model.authors?  html`<li><b>Authors:</b> ${ this._model.authors }</li>` :''}
+    ${this._model.contactP?  html`<li><b>Contact:</b> ${ this._model.contactP }</li>` :''}
+    ${this._model.fundS?  html`<li><b>Funding:</b> ${ this._model.fundS }</li>` :''}
+    ${this._model.publisher?  html`<li><b>Publisher:</b> ${ this._model.publisher }</li>` :''}
+    ${this._model.referenceP?  html`<li><b>Preferred citation:</b> ${ this._model.referenceP }</li>` :''}
+    ${this._model.dateP?  html`<li><b>Publication date:</b> ${ this._model.dateP }</li>` :''}
+    ${this._model.citations?  html`<li><b>Citations:</b> ${ this._model.citations }</li>` :''}
+    ${this._model.contributors?  html`<li><b>Contributors:</b> ${ this._model.contributors }</li>` :''}
+                </div>
+
+                <div><wl-title level="5">Technical Information:</wl-title>
+    ${this._model.os?  html`<li><b>Operating systems:</b> ${this._model.os.join(', ')}</li>` : ''}
+    ${this._model.pl?  html`<li><b>Programing languages:</b> ${this._model.pl.join(', ')}</li>` : ''}
+    ${this._model.memReq?  html`<li><b>Memory requirements:</b> ${this._model.memReq}</li>` : ''}
+    ${this._model.procReq?  html`<li><b>Processor requirements:</b> ${this._model.procReq}</li>` : ''}
+    ${this._model.downloadURL?  html`<li><b>Download:</b> ${this._fancyLink(this._model.downloadURL)}</li>` : ''}
+    ${this._model.sourceC?  html`<li><b>Source code:</b> ${this._fancyLink(this._model.sourceC)}</li>` : ''}
+    ${this._model.doc?  html`<li><b>Documentation:</b> ${this._fancyLink(this._model.doc)}</li>` : ''}
+    ${this._model.installInstr?  html`<li><b>Installation instructions:</b> ${this._fancyLink(this._model.installInstr)}</li>` : ''}
+                </div>
+            </div>
+
+            ${this._model.purpose? html`<b>Purpose:</b> ${this._model.purpose}`:html``}
+
+            ${this._model.assumptions? html`
+            <details style="margin-top: 10px;">
+                <summary><b>Assumptions</b></summary>
+                <ul>
+                ${this._model.assumptions.split('.').map(a=> a?html`<li>${a}.</li>`:'')}
+                </ul>
+            </details>
+            `:html``}
 
             ${this._modelMetadata? html`${this._renderMetadata('Model Metadata', this._modelMetadata)}`:html``}
             ${this._versionMetadata? html`${this._renderMetadata('Version Metadata', this._versionMetadata)}`:html``}
@@ -530,7 +668,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <thead>
                     <th>Name</th>
                     <th>Description</th>
-                    ${this._selectedCalibration? html`<th>Fixed value</th>` : html``}
+                    ${this._calibration? html`<th>Fixed value</th>` : html``}
                     <th>Format</th>
                 </thead>
                 <tbody>
@@ -540,7 +678,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                             ${io.label}
                         </span></td>
                         <td>${io.desc}</td>
-                        ${this._selectedCalibration? html`
+                        ${this._calibration? html`
                         <td>${io.fixedValueURL ? html`
                             <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
                         ` : html``}</td>
@@ -556,7 +694,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <thead>
                     <th>Name</th>
                     <th>Description</th>
-                    ${this._selectedCalibration? html`<th>Fixed value</th>` : html``}
+                    ${this._calibration? html`<th>Fixed value</th>` : html``}
                     <th>Format</th>
                 </thead>
                 <tbody>
@@ -566,7 +704,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                             ${io.label}
                         </span></td>
                         <td>${io.desc}</td>
-                        ${this._selectedCalibration? html`
+                        ${this._calibration? html`
                         <td>${io.fixedValueURL ? html`
                             <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
                         ` : html``}</td>
@@ -585,7 +723,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <th>Type</th>
                         <th>Datatype</th>
                         <th>Default value</th>
-                        ${this._selectedCalibration? html`<th>Fixed value</th>` : html``}
+                        ${this._calibration? html`<th>Fixed value</th>` : html``}
                     </thead>
                     <tbody>
                     ${this._parameters.map( (p:any) => html`
@@ -594,7 +732,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                             <td>${p.type}</td>
                             <td>${p.pdatatype}</td>
                             <td>${p.defaultvalue}</td>
-                            ${this._selectedCalibration? html`<td>${p.fixedValue}</td>` : html``}
+                            ${this._calibration? html`<td>${p.fixedValue}</td>` : html``}
                         </tr>`)}
                     </tbody>
                 </table>
@@ -692,7 +830,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _renderTabSoftware () {
-        return html`${(this._selectedVersion && this._selectedConfig)?
+        return html`${(this._config)?
             html`${(this._compInput && this._compInput.length>0) || 
                    (this._compOutput && this._compOutput.length>0) ?
                 html`
@@ -866,232 +1004,146 @@ export class ModelView extends connect(store)(PageViewElement) {
         goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + this._configId + '/' + id);
     }
 
-    stateChanged(state: RootState) {
-        // Set this model
-        if (state.explorerUI && state.explorerUI.selectedModel != this._uri) {
-            this._uri = state.explorerUI.selectedModel;
-            store.dispatch(explorerFetchVersions(this._uri));
-            store.dispatch(explorerFetchMetadata(this._uri));
-            store.dispatch(explorerFetchExplDiags(this._uri));
-        }
+    private _selectedModel = null;
+    private _selectedConfig = null;
+    private _selectedCalibration = null;
 
-        // Load model
-        if (state.explorer && state.explorer.models && state.explorer.models[this._uri] &&
-            this._model != state.explorer.models[this._uri]) {
-            // Set new model
-            console.log('SET NEW MODEL')
-            this._model = state.explorer.models[this._uri];
-            this._modelId = this._uri.split('/').pop() as string;
-            if (this._model.categories) {
-                // Set related models (by category)
-                let compModels : FetchedModel[] = [];
-                this._model.categories.forEach( (cat:string) =>  {
-                    Object.values(state.explorer!.models).forEach( (model:FetchedModel) => {
-                        if (model.categories && model.categories.indexOf(cat)>=0 && model.uri != this._uri) {
-                            compModels.push(model);
+    updated () {
+        if (this._versions) {
+            this._updateConfigSelector();
+            this._updateCalibrationSelector();
+        }
+    }
+
+    stateChanged(state: RootState) {
+        if (state.explorerUI) {
+            let ui = state.explorerUI;
+            // check whats changed
+            let modelChanged : boolean = (ui.selectedModel !== this._selectedModel);
+            let configChanged : boolean = (modelChanged || ui.selectedConfig !== this._selectedConfig);
+            let calibrationChanged : boolean = (configChanged || ui.selectedCalibration !== this._selectedCalibration);
+
+            this._modelId = ui.selectedModel ? ui.selectedModel.split('/').pop() : '';
+            this._versionId = ui.selectedVersion ? ui.selectedVersion.split('/').pop() : '';
+            this._configId = ui.selectedConfig ? ui.selectedConfig.split('/').pop() : '';
+            this._calibrationId = ui.selectedCalibration ? ui.selectedCalibration.split('/').pop() : '';
+
+            // Fetch & reset data
+            if (modelChanged) {
+                if (ui.selectedModel) {
+                    store.dispatch(explorerFetchVersions(ui.selectedModel));
+                    store.dispatch(explorerFetchExplDiags(ui.selectedModel));
+                    store.dispatch(explorerFetchMetadata(ui.selectedModel));
+                }
+                this._selectedModel = ui.selectedModel;
+
+                this._model = null;
+                this._versions = null;
+                this._compModels = null;
+                this._explDiagrams = null;
+                this._modelMetadata = null;
+            }
+            if (configChanged) {
+                if (ui.selectedConfig) {
+                    store.dispatch(explorerFetchMetadata(ui.selectedConfig));
+                    store.dispatch(explorerFetchCompatibleSoftware(ui.selectedConfig));
+                    store.dispatch(explorerFetchIO(ui.selectedConfig));
+                    store.dispatch(explorerFetchParameters(ui.selectedConfig));
+                }
+                this._selectedConfig = ui.selectedConfig;
+                this._config = null;
+                this._configMetadata = null;
+                this._compInput = null;
+                this._compOutput = null;
+
+                this._variables = {};
+                this._IOStatus = new Set();
+            }
+            if (calibrationChanged) {
+                if (ui.selectedCalibration) {
+                    store.dispatch(explorerFetchMetadata(ui.selectedCalibration));
+                    store.dispatch(explorerFetchIO(ui.selectedCalibration));
+                    store.dispatch(explorerFetchParameters(ui.selectedCalibration));
+                }
+                this._selectedCalibration = ui.selectedCalibration;
+                this._calibration = null;
+                this._calibrationMetadata = null;
+            }
+            if (configChanged || calibrationChanged) {
+                this._inputs = null;
+                this._outputs = null;
+                this._parameters = null;
+            }
+
+            // Load data 
+            if (state.explorer) {
+                let db = state.explorer;
+                if (!this._model && db.models) {
+                    this._model = db.models[this._selectedModel];
+                }
+                if (!this._versions && db.versions) {
+                    this._versions = db.versions[this._selectedModel];
+                }
+                if (!this._config && this._versions) {
+                    this._config = this._versions.reduce((acc, v) => {
+                        if (acc) return acc;
+                        return (v.configs || []).reduce((ac, c) => {
+                            if (ac) return ac;
+                            return (c.uri === this._selectedConfig) ? c : null;
+                        }, null);
+                    }, null);
+                }
+                if (!this._calibration && this._config) {
+                    this._calibration = (this._config.calibrations || []).reduce((acc,c) => {
+                        if (acc) return acc;
+                        return (c.uri === this._selectedCalibration) ? c : null;
+                    }, null);
+                }
+
+
+                // Update compatible models.
+                if (!this._compModels && this._model && this._model.categories) {
+                    this._compModels = [];
+                    Object.values(state.explorer.models || {}).forEach((model:FetchedModel) => {
+                        this._model.categories.forEach((cat:string) => {
+                            //FIXME: for the moment all models only has one category. change this to a SET
+                            if (model.categories && model.categories.indexOf(cat)>=0 && model.uri != this._selectedModel) {
+                                this._compModels.push(model);
+                            }
+                        })
+                    })
+                }
+                if (!this._explDiagrams && db.explDiagrams) {
+                    this._explDiagrams = db.explDiagrams[this._selectedModel];
+                }
+                if (!this._compInput && this._config && db.compatibleInput) {
+                    this._compInput = db.compatibleInput[this._config.uri];
+                }
+                if (!this._compOutput && this._config && db.compatibleOutput) {
+                    this._compOutput = db.compatibleOutput[this._config.uri];
+                }
+                if (db.modelMetadata) { //FIXME: modelMetadata has metadata of everything...
+                    if (!this._modelMetadata && this._model) this._modelMetadata = db.modelMetadata[this._selectedModel];
+                    if (!this._configMetadata && this._config) this._configMetadata = db.modelMetadata[this._selectedConfig];
+                    if (!this._calibrationMetadata && this._calibration) this._calibrationMetadata = db.modelMetadata[this._selectedCalibration];
+                }
+                if (this._config || this._calibration) {
+                    let selectedUri = this._calibration ? this._calibration.uri : this._config.uri;
+                    if (this._inputs != db.inputs[selectedUri]) this._inputs = db.inputs[selectedUri];
+                    if (this._outputs != db.outputs[selectedUri]) this._outputs = db.outputs[selectedUri];
+                    if (this._parameters != db.parameters[selectedUri]) this._parameters = db.parameters[selectedUri];
+                }
+
+                if (db.variables && this._IOStatus.size > 0) {
+                    this._IOStatus.forEach((uri:string) => {
+                        if (db.variables[uri]) {
+                            this._variables[uri] = db.variables[uri];
+                            this._IOStatus.delete(uri);
+                            this._count += 1;//FIXME
                         }
                     });
-                });
-                this._compModels = (compModels.length>0) ? compModels : null;
-            }
-            // Reset data
-            //this._versions = undefined;
-            this._selectedVersion = null;
-            this._selectedConfig = null;
-            this._selectedCalibration = null;
-            this._modelMetadata = null;
-            this._versionMetadata = null;
-            this._configMetadata = null;
-            this._calibrationMetadata = null;
-            this._parameters = null;
-            this._inputs = null;
-            this._outputs = null;
-            this._variables = {};
-            this._IOStatus = new Set();
-            this._compInput  = null;
-            this._compOutput = null;
-        }
-
-        if (this._model) {
-            // Load model versions
-            if (state.explorer && state.explorer.versions && state.explorer.versions[this._model.uri] &&
-                this._versions != state.explorer.versions[this._model.uri]) {
-                this._versions = state.explorer.versions[this._model.uri];
-
-                //Autoset version
-                if (this._versions.length > 0 && (!state.explorerUI || !state.explorerUI.selectedVersion)) {
-                    let firstVersion = this._versions[0];
-                    let id = firstVersion.uri.split('/').pop();
-                    goToPage('models/explore/' + this._modelId + '/' + id);
-                }
-            }
-
-            // Set explanation diagrams
-            if (state.explorer && state.explorer.explDiagrams && state.explorer.explDiagrams[this._model.uri] &&
-                this._explDiagrams != state.explorer.explDiagrams[this._model.uri]) {
-                this._explDiagrams = state.explorer.explDiagrams[this._model.uri];
-            }
-
-            if (state.explorerUI) {
-                // Set selected Version
-                if (state.explorerUI.selectedVersion && this._versions) {
-                    let sVersion = this._versions.filter( (v:any) => v.uri === state.explorerUI!.selectedVersion);
-                    if (sVersion && sVersion.length > 0 && sVersion[0] != this._selectedVersion) {
-                        this._selectedVersion = sVersion[0];
-                        this._versionId = this._selectedVersion.uri.split('/').pop() as string;
-                        console.log('SET NEW VERSION')
-                        this._selectedConfig = null;
-                        this._selectedCalibration = null;
-
-                        //Autoset config
-                        if (this._selectedVersion.configs && this._selectedVersion.configs.length>0 &&
-                            (!state.explorerUI.selectedConfig || this._selectedVersion.configs.filter((x:any) =>
-                            x.uri===state.explorerUI!.selectedConfig).length===0)) {
-                            let firstConfig = this._selectedVersion.configs[0];
-                            let id = firstConfig.uri.split('/').pop();
-                            goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + id);
-                            //store.dispatch(explorerSetConfig(firstConfig.uri.split('/').pop()));
-                        }
-                    }
                 }
 
-            if (this._selectedVersion) {
-                    // Set selected Config
-                    if (state.explorerUI.selectedConfig && this._selectedVersion.configs) {
-                        let sConfig = this._selectedVersion.configs.filter( (c:any) => 
-                            c.uri === state.explorerUI!.selectedConfig);
-                        if (sConfig && sConfig.length > 0 && sConfig[0] != this._selectedConfig) {
-                            this._selectedConfig = sConfig[0];
-                            this._configId = this._selectedConfig.uri.split('/').pop() as string;
-                            console.log('SET NEW CONFIG')
-                            this._selectedCalibration = null;
-                            this._parameters = null;
-                            this._compOutput = null;
-                            this._compInput = null;
-                            this._variables = {};
-                            this._IOStatus = new Set();
-                            this._inputs = null;
-                            this._outputs = null;
-                            this._modelMetadata = null;
-                            this._versionMetadata = null;
-                            this._configMetadata = null;
-                            this._calibrationMetadata = null;
-
-                            // Load config related data.
-                            store.dispatch(explorerFetchIO(this._selectedConfig.uri));
-                            store.dispatch(explorerFetchParameters(this._selectedConfig.uri));
-                            store.dispatch(explorerFetchCompatibleSoftware(this._selectedConfig.uri));
-                            store.dispatch(explorerFetchMetadata(this._selectedConfig.uri));
-
-                            // Auto set calibration
-                            if (this._selectedConfig.calibrations && this._selectedConfig.calibrations.length>0 &&
-                                (!state.explorerUI.selectedCalibration ||
-                                this._selectedConfig.calibrations.filter((x:any) => x.uri ===
-                                state.explorerUI!.selectedCalibration).length === 0)) {
-                                let firstCalib = this._selectedConfig.calibrations[0];
-                                let id = firstCalib.uri.split('/').pop();
-                                goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + this._configId + '/' + id);
-                            }
-                        }
-                    }
-
-                    // Set selected Calibration
-                    if (this._selectedConfig) {
-                        if (state.explorerUI.selectedCalibration && this._selectedConfig.calibrations) {
-                            let sCalib = this._selectedConfig.calibrations.filter((c:any) => 
-                                         c.uri === state.explorerUI!.selectedCalibration);
-                            if (sCalib && sCalib.length > 0 && sCalib[0] != this._selectedCalibration) {
-                                this._selectedCalibration = sCalib[0];
-                                console.log('SET NEW CALIBRATION')
-                                store.dispatch(explorerFetchMetadata(this._selectedCalibration.uri));
-
-                                store.dispatch(explorerFetchIO(this._selectedCalibration.uri));
-                                store.dispatch(explorerFetchParameters(this._selectedCalibration.uri));
-
-                            }
-                        } else if (state.explorerUI.selectedCalibration === "") {
-                            this._selectedCalibration = null;
-                            this._calibrationMetadata = null;
-                        }
-                    }
-                }
-            }
-
-            
-            if (state.explorer) {
-                // Set metadata
-                if (state.explorer.modelMetadata) {
-                    if (this._model && state.explorer.modelMetadata[this._model.uri]){
-                        this._modelMetadata = state.explorer.modelMetadata[this._model.uri];
-                    }
-                    if (this._selectedVersion && state.explorer.modelMetadata[this._selectedVersion.uri]){
-                        this._versionMetadata = state.explorer.modelMetadata[this._model.uri];
-                    }
-                    if (this._selectedConfig && state.explorer.modelMetadata[this._selectedConfig.uri]) {
-                        this._configMetadata = state.explorer.modelMetadata[this._selectedConfig.uri];
-                    }
-                    if (this._selectedCalibration && state.explorer.modelMetadata[this._selectedCalibration.uri]) {
-                        this._calibrationMetadata = state.explorer.modelMetadata[this._selectedCalibration.uri];
-                    } 
-                }
-
-                if (this._selectedConfig) {
-                    //Set parameters
-                    if (state.explorer.parameters) {
-                        let selectedUri : string = this._selectedCalibration ? 
-                                this._selectedCalibration.uri : this._selectedConfig.uri;
-                        if (state.explorer.parameters[selectedUri] && state.explorer.parameters[selectedUri].length > 0 
-                            && this._parameters != state.explorer.parameters[selectedUri]) {
-                            this._parameters = state.explorer.parameters[selectedUri];
-                        }
-                    }
-
-                    //Set compatible Inputs
-                    if (state.explorer.compatibleInput &&
-                        state.explorer.compatibleInput[this._selectedConfig.uri] &&
-                        state.explorer.compatibleInput[this._selectedConfig.uri].length > 0 &&
-                        this._compInput != state.explorer.compatibleInput[this._selectedConfig.uri]) {
-                        this._compInput = state.explorer.compatibleInput[this._selectedConfig.uri];
-                    }
-
-                    //Set compatible Outputs
-                    if (state.explorer.compatibleOutput &&
-                        state.explorer.compatibleOutput[this._selectedConfig.uri] &&
-                        state.explorer.compatibleOutput[this._selectedConfig.uri].length > 0 &&
-                        this._compOutput != state.explorer.compatibleOutput[this._selectedConfig.uri]) {
-                        this._compOutput = state.explorer.compatibleOutput[this._selectedConfig.uri];
-                    }
-
-                    //Set Inputs
-                    if (state.explorer.inputs) {
-                        let selectedUri : string = this._selectedCalibration ? 
-                                this._selectedCalibration.uri : this._selectedConfig.uri;
-                        if (state.explorer.inputs[selectedUri] && state.explorer.inputs[selectedUri].length > 0
-                            && this._inputs != state.explorer.inputs[selectedUri]) {
-                            this._inputs = state.explorer.inputs[selectedUri];
-                        }
-                    }
-
-                    //Set Outputs
-                    if (state.explorer.outputs) {
-                        let selectedUri : string = this._selectedCalibration ? 
-                                this._selectedCalibration.uri : this._selectedConfig.uri;
-                        if (state.explorer.outputs[selectedUri] && state.explorer.outputs[selectedUri].length > 0
-                            && this._outputs != state.explorer.outputs[selectedUri]) {
-                            this._outputs = state.explorer.outputs[selectedUri];
-                        }
-                    }
-
-                    if (state.explorer.variables && this._IOStatus.size > 0) {
-                        this._IOStatus.forEach((uri:string) => {
-                            if (state.explorer!.variables[uri]) {
-                                this._variables[uri] = state.explorer!.variables[uri];
-                                this._IOStatus.delete(uri);
-                                this._count += 1;//FIXME
-                            }
-                        });
-                    }
-                }
             }
         }
     }
