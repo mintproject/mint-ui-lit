@@ -234,11 +234,8 @@ export class ModelPreview extends connect(store)(PageViewElement) {
         store.dispatch(explorerCompareModel(uri));
     }
 
-    firstUpdated() {
-        this._baseUrl = 'models/explore/' + this.uri.split('/').pop();
-    }
-
     stateChanged(state: RootState) {
+        this._baseUrl = 'models/explore/' + this.uri.split('/').pop();
         if (state.explorer) {
             if (state.explorer.models) {
                 this._model = state.explorer.models[this.uri];
