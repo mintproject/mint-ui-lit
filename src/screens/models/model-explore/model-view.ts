@@ -60,6 +60,8 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _variables : any = {};
 
     private _IOStatus : Set<string> = new Set();
+    private _allVersions : any = null;
+    private _allModels : any = null;
 
     @property({type: Object})
     private _versions!: VersionDetail[];
@@ -464,6 +466,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     protected render() {
+        if (!this._model) return html``;
         return html`
             <div class="wrapper">
                 <div class="col-img text-centered">
@@ -666,9 +669,17 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _renderMetadataTable () {
+        if (!this._configMetadata && !this._calibrationMetadata) {
+            return html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`;
+        }
+
         let meta = [];
         if (this._configMetadata && this._configMetadata.length>0) meta.push(this._configMetadata[0]);
         if (this._calibrationMetadata && this._calibrationMetadata.length>0) meta.push(this._calibrationMetadata[0]);
+
+        if (meta.length === 0) {
+            return html``;
+        }
 
         let features = [];
         if (meta.filter((m:any) => m['regionName']).length>0)
@@ -699,10 +710,11 @@ export class ModelView extends connect(store)(PageViewElement) {
             features.push({name: 'Download', render: (m) => this._renderLink(m['compLoc'])})
 
         return html`
+            <h3>Metadata:</h3>
             <table class="pure-table pure-table-bordered">
                 <thead>
                     <th></th>
-                    ${meta.map((m:any) => {console.log(m); return html`<th>${m.label}</th>`;})}
+                    ${meta.map((m:any) => html`<th>${m.label}</th>`)}
                 </thead>
                 <tbody>
                     ${features.map((ft:any) => html`
@@ -889,6 +901,45 @@ export class ModelView extends connect(store)(PageViewElement) {
             : html``}`;
     }
 
+    _renderCompatibleVariableTable (compatibleVariables) {
+        let cInput = (compatibleVariables || []).reduce((acc, ci) => {
+            let verTree = this._getVersionTree(ci.uri);
+            if (!verTree.model) {
+                if (!acc['?']) acc['?'] = {configs: [], variables: new Set()};
+                acc['?'].configs.push(ci.uri);
+                ci.vars.forEach(v => acc['?'].variables.add(v));
+                return acc;
+            }
+            if (!acc[verTree.model.label]) acc[verTree.model.label] = {configs: [], variables: new Set()}
+            if (verTree.config.uri === ci.uri) acc[verTree.model.label].configs.push(verTree.config.label);
+            else if (verTree.calibration.uri === ci.uri) acc[verTree.model.label].configs.push(verTree.calibration.label);
+            ci.vars.forEach(v => acc[verTree.model.label].variables.add(v));
+            return acc;
+        }, {})
+        return html`
+            <table class="pure-table pure-table-bordered">
+                <thead>
+                    <th>Model</th>
+                    <th>Configuration</th>
+                    <th>Variables</th>
+                </thead>
+                <tbody>
+                    ${Object.keys(cInput).map(model => html`
+                    <tr>
+                        <td>${model}</td>
+                        <td>${cInput[model].configs.join(', ')}</td>
+                        <td>
+                            ${Array.from(cInput[model].variables).map((v, i) => {
+                            if (i===0) return html`<code>${v}</code>`
+                            else return html`, <code>${v}</code>`})}
+                        </td>
+                    </tr>
+                    `)}
+                </tbody>
+            </table>
+        `;
+    }
+
     _renderTabSoftware () {
         return html`${(this._config)?
             html`${(this._compInput && this._compInput.length>0) || 
@@ -896,21 +947,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                 html`
                     ${(this._compInput && this._compInput.length>0)?
                         html`<h3> This model configuration uses variables that can be produced from:</h3>
-                        <ul>${this._compInput.map(i=>{
-                            return html`<li><b>${i.label}:</b> With variables: ${i.vars.map((v, i) => {
-                                if (i==0) return html`<code>${v}</code>`;
-                                else return html`, <code>${v}</code>`;
-                            })}</li>`
-                        })}</ul>`: html``
+                        ${this._renderCompatibleVariableTable(this._compInput)}`
+                        : html``
                     }
                     ${(this._compOutput && this._compOutput.length>0)?
                         html`<h3> This model configuraion produces variables that can be used by:</h3>
-                        <ul>${this._compOutput.map(i=>{
-                            return html`<li><b>${i.label}:</b> With variables: ${i.vars.map((v, i) => {
-                                if (i==0) return html`<code>${v}</code>`;
-                                else return html`, <code>${v}</code>`;
-                            })}</li>`
-                        })}</ul>`: html``
+                        ${this._renderCompatibleVariableTable(this._compOutput)}`
+                        : html``
                     }`
                 : html``
             }`
@@ -1075,6 +1118,39 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
     }
 
+    _getVersionTree (uri:string) {
+        if (this._allModels[uri]) {
+            return {model: this._allModels[uri], version: this._allVersions[uri]};
+        }
+
+        let modelUris = Object.keys(this._allModels);
+        for (let i = 0; i < modelUris.length; i++) {
+            let model = this._allModels[modelUris[i]];
+            if (model) {
+                let versions = (this._allVersions[model.uri] || []);
+                let vf = versions.filter(v => v.uri === uri);
+                if (vf.length > 0) {
+                    return {model: model, version: vf[0], config: vf[0].configs};
+                }
+                for (let j = 0; j < versions.length; j++) {
+                    let configs = (versions[j].configs || []);
+                    let cf = configs.filter(c => c.uri === uri);
+                    if (cf.length > 0) {
+                        return {model: model, version: versions[j], config: cf[0], calibration: cf[0].calibrations};
+                    }
+                    for (let k = 0; k < configs.length; k++) {
+                        let ccf = (configs[k].calibrations || []).filter(cc => cc.uri === uri);
+                        if (ccf.length > 0) {
+                            return {model: model, version: versions[j], config: configs[k], calibration: ccf[0]};
+                        }
+                    }
+                }
+            }
+        }
+
+        return {}
+    }
+
     stateChanged(state: RootState) {
         if (state.explorerUI) {
             let ui = state.explorerUI;
@@ -1138,6 +1214,8 @@ export class ModelView extends connect(store)(PageViewElement) {
             // Load data 
             if (state.explorer) {
                 let db = state.explorer;
+                this._allVersions = db.versions;
+                this._allModels = db.models;
                 if (!this._model && db.models) {
                     this._model = db.models[this._selectedModel];
                 }
