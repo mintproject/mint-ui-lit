@@ -194,7 +194,8 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     }
 
     updated () {
-        let arrow = this.shadowRoot.getElementById('search-type-selector').shadowRoot.getElementById('arrow');
+        let searchSelector = this.shadowRoot.getElementById('search-type-selector');
+        let arrow = searchSelector ? searchSelector.shadowRoot.getElementById('arrow') : null;
         if (arrow) {
             arrow.style.pointerEvents = "none";
         }

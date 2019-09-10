@@ -694,6 +694,8 @@ export class ModelView extends connect(store)(PageViewElement) {
             features.push({name: 'Parameters', render: (m) => m['parameters'].join(', ')})
         if (meta.filter((m:any) => m['processes']).length>0)
             features.push({name: 'Processes', render: (m) => m['processes'].join(', ')})
+        if (meta.filter((m:any) => m['tIValue']).length>0 && meta.filter((m:any) => m['tIUnits']))
+            features.push({name: 'Time interval', render: (m) => m['tIValue'] + ' ' + m['tIUnits']})
         if (meta.filter((m:any) => m['gridType']).length>0)
             features.push({name: 'Grid type', render: (m) => m['gridType']})
         if (meta.filter((m:any) => m['gridDim']).length>0)
@@ -708,6 +710,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             features.push({name: 'Target variables', render: (m) => (m['targetVariables']||[]).join(', ')})
         if (meta.filter((m:any) => m['compLoc']).length>0)
             features.push({name: 'Download', render: (m) => this._renderLink(m['compLoc'])})
+
 
         return html`
             <h3>Metadata:</h3>
