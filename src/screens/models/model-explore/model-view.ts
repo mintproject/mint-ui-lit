@@ -792,7 +792,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <table class="pure-table pure-table-bordered">
                     <thead>
                         <th>Name</th>
-                        <th>Type</th>
+                        <th>Description</th>
                         <th>Datatype</th>
                         <th>Default value</th>
                         ${this._calibration? html`<th>Fixed value</th>` : html``}
@@ -801,7 +801,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${this._parameters.map( (p:any) => html`
                         <tr>
                             <td>${p.paramlabel}</td>
-                            <td>${p.type}</td>
+                            <td>${p.description}</td>
                             <td>${p.pdatatype}</td>
                             <td>${p.defaultvalue}</td>
                             ${this._calibration? html`<td>${p.fixedValue}</td>` : html``}
