@@ -113,13 +113,23 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 text-size: .8em;
                 padding: 0px 8px;
             }
+
+            .inline-new-buttom {
+                line-height: 1.2em;
+                font-size: 1.2em;
+            }
+
+            .inline-new-buttom > wl-icon {
+                --icon-size: 1.2em;
+                vertical-align: top;
+            }
             `,
             SharedStyles
         ];
     }
 
     protected render() {
-        let count = 0;
+        console.log(Object.values(this._models||{}).filter((m) => (!this._versions[m.uri] || this._versions[m.uri].length>0)));
         return html`
         <div class="twocolumns">
             <div class="${this._hideModels ? 'left_closed' : 'left'}">
@@ -153,8 +163,10 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                                                     ${cfg.calibrations.map((c) => html`
                                                     <li><a @click="${()=>{this._select(c.uri, c.label)}}">${c.label}</a></li>
                                                     `)}
+                                                    <li><a class="inline-new-buttom"><wl-icon>add_circle_outline</wl-icon> Add new calibration</a></li>
                                                 </ul>`: html``}
                                             </li>`)}
+                                            <li><a class="inline-new-buttom"><wl-icon>add_circle_outline</wl-icon> Add new configuration</a></li>
                                         </ul>` : ``}
                                     </li>`)}
                                 </ul>`)
