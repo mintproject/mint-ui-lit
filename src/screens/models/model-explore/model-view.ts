@@ -669,7 +669,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _renderMetadataTable () {
-        if (!this._configMetadata && !this._calibrationMetadata) {
+        if (!this._configMetadata && !this._calibrationMetadata && this._config) {
             return html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`;
         }
 
