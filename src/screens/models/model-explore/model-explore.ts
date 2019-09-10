@@ -160,7 +160,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 <!-- https://github.com/andreasbm/weightless/issues/58 -->
                 <wl-textfield id="search-input" label="Search models" @input=${this._onSearchInput} value="${this._filter}">
                     <div slot="after"> 
-                        <wl-icon style .="${this._filter == '' ? 'display:none;' : ''}" @click="${this._clearSearchInput}">clear</wl-icon> 
+                        <wl-icon style="${this._filter == '' ? 'display:none;' : ''}" @click="${this._clearSearchInput}">clear</wl-icon> 
                     </div>
                     <div slot="before"> <wl-icon>search</wl-icon> </div>
                 </wl-textfield><!--
@@ -191,6 +191,13 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             </div>
             ` : html``}
         `
+    }
+
+    updated () {
+        let arrow = this.shadowRoot.getElementById('search-type-selector').shadowRoot.getElementById('arrow');
+        if (arrow) {
+            arrow.style.pointerEvents = "none";
+        }
     }
 
     _onSearchInput () {
