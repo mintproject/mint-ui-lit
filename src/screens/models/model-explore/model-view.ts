@@ -740,8 +740,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <thead>
                     <th>Name</th>
                     <th>Description</th>
-                    ${this._calibration? html`<th>Fixed value</th>` : html``}
                     <th>Format</th>
+                    ${this._calibration? html`<th>Fixed value</th>` : html``}
                 </thead>
                 <tbody>
                 ${this._inputs.map( io => html`
@@ -750,12 +750,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                             ${io.label}
                         </span></td>
                         <td>${io.desc}</td>
+                        <td>${io.format}</td>
                         ${this._calibration? html`
                         <td>${io.fixedValueURL ? html`
                             <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
                         ` : html``}</td>
                         ` : html``}
-                        <td>${io.format}</td>
                     </tr>`)}
                 </tbody>
             </table>` : html``}
@@ -766,8 +766,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <thead>
                     <th>Name</th>
                     <th>Description</th>
-                    ${this._calibration? html`<th>Fixed value</th>` : html``}
                     <th>Format</th>
+                    ${this._calibration? html`<th>Fixed value</th>` : html``}
                 </thead>
                 <tbody>
                 ${this._outputs.map( io => html`
@@ -776,12 +776,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                             ${io.label}
                         </span></td>
                         <td>${io.desc}</td>
+                        <td>${io.format}</td>
                         ${this._calibration? html`
                         <td>${io.fixedValueURL ? html`
                             <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
                         ` : html``}</td>
                         ` : html``}
-                        <td>${io.format}</td>
                     </tr>`)}
                 </tbody>
             </table>` : html``}
