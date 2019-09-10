@@ -10,27 +10,44 @@ export interface CalibrationDetail extends Resource {}
 export interface ExplanationDiagramDetail extends Resource { url: string, source?: string }
 
 export interface FetchedModel extends Resource {
-    doc?:                   string;
-    logo?:                  string;
-    keywords?:              string[];
-    assumptions?:           string;
-    ver?:                   string[];
-    categories?:            string[];
-    screenshots?:           string[];
-    authors?:               string[];
-    referenceP?:            string;
-    contactP?:              string;
-    publisher?:             string;
-    type?:                  string;
-    sampleVisualization?:   string;
-    fundS?:                 string;
-    downloadURL?:           string;
-    dateC?:                 string;
-    installInstr?:          string;
-    pl?:                    string[];
-    sourceC?:               string;
-    os?:                    string[];
-    purpose?:               string[];
+    // General stuff
+    logo?:                  string;     // URL to logo
+    dateC?:                 string;     // Creation Date
+    shortDesc?:             string;     // Short description
+    type?:                  string;     // Model type ##
+    keywords?:              string[];   // Keywords ;;
+    categories?:            string[];   // Categories ,
+    // Overview
+    purpose?:               string[];   // Purpose  ;;
+    assumptions?:           string; // Assumption ...
+    restrictions?:          string; // Restrictions <--- ???
+    faq?:                   string;     // FAQ <--- ???
+    // Publication & founding
+    contactP?:              string; // Contact person 
+    dateP?:                 string; // Published Date
+    fundS?:                 string; // Funding Source
+    publisher?:             string; // Publisher
+    referenceP?:            string; // Reference
+    authors?:               string; // Authors ,
+    citations?:             string; // Citations ,  
+    contributors?:          string; // URI of contributors , 
+    // Technical stuff
+    installInstr?:          string; // URL to Instalation instructions
+    memReq?:                string; // Memory requeriments <---- ???
+    procReq?:               string; // Processor requeriments <--- ???
+    os?:                    string[]; // OS ;;
+    pl?:                    string[]; // Programming language
+    doc?:                   string; // URL to documentation
+    sourceC?:               string; // URL to source code
+    downloadURL?:           string; // URL to download
+    // Media
+    screenshots?:           string; // URL of screenshots
+    explanationDiagrams?:   string; // URI of explanation diagrams.
+    sampleVisualization?:   string; // URL of Sample visualizations
+    // ???
+    grid?:                  string; // URI of one grid
+    versions?:              string[]; // URI versions ,
+    typicalDataSource?:     string; // <---- ???
 }
 
 export interface IODetail extends Resource {
