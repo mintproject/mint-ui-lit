@@ -40,6 +40,14 @@ export const renderNotifications = () => {
         <wl-icon slot="icon">settings</wl-icon>
         <span>Sending runs...Please wait</span>
     </wl-snackbar>       
+    <wl-snackbar id="selectOneModelNotification" fixed backdrop>
+        <wl-icon slot="icon">error</wl-icon>
+        <span>Please select at least one model.</span>
+    </wl-snackbar>
+    <wl-snackbar id="selectTwoModelsNotification" fixed backdrop>
+        <wl-icon slot="icon">error</wl-icon>
+        <span>Please select at least two models.</span>
+    </wl-snackbar>
     `;
 }
 
