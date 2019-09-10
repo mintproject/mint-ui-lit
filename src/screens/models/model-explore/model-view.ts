@@ -705,7 +705,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (meta.filter((m:any) => m['adjustableVariables']).length>0)
             features.push({name: 'Adjustable parameters', render: (m) => (m['adjustableVariables']||[]).join(', ')})
         if (meta.filter((m:any) => m['targetVariables']).length>0)
-            features.push({name: 'Target parameters', render: (m) => (m['targetVariables']||[]).join(', ')})
+            features.push({name: 'Target variables', render: (m) => (m['targetVariables']||[]).join(', ')})
         if (meta.filter((m:any) => m['compLoc']).length>0)
             features.push({name: 'Download', render: (m) => this._renderLink(m['compLoc'])})
 
