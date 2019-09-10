@@ -28,6 +28,7 @@ import '../screens/regions/regions-home';
 import '../screens/models/models-home';
 import '../screens/analysis/analysis-home';
 import '../screens/variables/variables-home';
+import '../screens/messages/messages-home';
 
 import { SharedStyles } from '../styles/shared-styles';
 import { showDialog, hideDialog, formElementsComplete } from '../util/ui_functions';
@@ -209,6 +210,7 @@ export class MintApp extends connect(store)(LitElement) {
               <models-home class="page fullpage" ?active="${this._page == 'models'}"></models-home>
               <modeling-home class="page fullpage" ?active="${this._page == 'modeling'}"></modeling-home>
               <analysis-home class="page fullpage" ?active="${this._page == 'analysis'}"></analysis-home>
+              <messages-home class="page fullpage" ?active="${this._page == 'messages'}"></messages-home>
             </div>
           </div>
         </div>

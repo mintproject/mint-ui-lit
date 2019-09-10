@@ -71,8 +71,7 @@ export class RegionsHydrology extends PageViewElement {
         <div class="content">
             <regions-editor active
                 style="--map-height: 450px;"
-                regionType="Hydrology" 
-                parentRegionId="${this._regionid}"
+                regionType="Hydrology"
             ></regions-editor>
 
             <br/>
