@@ -8,6 +8,7 @@ import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
          ExplanationDiagramDetail } from "./api-interfaces";
 import { explorerFetchCompatibleSoftware, explorerFetchParameters, explorerFetchVersions, explorerFetchIO,
          explorerFetchIOVarsAndUnits, explorerFetchExplDiags, explorerFetchMetadata } from './actions';
+import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
 
@@ -367,6 +368,10 @@ export class ModelView extends connect(store)(PageViewElement) {
         ];
     }
 
+    _setEditMode () {
+        store.dispatch(explorerSetMode('edit')); 
+    }
+
     _updateConfigSelector () {
         let configSelectorWl = this.shadowRoot!.getElementById('config-selector');
         let configSelector = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
@@ -472,7 +477,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <div class="col-desc"style="text-align: justify;">
                     <wl-title level="2">
                         ${this._model.label}
-                        <a><wl-icon id="edit-model-icon">edit</wl-icon></a>
+                        <a @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
                     </wl-title>
                     <wl-divider style="margin-bottom: .5em;"></wl-divider>
                     <wl-text >${this._model.desc}</wl-text>
@@ -634,6 +639,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     ${this._model.pl?  html`<li><b>Programing languages:</b> ${this._model.pl.join(', ')}</li>` : ''}
     ${this._model.memReq?  html`<li><b>Memory requirements:</b> ${this._model.memReq}</li>` : ''}
     ${this._model.procReq?  html`<li><b>Processor requirements:</b> ${this._model.procReq}</li>` : ''}
+    ${this._model.softwareReq?  html`<li><b>Software requirements:</b> ${this._model.softwareReq}</li>` : ''}
     ${this._model.downloadURL?  html`<li><b>Download:</b> ${this._renderLink(this._model.downloadURL)}</li>` : ''}
     ${this._model.sourceC?  html`<li><b>Source code:</b> ${this._renderLink(this._model.sourceC)}</li>` : ''}
     ${this._model.doc?  html`<li><b>Documentation:</b> ${this._renderLink(this._model.doc)}</li>` : ''}

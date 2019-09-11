@@ -53,9 +53,15 @@ export const explorerFetch: ActionCreator<ExplorerThunkResult> = () => (dispatch
                 newKey: 'type', 
                 newValue: (old:any) => old.replace(/(.*?#)(.*)(Model)/, '$2').replace('-', ' ')
             },
+            'authors': {newValue: (old:any) => old.split(', ')},
+            'citations': {newValue: (old:any) => old.split(', ')},
             'os': {newValue: (old:any)=>old.split(/ *; */)},
             'pl': {newValue: (old:any)=>old.split(/ *; */)},
             'keywords': {newValue: (old:any)=>old.split(/ *; */)},
+            'restrictions': {newValue: (old:any)=>old.split(', ')},
+            'typicalDataSource': {newValue: (old:any)=>old.split(', ')},
+            'screenshots': {newValue: (old:any)=>old.split(', ')},
+            'explanationDiagrams': {newValue: (old:any)=>old.split(', ')},
             'purpose': {newValue: (old:any)=>old.split(/ *; */)}
         }
     }).then( (fetched) => {

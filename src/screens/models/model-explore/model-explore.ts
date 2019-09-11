@@ -16,6 +16,7 @@ import { UriModels } from './reducers';
 
 import './model-preview'
 import './model-view'
+import './model-edit'
 import './model-compare'
 
 import "weightless/textfield";
@@ -34,6 +35,9 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     @property({type: String})
     private _selectedUri : string = '';
+
+    @property({type: String})
+    private _mode : string = 'view';
 
     @property({type: String})
     private _filter : string = '';
@@ -98,7 +102,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 width: 100%;
             }
 
-            #model-view-cont > model-view {
+            #model-view-cont > model-view, model-edit {
                 margin: 0 auto;
                 display: block;
                 width: 75%;
@@ -144,7 +148,10 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         return html`
             ${this._selectedUri? 
                 //Display only selected model or the search
-                html`<div id="model-view-cont"><model-view></model-view></fiv>`
+                (this._mode === 'view' ?
+                    html`<div id="model-view-cont"><model-view></model-view></div>`
+                    : html`<div id="model-view-cont"><model-edit></model-edit></div>`
+                )
                 : this._renderSearch()
             }
         `;
@@ -317,6 +324,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             this._comparing = 0;
             if ( state.explorerUI.compareA && state.explorerUI.compareA.model) this._comparing += 1;
             if ( state.explorerUI.compareB && state.explorerUI.compareB.model) this._comparing += 1;
+            this._mode = state.explorerUI.mode;
         }
     }
 }
