@@ -9,6 +9,7 @@ import { apiFetch, VER_AND_CONF, MODELS, GET_IO, IO_VARS_AND_UNITS, EXPLANATION_
 
 export const EXPLORER_FETCH = 'EXPLORER_FETCH';
 export const EXPLORER_VERSIONS = 'EXPLORER_VERSIONS'
+export const EXPLORER_URLS = 'EXPLORER_URLS'
 export const EXPLORER_IO = 'EXPLORER_IO'
 export const EXPLORER_VAR_UNIT = 'EXPLORER_VAR_UNIT'
 export const EXPLORER_COMPATIBLE_INPUT = 'EXPLORER_COMPATIBLE_INPUT'
@@ -20,6 +21,7 @@ export const EXPLORER_SEARCH_BY_VAR_NAME = 'EXPLORER_SEARCH_BY_VAR_NAME'
 
 export interface ExplorerActionFetch extends Action<'EXPLORER_FETCH'> { models: UriModels };
 export interface ExplorerActionVersions extends Action<'EXPLORER_VERSIONS'> { uri: string, details: Array<any> };
+export interface ExplorerActionUrls extends Action<'EXPLORER_URLS'> { details: Map<string, string> };
 export interface ExplorerActionIO extends Action<'EXPLORER_IO'> { uri: string, details: Array<any> };
 export interface ExplorerActionVarUnit extends Action<'EXPLORER_VAR_UNIT'> { uri: string, details: Array<any> };
 export interface ExplorerActionCompInput extends Action<'EXPLORER_COMPATIBLE_INPUT'> { uri: string, details: Array<any> };
@@ -29,7 +31,7 @@ export interface ExplorerActionGetParameters extends Action<'EXPLORER_GET_PARAME
 export interface ExplorerActionGetExplDiags extends Action<'EXPLORER_GET_EXPL_DIAGS'> { uri: string, details: Array<any> };
 export interface ExplorerActionSearchByVarName extends Action<'EXPLORER_SEARCH_BY_VAR_NAME'> { text: string, details: Array<any> };
 
-export type ExplorerAction = ExplorerActionFetch | ExplorerActionVersions | ExplorerActionGetExplDiags |
+export type ExplorerAction = ExplorerActionFetch | ExplorerActionVersions | ExplorerActionGetExplDiags | ExplorerActionUrls |
                              ExplorerActionIO | ExplorerActionVarUnit | ExplorerActionCompInput | ExplorerActionSearchByVarName |
                              ExplorerActionCompOutput | ExplorerActionModelMetadata | ExplorerActionGetParameters;
 
@@ -37,7 +39,7 @@ export type ExplorerAction = ExplorerActionFetch | ExplorerActionVersions | Expl
 type ExplorerThunkResult = ThunkAction<void, RootState, undefined, ExplorerAction>;
 
 function debug (...args) {
-    console.log(...arguments);
+    //console.log(...arguments);
 }
 
 export const explorerFetch: ActionCreator<ExplorerThunkResult> = () => (dispatch) => {
@@ -97,10 +99,37 @@ export const explorerFetchVersions: ActionCreator<ExplorerThunkResult> = (uri:st
             }
             return acc;
         }, {})
+
+        let urls = {}
+        let baseUrl = 'models/explore/' + uri.split('/').pop();
+        // create urls going backwards on versions 
+        Object.values(data).forEach((ver:any, i:number) => {
+            let verUrl = baseUrl + '/' + ver.id;
+            let cfgUrl, calUrl;
+            for (let j = (ver.configs ? ver.configs.length : 0)-1; j >= 0; j--) {
+                cfgUrl = verUrl + '/' + ver.configs[j].uri.split('/').pop();
+                calUrl = '';
+                for (let k = (ver.configs[j].calibrations ? ver.configs[j].calibrations.length : 0)-1; k >= 0; k--) {
+                    calUrl = cfgUrl + '/' + ver.configs[j].calibrations[k].uri.split('/').pop();
+                    urls[ver.configs[j].calibrations[k].uri] = calUrl;
+                }
+                urls[ver.configs[j].uri] = calUrl || cfgUrl;
+            }
+            urls[ver.uri] = calUrl || cfgUrl || verUrl;
+            if (i === 0) {
+                urls[uri] = calUrl || cfgUrl || verUrl || baseUrl;
+            }
+        });
+
         dispatch({
             type: EXPLORER_VERSIONS,
             uri: uri,
             details: Object.values(data)
+        });
+        
+        dispatch({
+            type: EXPLORER_URLS,
+            details: urls
         });
     })
 }

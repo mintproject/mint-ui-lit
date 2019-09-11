@@ -62,6 +62,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _IOStatus : Set<string> = new Set();
     private _allVersions : any = null;
     private _allModels : any = null;
+    private _uriToUrl : Map<string,string> | null = null;
 
     @property({type: Object})
     private _versions!: VersionDetail[];
@@ -412,20 +413,11 @@ export class ModelView extends connect(store)(PageViewElement) {
         let configSelectorWl = this.shadowRoot!.getElementById('config-selector');
         let configSelector = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
         if (configSelector) {
-            let url = 'models/explore/' + this._modelId + '/';
-
-            let version = this._versions.filter((v) => 
-                v.configs && v.configs.filter((c)=> c.uri === configSelector.value).length>0
-            ).pop();
-            let config = (version && version.configs) ? version.configs.filter(c => c.uri === configSelector.value).pop() : null;
-            let calib = (config && config.calibrations) ? config.calibrations[0] : null;
-
-            url += version? version.id + '/' : 'noVer/';
-            url += config.uri.split('/').pop()
-            if (calib) {
-                url += '/' + calib.uri.split('/').pop();
+            if (this._uriToUrl[configSelector.value]) {
+                goToPage(this._uriToUrl[configSelector.value]);
+            } else {
+                console.error('Theres no URL for selected config URI, please report this issue!');
             }
-            goToPage(url);
         }
     }
 
@@ -433,8 +425,11 @@ export class ModelView extends connect(store)(PageViewElement) {
         let calibrationSelectorWl = this.shadowRoot!.getElementById('calibration-selector');
         let calibrationSelector = calibrationSelectorWl? calibrationSelectorWl.getElementsByTagName('select')[0] : null;
         if (calibrationSelector) {
-            let id = calibrationSelector.value.split('/').pop();
-            goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + this._configId + '/' + id);
+            if (this._uriToUrl[calibrationSelector.value]) {
+                goToPage(this._uriToUrl[calibrationSelector.value]);
+            } else {
+                console.error('Theres no URL for selected calibration URI, please report this issue!');
+            }
         }
     }
 
@@ -709,7 +704,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (meta.filter((m:any) => m['targetVariables']).length>0)
             features.push({name: 'Target variables', render: (m) => (m['targetVariables']||[]).join(', ')})
         if (meta.filter((m:any) => m['compLoc']).length>0)
-            features.push({name: 'Download', render: (m) => this._renderLink(m['compLoc'])})
+            features.push({name: 'Download', render: (m) => m['compLoc'] ? this._renderLink(m['compLoc']) : ''})
 
 
         return html`
@@ -1052,8 +1047,11 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _goToModel (model:any) {
-        let id : string = model.uri.split('/').pop();
-        goToPage('models/explore/' + id);
+        if (this._uriToUrl[model.uri]) {
+            goToPage(this._uriToUrl[model.uri]);
+        } else {
+            console.error('Theres no URL for selected model URI, please report this issue!');
+        }
     }
 
     _renderGallery () {
@@ -1219,6 +1217,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 let db = state.explorer;
                 this._allVersions = db.versions;
                 this._allModels = db.models;
+                this._uriToUrl= db.urls;
                 if (!this._model && db.models) {
                     this._model = db.models[this._selectedModel];
                 }
