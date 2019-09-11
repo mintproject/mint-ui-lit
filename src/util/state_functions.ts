@@ -134,7 +134,7 @@ const _createTemplateAndRunWorkflow = (
     });
 }
 
-export const runPathwayExecutableEnsembles_new = async(
+export const runPathwayExecutableEnsembles = async(
         scenario: Scenario, pathway: Pathway, 
         prefs: UserPreferences, indices: number[]) => {
 
@@ -142,16 +142,20 @@ export const runPathwayExecutableEnsembles_new = async(
     let model_indices = {};
     
     let i=0;
+    // First Register all models in Wings
     Promise.all(
         Object.keys(pathway.models).map((modelid) => {
             let model = pathway.models[modelid];
             model_indices[modelid] = i;
             i++;
             let cname = model.model_configuration;
+            //model.wcm_uri = "https://github.com/varunratnakar/mint-test-comps/blob/master/economic-v6.1-test.zip?raw=true"; // FIXME: Hack
             return registerWingsComponent(cname, model.wcm_uri, prefs);
         })
     ).then((values) => {
+        console.log(values);
         Promise.all(
+            // Get all input dataset bindings and parameter bindings
             indices.map((index) => {
                 let ensemble = pathway.executable_ensembles[index];
                 let model = pathway.models[ensemble.modelid];
@@ -181,12 +185,18 @@ export const runPathwayExecutableEnsembles_new = async(
                     if(resources.length > 0) {
                         let type = io.type.replace(/^.*#/, '');
                         resources.map((res) => {
+                            if(!res.name && res.url) {
+                                res.name =  res.url.replace(/^.*(#|\/)/, '');
+                                if(!res.id)
+                                    res.id = res.name;
+                            }
                             if(!registered_resources[res.id])
                                 registered_resources[res.id] = [res.name, type, res.url];
                         })
                         datasets[io.name] = resources.map((res) => res.name);
                     }
                 });
+                console.log(datasets);
 
                 // Get Input parameters
                 model.input_parameters.map((ip) => {
@@ -231,7 +241,7 @@ export const runPathwayExecutableEnsembles_new = async(
     });
 };
 
-export const runPathwayExecutableEnsembles = (
+export const runPathwayExecutableEnsembles_old = (
         scenario: Scenario, pathway: Pathway, 
         prefs: UserPreferences, indices: number[]) => {
     let clearTimer = setInterval(() => {
@@ -269,8 +279,10 @@ export const runPathwayExecutableEnsembles = (
 
 export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway, prefs: UserPreferences) => {
     let clearTimer = setInterval(() => {
-        let alldone = true;
-        let changed = false;
+        if(pathway == null) {
+            clearInterval(clearTimer);
+            return;
+        }
         Promise.all(
             pathway.executable_ensembles.map((ensemble) => {
                 if(!ensemble.status || ensemble.status == "ONGOING") {
@@ -278,6 +290,8 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
                 }
             })
         ).then((nensembles) => {
+            let alldone = true;
+            let changed = false;
             let i=0;
             pathway.executable_ensembles.map((ensemble) => {
                 if(!ensemble.status || ensemble.status == "ONGOING") {
@@ -293,16 +307,17 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
                     if(!nensemble.status || nensemble.status == "ONGOING") 
                         alldone = false;
                 }
-            })
+            });
+            if(changed) {
+                console.log("Changed.. updating pathway");
+                console.log(pathway);
+                updatePathway(scenario, pathway);
+            }
+            if(alldone) {
+                console.log("All done.. stop polling");
+                clearInterval(clearTimer);
+            }
         })
-        if(changed) {
-            console.log("Changed.. updating pathway");
-            updatePathway(scenario, pathway);
-        }
-        if(alldone) {
-            console.log("All done.. stop polling");
-            clearInterval(clearTimer);
-        }
     }, 1000);
 }
 

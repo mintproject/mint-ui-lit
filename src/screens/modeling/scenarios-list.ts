@@ -183,9 +183,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
         hideDialog("scenarioDialog", this.shadowRoot!);
         showNotification("saveNotification", this.shadowRoot!);
     
-        let path = BASE_HREF+"scenario/"+scenarioid;
-        window.history.pushState({}, "MINT", path);
-        store.dispatch(navigate(decodeURIComponent(path)));
+        goToPage("modeling/scenario/"+scenarioid);
 
     }
     else {

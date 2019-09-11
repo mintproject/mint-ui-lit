@@ -609,8 +609,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
         // Delete scenario itself. Scenario deletion returns a "Promise"
         deleteScenario(this._scenario!).then(() => {
             hideNotification("deleteNotification", this.shadowRoot!);
-            window.history.pushState({}, "MINT", BASE_HREF);
-            store.dispatch(navigate(decodeURIComponent(BASE_HREF)));
+            goToPage("modeling");
         });
  
     }
@@ -791,7 +790,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
 
             // If we've already got the details in the state
             // - extract details from the state
-            if(this._dispatched && state.modeling.scenario && state.modeling.scenario.id == scenarioid) {
+            if(state.modeling.scenario && state.modeling.scenario.id == scenarioid) {
                 this._dispatched = false;
                 this._scenario_details = state.modeling.scenario;
                 this._scenario = {

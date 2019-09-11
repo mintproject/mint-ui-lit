@@ -6,7 +6,7 @@ import { SharedStyles } from "../../../styles/shared-styles";
 import { BASE_HREF } from "../../../app/actions";
 
 import "weightless/progress-bar";
-import { runPathwayExecutableEnsembles } from "../../../util/state_functions";
+import { runPathwayExecutableEnsembles, checkPathwayEnsembleStatus } from "../../../util/state_functions";
 import { selectPathwaySection } from "../../../app/ui-actions";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { showNotification } from "util/ui_functions";
@@ -217,5 +217,6 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         super.setUser(state);
         super.setRegionId(state);
         super.setPathway(state);
+        checkPathwayEnsembleStatus(this.scenario, this.pathway, this.prefs);
     }
 }

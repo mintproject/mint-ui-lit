@@ -5,7 +5,7 @@ export const SAMPLE_USER = {
 
 export const SAMPLE_USER_PREFERENCES = {
     "wings": {
-        "domain": "test",
+        "domain": "mintTest",
         "export_url": "http://localhost:9090/wings-portal",
         "password": "admin123",
         "server": "http://localhost:9090/wings-portal",

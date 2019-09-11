@@ -469,6 +469,7 @@ export const fetchWingsRunStatus = (ensemble: ExecutableEnsemble, config: UserPr
                     }
                 });
                 nensemble.run_progress = numdone/totalsteps;
+                nensemble.results = []; // FIXME: This needs to read the actual files if the step is successful
                 resolve(nensemble);
             },
             onError: function() {
