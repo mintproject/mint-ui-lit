@@ -269,7 +269,7 @@ export const runPathwayExecutableEnsembles = async(
                     // Set run ids of each ensemble, and initialize the status
                     let ensemble = pathway.executable_ensembles[index];
                     ensemble.runid = runids[i];
-                    ensemble.status = "ONGOING";
+                    ensemble.status = "RUNNING";
                     ensemble.run_progress = 0;
                     pathway.executable_ensembles[index] = ensemble;
                     i++;
@@ -322,7 +322,7 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
     let alldone = true;
     if(pathway == null) return;
     pathway.executable_ensembles.map((ensemble) => {
-        if(!ensemble.status || ensemble.status == "ONGOING") {
+        if(!ensemble.status || ensemble.status == "RUNNING") {
             alldone = false;
         }
     });
@@ -336,42 +336,44 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
             clearInterval(clearTimer);
             return;
         }
-        Promise.all(
-            pathway.executable_ensembles.map((ensemble) => {
-                if(!ensemble.status || ensemble.status == "ONGOING") {
-                    return fetchWingsRunStatus(ensemble, prefs);
+        loginToWings(prefs).then(() => {
+            Promise.all(
+                pathway.executable_ensembles.map((ensemble) => {
+                    if(!ensemble.status || ensemble.status == "RUNNING") {
+                        return fetchWingsRunStatus(ensemble, prefs);
+                    }
+                })
+            ).then((nensembles) => {
+                let alldone = true;
+                let changed = false;
+                let i=0;
+                pathway.executable_ensembles.map((ensemble) => {
+                    if(!ensemble.status || ensemble.status == "RUNNING") {
+                        let nensemble = nensembles[i];
+                        i++;
+                        if(!nensemble || !ensemble) {
+                            return;
+                        }
+                        if(nensemble.run_progress != ensemble.run_progress ||
+                                nensemble.status != ensemble.status) {
+                            ensemble.status = nensemble.status;
+                            ensemble.run_progress = nensemble.run_progress;
+                            ensemble.results = nensemble.results;
+                            changed = true;
+                        }
+                        if(!nensemble.status || nensemble.status == "RUNNING") 
+                            alldone = false;
+                    }
+                });
+                if(changed) {
+                    console.log("Run details changed.. updating pathway");
+                    updatePathway(scenario, pathway);
+                }
+                if(alldone) {
+                    console.log("All runs finished.. stop polling");
+                    clearInterval(clearTimer);
                 }
             })
-        ).then((nensembles) => {
-            let alldone = true;
-            let changed = false;
-            let i=0;
-            pathway.executable_ensembles.map((ensemble) => {
-                if(!ensemble.status || ensemble.status == "ONGOING") {
-                    let nensemble = nensembles[i];
-                    i++;
-                    if(!nensemble || !ensemble) {
-                        return;
-                    }
-                    if(nensemble.run_progress != ensemble.run_progress ||
-                            nensemble.status != ensemble.status) {
-                        ensemble.status = nensemble.status;
-                        ensemble.run_progress = nensemble.run_progress;
-                        ensemble.results = nensemble.results;
-                        changed = true;
-                    }
-                    if(!nensemble.status || nensemble.status == "ONGOING") 
-                        alldone = false;
-                }
-            });
-            if(changed) {
-                console.log("Run details changed.. updating pathway");
-                updatePathway(scenario, pathway);
-            }
-            if(alldone) {
-                console.log("All runs finished.. stop polling");
-                clearInterval(clearTimer);
-            }
         })
     }, 5000);
 }
