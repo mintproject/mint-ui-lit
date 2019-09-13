@@ -244,10 +244,10 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                 time: Date.now(),
                 user: this.user!.email
             } as StepUpdateInformation
-        };    
+        };
 
         // Update pathway itself
-        updatePathway(this.scenario, this.pathway);
+        //updatePathway(this.scenario, this.pathway);
         
         let indices = []; // Run all ensembles that haven't already been run
         for(let i=0; i<this.pathway.executable_ensembles!.length; i++) {

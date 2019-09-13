@@ -5,14 +5,14 @@ export const SAMPLE_USER = {
 
 export const SAMPLE_USER_PREFERENCES = {
     "wings": {
-        "domain": "mintTest",
-        "export_url": "http://localhost:9090/wings-portal",
-        "password": "admin123",
-        "server": "http://localhost:9090/wings-portal",
-        "username": "admin",
-        "storage": "/Users/varun/.wings/storage",
-        "dotpath": "/usr/local/bin/dot",
+        "server": "https://wings.mint.isi.edu",
+        "export_url": "http://localhost:8080",
+        "username": "mint",
+        "password": "Seozie3Eif5tol",
+        "domain": "mint-test",
+        "storage": "/data/wings/storage/default",
+        "dotpath": "/usr/bin/dot",
         "onturl": "http://www.wings-workflows.org/ontology",
-        "api": "http://localhost:8080/v1.0.0"
+        "api": "https://api.wings.mint.isi.edu/v1.0.0"
     }
 };

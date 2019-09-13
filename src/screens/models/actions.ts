@@ -158,8 +158,7 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                                 type: value.type,
                                 variables: []
                             };
-                            // FIXME: Hack until we remove cycles_weather fixed value
-                            if(value.fixedValueURL && value.iolabel != "cycles_weather") {
+                            if(value.fixedValueURL) {
                                 io.value = {
                                     id: value.fixedValueDCId,
                                     resources: [{

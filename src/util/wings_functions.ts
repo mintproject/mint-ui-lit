@@ -155,6 +155,14 @@ export interface WingsParameterTypes {
     [inputid: string] : string
 }
 
+export interface WingsTemplateSeed {
+    tid?: string,
+    datasets: Object,
+    parameters: Object,
+    paramtypes: Object,
+}
+
+
 /* End of Wings Types */
 
 
@@ -268,11 +276,11 @@ export const fetchWingsTemplatesList = async(config: UserPreferences) : Promise<
     });
 }
 
-export const fetchWingsTemplate = async(tname: string, config: UserPreferences) : Promise<WingsTemplatePackage> => {
+export const fetchWingsTemplate = async(tid: string, config: UserPreferences) : Promise<WingsTemplatePackage> => {
     return new Promise<WingsTemplatePackage>((resolve, reject) => {
         var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
-        var exurl = config.wings.export_url + "/export/users/" + config.wings.username + "/" + config.wings.domain;
-        var tid = exurl + "/workflows/" + tname + ".owl#" + tname;
+        //var exurl = config.wings.export_url + "/export/users/" + config.wings.username + "/" + config.wings.domain;
+        //var tid = exurl + "/workflows/" + tname + ".owl#" + tname;
 
         getResource({
             url: purl + "/workflows/getEditorJSON?template_id=" + escape(tid),
