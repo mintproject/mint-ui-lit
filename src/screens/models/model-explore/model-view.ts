@@ -968,13 +968,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                         : html``
                     }
                     ${(this._compOutput && this._compOutput.length>0)?
-                        html`<h3> This model configuraion produces variables that can be used by:</h3>
+                        html`<h3> This model configuration produces variables that can be used by:</h3>
                         ${this._renderCompatibleVariableTable(this._compOutput)}`
                         : html``
                     }`
                 : html``
             }`
-            : html`<br/><h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`
+            : html`<br/><h3 style="margin-left:30px">Please select a configuration for this model.</h3>`
         }
         ${this._compModels? html`
         <h3> Related models: </h3>
@@ -997,7 +997,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         ${(!this._compModels && (!this._compInput || this._compInput.length == 0) && (!this._compOutput || this._compOutput.length == 0))?
             html`
                 <br/><h3 style="margin-left:30px">
-                    This information has not been specified yet.
+                    No compatible software has been described in the model catalog yet.
                 </h3>
             `
             :html``
