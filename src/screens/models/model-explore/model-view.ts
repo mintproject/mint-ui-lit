@@ -433,7 +433,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             if (this._uriToUrl[calibrationSelector.value]) {
                 goToPage(this._uriToUrl[calibrationSelector.value]);
             } else {
-                console.error('Theres no URL for selected calibration URI, please report this issue!');
+                console.error('Theres no URL for selected configuration setup URI, please report this issue!');
             }
         }
     }
@@ -453,7 +453,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             </wl-select>
             <wl-divider style="width: calc(100% - 32px);" class="${hasVersions? '' : 'hidden'}"></wl-divider>
 
-            <wl-select label="Select a calibration" id="calibration-selector" @input="${this._onCalibrationChange}"
+            <wl-select label="Select a configuration setup" id="calibration-selector" @input="${this._onCalibrationChange}"
                 class="${hasCalibrations? '' : 'hidden'}">
                 <div slot="after">
                     <wl-icon>help_outline</wl-icon>
@@ -461,7 +461,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             </wl-select>
             <wl-divider style="width: calc(100% - 32px);" class="${hasCalibrations? '': 'hidden'}"></wl-divider>
             <div class="info-center ${hasVersions? 'hidden' : ''}">- No version available -</div>
-            <div class="info-center ${(hasCalibrations || !hasVersions || (hasVersions && !this._config))? 'hidden': ''}">- No calibration available <a>add one</a> -</div>
+            <div class="info-center ${(hasCalibrations || !hasVersions || (hasVersions && !this._config))? 'hidden': ''}">- No configuration setup available <a>add one</a> -</div>
         `
     }
 
@@ -718,7 +718,20 @@ export class ModelView extends connect(store)(PageViewElement) {
             <table class="pure-table pure-table-bordered">
                 <thead>
                     <th></th>
-                    ${meta.map((m:any) => html`<th>${m.label}</th>`)}
+                    <th>
+                        <div style="font-size: 12px;">Selected configuration:</div>
+                        <div style="font-size: 14px; color: black; font-weight: bold;">${meta[0].label}<b>
+                    </th>
+                    ${this._calibration && (!this._calibrationMetadata || this._calibrationMetadata.length > 0) ? html`
+                    <th>${(this._calibrationMetadata || []).length > 0 ? html`
+                        <div style="font-size: 12px;">Selected configuration setup:</div>
+                        <div style="font-size: 14px; color: black; font-weight: bold;">${meta[1].label}<b>`
+                        : html`
+                        <div style="font-size: 12px;">Loading setup...</div>
+                        <wl-progress-bar style="width: 100px"></wl-progress-bar>
+                        `}
+                    </th>`
+                    :''}
                 </thead>
                 <tbody>
                     ${features.map((ft:any) => html`
