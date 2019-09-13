@@ -83,7 +83,7 @@ export class ModelCompare extends connect(store)(PageViewElement) {
         {key: 'processes', label: 'Processes', fn: (proc:any) => proc.join(', ')},
 
         {key: 'paramAssignMethod', label: 'Parameter assignment method'},
-        {key: 'adjustableVariables', label: 'Adjustable variables', fn: (av:any) => av.join(', ')},
+        {key: 'adjustableVariables', label: 'Adjustable parameters', fn: (av:any) => av.join(', ')},
         {key: 'targetVariables', label: 'Target variables', fn: (av:any) => av.join(', ')},
 
         {key: 'gridDim', label: 'Spatial dimensionality'},

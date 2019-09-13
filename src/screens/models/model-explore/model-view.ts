@@ -1005,51 +1005,6 @@ export class ModelView extends connect(store)(PageViewElement) {
         `
     }
 
-    _renderMetadata (title: string, metadata:any) {
-        let meta = metadata[0];
-        return html`
-        <details style="margin-top: 10px;">
-            <summary><b>${title}</b></summary>
-            <ul>
-                ${meta.label? html`<li><b>Name:</b> ${meta.label}</li>`:html``}
-                ${meta.regionName? html`<li><b>Region name:</b>
-                    ${meta.regionName}</li>`:html``}
-                ${meta.desc? html`<li><b>Description:</b>
-                    ${meta.desc}</li>`:html``}
-                ${meta.input_variables? 
-                    html`<li>
-                    <b class="clickable" @click="${()=>{this._changeTab('io')}}">Input Variables:</b>
-                    ${meta.input_variables.length}</li>`:html``}
-                ${meta.output_variables? 
-                    html`<li>
-                    <b class="clickable" @click="${()=>{this._changeTab('io')}}">Output Variables:</b>
-                    ${meta.output_variables.length}</li>`:html``}
-                ${meta.parameters? 
-                    html`<li>
-                    <b class="clickable" @click="${()=>{this._changeTab('io')}}">Parameters:</b>
-                    ${meta.parameters.length}</li>`:html``}
-                ${meta.processes? html`<li><b>Processes:</b>
-                    ${meta.processes.join(', ')}</li>`:html``}
-                ${meta.gridType? html`<li><b>Grid Type:</b>
-                    ${meta.gridType}</li>`:html``}
-                ${meta.gridDim? html`<li><b>Grid Dimentions:</b>
-                    ${meta.gridDim}</li>`:html``}
-                ${meta.gridSpatial? html`<li><b>Spatial resolution:</b>
-                    ${meta.gridSpatial}</li>`:html``}
-                ${meta.paramAssignMethod? html`<li><b>Parameter assignment method:</b>
-                    ${meta.paramAssignMethod}</li>`:html``}
-                ${meta.adjustableVariables? html`<li><b>Adjustable variables:</b>
-                    ${meta.adjustableVariables.join(', ')}</li>`:html``}
-                ${meta.targetVariables? html`<li><b>Target variables:</b>
-                    ${meta.targetVariables.join(', ')}</li>`:html``}
-                ${meta.compLoc? html`<li><b>Download:</b>
-                    <a target="_blank" href="${meta.compLoc}">
-                        ${meta.compLoc.split('/')[
-                        meta.compLoc.split('/').length-1]}</a></li>`:html``}
-            </ul>
-        </details>`;
-    }
-
     _renderTab (tabName : 'overview'|'io'|'variables'|'software') {
         switch (tabName) {
             case 'overview':
