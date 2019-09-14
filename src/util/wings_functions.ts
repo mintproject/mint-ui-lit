@@ -477,7 +477,24 @@ export const fetchWingsRunStatus = (ensemble: ExecutableEnsemble, config: UserPr
                     }
                 });
                 nensemble.run_progress = numdone/totalsteps;
-                nensemble.results = []; // FIXME: This needs to read the actual files if the step is successful
+                nensemble.results = [];
+                if(nensemble.status == "SUCCESS") {
+                    nensemble.run_progress = 1;
+                    
+                    // Look for outputs that aren't inputs to any other steps
+                    let outputfiles = {};
+                    ex.plan.steps.map((step: any) => {
+                        step.outputFiles.map((file: any) => {
+                            outputfiles[file.id] = file;
+                        })
+                    })
+                    ex.plan.steps.map((step: any) => {
+                        step.inputFiles.map((file: any) => {
+                            delete outputfiles[file.id];
+                        })
+                    })
+                    nensemble.results = Object.values(outputfiles);
+                }
                 resolve(nensemble);
             },
             onError: function() {
