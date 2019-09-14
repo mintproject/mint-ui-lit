@@ -377,12 +377,57 @@ export class ModelView extends connect(store)(PageViewElement) {
                 
                 .hidden {
                     display: none;
-                }`
+                }
+                
+                .metadata-top-buttons {
+                    float: right;
+                }
+
+                .metadata-top-buttons > .button-preview {
+                    margin-left: 4px;
+                }
+
+                .button-preview {
+                    cursor: pointer;
+                    display: inline-block;
+                }
+
+                .button-preview > div {
+                    display: inline-block;
+                    border-top: 1px solid #D9D9D9;
+                    border-bottom: 1px solid #D9D9D9;
+                    padding: 3px 6px;
+                }
+
+                .button-preview:hover > div:not(:first-child) {
+                    background-color: #F2F2F2;
+                }
+
+                .button-preview:hover > div:first-child {
+                    background-color: #E9E9E9;
+                }
+
+                .button-preview > div:first-child {
+                    border-left: 1px solid #D9D9D9;
+                    background-color: #F6F6F6;
+                    font-weight: 500;
+                    border-bottom-left-radius: 5px;
+                    border-top-left-radius: 5px;
+                }
+
+                .button-preview > div:last-child {
+                    border-right: 1px solid #D9D9D9;
+                    border-left: 1px solid #D9D9D9;
+                    border-bottom-right-radius: 5px;
+                    border-top-right-radius: 5px;
+                }
+                `
         ];
     }
 
     _setEditMode () {
-        store.dispatch(explorerSetMode('edit')); 
+        //TODO: this is work in progress!
+        //store.dispatch(explorerSetMode('edit')); 
     }
 
     _updateConfigSelector () {
@@ -699,6 +744,7 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _renderTabOverview () {
         return html`
+            ${this._config ? this._renderMetadataResume() : ''}
             ${this._model.purpose? html`
             <details style="margin-bottom: 6px;">
                 <summary><b>Purpose</b></summary>
@@ -717,8 +763,73 @@ export class ModelView extends connect(store)(PageViewElement) {
             </details>
             `:html``}
 
-            ${this._renderMetadataTable()}
             ${this._renderGallery()}`
+    }
+
+    _renderMetadataResume (meta) {
+        let data = [
+            [this._config, this._configMetadata, 'calibration'], 
+            [this._calibration, this._calibrationMetadata, 'calibration setup']
+        ]
+        return data.map(([obj, meta, title]) => 
+            obj ? html` 
+            <fieldset style="border-radius: 5px; padding-top: 0px; border: 2px solid #D9D9D9; margin-bottom: 8px;">
+                <legend style="font-weight: bold; font-size: 12px; color: gray;">Selected ${title}</legend>
+                ${(meta && meta.length > 0) ? html`
+                <div class="metadata-top-buttons">
+                    <div class="button-preview" @click=${() => this._changeTab('io')}>
+                        <div>Input files</div>
+                        <div>${(meta[0]['input_variables'] || []).length}</div>
+                    </div>
+                    <div class="button-preview" @click=${() => this._changeTab('io')}>
+                        <div>Output files</div>
+                        <div>${(meta[0]['output_variables'] || []).length}</div>
+                    </div>
+                    <div class="button-preview" @click=${() => this._changeTab('io')}>
+                        <div>Parameters</div>
+                        <div>${(meta[0]['parameters'] || []).length}</div>
+                    </div>
+                </div>
+                ` : ''}
+                <wl-title level="2" style="font-size: 16px;">${obj.label}</wl-title>
+
+                ${!meta ? 
+                html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`
+                : (meta.length==0 ?
+                    html`<div class="info-center">- No metadata available. -</div>`
+                    : html `
+                    <wl-text>${meta[0].desc}</wl-text>
+                    <ul>
+                    ${meta[0].regionName ? html`<li><b>Region:</b> ${meta[0].regionName}</li>`: ''}
+                    ${meta[0].tIValue && meta[0].tIUnits ? html`<li><b>Time interval:</b> ${meta[0].tIValue + ' ' + meta[0].tIUnits}</li>` : ''}
+                    ${meta[0].gridType && meta[0].gridDim && meta[0].gridSpatial ? html`
+                        <li><b>Grid details:</b> 
+                            <ul>
+                                <li><b>Type:</b> ${meta[0].gridType}</li>
+                                <li><b>Dimentions:</b> <span style="font-family: system-ui;">${meta[0].gridDim}</span></li>
+                                <li><b>Spatial resolution:</b> ${meta[0].gridSpatial}</li>
+                            </ul>
+                        </li>
+                    `: ''}
+                    ${meta[0].processes ? html`<li><b>Processes:</b> ${meta[0].processes.join(', ')}</li>`: ''}
+                    ${meta[0].paramAssignMethod ? html`<li><b>Parameter assignment method:</b> ${meta[0].paramAssignMethod}</li>`: ''}
+                    ${meta[0].adjustableVariables ? html`<li><b>Adjustable parameters:</b> ${meta[0].adjustableVariables.map((v,i) => {
+                        if (i === 0) return html`<code>${v}</code>`;
+                        else return html`, <code>${v}</code>`;
+                    })}</li>`: ''}
+                    ${meta[0].targetVariables ? html`<li><b>Target variables:</b> ${meta[0].targetVariables.map((v,i) => {
+                        if (i === 0) return html`<code>${v}</code>`;
+                        else return html`, <code>${v}</code>`;
+                    })}</li>`: ''}
+                    ${meta[0].compLoc ?  html`
+                        <li><b>Download:</b> ${this._renderLink(meta[0].compLoc)}
+                        <wl-icon style="--icon-size: 18px; vertical-align: text-bottom; margin-left: 5px;">help_outline</wl-icon></li>`
+                        : ''}
+                    </ul>
+                    `
+                )}
+            </fieldset>
+            ` : '' )
     }
 
     _renderMetadataTable () {
