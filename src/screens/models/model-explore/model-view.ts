@@ -259,6 +259,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
 
                 .tooltip {
+                    cursor: help;
                     display: inline-block;
                     position: relative;
                     float: right;
@@ -276,7 +277,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     padding: 5px 15px;
                     position: absolute;
                     z-index: 98;
-                    width: 220px;
+                    width: 300px;
                 }
 
                 .tooltip:hover:before {
@@ -333,7 +334,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
 
                 .col-desc > wl-select {
-                    --input-border-width: 0px;
+                    width: calc(100% - 40px);
+                }
+
+                .col-desc > .tooltip > wl-icon {
+                    padding-top: 16px;
+                    --icon-size: 24px;
                 }
 
                 #desc-ext {
@@ -503,21 +509,20 @@ export class ModelView extends connect(store)(PageViewElement) {
         let hasVersions = (this._versions.length > 0);
         let hasCalibrations = !!(this._config && this._config.calibrations);
         return html`
+            <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" class="tooltip">
+                <wl-icon>help_outline</wl-icon>
+            </span>
             <wl-select label="Select a configuration" id="config-selector" @input="${this._onConfigChange}"
                 class="${hasVersions? '' : 'hidden'}">
-                <div slot="after">
-                    <wl-icon>help_outline</wl-icon>
-                </div>
             </wl-select>
-            <wl-divider style="width: calc(100% - 32px);" class="${hasVersions? '' : 'hidden'}"></wl-divider>
 
+            <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region" class="tooltip">
+                <wl-icon>help_outline</wl-icon>
+            </span>
             <wl-select label="Select a configuration setup" id="calibration-selector" @input="${this._onCalibrationChange}"
                 class="${hasCalibrations? '' : 'hidden'}">
-                <div slot="after">
-                    <wl-icon>help_outline</wl-icon>
-                </div>
             </wl-select>
-            <wl-divider style="width: calc(100% - 32px);" class="${hasCalibrations? '': 'hidden'}"></wl-divider>
+
             <div class="info-center ${hasVersions? 'hidden' : ''}">- No version available -</div>
             <div class="info-center ${(hasCalibrations || !hasVersions || (hasVersions && !this._config))? 'hidden': ''}">- No configuration setup available <a>add one</a> -</div>
         `
@@ -535,7 +540,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${this._model.categories ? html`<div><b>Category:</b> ${this._model.categories}</div>`:''}
                     ${this._model.type ? html`<div><b>Model type:</b> ${this._model.type}</div>`:''}
                 </div>
-                <div class="col-desc"style="text-align: justify;">
+                <div class="col-desc" style="text-align: justify;">
                     <wl-title level="2">
                         ${this._model.label}
                         <a @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
@@ -768,8 +773,8 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _renderMetadataResume (meta) {
         let data = [
-            [this._config, this._configMetadata, 'calibration'], 
-            [this._calibration, this._calibrationMetadata, 'calibration setup']
+            [this._config, this._configMetadata, 'configuration'], 
+            [this._calibration, this._calibrationMetadata, 'configuration setup']
         ]
         return data.map(([obj, meta, title]) => 
             obj ? html` 
@@ -823,7 +828,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                     })}</li>`: ''}
                     ${meta[0].compLoc ?  html`
                         <li><b>Download:</b> ${this._renderLink(meta[0].compLoc)}
-                        <wl-icon style="--icon-size: 18px; vertical-align: text-bottom; margin-left: 5px;">help_outline</wl-icon></li>`
+                            <span tip="This download is an executable containing the code used to execute this ${title}." class="tooltip">
+                                <wl-icon style="--icon-size: 18px; vertical-align: text-bottom; margin-left: 5px;">help_outline</wl-icon>
+                            </span>
+                        </li>`
                         : ''}
                     </ul>
                     `
