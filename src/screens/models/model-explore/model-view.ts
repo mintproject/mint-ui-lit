@@ -322,6 +322,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                     max-height: 200px;
                 }
 
+                .col-img > div {
+                    margin-top: 6px;
+                }
+
                 .col-desc {
                     //border:1px dotted green;
                     grid-column: 2 / 5;
@@ -330,6 +334,15 @@ export class ModelView extends connect(store)(PageViewElement) {
 
                 .col-desc > wl-select {
                     --input-border-width: 0px;
+                }
+
+                #desc-ext {
+                    padding: 10px 5px 0px 5px;
+                }
+
+                #desc-ext > wl-text {
+                    display: block;
+                    margin-bottom: 5px;
                 }
                 
                 .row-tab-header {
@@ -473,6 +486,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${this._model.logo ? 
                     html`<img src="${this._model.logo}"/>`
                     : html`<img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>`}
+                    ${this._model.dateC ? html`<div><b>Creation date:</b> ${this._model.dateC}</div>`:''}
+                    ${this._model.categories ? html`<div><b>Category:</b> ${this._model.categories}</div>`:''}
+                    ${this._model.type ? html`<div><b>Model type:</b> ${this._model.type}</div>`:''}
                 </div>
                 <div class="col-desc"style="text-align: justify;">
                     <wl-title level="2">
@@ -481,10 +497,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </wl-title>
                     <wl-divider style="margin-bottom: .5em;"></wl-divider>
                     <wl-text >${this._model.desc}</wl-text>
-                    <div class="inline-info">
-                        ${this._model.categories ? html`<span><b>Category:</b> ${this._model.categories}</span>`:''}
-                        ${this._model.type ? html`<span><b>Model type:</b> ${this._model.type}</span>`:''}
-                        ${this._model.dateC ? html`<span><b>Creation date:</b> ${this._model.dateC}</span>`:''}
+                    <div id="desc-ext">
+                        ${this._model.authors? html`<wl-text><b>• Authors:</b> ${ this._model.authors.join(', ') }</wl-text>` :''}
+                        ${this._model.fundS? html`<wl-text><b>• Funding:</b> ${ this._model.fundS }</wl-text>` :''}
+                        ${this._model.publisher? html`<wl-text><b>• Publisher:</b> ${ this._model.publisher }</wl-text>` :''}
+                        ${this._model.dateP? html`<wl-text><b>• Publication date:</b> ${ this._model.dateP }</wl-text>` :''}
+                        ${this._model.referenceP? html`<wl-text><b>• Preferred citation:</b> <i>${ this._model.referenceP }<i></wl-text>` :''}
                     </div>
                     ${this._renderSelectors()}
                 </div>
@@ -493,6 +511,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <wl-tab-group>
                         <wl-tab id="tab-overview" ?checked=${this._tab=='overview'} @click="${() => {this._tab = 'overview'}}"
                             >Overview</wl-tab>
+                        <wl-tab id="tab-overview" ?checked=${this._tab=='tech'} @click="${() => {this._tab = 'tech'}}"
+                            >Technical Information</wl-tab>
                         <wl-tab id="tab-io" ?checked=${this._tab=='io'} @click="${() => {this._tab = 'io'}}"
                             >Input/Output</wl-tab>
                         <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => {this._tab = 'variables'}}"
@@ -504,11 +524,68 @@ export class ModelView extends connect(store)(PageViewElement) {
 
                 <div class="row-tab-content">
                     ${(this._tab === 'overview') ? this._renderTabOverview() : ''}
+                    ${(this._tab === 'tech') ? this._renderTabTechnical() : ''}
                     ${(this._tab === 'io') ? this._renderTabIO() : ''}
                     ${(this._tab === 'variables') ? this._renderTabVariables() : ''}
                     ${(this._tab === 'software') ? this._renderTabSoftware() : ''}
                 </div>
             </div>`
+    }
+
+    _renderTabTechnical () {
+        return html`
+            <table class="pure-table pure-table-striped">
+                <tbody>
+                    ${this._model.os? html`
+                    <tr>
+                        <td><b>Operating systems:</b></td>
+                        <td>${this._model.os.join(', ')}</td>
+                    </tr>`
+                    : ''}
+                    ${this._model.pl? html`
+                    <tr>
+                        <td><b>Programing languages:</b></td>
+                        <td>${this._model.pl.join(', ')}</td>
+                    </tr>`
+                    : ''}
+                    ${this._model.memReq? html`
+                    <tr>
+                        <td><b>Memory requirements:</b></td>
+                        <td>${this._model.memReq}</td>
+                    </tr>` : ''}
+                    ${this._model.procReq? html`
+                    <tr>
+                        <td><b>Processor requirements:</b></td>
+                        <td>${this._model.procReq}</td>
+                    </tr>` : ''}
+                    ${this._model.softwareReq? html`
+                    <tr>
+                        <td><b>Software requirements:</b></td>
+                        <td>${this._model.softwareReq}</td>
+                    </tr>` : ''}
+                    ${this._model.downloadURL? html`
+                    <tr>
+                        <td><b>Download:</b></td>
+                        <td>${this._renderLink(this._model.downloadURL)}</td>
+                    </tr>` : ''}
+                    ${this._model.sourceC? html`
+                    <tr>
+                        <td><b>Source code:</b></td>
+                        <td>${this._renderLink(this._model.sourceC)}</td>
+                    </tr>` : ''}
+                    ${this._model.doc? html`
+                    <tr>
+                        <td><b>Documentation:</b></td>
+                        <td>${this._renderLink(this._model.doc)}</td>
+                    </tr>` : ''}
+                    ${this._model.installInstr? html`
+                    <tr>
+                        <td><b>Installation instructions:</b></td>
+                        <td>${this._renderLink(this._model.installInstr)}</td>
+                    </tr>` : ''}
+                </tbody>
+            </table>
+        `
     }
 
     _renderSelector () {
@@ -622,31 +699,6 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _renderTabOverview () {
         return html`
-            <div class="small-wrapper">
-                <div><wl-title level="5">Publication Information:</wl-title>
-    ${this._model.authors?  html`<li><b>Authors:</b> ${ this._model.authors }</li>` :''}
-    ${this._model.contactP?  html`<li><b>Contact:</b> ${ this._model.contactP }</li>` :''}
-    ${this._model.fundS?  html`<li><b>Funding:</b> ${ this._model.fundS }</li>` :''}
-    ${this._model.publisher?  html`<li><b>Publisher:</b> ${ this._model.publisher }</li>` :''}
-    ${this._model.referenceP?  html`<li><b>Preferred citation:</b> ${ this._model.referenceP }</li>` :''}
-    ${this._model.dateP?  html`<li><b>Publication date:</b> ${ this._model.dateP }</li>` :''}
-    ${this._model.citations?  html`<li><b>Citations:</b> ${ this._model.citations }</li>` :''}
-    ${this._model.contributors?  html`<li><b>Contributors:</b> ${ this._model.contributors }</li>` :''}
-                </div>
-
-                <div><wl-title level="5">Technical Information:</wl-title>
-    ${this._model.os?  html`<li><b>Operating systems:</b> ${this._model.os.join(', ')}</li>` : ''}
-    ${this._model.pl?  html`<li><b>Programing languages:</b> ${this._model.pl.join(', ')}</li>` : ''}
-    ${this._model.memReq?  html`<li><b>Memory requirements:</b> ${this._model.memReq}</li>` : ''}
-    ${this._model.procReq?  html`<li><b>Processor requirements:</b> ${this._model.procReq}</li>` : ''}
-    ${this._model.softwareReq?  html`<li><b>Software requirements:</b> ${this._model.softwareReq}</li>` : ''}
-    ${this._model.downloadURL?  html`<li><b>Download:</b> ${this._renderLink(this._model.downloadURL)}</li>` : ''}
-    ${this._model.sourceC?  html`<li><b>Source code:</b> ${this._renderLink(this._model.sourceC)}</li>` : ''}
-    ${this._model.doc?  html`<li><b>Documentation:</b> ${this._renderLink(this._model.doc)}</li>` : ''}
-    ${this._model.installInstr?  html`<li><b>Installation instructions:</b> ${this._renderLink(this._model.installInstr)}</li>` : ''}
-                </div>
-            </div>
-
             ${this._model.purpose? html`
             <details style="margin-bottom: 6px;">
                 <summary><b>Purpose</b></summary>
@@ -715,7 +767,7 @@ export class ModelView extends connect(store)(PageViewElement) {
 
         return html`
             <h3>Metadata:</h3>
-            <table class="pure-table pure-table-bordered">
+            <table class="pure-table pure-table-striped">
                 <thead>
                     <th></th>
                     <th>
