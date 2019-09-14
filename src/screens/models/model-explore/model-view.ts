@@ -8,6 +8,7 @@ import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
          ExplanationDiagramDetail } from "./api-interfaces";
 import { explorerFetchCompatibleSoftware, explorerFetchParameters, explorerFetchVersions, explorerFetchIO,
          explorerFetchIOVarsAndUnits, explorerFetchExplDiags, explorerFetchMetadata } from './actions';
+import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
 
@@ -62,6 +63,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _IOStatus : Set<string> = new Set();
     private _allVersions : any = null;
     private _allModels : any = null;
+    private _uriToUrl : Map<string,string> | null = null;
 
     @property({type: Object})
     private _versions!: VersionDetail[];
@@ -257,6 +259,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
 
                 .tooltip {
+                    cursor: help;
                     display: inline-block;
                     position: relative;
                     float: right;
@@ -274,7 +277,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     padding: 5px 15px;
                     position: absolute;
                     z-index: 98;
-                    width: 220px;
+                    width: 300px;
                 }
 
                 .tooltip:hover:before {
@@ -320,6 +323,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                     max-height: 200px;
                 }
 
+                .col-img > div {
+                    margin-top: 6px;
+                }
+
                 .col-desc {
                     //border:1px dotted green;
                     grid-column: 2 / 5;
@@ -327,7 +334,21 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
 
                 .col-desc > wl-select {
-                    --input-border-width: 0px;
+                    width: calc(100% - 40px);
+                }
+
+                .col-desc > .tooltip > wl-icon {
+                    padding-top: 16px;
+                    --icon-size: 24px;
+                }
+
+                #desc-ext {
+                    padding: 10px 5px 0px 5px;
+                }
+
+                #desc-ext > wl-text {
+                    display: block;
+                    margin-bottom: 5px;
                 }
                 
                 .row-tab-header {
@@ -362,8 +383,57 @@ export class ModelView extends connect(store)(PageViewElement) {
                 
                 .hidden {
                     display: none;
-                }`
+                }
+                
+                .metadata-top-buttons {
+                    float: right;
+                }
+
+                .metadata-top-buttons > .button-preview {
+                    margin-left: 4px;
+                }
+
+                .button-preview {
+                    cursor: pointer;
+                    display: inline-block;
+                }
+
+                .button-preview > div {
+                    display: inline-block;
+                    border-top: 1px solid #D9D9D9;
+                    border-bottom: 1px solid #D9D9D9;
+                    padding: 3px 6px;
+                }
+
+                .button-preview:hover > div:not(:first-child) {
+                    background-color: #F2F2F2;
+                }
+
+                .button-preview:hover > div:first-child {
+                    background-color: #E9E9E9;
+                }
+
+                .button-preview > div:first-child {
+                    border-left: 1px solid #D9D9D9;
+                    background-color: #F6F6F6;
+                    font-weight: 500;
+                    border-bottom-left-radius: 5px;
+                    border-top-left-radius: 5px;
+                }
+
+                .button-preview > div:last-child {
+                    border-right: 1px solid #D9D9D9;
+                    border-left: 1px solid #D9D9D9;
+                    border-bottom-right-radius: 5px;
+                    border-top-right-radius: 5px;
+                }
+                `
         ];
+    }
+
+    _setEditMode () {
+        //TODO: this is work in progress!
+        //store.dispatch(explorerSetMode('edit')); 
     }
 
     _updateConfigSelector () {
@@ -412,20 +482,11 @@ export class ModelView extends connect(store)(PageViewElement) {
         let configSelectorWl = this.shadowRoot!.getElementById('config-selector');
         let configSelector = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
         if (configSelector) {
-            let url = 'models/explore/' + this._modelId + '/';
-
-            let version = this._versions.filter((v) => 
-                v.configs && v.configs.filter((c)=> c.uri === configSelector.value).length>0
-            ).pop();
-            let config = (version && version.configs) ? version.configs.filter(c => c.uri === configSelector.value).pop() : null;
-            let calib = (config && config.calibrations) ? config.calibrations[0] : null;
-
-            url += version? version.id + '/' : 'noVer/';
-            url += config.uri.split('/').pop()
-            if (calib) {
-                url += '/' + calib.uri.split('/').pop();
+            if (this._uriToUrl[configSelector.value]) {
+                goToPage(this._uriToUrl[configSelector.value]);
+            } else {
+                console.error('Theres no URL for selected config URI, please report this issue!');
             }
-            goToPage(url);
         }
     }
 
@@ -433,8 +494,11 @@ export class ModelView extends connect(store)(PageViewElement) {
         let calibrationSelectorWl = this.shadowRoot!.getElementById('calibration-selector');
         let calibrationSelector = calibrationSelectorWl? calibrationSelectorWl.getElementsByTagName('select')[0] : null;
         if (calibrationSelector) {
-            let id = calibrationSelector.value.split('/').pop();
-            goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + this._configId + '/' + id);
+            if (this._uriToUrl[calibrationSelector.value]) {
+                goToPage(this._uriToUrl[calibrationSelector.value]);
+            } else {
+                console.error('Theres no URL for selected configuration setup URI, please report this issue!');
+            }
         }
     }
 
@@ -445,23 +509,22 @@ export class ModelView extends connect(store)(PageViewElement) {
         let hasVersions = (this._versions.length > 0);
         let hasCalibrations = !!(this._config && this._config.calibrations);
         return html`
+            <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" class="tooltip">
+                <wl-icon>help_outline</wl-icon>
+            </span>
             <wl-select label="Select a configuration" id="config-selector" @input="${this._onConfigChange}"
                 class="${hasVersions? '' : 'hidden'}">
-                <div slot="after">
-                    <wl-icon>help_outline</wl-icon>
-                </div>
             </wl-select>
-            <wl-divider style="width: calc(100% - 32px);" class="${hasVersions? '' : 'hidden'}"></wl-divider>
 
-            <wl-select label="Select a calibration" id="calibration-selector" @input="${this._onCalibrationChange}"
+            <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region" class="tooltip">
+                <wl-icon>help_outline</wl-icon>
+            </span>
+            <wl-select label="Select a configuration setup" id="calibration-selector" @input="${this._onCalibrationChange}"
                 class="${hasCalibrations? '' : 'hidden'}">
-                <div slot="after">
-                    <wl-icon>help_outline</wl-icon>
-                </div>
             </wl-select>
-            <wl-divider style="width: calc(100% - 32px);" class="${hasCalibrations? '': 'hidden'}"></wl-divider>
+
             <div class="info-center ${hasVersions? 'hidden' : ''}">- No version available -</div>
-            <div class="info-center ${(hasCalibrations || !hasVersions || (hasVersions && !this._config))? 'hidden': ''}">- No calibration available <a>add one</a> -</div>
+            <div class="info-center ${(hasCalibrations || !hasVersions || (hasVersions && !this._config))? 'hidden': ''}">- No configuration setup available <a>add one</a> -</div>
         `
     }
 
@@ -473,18 +536,23 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${this._model.logo ? 
                     html`<img src="${this._model.logo}"/>`
                     : html`<img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>`}
+                    ${this._model.dateC ? html`<div><b>Creation date:</b> ${this._model.dateC}</div>`:''}
+                    ${this._model.categories ? html`<div><b>Category:</b> ${this._model.categories}</div>`:''}
+                    ${this._model.type ? html`<div><b>Model type:</b> ${this._model.type}</div>`:''}
                 </div>
-                <div class="col-desc"style="text-align: justify;">
+                <div class="col-desc" style="text-align: justify;">
                     <wl-title level="2">
                         ${this._model.label}
-                        <a><wl-icon id="edit-model-icon">edit</wl-icon></a>
+                        <a @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
                     </wl-title>
                     <wl-divider style="margin-bottom: .5em;"></wl-divider>
                     <wl-text >${this._model.desc}</wl-text>
-                    <div class="inline-info">
-                        ${this._model.categories ? html`<span><b>Category:</b> ${this._model.categories}</span>`:''}
-                        ${this._model.type ? html`<span><b>Model type:</b> ${this._model.type}</span>`:''}
-                        ${this._model.dateC ? html`<span><b>Creation date:</b> ${this._model.dateC}</span>`:''}
+                    <div id="desc-ext">
+                        ${this._model.authors? html`<wl-text><b>• Authors:</b> ${ this._model.authors.join(', ') }</wl-text>` :''}
+                        ${this._model.fundS? html`<wl-text><b>• Funding:</b> ${ this._model.fundS }</wl-text>` :''}
+                        ${this._model.publisher? html`<wl-text><b>• Publisher:</b> ${ this._model.publisher }</wl-text>` :''}
+                        ${this._model.dateP? html`<wl-text><b>• Publication date:</b> ${ this._model.dateP }</wl-text>` :''}
+                        ${this._model.referenceP? html`<wl-text><b>• Preferred citation:</b> <i>${ this._model.referenceP }<i></wl-text>` :''}
                     </div>
                     ${this._renderSelectors()}
                 </div>
@@ -493,6 +561,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <wl-tab-group>
                         <wl-tab id="tab-overview" ?checked=${this._tab=='overview'} @click="${() => {this._tab = 'overview'}}"
                             >Overview</wl-tab>
+                        <wl-tab id="tab-overview" ?checked=${this._tab=='tech'} @click="${() => {this._tab = 'tech'}}"
+                            >Technical Information</wl-tab>
                         <wl-tab id="tab-io" ?checked=${this._tab=='io'} @click="${() => {this._tab = 'io'}}"
                             >Input/Output</wl-tab>
                         <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => {this._tab = 'variables'}}"
@@ -504,11 +574,68 @@ export class ModelView extends connect(store)(PageViewElement) {
 
                 <div class="row-tab-content">
                     ${(this._tab === 'overview') ? this._renderTabOverview() : ''}
+                    ${(this._tab === 'tech') ? this._renderTabTechnical() : ''}
                     ${(this._tab === 'io') ? this._renderTabIO() : ''}
                     ${(this._tab === 'variables') ? this._renderTabVariables() : ''}
                     ${(this._tab === 'software') ? this._renderTabSoftware() : ''}
                 </div>
             </div>`
+    }
+
+    _renderTabTechnical () {
+        return html`
+            <table class="pure-table pure-table-striped">
+                <tbody>
+                    ${this._model.os? html`
+                    <tr>
+                        <td><b>Operating systems:</b></td>
+                        <td>${this._model.os.join(', ')}</td>
+                    </tr>`
+                    : ''}
+                    ${this._model.pl? html`
+                    <tr>
+                        <td><b>Programing languages:</b></td>
+                        <td>${this._model.pl.join(', ')}</td>
+                    </tr>`
+                    : ''}
+                    ${this._model.memReq? html`
+                    <tr>
+                        <td><b>Memory requirements:</b></td>
+                        <td>${this._model.memReq}</td>
+                    </tr>` : ''}
+                    ${this._model.procReq? html`
+                    <tr>
+                        <td><b>Processor requirements:</b></td>
+                        <td>${this._model.procReq}</td>
+                    </tr>` : ''}
+                    ${this._model.softwareReq? html`
+                    <tr>
+                        <td><b>Software requirements:</b></td>
+                        <td>${this._model.softwareReq}</td>
+                    </tr>` : ''}
+                    ${this._model.downloadURL? html`
+                    <tr>
+                        <td><b>Download:</b></td>
+                        <td>${this._renderLink(this._model.downloadURL)}</td>
+                    </tr>` : ''}
+                    ${this._model.sourceC? html`
+                    <tr>
+                        <td><b>Source code:</b></td>
+                        <td>${this._renderLink(this._model.sourceC)}</td>
+                    </tr>` : ''}
+                    ${this._model.doc? html`
+                    <tr>
+                        <td><b>Documentation:</b></td>
+                        <td>${this._renderLink(this._model.doc)}</td>
+                    </tr>` : ''}
+                    ${this._model.installInstr? html`
+                    <tr>
+                        <td><b>Installation instructions:</b></td>
+                        <td>${this._renderLink(this._model.installInstr)}</td>
+                    </tr>` : ''}
+                </tbody>
+            </table>
+        `
     }
 
     _renderSelector () {
@@ -622,30 +749,7 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _renderTabOverview () {
         return html`
-            <div class="small-wrapper">
-                <div><wl-title level="5">Publication Information:</wl-title>
-    ${this._model.authors?  html`<li><b>Authors:</b> ${ this._model.authors }</li>` :''}
-    ${this._model.contactP?  html`<li><b>Contact:</b> ${ this._model.contactP }</li>` :''}
-    ${this._model.fundS?  html`<li><b>Funding:</b> ${ this._model.fundS }</li>` :''}
-    ${this._model.publisher?  html`<li><b>Publisher:</b> ${ this._model.publisher }</li>` :''}
-    ${this._model.referenceP?  html`<li><b>Preferred citation:</b> ${ this._model.referenceP }</li>` :''}
-    ${this._model.dateP?  html`<li><b>Publication date:</b> ${ this._model.dateP }</li>` :''}
-    ${this._model.citations?  html`<li><b>Citations:</b> ${ this._model.citations }</li>` :''}
-    ${this._model.contributors?  html`<li><b>Contributors:</b> ${ this._model.contributors }</li>` :''}
-                </div>
-
-                <div><wl-title level="5">Technical Information:</wl-title>
-    ${this._model.os?  html`<li><b>Operating systems:</b> ${this._model.os.join(', ')}</li>` : ''}
-    ${this._model.pl?  html`<li><b>Programing languages:</b> ${this._model.pl.join(', ')}</li>` : ''}
-    ${this._model.memReq?  html`<li><b>Memory requirements:</b> ${this._model.memReq}</li>` : ''}
-    ${this._model.procReq?  html`<li><b>Processor requirements:</b> ${this._model.procReq}</li>` : ''}
-    ${this._model.downloadURL?  html`<li><b>Download:</b> ${this._renderLink(this._model.downloadURL)}</li>` : ''}
-    ${this._model.sourceC?  html`<li><b>Source code:</b> ${this._renderLink(this._model.sourceC)}</li>` : ''}
-    ${this._model.doc?  html`<li><b>Documentation:</b> ${this._renderLink(this._model.doc)}</li>` : ''}
-    ${this._model.installInstr?  html`<li><b>Installation instructions:</b> ${this._renderLink(this._model.installInstr)}</li>` : ''}
-                </div>
-            </div>
-
+            ${this._config ? this._renderMetadataResume() : ''}
             ${this._model.purpose? html`
             <details style="margin-bottom: 6px;">
                 <summary><b>Purpose</b></summary>
@@ -664,8 +768,76 @@ export class ModelView extends connect(store)(PageViewElement) {
             </details>
             `:html``}
 
-            ${this._renderMetadataTable()}
             ${this._renderGallery()}`
+    }
+
+    _renderMetadataResume (meta) {
+        let data = [
+            [this._config, this._configMetadata, 'configuration'], 
+            [this._calibration, this._calibrationMetadata, 'configuration setup']
+        ]
+        return data.map(([obj, meta, title]) => 
+            obj ? html` 
+            <fieldset style="border-radius: 5px; padding-top: 0px; border: 2px solid #D9D9D9; margin-bottom: 8px;">
+                <legend style="font-weight: bold; font-size: 12px; color: gray;">Selected ${title}</legend>
+                ${(meta && meta.length > 0) ? html`
+                <div class="metadata-top-buttons">
+                    <div class="button-preview" @click=${() => this._changeTab('io')}>
+                        <div>Input files</div>
+                        <div>${(meta[0]['input_variables'] || []).length}</div>
+                    </div>
+                    <div class="button-preview" @click=${() => this._changeTab('io')}>
+                        <div>Output files</div>
+                        <div>${(meta[0]['output_variables'] || []).length}</div>
+                    </div>
+                    <div class="button-preview" @click=${() => this._changeTab('io')}>
+                        <div>Parameters</div>
+                        <div>${(meta[0]['parameters'] || []).length}</div>
+                    </div>
+                </div>
+                ` : ''}
+                <wl-title level="2" style="font-size: 16px;">${obj.label}</wl-title>
+
+                ${!meta ? 
+                html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`
+                : (meta.length==0 ?
+                    html`<div class="info-center">- No metadata available. -</div>`
+                    : html `
+                    <wl-text>${meta[0].desc}</wl-text>
+                    <ul>
+                    ${meta[0].regionName ? html`<li><b>Region:</b> ${meta[0].regionName}</li>`: ''}
+                    ${meta[0].tIValue && meta[0].tIUnits ? html`<li><b>Time interval:</b> ${meta[0].tIValue + ' ' + meta[0].tIUnits}</li>` : ''}
+                    ${meta[0].gridType && meta[0].gridDim && meta[0].gridSpatial ? html`
+                        <li><b>Grid details:</b> 
+                            <ul>
+                                <li><b>Type:</b> ${meta[0].gridType}</li>
+                                <li><b>Dimentions:</b> <span style="font-family: system-ui;">${meta[0].gridDim}</span></li>
+                                <li><b>Spatial resolution:</b> ${meta[0].gridSpatial}</li>
+                            </ul>
+                        </li>
+                    `: ''}
+                    ${meta[0].processes ? html`<li><b>Processes:</b> ${meta[0].processes.join(', ')}</li>`: ''}
+                    ${meta[0].paramAssignMethod ? html`<li><b>Parameter assignment method:</b> ${meta[0].paramAssignMethod}</li>`: ''}
+                    ${meta[0].adjustableVariables ? html`<li><b>Adjustable parameters:</b> ${meta[0].adjustableVariables.map((v,i) => {
+                        if (i === 0) return html`<code>${v}</code>`;
+                        else return html`, <code>${v}</code>`;
+                    })}</li>`: ''}
+                    ${meta[0].targetVariables ? html`<li><b>Target variables:</b> ${meta[0].targetVariables.map((v,i) => {
+                        if (i === 0) return html`<code>${v}</code>`;
+                        else return html`, <code>${v}</code>`;
+                    })}</li>`: ''}
+                    ${meta[0].compLoc ?  html`
+                        <li><b>Download:</b> ${this._renderLink(meta[0].compLoc)}
+                            <span tip="This download is an executable containing the code used to execute this ${title}." class="tooltip">
+                                <wl-icon style="--icon-size: 18px; vertical-align: text-bottom; margin-left: 5px;">help_outline</wl-icon>
+                            </span>
+                        </li>`
+                        : ''}
+                    </ul>
+                    `
+                )}
+            </fieldset>
+            ` : '' )
     }
 
     _renderMetadataTable () {
@@ -694,6 +866,8 @@ export class ModelView extends connect(store)(PageViewElement) {
             features.push({name: 'Parameters', render: (m) => m['parameters'].join(', ')})
         if (meta.filter((m:any) => m['processes']).length>0)
             features.push({name: 'Processes', render: (m) => m['processes'].join(', ')})
+        if (meta.filter((m:any) => m['tIValue']).length>0 && meta.filter((m:any) => m['tIUnits']))
+            features.push({name: 'Time interval', render: (m) => m['tIValue'] + ' ' + m['tIUnits']})
         if (meta.filter((m:any) => m['gridType']).length>0)
             features.push({name: 'Grid type', render: (m) => m['gridType']})
         if (meta.filter((m:any) => m['gridDim']).length>0)
@@ -707,14 +881,28 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (meta.filter((m:any) => m['targetVariables']).length>0)
             features.push({name: 'Target variables', render: (m) => (m['targetVariables']||[]).join(', ')})
         if (meta.filter((m:any) => m['compLoc']).length>0)
-            features.push({name: 'Download', render: (m) => this._renderLink(m['compLoc'])})
+            features.push({name: 'Download', render: (m) => m['compLoc'] ? this._renderLink(m['compLoc']) : ''})
+
 
         return html`
             <h3>Metadata:</h3>
-            <table class="pure-table pure-table-bordered">
+            <table class="pure-table pure-table-striped">
                 <thead>
                     <th></th>
-                    ${meta.map((m:any) => html`<th>${m.label}</th>`)}
+                    <th>
+                        <div style="font-size: 12px;">Selected configuration:</div>
+                        <div style="font-size: 14px; color: black; font-weight: bold;">${meta[0].label}<b>
+                    </th>
+                    ${this._calibration && (!this._calibrationMetadata || this._calibrationMetadata.length > 0) ? html`
+                    <th>${(this._calibrationMetadata || []).length > 0 ? html`
+                        <div style="font-size: 12px;">Selected configuration setup:</div>
+                        <div style="font-size: 14px; color: black; font-weight: bold;">${meta[1].label}<b>`
+                        : html`
+                        <div style="font-size: 12px;">Loading setup...</div>
+                        <wl-progress-bar style="width: 100px"></wl-progress-bar>
+                        `}
+                    </th>`
+                    :''}
                 </thead>
                 <tbody>
                     ${features.map((ft:any) => html`
@@ -951,13 +1139,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                         : html``
                     }
                     ${(this._compOutput && this._compOutput.length>0)?
-                        html`<h3> This model configuraion produces variables that can be used by:</h3>
+                        html`<h3> This model configuration produces variables that can be used by:</h3>
                         ${this._renderCompatibleVariableTable(this._compOutput)}`
                         : html``
                     }`
                 : html``
             }`
-            : html`<br/><h3 style="margin-left:30px">Please select a version and configuration for this model.</h3>`
+            : html`<br/><h3 style="margin-left:30px">Please select a configuration for this model.</h3>`
         }
         ${this._compModels? html`
         <h3> Related models: </h3>
@@ -980,57 +1168,12 @@ export class ModelView extends connect(store)(PageViewElement) {
         ${(!this._compModels && (!this._compInput || this._compInput.length == 0) && (!this._compOutput || this._compOutput.length == 0))?
             html`
                 <br/><h3 style="margin-left:30px">
-                    This information has not been specified yet.
+                    No compatible software has been described in the model catalog yet.
                 </h3>
             `
             :html``
         }
         `
-    }
-
-    _renderMetadata (title: string, metadata:any) {
-        let meta = metadata[0];
-        return html`
-        <details style="margin-top: 10px;">
-            <summary><b>${title}</b></summary>
-            <ul>
-                ${meta.label? html`<li><b>Name:</b> ${meta.label}</li>`:html``}
-                ${meta.regionName? html`<li><b>Region name:</b>
-                    ${meta.regionName}</li>`:html``}
-                ${meta.desc? html`<li><b>Description:</b>
-                    ${meta.desc}</li>`:html``}
-                ${meta.input_variables? 
-                    html`<li>
-                    <b class="clickable" @click="${()=>{this._changeTab('io')}}">Input Variables:</b>
-                    ${meta.input_variables.length}</li>`:html``}
-                ${meta.output_variables? 
-                    html`<li>
-                    <b class="clickable" @click="${()=>{this._changeTab('io')}}">Output Variables:</b>
-                    ${meta.output_variables.length}</li>`:html``}
-                ${meta.parameters? 
-                    html`<li>
-                    <b class="clickable" @click="${()=>{this._changeTab('io')}}">Parameters:</b>
-                    ${meta.parameters.length}</li>`:html``}
-                ${meta.processes? html`<li><b>Processes:</b>
-                    ${meta.processes.join(', ')}</li>`:html``}
-                ${meta.gridType? html`<li><b>Grid Type:</b>
-                    ${meta.gridType}</li>`:html``}
-                ${meta.gridDim? html`<li><b>Grid Dimentions:</b>
-                    ${meta.gridDim}</li>`:html``}
-                ${meta.gridSpatial? html`<li><b>Spatial resolution:</b>
-                    ${meta.gridSpatial}</li>`:html``}
-                ${meta.paramAssignMethod? html`<li><b>Parameter assignment method:</b>
-                    ${meta.paramAssignMethod}</li>`:html``}
-                ${meta.adjustableVariables? html`<li><b>Adjustable variables:</b>
-                    ${meta.adjustableVariables.join(', ')}</li>`:html``}
-                ${meta.targetVariables? html`<li><b>Target variables:</b>
-                    ${meta.targetVariables.join(', ')}</li>`:html``}
-                ${meta.compLoc? html`<li><b>Download:</b>
-                    <a target="_blank" href="${meta.compLoc}">
-                        ${meta.compLoc.split('/')[
-                        meta.compLoc.split('/').length-1]}</a></li>`:html``}
-            </ul>
-        </details>`;
     }
 
     _renderTab (tabName : 'overview'|'io'|'variables'|'software') {
@@ -1049,8 +1192,11 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _goToModel (model:any) {
-        let id : string = model.uri.split('/').pop();
-        goToPage('models/explore/' + id);
+        if (this._uriToUrl[model.uri]) {
+            goToPage(this._uriToUrl[model.uri]);
+        } else {
+            console.error('Theres no URL for selected model URI, please report this issue!');
+        }
     }
 
     _renderGallery () {
@@ -1216,6 +1362,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 let db = state.explorer;
                 this._allVersions = db.versions;
                 this._allModels = db.models;
+                this._uriToUrl= db.urls;
                 if (!this._model && db.models) {
                     this._model = db.models[this._selectedModel];
                 }

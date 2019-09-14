@@ -2,7 +2,7 @@ import { Reducer } from "redux";
 import { RootAction } from "../../../app/store";
 import { EXPLORER_SELECT_MODEL, EXPLORER_SELECT_VERSION, EXPLORER_SELECT_CONFIG,
          EXPLORER_SELECT_CALIBRATION, EXPLORER_SET_COMPARE_A, EXPLORER_SET_COMPARE_B,
-         EXPLORER_COMPARE_MODEL } from './ui-actions'
+         EXPLORER_COMPARE_MODEL, EXPLORER_SET_MODE } from './ui-actions'
 
 export interface ComparisonEntry {
     model:          string;
@@ -16,6 +16,7 @@ export interface ExplorerUIState {
     selectedVersion:        string;
     selectedConfig:         string;
     selectedCalibration:    string;
+    mode:                   'view' | 'edit';
     compareA?:              ComparisonEntry | null;
     compareB?:              ComparisonEntry | null;
 }
@@ -25,6 +26,7 @@ const INITIAL_STATE: ExplorerUIState = {
     selectedVersion:        '',
     selectedConfig:         '',
     selectedCalibration:    '',
+    mode:                   'view',
     compareA:               null,
     compareB:               null
 }
@@ -56,6 +58,11 @@ const explorerUI: Reducer<ExplorerUIState, RootAction> = (state = INITIAL_STATE,
             return {
                 ...state,
                 selectedCalibration: action.uri
+            }
+        case EXPLORER_SET_MODE:
+            return {
+                ...state,
+                mode: action.mode
             }
         case EXPLORER_SET_COMPARE_A:
             return {

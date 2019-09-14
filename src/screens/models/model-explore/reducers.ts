@@ -1,7 +1,7 @@
 import { Reducer } from "redux";
 import { RootAction } from "../../../app/store";
 import { EXPLORER_FETCH, EXPLORER_VERSIONS, EXPLORER_IO, EXPLORER_VAR_UNIT, EXPLORER_COMPATIBLE_INPUT,
-         EXPLORER_COMPATIBLE_OUTPUT, EXPLORER_MODEL_METADATA, EXPLORER_GET_PARAMETERS, 
+         EXPLORER_COMPATIBLE_OUTPUT, EXPLORER_MODEL_METADATA, EXPLORER_GET_PARAMETERS, EXPLORER_URLS,
          EXPLORER_GET_EXPL_DIAGS, EXPLORER_SEARCH_BY_VAR_NAME } from './actions'
 import { FetchedModel, IODetail, VersionDetail, VariableDetail, CompIODetail,
          ExplanationDiagramDetail } from './api-interfaces'
@@ -26,6 +26,7 @@ export interface ExplorerState {
     parameters:         any;
     explDiagrams:       UriExplDiag;
     search:             SearchResult;
+    urls:               Map<string,string>;
 }
 
 const INITIAL_STATE: ExplorerState = { 
@@ -39,7 +40,8 @@ const INITIAL_STATE: ExplorerState = {
     modelMetadata:      {},
     parameters:         {},
     explDiagrams:       {} as UriExplDiag,
-    search:             {} as SearchResult
+    search:             {} as SearchResult,
+    urls:               {}
 }
 
 const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -55,6 +57,12 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
             return {
                 ...state,
                 versions: newVersions
+            }
+        case EXPLORER_URLS:
+            let newUrls = {...state.urls, ...action.details};
+            return {
+                ...state,
+                urls: newUrls
             }
         case EXPLORER_VAR_UNIT:
             let newVariables = {...state.variables};

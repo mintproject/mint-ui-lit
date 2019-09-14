@@ -9,6 +9,8 @@ export const EXPLORER_SELECT_VERSION = 'EXPLORER_SELECT_VERSION'
 export const EXPLORER_SELECT_CONFIG = 'EXPLORER_SELECT_CONFIG'
 export const EXPLORER_SELECT_CALIBRATION = 'EXPLORER_SELECT_CALIBRATION'
 
+export const EXPLORER_SET_MODE = 'EXPLORER_SET_MODE';
+
 export const EXPLORER_SET_COMPARE_A = 'EXPLORER_SET_COMPARE_A';
 export const EXPLORER_SET_COMPARE_B = 'EXPLORER_SET_COMPARE_B';
 export const EXPLORER_COMPARE_MODEL = 'EXPLORER_COMPARE_MODEL';
@@ -20,6 +22,8 @@ export interface ExplorerActionSelectVersion extends ActionSelectUri<'EXPLORER_S
 export interface ExplorerActionSelectConfig extends ActionSelectUri<'EXPLORER_SELECT_CONFIG'> {};
 export interface ExplorerActionSelectCalibration extends ActionSelectUri<'EXPLORER_SELECT_CALIBRATION'> {};
 
+export interface ExplorerActionSetMode extends Action<'EXPLORER_SET_MODE'> {mode: string};
+
 interface ActionCompare<T> extends Action<T> { compare: ComparisonEntry };
 
 export interface ExplorerActionCompareA extends ActionCompare<'EXPLORER_SET_COMPARE_A'> {};
@@ -28,7 +32,7 @@ export interface ExplorerActionCompareModel extends ActionSelectUri<'EXPLORER_CO
 
 export type ExplorerUIAction = ExplorerActionSelectModel | ExplorerActionSelectVersion | ExplorerActionSelectConfig | 
                                ExplorerActionSelectCalibration | ExplorerActionCompareA | ExplorerActionCompareB |
-                               ExplorerActionCompareModel;
+                               ExplorerActionCompareModel | ExplorerActionSetMode;
 
 type ExplorerThunkResult = ThunkAction<void, RootState, undefined, ExplorerUIAction>;
 
@@ -67,6 +71,10 @@ export const explorerSetCalibration: ActionCreator<ExplorerThunkResult> = (id:st
 
 export const explorerClearCalibration: ActionCreator<ExplorerThunkResult> = () => (dispatch) => {
     dispatch({ type: EXPLORER_SELECT_CALIBRATION, uri: '' })
+};
+
+export const explorerSetMode: ActionCreator<ExplorerThunkResult> = (mode:string) => (dispatch) => {
+    dispatch({ type: EXPLORER_SET_MODE, mode: mode})
 };
 
 export const explorerSetCompareA: ActionCreator<ExplorerThunkResult> = (comp:ComparisonEntry) => (dispatch) => {
