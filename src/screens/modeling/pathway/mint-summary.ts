@@ -8,8 +8,10 @@ import { getUISelectedSubgoal, getUISelectedGoal } from "../../../util/state_fun
 import { MintPathwayPage } from "./mint-pathway-page";
 import { getVariableLongName } from "../../../offline_data/variable_list";
 
-@customElement('mint-visualize')
-export class MintVisualize extends connect(store)(MintPathwayPage) {
+import "../../../components/editable-note";
+
+@customElement('mint-summary')
+export class MintSummary extends connect(store)(MintPathwayPage) {
 
     @property({type: Object})
     private _goal!: Goal;
@@ -25,12 +27,6 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
               margin: 4px;
           }
 
-          iframe {
-              width:100%;
-              border: 0px solid black;
-              height: 70vh;
-          }
-
           #notes {
               border: 0px;
               resize: none;
@@ -38,57 +34,20 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
           `
         ]
     }
+
+    ss (t) {
+        console.log('>', t);
+    }
     
     protected render() {
         if(!this.pathway) {
             return html ``;
         }
-
-        let responseV = this.pathway.response_variables.length > 0?
-                            getVariableLongName(this.pathway.response_variables[0]) : '';
-        let drivingV = this.pathway.driving_variables.length > 0?
-                            getVariableLongName(this.pathway.driving_variables[0]) : '';
+        let txt = 'This is a text that should appear in the textbox, shoulnd be editable.'
 
         return html`
-        <style>
-        i {
-            display: block;
-            margin: 10px 0px;
-            color: #999;
-        }
-        </style>
-        ${(this.pathway.visualizations && this.pathway.visualizations.length > 0)? html`
-            <h2>Visualizations 
-                ${responseV? 'of response variable ' + responseV : ''}
-                ${drivingV? 'to explore driving variable ' + drivingV : ''}
-            </h2>
-            ${this.pathway.visualizations.map((viz) => this._renderVisualization(viz))}
-            <fieldset class="notes">
-                <legend>Notes</legend>
-                <textarea id="notes">Write some notes here.</textarea>
-            </fieldset>
-            <br/>
-            <details>
-                <summary>Summary of models explored to generate visualizations</summary>
-                ${this._renderSummary()}
-            </details>
-        ` : html`
-            ${this._renderSummary()}
-        `}
-        `;
-    }
-
-    _renderVisualization (visualization: {[type:string]: string, [url:string]: string}) {
-        switch (visualization.type) {
-            case 'web':
-                return html`<iframe src="${visualization.url}"></iframe>`;
-            default:
-                return html`<a href="${visualization.url}" target="_blank">${visualization.url}</a>`;
-        }
-    }
-
-    _renderSummary () {
-        return html`
+        <editable-note .text="${txt}" .save="${this.ss}"></editable-note>
+        <br/>
         <h2>${this.scenario.name}</h2>
         <div class="clt">
             <ul>

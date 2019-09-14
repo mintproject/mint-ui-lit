@@ -155,6 +155,14 @@ export interface WingsParameterTypes {
     [inputid: string] : string
 }
 
+export interface WingsTemplateSeed {
+    tid?: string,
+    datasets: Object,
+    parameters: Object,
+    paramtypes: Object,
+}
+
+
 /* End of Wings Types */
 
 
@@ -268,11 +276,11 @@ export const fetchWingsTemplatesList = async(config: UserPreferences) : Promise<
     });
 }
 
-export const fetchWingsTemplate = async(tname: string, config: UserPreferences) : Promise<WingsTemplatePackage> => {
+export const fetchWingsTemplate = async(tid: string, config: UserPreferences) : Promise<WingsTemplatePackage> => {
     return new Promise<WingsTemplatePackage>((resolve, reject) => {
         var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
-        var exurl = config.wings.export_url + "/export/users/" + config.wings.username + "/" + config.wings.domain;
-        var tid = exurl + "/workflows/" + tname + ".owl#" + tname;
+        //var exurl = config.wings.export_url + "/export/users/" + config.wings.username + "/" + config.wings.domain;
+        //var tid = exurl + "/workflows/" + tname + ".owl#" + tname;
 
         getResource({
             url: purl + "/workflows/getEditorJSON?template_id=" + escape(tid),
@@ -469,6 +477,24 @@ export const fetchWingsRunStatus = (ensemble: ExecutableEnsemble, config: UserPr
                     }
                 });
                 nensemble.run_progress = numdone/totalsteps;
+                nensemble.results = [];
+                if(nensemble.status == "SUCCESS") {
+                    nensemble.run_progress = 1;
+                    
+                    // Look for outputs that aren't inputs to any other steps
+                    let outputfiles = {};
+                    ex.plan.steps.map((step: any) => {
+                        step.outputFiles.map((file: any) => {
+                            outputfiles[file.id] = file;
+                        })
+                    })
+                    ex.plan.steps.map((step: any) => {
+                        step.inputFiles.map((file: any) => {
+                            delete outputfiles[file.id];
+                        })
+                    })
+                    nensemble.results = Object.values(outputfiles);
+                }
                 resolve(nensemble);
             },
             onError: function() {

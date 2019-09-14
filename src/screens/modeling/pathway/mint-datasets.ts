@@ -143,7 +143,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                         let dataset = this.pathway.datasets![binding];
                                         return html`
                                         <li>
-                                        <a href="datasets/browse/${dataset.id}">${dataset.name}</a> (${dataset.resources.length} resources)
+                                        <a href="datasets/browse/${dataset.id}">${dataset.name}</a> (${(dataset.resources || []).length} resources)
                                         </li>
                                         `;
                                     })}

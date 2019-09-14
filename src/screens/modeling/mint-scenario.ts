@@ -4,7 +4,7 @@ import { store, RootState } from "../../app/store";
 import { PageViewElement } from "../../components/page-view-element";
 import { ScenarioDetails, SubGoal, Goal, Pathway, Scenario, Notes } from "./reducers";
 import { SharedStyles } from "../../styles/shared-styles";
-import { addGoal, addPathway, addSubGoal, deletePathway, deleteGoal, deleteSubGoal, getScenarioDetail, deleteScenario, addGoalFull, addSubGoalFull, updateSubGoal, updateGoal, updateScenario } from "./actions";
+import { addGoal, addPathway, addSubGoal, deletePathway, deleteGoal, deleteSubGoal, getScenarioDetail, deleteScenario, addGoalFull, addSubGoalFull, updateSubGoal, updateGoal, updateScenario, updatePathway } from "./actions";
 
 import "weightless/icon";
 import "weightless/tooltip";
@@ -33,6 +33,9 @@ export class MintScenario extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _selectedSubgoal!: SubGoal | null;
+
+    @property({type: String})
+    private _selectedPathwayId!: String | null;
 
     @property({type: Boolean})
     private _hideObjectives: Boolean = false;
@@ -111,6 +114,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
             return html``;
         }
         return html`
+            <!-- Top Scenario Heading -->
             <div class="cltrow scenariorow">
                 <wl-button flat inverted @click="${()=> goToPage('modeling')}">
                     <wl-icon>arrow_back_ios</wl-icon>
@@ -123,7 +127,11 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 <wl-icon @click="${this._onDeleteScenario}" 
                     class="actionIcon deleteIcon bigActionIcon">delete</wl-icon>
             </div>
+
+            <!-- Two Columns Section -->
             <div class="twocolumns">
+
+                <!-- Left Column : Tree of Objectives/Subobjectives -->
                 <div class="${this._hideObjectives ? 'left_closed' : 'left'}">
                     <div class="clt">
                         <div class="cltrow_padded scenariorow">
@@ -182,18 +190,54 @@ export class MintScenario extends connect(store)(PageViewElement) {
                         </ul>
                     </div>
                 </div>
-                <div class="${this._hideObjectives ? 'right_full' : 'right'}">
-                        <div class="card2">
-                            <wl-icon @click="${this._onAddPathway}" 
-                                class="actionIcon bigActionIcon" style="float:right">note_add</wl-icon>
-                            <wl-icon @click="${() => this._hideObjectives = !this._hideObjectives}"
-                                class="actionIcon bigActionIcon" style="float:right">
-                                ${!this._hideObjectives ? "fullscreen" : "fullscreen_exit"}
-                            </wl-icon>
 
-                            <mint-pathway ?active="${this._selectedSubgoal}"
-                                .scenario=${this._scenario}></mint-pathway>
+                <!-- Right Column : Pathway Tree + Pathway details -->
+                <div class="${this._hideObjectives ? 'right_full' : 'right'}">
+                    <div class="card2">
+                    ${this._selectedSubgoal ?
+                        html`
+                        <div class="clt">
+                            <div class="cltrow scenariorow">
+                                <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
+                                    <wl-title level="4">Threads</wl-title>
+                                </div>
+                                <wl-icon @click="${this._addPathwayDialog}" 
+                                    class="actionIcon">note_add</wl-icon>
+                                &nbsp;&nbsp;
+                                <wl-icon @click="${() => this._hideObjectives = !this._hideObjectives}"
+                                    class="actionIcon bigActionIcon" style="float:right">
+                                    ${!this._hideObjectives ? "fullscreen" : "fullscreen_exit"}</wl-icon>
+                            </div>
+                            <ul>
+                            ${((this._selectedSubgoal || {}).pathwayids || []).map((pathwayid) => {
+                                let pathway = this._scenario_details.pathways[pathwayid];
+                                let pname = pathway.name ? pathway.name : this._selectedSubgoal.name;
+                                let url = "modeling/scenario/" + this._scenario!.id + "/" + 
+                                    this._selectedSubgoal.id + "/" + pathwayid;
+                                return html`
+                                    <li class="active ${this._getPathwayClass(pathwayid!)}">
+                                        <div class="cltrow subgoalrow" id="pathway_${pathwayid}"
+                                                @click="${this._onSelectPathway}"
+                                                data-pathwayid="${pathwayid}">
+                                            <div class="cltmain">${pname}</div>
+                                            <wl-icon @click="${this._editPathwayDialog}" 
+                                                data-pathwayid="${pathwayid}"
+                                                class="actionIcon editIcon">edit</wl-icon>
+                                            <wl-icon @click="${this._onDeletePathway}" 
+                                                data-pathwayid="${pathwayid}"
+                                                class="actionIcon deleteIcon">delete</wl-icon>
+                                        </div>
+                                    </li>
+                                `;
+                            })}
+                            </ul>
                         </div>
+
+                        <mint-pathway ?active="${this._selectedSubgoal}"
+                            .scenario=${this._scenario}></mint-pathway>
+                    </div>
+                    ` : ''
+                    }
                 </div>
             </div>
         </div>
@@ -502,8 +546,37 @@ export class MintScenario extends connect(store)(PageViewElement) {
         this._addPathway(subgoalid);
     }
 
-    _onAddPathway() {
-        this._addPathway(this._selectedSubgoal.id);
+    _addPathwayDialog() {
+        let pathwayname = prompt("Please enter a name for the new thread");
+        if(pathwayname && this._selectedSubgoal) {
+            let pathway = {
+                name: pathwayname,
+                driving_variables: [],
+                response_variables: [],
+                models: {},
+                datasets: {},
+                model_ensembles: {},
+                executable_ensembles: [],
+                notes: {} as Notes
+            } as Pathway;
+            let pathwayid = addPathway(this._scenario, this._selectedSubgoal.id!, pathway);
+            // Update Scenario Details to the new pathway (we don't update scenario details from firebase every time as its expensive)
+            pathway.id = pathwayid;
+            this._scenario_details.pathways[pathwayid] = pathway;
+            showNotification("saveNotification", this.shadowRoot!);
+        }
+    }
+    
+    _editPathwayDialog(e: Event) {
+        let pathwayid = (e.currentTarget as HTMLButtonElement).dataset['pathwayid'];
+        let pathway = this._scenario_details!.pathways[pathwayid!];
+        let subgoal = this._selectedSubgoal;
+        let pathwayname = prompt("Please enter a new name for the thread", pathway.name);
+        if(pathwayname) {
+            pathway.name = pathwayname;
+            updatePathway(this._scenario, pathway);
+            showNotification("saveNotification", this.shadowRoot!); 
+        }
     }
 
     _addPathway(subgoalid:string) {
@@ -536,8 +609,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
         // Delete scenario itself. Scenario deletion returns a "Promise"
         deleteScenario(this._scenario!).then(() => {
             hideNotification("deleteNotification", this.shadowRoot!);
-            window.history.pushState({}, "MINT", BASE_HREF);
-            store.dispatch(navigate(decodeURIComponent(BASE_HREF)));
+            goToPage("modeling");
         });
  
     }
@@ -627,46 +699,45 @@ export class MintScenario extends connect(store)(PageViewElement) {
     }
 
     _onDeletePathway(e: Event) {
-        if(!confirm("Do you want to delete this pathway ?"))
+        e.preventDefault();
+        e.stopPropagation();
+
+        if(!confirm("Do you want to delete this thread ?"))
             return;
+        
         let pathwayid = (e.currentTarget as HTMLButtonElement).dataset['pathwayid'];    
-        if(this._selectedSubgoal && pathwayid)
+        if(this._selectedSubgoal && pathwayid) {
             this._deletePathway(this._selectedSubgoal.id!, pathwayid);
+            showNotification("deleteNotification", this.shadowRoot!);
+        }
     }
 
     _deletePathway(subgoalid: string, pathwayid: string) {
-        if(subgoalid && pathwayid)
+        if(subgoalid && pathwayid) {
             deletePathway(this._scenario!, subgoalid, pathwayid);
+            delete this._scenario_details.pathways[pathwayid];
+        }
     }
 
-
     _onSelectSubgoal(e: Event) {
-        let subgoalid = (e.currentTarget as HTMLDivElement).dataset['subgoalid'];
+        let subgoalid = (e.currentTarget as HTMLButtonElement).dataset['subgoalid'];
         let subgoal = this._scenario_details!.subgoals[subgoalid!];
         if(subgoal && (!this._selectedSubgoal || (this._selectedSubgoal.id != subgoalid))) {
-            //console.log("%%%%% "  + this._regionid);
-            goToPage("modeling/scenario/" + this._scenario!.id + "/" + subgoal.id + "/" + subgoal.pathwayids![0]);
-            //store.dispatch(selectSubgoal(subgoal.id));
-            //store.dispatch(selectPathway(subgoal.pathwayids![0])); 
             // Selecting the first pathway of the subgoal by default
             // TODO: Think about handling multiple pathways in an elegant manner
+            goToPage("modeling/scenario/" + this._scenario!.id + "/" + subgoal.id + "/" + subgoal.pathwayids![0]);
         }
     }
 
     _onSelectPathway(e: Event) {
-        let pathwayid = (e.currentTarget as HTMLDivElement).dataset['pathwayid'];
-        // Change url to the new pathway
-        /*
-        let pathway = this._scenario_details!.pathways[pathwayid];
-        if(pathway && (!this._selectedPathway || (this._selectedPathway.id != pathwayid))) {
-            //console.log("%%%%% "  + this._regionid);
-            goToPage("modeling/scenario/" + this._scenario!.id + "/" + 
-                this._selectedSubgoal.id + "/" + pathway.id!
-            //store.dispatch(selectSubgoal(subgoal.id));
-            //store.dispatch(selectPathway(subgoal.pathwayids![0])); 
+        let pathwayid = (e.currentTarget as HTMLButtonElement).dataset['pathwayid'];
+        let pathway = this._scenario_details!.pathways[pathwayid!];
+        let subgoal = this._selectedSubgoal;
+        if(pathway && subgoal) {
             // Selecting the first pathway of the subgoal by default
             // TODO: Think about handling multiple pathways in an elegant manner
-        }*/
+            goToPage("modeling/scenario/" + this._scenario!.id + "/" + subgoal.id + "/" + pathway.id);
+        }
     }
 
     _getSubgoalClass(subgoalid:string) {
@@ -676,9 +747,18 @@ export class MintScenario extends connect(store)(PageViewElement) {
         return "";
     }
 
+    _getPathwayClass(pathwayid:string) {
+        if(this._selectedPathwayId == pathwayid) {
+            return "highlighted";
+        }
+        return "";
+    }
+
     stateChanged(state: RootState) {
         super.setRegionId(state);
-        
+        if(state.ui && state.ui.selected_pathwayid) 
+            this._selectedPathwayId = state.ui.selected_pathwayid;
+
         // If a scenario has been selected, fetch scenario details
         let scenarioid = state.ui!.selected_scenarioid;
         let user = state.app.user;
@@ -692,12 +772,13 @@ export class MintScenario extends connect(store)(PageViewElement) {
                     console.log("Unsubscribing to scenario " + state.modeling.scenario.id);
                     state.modeling.scenario.unsubscribe();
                 }
-               console.log("Subscribing to scenario " + scenarioid);
+                console.log("Subscribing to scenario " + scenarioid);
 
                 // Reset the scenario details
                 this._scenario = null;
                 this._scenario_details = null;
                 this._selectedSubgoal = null;
+                this._selectedPathwayId = null;
 
                 this._dispatched = true;
 
@@ -709,9 +790,8 @@ export class MintScenario extends connect(store)(PageViewElement) {
 
             // If we've already got the details in the state
             // - extract details from the state
-            if(this._dispatched && state.modeling.scenario && state.modeling.scenario.id == scenarioid) {
+            if(state.modeling.scenario && state.modeling.scenario.id == scenarioid) {
                 this._dispatched = false;
-
                 this._scenario_details = state.modeling.scenario;
                 this._scenario = {
                     id: this._scenario_details.id,
@@ -725,10 +805,17 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 hideNotification("deleteNotification", this.shadowRoot!);
             }
         }
+
+        // If no subgoal/pathway selected, then show objectives tree
+        if(this._selectedSubgoal == null) {
+            this._hideObjectives = false;
+        }
+
         if(state.modeling.scenario && state.modeling.scenario.subgoals) {
             // If a subgoal has been selected
             this._selectedSubgoal = getUISelectedSubgoal(state)!;
         }
+
         if(!user && state.modeling.scenario) {
             // Logged out, Unsubscribe
             if(state.modeling.scenario.unsubscribe) {

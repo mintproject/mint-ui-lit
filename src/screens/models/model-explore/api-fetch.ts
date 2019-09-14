@@ -82,29 +82,34 @@ const createUrl = (params: ApiParams) : string => {
     return String(url);
 }
 
+let cache = {}
+
 export const apiFetch = (params: ApiParams) : Promise<any> => {
     let url = createUrl(params);
 
-    return new Promise( (resolve, reject) => {
-        fetch(url).then((response:any) => {
-            response.json().then((jr:any) => {
-                let bindings = jr["results"]["bindings"];
-                let data = bindings.map((obj:any) => {
-                    return Object.keys(obj).reduce((acc, key) => {
-                        if (params.rules && params.rules[key]) {
-                            let f = params.rules[key].newValue;
-                            acc[params.rules[key].newKey || key] = f ? f(obj[key].value) : obj[key].value;
-                        } else {
-                            acc[key] = obj[key].value;
-                        }
-                        return acc;
-                    }, {});
-                });
-                resolve(data);
-            })
-        }).catch( (e:any) => {
-            reject(e);
+    if (!cache[url]) {
+        console.log('fetching', url);
+        cache[url] = new Promise( (resolve, reject) => {
+            fetch(url).then((response:any) => {
+                response.json().then((jr:any) => {
+                    let bindings = jr["results"]["bindings"];
+                    let data = bindings.map((obj:any) => {
+                        return Object.keys(obj).reduce((acc, key) => {
+                            if (params.rules && params.rules[key]) {
+                                let f = params.rules[key].newValue;
+                                acc[params.rules[key].newKey || key] = f ? f(obj[key].value) : obj[key].value;
+                            } else {
+                                acc[key] = obj[key].value;
+                            }
+                            return acc;
+                        }, {});
+                    });
+                    resolve(data);
+                })
+            }).catch( (e:any) => {
+                reject(e);
+            });
         });
-
-    });
+    }
+    return cache[url];
 };

@@ -1,21 +1,9 @@
-/**
-@license
-Copyright (c) 2018 The Polymer Project Authors. All rights reserved.
-This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
-The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
-The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
-Code distributed by Google as part of the polymer project is also
-subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
-*/
-
 import { html, customElement, property, css } from 'lit-element';
 
-// These are the shared styles needed by this element.
 import { SharedStyles } from '../../styles/shared-styles';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from '../../app/store';
 
-// Actions needed by this element
 import { listScenarios, addScenario } from './actions';
 import { ScenarioList, Scenario } from './reducers';
 
@@ -195,9 +183,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
         hideDialog("scenarioDialog", this.shadowRoot!);
         showNotification("saveNotification", this.shadowRoot!);
     
-        let path = BASE_HREF+"scenario/"+scenarioid;
-        window.history.pushState({}, "MINT", path);
-        store.dispatch(navigate(decodeURIComponent(path)));
+        goToPage("modeling/scenario/"+scenarioid);
 
     }
     else {
@@ -245,7 +231,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
   }
 
   protected firstUpdated() {    
-    store.dispatch(listTopRegions());
+    //store.dispatch(listTopRegions()); done by mint-app
     store.dispatch(listScenarios());
     // list summaries of datasets, models, etc
   }

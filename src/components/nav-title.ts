@@ -51,7 +51,7 @@ export class NavTitle extends LitElement {
 
                 <div class="cltmain" id="nav-container">
                 ${this.nav.map((n,i) => { return (i<this.max) ? html`
-                    ${(i>0 && len===1)? html`<wl-title level="3" style="padding:0px 10px; cursor: default;">/</wl-title>`: html``}
+                    ${(i>1)? html`<wl-title level="3" style="padding:0px 10px; cursor: default;">/</wl-title>`: html``}
                     ${(i>=this.min || len===1)? ((i===len-1) ? html`
                     <wl-title level="3" style="cursor: default;">${n.label}</wl-title>
                     `:html`

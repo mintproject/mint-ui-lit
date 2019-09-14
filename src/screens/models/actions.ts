@@ -158,8 +158,7 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                                 type: value.type,
                                 variables: []
                             };
-                            // FIXME: Hack until we remove cycles_weather fixed value
-                            if(value.fixedValueURL && value.iolabel != "cycles_weather") {
+                            if(value.fixedValueURL) {
                                 io.value = {
                                     id: value.fixedValueDCId,
                                     resources: [{
@@ -221,12 +220,12 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                         spatial_grid_resolution: meta['gridSpatial'] || "",
                         minimum_output_time_interval: ""
                     };
-                    console.log(model);
+                    //console.log(model);
                     return model;
                 });
             });
         Promise.all(calibrationPromises).then(function(models) {
-            console.log(models)
+            //console.log(models)
             dispatch({
                 type: MODELS_VARIABLES_QUERY,
                 variables: response_variables,

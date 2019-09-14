@@ -14,14 +14,16 @@ import "../../components/google-map-json-layer";
 
 import { showDialog, hideDialog } from 'util/ui_functions';
 import { GoogleMap } from '../../thirdparty/google-map/src/google-map';
+import { GoogleMapJsonLayer } from '../../components/google-map-json-layer';
 
 @customElement('regions-editor')
 export class RegionsEditor extends connect(store)(PageViewElement)  {
-    @property({type: String})
-    public parentRegionId: string;
 
     @property({type: String})
     public regionType: string;
+
+    @property({type: String})
+    private _parentRegionName: string;
 
     @property({type: Object})
     private _regions: RegionList = {};
@@ -40,12 +42,16 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         return [
             SharedStyles,
             css `
+            :host {
+                width: 100%;
+            }
+
             .cltrow wl-button {
                 padding: 2px;
             }
 
             .map {
-                height: calc(100% - 45px);
+                height: var(--map-height, calc(100% - 45px));
                 width: 100%;
             }
             `
@@ -54,31 +60,21 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     protected render() {
         return html`
-        <div class="cltrow">
-            <wl-button flat inverted @click="${()=> goToPage('regions')}">
-                <wl-icon>arrow_back_ios</wl-icon>
-            </wl-button>
-            <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                <wl-title level="4" style="margin: 0px">${this.regionType} Regions</wl-title>
-            </div>
-            <wl-icon @click="${this._showAddRegionsDialog}" 
-                class="actionIcon bigActionIcon">note_add</wl-icon>
-        </div>
         ${this.regionType ? 
-            html`<p>The following shows the current ${this.regionType} areas of ${this.parentRegionId}</p>` : ""}
+            html`
+            <p>
+                The following map shows the current ${this.regionType} areas of ${this._parentRegionName || this._regionid}
+                <wl-icon @click="${this._showAddRegionsDialog}" style="float:right;"
+                    class="actionIcon bigActionIcon">note_add</wl-icon>
+            </p>
+            `
+            : ""
+        }
 
         <!-- FIXME: Latitude, Longitude, Zoom should be automatically generated from the regions -->
-        <google-map class="map" api-key="${GOOGLE_API_KEY}" 
+        <google-map class="map" api-key="${GOOGLE_API_KEY}" id="map_${this._regionid}"
             latitude="8" longitude="40" zoom="5" disable-default-ui="true" draggable="true"
             mapTypeId="terrain" styles="${this._mapStyles}">
-
-            ${Object.keys(this._regions || {}).map((regionid) => {
-              let region = this._regions![regionid];
-              return html`
-                <google-map-json-layer region_id="${region.id}" region_name="${region.name}" 
-                    url="${region.geojson}" json="${region.geojson_blob}"></google-map-json-layer>
-              `;
-            })}
         </google-map>
 
         ${this._renderAddRegionsDialog()}
@@ -86,11 +82,31 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     }
 
     public clearMap() {
-        console.log("Clearing Map");
+        //console.log("Clearing Map");
         let mapelement = this.shadowRoot.querySelector("google-map") as GoogleMap;
         if(mapelement && mapelement.map) {
             let map = mapelement.map;
-            map.data.forEach((feature) => mapelement.map.data.remove(feature));
+            map.data.forEach((feature) => {
+                mapelement.map.data.remove(feature);
+            });
+            mapelement.innerHTML = "";
+        }
+    }
+
+    public addRegionsToMap() {
+        this.clearMap();                
+
+        let mapelement = this.shadowRoot.querySelector("google-map") as GoogleMap;
+        if(mapelement && mapelement.map) {
+            Object.keys(this._regions || {}).map((regionid) => {
+                let region = this._regions![regionid];
+                let layer = new GoogleMapJsonLayer();
+                layer.url = region.geojson;
+                layer.json = JSON.parse(region.geojson_blob);
+                layer.region_id = region.id;
+                layer.region_name = region.name;
+                mapelement.appendChild(layer);
+            });
         }
     }
 
@@ -135,7 +151,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             return;
         }
         
-        addRegions(this.parentRegionId, newregions).then(() => {
+        addRegions(this._regionid, newregions).then(() => {
             hideDialog("addRegionDialog", this.shadowRoot);
         });
     }
@@ -254,9 +270,14 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             }
             else {
                 this._dispatched = false;
-                this.clearMap();
-                this._regions = qr[this._regionid][this.regionType];
-                console.log(this._regions);
+                this._regions = qr[this._regionid][this.regionType];                
+                this.addRegionsToMap();
+                //console.log(this._regions);
+            }
+
+            // Set parent region
+            if (state && state.regions && state.regions.regions && state.regions.regions[this._regionid]) {
+                this._parentRegionName = state.regions.regions[this._regionid].name;
             }
         }
     }

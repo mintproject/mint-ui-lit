@@ -163,9 +163,11 @@ const _addToVariableMap = (vars: Object) => {
     Object.keys(vars).map((categoryname) => {
         let category = vars[categoryname];
         Object.keys(category).map((varid) => {
-            let stdname = category[varid]["SVO_name"];
+            let stdname = category[varid]["SVO_name"].split(/,\s*/);
             let name = category[varid]["long_name"];
-            VARIABLE_MAP[stdname] = name;
+            stdname.forEach((stdn) => {
+                VARIABLE_MAP[stdn] = name;
+            });
         })
     })
 }
@@ -175,5 +177,6 @@ _addToVariableMap(VARIABLES['driving variable']);
 _addToVariableMap(VARIABLES['response variable']);
 
 export const getVariableLongName = (stdname: string) => {
-    return VARIABLE_MAP[stdname];
+    let stdn = stdname.split(/,\s*/)[0];
+    return VARIABLE_MAP[stdn];
 }
