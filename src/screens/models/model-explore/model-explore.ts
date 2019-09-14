@@ -80,6 +80,8 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             #model-comparison {
                 margin: 0 auto;
                 width: 75%;
+                max-height: 100%;
+                overflow: scroll;
             }
 
             #model-search-results {
