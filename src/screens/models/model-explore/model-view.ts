@@ -5,9 +5,10 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from '../../../app/store';
 
 import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail, CompIODetail,
-         ExplanationDiagramDetail } from "./api-interfaces";
-import { explorerFetchCompatibleSoftware, explorerFetchParameters, explorerFetchVersions, explorerFetchIO,
-         explorerFetchIOVarsAndUnits, explorerFetchExplDiags, explorerFetchMetadata } from './actions';
+         ExplanationDiagramDetail } from "../../../util/api-interfaces";
+import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersionsForModel, 
+        fetchIOAndVarsSNForConfig, fetchVarsSNAndUnitsForIO, fetchDiagramsForModelConfig,
+        fetchMetadataForModelConfig } from '../../../util/model-catalog-actions';
 import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
@@ -1224,7 +1225,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     expandIO (uri:string) {
         if (!this._variables[uri]) {
             //Dont call this on click! FIXME
-            store.dispatch(explorerFetchIOVarsAndUnits(uri)); 
+            store.dispatch(fetchVarsSNAndUnitsForIO(uri)); 
             this._IOStatus.add(uri);
         }
     }
@@ -1313,9 +1314,9 @@ export class ModelView extends connect(store)(PageViewElement) {
             // Fetch & reset data
             if (modelChanged) {
                 if (ui.selectedModel) {
-                    store.dispatch(explorerFetchVersions(ui.selectedModel));
-                    store.dispatch(explorerFetchExplDiags(ui.selectedModel));
-                    store.dispatch(explorerFetchMetadata(ui.selectedModel));
+                    store.dispatch(fetchVersionsForModel(ui.selectedModel));
+                    store.dispatch(fetchDiagramsForModelConfig(ui.selectedModel));
+                    store.dispatch(fetchMetadataForModelConfig(ui.selectedModel));
                 }
                 this._selectedModel = ui.selectedModel;
 
@@ -1327,10 +1328,10 @@ export class ModelView extends connect(store)(PageViewElement) {
             }
             if (configChanged) {
                 if (ui.selectedConfig) {
-                    store.dispatch(explorerFetchMetadata(ui.selectedConfig));
-                    store.dispatch(explorerFetchCompatibleSoftware(ui.selectedConfig));
-                    store.dispatch(explorerFetchIO(ui.selectedConfig));
-                    store.dispatch(explorerFetchParameters(ui.selectedConfig));
+                    store.dispatch(fetchMetadataForModelConfig(ui.selectedConfig));
+                    store.dispatch(fetchCompatibleSoftwareForConfig(ui.selectedConfig));
+                    store.dispatch(fetchIOAndVarsSNForConfig(ui.selectedConfig));
+                    store.dispatch(fetchParametersForConfig(ui.selectedConfig));
                 }
                 this._selectedConfig = ui.selectedConfig;
                 this._config = null;
@@ -1343,9 +1344,9 @@ export class ModelView extends connect(store)(PageViewElement) {
             }
             if (calibrationChanged) {
                 if (ui.selectedCalibration) {
-                    store.dispatch(explorerFetchMetadata(ui.selectedCalibration));
-                    store.dispatch(explorerFetchIO(ui.selectedCalibration));
-                    store.dispatch(explorerFetchParameters(ui.selectedCalibration));
+                    store.dispatch(fetchMetadataForModelConfig(ui.selectedCalibration));
+                    store.dispatch(fetchIOAndVarsSNForConfig(ui.selectedCalibration));
+                    store.dispatch(fetchParametersForConfig(ui.selectedCalibration));
                 }
                 this._selectedCalibration = ui.selectedCalibration;
                 this._calibration = null;

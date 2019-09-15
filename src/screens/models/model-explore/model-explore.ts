@@ -8,11 +8,11 @@ import { store, RootState } from '../../../app/store';
 
 import { goToPage } from '../../../app/actions';
 
-import { explorerFetch, explorerSearchByVarName } from './actions';
+import { fetchModels, fetchSearchModelByVarSN } from '../../../util/model-catalog-actions';
 import { explorerSetCompareA, explorerSetCompareB } from "./ui-actions";
-import explorer from "./reducers";
+import explorer from '../../../util/model-catalog-reducers';
 import explorerUI from "./ui-reducers";
-import { UriModels } from './reducers';
+import { UriModels } from '../../../util/model-catalog-reducers';
 
 import './model-preview'
 import './model-view'
@@ -263,7 +263,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             })
             this._activeCount = 0;
             this._lastTimeout = setTimeout(
-                ()=>{ store.dispatch(explorerSearchByVarName(input)); },
+                ()=>{ store.dispatch(fetchSearchModelByVarSN(input)); },
                 750);
         } else {
             this._loading=false;
@@ -272,7 +272,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     }
 
     firstUpdated() {
-        store.dispatch(explorerFetch());
+        store.dispatch(fetchModels());
     }
 
     stateChanged(state: RootState) {

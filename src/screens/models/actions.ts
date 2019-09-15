@@ -10,7 +10,8 @@ export const MODELS_VARIABLES_QUERY = 'MODELS_VARIABLES_QUERY';
 export const MODELS_LIST = 'MODELS_LIST';
 export const MODELS_DETAIL = 'MODELS_DETAIL';
 
-import { apiFetch,  CALIBRATIONS_FOR_VAR_SN, METADATA_NOIO_FOR_MODEL_CONFIG, PARAMETERS_FOR_CONFIG, IO_AND_VARS_SN_FOR_CONFIG } from './model-explore/api-fetch';
+import { apiFetch,  CALIBRATIONS_FOR_VAR_SN, METADATA_NOIO_FOR_MODEL_CONFIG, PARAMETERS_FOR_CONFIG,
+IO_AND_VARS_SN_FOR_CONFIG } from '../../util/model-catalog-requests';
 import { Dataset } from "../datasets/reducers";
 
 export interface ModelsActionList extends Action<'MODELS_LIST'> { models: Model[] };
