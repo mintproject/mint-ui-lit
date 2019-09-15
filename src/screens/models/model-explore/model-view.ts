@@ -462,6 +462,10 @@ export class ModelView extends connect(store)(PageViewElement) {
             while (calibrationSelector.options.length > 0) {
                 calibrationSelector.remove(calibrationSelector.options.length - 1);
             }
+            let unselect = document.createElement('option');
+            unselect.text = '\xA0\xA0No setup selected'
+            unselect.value = '';
+            calibrationSelector.add(unselect, null);
             (this._config.calibrations || []).forEach((c:any) => {
                 let newOption = document.createElement('option');
                 newOption.text = '\xA0\xA0' + c.label;
@@ -491,6 +495,17 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (calibrationSelector) {
             if (this._uriToUrl[calibrationSelector.value]) {
                 goToPage(this._uriToUrl[calibrationSelector.value]);
+            } else if (calibrationSelector.value === '') {
+                let id = this._config.uri.split('/').pop();
+                let fullURI = this._uriToUrl[this._config.uri]
+                let sp = fullURI.split('/')
+                let frg = '';
+                do {
+                    frg = sp.pop();
+                } while (frg != id);
+                sp.push(frg);
+                let uri = sp.join('/');
+                goToPage(uri);
             } else {
                 console.error('Theres no URL for selected configuration setup URI, please report this issue!');
             }
