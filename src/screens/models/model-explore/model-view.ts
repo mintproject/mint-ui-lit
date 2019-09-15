@@ -339,7 +339,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
 
                 .col-desc > wl-select {
-                    width: calc(100% - 40px);
+                    width: calc(100% - 55px);
+                    margin-left:25px;
                 }
 
                 .col-desc > .tooltip > wl-icon {
@@ -387,7 +388,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
                 
                 .hidden {
-                    display: none;
+                    display: none !important;
                 }
                 
                 .metadata-top-buttons {
@@ -431,6 +432,16 @@ export class ModelView extends connect(store)(PageViewElement) {
                     border-left: 1px solid #D9D9D9;
                     border-bottom-right-radius: 5px;
                     border-top-right-radius: 5px;
+                }
+
+                .rdf-icon {
+                    display: inline-block;
+                    vertical-align: middle;
+                    height: 22px;
+                    width: 24px;
+                    background: url(images/rdf.png) no-repeat 0px 0px;
+                    background-size: 20px 22px;
+                    cursor: pointer;
                 }
                 `
         ];
@@ -529,16 +540,22 @@ export class ModelView extends connect(store)(PageViewElement) {
         let hasVersions = (this._versions.length > 0);
         let hasCalibrations = !!(this._config && this._config.calibrations);
         return html`
-            <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" class="tooltip">
+            <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" 
+                class="tooltip ${hasVersions? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
+            <a target="_blank" href="${this._config ? this._config.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
+                class="rdf-icon ${this._config? '' : 'hidden'}"></a> 
             <wl-select label="Select a configuration" id="config-selector" @input="${this._onConfigChange}"
                 class="${hasVersions? '' : 'hidden'}">
             </wl-select>
 
-            <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region" class="tooltip">
+            <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region"
+                class="tooltip ${hasCalibrations? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
+            <a target="_blank" href="${this._calibration ? this._calibration.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
+                class="rdf-icon ${this._calibration? '' : 'hidden'}"></a> 
             <wl-select label="Select a configuration setup" id="calibration-selector" @input="${this._onCalibrationChange}"
                 class="${hasCalibrations? '' : 'hidden'}">
             </wl-select>
@@ -562,6 +579,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </div>
                 <div class="col-desc" style="text-align: justify;">
                     <wl-title level="2">
+                        <a target="_blank" href="${this._model ? this._model.uri : ''}" class="rdf-icon"></a>
                         ${this._model.label}
                         <a @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
                     </wl-title>
