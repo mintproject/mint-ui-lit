@@ -571,14 +571,14 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <wl-tab-group>
                         <wl-tab id="tab-overview" ?checked=${this._tab=='overview'} @click="${() => {this._tab = 'overview'}}"
                             >Overview</wl-tab>
-                        <wl-tab id="tab-overview" ?checked=${this._tab=='tech'} @click="${() => {this._tab = 'tech'}}"
-                            >Technical Information</wl-tab>
                         <wl-tab id="tab-io" ?checked=${this._tab=='io'} @click="${() => {this._tab = 'io'}}"
                             >Input/Output</wl-tab>
                         <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => {this._tab = 'variables'}}"
                             >Variables</wl-tab>
                         <wl-tab id="tab-software" @click="${() => {this._tab = 'software'}}"
                             >Compatible Software</wl-tab>
+                        <wl-tab id="tab-overview" ?checked=${this._tab=='tech'} @click="${() => {this._tab = 'tech'}}"
+                            >Technical Information</wl-tab>
                     </wl-tab-group>
                 </div>
 
@@ -948,7 +948,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <th>Name</th>
                     <th>Description</th>
                     <th>Format</th>
-                    ${this._calibration? html`<th>Fixed value</th>` : html``}
+                    ${this._calibration? html`<th>Value in this setup</th>` : html``}
                 </thead>
                 <tbody>
                 ${this._inputs.map( io => html`
@@ -974,7 +974,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <th>Name</th>
                     <th>Description</th>
                     <th>Format</th>
-                    ${this._calibration? html`<th>Fixed value</th>` : html``}
+                    ${this._calibration? html`<th>Value in this setup</th>` : html``}
                 </thead>
                 <tbody>
                 ${this._outputs.map( io => html`
@@ -1002,7 +1002,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <th>Description</th>
                         <th>Datatype</th>
                         <th>Default value</th>
-                        ${this._calibration? html`<th>Fixed value</th>` : html``}
+                        ${this._calibration? html`<th>Value in this setup</th>` : html``}
                     </thead>
                     <tbody>
                     ${this._parameters.map( (p:any) => html`
