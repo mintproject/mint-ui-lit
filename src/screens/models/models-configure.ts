@@ -1,4 +1,3 @@
-
 import { property, html, customElement, css } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
@@ -7,10 +6,10 @@ import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
 
-import { explorerFetch, explorerFetchVersions, explorerFetchParameters } from './model-explore/actions';
+import { fetchModels, fetchVersionsForModel, fetchParametersForConfig } from '../../util/model-catalog-actions';
 
 import "weightless/progress-spinner";
-import { UriModels } from './model-explore/reducers';
+import { UriModels } from '../../util/model-catalog-reducers';
 
 @customElement('models-configure')
 export class ModelsConfigure extends connect(store)(PageViewElement) {
@@ -246,12 +245,12 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             this._selectedUri = uri;
             this._selectedLabel = label;
             this._parameters = null;
-            store.dispatch(explorerFetchParameters(uri));
+            store.dispatch(fetchParametersForConfig(uri));
         }
     }
 
     firstUpdated() {
-        store.dispatch(explorerFetch());
+        store.dispatch(fetchModels());
     }
 
     stateChanged(state: RootState) {
@@ -259,7 +258,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             if (state.explorer.models && Object.values(state.explorer.models).length >0 && this._models == null) {
                 this._models = state.explorer.models;
                 Object.keys(this._models).forEach((uri) =>{
-                    store.dispatch(explorerFetchVersions(uri));
+                    store.dispatch(fetchVersionsForModel(uri));
                     this._waitingVersions.add(uri);
                 });
             }

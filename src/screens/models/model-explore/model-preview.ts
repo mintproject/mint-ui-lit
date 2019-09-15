@@ -7,7 +7,7 @@ import { html, property, customElement, css } from 'lit-element';
 
 import { goToPage } from '../../../app/actions';
 
-import { FetchedModel } from "./api-interfaces";
+import { FetchedModel } from "../../../api-interfaces";
 import { ExplorerStyles } from './explorer-styles'
 import { explorerCompareModel } from './ui-actions'
 
