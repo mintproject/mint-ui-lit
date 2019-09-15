@@ -7,8 +7,8 @@ import { store, RootState } from '../../../app/store';
 import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail, CompIODetail,
          ExplanationDiagramDetail } from "../../../util/api-interfaces";
 import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersionsForModel, 
-        fetchIOAndVarsSNForConfig, fetchVarsSNAndUnitsForIO, fetchDiagramsForModelConfig,
-        fetchMetadataForModelConfig, fetchMetadataNoioForModelConfig } from '../../../util/model-catalog-actions';
+        fetchIOAndVarsSNForConfig, fetchVarsSNAndUnitsForIO, fetchDiagramsForModelConfig,  fetchSampleVisForModelConfig,
+        fetchMetadataForModelConfig, fetchMetadataNoioForModelConfig, fetchScreenshotsForModelConfig } from '../../../util/model-catalog-actions';
 import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
@@ -22,6 +22,10 @@ import "weightless/icon";
 import "weightless/progress-spinner";
 import "weightless/progress-bar";
 import '../../../components/image-gallery'
+
+function capitalizeFirstLetter (s:string) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 @customElement('model-view')
 export class ModelView extends connect(store)(PageViewElement) {
@@ -83,6 +87,12 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _explDiagrams : ExplanationDiagramDetail[] | null = null;
+
+    @property({type: Object})
+    private _sampleVis : any = null;
+
+    @property({type: Object})
+    private _screenshots : any = null;
 
     @property({type: String})
     private _tab : 'overview'|'io'|'variables'|'software' = 'overview';
@@ -329,7 +339,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
 
                 .col-desc > wl-select {
-                    width: calc(100% - 40px);
+                    width: calc(100% - 55px);
+                    margin-left:25px;
                 }
 
                 .col-desc > .tooltip > wl-icon {
@@ -377,7 +388,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
                 
                 .hidden {
-                    display: none;
+                    display: none !important;
                 }
                 
                 .metadata-top-buttons {
@@ -421,6 +432,16 @@ export class ModelView extends connect(store)(PageViewElement) {
                     border-left: 1px solid #D9D9D9;
                     border-bottom-right-radius: 5px;
                     border-top-right-radius: 5px;
+                }
+
+                .rdf-icon {
+                    display: inline-block;
+                    vertical-align: middle;
+                    height: 22px;
+                    width: 24px;
+                    background: url(images/rdf.png) no-repeat 0px 0px;
+                    background-size: 20px 22px;
+                    cursor: pointer;
                 }
                 `
         ];
@@ -519,16 +540,22 @@ export class ModelView extends connect(store)(PageViewElement) {
         let hasVersions = (this._versions.length > 0);
         let hasCalibrations = !!(this._config && this._config.calibrations);
         return html`
-            <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" class="tooltip">
+            <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" 
+                class="tooltip ${hasVersions? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
+            <a target="_blank" href="${this._config ? this._config.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
+                class="rdf-icon ${this._config? '' : 'hidden'}"></a> 
             <wl-select label="Select a configuration" id="config-selector" @input="${this._onConfigChange}"
                 class="${hasVersions? '' : 'hidden'}">
             </wl-select>
 
-            <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region" class="tooltip">
+            <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region"
+                class="tooltip ${hasCalibrations? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
+            <a target="_blank" href="${this._calibration ? this._calibration.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
+                class="rdf-icon ${this._calibration? '' : 'hidden'}"></a> 
             <wl-select label="Select a configuration setup" id="calibration-selector" @input="${this._onCalibrationChange}"
                 class="${hasCalibrations? '' : 'hidden'}">
             </wl-select>
@@ -552,6 +579,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </div>
                 <div class="col-desc" style="text-align: justify;">
                     <wl-title level="2">
+                        <a target="_blank" href="${this._model ? this._model.uri : ''}" class="rdf-icon"></a>
                         ${this._model.label}
                         <a @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
                     </wl-title>
@@ -626,22 +654,22 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${this._model.downloadURL? html`
                     <tr>
                         <td><b>Download:</b></td>
-                        <td>${this._renderLink(this._model.downloadURL)}</td>
+                        <td><a target="_blank" href="${this._model.downloadURL}">${this._model.downloadURL}</a></td>
                     </tr>` : ''}
                     ${this._model.sourceC? html`
                     <tr>
                         <td><b>Source code:</b></td>
-                        <td>${this._renderLink(this._model.sourceC)}</td>
+                        <td><a target="_blank" href="${this._model.sourceC}">${this._model.sourceC}</a></td>
                     </tr>` : ''}
                     ${this._model.doc? html`
                     <tr>
                         <td><b>Documentation:</b></td>
-                        <td>${this._renderLink(this._model.doc)}</td>
+                        <td><a target="_blank" href="${this._model.doc}">${this._model.doc}</a></td>
                     </tr>` : ''}
                     ${this._model.installInstr? html`
                     <tr>
                         <td><b>Installation instructions:</b></td>
-                        <td>${this._renderLink(this._model.installInstr)}</td>
+                        <td><a target="_blank" href="${this._model.installInstr}">${this._model.installInstr}</a></td>
                     </tr>` : ''}
                 </tbody>
             </table>
@@ -993,30 +1021,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </tbody>
             </table>` : html``}
 
-            ${(this._parameters)? 
-            html`
-                <h3> Parameters: </h3>
-                <table class="pure-table pure-table-bordered">
-                    <thead>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Datatype</th>
-                        <th>Default value</th>
-                        ${this._calibration? html`<th>Value in this setup</th>` : html``}
-                    </thead>
-                    <tbody>
-                    ${this._parameters.map( (p:any) => html`
-                        <tr>
-                            <td>${p.paramlabel}</td>
-                            <td>${p.description}</td>
-                            <td>${p.pdatatype}</td>
-                            <td>${p.defaultvalue}</td>
-                            ${this._calibration? html`<td>${p.fixedValue}</td>` : html``}
-                        </tr>`)}
-                    </tbody>
-                </table>
-            `
-            :html``}
+            ${(this._parameters)? this._renderParametersTable() : html``}
             ${(!this._inputs && !this._outputs && !this._parameters)? html`
             <br/>
             <h3 style="margin-left:30px">
@@ -1024,6 +1029,48 @@ export class ModelView extends connect(store)(PageViewElement) {
             </h3>`
             :html ``}
             `;
+    }
+
+    _renderParametersTable () {
+        if (!this._parameters) { 
+            return html`<div class="text-centered">
+                LOADING PARAMETERS
+                <object style="height: 10px; margin-left: 6px;" type="image/svg+xml" data="images/dots.svg"></object>
+            </div>`
+        }
+        if (this._parameters.length > 0) {
+            return html`
+                <h3> Parameters: </h3>
+                <table class="pure-table pure-table-bordered">
+                    <thead>
+                        <th style="text-align: right;">#</th>
+                        <th>Description</th>
+                        <th>Name</th>
+                        <th style="text-align: right;">Default value</th>
+                        ${this._calibration? html`<th style="text-align: right;">Value in this setup</th>` : html``}
+                    </thead>
+                    <tbody>
+                    ${this._parameters.sort((a,b) => (a.position < b.position) ? -1 : (a.position > b.position? 1 : 0)).map( (p:any) => html`
+                        <tr>
+                            <td style="text-align: right;">${p.position}</td>
+                            <td>
+                                <b style="font-size: 14px;">${ capitalizeFirstLetter(p.description) }</b><br/>
+                                ${p.minVal && p.maxVal ? html`
+                                The range is from ${p.minVal} to ${p.maxVal}
+                                ` : ''}
+                            </td>
+                            <td>
+                                <code>${p.paramlabel}</code><br/>
+                            </td>
+                            <td class="font-numbers" style="text-align: right;">${p.defaultvalue}</td>
+                            ${this._calibration? html`<td class="font-numbers" style="text-align: right;">${p.fixedValue || '-'}</td>` : html``}
+                        </tr>`)}
+                    </tbody>
+                </table>`
+        } else {
+            //Shows nothing when no parameters
+            return '';
+        }
     }
 
     _renderTabVariables () {
@@ -1219,10 +1266,13 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _renderGallery () {
-        let items = [];
-        if (this._model.sampleVisualization) {
-            items.push({label: "Sample Visualization", src: this._model.sampleVisualization})
+        if (!this._explDiagrams && !this._sampleVis && !this._screenshots) {
+            return html`<div class="text-centered">
+                LOADING GALLERY
+                <object style="height: 10px; margin-left: 6px;" type="image/svg+xml" data="images/dots.svg"></object>
+            </div>`
         }
+        let items = [];
         if (this._explDiagrams) {
             this._explDiagrams.forEach((ed) => {
                 let newItem = {label: ed.label, src: ed.url, desc: ed.desc};
@@ -1232,10 +1282,33 @@ export class ModelView extends connect(store)(PageViewElement) {
                 items.push(newItem);
             })
         }
+        if (this._sampleVis) {
+            this._sampleVis.forEach((sv, i) => {
+                let newItem = {label: 'Sample visualization ' + (i>0? i+1 : ''), src: sv.url, desc: sv.desc};
+                items.push(newItem);
+            });
+        }
+        if (this._screenshots) {
+            this._screenshots.forEach((s) => {
+                let newItem = {label: s.label, src: s.url};
+                if (s.desc) newItem.desc = s.desc;
+                if (s.source) newItem.source = {label: s.source, url: s.source};
+                items.push(newItem);
+            });
+        }
+
+        let stillLoading = (!this._explDiagrams || !this._sampleVis || !this._screenshots);
+
         if (items.length > 0) {
-            return html`<h3>Gallery:</h3>
+            return html`
+                ${stillLoading ? html`
+                <div style="float: right; margin: 1em 0;">
+                    <object style="height: 10px; margin-left: 6px;" type="image/svg+xml" data="images/dots.svg"></object>
+                </div>` : ''}
+                <h3>Gallery:</h3>
                 <image-gallery style="--width: 300px; --height: 160px;" .items="${items}"></image-gallery>`;
         } else {
+            // Shows nothing when no gallery
             return html``;
         }
     }
@@ -1334,6 +1407,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                 if (ui.selectedModel) {
                     store.dispatch(fetchVersionsForModel(ui.selectedModel));
                     store.dispatch(fetchDiagramsForModelConfig(ui.selectedModel));
+                    store.dispatch(fetchSampleVisForModelConfig(ui.selectedModel));
+                    store.dispatch(fetchScreenshotsForModelConfig(ui.selectedModel));
                 }
                 this._selectedModel = ui.selectedModel;
 
@@ -1341,6 +1416,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                 this._versions = null;
                 this._compModels = null;
                 this._explDiagrams = null;
+                this._sampleVis = null;
+                this._screenshots = null;
             }
             if (configChanged) {
                 if (ui.selectedConfig) {
@@ -1419,6 +1496,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
                 if (!this._explDiagrams && db.explDiagrams) {
                     this._explDiagrams = db.explDiagrams[this._selectedModel];
+                }
+                if (!this._sampleVis && db.sampleVis) {
+                    this._sampleVis = db.sampleVis[this._selectedModel];
+                }
+                if (!this._screenshots && db.screenshots) {
+                    this._screenshots = db.screenshots[this._selectedModel];
                 }
                 if (!this._compInput && this._config && db.compatibleInput) {
                     this._compInput = db.compatibleInput[this._config.uri];

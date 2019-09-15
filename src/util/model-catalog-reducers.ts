@@ -9,7 +9,7 @@ import { FETCH_MODELS, FETCH_VERSIONS_AND_CONFIGS, FETCH_CATEGORIES, FETCH_CONFI
          FETCH_VARS_SN_AND_UNITS_FOR_IO, FETCH_CONFIGS_FOR_VAR, FETCH_CONFIGS_FOR_VAR_SN, FETCH_CALIBRATIONS_FOR_VAR_SN,
          FETCH_IO_FOR_VAR_SN, FETCH_METADATA_FOR_VAR_SN, FETCH_PROCESS_FOR_CAG, FETCH_SEARCH_MODEL_BY_NAME,
          FETCH_SEARCH_MODEL_BY_CATEGORY, FETCH_SEARCH_ANY, FETCH_SEARCH_IO, FETCH_SEARCH_MODEL, FETCH_SEARCH_VAR,
-         FETCH_SEARCH_MODEL_BY_VAR_SN, ADD_URLS } from './model-catalog-actions'
+         FETCH_SAMPLE_VIS_FOR_MODEL_CONFIG, FETCH_SEARCH_MODEL_BY_VAR_SN, ADD_URLS } from './model-catalog-actions'
 
 // For the moment storing on explorer
 import { FetchedModel, IODetail, VersionDetail, VariableDetail, CompIODetail,
@@ -33,6 +33,8 @@ export interface ExplorerState {
     compatibleOutput:   UriCompIO;
     metadata:           any;
     parameters:         any;
+    sampleVis:          any;
+    screenshots:        any;
     explDiagrams:       UriExplDiag;
     search:             SearchResult;
     urls:               Map<string,string>;
@@ -48,6 +50,8 @@ const INITIAL_STATE: ExplorerState = {
     compatibleOutput:   {} as UriCompIO,
     metadata:           {},
     parameters:         {},
+    sampleVis:          {},
+    screenshots:        {},
     explDiagrams:       {} as UriExplDiag,
     search:             {} as SearchResult,
     urls:               {}
@@ -97,13 +101,25 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
         case FETCH_GRID_FOR_MODEL_CONFIG:
             console.log(action); return { ...state };
         case FETCH_SCREENSHOTS_FOR_MODEL_CONFIG:
-            console.log(action); return { ...state };
+            let newScreenshots = { ...state.screenshots };
+            newScreenshots[action.uri] = action.data;
+            return  {
+                ...state,
+                screenshots: newScreenshots
+            }
         case FETCH_DIAGRAMS_FOR_MODEL_CONFIG:
             let newExplDiags = {...state.explDiagrams};
-            newExplDiags[action.uri] = action.details;
+            newExplDiags[action.uri] = action.data;
             return { 
                 ...state,
                 explDiagrams: newExplDiags
+            }
+        case FETCH_SAMPLE_VIS_FOR_MODEL_CONFIG:
+            let newSampleVis = { ...state.sampleVis };
+            newSampleVis[action.uri] = action.data
+            return { 
+                ...state,
+                sampleVis: newSampleVis
             }
         case FETCH_METADATA_FOR_MODEL_CONFIG:
             let newMetadata = {...state.metadata};

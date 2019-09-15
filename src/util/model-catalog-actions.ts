@@ -8,7 +8,8 @@ import { apiFetch, MODELS, VERSIONS_AND_CONFIGS, CATEGORIES, CONFIGS, CONFIGS_AN
          METADATA_NOIO_FOR_MODEL_CONFIG, PARAMETERS_FOR_CONFIG, INPUT_COMPATIBLE_FOR_CONFIG, OUTPUT_COMPATIBLE_FOR_CONFIG,
          IO_FOR_CONFIG, IO_AND_VARS_SN_FOR_CONFIG, VARS_SN_AND_UNITS_FOR_IO, CONFIGS_FOR_VAR, CONFIGS_FOR_VAR_SN, 
          CALIBRATIONS_FOR_VAR_SN, IO_FOR_VAR_SN, METADATA_FOR_VAR_SN, PROCESS_FOR_CAG, SEARCH_MODEL_BY_NAME, 
-         SEARCH_MODEL_BY_CATEGORY, SEARCH_ANY, SEARCH_IO, SEARCH_MODEL, SEARCH_VAR, SEARCH_MODEL_BY_VAR_SN } from './model-catalog-requests';
+         SEARCH_MODEL_BY_CATEGORY, SEARCH_ANY, SEARCH_IO, SEARCH_MODEL, SEARCH_VAR, SEARCH_MODEL_BY_VAR_SN,
+         SAMPLE_VIS_FOR_MODEL_CONFIG } from './model-catalog-requests';
 
 function debug (...args) {
     //console.log(...arguments);
@@ -30,6 +31,7 @@ export const FETCH_AUTHORS_FOR_MODEL_CONFIG        = "FETCH_AUTHORS_FOR_MODEL_CO
 export const FETCH_GRID_FOR_MODEL_CONFIG           = "FETCH_GRID_FOR_MODEL_CONFIG";
 export const FETCH_SCREENSHOTS_FOR_MODEL_CONFIG    = "FETCH_SCREENSHOTS_FOR_MODEL_CONFIG";
 export const FETCH_DIAGRAMS_FOR_MODEL_CONFIG       = "FETCH_DIAGRAMS_FOR_MODEL_CONFIG";
+export const FETCH_SAMPLE_VIS_FOR_MODEL_CONFIG     = "FETCH_SAMPLE_VIS_FOR_MODEL_CONFIG";
 export const FETCH_METADATA_FOR_MODEL_CONFIG       = "FETCH_METADATA_FOR_MODEL_CONFIG";
 export const FETCH_METADATA_NOIO_FOR_MODEL_CONFIG  = "FETCH_METADATA_NOIO_FOR_MODEL_CONFIG";
 export const FETCH_PARAMETERS_FOR_CONFIG           = "FETCH_PARAMETERS_FOR_CONFIG";
@@ -71,6 +73,7 @@ interface ActionFetchAuthorsForModelConfig         extends UriParams<'FETCH_AUTH
 interface ActionFetchGridForModelConfig            extends UriParams<'FETCH_GRID_FOR_MODEL_CONFIG'> {};
 interface ActionFetchScreenshotsForModelConfig     extends UriParams<'FETCH_SCREENSHOTS_FOR_MODEL_CONFIG'> {};
 interface ActionFetchDiagramsForModelConfig        extends UriParams<'FETCH_DIAGRAMS_FOR_MODEL_CONFIG'> {};
+interface ActionFetchSampleVisForModelConfig       extends UriParams<'FETCH_SAMPLE_VIS_FOR_MODEL_CONFIG'> {};
 interface ActionFetchMetadataForModelConfig        extends UriParams<'FETCH_METADATA_FOR_MODEL_CONFIG'> {};
 interface ActionFetchMetadataNoioForModelConfig    extends UriParams<'FETCH_METADATA_NOIO_FOR_MODEL_CONFIG'> {};
 interface ActionFetchParametersForConfig           extends UriParams<'FETCH_PARAMETERS_FOR_CONFIG'> {};
@@ -99,7 +102,7 @@ export type ApiAction = ActionFetchModels | ActionFetchVersionsAndConfigs | Acti
                         ActionFetchVarsForModel | ActionFetchAuthorsForModelConfig | ActionFetchGridForModelConfig |
                         ActionFetchScreenshotsForModelConfig | ActionFetchDiagramsForModelConfig |
                         ActionFetchMetadataForModelConfig | ActionFetchMetadataNoioForModelConfig |
-                        ActionFetchParametersForConfig | ActionFetchInputCompatibleForConfig |
+                        ActionFetchParametersForConfig | ActionFetchInputCompatibleForConfig | ActionFetchSampleVisForModelConfig |
                         ActionFetchOutputCompatibleForConfig | ActionFetchIOForConfig | ActionFetchIOAndVarsSNForConfig |
                         ActionFetchVarsSNAndUnitsForIO | ActionFetchConfigsForVar | ActionFetchConfigsForVarSN |
                         ActionFetchCalibrationsForVarSN | ActionFetchIOForVarSN | ActionFetchMetadataForVarSN |
@@ -278,21 +281,31 @@ export const fetchDiagramsForModelConfig: ActionCreator<ApiThunkResult> = (uri:s
         dispatch({
             type: FETCH_DIAGRAMS_FOR_MODEL_CONFIG,
             uri: uri,
-            details: fetched
+            data: fetched
         })
     })
 }
 
-export const fetchMetadataForModelConfig: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
-    //apiFetch({type: METADATA_FOR_MODEL_CONFIG, modelConfig: uri).then((fetched) => { dispatch({type: FETCH_METADATA_FOR_MODEL_CONFIG, data: fetched}); });
-    debug('Fetching metadata for', uri);
-    let parseUris = (v:any) => {
-        return v.split(', ').map((l:any)=>{
-            let sp = l.split('/');
-            return sp[sp.length-1];
+export const fetchSampleVisForModelConfig: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
+    debug('Fetching sample visualizations for', uri);
+    apiFetch({
+        type: SAMPLE_VIS_FOR_MODEL_CONFIG,
+        v: uri,
+        rules: {
+            description: {newKey: 'desc'},
+        }
+    }).then(fetched => {
+        dispatch({
+            type: FETCH_SAMPLE_VIS_FOR_MODEL_CONFIG,
+            uri: uri,
+            data: fetched
         })
-    };
+    })
+}
 
+const parseUris = (v:string) => v.split(', ').map((l:string) => l.split('/').pop());
+
+export const fetchMetadataForModelConfig: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
     apiFetch({
         type: METADATA_FOR_MODEL_CONFIG,
         modelConfig: uri,
@@ -324,8 +337,8 @@ export const fetchMetadataNoioForModelConfig: ActionCreator<ApiThunkResult> = (u
         rules: {
             cag: {newValue: (old) => old.split(', ')},
             calibrations: {newValue: (old) => old.split(', ')},
-            adjustableVariables: {newValue: (old) => old.split(', ')},
-            targetVariables: {newValue: (old) => old.split(', ')},
+            adjustableVariables: {newValue: parseUris},
+            targetVariables: {newValue: parseUris},
             keywords: {newValue: (old) => old.split(/ *; */)},
             processes: {newValue: (old) => old.split(', ')},
             gridType: {newValue: (old:any) => old.split('#').pop()}
