@@ -16,6 +16,7 @@ export const AUTHORS_FOR_MODEL_CONFIG        = "AUTHORS_FOR_MODEL_CONFIG";
 export const GRID_FOR_MODEL_CONFIG           = "GRID_FOR_MODEL_CONFIG";
 export const SCREENSHOTS_FOR_MODEL_CONFIG    = "SCREENSHOTS_FOR_MODEL_CONFIG";
 export const DIAGRAMS_FOR_MODEL_CONFIG       = "DIAGRAMS_FOR_MODEL_CONFIG";
+export const SAMPLE_VIS_FOR_MODEL_CONFIG     = "SAMPLE_VIS_FOR_MODEL_CONFIG";
 export const METADATA_FOR_MODEL_CONFIG       = "METADATA_FOR_MODEL_CONFIG";
 export const METADATA_NOIO_FOR_MODEL_CONFIG  = "METADATA_NOIO_FOR_MODEL_CONFIG";
 export const PARAMETERS_FOR_CONFIG           = "PARAMETERS_FOR_CONFIG";
@@ -70,6 +71,7 @@ interface AuthorsForModelConfig         extends VParams<'AUTHORS_FOR_MODEL_CONFI
 interface GridForModelConfig            extends VParams<'GRID_FOR_MODEL_CONFIG'> {};
 interface ScreenshotsForModelConfig     extends VParams<'SCREENSHOTS_FOR_MODEL_CONFIG'> {};
 interface DiagramsForModelConfig        extends VParams<'DIAGRAMS_FOR_MODEL_CONFIG'> {};
+interface SampleVisForModelConfig       extends VParams<'SAMPLE_VIS_FOR_MODEL_CONFIG'> {};
 interface MetadataForModelConfig        extends ModelConfigParams<'METADATA_FOR_MODEL_CONFIG'> {};
 interface MetadataNoioForModelConfig    extends ModelConfigParams<'METADATA_NOIO_FOR_MODEL_CONFIG'> {};
 interface ParametersForConfig           extends ConfigParams<'PARAMETERS_FOR_CONFIG'> {};
@@ -98,7 +100,8 @@ type ApiParams = Models | VersionsAndConfigs | Categories | Configs | ConfigsAnd
         MetadataNoioForModelConfig | ParametersForConfig | InputCompatibleForConfig | OutputCompatibleForConfig |
         IOForConfig | IOAndVarsSNForConfig | VarsSNAndUnitsForIO | ConfigsForVar | ConfigsForVarSN |
         CalibrationsForVarSN | IOForVarSN | MetadataForVarSN | ProcessForCag | SearchModelByName | 
-        SearchModelByCategory | SearchAny | SearchIO | SearchModel | SearchVar | SearchModelByVarSN;
+        SearchModelByCategory | SearchAny | SearchIO | SearchModel | SearchVar | SearchModelByVarSN |
+        SampleVisForModelConfig;
 
 const path = {
     MODELS:                         'getModels',
@@ -116,6 +119,7 @@ const path = {
     GRID_FOR_MODEL_CONFIG:          'getGridForResource',
     SCREENSHOTS_FOR_MODEL_CONFIG:   'getScreenshotsForResource',
     DIAGRAMS_FOR_MODEL_CONFIG:      'getExplanationDiagramsForResource',
+    SAMPLE_VIS_FOR_MODEL_CONFIG:    'getSampleVisualizationsForResource',
     METADATA_FOR_MODEL_CONFIG:      'getModelConfigurationMetadata',
     METADATA_NOIO_FOR_MODEL_CONFIG: 'getModelConfigurationMetadata_NoIO',
     PARAMETERS_FOR_CONFIG:          'getConfigIParameters',
@@ -158,7 +162,7 @@ export const apiFetch = (params: ApiParams) : Promise<any> => {
     let url = createUrl(params);
 
     if (!cache[url]) {
-        console.log('fetching', url);
+        //console.log('fetching', url);
         cache[url] = new Promise( (resolve, reject) => {
             fetch(url).then((response:any) => {
                 response.json().then((jr:any) => {

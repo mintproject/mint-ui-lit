@@ -7,8 +7,8 @@ import { store, RootState } from '../../../app/store';
 import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail, CompIODetail,
          ExplanationDiagramDetail } from "../../../util/api-interfaces";
 import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersionsForModel, 
-        fetchIOAndVarsSNForConfig, fetchVarsSNAndUnitsForIO, fetchDiagramsForModelConfig,
-        fetchMetadataForModelConfig, fetchMetadataNoioForModelConfig } from '../../../util/model-catalog-actions';
+        fetchIOAndVarsSNForConfig, fetchVarsSNAndUnitsForIO, fetchDiagramsForModelConfig,  fetchSampleVisForModelConfig,
+        fetchMetadataForModelConfig, fetchMetadataNoioForModelConfig, fetchScreenshotsForModelConfig } from '../../../util/model-catalog-actions';
 import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
@@ -87,6 +87,12 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _explDiagrams : ExplanationDiagramDetail[] | null = null;
+
+    @property({type: Object})
+    private _sampleVis : any = null;
+
+    @property({type: Object})
+    private _screenshots : any = null;
 
     @property({type: String})
     private _tab : 'overview'|'io'|'variables'|'software' = 'overview';
@@ -1008,35 +1014,45 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _renderParametersTable () {
-        return html`
-            <h3> Parameters: </h3>
-            <table class="pure-table pure-table-bordered">
-                <thead>
-                    <th style="text-align: right;">#</th>
-                    <th>Description</th>
-                    <th>Name</th>
-                    <th style="text-align: right;">Default value</th>
-                    ${this._calibration? html`<th style="text-align: right;">Value in this setup</th>` : html``}
-                </thead>
-                <tbody>
-                ${this._parameters.sort((a,b) => (a.position < b.position) ? -1 : (a.position > b.position? 1 : 0)).map( (p:any) => html`
-                    <tr>
-                        <td style="text-align: right;">${p.position}</td>
-                        <td>
-                            <b style="font-size: 14px;">${ capitalizeFirstLetter(p.description) }</b><br/>
-                            ${p.minVal && p.maxVal ? html`
-                            The range is from ${p.minVal} to ${p.maxVal}
-                            ` : ''}
-                        </td>
-                        <td>
-                            <code>${p.paramlabel}</code><br/>
-                        </td>
-                        <td class="font-numbers" style="text-align: right;">${p.defaultvalue}</td>
-                        ${this._calibration? html`<td class="font-numbers" style="text-align: right;">${p.fixedValue || '-'}</td>` : html``}
-                    </tr>`)}
-                </tbody>
-            </table>
-        `
+        if (!this._parameters) { 
+            return html`<div class="text-centered">
+                LOADING PARAMETERS
+                <object style="height: 10px; margin-left: 6px;" type="image/svg+xml" data="images/dots.svg"></object>
+            </div>`
+        }
+        if (this._parameters.length > 0) {
+            return html`
+                <h3> Parameters: </h3>
+                <table class="pure-table pure-table-bordered">
+                    <thead>
+                        <th style="text-align: right;">#</th>
+                        <th>Description</th>
+                        <th>Name</th>
+                        <th style="text-align: right;">Default value</th>
+                        ${this._calibration? html`<th style="text-align: right;">Value in this setup</th>` : html``}
+                    </thead>
+                    <tbody>
+                    ${this._parameters.sort((a,b) => (a.position < b.position) ? -1 : (a.position > b.position? 1 : 0)).map( (p:any) => html`
+                        <tr>
+                            <td style="text-align: right;">${p.position}</td>
+                            <td>
+                                <b style="font-size: 14px;">${ capitalizeFirstLetter(p.description) }</b><br/>
+                                ${p.minVal && p.maxVal ? html`
+                                The range is from ${p.minVal} to ${p.maxVal}
+                                ` : ''}
+                            </td>
+                            <td>
+                                <code>${p.paramlabel}</code><br/>
+                            </td>
+                            <td class="font-numbers" style="text-align: right;">${p.defaultvalue}</td>
+                            ${this._calibration? html`<td class="font-numbers" style="text-align: right;">${p.fixedValue || '-'}</td>` : html``}
+                        </tr>`)}
+                    </tbody>
+                </table>`
+        } else {
+            //Shows nothing when no parameters
+            return '';
+        }
     }
 
     _renderTabVariables () {
@@ -1232,10 +1248,13 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _renderGallery () {
-        let items = [];
-        if (this._model.sampleVisualization) {
-            items.push({label: "Sample Visualization", src: this._model.sampleVisualization})
+        if (!this._explDiagrams && !this._sampleVis && !this._screenshots) {
+            return html`<div class="text-centered">
+                LOADING GALLERY
+                <object style="height: 10px; margin-left: 6px;" type="image/svg+xml" data="images/dots.svg"></object>
+            </div>`
         }
+        let items = [];
         if (this._explDiagrams) {
             this._explDiagrams.forEach((ed) => {
                 let newItem = {label: ed.label, src: ed.url, desc: ed.desc};
@@ -1245,10 +1264,33 @@ export class ModelView extends connect(store)(PageViewElement) {
                 items.push(newItem);
             })
         }
+        if (this._sampleVis) {
+            this._sampleVis.forEach((sv, i) => {
+                let newItem = {label: 'Sample visualization ' + (i>0? i+1 : ''), src: sv.url, desc: sv.desc};
+                items.push(newItem);
+            });
+        }
+        if (this._screenshots) {
+            this._screenshots.forEach((s) => {
+                let newItem = {label: s.label, src: s.url};
+                if (s.desc) newItem.desc = s.desc;
+                if (s.source) newItem.source = {label: s.source, url: s.source};
+                items.push(newItem);
+            });
+        }
+
+        let stillLoading = (!this._explDiagrams || !this._sampleVis || !this._screenshots);
+
         if (items.length > 0) {
-            return html`<h3>Gallery:</h3>
+            return html`
+                ${stillLoading ? html`
+                <div style="float: right; margin: 1em 0;">
+                    <object style="height: 10px; margin-left: 6px;" type="image/svg+xml" data="images/dots.svg"></object>
+                </div>` : ''}
+                <h3>Gallery:</h3>
                 <image-gallery style="--width: 300px; --height: 160px;" .items="${items}"></image-gallery>`;
         } else {
+            // Shows nothing when no gallery
             return html``;
         }
     }
@@ -1347,6 +1389,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                 if (ui.selectedModel) {
                     store.dispatch(fetchVersionsForModel(ui.selectedModel));
                     store.dispatch(fetchDiagramsForModelConfig(ui.selectedModel));
+                    store.dispatch(fetchSampleVisForModelConfig(ui.selectedModel));
+                    store.dispatch(fetchScreenshotsForModelConfig(ui.selectedModel));
                 }
                 this._selectedModel = ui.selectedModel;
 
@@ -1354,6 +1398,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                 this._versions = null;
                 this._compModels = null;
                 this._explDiagrams = null;
+                this._sampleVis = null;
+                this._screenshots = null;
             }
             if (configChanged) {
                 if (ui.selectedConfig) {
@@ -1432,6 +1478,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
                 if (!this._explDiagrams && db.explDiagrams) {
                     this._explDiagrams = db.explDiagrams[this._selectedModel];
+                }
+                if (!this._sampleVis && db.sampleVis) {
+                    this._sampleVis = db.sampleVis[this._selectedModel];
+                }
+                if (!this._screenshots && db.screenshots) {
+                    this._screenshots = db.screenshots[this._selectedModel];
                 }
                 if (!this._compInput && this._config && db.compatibleInput) {
                     this._compInput = db.compatibleInput[this._config.uri];
