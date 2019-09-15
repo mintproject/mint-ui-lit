@@ -23,6 +23,10 @@ import "weightless/progress-spinner";
 import "weightless/progress-bar";
 import '../../../components/image-gallery'
 
+function capitalizeFirstLetter (s:string) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 @customElement('model-view')
 export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object})
@@ -626,22 +630,22 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${this._model.downloadURL? html`
                     <tr>
                         <td><b>Download:</b></td>
-                        <td>${this._renderLink(this._model.downloadURL)}</td>
+                        <td><a target="_blank" href="${this._model.downloadURL}">${this._model.downloadURL}</a></td>
                     </tr>` : ''}
                     ${this._model.sourceC? html`
                     <tr>
                         <td><b>Source code:</b></td>
-                        <td>${this._renderLink(this._model.sourceC)}</td>
+                        <td><a target="_blank" href="${this._model.sourceC}">${this._model.sourceC}</a></td>
                     </tr>` : ''}
                     ${this._model.doc? html`
                     <tr>
                         <td><b>Documentation:</b></td>
-                        <td>${this._renderLink(this._model.doc)}</td>
+                        <td><a target="_blank" href="${this._model.doc}">${this._model.doc}</a></td>
                     </tr>` : ''}
                     ${this._model.installInstr? html`
                     <tr>
                         <td><b>Installation instructions:</b></td>
-                        <td>${this._renderLink(this._model.installInstr)}</td>
+                        <td><a target="_blank" href="${this._model.installInstr}">${this._model.installInstr}</a></td>
                     </tr>` : ''}
                 </tbody>
             </table>
@@ -993,30 +997,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </tbody>
             </table>` : html``}
 
-            ${(this._parameters)? 
-            html`
-                <h3> Parameters: </h3>
-                <table class="pure-table pure-table-bordered">
-                    <thead>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Datatype</th>
-                        <th>Default value</th>
-                        ${this._calibration? html`<th>Value in this setup</th>` : html``}
-                    </thead>
-                    <tbody>
-                    ${this._parameters.map( (p:any) => html`
-                        <tr>
-                            <td>${p.paramlabel}</td>
-                            <td>${p.description}</td>
-                            <td>${p.pdatatype}</td>
-                            <td>${p.defaultvalue}</td>
-                            ${this._calibration? html`<td>${p.fixedValue}</td>` : html``}
-                        </tr>`)}
-                    </tbody>
-                </table>
-            `
-            :html``}
+            ${(this._parameters)? this._renderParametersTable() : html``}
             ${(!this._inputs && !this._outputs && !this._parameters)? html`
             <br/>
             <h3 style="margin-left:30px">
@@ -1024,6 +1005,38 @@ export class ModelView extends connect(store)(PageViewElement) {
             </h3>`
             :html ``}
             `;
+    }
+
+    _renderParametersTable () {
+        return html`
+            <h3> Parameters: </h3>
+            <table class="pure-table pure-table-bordered">
+                <thead>
+                    <th style="text-align: right;">#</th>
+                    <th>Description</th>
+                    <th>Name</th>
+                    <th style="text-align: right;">Default value</th>
+                    ${this._calibration? html`<th style="text-align: right;">Value in this setup</th>` : html``}
+                </thead>
+                <tbody>
+                ${this._parameters.sort((a,b) => (a.position < b.position) ? -1 : (a.position > b.position? 1 : 0)).map( (p:any) => html`
+                    <tr>
+                        <td style="text-align: right;">${p.position}</td>
+                        <td>
+                            <b style="font-size: 14px;">${ capitalizeFirstLetter(p.description) }</b><br/>
+                            ${p.minVal && p.maxVal ? html`
+                            The range is from ${p.minVal} to ${p.maxVal}
+                            ` : ''}
+                        </td>
+                        <td>
+                            <code>${p.paramlabel}</code><br/>
+                        </td>
+                        <td class="font-numbers" style="text-align: right;">${p.defaultvalue}</td>
+                        ${this._calibration? html`<td class="font-numbers" style="text-align: right;">${p.fixedValue || '-'}</td>` : html``}
+                    </tr>`)}
+                </tbody>
+            </table>
+        `
     }
 
     _renderTabVariables () {
