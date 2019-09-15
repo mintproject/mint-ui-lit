@@ -31,7 +31,7 @@ export interface ExplorerState {
     variables:          UriVariable,
     compatibleInput:    UriCompIO;
     compatibleOutput:   UriCompIO;
-    modelMetadata:      any;
+    metadata:           any;
     parameters:         any;
     explDiagrams:       UriExplDiag;
     search:             SearchResult;
@@ -46,7 +46,7 @@ const INITIAL_STATE: ExplorerState = {
     variables:          {} as UriVariable,
     compatibleInput:    {} as UriCompIO,
     compatibleOutput:   {} as UriCompIO,
-    modelMetadata:      {},
+    metadata:           {},
     parameters:         {},
     explDiagrams:       {} as UriExplDiag,
     search:             {} as SearchResult,
@@ -106,14 +106,19 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
                 explDiagrams: newExplDiags
             }
         case FETCH_METADATA_FOR_MODEL_CONFIG:
-            let newMetadata = {...state.modelMetadata};
+            let newMetadata = {...state.metadata};
             if (action.data.length>0) newMetadata[action.uri] = action.data;
             return {
                 ...state,
-                modelMetadata: newMetadata
+                metadata: newMetadata
             }
         case FETCH_METADATA_NOIO_FOR_MODEL_CONFIG:
-            console.log(action); return { ...state };
+            let newMetadataNoIO = {...state.metadata};
+            if (action.data.length>0) newMetadataNoIO[action.uri] = action.data;
+            return {
+                ...state,
+                metadata: newMetadataNoIO
+            }
         case FETCH_PARAMETERS_FOR_CONFIG:
             let newParams = {...state.parameters};
             newParams[action.uri] = action.data;

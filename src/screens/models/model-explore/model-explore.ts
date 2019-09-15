@@ -8,7 +8,7 @@ import { store, RootState } from '../../../app/store';
 
 import { goToPage } from '../../../app/actions';
 
-import { fetchModels, fetchSearchModelByVarSN } from '../../../util/model-catalog-actions';
+import { fetchModels, fetchVersionsAndConfigs, fetchSearchModelByVarSN } from '../../../util/model-catalog-actions';
 import { explorerSetCompareA, explorerSetCompareB } from "./ui-actions";
 import explorer from '../../../util/model-catalog-reducers';
 import explorerUI from "./ui-reducers";
@@ -273,6 +273,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     firstUpdated() {
         store.dispatch(fetchModels());
+        //store.dispatch(fetchVersionsAndConfigs());
     }
 
     stateChanged(state: RootState) {

@@ -146,7 +146,9 @@ export const fetchModels: ActionCreator<ApiThunkResult> = () => (dispatch) => {
 }
 
 export const fetchVersionsAndConfigs: ActionCreator<ApiThunkResult> = () => (dispatch) => {
-    apiFetch({type: VERSIONS_AND_CONFIGS}).then((fetched) => { dispatch({type: FETCH_VERSIONS_AND_CONFIGS, data: fetched}); });
+    apiFetch({type: VERSIONS_AND_CONFIGS}).then((fetched) => {
+        dispatch({type: FETCH_VERSIONS_AND_CONFIGS, data: fetched}); 
+    });
 }
 
 export const fetchCategories: ActionCreator<ApiThunkResult> = () => (dispatch) => {
@@ -174,7 +176,7 @@ export const fetchVarsAndSN: ActionCreator<ApiThunkResult> = () => (dispatch) =>
 }
 
 export const fetchMetadataForAny: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
-    apiFetch({type: METADATA_FOR_ANY, mv: uri}).then((fetched) => { dispatch({type: FETCH_METADATA_FOR_ANY, data: fetched}); });
+    apiFetch({type: METADATA_FOR_ANY, mv: uri}).then((fetched) => { dispatch({type: FETCH_METADATA_FOR_ANY, uri: uri, data: fetched}); });
 }
 
 export const fetchVersionsForModel: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
@@ -245,19 +247,22 @@ export const fetchVersionsForModel: ActionCreator<ApiThunkResult> = (uri:string)
 }
 
 export const fetchVarsForModel: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
-    apiFetch({type: VARS_FOR_MODEL, model: uri}).then((fetched) => { dispatch({type: FETCH_VARS_FOR_MODEL, data: fetched}); });
+    apiFetch({type: VARS_FOR_MODEL, model: uri}).then((fetched) => { dispatch({type: FETCH_VARS_FOR_MODEL, uri: uri, data: fetched}); });
 }
 
 export const fetchAuthorsForModelConfig: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
-    apiFetch({type: AUTHORS_FOR_MODEL_CONFIG, v: uri}).then((fetched) => { dispatch({type: FETCH_AUTHORS_FOR_MODEL_CONFIG, data: fetched}); });
+    apiFetch({type: AUTHORS_FOR_MODEL_CONFIG, v: uri}).then((fetched) => {
+        dispatch({type: FETCH_AUTHORS_FOR_MODEL_CONFIG, uri: uri, data: fetched}); });
 }
 
 export const fetchGridForModelConfig: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
-    apiFetch({type: GRID_FOR_MODEL_CONFIG, v: uri}).then((fetched) => { dispatch({type: FETCH_GRID_FOR_MODEL_CONFIG, data: fetched}); });
+    apiFetch({type: GRID_FOR_MODEL_CONFIG, v: uri}).then((fetched) => {
+        dispatch({type: FETCH_GRID_FOR_MODEL_CONFIG, uri: uri, data: fetched}); });
 }
 
 export const fetchScreenshotsForModelConfig: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
-    apiFetch({type: SCREENSHOTS_FOR_MODEL_CONFIG, v: uri}).then((fetched) => { dispatch({type: FETCH_SCREENSHOTS_FOR_MODEL_CONFIG, data: fetched}); });
+    apiFetch({type: SCREENSHOTS_FOR_MODEL_CONFIG, v: uri}).then((fetched) => {
+        dispatch({type: FETCH_SCREENSHOTS_FOR_MODEL_CONFIG, uri:uri, data: fetched}); });
 }
 
 export const fetchDiagramsForModelConfig: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
@@ -313,7 +318,19 @@ export const fetchMetadataForModelConfig: ActionCreator<ApiThunkResult> = (uri:s
 }
 
 export const fetchMetadataNoioForModelConfig: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
-    apiFetch({type: METADATA_NOIO_FOR_MODEL_CONFIG, modelConfig: uri}).then((fetched) => { dispatch({type: FETCH_METADATA_NOIO_FOR_MODEL_CONFIG, data: fetched}); });
+    apiFetch({
+        type: METADATA_NOIO_FOR_MODEL_CONFIG,
+        modelConfig: uri,
+        rules: {
+            cag: {newValue: (old) => old.split(', ')},
+            calibrations: {newValue: (old) => old.split(', ')},
+            adjustableVariables: {newValue: (old) => old.split(', ')},
+            targetVariables: {newValue: (old) => old.split(', ')},
+            keywords: {newValue: (old) => old.split(/ *; */)},
+            processes: {newValue: (old) => old.split(', ')},
+            gridType: {newValue: (old:any) => old.split('#').pop()}
+        }
+    }).then((fetched) => { dispatch({type: FETCH_METADATA_NOIO_FOR_MODEL_CONFIG, uri: uri, data: fetched}); });
 }
 
 export const fetchParametersForConfig: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
@@ -370,7 +387,7 @@ export const fetchCompatibleSoftwareForConfig: ActionCreator<ApiThunkResult> = (
 }
 
 export const fetchIOForConfig: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
-    apiFetch({type: IO_FOR_CONFIG, config: uri}).then((fetched) => { dispatch({type: FETCH_IO_FOR_CONFIG, data: fetched}); });
+    apiFetch({type: IO_FOR_CONFIG, config: uri}).then((fetched) => { dispatch({type: FETCH_IO_FOR_CONFIG, uri:uri, data: fetched}); });
 }
 
 export const fetchIOAndVarsSNForConfig: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
@@ -426,51 +443,61 @@ export const fetchVarsSNAndUnitsForIO: ActionCreator<ApiThunkResult> = (uri:stri
 }
 
 export const fetchConfigsForVar: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
-    apiFetch({type: CONFIGS_FOR_VAR, var: uri}).then((fetched) => { dispatch({type: FETCH_CONFIGS_FOR_VAR, data: fetched}); });
+    apiFetch({type: CONFIGS_FOR_VAR, var: uri}).then((fetched) => { dispatch({type: FETCH_CONFIGS_FOR_VAR, uri:uri, data: fetched}); });
 }
 
 export const fetchConfigsForVarSN: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
-    apiFetch({type: CONFIGS_FOR_VAR_SN, std: uri}).then((fetched) => { dispatch({type: FETCH_CONFIGS_FOR_VAR_SN, data: fetched}); });
+    apiFetch({type: CONFIGS_FOR_VAR_SN, std: uri}).then((fetched) => {
+        dispatch({type: FETCH_CONFIGS_FOR_VAR_SN, uri:uri, data: fetched}); });
 }
 
 export const fetchCalibrationsForVarSN: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
-    apiFetch({type: CALIBRATIONS_FOR_VAR_SN, std: uri}).then((fetched) => { dispatch({type: FETCH_CALIBRATIONS_FOR_VAR_SN, data: fetched}); });
+    apiFetch({type: CALIBRATIONS_FOR_VAR_SN, std: uri}).then((fetched) => {
+        dispatch({type: FETCH_CALIBRATIONS_FOR_VAR_SN, uri: uri, data: fetched}); });
 }
 
 export const fetchIOForVarSN: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
-    apiFetch({type: IO_FOR_VAR_SN, std: uri}).then((fetched) => { dispatch({type: FETCH_IO_FOR_VAR_SN, data: fetched}); });
+    apiFetch({type: IO_FOR_VAR_SN, std: uri}).then((fetched) => { dispatch({type: FETCH_IO_FOR_VAR_SN, uri:uri, data: fetched}); });
 }
 
 export const fetchMetadataForVarSN: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
-    apiFetch({type: METADATA_FOR_VAR_SN, std: uri}).then((fetched) => { dispatch({type: FETCH_METADATA_FOR_VAR_SN, data: fetched}); });
+    apiFetch({type: METADATA_FOR_VAR_SN, std: uri}).then((fetched) => {
+        dispatch({type: FETCH_METADATA_FOR_VAR_SN, uri: uri, data: fetched}); });
 }
 
 export const fetchProcessForCag: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
-    apiFetch({type: PROCESS_FOR_CAG, cag: uri}).then((fetched) => { dispatch({type: FETCH_PROCESS_FOR_CAG, data: fetched}); });
+    apiFetch({type: PROCESS_FOR_CAG, cag: uri}).then((fetched) => {
+        dispatch({type: FETCH_PROCESS_FOR_CAG, uri:uri, data: fetched}); });
 }
 
 export const fetchSearchModelByName: ActionCreator<ApiThunkResult> = (text:string) => (dispatch) => {
-    apiFetch({type: SEARCH_MODEL_BY_NAME, label: uri}).then((fetched) => { dispatch({type: FETCH_SEARCH_MODEL_BY_NAME, data: fetched}); });
+    apiFetch({type: SEARCH_MODEL_BY_NAME, label: uri}).then((fetched) => {
+        dispatch({type: FETCH_SEARCH_MODEL_BY_NAME, text:text, data: fetched}); });
 }
 
 export const fetchSearchModelByCategory: ActionCreator<ApiThunkResult> = (text:string) => (dispatch) => {
-    apiFetch({type: SEARCH_MODEL_BY_CATEGORY, cat: uri}).then((fetched) => { dispatch({type: FETCH_SEARCH_MODEL_BY_CATEGORY, data: fetched}); });
+    apiFetch({type: SEARCH_MODEL_BY_CATEGORY, cat: uri}).then((fetched) => {
+        dispatch({type: FETCH_SEARCH_MODEL_BY_CATEGORY, text:text, data: fetched}); });
 }
 
 export const fetchSearchAny: ActionCreator<ApiThunkResult> = (text:string) => (dispatch) => {
-    apiFetch({type: SEARCH_ANY, text: text}).then((fetched) => { dispatch({type: FETCH_SEARCH_ANY, data: fetched}); });
+    apiFetch({type: SEARCH_ANY, text: text}).then((fetched) => {
+        dispatch({type: FETCH_SEARCH_ANY, text:text, data: fetched}); });
 }
 
 export const fetchSearchIO: ActionCreator<ApiThunkResult> = (text:string) => (dispatch) => {
-    apiFetch({type: SEARCH_IO, text: text}).then((fetched) => { dispatch({type: FETCH_SEARCH_IO, data: fetched}); });
+    apiFetch({type: SEARCH_IO, text: text}).then((fetched) => {
+        dispatch({type: FETCH_SEARCH_IO, text:text, data: fetched}); });
 }
 
 export const fetchSearchModel: ActionCreator<ApiThunkResult> = (text:string) => (dispatch) => {
-    apiFetch({type: SEARCH_MODEL, text: text}).then((fetched) => { dispatch({type: FETCH_SEARCH_MODEL, data: fetched}); });
+    apiFetch({type: SEARCH_MODEL, text: text}).then((fetched) => {
+        dispatch({type: FETCH_SEARCH_MODEL, text:text, data: fetched}); });
 }
 
 export const fetchSearchVar: ActionCreator<ApiThunkResult> = (text:string) => (dispatch) => {
-    apiFetch({type: SEARCH_VAR, text: text}).then((fetched) => { dispatch({type: FETCH_SEARCH_VAR, data: fetched}); });
+    apiFetch({type: SEARCH_VAR, text: text}).then((fetched) => {
+        dispatch({type: FETCH_SEARCH_VAR, text:text, data: fetched}); });
 }
 
 export const fetchSearchModelByVarSN: ActionCreator<ApiThunkResult> = (text:string) => (dispatch) => {

@@ -8,7 +8,7 @@ import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
          ExplanationDiagramDetail } from "../../../util/api-interfaces";
 import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersionsForModel, 
         fetchIOAndVarsSNForConfig, fetchVarsSNAndUnitsForIO, fetchDiagramsForModelConfig,
-        fetchMetadataForModelConfig } from '../../../util/model-catalog-actions';
+        fetchMetadataForModelConfig, fetchMetadataNoioForModelConfig } from '../../../util/model-catalog-actions';
 import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
@@ -36,12 +36,6 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     @property({type: Number})
     private _count : number = 0;
-
-    @property({type: Object})
-    private _modelMetadata: any = null;
-
-    @property({type: Object})
-    private _versionMetadata: any = null;
 
     @property({type: Object})
     private _configMetadata: any = null;
@@ -781,22 +775,31 @@ export class ModelView extends connect(store)(PageViewElement) {
             obj ? html` 
             <fieldset style="border-radius: 5px; padding-top: 0px; border: 2px solid #D9D9D9; margin-bottom: 8px;">
                 <legend style="font-weight: bold; font-size: 12px; color: gray;">Selected ${title}</legend>
-                ${(meta && meta.length > 0) ? html`
+
+
                 <div class="metadata-top-buttons">
                     <div class="button-preview" @click=${() => this._changeTab('io')}>
                         <div>Input files</div>
-                        <div>${(meta[0]['input_variables'] || []).length}</div>
+                        <div>${!this._inputs? html`
+                            <object style="width: 20px;" type="image/svg+xml" data="images/dots.svg"></object>`
+                            : this._inputs.length}
+                        </div>
                     </div>
                     <div class="button-preview" @click=${() => this._changeTab('io')}>
                         <div>Output files</div>
-                        <div>${(meta[0]['output_variables'] || []).length}</div>
+                        <div>${!this._outputs? html`
+                            <object style="width: 20px;" type="image/svg+xml" data="images/dots.svg"></object>`
+                            : this._outputs.length}
+                        </div>
                     </div>
                     <div class="button-preview" @click=${() => this._changeTab('io')}>
                         <div>Parameters</div>
-                        <div>${(meta[0]['parameters'] || []).length}</div>
+                        <div>${!this._parameters ? html`
+                            <object style="width: 20px;" type="image/svg+xml" data="images/dots.svg"></object>`
+                            : this._parameters.length}
+                        </div>
                     </div>
                 </div>
-                ` : ''}
                 <wl-title level="2" style="font-size: 16px;">${obj.label}</wl-title>
 
                 ${!meta ? 
@@ -1316,7 +1319,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                 if (ui.selectedModel) {
                     store.dispatch(fetchVersionsForModel(ui.selectedModel));
                     store.dispatch(fetchDiagramsForModelConfig(ui.selectedModel));
-                    store.dispatch(fetchMetadataForModelConfig(ui.selectedModel));
                 }
                 this._selectedModel = ui.selectedModel;
 
@@ -1324,11 +1326,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                 this._versions = null;
                 this._compModels = null;
                 this._explDiagrams = null;
-                this._modelMetadata = null;
             }
             if (configChanged) {
                 if (ui.selectedConfig) {
-                    store.dispatch(fetchMetadataForModelConfig(ui.selectedConfig));
+                    //store.dispatch(fetchMetadataForModelConfig(ui.selectedConfig));
+                    store.dispatch(fetchMetadataNoioForModelConfig(ui.selectedConfig));
                     store.dispatch(fetchCompatibleSoftwareForConfig(ui.selectedConfig));
                     store.dispatch(fetchIOAndVarsSNForConfig(ui.selectedConfig));
                     store.dispatch(fetchParametersForConfig(ui.selectedConfig));
@@ -1344,7 +1346,8 @@ export class ModelView extends connect(store)(PageViewElement) {
             }
             if (calibrationChanged) {
                 if (ui.selectedCalibration) {
-                    store.dispatch(fetchMetadataForModelConfig(ui.selectedCalibration));
+                    //store.dispatch(fetchMetadataForModelConfig(ui.selectedCalibration));
+                    store.dispatch(fetchMetadataNoioForModelConfig(ui.selectedCalibration));
                     store.dispatch(fetchIOAndVarsSNForConfig(ui.selectedCalibration));
                     store.dispatch(fetchParametersForConfig(ui.selectedCalibration));
                 }
@@ -1408,10 +1411,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                 if (!this._compOutput && this._config && db.compatibleOutput) {
                     this._compOutput = db.compatibleOutput[this._config.uri];
                 }
-                if (db.modelMetadata) { //FIXME: modelMetadata has metadata of everything...
-                    if (!this._modelMetadata && this._model) this._modelMetadata = db.modelMetadata[this._selectedModel];
-                    if (!this._configMetadata && this._config) this._configMetadata = db.modelMetadata[this._selectedConfig];
-                    if (!this._calibrationMetadata && this._calibration) this._calibrationMetadata = db.modelMetadata[this._selectedCalibration];
+                if (db.metadata) {
+                    if (!this._configMetadata && this._config) this._configMetadata = db.metadata[this._selectedConfig];
+                    if (!this._calibrationMetadata && this._calibration) this._calibrationMetadata = db.metadata[this._selectedCalibration];
                 }
                 if (this._config || this._calibration) {
                     let selectedUri = this._calibration ? this._calibration.uri : this._config.uri;
