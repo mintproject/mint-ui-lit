@@ -11,7 +11,7 @@ The deployment of the following the services is full-automatic:
 
 The deployment of the production webpage needs a manual step.
 
-- <https://mint.isi.edu points> the last release/tag on GitHub - MINT version: Full
+- <https://mint.isi.edu> points the last release/tag on GitHub - MINT version: Full
 
 Wait! How I can deploy a new version?
 

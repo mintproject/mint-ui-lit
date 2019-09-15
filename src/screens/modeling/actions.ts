@@ -174,37 +174,34 @@ export const getScenarioDetail: ActionCreator<DetailsThunkResult> = (scenarioid:
             unsubscribe();
         },
         next: (doc) => {
-            var details = doc.data() as ScenarioDetails;
+            var details = Object.assign({}, doc.data()) as ScenarioDetails;
             if(!details)
                 return;
             details.id = doc.id;
-            details.goals = {};
-            details.subgoals = {};
-            details.pathways = {};
             Promise.all([
-                db.collection("scenarios/"+scenarioid+"/goals").get().then((querySnapshot) => {
-                    querySnapshot.forEach((doc) => {
-                        var data = doc.data();
-                        data.id = doc.id;
-                        details.goals[doc.id] = data as Goal;
-                    });
-                }),
-                db.collection("scenarios/"+scenarioid+"/subgoals").get().then((querySnapshot) => {
-                    querySnapshot.forEach((doc) => {
-                        var data = doc.data();
-                        data.id = doc.id;
-                        details.subgoals[doc.id] = data as SubGoal;
-                    });
-                }),
-                db.collection("scenarios/"+scenarioid+"/pathways").get().then((querySnapshot) => {
-                    querySnapshot.forEach((doc) => {
-                        var data = doc.data();
-                        data.id = doc.id;
-                        details.pathways[doc.id] = data as Pathway;
-                    });
-                })
-            ]).then( () => {
-                console.log("Scenario " + scenarioid + " changed. Dispatching action");
+                db.collection("scenarios/"+scenarioid+"/goals").get(),
+                db.collection("scenarios/"+scenarioid+"/subgoals").get(),
+                db.collection("scenarios/"+scenarioid+"/pathways").get()
+            ]).then( (values) => {
+                details.goals = {};
+                details.subgoals = {};
+                details.pathways = {};
+                values[0].forEach((doc) => {
+                    var data = Object.assign({}, doc.data());
+                    data.id = doc.id;
+                    details.goals[doc.id] = data as Goal;
+                });
+                values[1].forEach((doc) => {
+                    var data = Object.assign({}, doc.data());
+                    data.id = doc.id;
+                    details.subgoals[doc.id] = data as SubGoal;
+                });
+                values[2].forEach((doc) => {
+                    var data = Object.assign({}, doc.data());
+                    data.id = doc.id;
+                    details.pathways[doc.id] = data as Pathway;
+                });
+
                 // Dispach scenario details on an edit
                 dispatch({
                     type: SCENARIO_DETAILS,
