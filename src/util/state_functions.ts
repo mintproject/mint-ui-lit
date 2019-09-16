@@ -350,7 +350,6 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
                 pathway.executable_ensembles.map((ensemble) => {
                     if(!ensemble.status || ensemble.status == "RUNNING") {
                         let nensemble = nensembles[i];
-                        i++;
                         if(!nensemble || !ensemble) {
                             return;
                         }
@@ -364,6 +363,7 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
                         if(!nensemble.status || nensemble.status == "RUNNING") 
                             alldone = false;
                     }
+                    i++;
                 });
                 if(changed) {
                     console.log("Run details changed.. updating pathway");
