@@ -622,7 +622,13 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _renderTabTechnical () {
         return html`
+            <br/>
             <table class="pure-table pure-table-striped">
+                <thead>
+                    <tr><th colspan="2">MODEL: 
+                        <span style="margin-left: 6px; font-size: 16px; font-weight: bold; color: black;">${this._model.label}</span>
+                    </th></tr>
+                </thead>
                 <tbody>
                     ${this._model.os? html`
                     <tr>
@@ -673,6 +679,74 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </tr>` : ''}
                 </tbody>
             </table>
+            <br/>
+
+            ${this._config && this._configMetadata ? html`
+            <table class="pure-table pure-table-striped">
+                <thead>
+                    <tr><th colspan="2">CONFIGURATION: 
+                        <span style="margin-left: 6px; font-size: 16px; font-weight: bold; color: black;">${this._config.label}</span>
+                    </th></tr>
+                </thead>
+                <tbody>
+                    ${this._configMetadata[0].dImg ? html`
+                    <tr>
+                        <td><b>Software Image:</b></td>
+                        <td><code>${this._configMetadata[0].dImg}</code></td>
+                    </tr>` : '' }
+                    ${this._configMetadata[0].repo ? html`
+                    <tr>
+                        <td><b>Repository:</b></td>
+                        <td><a target="_blank" href="${this._configMetadata[0].repo}">${this._configMetadata[0].repo}</td>
+                    </tr>` : '' }
+                    ${this._configMetadata[0].compLoc ? html`
+                    <tr>
+                        <td><b>Component Location:</b></td>
+                        <td><a target="_blank" href="${this._configMetadata[0].compLoc}">${this._configMetadata[0].compLoc}</td>
+                    </tr>` : '' }
+                    ${this._configMetadata[0].pLanguage ? html`
+                    <tr>
+                        <td><b>Language:</b></td>
+                        <td>${this._configMetadata[0].pLanguage}</td>
+                    </tr>` : '' }
+                </tbody>
+            </table>` : ''} 
+
+            <br/>
+            ${this._calibration && this._calibrationMetadata ? html`
+            <table class="pure-table pure-table-striped">
+                <thead>
+                    <tr><th colspan="2">SETUP:
+                        <span style="margin-left: 6px; font-size: 16px; font-weight: bold; color:
+                        black;">${this._calibration.label}</span>
+                    </th></tr>
+                </thead>
+                <tbody>
+                    ${console.log(this._calibrationMetadata)}
+                    ${this._calibrationMetadata[0].dImg ? html`
+                    <tr>
+                        <td><b>Software Image:</b></td>
+                        <td><code>${this._calibrationMetadata[0].dImg}</code></td>
+                    </tr>` : '' }
+                    ${this._calibrationMetadata[0].repo ? html`
+                    <tr>
+                        <td><b>Repository:</b></td>
+                        <td><a target="_blank" href="${this._calibrationMetadata[0].repo}">${this._calibrationMetadata[0].repo}</td>
+                    </tr>` : '' }
+                    ${this._calibrationMetadata[0].compLoc ? html`
+                    <tr>
+                        <td><b>Component Location:</b></td>
+                        <td><a target="_blank" href="${this._calibrationMetadata[0].compLoc}">${this._calibrationMetadata[0].compLoc}</td>
+                    </tr>` : '' }
+                    ${this._calibrationMetadata[0].pLanguage ? html`
+                    <tr>
+                        <td><b>Language:</b></td>
+                        <td>${this._calibrationMetadata[0].pLanguage}</td>
+                    </tr>` : '' }
+                </tbody>
+            </table>
+            <br/>
+            ` : ''}
         `
     }
 
