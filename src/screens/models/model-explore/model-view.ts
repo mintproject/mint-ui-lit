@@ -23,6 +23,7 @@ import "weightless/icon";
 import "weightless/progress-spinner";
 import "weightless/progress-bar";
 import '../../../components/image-gallery'
+import '../../../components/loading-dots'
 
 function capitalizeFirstLetter (s:string) {
     return s.charAt(0).toUpperCase() + s.slice(1);
@@ -138,40 +139,14 @@ export class ModelView extends connect(store)(PageViewElement) {
                   vertical-align: top;
                 }
 
-                td.left {
-                  width: 25%;
-                }
-
-                td.right {
-                  width: 75%;
-                }
-
-                td div {
-                  overflow: hidden;
-                }
-
                 img {
                   vertical-align: middle;
                   max-width: calc(100% - 8px);
                   border: 1px solid black;
                 }
 
-                .helper {
-                  display: inline-block;
-                  height: 100%;
-                  vertical-align: middle;
-                }
-
                 .text-centered {
                   text-align: center;
-                }
-
-                .header {
-                    color: rgb(6, 67, 108);
-                    font-weight: bold;
-                  font-size: 1.4em;
-                  line-height: 1.5em;
-                  height: 1.5em;
                 }
 
                 .title {
@@ -192,79 +167,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                 .content {
                   padding: 0px 10px;
                   text-align: justify;
-                }
-
-                td.header div {
-                  display: inline-block;
-                }
-
-                td.header div:nth-child(1) { width: 150px; }
-                td.header div:nth-child(2) { width: calc(100% - 300px); min-width: 100px; }
-                td.header div:nth-child(3) { width: 150px; }
-
-                .details-button {
-                    display: inline-block;
-                    color: rgb(15, 122, 207);
-                    cursor: pointer;
-                    font-weight: bold;
-                }
-
-                .select-css {
-                    float: right;
-                    display: inline-block;
-                    font-size: 1.1em;
-                    font-family: sans-serif;
-                    font-weight: 600;
-                    color: #444;
-                    line-height: 1.2em;
-                    padding: .3em .7em .25em .4em;
-                    width: calc(100% - 180px);
-                    max-width: calc(100%; - 180px);
-                    box-sizing: border-box;
-                    margin: 0;
-                    border: 1px solid #aaa;
-                    box-shadow: 0 1px 0 1px rgba(0,0,0,.04);
-                    border-radius: .5em;
-                    -moz-appearance: none;
-                    -webkit-appearance: none;
-                    appearance: none;
-                    background-color: #fff;
-                    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007CB2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'),
-                      linear-gradient(to bottom, #ffffff 0%,#e5e5e5 100%);
-                    background-repeat: no-repeat, repeat;
-                    background-position: right .7em top 50%, 0 0;
-                    background-size: .65em auto, 100%;
-                    margin-bottom: 10px;
-                }
-
-                .select-css::-ms-expand {
-                    display: none;
-                }
-
-                .select-css:hover {
-                    border-color: #888;
-                }
-
-                .select-css:focus {
-                    border-color: #aaa;
-                    box-shadow: 0 0 1px 3px rgba(59, 153, 252, .7);
-                    box-shadow: 0 0 0 3px -moz-mac-focusring;
-                    color: #222;
-                    outline: none;
-                }
-
-                .select-css option {
-                    font-weight:normal;
-                }
-
-                .select-label {
-                    padding: .3em .7em .25em .4em;
-                    display: inline-block;
-                    font-size: 1.2em;
-                    font-weight: bold;
-                    width: 120px;
-                    text-align: right;
-                    margin-bottom: 10px;
                 }
 
                 .tooltip {
@@ -299,7 +201,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     position: absolute;
                     z-index: 99;
                 }
-                
+
                 #edit-model-icon {
                     float: right;
                     --icon-size: 26px;
@@ -311,7 +213,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                     display:grid;
                     grid-gap:4px;
                     grid-template-columns: 1fr 1fr 1fr 1fr;
-                    //border: 1px dotted red;
                 }
 
                 .small-wrapper {
@@ -322,7 +223,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
                 
                 .col-img {
-                    //border:1px dotted blue;
                     grid-column: 1 / 2;
                     grid-row: 1;
                     padding: 16px;
@@ -337,7 +237,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
 
                 .col-desc {
-                    //border:1px dotted green;
                     grid-column: 2 / 5;
                     grid-row: 1;
                 }
@@ -383,18 +282,20 @@ export class ModelView extends connect(store)(PageViewElement) {
                     padding-top:4px;
                     padding-left:5px;
                 }
+
                 .inline-info > span {
                     display: inline-block;
                     width: 33%;
                 }
+
                 .inline-info > span:before {
                     content:"• ";
                 }
-                
+
                 .hidden {
                     display: none !important;
                 }
-                
+
                 .metadata-top-buttons {
                     float: right;
                 }
@@ -446,6 +347,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                     background: url(images/rdf.png) no-repeat 0px 0px;
                     background-size: 20px 22px;
                     cursor: pointer;
+                }
+
+                .text-helper {
+                    --height: 10px;
+                    margin-left: 6px;
                 }
                 `
         ];
@@ -827,21 +733,21 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <div class="button-preview" @click=${() => this._changeTab('io')}>
                         <div>Input files</div>
                         <div>${!this._inputs? html`
-                            <object style="width: 20px;" type="image/svg+xml" data="images/dots.svg"></object>`
+                            <loading-dots style="--width: 20px"></loading-dots>`
                             : this._inputs.length}
                         </div>
                     </div>
                     <div class="button-preview" @click=${() => this._changeTab('io')}>
                         <div>Output files</div>
                         <div>${!this._outputs? html`
-                            <object style="width: 20px;" type="image/svg+xml" data="images/dots.svg"></object>`
+                            <loading-dots style="--width: 20px"></loading-dots>`
                             : this._outputs.length}
                         </div>
                     </div>
                     <div class="button-preview" @click=${() => this._changeTab('io')}>
                         <div>Parameters</div>
                         <div>${!this._parameters ? html`
-                            <object style="width: 20px;" type="image/svg+xml" data="images/dots.svg"></object>`
+                            <loading-dots style="--width: 20px"></loading-dots>`
                             : this._parameters.length}
                         </div>
                     </div>
@@ -857,7 +763,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${(!this._configAuthors || (this._configAuthors.length > 0 && authors)) ? html`
                     <br/>
                     <wl-text><b>Authors:</b> ${this._configAuthors ?  authors : html`
-                        <object style="height: 8px;" type="image/svg+xml" data="images/dots.svg"></object>
+                        <loading-dots style="--height: 8px"></loading-dots>
                     `}</wl-text>
                     `: '' }
                     <ul>
@@ -980,25 +886,31 @@ export class ModelView extends connect(store)(PageViewElement) {
         return html`
             ${(this._inputs) ? html`
             <h3> Inputs: </h3>
-            <table class="pure-table pure-table-bordered">
+            <table class="pure-table pure-table-striped">
+                <colgroup>
+                    <col span="1" style="width: 20%;">
+                    <col span="1">
+                    <col span="1" style="width: 140px">
+                    ${this._calibration? html`<col span="1">` : ''}
+                </colgroup>
                 <thead>
                     <th>Name</th>
                     <th>Description</th>
                     <th>Format</th>
-                    ${this._calibration? html`<th>Value in this setup</th>` : html``}
+                    ${this._calibration? html`<th style="text-align: right;">Value in this setup</th>` : html``}
                 </thead>
                 <tbody>
                 ${this._inputs.map( io => html`
                     <tr>
-                        <td><span class="clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
+                        <td><span class="font-numbers clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
                             ${io.label}
                         </span></td>
                         <td>${io.desc}</td>
-                        <td>${io.format}</td>
+                        <td class="font-numbers">${io.format}</td>
                         ${this._calibration? html`
-                        <td>${io.fixedValueURL ? html`
+                        <td style="text-align: right;">${io.fixedValueURL ? html`
                             <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
-                        ` : html``}</td>
+                        ` : html`<span style="color:#999999;">-</span>`}</td>
                         ` : html``}
                     </tr>`)}
                 </tbody>
@@ -1006,25 +918,31 @@ export class ModelView extends connect(store)(PageViewElement) {
 
             ${(this._outputs) ? html`
             <h3> Outputs: </h3>
-            <table class="pure-table pure-table-bordered">
+            <table class="pure-table pure-table-striped">
+                <colgroup>
+                    <col span="1" style="width: 20%;">
+                    <col span="1">
+                    <col span="1" style="width: 140px">
+                    ${this._calibration? html`<col span="1">` : ''}
+                </colgroup>
                 <thead>
                     <th>Name</th>
                     <th>Description</th>
                     <th>Format</th>
-                    ${this._calibration? html`<th>Value in this setup</th>` : html``}
+                    ${this._calibration? html`<th style="text-align: right;">Value in this setup</th>` : html``}
                 </thead>
                 <tbody>
                 ${this._outputs.map( io => html`
                     <tr>
-                        <td><span class="clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
+                        <td><span class="font-numbers clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
                             ${io.label}
                         </span></td>
                         <td>${io.desc}</td>
-                        <td>${io.format}</td>
+                        <td class="font-numbers">${io.format}</td>
                         ${this._calibration? html`
-                        <td>${io.fixedValueURL ? html`
+                        <td style="text-align: right;">${io.fixedValueURL ? html`
                             <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
-                        ` : html``}</td>
+                        ` : html`<span style="color:#999999;">-</span>`}</td>
                         ` : html``}
                     </tr>`)}
                 </tbody>
@@ -1044,35 +962,35 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (!this._parameters) { 
             return html`<div class="text-centered">
                 LOADING PARAMETERS
-                <object style="height: 10px; margin-left: 6px;" type="image/svg+xml" data="images/dots.svg"></object>
+                <loading-dots class="text-helper"></loading-dots>
             </div>`
         }
         if (this._parameters.length > 0) {
             return html`
                 <h3> Parameters: </h3>
-                <table class="pure-table pure-table-bordered">
+                <table class="pure-table pure-table-striped">
                     <thead>
-                        <th style="text-align: right;">#</th>
-                        <th>Description</th>
                         <th>Name</th>
+                        <th>Description</th>
                         <th style="text-align: right;">Default value</th>
                         ${this._calibration? html`<th style="text-align: right;">Value in this setup</th>` : html``}
                     </thead>
                     <tbody>
                     ${this._parameters.sort((a,b) => (a.position < b.position) ? -1 : (a.position > b.position? 1 : 0)).map( (p:any) => html`
                         <tr>
-                            <td style="text-align: right;">${p.position}</td>
+                            <td>
+                                <code>${p.paramlabel}</code><br/>
+                            </td>
                             <td>
                                 <b style="font-size: 14px;">${ capitalizeFirstLetter(p.description) }</b><br/>
                                 ${p.minVal && p.maxVal ? html`
                                 The range is from ${p.minVal} to ${p.maxVal}
                                 ` : ''}
                             </td>
-                            <td>
-                                <code>${p.paramlabel}</code><br/>
-                            </td>
                             <td class="font-numbers" style="text-align: right;">${p.defaultvalue}</td>
-                            ${this._calibration? html`<td class="font-numbers" style="text-align: right;">${p.fixedValue || '-'}</td>` : html``}
+                            ${this._calibration? html`<td class="font-numbers" style="text-align: right;">
+                                ${p.fixedValue ? p.fixedValue : html`<span style="color:#999999;">-</span>`}
+                           </td>` : html``}
                         </tr>`)}
                     </tbody>
                 </table>`
@@ -1263,7 +1181,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (!this._explDiagrams && !this._sampleVis && !this._screenshots) {
             return html`<div class="text-centered">
                 LOADING GALLERY
-                <object style="height: 10px; margin-left: 6px;" type="image/svg+xml" data="images/dots.svg"></object>
+                <loading-dots class="text-helper"></loading-dots>
             </div>`
         }
         let items = [];
@@ -1297,7 +1215,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             return html`
                 ${stillLoading ? html`
                 <div style="float: right; margin: 1em 0;">
-                    <object style="height: 10px; margin-left: 6px;" type="image/svg+xml" data="images/dots.svg"></object>
+                    <loading-dots style="--height: 10px"></loading-dots>
                 </div>` : ''}
                 <h3>Gallery:</h3>
                 <image-gallery style="--width: 300px; --height: 160px;" .items="${items}"></image-gallery>`;
