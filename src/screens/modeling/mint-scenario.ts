@@ -844,7 +844,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
         if(state.ui && state.ui.selected_pathwayid) 
             this._selectedPathwayId = state.ui.selected_pathwayid;
 
-        if(state.regions!.query_result && this._regionid) 
+        if(state.regions!.query_result && this._regionid && state.regions!.query_result[this._regionid]) 
             this._subRegions = state.regions!.query_result[this._regionid]["*"];
 
         // If a scenario has been selected, fetch scenario details

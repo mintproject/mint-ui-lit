@@ -315,7 +315,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
       this._regions = state.regions!.regions;
       this._top_region = this._regions[this._top_regionid];
 
-      if(!state.regions!.query_result) {
+      if(!state.regions!.query_result || !state.regions!.query_result[this._top_regionid]) {
         store.dispatch(queryRegions(this._top_regionid));
       }
       else {
