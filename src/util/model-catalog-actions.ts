@@ -10,6 +10,7 @@ import { apiFetch, MODELS, VERSIONS_AND_CONFIGS, CATEGORIES, CONFIGS, CONFIGS_AN
          CALIBRATIONS_FOR_VAR_SN, IO_FOR_VAR_SN, METADATA_FOR_VAR_SN, PROCESS_FOR_CAG, SEARCH_MODEL_BY_NAME, 
          SEARCH_MODEL_BY_CATEGORY, SEARCH_ANY, SEARCH_IO, SEARCH_MODEL, SEARCH_VAR, SEARCH_MODEL_BY_VAR_SN,
          SAMPLE_VIS_FOR_MODEL_CONFIG } from './model-catalog-requests';
+import { UriModels } from "./model-catalog-reducers";
 
 function debug (...args) {
     //console.log(...arguments);

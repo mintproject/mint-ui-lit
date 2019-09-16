@@ -49,12 +49,12 @@ interface BaseParams<T> {
     rules?: {[key:string]: ApiRule}
 };
 
-interface VParams<T> extends BaseParam<T> { v: string }
-interface STDParams<T> extends BaseParam<T> { std: string }
-interface TextParams<T> extends BaseParam<T> { text: string }
-interface ModelParams<T> extends BaseParam<T> { model: string }
-interface ConfigParams<T> extends BaseParam<T> { config: string }
-interface ModelConfigParams<T> extends BaseParam<T> { modelConfig: string }
+interface VParams<T> extends BaseParams<T> { v: string }
+interface STDParams<T> extends BaseParams<T> { std: string }
+interface TextParams<T> extends BaseParams<T> { text: string }
+interface ModelParams<T> extends BaseParams<T> { model: string }
+interface ConfigParams<T> extends BaseParams<T> { config: string }
+interface ModelConfigParams<T> extends BaseParams<T> { modelConfig: string }
 
 interface Models                        extends BaseParams<'MODELS'> {};
 interface VersionsAndConfigs            extends BaseParams<'VERSIONS_AND_CONFIGS'> {};
