@@ -32,9 +32,6 @@ function capitalizeFirstLetter (s:string) {
 export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _model! : FetchedModel;
-    _modelId: string = '';
-    _versionId: string = '';
-    _configId: string = '';
 
     @property({type: String})
     private _uri : string = "-";
@@ -102,7 +99,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _screenshots : any = null;
 
     @property({type: String})
-    private _tab : 'overview'|'io'|'variables'|'software' = 'overview';
+    private _tab : 'overview'|'io'|'variables'|'software'|'tech' = 'overview';
 
     constructor () {
         super();
@@ -479,7 +476,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 })
             })
             configSelector.value = this._config ? this._config.uri : '';
-            configSelectorWl.refreshAttributes();
+            (<any>configSelectorWl).refreshAttributes();
         }
     }
 
@@ -501,7 +498,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 calibrationSelector.add(newOption, null);
             })
             calibrationSelector.value = this._calibration ? this._calibration.uri : '';
-            calibrationSelectorWl.refreshAttributes();
+            (<any>calibrationSelectorWl).refreshAttributes();
         }
     }
 
@@ -757,62 +754,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         `
     }
 
-    _renderSelector () {
-        return html`
-        <span tip="Currently selected model version" class="tooltip">
-            <wl-icon>help_outline</wl-icon>
-        </span>
-        <span class="select-label">Version:</span>
-        <select id="select-version" class="select-css" label="Select version" @change="${this.changeVersion}">
-            <option value="" disabled ?selected="${this._version === null}">Select version</option>
-            ${this._versions.map(v => 
-                html`<option value="${v.uri}" ?selected=${this._version && v.uri===this._version.uri}>
-                    ${v.label}
-                </option>`)}
-        </select>
-        ${(this._version && this._version.configs) ?
-            html`
-            <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" class="tooltip">
-                <wl-icon>help_outline</wl-icon>
-            </span>
-            <span class="select-label">Configuration:</span>
-            <select id="select-config" class="select-css" label="Select configuration" @change="${this.changeConfig}">
-                <option value="" disabled ?selected="${this._config === null}">Select configuration</option>
-                ${this._version.configs.map( c =>
-                    html`<option value="${c.uri}" ?selected=${this._config && c.uri===this._config.uri}>
-                        ${c.label}
-                    </option>`
-                )}
-            </select>
-            ${(this._config && this._config.calibrations) ?
-
-                html`
-                <span tip="A model calibration represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region" class="tooltip">
-                    <wl-icon>help_outline</wl-icon>
-                </span>
-                <span class="select-label">Calibration:</span>
-                <select id="select-calibration" class="select-css" label="Select calibration" @change="${this.changeCalibration}">
-                    <option value="" ?selected="${this._calibration===null}">Select calibration</option>
-                    ${this._config.calibrations.map( c =>
-                        html`<option value="${c.uri}"
-                        ?selected="${this._calibration && c.uri===this._calibration.uri}">
-                            ${c.label}
-                        </option>`
-                    )}
-                </select>
-                `
-                :html``
-            }
-            `
-            :html``
-        }`
-    }
-
-    _setTab (tabName: 'overview'|'io'|'variables'|'software') {
-        this._tab = tabName;
-    }
-
-    _changeTab (tabName: string) {
+    _changeTab (tabName: string) { //TODO
         let tabId : string = '';
         switch (tabName) {
             case 'io':
@@ -839,26 +781,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
                 }, 200)
         }
-    }
-
-    _renderTabs () {
-        return html`
-            <tr>
-                <td class="content" colspan="2">
-                    <br/>
-                    <wl-tab-group>
-                        <wl-tab ?checked=${this._tab=='overview'}
-                            @click="${() => {this._setTab('overview')}}">Overview</wl-tab>
-                        <wl-tab ?checked=${this._tab=='io'} id="tab-io"
-                            @click="${() => {this._setTab('io')}}">Input/Output</wl-tab>
-                        <wl-tab ?checked=${this._tab=='variables'} id="tab-variable"
-                            @click="${() => {this._setTab('variables')}}">Variables</wl-tab>
-                        <wl-tab @click="${() => {this._setTab('software')}}">Compatible Software</wl-tab>
-                    </wl-tab-group>
-                    <div>${this._renderTab(this._tab)}<div>
-                </td>
-            </tr>
-        `
     }
 
     _renderLink (url) {
@@ -890,7 +812,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             ${this._renderGallery()}`
     }
 
-    _renderMetadataResume (meta) {
+    _renderMetadataResume () {
         let data = [
             [this._config, this._configMetadata, 'configuration', (this._configAuthors || []).map(x => x.name).join(', ')], 
             [this._calibration, this._calibrationMetadata, 'configuration setup', (this._calibrationAuthors || []).map(x => x.name).join(', ')]
@@ -1329,21 +1251,6 @@ export class ModelView extends connect(store)(PageViewElement) {
         `
     }
 
-    _renderTab (tabName : 'overview'|'io'|'variables'|'software') {
-        switch (tabName) {
-            case 'overview':
-                return this._renderTabOverview(); 
-            case 'io':
-                return this._renderTabIO();
-            case 'variables':
-                return this._renderTabVariables();
-            case 'software':
-                return this._renderTabSoftware();
-            default:
-                return html`<br/><h3 style="margin-left:30px">Sorry! We are currently working in this feature.</h3>`
-        }
-    }
-
     _goToModel (model:any) {
         if (this._uriToUrl[model.uri]) {
             goToPage(this._uriToUrl[model.uri]);
@@ -1364,7 +1271,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             this._explDiagrams.forEach((ed) => {
                 let newItem = {label: ed.label, src: ed.url, desc: ed.desc};
                 if (ed.source) {
-                    newItem.source = {label: ed.source.split('/').pop(), url: ed.source}
+                    newItem['source'] = {label: ed.source.split('/').pop(), url: ed.source}
                 }
                 items.push(newItem);
             })
@@ -1378,8 +1285,8 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (this._screenshots) {
             this._screenshots.forEach((s) => {
                 let newItem = {label: s.label, src: s.url};
-                if (s.desc) newItem.desc = s.desc;
-                if (s.source) newItem.source = {label: s.source, url: s.source};
+                if (s.desc) newItem['desc'] = s.desc;
+                if (s.source) newItem['source'] = {label: s.source, url: s.source};
                 items.push(newItem);
             });
         }
@@ -1406,30 +1313,6 @@ export class ModelView extends connect(store)(PageViewElement) {
             store.dispatch(fetchVarsSNAndUnitsForIO(uri)); 
             this._IOStatus.add(uri);
         }
-    }
-
-    changeVersion () {
-        let selectElement : HTMLElement | null = this.shadowRoot!.getElementById('select-version');
-        if (!selectElement) return;
-
-        let id = selectElement['value'].split('/').pop();
-        goToPage('models/explore/' + this._modelId + '/' + id);
-    }
-
-    changeConfig () {
-        let selectElement : HTMLElement | null = this.shadowRoot!.getElementById('select-config');
-        if (!selectElement) return;
-
-        let id = selectElement['value'].split('/').pop();
-        goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + id);
-    }
-
-    changeCalibration () {
-        let selectElement : HTMLElement | null = this.shadowRoot!.getElementById('select-calibration');
-        if (!selectElement) return;
-
-        let id = selectElement['value'].split('/').pop();
-        goToPage('models/explore/' + this._modelId + '/' + this._versionId + '/' + this._configId + '/' + id);
     }
 
     private _selectedModel = null;
@@ -1483,11 +1366,6 @@ export class ModelView extends connect(store)(PageViewElement) {
             let modelChanged : boolean = (ui.selectedModel !== this._selectedModel);
             let configChanged : boolean = (modelChanged || ui.selectedConfig !== this._selectedConfig);
             let calibrationChanged : boolean = (configChanged || ui.selectedCalibration !== this._selectedCalibration);
-
-            this._modelId = ui.selectedModel ? ui.selectedModel.split('/').pop() : '';
-            this._versionId = ui.selectedVersion ? ui.selectedVersion.split('/').pop() : '';
-            this._configId = ui.selectedConfig ? ui.selectedConfig.split('/').pop() : '';
-            this._calibrationId = ui.selectedCalibration ? ui.selectedCalibration.split('/').pop() : '';
 
             // Fetch & reset data
             if (modelChanged) {

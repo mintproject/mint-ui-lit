@@ -95,13 +95,13 @@ export class EditableNote extends LitElement {
     }
 
     _cancel () {
-        let textarea = this.shadowRoot!.getElementById("editable-text");
+        let textarea = this.shadowRoot!.getElementById("editable-text") as HTMLInputElement;
         textarea.value = this.text;
         this._autoGrow();
     }
 
     _autoGrow () {
-        let textarea = this.shadowRoot!.getElementById("editable-text");
+        let textarea = this.shadowRoot!.getElementById("editable-text") as HTMLInputElement;
         this._edited = textarea.value;
         textarea.style.height = "10px";
         textarea.style.height = (textarea.scrollHeight)+"px";

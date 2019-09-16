@@ -488,16 +488,16 @@ export class ModelCompare extends connect(store)(PageViewElement) {
                         this._updateSelectOptions('selector-calibration-a', this._calibrationsA, this._compareA.calibration);
                     }
 
-                    if (state.explorer.modelMetadata && state.explorer.modelMetadata[this._compareA.config]) {
-                        this._configMetadataA = state.explorer.modelMetadata[this._compareA.config][0];
+                    if (state.explorer.metadata && state.explorer.metadata[this._compareA.config]) {
+                        this._configMetadataA = state.explorer.metadata[this._compareA.config][0];
                     } else {
                         this._configMetadataA = null;
                     }
                 }
 
-                if (this._compareA.calibration && state.explorer.modelMetadata &&
-                    state.explorer.modelMetadata[this._compareA.calibration]) {
-                    this._calibrationMetadataA = state.explorer.modelMetadata[this._compareA.calibration][0];
+                if (this._compareA.calibration && state.explorer.metadata &&
+                    state.explorer.metadata[this._compareA.calibration]) {
+                    this._calibrationMetadataA = state.explorer.metadata[this._compareA.calibration][0];
                 } else {
                     this._calibrationMetadataA = null;
                 }
@@ -525,16 +525,16 @@ export class ModelCompare extends connect(store)(PageViewElement) {
                         this._updateSelectOptions('selector-calibration-b', this._calibrationsB, this._compareB.calibration);
                     }
 
-                    if (state.explorer.modelMetadata && state.explorer.modelMetadata[this._compareB.config]) {
-                        this._configMetadataB = state.explorer.modelMetadata[this._compareB.config][0];
+                    if (state.explorer.metadata && state.explorer.metadata[this._compareB.config]) {
+                        this._configMetadataB = state.explorer.metadata[this._compareB.config][0];
                     } else {
                         this._configMetadataB = null;
                     }
                 }
 
-                if (this._compareB.calibration && state.explorer.modelMetadata &&
-                    state.explorer.modelMetadata[this._compareB.calibration]) {
-                    this._calibrationMetadataB = state.explorer.modelMetadata[this._compareB.calibration][0];
+                if (this._compareB.calibration && state.explorer.metadata &&
+                    state.explorer.metadata[this._compareB.calibration]) {
+                    this._calibrationMetadataB = state.explorer.metadata[this._compareB.calibration][0];
                 } else {
                     this._calibrationMetadataB = null;
                 }

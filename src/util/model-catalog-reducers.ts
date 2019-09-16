@@ -38,7 +38,7 @@ export interface ExplorerState {
     authors:            any;
     explDiagrams:       UriExplDiag;
     search:             SearchResult;
-    urls:               Map<string,string>;
+    urls:               any;
 }
 
 const INITIAL_STATE: ExplorerState = { 

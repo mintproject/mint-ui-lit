@@ -257,7 +257,7 @@ export class ModelEdit extends connect(store)(PageViewElement) {
             this._explDiagrams.forEach((ed) => {
                 let newItem = {label: ed.label, src: ed.url, desc: ed.desc};
                 if (ed.source) {
-                    newItem.source = {label: ed.source.split('/').pop(), url: ed.source}
+                    newItem['source'] = {label: ed.source.split('/').pop(), url: ed.source}
                 }
                 items.push(newItem);
             })
