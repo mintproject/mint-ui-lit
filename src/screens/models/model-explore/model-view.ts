@@ -8,7 +8,8 @@ import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
          ExplanationDiagramDetail } from "../../../util/api-interfaces";
 import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersionsForModel, 
         fetchIOAndVarsSNForConfig, fetchVarsSNAndUnitsForIO, fetchDiagramsForModelConfig,  fetchSampleVisForModelConfig,
-        fetchMetadataForModelConfig, fetchMetadataNoioForModelConfig, fetchScreenshotsForModelConfig } from '../../../util/model-catalog-actions';
+        fetchMetadataForModelConfig, fetchMetadataNoioForModelConfig, fetchScreenshotsForModelConfig,
+        fetchAuthorsForModelConfig } from '../../../util/model-catalog-actions';
 import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
@@ -75,6 +76,12 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _calibration : CalibrationDetail | null = null;
+
+    @property({type: Object})
+    private _configAuthors : any  = null;
+
+    @property({type: Object})
+    private _calibrationAuthors : any = null;
 
     @property({type: Object})
     private _compInput : CompIODetail[] | null = null;
@@ -885,10 +892,10 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _renderMetadataResume (meta) {
         let data = [
-            [this._config, this._configMetadata, 'configuration'], 
-            [this._calibration, this._calibrationMetadata, 'configuration setup']
+            [this._config, this._configMetadata, 'configuration', (this._configAuthors || []).map(x => x.name).join(', ')], 
+            [this._calibration, this._calibrationMetadata, 'configuration setup', (this._calibrationAuthors || []).map(x => x.name).join(', ')]
         ]
-        return data.map(([obj, meta, title]) => 
+        return data.map(([obj, meta, title, authors]) => 
             obj ? html` 
             <fieldset style="border-radius: 5px; padding-top: 0px; border: 2px solid #D9D9D9; margin-bottom: 8px;">
                 <legend style="font-weight: bold; font-size: 12px; color: gray;">Selected ${title}</legend>
@@ -925,6 +932,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                     html`<div class="info-center">- No metadata available. -</div>`
                     : html `
                     <wl-text>${meta[0].desc}</wl-text>
+                    ${(!this._configAuthors || (this._configAuthors.length > 0 && authors)) ? html`
+                    <br/>
+                    <wl-text><b>Authors:</b> ${this._configAuthors ?  authors : html`
+                        <object style="height: 8px;" type="image/svg+xml" data="images/dots.svg"></object>
+                    `}</wl-text>
+                    `: '' }
                     <ul>
                     ${meta[0].regionName ? html`<li><b>Region:</b> ${meta[0].regionName}</li>`: ''}
                     ${meta[0].tIValue && meta[0].tIUnits ? html`<li><b>Time interval:</b> ${meta[0].tIValue + ' ' + meta[0].tIUnits}</li>` : ''}
@@ -1500,12 +1513,14 @@ export class ModelView extends connect(store)(PageViewElement) {
                     store.dispatch(fetchCompatibleSoftwareForConfig(ui.selectedConfig));
                     store.dispatch(fetchIOAndVarsSNForConfig(ui.selectedConfig));
                     store.dispatch(fetchParametersForConfig(ui.selectedConfig));
+                    store.dispatch(fetchAuthorsForModelConfig(ui.selectedConfig));
                 }
                 this._selectedConfig = ui.selectedConfig;
                 this._config = null;
                 this._configMetadata = null;
                 this._compInput = null;
                 this._compOutput = null;
+                this._configAuthors = null;
 
                 this._variables = {};
                 this._IOStatus = new Set();
@@ -1516,6 +1531,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     store.dispatch(fetchMetadataNoioForModelConfig(ui.selectedCalibration));
                     store.dispatch(fetchIOAndVarsSNForConfig(ui.selectedCalibration));
                     store.dispatch(fetchParametersForConfig(ui.selectedCalibration));
+                    store.dispatch(fetchAuthorsForModelConfig(ui.selectedCalibration));
                 }
                 this._selectedCalibration = ui.selectedCalibration;
                 this._calibration = null;
@@ -1525,6 +1541,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 this._inputs = null;
                 this._outputs = null;
                 this._parameters = null;
+                this._calibrationAuthors = null;
             }
 
             // Load data 
@@ -1555,7 +1572,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                     }, null);
                 }
 
-
                 // Update compatible models.
                 if (!this._compModels && this._model && this._model.categories) {
                     this._compModels = [];
@@ -1582,6 +1598,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
                 if (!this._compOutput && this._config && db.compatibleOutput) {
                     this._compOutput = db.compatibleOutput[this._config.uri];
+                }
+                if (!this._configAuthors && this._config && db.authors) {
+                    this._configAuthors = db.authors[this._config.uri];
+                }
+                if (!this._calibrationAuthors && this._calibration && db.authors) {
+                    this._calibrationAuthors = db.authors[this._calibration.uri];
                 }
                 if (db.metadata) {
                     if (!this._configMetadata && this._config) this._configMetadata = db.metadata[this._selectedConfig];

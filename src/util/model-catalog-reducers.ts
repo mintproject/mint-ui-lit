@@ -35,6 +35,7 @@ export interface ExplorerState {
     parameters:         any;
     sampleVis:          any;
     screenshots:        any;
+    authors:            any;
     explDiagrams:       UriExplDiag;
     search:             SearchResult;
     urls:               Map<string,string>;
@@ -52,6 +53,7 @@ const INITIAL_STATE: ExplorerState = {
     parameters:         {},
     sampleVis:          {},
     screenshots:        {},
+    authors:            {},
     explDiagrams:       {} as UriExplDiag,
     search:             {} as SearchResult,
     urls:               {}
@@ -97,7 +99,12 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
         case FETCH_VARS_FOR_MODEL:
             console.log(action); return { ...state };
         case FETCH_AUTHORS_FOR_MODEL_CONFIG:
-            console.log(action); return { ...state };
+            let newAuthors = { ...state.authors }
+            newAuthors[action.uri] = action.data;
+            return {
+                ...state,
+                authors: newAuthors
+            };
         case FETCH_GRID_FOR_MODEL_CONFIG:
             console.log(action); return { ...state };
         case FETCH_SCREENSHOTS_FOR_MODEL_CONFIG:
