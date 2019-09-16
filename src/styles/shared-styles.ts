@@ -653,5 +653,8 @@ export const SharedStyles = css`
   }
 
   /* End of Chevron Breadcrumbs */  
+  .font-numbers {
+    font-family: system-ui;
+  }
 
 `;

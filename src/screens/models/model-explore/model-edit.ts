@@ -5,9 +5,10 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from '../../../app/store';
 
 import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail, CompIODetail,
-         ExplanationDiagramDetail } from "./api-interfaces";
-import { explorerFetchCompatibleSoftware, explorerFetchParameters, explorerFetchVersions, explorerFetchIO,
-         explorerFetchIOVarsAndUnits, explorerFetchExplDiags, explorerFetchMetadata } from './actions';
+         ExplanationDiagramDetail } from "../../../util/api-interfaces";
+import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersionsForModel,
+         fetchIOAndVarsSNForConfig, fetchVarsSNAndUnitsForIO, fetchDiagramsForModelConfig, 
+         fetchMetadataForModelConfig } from '../../../util/model-catalog-actions';
 import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'

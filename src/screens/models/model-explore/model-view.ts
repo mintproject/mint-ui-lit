@@ -5,9 +5,11 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from '../../../app/store';
 
 import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail, CompIODetail,
-         ExplanationDiagramDetail } from "./api-interfaces";
-import { explorerFetchCompatibleSoftware, explorerFetchParameters, explorerFetchVersions, explorerFetchIO,
-         explorerFetchIOVarsAndUnits, explorerFetchExplDiags, explorerFetchMetadata } from './actions';
+         ExplanationDiagramDetail } from "../../../util/api-interfaces";
+import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersionsForModel, 
+        fetchIOAndVarsSNForConfig, fetchVarsSNAndUnitsForIO, fetchDiagramsForModelConfig,  fetchSampleVisForModelConfig,
+        fetchMetadataForModelConfig, fetchMetadataNoioForModelConfig, fetchScreenshotsForModelConfig,
+        fetchAuthorsForModelConfig } from '../../../util/model-catalog-actions';
 import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
@@ -22,6 +24,10 @@ import "weightless/progress-spinner";
 import "weightless/progress-bar";
 import '../../../components/image-gallery'
 
+function capitalizeFirstLetter (s:string) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 @customElement('model-view')
 export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object})
@@ -35,12 +41,6 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     @property({type: Number})
     private _count : number = 0;
-
-    @property({type: Object})
-    private _modelMetadata: any = null;
-
-    @property({type: Object})
-    private _versionMetadata: any = null;
 
     @property({type: Object})
     private _configMetadata: any = null;
@@ -78,6 +78,12 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _calibration : CalibrationDetail | null = null;
 
     @property({type: Object})
+    private _configAuthors : any  = null;
+
+    @property({type: Object})
+    private _calibrationAuthors : any = null;
+
+    @property({type: Object})
     private _compInput : CompIODetail[] | null = null;
     
     @property({type: Object})
@@ -88,6 +94,12 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _explDiagrams : ExplanationDiagramDetail[] | null = null;
+
+    @property({type: Object})
+    private _sampleVis : any = null;
+
+    @property({type: Object})
+    private _screenshots : any = null;
 
     @property({type: String})
     private _tab : 'overview'|'io'|'variables'|'software' = 'overview';
@@ -334,7 +346,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
 
                 .col-desc > wl-select {
-                    width: calc(100% - 40px);
+                    width: calc(100% - 55px);
+                    margin-left:25px;
                 }
 
                 .col-desc > .tooltip > wl-icon {
@@ -382,7 +395,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
                 
                 .hidden {
-                    display: none;
+                    display: none !important;
                 }
                 
                 .metadata-top-buttons {
@@ -427,6 +440,16 @@ export class ModelView extends connect(store)(PageViewElement) {
                     border-bottom-right-radius: 5px;
                     border-top-right-radius: 5px;
                 }
+
+                .rdf-icon {
+                    display: inline-block;
+                    vertical-align: middle;
+                    height: 22px;
+                    width: 24px;
+                    background: url(images/rdf.png) no-repeat 0px 0px;
+                    background-size: 20px 22px;
+                    cursor: pointer;
+                }
                 `
         ];
     }
@@ -467,6 +490,10 @@ export class ModelView extends connect(store)(PageViewElement) {
             while (calibrationSelector.options.length > 0) {
                 calibrationSelector.remove(calibrationSelector.options.length - 1);
             }
+            let unselect = document.createElement('option');
+            unselect.text = '\xA0\xA0No setup selected'
+            unselect.value = '';
+            calibrationSelector.add(unselect, null);
             (this._config.calibrations || []).forEach((c:any) => {
                 let newOption = document.createElement('option');
                 newOption.text = '\xA0\xA0' + c.label;
@@ -496,6 +523,17 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (calibrationSelector) {
             if (this._uriToUrl[calibrationSelector.value]) {
                 goToPage(this._uriToUrl[calibrationSelector.value]);
+            } else if (calibrationSelector.value === '') {
+                let id = this._config.uri.split('/').pop();
+                let fullURI = this._uriToUrl[this._config.uri]
+                let sp = fullURI.split('/')
+                let frg = '';
+                do {
+                    frg = sp.pop();
+                } while (frg != id);
+                sp.push(frg);
+                let uri = sp.join('/');
+                goToPage(uri);
             } else {
                 console.error('Theres no URL for selected configuration setup URI, please report this issue!');
             }
@@ -509,16 +547,22 @@ export class ModelView extends connect(store)(PageViewElement) {
         let hasVersions = (this._versions.length > 0);
         let hasCalibrations = !!(this._config && this._config.calibrations);
         return html`
-            <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" class="tooltip">
+            <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" 
+                class="tooltip ${hasVersions? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
+            <a target="_blank" href="${this._config ? this._config.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
+                class="rdf-icon ${this._config? '' : 'hidden'}"></a> 
             <wl-select label="Select a configuration" id="config-selector" @input="${this._onConfigChange}"
                 class="${hasVersions? '' : 'hidden'}">
             </wl-select>
 
-            <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region" class="tooltip">
+            <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region"
+                class="tooltip ${hasCalibrations? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
+            <a target="_blank" href="${this._calibration ? this._calibration.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
+                class="rdf-icon ${this._calibration? '' : 'hidden'}"></a> 
             <wl-select label="Select a configuration setup" id="calibration-selector" @input="${this._onCalibrationChange}"
                 class="${hasCalibrations? '' : 'hidden'}">
             </wl-select>
@@ -542,6 +586,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </div>
                 <div class="col-desc" style="text-align: justify;">
                     <wl-title level="2">
+                        <a target="_blank" href="${this._model ? this._model.uri : ''}" class="rdf-icon"></a>
                         ${this._model.label}
                         <a @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
                     </wl-title>
@@ -561,14 +606,14 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <wl-tab-group>
                         <wl-tab id="tab-overview" ?checked=${this._tab=='overview'} @click="${() => {this._tab = 'overview'}}"
                             >Overview</wl-tab>
-                        <wl-tab id="tab-overview" ?checked=${this._tab=='tech'} @click="${() => {this._tab = 'tech'}}"
-                            >Technical Information</wl-tab>
                         <wl-tab id="tab-io" ?checked=${this._tab=='io'} @click="${() => {this._tab = 'io'}}"
                             >Input/Output</wl-tab>
                         <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => {this._tab = 'variables'}}"
                             >Variables</wl-tab>
                         <wl-tab id="tab-software" @click="${() => {this._tab = 'software'}}"
                             >Compatible Software</wl-tab>
+                        <wl-tab id="tab-overview" ?checked=${this._tab=='tech'} @click="${() => {this._tab = 'tech'}}"
+                            >Technical Information</wl-tab>
                     </wl-tab-group>
                 </div>
 
@@ -584,7 +629,13 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _renderTabTechnical () {
         return html`
+            <br/>
             <table class="pure-table pure-table-striped">
+                <thead>
+                    <tr><th colspan="2">MODEL: 
+                        <span style="margin-left: 6px; font-size: 16px; font-weight: bold; color: black;">${this._model.label}</span>
+                    </th></tr>
+                </thead>
                 <tbody>
                     ${this._model.os? html`
                     <tr>
@@ -616,25 +667,93 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${this._model.downloadURL? html`
                     <tr>
                         <td><b>Download:</b></td>
-                        <td>${this._renderLink(this._model.downloadURL)}</td>
+                        <td><a target="_blank" href="${this._model.downloadURL}">${this._model.downloadURL}</a></td>
                     </tr>` : ''}
                     ${this._model.sourceC? html`
                     <tr>
                         <td><b>Source code:</b></td>
-                        <td>${this._renderLink(this._model.sourceC)}</td>
+                        <td><a target="_blank" href="${this._model.sourceC}">${this._model.sourceC}</a></td>
                     </tr>` : ''}
                     ${this._model.doc? html`
                     <tr>
                         <td><b>Documentation:</b></td>
-                        <td>${this._renderLink(this._model.doc)}</td>
+                        <td><a target="_blank" href="${this._model.doc}">${this._model.doc}</a></td>
                     </tr>` : ''}
                     ${this._model.installInstr? html`
                     <tr>
                         <td><b>Installation instructions:</b></td>
-                        <td>${this._renderLink(this._model.installInstr)}</td>
+                        <td><a target="_blank" href="${this._model.installInstr}">${this._model.installInstr}</a></td>
                     </tr>` : ''}
                 </tbody>
             </table>
+            <br/>
+
+            ${this._config && this._configMetadata ? html`
+            <table class="pure-table pure-table-striped">
+                <thead>
+                    <tr><th colspan="2">CONFIGURATION: 
+                        <span style="margin-left: 6px; font-size: 16px; font-weight: bold; color: black;">${this._config.label}</span>
+                    </th></tr>
+                </thead>
+                <tbody>
+                    ${this._configMetadata[0].dImg ? html`
+                    <tr>
+                        <td><b>Software Image:</b></td>
+                        <td><code>${this._configMetadata[0].dImg}</code></td>
+                    </tr>` : '' }
+                    ${this._configMetadata[0].repo ? html`
+                    <tr>
+                        <td><b>Repository:</b></td>
+                        <td><a target="_blank" href="${this._configMetadata[0].repo}">${this._configMetadata[0].repo}</td>
+                    </tr>` : '' }
+                    ${this._configMetadata[0].compLoc ? html`
+                    <tr>
+                        <td><b>Component Location:</b></td>
+                        <td><a target="_blank" href="${this._configMetadata[0].compLoc}">${this._configMetadata[0].compLoc}</td>
+                    </tr>` : '' }
+                    ${this._configMetadata[0].pLanguage ? html`
+                    <tr>
+                        <td><b>Language:</b></td>
+                        <td>${this._configMetadata[0].pLanguage}</td>
+                    </tr>` : '' }
+                </tbody>
+            </table>` : ''} 
+
+            <br/>
+            ${this._calibration && this._calibrationMetadata ? html`
+            <table class="pure-table pure-table-striped">
+                <thead>
+                    <tr><th colspan="2">SETUP:
+                        <span style="margin-left: 6px; font-size: 16px; font-weight: bold; color:
+                        black;">${this._calibration.label}</span>
+                    </th></tr>
+                </thead>
+                <tbody>
+                    ${console.log(this._calibrationMetadata)}
+                    ${this._calibrationMetadata[0].dImg ? html`
+                    <tr>
+                        <td><b>Software Image:</b></td>
+                        <td><code>${this._calibrationMetadata[0].dImg}</code></td>
+                    </tr>` : '' }
+                    ${this._calibrationMetadata[0].repo ? html`
+                    <tr>
+                        <td><b>Repository:</b></td>
+                        <td><a target="_blank" href="${this._calibrationMetadata[0].repo}">${this._calibrationMetadata[0].repo}</td>
+                    </tr>` : '' }
+                    ${this._calibrationMetadata[0].compLoc ? html`
+                    <tr>
+                        <td><b>Component Location:</b></td>
+                        <td><a target="_blank" href="${this._calibrationMetadata[0].compLoc}">${this._calibrationMetadata[0].compLoc}</td>
+                    </tr>` : '' }
+                    ${this._calibrationMetadata[0].pLanguage ? html`
+                    <tr>
+                        <td><b>Language:</b></td>
+                        <td>${this._calibrationMetadata[0].pLanguage}</td>
+                    </tr>` : '' }
+                </tbody>
+            </table>
+            <br/>
+            ` : ''}
         `
     }
 
@@ -773,29 +892,38 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _renderMetadataResume (meta) {
         let data = [
-            [this._config, this._configMetadata, 'configuration'], 
-            [this._calibration, this._calibrationMetadata, 'configuration setup']
+            [this._config, this._configMetadata, 'configuration', (this._configAuthors || []).map(x => x.name).join(', ')], 
+            [this._calibration, this._calibrationMetadata, 'configuration setup', (this._calibrationAuthors || []).map(x => x.name).join(', ')]
         ]
-        return data.map(([obj, meta, title]) => 
+        return data.map(([obj, meta, title, authors]) => 
             obj ? html` 
             <fieldset style="border-radius: 5px; padding-top: 0px; border: 2px solid #D9D9D9; margin-bottom: 8px;">
                 <legend style="font-weight: bold; font-size: 12px; color: gray;">Selected ${title}</legend>
-                ${(meta && meta.length > 0) ? html`
+
+
                 <div class="metadata-top-buttons">
                     <div class="button-preview" @click=${() => this._changeTab('io')}>
                         <div>Input files</div>
-                        <div>${(meta[0]['input_variables'] || []).length}</div>
+                        <div>${!this._inputs? html`
+                            <object style="width: 20px;" type="image/svg+xml" data="images/dots.svg"></object>`
+                            : this._inputs.length}
+                        </div>
                     </div>
                     <div class="button-preview" @click=${() => this._changeTab('io')}>
                         <div>Output files</div>
-                        <div>${(meta[0]['output_variables'] || []).length}</div>
+                        <div>${!this._outputs? html`
+                            <object style="width: 20px;" type="image/svg+xml" data="images/dots.svg"></object>`
+                            : this._outputs.length}
+                        </div>
                     </div>
                     <div class="button-preview" @click=${() => this._changeTab('io')}>
                         <div>Parameters</div>
-                        <div>${(meta[0]['parameters'] || []).length}</div>
+                        <div>${!this._parameters ? html`
+                            <object style="width: 20px;" type="image/svg+xml" data="images/dots.svg"></object>`
+                            : this._parameters.length}
+                        </div>
                     </div>
                 </div>
-                ` : ''}
                 <wl-title level="2" style="font-size: 16px;">${obj.label}</wl-title>
 
                 ${!meta ? 
@@ -804,6 +932,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                     html`<div class="info-center">- No metadata available. -</div>`
                     : html `
                     <wl-text>${meta[0].desc}</wl-text>
+                    ${(!this._configAuthors || (this._configAuthors.length > 0 && authors)) ? html`
+                    <br/>
+                    <wl-text><b>Authors:</b> ${this._configAuthors ?  authors : html`
+                        <object style="height: 8px;" type="image/svg+xml" data="images/dots.svg"></object>
+                    `}</wl-text>
+                    `: '' }
                     <ul>
                     ${meta[0].regionName ? html`<li><b>Region:</b> ${meta[0].regionName}</li>`: ''}
                     ${meta[0].tIValue && meta[0].tIUnits ? html`<li><b>Time interval:</b> ${meta[0].tIValue + ' ' + meta[0].tIUnits}</li>` : ''}
@@ -929,7 +1063,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <th>Name</th>
                     <th>Description</th>
                     <th>Format</th>
-                    ${this._calibration? html`<th>Fixed value</th>` : html``}
+                    ${this._calibration? html`<th>Value in this setup</th>` : html``}
                 </thead>
                 <tbody>
                 ${this._inputs.map( io => html`
@@ -955,7 +1089,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <th>Name</th>
                     <th>Description</th>
                     <th>Format</th>
-                    ${this._calibration? html`<th>Fixed value</th>` : html``}
+                    ${this._calibration? html`<th>Value in this setup</th>` : html``}
                 </thead>
                 <tbody>
                 ${this._outputs.map( io => html`
@@ -974,30 +1108,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </tbody>
             </table>` : html``}
 
-            ${(this._parameters)? 
-            html`
-                <h3> Parameters: </h3>
-                <table class="pure-table pure-table-bordered">
-                    <thead>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Datatype</th>
-                        <th>Default value</th>
-                        ${this._calibration? html`<th>Fixed value</th>` : html``}
-                    </thead>
-                    <tbody>
-                    ${this._parameters.map( (p:any) => html`
-                        <tr>
-                            <td>${p.paramlabel}</td>
-                            <td>${p.description}</td>
-                            <td>${p.pdatatype}</td>
-                            <td>${p.defaultvalue}</td>
-                            ${this._calibration? html`<td>${p.fixedValue}</td>` : html``}
-                        </tr>`)}
-                    </tbody>
-                </table>
-            `
-            :html``}
+            ${(this._parameters)? this._renderParametersTable() : html``}
             ${(!this._inputs && !this._outputs && !this._parameters)? html`
             <br/>
             <h3 style="margin-left:30px">
@@ -1005,6 +1116,48 @@ export class ModelView extends connect(store)(PageViewElement) {
             </h3>`
             :html ``}
             `;
+    }
+
+    _renderParametersTable () {
+        if (!this._parameters) { 
+            return html`<div class="text-centered">
+                LOADING PARAMETERS
+                <object style="height: 10px; margin-left: 6px;" type="image/svg+xml" data="images/dots.svg"></object>
+            </div>`
+        }
+        if (this._parameters.length > 0) {
+            return html`
+                <h3> Parameters: </h3>
+                <table class="pure-table pure-table-bordered">
+                    <thead>
+                        <th style="text-align: right;">#</th>
+                        <th>Description</th>
+                        <th>Name</th>
+                        <th style="text-align: right;">Default value</th>
+                        ${this._calibration? html`<th style="text-align: right;">Value in this setup</th>` : html``}
+                    </thead>
+                    <tbody>
+                    ${this._parameters.sort((a,b) => (a.position < b.position) ? -1 : (a.position > b.position? 1 : 0)).map( (p:any) => html`
+                        <tr>
+                            <td style="text-align: right;">${p.position}</td>
+                            <td>
+                                <b style="font-size: 14px;">${ capitalizeFirstLetter(p.description) }</b><br/>
+                                ${p.minVal && p.maxVal ? html`
+                                The range is from ${p.minVal} to ${p.maxVal}
+                                ` : ''}
+                            </td>
+                            <td>
+                                <code>${p.paramlabel}</code><br/>
+                            </td>
+                            <td class="font-numbers" style="text-align: right;">${p.defaultvalue}</td>
+                            ${this._calibration? html`<td class="font-numbers" style="text-align: right;">${p.fixedValue || '-'}</td>` : html``}
+                        </tr>`)}
+                    </tbody>
+                </table>`
+        } else {
+            //Shows nothing when no parameters
+            return '';
+        }
     }
 
     _renderTabVariables () {
@@ -1200,10 +1353,13 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _renderGallery () {
-        let items = [];
-        if (this._model.sampleVisualization) {
-            items.push({label: "Sample Visualization", src: this._model.sampleVisualization})
+        if (!this._explDiagrams && !this._sampleVis && !this._screenshots) {
+            return html`<div class="text-centered">
+                LOADING GALLERY
+                <object style="height: 10px; margin-left: 6px;" type="image/svg+xml" data="images/dots.svg"></object>
+            </div>`
         }
+        let items = [];
         if (this._explDiagrams) {
             this._explDiagrams.forEach((ed) => {
                 let newItem = {label: ed.label, src: ed.url, desc: ed.desc};
@@ -1213,10 +1369,33 @@ export class ModelView extends connect(store)(PageViewElement) {
                 items.push(newItem);
             })
         }
+        if (this._sampleVis) {
+            this._sampleVis.forEach((sv, i) => {
+                let newItem = {label: 'Sample visualization ' + (i>0? i+1 : ''), src: sv.url, desc: sv.desc};
+                items.push(newItem);
+            });
+        }
+        if (this._screenshots) {
+            this._screenshots.forEach((s) => {
+                let newItem = {label: s.label, src: s.url};
+                if (s.desc) newItem.desc = s.desc;
+                if (s.source) newItem.source = {label: s.source, url: s.source};
+                items.push(newItem);
+            });
+        }
+
+        let stillLoading = (!this._explDiagrams || !this._sampleVis || !this._screenshots);
+
         if (items.length > 0) {
-            return html`<h3>Gallery:</h3>
+            return html`
+                ${stillLoading ? html`
+                <div style="float: right; margin: 1em 0;">
+                    <object style="height: 10px; margin-left: 6px;" type="image/svg+xml" data="images/dots.svg"></object>
+                </div>` : ''}
+                <h3>Gallery:</h3>
                 <image-gallery style="--width: 300px; --height: 160px;" .items="${items}"></image-gallery>`;
         } else {
+            // Shows nothing when no gallery
             return html``;
         }
     }
@@ -1224,7 +1403,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     expandIO (uri:string) {
         if (!this._variables[uri]) {
             //Dont call this on click! FIXME
-            store.dispatch(explorerFetchIOVarsAndUnits(uri)); 
+            store.dispatch(fetchVarsSNAndUnitsForIO(uri)); 
             this._IOStatus.add(uri);
         }
     }
@@ -1313,9 +1492,10 @@ export class ModelView extends connect(store)(PageViewElement) {
             // Fetch & reset data
             if (modelChanged) {
                 if (ui.selectedModel) {
-                    store.dispatch(explorerFetchVersions(ui.selectedModel));
-                    store.dispatch(explorerFetchExplDiags(ui.selectedModel));
-                    store.dispatch(explorerFetchMetadata(ui.selectedModel));
+                    store.dispatch(fetchVersionsForModel(ui.selectedModel));
+                    store.dispatch(fetchDiagramsForModelConfig(ui.selectedModel));
+                    store.dispatch(fetchSampleVisForModelConfig(ui.selectedModel));
+                    store.dispatch(fetchScreenshotsForModelConfig(ui.selectedModel));
                 }
                 this._selectedModel = ui.selectedModel;
 
@@ -1323,29 +1503,35 @@ export class ModelView extends connect(store)(PageViewElement) {
                 this._versions = null;
                 this._compModels = null;
                 this._explDiagrams = null;
-                this._modelMetadata = null;
+                this._sampleVis = null;
+                this._screenshots = null;
             }
             if (configChanged) {
                 if (ui.selectedConfig) {
-                    store.dispatch(explorerFetchMetadata(ui.selectedConfig));
-                    store.dispatch(explorerFetchCompatibleSoftware(ui.selectedConfig));
-                    store.dispatch(explorerFetchIO(ui.selectedConfig));
-                    store.dispatch(explorerFetchParameters(ui.selectedConfig));
+                    //store.dispatch(fetchMetadataForModelConfig(ui.selectedConfig));
+                    store.dispatch(fetchMetadataNoioForModelConfig(ui.selectedConfig));
+                    store.dispatch(fetchCompatibleSoftwareForConfig(ui.selectedConfig));
+                    store.dispatch(fetchIOAndVarsSNForConfig(ui.selectedConfig));
+                    store.dispatch(fetchParametersForConfig(ui.selectedConfig));
+                    store.dispatch(fetchAuthorsForModelConfig(ui.selectedConfig));
                 }
                 this._selectedConfig = ui.selectedConfig;
                 this._config = null;
                 this._configMetadata = null;
                 this._compInput = null;
                 this._compOutput = null;
+                this._configAuthors = null;
 
                 this._variables = {};
                 this._IOStatus = new Set();
             }
             if (calibrationChanged) {
                 if (ui.selectedCalibration) {
-                    store.dispatch(explorerFetchMetadata(ui.selectedCalibration));
-                    store.dispatch(explorerFetchIO(ui.selectedCalibration));
-                    store.dispatch(explorerFetchParameters(ui.selectedCalibration));
+                    //store.dispatch(fetchMetadataForModelConfig(ui.selectedCalibration));
+                    store.dispatch(fetchMetadataNoioForModelConfig(ui.selectedCalibration));
+                    store.dispatch(fetchIOAndVarsSNForConfig(ui.selectedCalibration));
+                    store.dispatch(fetchParametersForConfig(ui.selectedCalibration));
+                    store.dispatch(fetchAuthorsForModelConfig(ui.selectedCalibration));
                 }
                 this._selectedCalibration = ui.selectedCalibration;
                 this._calibration = null;
@@ -1355,6 +1541,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 this._inputs = null;
                 this._outputs = null;
                 this._parameters = null;
+                this._calibrationAuthors = null;
             }
 
             // Load data 
@@ -1385,7 +1572,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                     }, null);
                 }
 
-
                 // Update compatible models.
                 if (!this._compModels && this._model && this._model.categories) {
                     this._compModels = [];
@@ -1401,16 +1587,27 @@ export class ModelView extends connect(store)(PageViewElement) {
                 if (!this._explDiagrams && db.explDiagrams) {
                     this._explDiagrams = db.explDiagrams[this._selectedModel];
                 }
+                if (!this._sampleVis && db.sampleVis) {
+                    this._sampleVis = db.sampleVis[this._selectedModel];
+                }
+                if (!this._screenshots && db.screenshots) {
+                    this._screenshots = db.screenshots[this._selectedModel];
+                }
                 if (!this._compInput && this._config && db.compatibleInput) {
                     this._compInput = db.compatibleInput[this._config.uri];
                 }
                 if (!this._compOutput && this._config && db.compatibleOutput) {
                     this._compOutput = db.compatibleOutput[this._config.uri];
                 }
-                if (db.modelMetadata) { //FIXME: modelMetadata has metadata of everything...
-                    if (!this._modelMetadata && this._model) this._modelMetadata = db.modelMetadata[this._selectedModel];
-                    if (!this._configMetadata && this._config) this._configMetadata = db.modelMetadata[this._selectedConfig];
-                    if (!this._calibrationMetadata && this._calibration) this._calibrationMetadata = db.modelMetadata[this._selectedCalibration];
+                if (!this._configAuthors && this._config && db.authors) {
+                    this._configAuthors = db.authors[this._config.uri];
+                }
+                if (!this._calibrationAuthors && this._calibration && db.authors) {
+                    this._calibrationAuthors = db.authors[this._calibration.uri];
+                }
+                if (db.metadata) {
+                    if (!this._configMetadata && this._config) this._configMetadata = db.metadata[this._selectedConfig];
+                    if (!this._calibrationMetadata && this._calibration) this._calibrationMetadata = db.metadata[this._selectedCalibration];
                 }
                 if (this._config || this._calibration) {
                     let selectedUri = this._calibration ? this._calibration.uri : this._config.uri;
