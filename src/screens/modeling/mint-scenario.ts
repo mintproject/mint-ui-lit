@@ -4,7 +4,7 @@ import { store, RootState } from "../../app/store";
 import { PageViewElement } from "../../components/page-view-element";
 import { ScenarioDetails, SubGoal, Goal, Pathway, Scenario, Notes } from "./reducers";
 import { SharedStyles } from "../../styles/shared-styles";
-import { addGoal, addPathway, addSubGoal, deletePathway, deleteGoal, deleteSubGoal, getScenarioDetail, deleteScenario, addGoalFull, addSubGoalFull, updateSubGoal, updateGoal, updateScenario, updatePathway } from "./actions";
+import { addGoal, addPathway, addSubGoal, deletePathway, deleteGoal, deleteSubGoal, getScenarioDetail, addGoalFull, addSubGoalFull, updateSubGoal, updateGoal, updatePathway } from "./actions";
 
 import "weightless/icon";
 import "weightless/tooltip";
@@ -20,10 +20,14 @@ import { renderVariables, renderNotifications } from "../../util/ui_renders";
 import { resetForm, showDialog, formElementsComplete, showNotification, hideDialog, hideNotification } from "../../util/ui_functions";
 import { firestore } from "firebase";
 import { toTimeStamp, fromTimeStampToDateString } from "util/date-utils";
+import { RegionList } from "screens/regions/reducers";
 
 
 @customElement('mint-scenario')
 export class MintScenario extends connect(store)(PageViewElement) {
+
+    @property({type: Object})
+    private _subRegions: RegionList;
 
     @property({type: Object})
     private _scenario_details!: ScenarioDetails | null;
@@ -122,10 +126,6 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
                     <wl-title level="3" style="margin: 0px">${this._scenario!.name}</wl-title>
                 </div>
-                <wl-icon @click="${this._onEditScenario}" 
-                    class="actionIcon editIcon bigActionIcon">edit</wl-icon>
-                <wl-icon @click="${this._onDeleteScenario}" 
-                    class="actionIcon deleteIcon bigActionIcon">delete</wl-icon>
             </div>
 
             <!-- Two Columns Section -->
@@ -201,7 +201,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                 <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
                                     <wl-title level="4">Threads</wl-title>
                                 </div>
-                                <wl-icon @click="${this._addPathwayDialog}" 
+                                <wl-icon @click="${this._editPathwayDialog}" 
                                     class="actionIcon">note_add</wl-icon>
                                 &nbsp;&nbsp;
                                 <wl-icon @click="${() => this._hideObjectives = !this._hideObjectives}"
@@ -251,26 +251,17 @@ export class MintScenario extends connect(store)(PageViewElement) {
         <!-- Dialogs -->
         ${this._renderObjectiveDialog()}
         ${this._renderSubObjectiveDialog()}
+        ${this._renderThreadDialog()}
         `;
     }
 
     _renderTooltips() {
         return html`
-        <!-- Tooltips for the Scenario -->
+        <!-- Tooltips for the addPaScenario -->
         <wl-tooltip anchor=".scenariorow .addIcon" 
             .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
             anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
             Add an Objective
-        </wl-tooltip>
-        <wl-tooltip anchor=".scenariorow .editIcon" 
-            .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
-            anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
-            Edit Scenario Name
-        </wl-tooltip>
-        <wl-tooltip anchor=".scenariorow .deleteIcon" 
-            .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
-            anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
-            Delete Scenario
         </wl-tooltip>
         
         ${Object.keys(this._scenario_details!.goals).map((goalid) => {
@@ -373,6 +364,23 @@ export class MintScenario extends connect(store)(PageViewElement) {
             </div>
             <br />
 
+            <!-- Sub Region -->
+            <div class="formRow">
+                <div class="input_half">
+                    <label>Sub-Region</label>
+                    <select name="subgoal_subregion">
+                        <option value disabled selected>Select</option>
+                        ${Object.keys(this._subRegions || {}).map((subRegionid) => {
+                            let subRegion = this._subRegions![subRegionid];
+                            return html`
+                            <option value="${subRegion.id}">${subRegion.name}</option>
+                            `;
+                        })}
+                    </select>
+                </div>            
+            </div>            
+            <div style="height:10px;">&nbsp;</div>
+
             <!-- Time Period -->
             <div class="input_full">
                 <label>Time Period</label>
@@ -393,8 +401,57 @@ export class MintScenario extends connect(store)(PageViewElement) {
         `;        
     }
     
+    _renderThreadDialog() {
+        return html`
+        <wl-dialog id="threadDialog" fixed backdrop blockscrolling>
+            <h3 slot="header">What is the Thread ?</h3>
+            <div slot="content">
+                <form id="threadForm">
+                <p>
+                    Specify thread details.
+                    A Thread constitutes analysis of a sub-objective using a single model. A sub-objective may have multiple threads.
+                </p>
+                <input type="hidden" name="pathwayid"></input>
+                
+                <!-- Sub-Objective name -->
+                <div class="input_full">
+                    <label>Thread name*</label>
+                    <input name="pathway_name"></input>
+                </div>
+                <br />
+
+                <!-- Time Period -->
+                <div class="input_full">
+                    <label>Time Period</label>
+                </div>
+                <div class="formRow">
+                    <div class="input_half">
+                        <input name="pathway_from" type="date">
+                    </div>
+                    to
+                    <div class="input_half">
+                        <input name="pathway_to" type="date">
+                    </div>
+                </div>
+                <br />
+                </form>
+            </div>
+            <div slot="footer">
+                <wl-button @click="${this._onEditPathwayCancel}" inverted flat>Cancel</wl-button>
+                <wl-button @click="${this._onEditPathwaySubmit}" class="submit" id="dialog-submit-button">Submit</wl-button>
+            </div>
+        </wl-dialog>
+        `;
+    }
+
     _addGoalDialog() {
-        resetForm(this.shadowRoot!.querySelector<HTMLFormElement>("#objectiveForm")!);
+        let form = this.shadowRoot!.querySelector<HTMLFormElement>("#objectiveForm")!;
+        resetForm(form, null);
+        let dates = this._scenario.dates;
+        (form.elements["goalid"] as HTMLInputElement).value = null!;
+        (form.elements["subgoal_subregion"] as HTMLSelectElement).value = this._scenario.subregionid!;
+        (form.elements["subgoal_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
+        (form.elements["subgoal_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
         showDialog("objectiveDialog", this.shadowRoot!);
     }
 
@@ -440,26 +497,105 @@ export class MintScenario extends connect(store)(PageViewElement) {
     _addSubGoalDialog(e: Event) {
         let goalid = (e.currentTarget as HTMLButtonElement).dataset['goalid']; 
         let form = this.shadowRoot!.querySelector<HTMLFormElement>("#subObjectiveForm")!;
-        resetForm(form);
+        resetForm(form, null);
         this._subgoalEditMode = false;
         let dates = this._scenario.dates;
         (form.elements["goalid"] as HTMLInputElement).value = goalid!;
+        (form.elements["subgoal_subregion"] as HTMLSelectElement).value = this._scenario.subregionid!;
         (form.elements["subgoal_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
         (form.elements["subgoal_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
         showDialog("subObjectiveDialog", this.shadowRoot!);
     }
 
+    _editPathwayDialog(e: Event) {
+        let form = this.shadowRoot!.querySelector<HTMLFormElement>("#threadForm")!;
+        resetForm(form, null);
+
+        let threadid = (e.currentTarget as HTMLButtonElement).dataset['pathwayid'];
+        let dates = this._selectedSubgoal.dates || this._scenario.dates;
+        if(threadid) {
+            let pathway = this._scenario_details!.pathways[threadid];
+            if(pathway) {
+                if(pathway.dates)
+                    dates = pathway.dates;
+                (form.elements["pathwayid"] as HTMLInputElement).value = pathway.id;
+                (form.elements["pathway_name"] as HTMLInputElement).value = pathway.name || this._selectedSubgoal.name;
+            }
+        }
+        (form.elements["pathway_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
+        (form.elements["pathway_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
+
+        showDialog("threadDialog", this.shadowRoot!);
+        e.stopPropagation();
+        e.preventDefault();
+        return false;
+    }
+
+    _onEditPathwaySubmit() {
+        let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#threadForm")!;
+        if(formElementsComplete(form, ["pathway_name"])) {
+            let pathwayid = (form.elements["pathwayid"] as HTMLInputElement).value;
+            let subgoalid = this._selectedSubgoal.id;
+            let pathway_name = (form.elements["pathway_name"] as HTMLInputElement).value;
+            let pathway_from = (form.elements["pathway_from"] as HTMLInputElement).value;
+            let pathway_to = (form.elements["pathway_to"] as HTMLInputElement).value;
+
+            // If no subgoalid, but goalid is there, then this is a new subgoal
+            let pathway : Pathway = null;
+            if(pathwayid) {
+                // Edit Pathway 
+                pathway = this._scenario_details!.pathways[pathwayid];
+                pathway.name = pathway_name;
+                pathway.dates = {
+                    start_date: firestore.Timestamp.fromDate(new Date(pathway_from)),
+                    end_date: firestore.Timestamp.fromDate(new Date(pathway_to))
+                };
+                updatePathway(this._scenario!, pathway);
+            }
+            else {
+                // Add Pathway
+                let pathway = {
+                    name: pathway_name,
+                    dates: {
+                        start_date: toTimeStamp(pathway_from),
+                        end_date: toTimeStamp(pathway_to)
+                    },
+                    driving_variables: [],
+                    response_variables: [],
+                    models: {},
+                    datasets: {},
+                    model_ensembles: {},
+                    executable_ensembles: [],
+                    notes: {} as Notes
+                } as Pathway;
+
+                addPathway(this._scenario!, subgoalid, pathway);
+            }
+
+            showNotification("saveNotification", this.shadowRoot!);
+            hideDialog("threadDialog", this.shadowRoot!);
+        }
+        else {
+            showNotification("formValuesIncompleteNotification", this.shadowRoot!);
+        }
+    }
+
+    _onEditPathwayCancel() {
+        hideDialog("threadDialog", this.shadowRoot!);
+    }
+    
     _editSubGoalDialog(e: Event) {
         let subgoalid = (e.currentTarget as HTMLButtonElement).dataset['subgoalid'];
         if(subgoalid) {
             let subgoal = this._scenario_details!.subgoals[subgoalid];
             if(subgoal) {
                 let form = this.shadowRoot!.querySelector<HTMLFormElement>("#subObjectiveForm")!;
-                resetForm(form);
+                resetForm(form, null);
                 this._subgoalEditMode = true;
                 let dates = subgoal.dates ? subgoal.dates : this._scenario.dates;
                 (form.elements["subgoalid"] as HTMLInputElement).value = subgoal.id;
                 (form.elements["subgoal_name"] as HTMLInputElement).value = subgoal.name;
+                (form.elements["subgoal_subregion"] as HTMLInputElement).value = subgoal.subregionid;
                 (form.elements["subgoal_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
                 (form.elements["subgoal_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
                 showDialog("subObjectiveDialog", this.shadowRoot!);
@@ -475,6 +611,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
         if(formElementsComplete(form, ["subgoal_name"])) {
             let goalid = (form.elements["goalid"] as HTMLInputElement).value;
             let subgoalid = (form.elements["subgoalid"] as HTMLInputElement).value;
+            let subgoal_subregion = (form.elements["subgoal_subregion"] as HTMLInputElement).value;
             let subgoal_name = (form.elements["subgoal_name"] as HTMLInputElement).value;
             let subgoal_from = (form.elements["subgoal_from"] as HTMLInputElement).value;
             let subgoal_to = (form.elements["subgoal_to"] as HTMLInputElement).value;
@@ -485,6 +622,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 // Edit Subgoal 
                 subgoal = this._scenario_details!.subgoals[subgoalid];
                 subgoal.name = subgoal_name;
+                subgoal.subregionid = subgoal_subregion;
                 subgoal.dates = {
                     start_date: firestore.Timestamp.fromDate(new Date(subgoal_from)),
                     end_date: firestore.Timestamp.fromDate(new Date(subgoal_to))
@@ -497,6 +635,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 let driving_variable = (form.elements["driving_variable"] as HTMLInputElement).value || "";
                 subgoal = {
                     name: subgoal_name,
+                    subregionid: subgoal_subregion,
                     dates: {
                         start_date: toTimeStamp(subgoal_from),
                         end_date: toTimeStamp(subgoal_to)
@@ -528,7 +667,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
     _onEditSubGoalCancel() {
         hideDialog("subObjectiveDialog", this.shadowRoot!);
     }
-    
+
     _addGoal(name:string) {
         let goal = {
             name: name,
@@ -546,39 +685,6 @@ export class MintScenario extends connect(store)(PageViewElement) {
         this._addPathway(subgoalid);
     }
 
-    _addPathwayDialog() {
-        let pathwayname = prompt("Please enter a name for the new thread");
-        if(pathwayname && this._selectedSubgoal) {
-            let pathway = {
-                name: pathwayname,
-                driving_variables: [],
-                response_variables: [],
-                models: {},
-                datasets: {},
-                model_ensembles: {},
-                executable_ensembles: [],
-                notes: {} as Notes
-            } as Pathway;
-            let pathwayid = addPathway(this._scenario, this._selectedSubgoal.id!, pathway);
-            // Update Scenario Details to the new pathway (we don't update scenario details from firebase every time as its expensive)
-            pathway.id = pathwayid;
-            this._scenario_details.pathways[pathwayid] = pathway;
-            showNotification("saveNotification", this.shadowRoot!);
-        }
-    }
-    
-    _editPathwayDialog(e: Event) {
-        let pathwayid = (e.currentTarget as HTMLButtonElement).dataset['pathwayid'];
-        let pathway = this._scenario_details!.pathways[pathwayid!];
-        let subgoal = this._selectedSubgoal;
-        let pathwayname = prompt("Please enter a new name for the thread", pathway.name);
-        if(pathwayname) {
-            pathway.name = pathwayname;
-            updatePathway(this._scenario, pathway);
-            showNotification("saveNotification", this.shadowRoot!); 
-        }
-    }
-
     _addPathway(subgoalid:string) {
         let pathway = {
             driving_variables: [],
@@ -590,28 +696,6 @@ export class MintScenario extends connect(store)(PageViewElement) {
             notes: {} as Notes
         } as Pathway;
         addPathway(this._scenario!, subgoalid!, pathway);
-    }
-
-    _onEditScenario() {
-        let newname = prompt("Enter new name for the scenario", this._scenario!.name);
-        if(newname) {
-            this._scenario!.name = newname;
-            updateScenario(this._scenario!);
-            showNotification("saveNotification", this.shadowRoot!); 
-        }
-    }
-
-    _onDeleteScenario() {
-        if(!confirm("Do you want to delete the scenario '" + this._scenario!.name + "' ?"))
-            return;
-
-        showNotification("deleteNotification", this.shadowRoot!);
-        // Delete scenario itself. Scenario deletion returns a "Promise"
-        deleteScenario(this._scenario!).then(() => {
-            hideNotification("deleteNotification", this.shadowRoot!);
-            goToPage("modeling");
-        });
- 
     }
 
     _onEditGoal(e: Event) {
@@ -759,6 +843,9 @@ export class MintScenario extends connect(store)(PageViewElement) {
         if(state.ui && state.ui.selected_pathwayid) 
             this._selectedPathwayId = state.ui.selected_pathwayid;
 
+        if(state.regions!.query_result && this._regionid) 
+            this._subRegions = state.regions!.query_result[this._regionid]["*"];
+
         // If a scenario has been selected, fetch scenario details
         let scenarioid = state.ui!.selected_scenarioid;
         let user = state.app.user;
@@ -798,6 +885,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                     dates: this._scenario_details.dates,
                     name: this._scenario_details.name,
                     regionid: this._scenario_details.regionid,
+                    subregionid: this._scenario_details.subregionid,
                     last_update: this._scenario_details.last_update
                 } as Scenario;
 

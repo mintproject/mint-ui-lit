@@ -3,7 +3,7 @@ import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 
 import { SharedStyles } from "../../../styles/shared-styles";
-import { ExecutableEnsemble, Goal, SubGoal, DataEnsembleMap } from "../reducers";
+import { ExecutableEnsemble, Goal, SubGoal, DataEnsembleMap, Visualization } from "../reducers";
 import { getUISelectedSubgoal, getUISelectedGoal } from "../../../util/state_functions";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { getVariableLongName } from "../../../offline_data/variable_list";
@@ -49,6 +49,16 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
         let drivingV = this.pathway.driving_variables.length > 0?
                             getVariableLongName(this.pathway.driving_variables[0]) : '';
 
+        // FIXME: Hack
+        if(responseV == "Crop Yields") {
+            this.pathway.visualizations = [
+                {
+                    type: 'web',
+                    url: 'https://viz.mint.isi.edu/economic'
+                }
+            ]
+        }
+
         return html`
         <style>
         i {
@@ -78,7 +88,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
         `;
     }
 
-    _renderVisualization (visualization: {[type:string]: string, [url:string]: string}) {
+    _renderVisualization (visualization: Visualization) {
         switch (visualization.type) {
             case 'web':
                 return html`<iframe src="${visualization.url}"></iframe>`;

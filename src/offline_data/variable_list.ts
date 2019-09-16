@@ -143,10 +143,6 @@ export const VARIABLES = {
                 "long_name": "Crop Production",
                 "SVO_name": "crop__simulated_produced_mass"
             },
-            "var2": {
-                "long_name": "Crop Yields",
-                "SVO_name": "land_crop__simulated_mass-per-area_yield"
-            },
             "var3": {
                 "long_name": "Land Area",
                 "SVO_name": "land_crop__simulated_allocated_area"

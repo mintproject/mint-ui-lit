@@ -18,6 +18,7 @@ export interface ScenarioList {
 
 export interface Scenario extends IdNameObject {
     regionid: string
+    subregionid?: string
     dates: DateRange
     last_update?: string
 }
@@ -35,6 +36,7 @@ export interface ScenarioDetails extends Scenario {
 }
 
 export interface Pathway extends IdNameObject {
+    dates?: DateRange
     driving_variables: string[]
     response_variables: string[]
     models?: ModelMap
@@ -43,6 +45,12 @@ export interface Pathway extends IdNameObject {
     executable_ensembles?: ExecutableEnsemble[]
     notes?: Notes
     last_update?: PathwayUpdateInformation
+    visualizations?: Visualization[]
+}
+
+export interface Visualization {
+    type: string,
+    url: string
 }
 
 export interface Notes {
@@ -81,6 +89,7 @@ export interface Goal extends IdNameObject {
 
 export interface SubGoal extends IdNameObject {
     dates?: DateRange,
+    subregionid?: string
     pathwayids?: string[]
 }
 
@@ -100,7 +109,7 @@ export interface ExecutableEnsemble {
     runid?: string
     status: "FAILED" | "SUCCESS" | "RUNNING",
     run_progress?: number // 0 to 100 (percentage done)
-    results: string[] // Chosen results after completed run
+    results: any[] // Chosen results after completed run
     selected: boolean
 }
 

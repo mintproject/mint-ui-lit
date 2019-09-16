@@ -300,6 +300,8 @@ export const addSubGoalFull = (scenario:Scenario, goalid: string, subgoal: SubGo
 export const updateScenario = (scenario: Scenario) =>  {
     let scenarioRef = db.collection("scenarios").doc(scenario.id);
     scenario.last_update = Date.now().toString();
+    if(!scenario.subregionid)
+        scenario.subregionid = null;
     scenarioRef.set(scenario);
 };
 

@@ -23,6 +23,7 @@ export const EXAMPLE_SCENARIOS_LIST_DATA = {
             "id": "scenario1",
             "name": "Check on Food Security in South Sudan",
             "regionid": "south_sudan",
+            "subregionid": "pongo",
             "dates": {
                 "start_date": toTimeStamp(new Date().toDateString()),
                 "end_date": toTimeStamp(new Date().toDateString()),
@@ -32,6 +33,7 @@ export const EXAMPLE_SCENARIOS_LIST_DATA = {
             "id": "scenario2",
             "name": "Check up on Flooding issues in South Sudan",
             "regionid": "south_sudan",
+            "subregionid": "pongo",
             "dates": {
                 "start_date": toTimeStamp(new Date().toDateString()),
                 "end_date": toTimeStamp(new Date().toDateString()),
@@ -41,6 +43,7 @@ export const EXAMPLE_SCENARIOS_LIST_DATA = {
             "id": "scenario3",
             "name": "Investigate the evolving refugee crisis in Ethipia",
             "regionid": "ethiopia",
+            "subregionid": "pongo",
             "dates": {
                 "start_date": toTimeStamp(new Date().toDateString()),
                 "end_date":toTimeStamp (new Date().toDateString()),

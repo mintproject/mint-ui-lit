@@ -16,6 +16,8 @@ import { MintPathwayPage } from "./mint-pathway-page";
 import { IdMap } from "../../../app/reducers";
 import { fromTimeStampToDateString } from "util/date-utils";
 
+import "weightless/snackbar";
+
 store.addReducers({
     datasets
 });
@@ -153,61 +155,63 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                         }
                         else {
                             let queriedInputDatasetStatuses = (this._queriedDatasets[modelid] || {})[input.id!];
-                            let loading = queriedInputDatasetStatuses.loading;
-                            let queriedInputDatasets = queriedInputDatasetStatuses.datasets;
-                            return html `
-                            <li>
-                                Select an input dataset for <b>${input.name}</b>. (You can select more than one dataset if you want several runs). 
-                                Datasets matching the driving variable specied (if any) are in <b>bold</b>.
-                                <p />
-                                ${loading ? 
-                                html`<wl-progress-bar></wl-progress-bar>`
-                                :
-                                html`
-                                <table class="pure-table pure-table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th></th>
-                                            <th><b>Dataset</b></th>
-                                            <th>Categories</th>
-                                            <th>Region</th>
-                                            <th>Time Period</th>
-                                            <th>Source</th>
-
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${(queriedInputDatasets || []).map((dataset:Dataset) => {
-                                            let matched = matchVariables(this.pathway.driving_variables, dataset.variables, false); // Partial match
-                                            return html`
+                            if(queriedInputDatasetStatuses) {
+                                let loading = queriedInputDatasetStatuses.loading;
+                                let queriedInputDatasets = queriedInputDatasetStatuses.datasets;
+                                return html `
+                                <li>
+                                    Select an input dataset for <b>${input.name}</b>. (You can select more than one dataset if you want several runs). 
+                                    Datasets matching the driving variable specied (if any) are in <b>bold</b>.
+                                    <p />
+                                    ${loading ? 
+                                    html`<wl-progress-bar></wl-progress-bar>`
+                                    :
+                                    html`
+                                    <table class="pure-table pure-table-striped">
+                                        <thead>
                                             <tr>
-                                                <td><input class="${this._valid(modelid)}_${this._valid(input.id!)}_checkbox" 
-                                                    type="checkbox" data-datasetid="${dataset.id}"
-                                                    ?checked="${(bindings || []).indexOf(dataset.id!) >= 0}"></input></td>
-                                                <td class="${matched ? 'matched': ''}">
-                                                    <a href="datasets/browse/${dataset.id}">${dataset.name}</a>
-                                                    (${dataset.resources.length} resources)
-                                                </td>
-                                                <td>${(dataset.categories || []).join(", ")}</td>
-                                                <td>${dataset.region}</td>
-                                                <td>
-                                                    ${fromTimeStampToDateString(dataset.time_period.start_date)} to 
-                                                    ${fromTimeStampToDateString(dataset.time_period.end_date)}
-                                                </td>
-                                                <td><a href="${dataset.source.url}">${dataset.source.name}</a></td>
+                                                <th></th>
+                                                <th><b>Dataset</b></th>
+                                                <th>Categories</th>
+                                                <th>Region</th>
+                                                <th>Time Period</th>
+                                                <th>Source</th>
+
                                             </tr>
-                                            `;
-                                        })}
-                                    </tbody>
-                                </table>
-                                <div class="footer">
-                                    <wl-button type="button" flat inverted outlined 
-                                        @click="${() => this._compareDatasets(modelid, input.id!)}">Compare Selected Data</wl-button>
-                                    <div style="flex-grow: 1">&nbsp;</div>
-                                </div>
-                                `}
-                            </li>
-                            `;
+                                        </thead>
+                                        <tbody>
+                                            ${(queriedInputDatasets || []).map((dataset:Dataset) => {
+                                                let matched = matchVariables(this.pathway.driving_variables, dataset.variables, false); // Partial match
+                                                return html`
+                                                <tr>
+                                                    <td><input class="${this._valid(modelid)}_${this._valid(input.id!)}_checkbox" 
+                                                        type="checkbox" data-datasetid="${dataset.id}"
+                                                        ?checked="${(bindings || []).indexOf(dataset.id!) >= 0}"></input></td>
+                                                    <td class="${matched ? 'matched': ''}">
+                                                        <a href="datasets/browse/${dataset.id}">${dataset.name}</a>
+                                                        (${dataset.resources.length} resources)
+                                                    </td>
+                                                    <td>${(dataset.categories || []).join(", ")}</td>
+                                                    <td>${dataset.region}</td>
+                                                    <td>
+                                                        ${fromTimeStampToDateString(dataset.time_period.start_date)} to 
+                                                        ${fromTimeStampToDateString(dataset.time_period.end_date)}
+                                                    </td>
+                                                    <td><a href="${dataset.source.url}">${dataset.source.name}</a></td>
+                                                </tr>
+                                                `;
+                                            })}
+                                        </tbody>
+                                    </table>
+                                    <div class="footer">
+                                        <wl-button type="button" flat inverted outlined 
+                                            @click="${() => this._compareDatasets(modelid, input.id!)}">Compare Selected Data</wl-button>
+                                        <div style="flex-grow: 1">&nbsp;</div>
+                                    </div>
+                                    `}
+                                </li>
+                                `;
+                            }
                         }
                     })}
                     </ul>
@@ -402,7 +406,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         };    
 
         // Update pathway itself
-        console.log(this.pathway);
+        //console.log(this.pathway);
         updatePathway(this.scenario, this.pathway);
         showNotification("saveNotification", this.shadowRoot!);
     }
@@ -421,7 +425,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
 
     queryDataCatalog() {
         //console.log("Querying data catalog again");
-        let dates = this.subgoal.dates || this.scenario.dates;
+        let dates = this.pathway.dates || this.subgoal.dates || this.scenario.dates;
 
         if(this._models) {
             if(!this._queriedDatasets) {

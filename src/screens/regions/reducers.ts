@@ -31,7 +31,7 @@ const regions: Reducer<RegionsState, RootAction> = (state = INITIAL_STATE, actio
         case REGIONS_QUERY:
             state.query_result = { ...state.query_result };
             state.query_result[action.parent_id] = state.query_result[action.parent_id] || {};
-            state.query_result[action.parent_id][action.region_type] = action.list;
+            state.query_result[action.parent_id][action.region_type || "*"] = action.list;
             return {
                 ...state
             };
