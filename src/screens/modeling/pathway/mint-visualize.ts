@@ -50,11 +50,19 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                             getVariableLongName(this.pathway.driving_variables[0]) : '';
 
         // FIXME: Hack
-        if(responseV == "Crop Yields") {
+        if(responseV == "Crop Production") {
             this.pathway.visualizations = [
                 {
                     type: 'web',
                     url: 'https://viz.mint.isi.edu/economic'
+                }
+            ]
+        }
+        else if(responseV == "Crop Yields") {
+            this.pathway.visualizations = [
+                {
+                    type: 'web',
+                    url: 'https://viz.mint.isi.edu/bokeh/cycles_viz'
                 }
             ]
         }
