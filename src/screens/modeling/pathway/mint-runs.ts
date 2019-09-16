@@ -217,6 +217,6 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         super.setUser(state);
         super.setRegionId(state);
         super.setPathway(state);
-        checkPathwayEnsembleStatus(this.scenario, this.pathway, this.prefs);
+        //checkPathwayEnsembleStatus(this.scenario, this.pathway, this.prefs);
     }
 }

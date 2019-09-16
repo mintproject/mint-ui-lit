@@ -275,7 +275,7 @@ export const runPathwayExecutableEnsembles = async(
                     i++;
                 });
                 updatePathway(scenario, pathway);
-                checkPathwayEnsembleStatus(scenario, pathway, prefs);
+                //checkPathwayEnsembleStatus(scenario, pathway, prefs);
             });
         });
     });
@@ -317,6 +317,8 @@ export const runPathwayExecutableEnsembles_old = (
     }, 1000);
 };
 
+const clearTimer = {};
+
 export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway, prefs: UserPreferences) => {
     /* Check if some ensembles need to be monitored or not */
     let alldone = true;
@@ -327,13 +329,19 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
         }
     });
     if(alldone) {
+        delete clearTimer[pathway.id];
         return;
     }
 
     // If we need to monitor some ensembles, then set a timer for regular monitoring
-    let clearTimer = setInterval(() => {
+    if(clearTimer[pathway.id]) {
+        return;
+    }
+
+    clearTimer[pathway.id] = setInterval(() => {
         if(pathway == null) {
-            clearInterval(clearTimer);
+            clearInterval(clearTimer[pathway.id]);
+            delete clearTimer[pathway.id];
             return;
         }
         loginToWings(prefs).then(() => {
@@ -371,7 +379,8 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
                 }
                 if(alldone) {
                     console.log("All runs finished.. stop polling");
-                    clearInterval(clearTimer);
+                    clearInterval(clearTimer[pathway.id]);
+                    delete clearTimer[pathway.id];
                 }
             })
         })
