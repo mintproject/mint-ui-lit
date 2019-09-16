@@ -144,7 +144,8 @@ export class ScenariosList extends connect(store)(PageViewElement) {
             <div class="input_half">
               <label>Sub-Region</label>
               <select name="scenario_subregion">
-                <option value disabled selected>Select</option>
+                <option disabled selected>Select</option>
+                <option value="">None</option>
                 ${this._list && Object.keys(this._subRegions || {}).map((subRegionid) => {
                   let subRegion = this._subRegions![subRegionid];
                   return html`

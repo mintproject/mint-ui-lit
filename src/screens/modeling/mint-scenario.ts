@@ -199,7 +199,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                         <div class="clt">
                             <div class="cltrow scenariorow">
                                 <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                                    <wl-title level="4">Threads</wl-title>
+                                    <wl-title level="4">Modeling threads</wl-title>
                                 </div>
                                 <wl-icon @click="${this._editPathwayDialog}" 
                                     class="actionIcon">note_add</wl-icon>
@@ -369,7 +369,8 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 <div class="input_half">
                     <label>Sub-Region</label>
                     <select name="subgoal_subregion">
-                        <option value disabled selected>Select</option>
+                        <option disabled selected>Select</option>
+                        <option value="">None</option>
                         ${Object.keys(this._subRegions || {}).map((subRegionid) => {
                             let subRegion = this._subRegions![subRegionid];
                             return html`
@@ -404,18 +405,18 @@ export class MintScenario extends connect(store)(PageViewElement) {
     _renderThreadDialog() {
         return html`
         <wl-dialog id="threadDialog" fixed backdrop blockscrolling>
-            <h3 slot="header">What is the Thread ?</h3>
+            <h3 slot="header">Modeling thread</h3>
             <div slot="content">
                 <form id="threadForm">
                 <p>
-                    Specify thread details.
-                    A Thread constitutes analysis of a sub-objective using a single model. A sub-objective may have multiple threads.
+                    Specify modeling thread details.
+                    A Thread constitutes analysis of a sub-objective using a single model. A sub-objective may have multiple modeling threads.
                 </p>
                 <input type="hidden" name="pathwayid"></input>
                 
                 <!-- Sub-Objective name -->
                 <div class="input_full">
-                    <label>Thread name*</label>
+                    <label>Modeling thread name*</label>
                     <input name="pathway_name"></input>
                 </div>
                 <br />
