@@ -9,7 +9,7 @@ import { ExplorerStyles } from './explorer-styles'
 
 import { ComparisonEntry } from './ui-reducers';
 import { FetchedModel, VersionDetail } from '../../../util/api-interfaces';
-import { fetchVersionsForModel, fetchMetadataForModelConfig } from '../../../util/model-catalog-actions';
+import { fetchMetadataForModelConfig } from '../../../util/model-catalog-actions';
 import { explorerSetCompareA, explorerSetCompareB } from './ui-actions'
 
 //import { goToPage } from '../../../app/actions';
@@ -438,9 +438,6 @@ export class ModelCompare extends connect(store)(PageViewElement) {
                 } else if (!this._compareA || state.explorerUI.compareA.model !== this._compareA.model) {
                     if (state.explorer && state.explorer.models && state.explorer.models[state.explorerUI.compareA.model]) {
                         this._modelA = state.explorer.models[state.explorerUI.compareA.model];
-                        if (!state.explorer.versions || !state.explorer.versions[this._modelA!.uri]) {
-                            store.dispatch(fetchVersionsForModel(this._modelA!.uri));
-                        }
                     } else {
                         this._modelA = null;
                     }
@@ -454,9 +451,6 @@ export class ModelCompare extends connect(store)(PageViewElement) {
                 } else if (!this._compareB || state.explorerUI.compareB.model !== this._compareB.model) {
                     if (state.explorer && state.explorer.models && state.explorer.models[state.explorerUI.compareB.model]) {
                         this._modelB = state.explorer.models[state.explorerUI.compareB.model];
-                        if (!state.explorer.versions || !state.explorer.versions[this._modelB!.uri]) {
-                            store.dispatch(fetchVersionsForModel(this._modelB!.uri));
-                        }
                     } else {
                         this._modelB = null;
                     }

@@ -74,7 +74,11 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
                 models: action.data
             }
         case FETCH_VERSIONS_AND_CONFIGS:
-            console.log(action); return { ...state };
+            let allVersions = { ...state.versions, ...action.data };
+            return { 
+                ...state, 
+                versions: allVersions
+            }
         case FETCH_CATEGORIES:
             console.log(action); return { ...state };
         case FETCH_CONFIGS:

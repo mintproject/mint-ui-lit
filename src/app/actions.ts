@@ -137,7 +137,7 @@ const loadPage: ActionCreator<ThunkResult> =
           store.dispatch(selectPathway(null));
         });
       }
-      else if(subpage == "scenario") {
+      else if(subpage == 'scenario') {
         // Scenario passed in. Load scenario
         import('../screens/modeling/mint-scenario').then((_module) => {
           if(params.length > 0) {
@@ -163,8 +163,25 @@ const loadPage: ActionCreator<ThunkResult> =
                     store.dispatch(queryModelDetail(params[0]));
                 }
             });
-        } else if (subpage == "explore") {
+        } else if (subpage == 'explore') {
             import('../screens/models/model-explore/model-explore').then((_module) => {
+                if(params.length > 0) {
+                    store.dispatch(explorerSetModel(params[0]));
+                    if (params.length > 1) {
+                        store.dispatch(explorerSetVersion(params[1]));
+                        if (params.length > 2) {
+                            store.dispatch(explorerSetConfig(params[2]));
+                            if (params.length > 3) {
+                                store.dispatch(explorerSetCalibration(params[3]));
+                            }
+                        }
+                    }
+                } else {
+                    store.dispatch(explorerClearModel());
+                }
+            });
+        } else if (subpage == 'configure') {
+            import('../screens/models/models-configure').then((_module) => {
                 if(params.length > 0) {
                     store.dispatch(explorerSetModel(params[0]));
                     if (params.length > 1) {

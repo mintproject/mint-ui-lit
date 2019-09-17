@@ -29,6 +29,8 @@ function capitalizeFirstLetter (s:string) {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+const PAGE_PREFIX = 'models/explore/';
+
 @customElement('model-view')
 export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object})
@@ -413,7 +415,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         let configSelector = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
         if (configSelector) {
             if (this._uriToUrl[configSelector.value]) {
-                goToPage(this._uriToUrl[configSelector.value]);
+                goToPage(PAGE_PREFIX + this._uriToUrl[configSelector.value]);
             } else {
                 console.error('Theres no URL for selected config URI, please report this issue!');
             }
@@ -425,10 +427,10 @@ export class ModelView extends connect(store)(PageViewElement) {
         let calibrationSelector = calibrationSelectorWl? calibrationSelectorWl.getElementsByTagName('select')[0] : null;
         if (calibrationSelector) {
             if (this._uriToUrl[calibrationSelector.value]) {
-                goToPage(this._uriToUrl[calibrationSelector.value]);
+                goToPage(PAGE_PREFIX + this._uriToUrl[calibrationSelector.value]);
             } else if (calibrationSelector.value === '') {
                 let id = this._config.uri.split('/').pop();
-                let fullURI = this._uriToUrl[this._config.uri]
+                let fullURI = PAGE_PREFIX + this._uriToUrl[this._config.uri]
                 let sp = fullURI.split('/')
                 let frg = '';
                 do {
@@ -1171,7 +1173,7 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _goToModel (model:any) {
         if (this._uriToUrl[model.uri]) {
-            goToPage(this._uriToUrl[model.uri]);
+            goToPage(PAGE_PREFIX + this._uriToUrl[model.uri]);
         } else {
             console.error('Theres no URL for selected model URI, please report this issue!');
         }
@@ -1288,7 +1290,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             // Fetch & reset data
             if (modelChanged) {
                 if (ui.selectedModel) {
-                    store.dispatch(fetchVersionsForModel(ui.selectedModel));
+                    //store.dispatch(fetchVersionsForModel(ui.selectedModel));
                     store.dispatch(fetchDiagramsForModelConfig(ui.selectedModel));
                     store.dispatch(fetchSampleVisForModelConfig(ui.selectedModel));
                     store.dispatch(fetchScreenshotsForModelConfig(ui.selectedModel));

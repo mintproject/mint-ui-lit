@@ -6,7 +6,7 @@ import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
 
-import { fetchModels, fetchVersionsForModel, fetchParametersForConfig } from '../../util/model-catalog-actions';
+import { fetchParametersForConfig } from '../../util/model-catalog-actions';
 
 import "weightless/progress-spinner";
 import { UriModels } from '../../util/model-catalog-reducers';
@@ -128,7 +128,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     }
 
     protected render() {
-        console.log(Object.values(this._models||{}).filter((m) => (!this._versions[m.uri] || this._versions[m.uri].length>0)));
+        //console.log(Object.values(this._models||{}).filter((m) => (!this._versions[m.uri] || this._versions[m.uri].length>0)));
         return html`
         <div class="twocolumns">
             <div class="${this._hideModels ? 'left_closed' : 'left'}">
@@ -249,16 +249,11 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         }
     }
 
-    firstUpdated() {
-        store.dispatch(fetchModels());
-    }
-
     stateChanged(state: RootState) {
         if (state.explorer) {
             if (state.explorer.models && Object.values(state.explorer.models).length >0 && this._models == null) {
                 this._models = state.explorer.models;
                 Object.keys(this._models).forEach((uri) =>{
-                    store.dispatch(fetchVersionsForModel(uri));
                     this._waitingVersions.add(uri);
                 });
             }

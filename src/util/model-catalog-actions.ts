@@ -152,7 +152,73 @@ export const fetchModels: ActionCreator<ApiThunkResult> = () => (dispatch) => {
 
 export const fetchVersionsAndConfigs: ActionCreator<ApiThunkResult> = () => (dispatch) => {
     apiFetch({type: VERSIONS_AND_CONFIGS}).then((fetched) => {
-        dispatch({type: FETCH_VERSIONS_AND_CONFIGS, data: fetched}); 
+        let data = fetched.reduce((acc:any, obj:any) => {
+            if (!acc[obj.model]) {
+                acc[obj.model] = {};
+            }
+
+            if (!acc[obj.model][obj.version]) {
+                acc[obj.model][obj.version] = {uri: obj.version, label: obj.versionLabel, id: obj.versionId};
+            } else if (!acc[obj.model][obj.version].id && obj.versionId) {
+                acc[obj.model][obj.version].id = obj.versionId;
+            }
+
+            if (obj.config) {
+                if (!acc[obj.model][obj.version].configs) {
+                    acc[obj.model][obj.version].configs = [{uri: obj.config, label: obj.configLabel}]
+                } else if (acc[obj.model][obj.version].configs.filter((c:any)=>(c.uri===obj.config)).length === 0) {
+                    acc[obj.model][obj.version].configs.push({uri: obj.config, label: obj.configLabel}) 
+                }
+            }
+
+            if (obj.calibration) {
+                let cfg = acc[obj.model][obj.version].configs.filter((c:any)=>(c.uri===obj.config))[0];
+                if (!cfg.calibrations) {
+                    cfg.calibrations = [{uri: obj.calibration, label: obj.calibrationLabel}]
+                } else {
+                    cfg.calibrations.push( {uri: obj.calibration, label: obj.calibrationLabel})
+                }
+            }
+            return acc;
+        }, {})
+
+        let urls = {}
+        Object.keys(data).forEach((modelUri) => {
+            let baseUrl = modelUri.split('/').pop();
+            // create urls going backwards on versions 
+            Object.values(data[modelUri]).forEach((ver:any, i:number) => {
+                let verUrl = baseUrl + '/' + ver.id;
+                let cfgUrl, calUrl;
+                for (let j = (ver.configs ? ver.configs.length : 0)-1; j >= 0; j--) {
+                    cfgUrl = verUrl + '/' + ver.configs[j].uri.split('/').pop();
+                    calUrl = '';
+                    for (let k = (ver.configs[j].calibrations ? ver.configs[j].calibrations.length : 0)-1; k >= 0; k--) {
+                        calUrl = cfgUrl + '/' + ver.configs[j].calibrations[k].uri.split('/').pop();
+                        urls[ver.configs[j].calibrations[k].uri] = calUrl;
+                    }
+                    urls[ver.configs[j].uri] = calUrl || cfgUrl;
+                }
+                urls[ver.uri] = calUrl || cfgUrl || verUrl;
+                if (i === 0) {
+                    urls[modelUri] = calUrl || cfgUrl || verUrl || baseUrl;
+                }
+            });
+        });
+
+        let fixedData = {}
+        Object.keys(data).forEach(mUri => {
+            fixedData[mUri] = Object.values(data[mUri]);
+        })
+
+        dispatch({
+            type: FETCH_VERSIONS_AND_CONFIGS,
+            data: fixedData
+        });
+        
+        dispatch({
+            type: ADD_URLS,
+            data: urls
+        });
     });
 }
 
@@ -218,7 +284,7 @@ export const fetchVersionsForModel: ActionCreator<ApiThunkResult> = (uri:string)
         }, {})
 
         let urls = {}
-        let baseUrl = 'models/explore/' + uri.split('/').pop();
+        let baseUrl = uri.split('/').pop();
         // create urls going backwards on versions 
         Object.values(data).forEach((ver:any, i:number) => {
             let verUrl = baseUrl + '/' + ver.id;
