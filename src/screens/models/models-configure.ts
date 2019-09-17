@@ -22,29 +22,38 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     private _editing : boolean = false;
 
     @property({type: Object})
-    private _models : UriModels = null;
+    private _models : UriModels | null = null;
 
     @property({type: Object})
-    private _versions : any = {};
-    private _waitingVersions : Set<string>= new Set();
-
-    @property({type: String})
-    private _selectedUri : string = "";
-
-    @property({type: String})
-    private _selectedLabel : string = "";
+    private _config: any = null;
 
     @property({type: Object})
-    private _configParameters : any[] | null = [];
+    private _calibration: any = null;
 
     @property({type: Object})
-    private _calibrationParameters : any[] | null = [];
+    private _versions : any = null;
+
+    @property({type: Object})
+    private _configParameters : any = null;
+
+    @property({type: Object})
+    private _calibrationParameters : any = null;
 
     @property({type: Object})
     private _configMetadata : any = null;
 
     @property({type: Object})
     private _calibrationMetadata : any = null;
+
+    @property({type: Object})
+    private _configAuthors : any = null;
+
+    @property({type: Object})
+    private _calibrationAuthors : any = null;
+
+    private _selectedModel : string = '';
+    private _selectedConfig : string = '';
+    private _selectedCalibration : string = '';
 
     static get styles() {
         return [
@@ -162,7 +171,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             <li>
                 ${this._models && this._models[modelUri] ? this._models[modelUri].label : 'no name or loading'}
                 <ul>
-                    ${vers.map((v) => html`
+                    ${(<any>vers).map((v) => html`
                     <li>
                         ${v.label}
                         <ul>
@@ -363,16 +372,6 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         `
     }
 
-    _select (uri:string, label:string) {
-        console.log(uri, label)
-        if (uri && this._selectedUri != uri) {
-            this._selectedUri = uri;
-            this._selectedLabel = label;
-            this._parameters = null;
-            store.dispatch(fetchParametersForConfig(uri));
-        }
-    }
-
     stateChanged(state: RootState) {
         if (state.explorerUI) {
             let ui = state.explorerUI;
@@ -413,7 +412,6 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 let db = state.explorer;
                 this._versions = db.versions;
                 this._models   = db.models;
-                this._uriToUrl = db.urls;
                 if (!this._config && this._versions[this._selectedModel]) {
                     this._config = this._versions[this._selectedModel].reduce((acc, v) => {
                         if (acc) return acc;
