@@ -287,7 +287,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             }
         });
 
-        runPathwayExecutableEnsembles(this.scenario, this.pathway, this.prefs, selected_indices); 
+        runPathwayExecutableEnsembles(this.scenario, this.pathway, this.prefs, selected_indices, this.shadowRoot); 
         
         showNotification("runNotification", this.shadowRoot!);
     }

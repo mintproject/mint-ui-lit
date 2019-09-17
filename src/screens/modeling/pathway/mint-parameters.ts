@@ -254,7 +254,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
             if(!this.pathway.executable_ensembles![i].runid)
                 indices.push(i);
         }
-        runPathwayExecutableEnsembles(this.scenario, this.pathway, this.prefs, indices); 
+        runPathwayExecutableEnsembles(this.scenario, this.pathway, this.prefs, indices, this.shadowRoot); 
 
         showNotification("runNotification", this.shadowRoot!);
     }

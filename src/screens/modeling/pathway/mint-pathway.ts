@@ -238,9 +238,9 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
         super.setUser(state);
         if(super.setPathway(state)) {
             // If pathway changed
-            console.log("mint-pathway: Pathway changed !");
+            //console.log("mint-pathway: Pathway changed !");
             this._selectMode(this._getNextMode());
-            hideNotification("runNotification", this.shadowRoot!);
+            //hideNotification("runNotification", this.shadowRoot!);
             
             //FIXME: Add this back later
             checkPathwayEnsembleStatus(this.scenario, this.pathway, this.prefs);

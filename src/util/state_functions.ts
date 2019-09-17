@@ -4,6 +4,7 @@ import { updatePathway } from "../screens/modeling/actions";
 import { UserPreferences } from "app/reducers";
 import { loginToWings, fetchWingsTemplate, fetchWingsTemplatesList, fetchWingsComponent, createSingleComponentTemplate, saveWingsTemplate, layoutWingsTemplate, WingsParameterBindings, WingsDataBindings, WingsParameterTypes, registerWingsComponent, registerWingsDataset, fetchWingsRunStatus, WingsTemplateSeed, expandAndRunWingsWorkflow } from "./wings_functions";
 import { DataResource } from "screens/datasets/reducers";
+import { hideNotification } from "./ui_functions";
 
 export const removeDatasetFromPathway = (pathway: Pathway,
         datasetid: string, modelid: string, inputid: string) => {
@@ -150,7 +151,7 @@ const _runModelTemplates = (
                         parameterBindings, 
                         parameterTypes, prefs));
                 });
-                return Promise.all(seed_promises).then((runids) => {
+                Promise.all(seed_promises).then((runids) => {
                     resolve(runids);
                 })
             })
@@ -160,7 +161,7 @@ const _runModelTemplates = (
 
 export const runPathwayExecutableEnsembles = async(
         scenario: Scenario, pathway: Pathway, 
-        prefs: UserPreferences, indices: number[]) => {
+        prefs: UserPreferences, indices: number[], shadowRoot: ShadowRoot) => {
 
     let registered_resources = {};
     let model_indices = {};
@@ -260,22 +261,23 @@ export const runPathwayExecutableEnsembles = async(
             })
 
             // Register all datasets
-            return Promise.all(registerDatasetPromises).then(() => {
+            Promise.all(registerDatasetPromises).then(() => {
                 // Now run all model templates
-                return _runModelTemplates(seeds, prefs);
-            }).then((runids) => {
-                let i=0;
-                indices.map((index) => {
-                    // Set run ids of each ensemble, and initialize the status
-                    let ensemble = pathway.executable_ensembles[index];
-                    ensemble.runid = runids[i];
-                    ensemble.status = "RUNNING";
-                    ensemble.run_progress = 0;
-                    pathway.executable_ensembles[index] = ensemble;
-                    i++;
+                _runModelTemplates(seeds, prefs).then((runids) => {
+                    let i=0;
+                    indices.map((index) => {
+                        // Set run ids of each ensemble, and initialize the status
+                        let ensemble = pathway.executable_ensembles[index];
+                        ensemble.runid = runids[i];
+                        ensemble.status = "WAITING";
+                        ensemble.run_progress = 0;
+                        pathway.executable_ensembles[index] = ensemble;
+                        i++;
+                    });
+                    updatePathway(scenario, pathway);
+                    hideNotification("runNotification", shadowRoot);
+                    //checkPathwayEnsembleStatus(scenario, pathway, prefs);
                 });
-                updatePathway(scenario, pathway);
-                //checkPathwayEnsembleStatus(scenario, pathway, prefs);
             });
         });
     });
@@ -328,7 +330,7 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
     let alldone = true;
     if(pathway == null) return;
     pathway.executable_ensembles.map((ensemble) => {
-        if(ensembleNotDone(ensemble)) {
+        if(ensemble.runid && ensembleNotDone(ensemble)) {
             alldone = false;
         }
     });
