@@ -1334,12 +1334,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                 this._selectedCalibration = ui.selectedCalibration;
                 this._calibration = null;
                 this._calibrationMetadata = null;
+                this._calibrationAuthors = null;
             }
             if (configChanged || calibrationChanged) {
                 this._inputs = null;
                 this._outputs = null;
                 this._parameters = null;
-                this._calibrationAuthors = null;
             }
 
             // Load data 
