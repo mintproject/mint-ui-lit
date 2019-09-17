@@ -7,6 +7,8 @@ import { store, RootState } from '../../app/store';
 import models from './reducers';
 import { connect } from 'pwa-helpers/connect-mixin';
 
+import { fetchVersionsAndConfigs, fetchModels } from '../../util/model-catalog-actions';
+
 import './model-explore/model-explore';
 import './models-register';
 import './models-calibrate';
@@ -108,6 +110,11 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             <models-configure class="page" ?active="${this._subpage == 'configure'}"></models-configure>
             <models-calibrate class="page" ?active="${this._subpage == 'calibrate'}"></models-calibrate>
         `
+    }
+
+    firstUpdated() {
+        store.dispatch(fetchModels());
+        store.dispatch(fetchVersionsAndConfigs());
     }
 
     stateChanged(state: RootState) {
