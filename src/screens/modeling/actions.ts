@@ -9,6 +9,7 @@ import { Model } from '../models/reducers';
 import { EXAMPLE_SCENARIOS_LIST_DATA, EXAMPLE_SCENARIO_DETAILS } from '../../offline_data/sample_scenarios';
 import { IdMap } from '../../app/reducers';
 import { OFFLINE_DEMO_MODE } from '../../app/actions';
+import { stopMonitoringPathwayExecutions } from 'util/state_functions';
 
 export const SCENARIOS_LIST = 'SCENARIOS_LIST';
 export const SCENARIOS_ADD = 'SCENARIOS_ADD';
@@ -350,6 +351,8 @@ export const deleteSubGoal = (scenario:Scenario, goalid:string, subgoalid: strin
 
 // Delete Pathway
 export const deletePathway = (scenario:Scenario, subgoalid: string, pathwayid:string) =>  {
+    stopMonitoringPathwayExecutions(pathwayid);
+    
     let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc(pathwayid);
     pathwayRef.delete();
     db.collection("scenarios/"+scenario.id+"/subgoals").doc(subgoalid).update({

@@ -437,6 +437,43 @@ export const executeWingsExpandedWorkflow = async(xtpl: WingsTemplatePackage,
     });
 }
 
+export const expandAndRunWingsWorkflow = async(
+    tpl: WingsTemplatePackage, 
+    dataBindings: WingsDataBindings,
+    parameterBindings: WingsParameterBindings,
+    parameterTypes: WingsParameterBindings,
+    config: UserPreferences) 
+        : Promise<string> => {
+
+    return new Promise<string>((resolve, reject) => {
+        // Get url prefix for operations
+        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
+        var data = {
+            templateId: tpl.template.id,
+            parameterBindings: parameterBindings,
+            parameterTypes: parameterTypes,
+            componentBindings: _getComponentBindings(tpl),
+            dataBindings: dataBindings            
+        }
+        postJSONResource({
+            url: purl + "/executions/expandAndRunWorkflow",
+            onLoad: function(e: any) {
+                var runid = e.target.responseText;
+                if(runid) {
+                    resolve(runid);
+                }
+                else {
+                    reject("Could not run workflow");
+                }
+              },
+              onError: function() {
+                reject("Cannot run workflow");
+              }
+            }, 
+        data, true);
+    });
+}
+
 export const executeWingsWorkflow = async(
         tpl_package : WingsTemplatePackage, 
         dataBindings: WingsDataBindings,
@@ -469,6 +506,8 @@ export const fetchWingsRunStatus = (ensemble: ExecutableEnsemble, config: UserPr
                 let ex = compjson.execution;
                 let nensemble = Object.assign({}, ensemble);
                 nensemble.status = ex.runtimeInfo.status;
+                if(!ex.queue) 
+                    return;
                 let totalsteps = ex.queue.steps.length;
                 let numdone = 0;
                 ex.queue.steps.map((step: any) => {

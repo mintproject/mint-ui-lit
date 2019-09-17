@@ -2,7 +2,7 @@ import { Pathway, DatasetMap, ModelEnsembleMap, DataEnsembleMap, InputBindings, 
 import { RootState } from "../app/store";
 import { updatePathway } from "../screens/modeling/actions";
 import { UserPreferences } from "app/reducers";
-import { loginToWings, fetchWingsTemplate, fetchWingsTemplatesList, fetchWingsComponent, createSingleComponentTemplate, saveWingsTemplate, WingsTemplatePackage, layoutWingsTemplate, getWingsExpandedTemplates, WingsParameterBindings, WingsDataBindings, WingsParameterTypes, executeWingsWorkflow, registerWingsComponent, registerWingsDataset, fetchWingsRunStatus, WingsTemplateSeed } from "./wings_functions";
+import { loginToWings, fetchWingsTemplate, fetchWingsTemplatesList, fetchWingsComponent, createSingleComponentTemplate, saveWingsTemplate, layoutWingsTemplate, WingsParameterBindings, WingsDataBindings, WingsParameterTypes, registerWingsComponent, registerWingsDataset, fetchWingsRunStatus, WingsTemplateSeed, expandAndRunWingsWorkflow } from "./wings_functions";
 import { DataResource } from "screens/datasets/reducers";
 
 export const removeDatasetFromPathway = (pathway: Pathway,
@@ -145,7 +145,7 @@ const _runModelTemplates = (
                         parameterTypes[varid] = "http://www.w3.org/2001/XMLSchema#" + seed.paramtypes[varname];
                     }
             
-                    seed_promises.push(executeWingsWorkflow(tpl_package, 
+                    seed_promises.push(expandAndRunWingsWorkflow(tpl_package, 
                         dataBindings, 
                         parameterBindings, 
                         parameterTypes, prefs));
@@ -317,7 +317,7 @@ export const runPathwayExecutableEnsembles_old = (
     }, 1000);
 };
 
-const clearTimer = {};
+const pathwayExecutionMonitor = {};
 
 export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway, prefs: UserPreferences) => {
     /* Check if some ensembles need to be monitored or not */
@@ -329,19 +329,19 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
         }
     });
     if(alldone) {
-        delete clearTimer[pathway.id];
+        stopMonitoringPathwayExecutions(pathway.id);
         return;
     }
 
-    // If we need to monitor some ensembles, then set a timer for regular monitoring
-    if(clearTimer[pathway.id]) {
+    // If we area already monitoring the pathway, then return
+    if(pathwayExecutionMonitor[pathway.id]) {
         return;
     }
 
-    clearTimer[pathway.id] = setInterval(() => {
+    // Set a timer for regular monitoring of pathway executions
+    pathwayExecutionMonitor[pathway.id] = setInterval(() => {
         if(pathway == null) {
-            clearInterval(clearTimer[pathway.id]);
-            delete clearTimer[pathway.id];
+            stopMonitoringPathwayExecutions(pathway.id);
             return;
         }
         loginToWings(prefs).then(() => {
@@ -379,12 +379,18 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
                 }
                 if(alldone) {
                     console.log("All runs finished.. stop polling");
-                    clearInterval(clearTimer[pathway.id]);
-                    delete clearTimer[pathway.id];
+                    stopMonitoringPathwayExecutions(pathway.id);
                 }
             })
         })
-    }, 5000);
+    }, 15000);
+}
+
+export const stopMonitoringPathwayExecutions = (pathwayid: string) => {
+    if(pathwayExecutionMonitor[pathwayid]) {
+        clearInterval(pathwayExecutionMonitor[pathwayid]);
+        delete pathwayExecutionMonitor[pathwayid];
+    }
 }
 
 export const matchVariables = (variables1: string[], variables2: string[], fullmatch: boolean) => {
