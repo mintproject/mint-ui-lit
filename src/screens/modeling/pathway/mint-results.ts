@@ -4,7 +4,7 @@ import { store, RootState } from "../../../app/store";
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { BASE_HREF } from "../../../app/actions";
-import { getPathwayRunsStatus, TASK_DONE } from "../../../util/state_functions";
+import { getPathwayRunsStatus, TASK_DONE, matchVariables } from "../../../util/state_functions";
 import { ExecutableEnsemble, StepUpdateInformation } from "../reducers";
 import { updatePathway } from "../actions";
 import { showNotification } from "../../../util/ui_functions";
@@ -58,6 +58,36 @@ export class MintResults extends connect(store)(MintPathwayPage) {
         
         let readmode = (done && !this._editMode);
 
+        let grouped_ensembles = {};
+        Object.keys(running_ensembles).map((index) => {
+            let ensemble: ExecutableEnsemble = running_ensembles[index];
+            let model = this.pathway.models![ensemble.modelid];
+            if(!grouped_ensembles[model.id]) {
+                grouped_ensembles[model.id] = {
+                    ensembles: {},
+                    params: [],
+                    inputs: [],
+                    outputs: []
+                };
+                let input_parameters = model.input_parameters
+                    .filter((input) => !input.value)
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                input_parameters.map((ip) => {
+                    if(!ip.value)
+                        grouped_ensembles[model.id].params.push(ip);
+                })
+                model.input_files.map((inf) => {
+                    if(!inf.value)
+                        grouped_ensembles[model.id].inputs.push(inf);
+                })
+                model.output_files.map((outf) => {
+                    if(matchVariables(this.pathway.response_variables, outf.variables, false))
+                        grouped_ensembles[model.id].outputs.push(outf);
+                })
+            }
+            grouped_ensembles[model.id].ensembles[index] = ensemble;
+        });
+
         // Show executable ensembles
         return html`
 
@@ -84,80 +114,98 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                 Change Result Selections
         </wl-tooltip>
         <div class="clt">
+            ${!readmode ? 
+                html `
+                <p>
+                    These results have been produced by running these models with the input combinations indicated.
+                </p>
+                ` : 
+                html``
+            }
             <ul>
-                <li>
-                    ${!readmode ? 
-                        html `
-                        <p>
-                            These results have been produced by running these models with the input combinations indicated.
-                        </p>
-                        ` : 
-                        html``
-                    }
-                    <table class="pure-table pure-table-striped" id="results_table">
-                        <colgroup>
-                            <col span="1" style="width: 35%;">
-                            <col span="1" style="width: 65%;">
-                            <col span="1" style="width: 176px;">
-                        </colgroup>
-                        <thead>
-                            <tr>
-                                ${!readmode ? html`<th></th>`: html``}
-                                <th>Model</th>
-                                <th>Inputs</th>
-                                <th>Results</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        ${Object.keys(running_ensembles).map((index) => {
-                            let ensemble: ExecutableEnsemble = running_ensembles[index];
-                            let model = this.pathway.models![ensemble.modelid];
-                            if(readmode && !ensemble.selected) {
-                                return html``;
-                            }
-                            return html`
-                                <tr>
+                    ${Object.keys(grouped_ensembles).map((modelid) => {
+                        let grouped_ensemble = grouped_ensembles[modelid];
+                        let model = this.pathway.models![modelid];
+                        return html`
+                            <li>
+                                <wl-title level="4">Results for <a href="${this._getModelURL(model)}">${model.name}</a></wl-title>
+                                <table class="pure-table pure-table-striped results_table">
+                                    <!-- Heading -->
                                     ${!readmode ? 
-                                        html`
-                                        <td><input class="checkbox" type="checkbox" 
-                                            ?checked="${ensemble.selected}"
-                                            data-index="${index}"></input></td>   
-                                        `: 
-                                        html ``
-                                    }
-                                    <td>
-                                        <a href="${this._getModelURL(model)}">${model.name}</a>
-                                    </td>
-                                    <td>
-                                    ${Object.keys(ensemble.bindings).map((inputid) => {
-                                        let inputname = inputid.substr(inputid.lastIndexOf('/') + 1);
-                                        let dsid = ensemble.bindings[inputid];
-                                        let dataset = this.pathway.datasets![dsid];
-                                        if(dataset) {
-                                            return html`
-                                                ${inputname} = <a href="${BASE_HREF}datasets/browse/${dataset.id}">${dataset.name}</a> <br />
-                                            `;
+                                        html `<colgroup span="1"></colgroup>`: ""} <!-- Checkbox -->
+                                    ${grouped_ensemble.outputs.length > 0 ? 
+                                        html `<colgroup span="${grouped_ensemble.outputs.length}"></colgroup>` : ""} <!-- Outputs -->
+                                    ${grouped_ensemble.inputs.length > 0 ? 
+                                        html `<colgroup span="${grouped_ensemble.inputs.length}"></colgroup>` : ""} <!-- Inputs -->
+                                    ${grouped_ensemble.params.length > 0 ? 
+                                        html `<colgroup span="${grouped_ensemble.params.length}"></colgroup>` : ""} <!-- Parameters -->
+                                    <thead>
+                                        <tr>
+                                            ${!readmode ? 
+                                                html `<th></th>`: ""} <!-- Checkbox -->
+                                            ${grouped_ensemble.outputs.length > 0 ? 
+                                                html `<th colspan="${grouped_ensemble.outputs.length}">Outputs</th>` : ""} <!-- Outputs -->
+                                            ${grouped_ensemble.inputs.length > 0 ? 
+                                                html `<th colspan="${grouped_ensemble.inputs.length}">Inputs</th>` : ""} <!-- Inputs -->
+                                            ${grouped_ensemble.params.length > 0 ? 
+                                                html `<th colspan="${grouped_ensemble.params.length}">Parameters</th>` : ""} <!-- Parameters -->
+                                        </tr>
+                                        <tr>
+                                            ${!readmode ? 
+                                                html `<th></th>`: ""} <!-- Checkbox -->
+                                            ${grouped_ensemble.outputs.map((outf) => html`<th scope="col">${outf.name.replace(/(-|_)/g, ' ')}</th>` )}
+                                            ${grouped_ensemble.inputs.map((inf) => html`<th scope="col">${inf.name.replace(/(-|_)/g, ' ')}</th>` )}
+                                            ${grouped_ensemble.params.map((param) => html`<th scope="col">${param.name.replace(/(-|_)/g, ' ')}</th>` )}
+                                        </tr>
+                                    </thead>
+                                    <!-- Body -->
+                                    <tbody>
+                                    ${Object.keys(grouped_ensemble.ensembles).map((index) => {
+                                        let ensemble: ExecutableEnsemble = grouped_ensemble.ensembles[index];
+                                        let model = this.pathway.models![ensemble.modelid];
+                                        if(readmode && !ensemble.selected) {
+                                            return html `<tr><td>None Selected</td></tr>`;
                                         }
-                                        else {
-                                            return html `${inputname} = ${dsid} <br />`
-                                        }
-                                    })}
-                                    </td>
-                                    <td>
-                                    ${ensemble.results.map((result: any) => {
-                                        var fname = result.id.replace(/.+#/, '');
-                                        var furl = this._getDatasetURL(result);
                                         return html`
-                                            <a href="${furl}">${fname}</a> <br />
-                                        `
+                                            <tr>
+                                                ${!readmode ? 
+                                                    html`
+                                                    <td><input class="checkbox" type="checkbox" 
+                                                        ?checked="${ensemble.selected}"
+                                                        data-index="${index}"></input></td>   
+                                                    `: 
+                                                    html ``
+                                                }
+                                                ${grouped_ensemble.outputs.map((output) => {
+                                                    return ensemble.results.map((result: any) => {
+                                                        let oname = result.id.replace(/.+#/, '');
+                                                        if(output.name == oname) {
+                                                            let furl = this._getResultDatasetURL(result);
+                                                            let filename = result.location.replace(/.+\//, '');
+                                                            return html`
+                                                                <td><a href="${furl}">${filename}</a></td>
+                                                            `
+                                                        }
+                                                    });
+                                                })}
+                                                ${grouped_ensemble.inputs.map((input) => {
+                                                    let dsid = ensemble.bindings[input.id];
+                                                    let dataset = this.pathway.datasets![dsid];
+                                                    // FIXME: This should be resolved to a collection of resources
+                                                    let furl = this._getDatasetURL(dataset.name); 
+                                                    return html`
+                                                        <td><a href="${furl}">${dataset.name}</a></td>
+                                                    `;
+                                                })}
+                                                ${grouped_ensemble.params.map((param) => html`<td>${ensemble.bindings[param.id]}</td>` )}
+                                            </tr>
+                                        `;
                                     })}
-                                    </td>
-                                </tr>
-                            `;
-                        })}
-                        </tbody>
-                    </table> 
-                </li>
+                                    </tbody>
+                                </table>
+                            </li>
+                        `;
+                    })}
             </ul>
         </div>
         ${!done || this._editMode ? 
@@ -204,12 +252,16 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                + model.localname;
     }
 
-    _getDatasetURL (result: any) {
+    _getResultDatasetURL(result: any) {
+        return this._getDatasetURL(result.location.replace(/.+\//, ''));
+    }
+
+    _getDatasetURL (dsname: string) {
         let config = this.prefs;
         let suffix = "/users/" + config.wings.username + "/" + config.wings.domain;
         var purl = config.wings.server + suffix
         var expurl = config.wings.export_url + "/export" + suffix;
-        let dsid = expurl + "/data/library.owl#" + result.location.replace(/.+\//, '');
+        let dsid = expurl + "/data/library.owl#" + dsname;
         return purl + "/data/fetch?data_id=" + escape(dsid);
     }
 
@@ -222,7 +274,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     _publishResults() {
 
         let executable_ensembles = this.pathway.executable_ensembles || [];
-        this.shadowRoot!.querySelectorAll("#results_table input.checkbox").forEach((cbox) => {
+        this.shadowRoot!.querySelectorAll(".results_table input.checkbox").forEach((cbox) => {
             let cboxinput = (cbox as HTMLInputElement);
             let index = parseInt(cboxinput.dataset["index"]!);
             executable_ensembles![index].selected = cboxinput.checked;

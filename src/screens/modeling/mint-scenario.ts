@@ -891,6 +891,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 } as Scenario;
 
                 hideNotification("saveNotification", this.shadowRoot!);
+                hideNotification("runNotification", this.shadowRoot!);
                 hideNotification("deleteNotification", this.shadowRoot!);
             }
         }

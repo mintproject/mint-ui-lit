@@ -12,6 +12,7 @@ import { MintPathwayPage } from "./mint-pathway-page";
 import { showNotification } from "util/ui_functions";
 import { renderNotifications } from "util/ui_renders";
 import { Model } from "screens/models/reducers";
+import { ExecutableEnsemble } from "../reducers";
 
 @customElement('mint-runs')
 export class MintRuns extends connect(store)(MintPathwayPage) {
@@ -52,28 +53,61 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 not_running_ensembles[""+i] = ensemble;
             }
         }
-
-        // Show executable ensembles
-        // TODO: Show separate tables 
-        // - one for ensembles already run -- Show run status, Allow stopping runs
-        // - one for ensembles not yet run -- Allow starting runs
-        // TODO: Make sure the call to create executable ensembels doesn't remove 
-        //      ensembles with existing runs
         
-        // TODO (Later): Store executable ensembles in a separate collection ? 
-        //      Would be easier to refresh than refreshing the whole scenario
+        // Group running ensembles
+        let running_grouped_ensembles = {};
+        Object.keys(running_ensembles).map((index) => {
+            let ensemble: ExecutableEnsemble = running_ensembles[index];
+            let model = this.pathway.models![ensemble.modelid];
+            if(!running_grouped_ensembles[model.id]) {
+                running_grouped_ensembles[model.id] = {
+                    ensembles: {},
+                    params: [],
+                    inputs: [],
+                    outputs: []
+                };
+                let input_parameters = model.input_parameters
+                    .filter((input) => !input.value)
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                input_parameters.map((ip) => {
+                    if(!ip.value)
+                        running_grouped_ensembles[model.id].params.push(ip);
+                })
+                model.input_files.map((inf) => {
+                    if(!inf.value)
+                        running_grouped_ensembles[model.id].inputs.push(inf);
+                })
+            }
+            running_grouped_ensembles[model.id].ensembles[index] = ensemble;
+        });
 
-        // Store in /runs/(docid) 
-        // - (runid, progress, status, provenanceid)
+        // Group ensembles that aren't running
+        let not_running_grouped_ensembles = {};
+        Object.keys(not_running_ensembles).map((index) => {
+            let ensemble: ExecutableEnsemble = not_running_ensembles[index];
+            let model = this.pathway.models![ensemble.modelid];
+            if(!not_running_grouped_ensembles[model.id]) {
+                not_running_grouped_ensembles[model.id] = {
+                    ensembles: {},
+                    params: [],
+                    inputs: [],
+                    outputs: []
+                };
+                let input_parameters = model.input_parameters
+                    .filter((input) => !input.value)
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                input_parameters.map((ip) => {
+                    if(!ip.value)
+                    not_running_grouped_ensembles[model.id].params.push(ip);
+                })
+                model.input_files.map((inf) => {
+                    if(!inf.value)
+                    not_running_grouped_ensembles[model.id].inputs.push(inf);
+                })
+            }
+            not_running_grouped_ensembles[model.id].ensembles[index] = ensemble;
+        });        
 
-        // An execution will only update that run doc
-        // - option a) Add code to Wings to directly update runstatus 
-        // - option b) Add some external code to check Wings run and update runstatus
-        
-        // The run status client will use the "onSnapshot" on each run to track run progress
-        // - When run is finished/stopped, unsubscribe to onSnapshot 
-
-        // Separate run state
 
         return html`
         <p>
@@ -84,51 +118,69 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             <ul>
                 <li>
                     <wl-title level="4">Model Runs executed</wl-title>
-                    <table class="pure-table pure-table-striped">
-                        <colgroup>
-                            <col span="1" style="width: 35%;">
-                            <col span="1" style="width: 65%;">
-                            <col span="1" style="width: 176px;">
-                        </colgroup>
-
-                        <thead>
-                            <tr>
-                                <th>Model</th>
-                                <th>Inputs</th>
-                                <th>Run Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${Object.keys(running_ensembles).map((index) => {
-                                let ensemble = running_ensembles[index];
-                                let model = this.pathway.models![ensemble.modelid];
-                                return html`
-                                <tr>
-                                    <td><a href="${this._getModelURL(model)}">${model.name}</a></td>
-                                    <td>
-                                    ${Object.keys(ensemble.bindings).map((inputid) => {
-                                        let inputname = inputid.substr(inputid.lastIndexOf('/') + 1);
-                                        let dsid = ensemble.bindings[inputid];
-                                        let dataset = this.pathway.datasets![dsid];
-                                        if(dataset) {
-                                            return html`
-                                                ${inputname} = <a href="${BASE_HREF}datasets/browse/${dataset.id}">${dataset.name}</a> <br />
-                                            `;
+                    <ul>
+                    ${Object.keys(running_grouped_ensembles).map((modelid) => {
+                        let grouped_ensemble = running_grouped_ensembles[modelid];
+                        let model = this.pathway.models![modelid];
+                        return html`
+                        <li>
+                            <wl-title level="4">Runs for <a href="${this._getModelURL(model)}">${model.name}</a></wl-title>
+                            <table class="pure-table pure-table-striped run_table">
+                                <!-- Heading -->
+                                <colgroup span="1"></colgroup> <!-- Run Status -->
+                                ${grouped_ensemble.inputs.length > 0 ? 
+                                    html `<colgroup span="${grouped_ensemble.inputs.length}"></colgroup>` : ""} <!-- Inputs -->
+                                ${grouped_ensemble.params.length > 0 ? 
+                                    html `<colgroup span="${grouped_ensemble.params.length}"></colgroup>` : ""} <!-- Parameters -->
+                                <thead>
+                                    <tr>
+                                        <th></th> <!-- Run Status -->
+                                        ${grouped_ensemble.inputs.length > 0 ? 
+                                            html `<th colspan="${grouped_ensemble.inputs.length}">Inputs</th>` : ""} <!-- Inputs -->
+                                        ${grouped_ensemble.params.length > 0 ? 
+                                            html `<th colspan="${grouped_ensemble.params.length}">Parameters</th>` : ""} <!-- Parameters -->
+                                    </tr>
+                                    <tr>
+                                        <th>Run Status</th>
+                                        ${grouped_ensemble.inputs.length + grouped_ensemble.params.length == 0 ?     
+                                            html`<th></th>` : ""
                                         }
-                                        else {
-                                            return html `${inputname} = ${dsid} <br />`
-                                        }
-                                    })}
-                                    </td>
-                                    <td>
-                                        <wl-progress-bar mode="determinate" class="${ensemble.status}"
-                                            value="${ensemble.status == "FAILURE" ? 100 : (ensemble.run_progress || 0)}"></wl-progress-bar>
-                                    </td>
-                                </tr>
-                                `;
-                            })}
-                        </tbody>
-                    </table>
+                                        ${grouped_ensemble.inputs.map((inf) => html`<th scope="col">${inf.name.replace(/(-|_)/g, ' ')}</th>` )}
+                                        ${grouped_ensemble.params.map((param) => html`<th scope="col">${param.name.replace(/(-|_)/g, ' ')}</th>` )}
+                                    </tr>
+                                </thead>
+                                <!-- Body -->
+                                <tbody>
+                                ${Object.keys(grouped_ensemble.ensembles).map((index) => {
+                                    let ensemble: ExecutableEnsemble = grouped_ensemble.ensembles[index];
+                                    let model = this.pathway.models![ensemble.modelid];
+                                    return html`
+                                        <tr>
+                                            <td>
+                                                <wl-progress-bar mode="determinate" class="${ensemble.status}"
+                                                    value="${ensemble.status == "FAILURE" ? 100 : (ensemble.run_progress || 0)}"></wl-progress-bar>
+                                            </td>
+                                            ${grouped_ensemble.inputs.length + grouped_ensemble.params.length == 0 ? 
+                                                html`<td>No inputs or parameters</td>` : ""
+                                            }
+                                            ${grouped_ensemble.inputs.map((input) => {
+                                                let dsid = ensemble.bindings[input.id];
+                                                let dataset = this.pathway.datasets![dsid];
+                                                // FIXME: This should be resolved to a collection of resources
+                                                let furl = this._getDatasetURL(dataset.name); 
+                                                return html`
+                                                    <td><a href="${furl}">${dataset.name}</a></td>
+                                                `;
+                                            })}
+                                            ${grouped_ensemble.params.map((param) => html`<td>${ensemble.bindings[param.id]}</td>` )}
+                                        </tr>
+                                    `;
+                                })}
+                                </tbody>
+                            </table>
+                        </li>`;
+                    })}
+                    </ul>
                     <div class="footer">
                         <wl-button type="button" class="submit" @click="${() => store.dispatch(selectPathwaySection("results"))}">Continue</wl-button>
                     </div>
@@ -139,49 +191,67 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                         <wl-title level="4">Model Runs not executed</wl-title>
                         <p>
                             These model runs have not yet been executed. To run, please select the configurations and click the RUN button.
-                        </p>                
-                        <table class="pure-table pure-table-striped" id="notrun">
-                            <thead>
-                                <tr>
-                                    <th></th>
-                                    <th>Model</th>
-                                    <th>Inputs</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${Object.keys(not_running_ensembles).map((index) => {
-                                    let ensemble = not_running_ensembles[index];
-                                    let model = this.pathway.models![ensemble.modelid];                      
-                                    return html`
-                                    <tr>
-                                        <td><input class="checkbox" type="checkbox" data-index="${index}"></input></td>                    
-                                        <td><a href="${this._getModelURL(model)}">${model.name}</a></td>
-                                        <td>
-                                        ${Object.keys(ensemble.bindings).map((inputid) => {
-                                            let inputname = inputid.substr(inputid.lastIndexOf('/') + 1);
-                                            let dsid = ensemble.bindings[inputid];
-                                            let dataset = this.pathway.datasets![dsid];
-                                            if(dataset) {
-                                                return html`
-                                                    ${inputname} = <a href="${BASE_HREF}datasets/browse/${dataset.id}">${dataset.name}</a> <br />
-                                                `;
-                                            }
-                                            else {
-                                                return html `${inputname} = ${dsid} <br />`
-                                            }
-                                        })}
-                                        </td>
-                                    </tr>
-                                    `
-                                })}
-                            </tbody>
-                        </table>
+                        </p>   
+                        <ul>
+                        ${Object.keys(not_running_grouped_ensembles).map((modelid) => {
+                            let grouped_ensemble = not_running_grouped_ensembles[modelid];
+                            let model = this.pathway.models![modelid];
+                            return html`
+                            <li>
+                                <wl-title level="4">Run configurations for <a href="${this._getModelURL(model)}">${model.name}</a></wl-title>
+                                <table class="pure-table pure-table-striped notrun_table">
+                                    <!-- Heading -->
+                                    <colgroup span="1"></colgroup> <!-- Run Status -->
+                                    ${grouped_ensemble.inputs.length > 0 ? 
+                                        html `<colgroup span="${grouped_ensemble.inputs.length}"></colgroup>` : ""} <!-- Inputs -->
+                                    ${grouped_ensemble.params.length > 0 ? 
+                                        html `<colgroup span="${grouped_ensemble.params.length}"></colgroup>` : ""} <!-- Parameters -->
+                                    <thead>
+                                        <tr>
+                                            <th></th> <!-- Checkbox -->
+                                            ${grouped_ensemble.inputs.length > 0 ? 
+                                                html `<th colspan="${grouped_ensemble.inputs.length}">Inputs</th>` : ""} <!-- Inputs -->
+                                            ${grouped_ensemble.params.length > 0 ? 
+                                                html `<th colspan="${grouped_ensemble.params.length}">Parameters</th>` : ""} <!-- Parameters -->
+                                        </tr>
+                                        <tr>
+                                            <th></th>
+                                            ${grouped_ensemble.inputs.map((inf) => html`<th scope="col">${inf.name.replace(/(-|_)/g, ' ')}</th>` )}
+                                            ${grouped_ensemble.params.map((param) => html`<th scope="col">${param.name.replace(/(-|_)/g, ' ')}</th>` )}
+                                        </tr>
+                                    </thead>
+                                    <!-- Body -->
+                                    <tbody>
+                                    ${Object.keys(grouped_ensemble.ensembles).map((index) => {
+                                        let ensemble: ExecutableEnsemble = grouped_ensemble.ensembles[index];
+                                        let model = this.pathway.models![ensemble.modelid];
+                                        return html`
+                                            <tr>
+                                                <td><input class="checkbox" type="checkbox" data-index="${index}"></input></td>
+                                                ${grouped_ensemble.inputs.map((input) => {
+                                                    let dsid = ensemble.bindings[input.id];
+                                                    let dataset = this.pathway.datasets![dsid];
+                                                    // FIXME: This should be resolved to a collection of resources
+                                                    let furl = this._getDatasetURL(dataset.name); 
+                                                    return html`
+                                                        <td><a href="${furl}">${dataset.name}</a></td>
+                                                    `;
+                                                })}
+                                                ${grouped_ensemble.params.map((param) => html`<td>${ensemble.bindings[param.id]}</td>` )}
+                                            </tr>
+                                        `;
+                                    })}
+                                    </tbody>
+                                </table>
+                            </li>`;
+                        })}
+                        </ul>
                         <div class="footer">
                             <wl-button type="button" class="submit" @click="${this._runSelectedEnsembles}">Run Selected</wl-button>
                         </div>
-                    </li>`
-                    : 
-                    html ``
+                    </li>
+                    `
+                    : ""
                 }
             </ul>
         </div>
@@ -197,10 +267,19 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                + model.localname;
     }
 
+    _getDatasetURL (dsname: string) {
+        let config = this.prefs;
+        let suffix = "/users/" + config.wings.username + "/" + config.wings.domain;
+        var purl = config.wings.server + suffix
+        var expurl = config.wings.export_url + "/export" + suffix;
+        let dsid = expurl + "/data/library.owl#" + dsname;
+        return purl + "/data/fetch?data_id=" + escape(dsid);
+    }
+
     _runSelectedEnsembles() {
         let selected_indices: number[] = [];
         
-        this.shadowRoot!.querySelectorAll("#notrun input.checkbox").forEach((cbox) => {
+        this.shadowRoot!.querySelectorAll(".notrun_table input.checkbox").forEach((cbox) => {
             let cboxinput = (cbox as HTMLInputElement);
             if(cboxinput.checked) {
                 let index = parseInt(cboxinput.dataset["index"]!);

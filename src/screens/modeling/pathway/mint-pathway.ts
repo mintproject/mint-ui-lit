@@ -18,6 +18,7 @@ import { getPathwayVariablesStatus, TASK_NOT_STARTED, getPathwayModelsStatus,
 import { SubGoal } from "../reducers";
 import { BASE_HREF } from "../../../app/actions";
 import { MintPathwayPage } from "./mint-pathway-page";
+import { hideNotification } from "util/ui_functions";
 
 @customElement('mint-pathway')
 export class MintPathway extends connect(store)(MintPathwayPage) {
@@ -239,6 +240,7 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
             // If pathway changed
             console.log("mint-pathway: Pathway changed !");
             this._selectMode(this._getNextMode());
+            hideNotification("runNotification", this.shadowRoot!);
             
             //FIXME: Add this back later
             checkPathwayEnsembleStatus(this.scenario, this.pathway, this.prefs);
