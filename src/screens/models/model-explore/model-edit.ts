@@ -6,7 +6,7 @@ import { store, RootState } from '../../../app/store';
 
 import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail, CompIODetail,
          ExplanationDiagramDetail } from "../../../util/api-interfaces";
-import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersionsForModel,
+import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig,
          fetchIOAndVarsSNForConfig, fetchVarsSNAndUnitsForIO, fetchDiagramsForModelConfig, 
          fetchMetadataForModelConfig } from '../../../util/model-catalog-actions';
 import { explorerSetMode } from './ui-actions';
@@ -257,7 +257,7 @@ export class ModelEdit extends connect(store)(PageViewElement) {
             this._explDiagrams.forEach((ed) => {
                 let newItem = {label: ed.label, src: ed.url, desc: ed.desc};
                 if (ed.source) {
-                    newItem.source = {label: ed.source.split('/').pop(), url: ed.source}
+                    newItem['source'] = {label: ed.source.split('/').pop(), url: ed.source}
                 }
                 items.push(newItem);
             })

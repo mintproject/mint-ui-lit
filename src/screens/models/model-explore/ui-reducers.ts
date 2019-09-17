@@ -16,7 +16,7 @@ export interface ExplorerUIState {
     selectedVersion:        string;
     selectedConfig:         string;
     selectedCalibration:    string;
-    mode:                   'view' | 'edit';
+    mode:                   string;
     compareA?:              ComparisonEntry | null;
     compareB?:              ComparisonEntry | null;
 }

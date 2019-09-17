@@ -57,16 +57,17 @@ export const FETCH_SEARCH_MODEL_BY_VAR_SN          = "FETCH_SEARCH_MODEL_BY_VAR_
 
 interface ActionData<T> extends Action<T> { data: any };
 interface UriParams<T> extends ActionData<T> { uri: string };
+interface TextParams<T> extends ActionData<T> { text: string };
 
 interface ActionAddURLs                            extends ActionData<'ADD_URLS'> {};
-interface ActionFetchModels                        extends ActionData<'MODELS'> {};
-interface ActionFetchVersionsAndConfigs            extends ActionData<'VERSIONS_AND_CONFIGS'> {};
-interface ActionFetchCategories                    extends ActionData<'CATEGORIES'> {};
-interface ActionFetchConfigs                       extends ActionData<'CONFIGS'> {};
-interface ActionFetchConfigsAndIOs                 extends ActionData<'CONFIGS_AND_IOS'> {};
-interface ActionFetchInputsAndVarsSN               extends ActionData<'INPUTS_AND_VARS_SN'> {};
-interface ActionFetchOutputsAndVarsSN              extends ActionData<'OUTPUTS_AND_VARS_SN'> {};
-interface ActionFetchVarsAndSN                     extends ActionData<'VARS_AND_SN'> {};
+interface ActionFetchModels                        extends ActionData<'FETCH_MODELS'> {};
+interface ActionFetchVersionsAndConfigs            extends ActionData<'FETCH_VERSIONS_AND_CONFIGS'> {};
+interface ActionFetchCategories                    extends ActionData<'FETCH_CATEGORIES'> {};
+interface ActionFetchConfigs                       extends ActionData<'FETCH_CONFIGS'> {};
+interface ActionFetchConfigsAndIOs                 extends ActionData<'FETCH_CONFIGS_AND_IOS'> {};
+interface ActionFetchInputsAndVarsSN               extends ActionData<'FETCH_INPUTS_AND_VARS_SN'> {};
+interface ActionFetchOutputsAndVarsSN              extends ActionData<'FETCH_OUTPUTS_AND_VARS_SN'> {};
+interface ActionFetchVarsAndSN                     extends ActionData<'FETCH_VARS_AND_SN'> {};
 interface ActionFetchMetadataForAny                extends UriParams<'FETCH_METADATA_FOR_ANY'> {};
 interface ActionFetchVersionsForModel              extends UriParams<'FETCH_VERSIONS_FOR_MODEL'> {};
 interface ActionFetchVarsForModel                  extends UriParams<'FETCH_VARS_FOR_MODEL'> {};
@@ -89,13 +90,13 @@ interface ActionFetchCalibrationsForVarSN          extends UriParams<'FETCH_CALI
 interface ActionFetchIOForVarSN                    extends UriParams<'FETCH_IO_FOR_VAR_SN'> {};
 interface ActionFetchMetadataForVarSN              extends UriParams<'FETCH_METADATA_FOR_VAR_SN'> {};
 interface ActionFetchProcessForCag                 extends UriParams<'FETCH_PROCESS_FOR_CAG'> {};
-interface ActionFetchSearchModelByName             extends UriParams<'FETCH_SEARCH_MODEL_BY_NAME'> {};
-interface ActionFetchSearchModelByCategory         extends UriParams<'FETCH_SEARCH_MODEL_BY_CATEGORY'> {};
-interface ActionFetchSearchAny                     extends UriParams<'FETCH_SEARCH_ANY'> {};
-interface ActionFetchSearchIO                      extends UriParams<'FETCH_SEARCH_IO'> {};
-interface ActionFetchSearchModel                   extends UriParams<'FETCH_SEARCH_MODEL'> {};
-interface ActionFetchSearchVar                     extends UriParams<'FETCH_SEARCH_VAR'> {};
-interface ActionFetchSearchModelByVarSN            extends UriParams<'FETCH_SEARCH_MODEL_BY_VAR_SN'> {};          
+interface ActionFetchSearchModelByName             extends TextParams<'FETCH_SEARCH_MODEL_BY_NAME'> {};
+interface ActionFetchSearchModelByCategory         extends TextParams<'FETCH_SEARCH_MODEL_BY_CATEGORY'> {};
+interface ActionFetchSearchAny                     extends TextParams<'FETCH_SEARCH_ANY'> {};
+interface ActionFetchSearchIO                      extends TextParams<'FETCH_SEARCH_IO'> {};
+interface ActionFetchSearchModel                   extends TextParams<'FETCH_SEARCH_MODEL'> {};
+interface ActionFetchSearchVar                     extends TextParams<'FETCH_SEARCH_VAR'> {};
+interface ActionFetchSearchModelByVarSN            extends TextParams<'FETCH_SEARCH_MODEL_BY_VAR_SN'> {};          
 
 export type ApiAction = ActionFetchModels | ActionFetchVersionsAndConfigs | ActionFetchCategories | ActionFetchConfigs |
                         ActionFetchConfigsAndIOs | ActionFetchInputsAndVarsSN | ActionFetchOutputsAndVarsSN |
@@ -111,7 +112,7 @@ export type ApiAction = ActionFetchModels | ActionFetchVersionsAndConfigs | Acti
                         ActionFetchSearchAny | ActionFetchSearchIO | ActionFetchSearchModel | ActionFetchSearchVar |
                         ActionFetchSearchModelByVarSN | ActionAddURLs;
 
-type ApiThunkResult = ThunkAction<void, RootState, undefined, ExplorerAction>;
+type ApiThunkResult = ThunkAction<void, RootState, undefined, ApiAction>;
 
 export const fetchModels: ActionCreator<ApiThunkResult> = () => (dispatch) => {
     //apiFetch({type: MODELS}).then((fetched) => { dispatch({type: FETCH_MODELS, data: fetched}); });
@@ -120,7 +121,7 @@ export const fetchModels: ActionCreator<ApiThunkResult> = () => (dispatch) => {
         type: MODELS,
         rules: {
             'model': {newKey: 'uri'},
-            'versions': {newKey: 'ver',newValue: (value:any) => value.split(', ')},
+            'versions': {newValue: (value:any) => value.split(', ')},
             'categories': {newValue: (value:any) => value.split(', ')},
             'modelType': {
                 newKey: 'type', 
@@ -151,7 +152,73 @@ export const fetchModels: ActionCreator<ApiThunkResult> = () => (dispatch) => {
 
 export const fetchVersionsAndConfigs: ActionCreator<ApiThunkResult> = () => (dispatch) => {
     apiFetch({type: VERSIONS_AND_CONFIGS}).then((fetched) => {
-        dispatch({type: FETCH_VERSIONS_AND_CONFIGS, data: fetched}); 
+        let data = fetched.reduce((acc:any, obj:any) => {
+            if (!acc[obj.model]) {
+                acc[obj.model] = {};
+            }
+
+            if (!acc[obj.model][obj.version]) {
+                acc[obj.model][obj.version] = {uri: obj.version, label: obj.versionLabel, id: obj.versionId};
+            } else if (!acc[obj.model][obj.version].id && obj.versionId) {
+                acc[obj.model][obj.version].id = obj.versionId;
+            }
+
+            if (obj.config) {
+                if (!acc[obj.model][obj.version].configs) {
+                    acc[obj.model][obj.version].configs = [{uri: obj.config, label: obj.configLabel}]
+                } else if (acc[obj.model][obj.version].configs.filter((c:any)=>(c.uri===obj.config)).length === 0) {
+                    acc[obj.model][obj.version].configs.push({uri: obj.config, label: obj.configLabel}) 
+                }
+            }
+
+            if (obj.calibration) {
+                let cfg = acc[obj.model][obj.version].configs.filter((c:any)=>(c.uri===obj.config))[0];
+                if (!cfg.calibrations) {
+                    cfg.calibrations = [{uri: obj.calibration, label: obj.calibrationLabel}]
+                } else {
+                    cfg.calibrations.push( {uri: obj.calibration, label: obj.calibrationLabel})
+                }
+            }
+            return acc;
+        }, {})
+
+        let urls = {}
+        Object.keys(data).forEach((modelUri) => {
+            let baseUrl = modelUri.split('/').pop();
+            // create urls going backwards on versions 
+            Object.values(data[modelUri]).forEach((ver:any, i:number) => {
+                let verUrl = baseUrl + '/' + ver.id;
+                let cfgUrl, calUrl;
+                for (let j = (ver.configs ? ver.configs.length : 0)-1; j >= 0; j--) {
+                    cfgUrl = verUrl + '/' + ver.configs[j].uri.split('/').pop();
+                    calUrl = '';
+                    for (let k = (ver.configs[j].calibrations ? ver.configs[j].calibrations.length : 0)-1; k >= 0; k--) {
+                        calUrl = cfgUrl + '/' + ver.configs[j].calibrations[k].uri.split('/').pop();
+                        urls[ver.configs[j].calibrations[k].uri] = calUrl;
+                    }
+                    urls[ver.configs[j].uri] = calUrl || cfgUrl;
+                }
+                urls[ver.uri] = calUrl || cfgUrl || verUrl;
+                if (i === 0) {
+                    urls[modelUri] = calUrl || cfgUrl || verUrl || baseUrl;
+                }
+            });
+        });
+
+        let fixedData = {}
+        Object.keys(data).forEach(mUri => {
+            fixedData[mUri] = Object.values(data[mUri]);
+        })
+
+        dispatch({
+            type: FETCH_VERSIONS_AND_CONFIGS,
+            data: fixedData
+        });
+        
+        dispatch({
+            type: ADD_URLS,
+            data: urls
+        });
     });
 }
 
@@ -217,7 +284,7 @@ export const fetchVersionsForModel: ActionCreator<ApiThunkResult> = (uri:string)
         }, {})
 
         let urls = {}
-        let baseUrl = 'models/explore/' + uri.split('/').pop();
+        let baseUrl = uri.split('/').pop();
         // create urls going backwards on versions 
         Object.values(data).forEach((ver:any, i:number) => {
             let verUrl = baseUrl + '/' + ver.id;
@@ -485,12 +552,12 @@ export const fetchProcessForCag: ActionCreator<ApiThunkResult> = (uri:string) =>
 }
 
 export const fetchSearchModelByName: ActionCreator<ApiThunkResult> = (text:string) => (dispatch) => {
-    apiFetch({type: SEARCH_MODEL_BY_NAME, label: uri}).then((fetched) => {
+    apiFetch({type: SEARCH_MODEL_BY_NAME, label: text}).then((fetched) => {
         dispatch({type: FETCH_SEARCH_MODEL_BY_NAME, text:text, data: fetched}); });
 }
 
 export const fetchSearchModelByCategory: ActionCreator<ApiThunkResult> = (text:string) => (dispatch) => {
-    apiFetch({type: SEARCH_MODEL_BY_CATEGORY, cat: uri}).then((fetched) => {
+    apiFetch({type: SEARCH_MODEL_BY_CATEGORY, cat: text}).then((fetched) => {
         dispatch({type: FETCH_SEARCH_MODEL_BY_CATEGORY, text:text, data: fetched}); });
 }
 

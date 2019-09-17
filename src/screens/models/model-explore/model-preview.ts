@@ -7,7 +7,7 @@ import { html, property, customElement, css } from 'lit-element';
 
 import { goToPage } from '../../../app/actions';
 
-import { FetchedModel } from "../../../api-interfaces";
+import { FetchedModel } from "../../../util/api-interfaces";
 import { ExplorerStyles } from './explorer-styles'
 import { explorerCompareModel } from './ui-actions'
 
@@ -182,7 +182,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
               <tr>
                 <td class="left"> 
                   <div class="text-centered one-line">
-                    ${this._model.ver? html`${this._model.ver.length} version${this._model.ver.length>1?'s':''}`: html`No versions`}
+                    ${this._model.versions? html`${this._model.versions.length} version${this._model.versions.length>1?'s':''}`: html`No versions`}
                   </div>
                   <div>
                     <span class="helper"></span>${this._model.logo ? 
@@ -218,7 +218,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                         ${this._model.keywords?  html`${this._model.keywords.join(', ')}` : html`No keywords`}
                     </span>
                     <span class="details-button"
-                          @click="${()=>{goToPage(this._optUrl || this._baseUrl)}}"
+                          @click="${()=>{goToPage(<string>(this._optUrl || this._baseUrl))}}"
                            > More details </span>
                   </div>
                 </td>

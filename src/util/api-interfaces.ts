@@ -28,13 +28,14 @@ export interface FetchedModel extends Resource {
     fundS?:                 string; // Funding Source
     publisher?:             string; // Publisher
     referenceP?:            string; // Reference
-    authors?:               string; // Authors ,
+    authors?:               string[]; // Authors ,
     citations?:             string; // Citations ,  
     contributors?:          string; // URI of contributors , 
     // Technical stuff
     installInstr?:          string; // URL to Instalation instructions
     memReq?:                string; // Memory requeriments <---- ???
     procReq?:               string; // Processor requeriments <--- ???
+    softwareReq?:           string; // Software requeriments <--- ???
     os?:                    string[]; // OS ;;
     pl?:                    string[]; // Programming language
     doc?:                   string; // URL to documentation
@@ -44,6 +45,7 @@ export interface FetchedModel extends Resource {
     screenshots?:           string; // URL of screenshots
     explanationDiagrams?:   string; // URI of explanation diagrams.
     sampleVisualization?:   string; // URL of Sample visualizations
+    web?:                   string; // URL to web page
     // ???
     grid?:                  string; // URI of one grid
     versions?:              string[]; // URI versions ,

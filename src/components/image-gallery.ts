@@ -24,7 +24,7 @@ export interface GalleryEntry {
 @customElement('image-gallery')
 export class ImageGallery extends LitElement {
     @property({type:Object})
-    items: GalleryEntry = [];
+    items: GalleryEntry[] = [];
 
     static get styles() {
         return [SharedStyles, css`
@@ -127,7 +127,7 @@ export class ImageGallery extends LitElement {
         let external    = this.shadowRoot!.getElementById("dialog-external-link");
         let title       = this.shadowRoot!.getElementById("dialog-title");
         let img         = this.shadowRoot!.getElementById("dialog-img");
-        let video       = this.shadowRoot!.getElementById("dialog-video");
+        let video       = this.shadowRoot!.getElementById("dialog-video") as HTMLVideoElement;
         let videoSrc    = this.shadowRoot!.getElementById("dialog-video-src");
         let desc        = this.shadowRoot!.getElementById("dialog-desc");
         let source      = this.shadowRoot!.getElementById("dialog-source");
