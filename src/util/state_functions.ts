@@ -317,6 +317,10 @@ export const runPathwayExecutableEnsembles_old = (
     }, 1000);
 };
 
+const ensembleNotDone = (ensemble: ExecutableEnsemble) => {
+    return !ensemble.status || ensemble.status == "RUNNING" || ensemble.status == "WAITING";
+}
+
 const pathwayExecutionMonitor = {};
 
 export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway, prefs: UserPreferences) => {
@@ -324,7 +328,7 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
     let alldone = true;
     if(pathway == null) return;
     pathway.executable_ensembles.map((ensemble) => {
-        if(!ensemble.status || ensemble.status == "RUNNING") {
+        if(ensembleNotDone(ensemble)) {
             alldone = false;
         }
     });
@@ -347,7 +351,7 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
         loginToWings(prefs).then(() => {
             Promise.all(
                 pathway.executable_ensembles.map((ensemble) => {
-                    if(!ensemble.status || ensemble.status == "RUNNING") {
+                    if(ensembleNotDone(ensemble)) {
                         return fetchWingsRunStatus(ensemble, prefs);
                     }
                 })
@@ -356,7 +360,7 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
                 let changed = false;
                 let i=0;
                 pathway.executable_ensembles.map((ensemble) => {
-                    if(!ensemble.status || ensemble.status == "RUNNING") {
+                    if(ensembleNotDone(ensemble)) {
                         let nensemble = nensembles[i];
                         if(!nensemble || !ensemble) {
                             return;
@@ -368,7 +372,7 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
                             ensemble.results = nensemble.results;
                             changed = true;
                         }
-                        if(!nensemble.status || nensemble.status == "RUNNING") 
+                        if(ensembleNotDone(nensemble)) 
                             alldone = false;
                     }
                     i++;

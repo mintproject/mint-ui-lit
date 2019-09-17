@@ -107,7 +107,7 @@ export interface ExecutableEnsemble {
     modelid: string
     bindings: InputBindings
     runid?: string
-    status: "FAILURE" | "SUCCESS" | "RUNNING",
+    status: "FAILURE" | "SUCCESS" | "RUNNING" | "WAITING",
     run_progress?: number // 0 to 100 (percentage done)
     results: any[] // Chosen results after completed run
     selected: boolean

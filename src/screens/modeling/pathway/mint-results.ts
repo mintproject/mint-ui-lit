@@ -177,6 +177,9 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                                     html ``
                                                 }
                                                 ${grouped_ensemble.outputs.map((output) => {
+                                                    if(ensemble.results.length == 0) {
+                                                        return html `<td></td>`;
+                                                    }
                                                     return ensemble.results.map((result: any) => {
                                                         let oname = result.id.replace(/.+#/, '');
                                                         if(output.name == oname) {
