@@ -447,7 +447,8 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _renderSelectors () {
         if (!this._versions) {
-            return html`<wl-progress-bar></wl-progress-bar>`;
+            return html`<div class="info-center">- No version available -</div>`;
+            //return html`<wl-progress-bar></wl-progress-bar>`;
         }
         let hasVersions = (this._versions.length > 0);
         let hasCalibrations = !!(this._config && this._config.calibrations);
