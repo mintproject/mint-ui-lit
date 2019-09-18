@@ -137,7 +137,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                         return html`
                         <li>
                             <wl-title level="4">Runs for <a href="${this._getModelURL(model)}">${model.name}</a></wl-title>
-                            <table class="pure-table pure-table-striped run_table">
+                            <table class="pure-table pure-table-bordered run_table">
                                 <!-- Heading -->
                                 <colgroup span="1"></colgroup> <!-- Run Status -->
                                 ${grouped_ensemble.inputs.length > 0 ? 

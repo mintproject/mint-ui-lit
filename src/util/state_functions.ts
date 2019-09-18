@@ -351,46 +351,58 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
             stopMonitoringPathwayExecutions(pathway.id);
             return;
         }
-        loginToWings(prefs).then(() => {
-            Promise.all(
-                pathway.executable_ensembles.map((ensemble) => {
-                    if(ensembleNotDone(ensemble)) {
-                        return fetchWingsRunStatus(ensemble, prefs);
-                    }
-                })
-            ).then((nensembles) => {
-                let alldone = true;
-                let changed = false;
-                let i=0;
-                pathway.executable_ensembles.map((ensemble) => {
-                    if(ensembleNotDone(ensemble)) {
-                        let nensemble = nensembles[i];
-                        if(!nensemble || !ensemble) {
-                            return;
-                        }
-                        if(nensemble.run_progress != ensemble.run_progress ||
-                                nensemble.status != ensemble.status) {
-                            ensemble.status = nensemble.status;
-                            ensemble.run_progress = nensemble.run_progress;
-                            ensemble.results = nensemble.results;
-                            changed = true;
-                        }
-                        if(ensembleNotDone(nensemble)) 
-                            alldone = false;
-                    }
-                    i++;
-                });
-                if(changed) {
-                    console.log("Run details changed.. updating pathway");
-                    updatePathway(scenario, pathway);
-                }
-                if(alldone) {
-                    console.log("All runs finished.. stop polling");
-                    stopMonitoringPathwayExecutions(pathway.id);
+        _monitorPathwayExecutions(scenario, pathway, prefs);
+    }, 30000);
+}
+
+const _monitorPathwayExecutions = (scenario: Scenario, pathway: Pathway, prefs: UserPreferences) => {
+    loginToWings(prefs).then(() => {
+        Promise.all(
+            pathway.executable_ensembles.map((ensemble) => {
+                if(ensembleNotDone(ensemble)) {
+                    return fetchWingsRunStatus(ensemble, prefs);
                 }
             })
+        ).then((nensembles) => {
+            let alldone = true;
+            let changed = false;
+            let i=0;
+            pathway.executable_ensembles.map((ensemble) => {
+                if(ensembleNotDone(ensemble)) {
+                    let nensemble = nensembles[i];
+                    if(!nensemble || !ensemble) {
+                        return;
+                    }
+                    if(nensemble.run_progress != ensemble.run_progress ||
+                            nensemble.status != ensemble.status) {
+                        ensemble.status = nensemble.status;
+                        ensemble.run_progress = nensemble.run_progress;
+                        ensemble.results = nensemble.results;
+                        changed = true;
+                    }
+                    if(ensembleNotDone(nensemble)) 
+                        alldone = false;
+                }
+                i++;
+            });
+            if(changed) {
+                // TODO: Update just that ensemble document
+                // - Have an ensembles subcollection inside the pathway
+                // - Monitor that ensembles subcollection
+                //   - How does this scale up ?
+                
+                // TODO: Separate pathway monitor
+                // - Monitor pathway changes in firebase
+                // - No need to update the scenario every time the pathway changes
+                console.log("Run details changed.. updating pathway");
+                updatePathway(scenario, pathway);
+            }
+            if(alldone) {
+                console.log("All runs finished.. stop polling");
+                stopMonitoringPathwayExecutions(pathway.id);
+            }
         })
-    }, 30000);
+    })
 }
 
 export const stopMonitoringPathwayExecutions = (pathwayid: string) => {

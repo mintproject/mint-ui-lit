@@ -193,7 +193,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
     _getParameterSelections(model: Model, inputid: string) {
         let form = this.shadowRoot!.querySelector<HTMLFormElement>("#form_"+this._valid(model.localname || model.id))!;
         let inputstr = (form.elements[inputid] as HTMLInputElement).value;
-        return inputstr.split(",");
+        return inputstr.split(/\s*,\s*/);
     }
 
     _setPathwayParametersAndRun() {
