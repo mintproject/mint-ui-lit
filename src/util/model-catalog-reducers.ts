@@ -9,7 +9,8 @@ import { FETCH_MODELS, FETCH_VERSIONS_AND_CONFIGS, FETCH_CATEGORIES, FETCH_CONFI
          FETCH_VARS_SN_AND_UNITS_FOR_IO, FETCH_CONFIGS_FOR_VAR, FETCH_CONFIGS_FOR_VAR_SN, FETCH_CALIBRATIONS_FOR_VAR_SN,
          FETCH_IO_FOR_VAR_SN, FETCH_METADATA_FOR_VAR_SN, FETCH_PROCESS_FOR_CAG, FETCH_SEARCH_MODEL_BY_NAME,
          FETCH_SEARCH_MODEL_BY_CATEGORY, FETCH_SEARCH_ANY, FETCH_SEARCH_IO, FETCH_SEARCH_MODEL, FETCH_SEARCH_VAR,
-         FETCH_SAMPLE_VIS_FOR_MODEL_CONFIG, FETCH_SEARCH_MODEL_BY_VAR_SN, ADD_URLS, ADD_PARAMETERS, ADD_CALIBRATION } from './model-catalog-actions'
+         FETCH_SAMPLE_VIS_FOR_MODEL_CONFIG, FETCH_SEARCH_MODEL_BY_VAR_SN, ADD_URLS, ADD_PARAMETERS, ADD_CALIBRATION,
+         ADD_INPUTS, ADD_METADATA } from './model-catalog-actions'
 
 // For the moment storing on explorer
 import { FetchedModel, IODetail, VersionDetail, VariableDetail, CompIODetail,
@@ -70,21 +71,39 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
                 parameters: newParam
             }
         case ADD_CALIBRATION:
-            let newVer = { ...state.versions };
-            Object.keys(newVer).forEach(modelUri => {
-                newVer[modelUri].forEach(ver => {
+            let crVersions = { ...state.versions };
+            let crUrls = { ...state.urls }
+            Object.keys(crVersions).forEach(modelUri => {
+                crVersions[modelUri].forEach(ver => {
                     (ver.configs || []).forEach(cfg => {
                         if (cfg.uri === action.config) {
                             if (!cfg.calibrations) cfg.calibrations = [];
                             cfg.calibrations.push({uri: action.uri, label: action.label});
+                            crUrls[action.uri] = modelUri.split('/').pop() + '/' + ver.uri.split('/').pop() + '/'
+                                               + cfg.uri.split('/').pop() + '/' + action.uri.split('/').pop();
                         }
                     })
                 })
             })
             return {
                 ...state,
-                versions: newVer
+                versions: crVersions,
+                urls: crUrls
             }
+        case ADD_INPUTS:
+            let crInputs = { ...state.inputs }
+            crInputs[action.uri] = action.data;
+            return { 
+                ...state,
+                inputs: crInputs
+            };
+        case ADD_METADATA:
+            let crMetadata = { ...state.metadata }
+            crMetadata[action.uri] = action.data;
+            return {
+                ...state,
+                metadata: crMetadata
+            };
 
         case ADD_URLS:
             let newUrls = {...state.urls, ...action.data};
@@ -172,7 +191,9 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
             }
         case FETCH_PARAMETERS_FOR_CONFIG:
             let newParams = {...state.parameters};
-            newParams[action.uri] = action.data;
+            if (!newParams[action.uri]) {
+                newParams[action.uri] = action.data;
+            }
             return {
                 ...state,
                 parameters: newParams
@@ -195,9 +216,13 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
             console.log(action); return { ...state };
         case FETCH_IO_AND_VARS_SN_FOR_CONFIG:
             let newInputs = {...state.inputs};
-            newInputs[action.uri] = action.data.filter((i:any)=> i.kind==="Input");
+            if (!newInputs[action.uri]) {
+                newInputs[action.uri] = action.data.filter((i:any)=> i.kind==="Input");
+            }
             let newOutputs = {...state.outputs};
-            newOutputs[action.uri] = action.data.filter((o:any)=> o.kind==="Output");
+            if (!newOutputs[action.uri]) {
+                newOutputs[action.uri] = action.data.filter((o:any)=> o.kind==="Output");
+            }
             return {
                 ...state,
                 inputs: newInputs,
