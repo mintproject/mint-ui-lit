@@ -6,7 +6,8 @@ import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
 
-import { fetchAuthorsForModelConfig, fetchParametersForConfig, fetchMetadataNoioForModelConfig } from '../../util/model-catalog-actions';
+import { fetchIOAndVarsSNForConfig, fetchAuthorsForModelConfig, fetchParametersForConfig,
+         fetchMetadataNoioForModelConfig, addParameters, addCalibration } from '../../util/model-catalog-actions';
 
 import "weightless/slider";
 import "weightless/progress-spinner";
@@ -53,6 +54,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _calibrationAuthors : any = null;
+
+    @property({type: Object})
+    private _configInputs : any = null;
 
     private _url : string = '';
     private _selectedModel : string = '';
@@ -179,6 +183,43 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         goToPage(url);
     }
 
+     _uuidv4() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+
+    _save () {
+        if (this._editing) {
+            alert('Sorry! Save function its not available yet.');
+        } else if (this._creating) {
+            let labelEl = this.shadowRoot.getElementById('new-setup-label') as HTMLInputElement;
+            let descEl = this.shadowRoot.getElementById('new-setup-desc') as HTMLInputElement;
+            let authEl = this.shadowRoot.getElementById('new-setup-authors') as HTMLInputElement;
+            let paramsEl = this.shadowRoot.querySelectorAll('.new-setup-param');
+            if (labelEl && descEl && authEl) {
+                let label = labelEl.value;
+                let desc = descEl.value;
+                let auth = authEl.value;
+                let params = Array.from(paramsEl).map(e => (<HTMLInputElement>e).value);
+                
+                let id = this._uuidv4();
+                let newUri = "https://w3id.org/okn/i/" + id;
+
+                let newSetupParameters = Object.assign({}, this._configParameters);
+                //FIXME
+                for (let i = 0; i < params.length; i++) {
+                    newSetupParameters[i]['fixedValue'] = params[i];
+                }
+
+                store.dispatch(addParameters(newUri, newSetupParameters));
+                store.dispatch(addCalibration(this._config.uri, newUri, label));
+
+            }
+        }
+    }
+
     _renderVersionTree () {
         if (!this._versions || !this._models) 
             return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
@@ -257,9 +298,10 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     _renderNewSetup () {
         return html`
         <wl-title level="4">Creating a new setup</wl-title>
-        <wl-textfield label="Setup name"></wl-textfield>
-        <wl-textarea style="--input-font-size: 15px;"label="Description"></wl-textarea>
-        <wl-textfield label="Authors"></wl-textfield>
+        <wl-textfield id="new-setup-label" label="Setup name"></wl-textfield>
+        <wl-textarea id="new-setup-desc" style="--input-font-size: 15px;"label="Description"></wl-textarea>
+        <wl-textfield id="new-setup-authors"label="Authors"></wl-textfield>
+        <wl-title level="5" style="margin-top:1em;">PARAMETERS:</wl-title>
         <table class="pure-table pure-table-striped" style="width: 100%">
             <thead>
                 <th><b>#</b></th>
@@ -273,9 +315,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 <th style="text-align: right;"><b>Unit</b></th>
             </thead>
             <tbody>
-
-            ${!this._configParameters ? html `` : 
-            this._configParameters.map((p:any) => html`
+            ${!this._configParameters ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
+            : (this._configParameters.length == 0 ? html`<tr><td colspan="6"> NO PARAMETERS </td></tr>`
+            : this._configParameters.map((p:any) => html`
             <tr>
                 <td>${p.position}</td>
                 <td>
@@ -289,30 +331,58 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 <td style="text-align: right;">
                     ${(p.minVal || p.maxVal) ? html`
                     <wl-slider thumblabel value="${p.defaulvalue}" min="${p.minVal}" max="${p.maxVal}"
-                            step="${p.pdatatype=='float' ? .01 : 1}">
+                            step="${p.pdatatype=='float' ? .01 : 1}" class="new-setup-param">
                         <span slot="before" class="int-range">${p.minVal}</span>
                         <span slot="after" class="int-range">${p.maxVal}</span>
                     </wl-slider>
                     ` : (p.pdatatype == 'boolean' ? html`
-                    <wl-select>
+                    <wl-select class="new-setup-param">
                         <option>True</option>
                         <option>False</option>
                     </wl-select>
                     `: html`
-                    <input class="value-edit" type="${(p.pdatatype=='int' || p.pdatatype=='float')? 'number' : 'text'}" 
+                    <input class="new-setup-param value-edit" type="${(p.pdatatype=='int' || p.pdatatype=='float')? 'number' : 'text'}" 
                         step="${p.datatype=='float' ? 0.01 : 1}"placeholder="${p.defaultvalue}"></input>
                     `)}
                 </td>
                 <td style="text-align: right;">${p.unit}</td>
-            </tr>`)
+            </tr>`))
             }
             </tbody>
         </table>
-        <div style="float:right; border-top: 1em;">
+
+        <wl-title level="5" style="margin-top:1em;">INPUT FILES:</wl-title>
+        ${!this._configInputs ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
+        : html`
+        <table class="pure-table pure-table-striped" style="width: 100%">
+            <colgroup>
+                <col span="1">
+                <col span="1">
+                <col span="1">
+            </colgroup>
+            <thead>
+                <th><b>Label</b></th>
+                <th><b>Description</b></th>
+                <th><b>File</b></th>
+            </thead>
+            <tbody>
+            ${this._configInputs.map(i => html`
+                <tr>
+                    <td>${i.label}</td>
+                    <td>${i.desc}</td>
+                    <td>
+                        <input type="file" style="position: relative !important;height: unset;width: unset;">
+                    </td>
+                </tr>
+            `)}
+            </tbody>
+        </table> `}
+
+        <div style="float:right; border-top: 2em;">
             <wl-button @click="${this._cancel}" style="margin-right: 1em;" flat inverted>
-                <wl-icon>cancel</wl-icon>&ensp;Discard changes
+                <wl-icon>cancel</wl-icon>&ensp;Cancel
             </wl-button>
-            <wl-button>
+            <wl-button @click="${this._save}">
                 <wl-icon>save</wl-icon>&ensp;Save
             </wl-button>
         </div>
@@ -326,7 +396,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             <wl-button @click="${this._cancel}" style="margin-right: 1em;" flat inverted>
                 <wl-icon>cancel</wl-icon>&ensp;Discard changes
             </wl-button>
-            <wl-button @click="${()=>{alert('Sorry! Save function its not available yet.')}}">
+            <wl-button @click="${this._save}">
                 <wl-icon>save</wl-icon>&ensp;Save
             </wl-button>
             `
@@ -480,6 +550,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     store.dispatch(fetchMetadataNoioForModelConfig(ui.selectedConfig));
                     store.dispatch(fetchParametersForConfig(ui.selectedConfig));
                     store.dispatch(fetchAuthorsForModelConfig(ui.selectedConfig));
+                    store.dispatch(fetchIOAndVarsSNForConfig(ui.selectedConfig));
                 }
                 this._selectedConfig = ui.selectedConfig;
                 this._config = null;
@@ -542,6 +613,10 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 if (db.parameters) {
                     if (!this._configParameters && this._config) this._configParameters = db.parameters[this._selectedConfig];
                     if (!this._calibrationParameters && this._calibration) this._calibrationParameters = db.parameters[this._selectedCalibration];
+                }
+
+                if (db.inputs) {
+                    if (!this._configInputs && this._config) this._configInputs = db.inputs[this._selectedConfig];
                 }
             }
         }
