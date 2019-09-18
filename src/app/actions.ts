@@ -14,7 +14,7 @@ import { RootState, store } from './store';
 import { queryDatasetDetail } from '../screens/datasets/actions';
 import { queryModelDetail } from '../screens/models/actions';
 import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetConfig,
-         explorerSetCalibration } from '../screens/models/model-explore/ui-actions';
+         explorerSetCalibration, explorerSetMode } from '../screens/models/model-explore/ui-actions';
 import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread } from './ui-actions';
 import { auth } from '../config/firebase';
 import { User } from 'firebase';
@@ -182,6 +182,11 @@ const loadPage: ActionCreator<ThunkResult> =
             });
         } else if (subpage == 'configure') {
             import('../screens/models/models-configure').then((_module) => {
+                if (params[params.length -1] === 'edit' || params[params.length -1] === 'new') {
+                    store.dispatch(explorerSetMode(params.pop()));
+                } else {
+                    store.dispatch(explorerSetMode('view'));
+                }
                 if(params.length > 0) {
                     store.dispatch(explorerSetModel(params[0]));
                     if (params.length > 1) {

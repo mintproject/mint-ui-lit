@@ -21,6 +21,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     @property({type: Boolean})
     private _editing : boolean = false;
 
+    @property({type: Boolean})
+    private _creating : boolean = false;
+
     @property({type: Object})
     private _models : UriModels | null = null;
 
@@ -51,6 +54,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _calibrationAuthors : any = null;
 
+    private _url : string = '';
     private _selectedModel : string = '';
     private _selectedConfig : string = '';
     private _selectedCalibration : string = '';
@@ -108,19 +112,20 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             }
 
             wl-slider > .value-edit {
-                width: 40px;
+                width: 47px;
             }
 
             input.value-edit {
                 background-color: transparent;
                 border: 0px;
                 text-align: right;
+                font-size: 16px;
+                font-weight: 400;
+                family: Raleway;
             }
 
-            input.value-edit {
-                background-color: transparent;
-                border: 0px;
-                text-align: right;
+            input.value-edit::placeholder {
+                color: rgb(136, 142, 145);
             }
 
             input.value-edit:hover {
@@ -149,8 +154,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             .inline-new-button > wl-icon {
                 --icon-size: 1.2em;
                 vertical-align: top;
-            }
-            `,
+            }`,
             SharedStyles
         ];
     }
@@ -158,7 +162,20 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     _goToUrl (modelUri, version, config, calibration?) {
         let url = 'models/configure/' + modelUri.split('/').pop() + '/' + (version.id || version.uri.split('/').pop())
                 + '/' + config.uri.split('/').pop() + (calibration? '/' + calibration.uri.split('/').pop() : '');
-        this._editing = false;
+        goToPage(url);
+    }
+
+    _cancel () {
+        goToPage(this._url);
+    }
+
+    _edit () {
+        goToPage(this._url + '/edit');
+    }
+
+    _createNew (modelUri, version, config) {
+        let url = 'models/configure/' + modelUri.split('/').pop() + '/' + (version.id || version.uri.split('/').pop())
+                + '/' + config.uri.split('/').pop() + '/new'
         goToPage(url);
     }
 
@@ -183,10 +200,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                                     <li>
                                         <a @click="${()=>{this._goToUrl(modelUri, v, cfg, cal)}}">${cal.label}</a>
                                     </li>`)}
-                                    <li><a class="inline-new-button"><wl-icon>add_circle_outline</wl-icon> Add new setup</a></li>
+                                    <li><a class="inline-new-button" @click="${()=>{this._createNew(modelUri, v, cfg)}}"><wl-icon>add_circle_outline</wl-icon> Add new setup</a></li>
                                 </ul>
                             </li>`)}
-                            <li><a class="inline-new-button"><wl-icon>add_circle_outline</wl-icon> Add new configuration</a></li>
                         </ul>
                     </li>`)}
                 </ul>
@@ -223,45 +239,44 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     <div class="cltrow_padded">
                         <div class="cltmain">
                             <wl-title level="3" style="margin: 0px">
-                                ${this._calibration ? this._calibration.label : (this._config ? this._config.label : 'Select a configuration or calibration on the left panel.')}
+                                ${this._calibration ? this._calibration.label : (this._config ? this._config.label : 'Select a configuration or setup on the left panel.')}
                             </wl-title>
                         </div>
                     </div>
 
-                    ${this._calibration ? this._renderCalibration() : (this._config ? this._renderConfig() : '')}
+                    <div style="padding: 0px 20px;">
+                    ${(this._creating && !this._calibration && this._config) ? this._renderNewSetup()
+                    : (this._calibration ? this._renderCalibration() : (this._config ? this._renderConfig() : '')) }
+                    </div>
                 </div>
             </div>
         </div>
         `
     }
 
-    _renderCalibration () {
-        let loadingMeta = !this._calibrationMetadata;
-        let loadingParams = !this._calibrationParameters;
-        let meta = (!loadingMeta && this._calibrationMetadata.length > 0) ? this._calibrationMetadata[0] : null;
-        let params = (!loadingParams && this._calibrationParameters.length > 0) ? this._calibrationParameters : null;
+    _renderNewSetup () {
         return html`
-        <div style="margin-bottom: 1em;">
-            <b>Description:</b>
-            ${loadingMeta ? html`<loading-dots style="--width: 20px"></loading-dots>` : meta.desc}
-        </div>
-        ${loadingParams ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
-        : (params ? html`
+        <wl-title level="4">Creating a new setup</wl-title>
+        <wl-textfield label="Setup name"></wl-textfield>
+        <wl-textarea style="--input-font-size: 15px;"label="Description"></wl-textarea>
+        <wl-textfield label="Authors"></wl-textfield>
         <table class="pure-table pure-table-striped" style="width: 100%">
             <thead>
                 <th><b>#</b></th>
                 <th><b>Label</b></th>
                 <th><b>Type</b></th>
                 <th><b>Datatype</b></th>
-                <th style="text-align: right;"><b>Default Value</b></th>
                 <th style="text-align: right;">
                     <b>Value in this setup</b>
-                    ${this._editing? html`<wl-icon>edit</wl-icon>` : ''}
+                    <wl-icon>edit</wl-icon>
                 </th>
                 <th style="text-align: right;"><b>Unit</b></th>
             </thead>
             <tbody>
-            ${params.map((p:any) => html`<tr>
+
+            ${!this._configParameters ? html `` : 
+            this._configParameters.map((p:any) => html`
+            <tr>
                 <td>${p.position}</td>
                 <td>
                     <b>${p.description}</b><br/>
@@ -270,22 +285,45 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 <td>${p.type}</td>
                 <td>
                     ${p.pdatatype}
-                    ${(p.minVal || p.maxVal) ? html`<br/><span style="font-size: 11px;">Range is from ${p.minVal} to ${p.maxVal}</span>` : '' }
                 </td>
-                <td style="text-align: right;">${p.defaultvalue}</td>
                 <td style="text-align: right;">
-                    ${this._editing ? html`
-                    <input class="value-edit" type="text" placeholder="-" value="${p.fixedValue || ''}"></input>
-                    ` : (p.fixedValue || '-')}
+                    ${(p.minVal || p.maxVal) ? html`
+                    <wl-slider thumblabel value="${p.defaulvalue}" min="${p.minVal}" max="${p.maxVal}"
+                            step="${p.pdatatype=='float' ? .01 : 1}">
+                        <span slot="before" class="int-range">${p.minVal}</span>
+                        <span slot="after" class="int-range">${p.maxVal}</span>
+                    </wl-slider>
+                    ` : (p.pdatatype == 'boolean' ? html`
+                    <wl-select>
+                        <option>True</option>
+                        <option>False</option>
+                    </wl-select>
+                    `: html`
+                    <input class="value-edit" type="${(p.pdatatype=='int' || p.pdatatype=='float')? 'number' : 'text'}" 
+                        step="${p.datatype=='float' ? 0.01 : 1}"placeholder="${p.defaultvalue}"></input>
+                    `)}
                 </td>
                 <td style="text-align: right;">${p.unit}</td>
-            </tr>`)}
+            </tr>`)
+            }
             </tbody>
         </table>
+        <div style="float:right; border-top: 1em;">
+            <wl-button @click="${this._cancel}" style="margin-right: 1em;" flat inverted>
+                <wl-icon>cancel</wl-icon>&ensp;Discard changes
+            </wl-button>
+            <wl-button>
+                <wl-icon>save</wl-icon>&ensp;Save
+            </wl-button>
+        </div>
+        `
+    }
 
+    _renderButtons () {
+        return html`
         <div style="float:right; margin-top: 1em;">
             ${this._editing? html`
-            <wl-button @click="${()=>{this._editing = false;}}" style="margin-right: 1em;" flat inverted>
+            <wl-button @click="${this._cancel}" style="margin-right: 1em;" flat inverted>
                 <wl-icon>cancel</wl-icon>&ensp;Discard changes
             </wl-button>
             <wl-button @click="${()=>{alert('Sorry! Save function its not available yet.')}}">
@@ -293,13 +331,12 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             </wl-button>
             `
             : html`
-            <wl-button @click="${()=>{this._editing = true;}}">
+            <wl-button @click="${this._edit}">
                 <wl-icon>edit</wl-icon>&ensp;Edit
             </wl-button>
             `}
-        </div>`
-        : html`<p>${this._calibration.label} has no parameters.</p>`)}
-        `
+        </div>
+        `;
     }
 
     _renderConfig () {
@@ -352,23 +389,76 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             </tr>`)}
             </tbody>
         </table>
-
-        <div style="float:right; margin-top: 1em;">
-            ${this._editing? html`
-            <wl-button @click="${()=>{this._editing = false;}}" style="margin-right: 1em;" flat inverted>
-                <wl-icon>cancel</wl-icon>&ensp;Discard changes
-            </wl-button>
-            <wl-button @click="${()=>{alert('Sorry! Save function its not available yet.')}}">
-                <wl-icon>save</wl-icon>&ensp;Save
-            </wl-button>
-            `
-            : html`
-            <wl-button @click="${()=>{this._editing = true;}}">
-                <wl-icon>edit</wl-icon>&ensp;Edit
-            </wl-button>
-            `}
-        </div>`
+        ${this._renderButtons()}`
         : html`<p>${this._config.label} has no parameters.</p>`)}
+        `
+    }
+
+    _renderCalibration () {
+        let loadingMeta = !this._calibrationMetadata;
+        let loadingParams = !this._calibrationParameters;
+        let meta = (!loadingMeta && this._calibrationMetadata.length > 0) ? this._calibrationMetadata[0] : null;
+        let params = (!loadingParams && this._calibrationParameters.length > 0) ? this._calibrationParameters : null;
+        return html`
+        <div style="margin-bottom: 1em;">
+            <b>Description:</b>
+            ${loadingMeta ? html`<loading-dots style="--width: 20px"></loading-dots>` : meta.desc}
+        </div>
+        ${loadingParams ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
+        : (params ? html`
+        <table class="pure-table pure-table-striped" style="width: 100%">
+            <thead>
+                <th><b>#</b></th>
+                <th><b>Label</b></th>
+                <th><b>Type</b></th>
+                <th><b>Datatype</b></th>
+                <th style="text-align: right;">
+                    <b>Value in this setup</b>
+                    ${this._editing? html`<wl-icon>edit</wl-icon>` : ''}
+                </th>
+                <th style="text-align: right;"><b>Unit</b></th>
+            </thead>
+            <tbody>
+            ${params.map((p:any) => html`<tr>
+                <td>${p.position}</td>
+                <td>
+                    <b>${p.description}</b><br/>
+                    <code>${p.paramlabel}</code>
+                </td>
+                <td>${p.type}</td>
+                <td>
+                    ${p.pdatatype}
+                    ${(p.minVal || p.maxVal) ? html`<br/><span style="font-size: 11px;">Range is from ${p.minVal} to ${p.maxVal}</span>` : '' }
+                </td>
+                <td style="text-align: right;">
+                    ${this._editing ? 
+                    html`
+                    ${(p.minVal || p.maxVal) ? html`
+                    <wl-slider thumblabel value="${p.fixedValue || p.defaultvalue}" min="${p.minVal}" max="${p.maxVal}"
+                            step="${p.pdatatype=='float' ? .01 : 1}">
+                        <span slot="before" class="int-range">${p.minVal}</span>
+                        <span slot="after" class="int-range">${p.maxVal}</span>
+                    </wl-slider>
+                    ` : (p.pdatatype == 'boolean' ? html`
+                    <wl-select value=${p.fixedValue || p.defaultvalue}>
+                        <option value="TRUE">True</option>
+                        <option value="FALSE">False</option>
+                    </wl-select>
+                    `: html`
+                    <input class="value-edit" type="${(p.pdatatype=='int' || p.pdatatype=='float')? 'number' : 'text'}" 
+                        step="${p.datatype=='float' ? 0.01 : 1}"placeholder="${p.defaultvalue}"></input>
+                    `)}
+                    `
+                    : (p.fixedValue || p.defaultvalue + ' (default)')}
+
+
+                </td>
+                <td style="text-align: right;">${p.unit}</td>
+            </tr>`)}
+            </tbody>
+        </table>
+        ${this._renderButtons()}`
+        : html`<p>${this._calibration.label} has no parameters.</p>`)}
         `
     }
 
@@ -379,6 +469,8 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             let modelChanged : boolean = (ui.selectedModel !== this._selectedModel);
             let configChanged : boolean = (modelChanged || ui.selectedConfig !== this._selectedConfig);
             let calibrationChanged : boolean = (configChanged || ui.selectedCalibration !== this._selectedCalibration);
+            this._editing = (ui.mode === 'edit');
+            this._creating = (ui.mode === 'new');
 
             if (modelChanged) {
                 this._selectedModel = ui.selectedModel;
@@ -420,12 +512,21 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                             return (c.uri === this._selectedConfig) ? c : null;
                         }, null);
                     }, null);
+                    if (this._config) {
+                        this._url = 'models/configure/' + this._selectedModel.split('/').pop() + '/' 
+                                  + ui.selectedVersion.split('/').pop() + '/' + this._config.uri.split('/').pop();
+                    }
                 }
                 if (!this._calibration && this._config) {
                     this._calibration = (this._config.calibrations || []).reduce((acc,c) => {
                         if (acc) return acc;
                         return (c.uri === this._selectedCalibration) ? c : null;
                     }, null);
+                    if (this._calibration) {
+                        this._url = 'models/configure/' + this._selectedModel.split('/').pop() + '/' 
+                                  + ui.selectedVersion.split('/').pop() + '/' + this._config.uri.split('/').pop()
+                                  + '/' + this._calibration.uri.split('/').pop();
+                    }
                 }
 
                 if (db.authors) {
