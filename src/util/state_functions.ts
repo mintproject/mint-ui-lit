@@ -247,11 +247,6 @@ export const runPathwayExecutableEnsembles = async(
                     paramtypes[ip.name] = ip.type;
                 });
 
-                // Register any datasets that need to be registered
-                for(let resid in registered_resources) {
-                    let args = registered_resources[resid];
-                    registerDatasetPromises.push(registerWingsDataset(resid, args[0], args[1], args[2], prefs));
-                }
                 seeds.push({
                     tid: tid,
                     datasets: datasets,
@@ -259,6 +254,12 @@ export const runPathwayExecutableEnsembles = async(
                     paramtypes: paramtypes
                 } as WingsTemplateSeed);
             })
+
+            // Register any datasets that need to be registered
+            for(let resid in registered_resources) {
+                let args = registered_resources[resid];
+                registerDatasetPromises.push(registerWingsDataset(resid, args[0], args[1], args[2], prefs));
+            }
 
             // Register all datasets
             Promise.all(registerDatasetPromises).then(() => {
@@ -389,7 +390,7 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
                 }
             })
         })
-    }, 15000);
+    }, 30000);
 }
 
 export const stopMonitoringPathwayExecutions = (pathwayid: string) => {

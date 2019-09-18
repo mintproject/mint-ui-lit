@@ -105,7 +105,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                         not_running_grouped_ensembles[model.id].inputs.push(inf);
                 })
             }
-            /* Check if everything is bound */
+            /* Check if all inputs are bound */
             let allbound = true;
             model.input_parameters.map((ip) => {
                 if(!ip.value && !ensemble.bindings[ip.id])

@@ -196,6 +196,10 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                         params[value.p] = param;
                         parameters.push(param);
                     });
+                    let input_parameters = parameters
+                        .sort((a, b) => a.name.localeCompare(b.name));
+                    let input_files = inputs
+                        .sort((a, b) => a.name.localeCompare(b.name));
 
                     let model: Model = {
                         id: modelid,
@@ -205,8 +209,8 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                         description: row["desc"] || "",
                         category: row["category"] || "",
                         wcm_uri: row["compLoc"] || "",
-                        input_files: inputs,
-                        input_parameters: parameters,
+                        input_files: input_files,
+                        input_parameters: input_parameters,
                         output_files: outputs,
                         original_model: row["modelName"] || "",
                         model_version: row["versionName"] || "",

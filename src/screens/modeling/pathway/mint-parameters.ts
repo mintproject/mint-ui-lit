@@ -13,6 +13,8 @@ import { selectPathwaySection } from "../../../app/ui-actions";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { IdMap } from "../../../app/reducers";
 
+const MAX_PARAMETER_COMBINATIONS = 300;
+
 @customElement('mint-parameters')
 export class MintParameters extends connect(store)(MintPathwayPage) {
 
@@ -230,7 +232,13 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         this._editMode = false;
 
         // Update executable ensembles in the pathway
-        this.pathway = createPathwayExecutableEnsembles(this.pathway);
+        let pathway = createPathwayExecutableEnsembles(this.pathway);
+        if(pathway.executable_ensembles.length > MAX_PARAMETER_COMBINATIONS) {
+            alert("Too many parameter combinations (" + pathway.executable_ensembles.length + " > " + MAX_PARAMETER_COMBINATIONS +"). \
+            Please reduce the number of parameter options to continue");
+            return;
+        }
+        this.pathway = pathway;
 
         // Update notes
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;

@@ -87,7 +87,21 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                         grouped_ensembles[model.id].outputs.push(outf);
                 })
             }
-            grouped_ensembles[model.id].ensembles[index] = ensemble;
+
+            /* Check if outputs are bound */
+            let allbound = true;
+            model.output_files.map((outf) => {
+                let foundmatch = false;
+                ensemble.results.map((result) => {
+                    if(result.id.replace(/.+#/,'') == outf.name) {
+                        foundmatch = true;
+                    }
+                })
+                if(!foundmatch)
+                    allbound = false;
+            })
+            if(allbound)
+                grouped_ensembles[model.id].ensembles[index] = ensemble;
         });
 
         // Show executable ensembles
@@ -162,6 +176,13 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                     </thead>
                                     <!-- Body -->
                                     <tbody>
+                                    ${Object.keys(grouped_ensemble.ensembles).length == 0 ? 
+                                        html`
+                                        <tr><td colspan="${grouped_ensemble.inputs.length + 
+                                                grouped_ensemble.params.length + grouped_ensemble.outputs.length + 1}">
+                                            - No results available -
+                                        </td></tr>` : ""
+                                    }
                                     ${Object.keys(grouped_ensemble.ensembles).map((index) => {
                                         let ensemble: ExecutableEnsemble = grouped_ensemble.ensembles[index];
                                         let model = this.pathway.models![ensemble.modelid];
