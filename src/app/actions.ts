@@ -165,6 +165,7 @@ const loadPage: ActionCreator<ThunkResult> =
             });
         } else if (subpage == 'explore') {
             import('../screens/models/model-explore/model-explore').then((_module) => {
+                store.dispatch(explorerSetMode('view'));
                 if(params.length > 0) {
                     store.dispatch(explorerSetModel(params[0]));
                     if (params.length > 1) {
