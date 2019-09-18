@@ -160,7 +160,16 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             .inline-new-button > wl-icon {
                 --icon-size: 1.2em;
                 vertical-align: top;
-            }`,
+            }
+
+            .info-center {
+                text-align: center;
+                font-size: 13pt;
+                height: 32px;
+                line-height:32px;
+                color: #999;
+            }
+            `,
             SharedStyles
         ];
     }
@@ -212,7 +221,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 }
                 
                 let id = this._uuidv4();
-                let newUri = "https://w3id.org/okn/i/" + id;
+                let newUri = "https://w3id.org/okn/i/mint/" + id;
 
                 let newSetupParameters = Object.assign({}, this._configParameters);
                 //FIXME
@@ -220,7 +229,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     newSetupParameters[i]['fixedValue'] = params[i];
                 }
 
-                store.dispatch(addParameters(newUri, newSetupParameters));
+                store.dispatch(addParameters(newUri, Object.values(newSetupParameters)));
                 store.dispatch(addCalibration(this._config.uri, newUri, label));
                 showNotification("saveNotification", this.shadowRoot!);
                 goToPage(this._url + '/' + id);
@@ -325,7 +334,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             </thead>
             <tbody>
             ${!this._configParameters ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
-            : (this._configParameters.length == 0 ? html`<tr><td colspan="6"> NO PARAMETERS </td></tr>`
+            : (this._configParameters.length == 0 ? html`<tr><td colspan="6">
+                <div class="info-center">- This configuration has no parameters -</div>
+            </td></tr>`
             : this._configParameters.map((p:any) => html`
             <tr>
                 <td>${p.position}</td>
@@ -375,7 +386,13 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 <th><b>File</b></th>
             </thead>
             <tbody>
-            ${this._configInputs.map(i => html`
+            ${this._configInputs.length === 0 ?  html`
+                <tr>
+                    <td colspan="3">
+                        <div class="info-center">- This configuration has no input files -</div>
+                    </td>
+                </tr>`
+            : this._configInputs.map(i => html`
                 <tr>
                     <td>${i.label}</td>
                     <td>${i.desc}</td>
@@ -566,6 +583,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 this._configMetadata = null;
                 this._configAuthors = null;
                 this._configParameters = null;
+                this._configInputs = null;
             }
             if (calibrationChanged) {
                 if (ui.selectedCalibration) {

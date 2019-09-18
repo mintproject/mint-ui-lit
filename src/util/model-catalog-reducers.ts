@@ -172,7 +172,9 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
             }
         case FETCH_PARAMETERS_FOR_CONFIG:
             let newParams = {...state.parameters};
-            newParams[action.uri] = action.data;
+            if (!newParams[action.uri]) {
+                newParams[action.uri] = action.data;
+            }
             return {
                 ...state,
                 parameters: newParams
