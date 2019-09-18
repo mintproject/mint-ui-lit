@@ -9,7 +9,7 @@ import { FETCH_MODELS, FETCH_VERSIONS_AND_CONFIGS, FETCH_CATEGORIES, FETCH_CONFI
          FETCH_VARS_SN_AND_UNITS_FOR_IO, FETCH_CONFIGS_FOR_VAR, FETCH_CONFIGS_FOR_VAR_SN, FETCH_CALIBRATIONS_FOR_VAR_SN,
          FETCH_IO_FOR_VAR_SN, FETCH_METADATA_FOR_VAR_SN, FETCH_PROCESS_FOR_CAG, FETCH_SEARCH_MODEL_BY_NAME,
          FETCH_SEARCH_MODEL_BY_CATEGORY, FETCH_SEARCH_ANY, FETCH_SEARCH_IO, FETCH_SEARCH_MODEL, FETCH_SEARCH_VAR,
-         FETCH_SAMPLE_VIS_FOR_MODEL_CONFIG, FETCH_SEARCH_MODEL_BY_VAR_SN, ADD_URLS } from './model-catalog-actions'
+         FETCH_SAMPLE_VIS_FOR_MODEL_CONFIG, FETCH_SEARCH_MODEL_BY_VAR_SN, ADD_URLS, ADD_PARAMETERS, ADD_CALIBRATION } from './model-catalog-actions'
 
 // For the moment storing on explorer
 import { FetchedModel, IODetail, VersionDetail, VariableDetail, CompIODetail,
@@ -62,6 +62,30 @@ const INITIAL_STATE: ExplorerState = {
 // Should change to a model-catalog state
 const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, action) => {
     switch (action.type) {
+        case ADD_PARAMETERS:
+            let newParam = {...state.parameters}
+            newParam[action.uri] = action.data;
+            return {
+                ...state,
+                parameters: newParam
+            }
+        case ADD_CALIBRATION:
+            let newVer = { ...state.versions };
+            Object.keys(newVer).forEach(modelUri => {
+                newVer[modelUri].forEach(ver => {
+                    (ver.configs || []).forEach(cfg => {
+                        if (cfg.uri === action.config) {
+                            if (!cfg.calibrations) cfg.calibrations = [];
+                            cfg.calibrations.push({uri: action.uri, label: action.label});
+                        }
+                    })
+                })
+            })
+            return {
+                ...state,
+                versions: newVer
+            }
+
         case ADD_URLS:
             let newUrls = {...state.urls, ...action.data};
             return {

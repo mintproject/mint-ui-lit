@@ -887,24 +887,27 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _renderTabIO () {
         return html`
-            ${(this._inputs) ? html`
-            <h3> Inputs: </h3>
+            ${(this._inputs || this._outputs) ? html`
+            <h3> IO Files: </h3>
             <table class="pure-table pure-table-striped">
                 <colgroup>
+                    <col span="1" style="width: 60px;">
                     <col span="1" style="width: 20%;">
                     <col span="1">
-                    <col span="1" style="width: 140px">
+                    <col span="1" style="max-width: 140px">
                     ${this._calibration? html`<col span="1">` : ''}
                 </colgroup>
                 <thead>
+                    <th></th>
                     <th>Name</th>
                     <th>Description</th>
                     <th>Format</th>
                     ${this._calibration? html`<th style="text-align: right;">Value in this setup</th>` : html``}
                 </thead>
                 <tbody>
-                ${this._inputs.map( io => html`
+                ${(this._inputs || []).map( io => html`
                     <tr>
+                        <td style="color: rgb(153, 153, 153); font-family: Raleway; font-size: 12px; text-align: right;">INPUT</td>
                         <td><span class="font-numbers clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
                             ${io.label}
                         </span></td>
@@ -916,27 +919,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                         ` : html`<span style="color:#999999;">-</span>`}</td>
                         ` : html``}
                     </tr>`)}
-                </tbody>
-            </table>` : html``}
-
-            ${(this._outputs) ? html`
-            <h3> Outputs: </h3>
-            <table class="pure-table pure-table-striped">
-                <colgroup>
-                    <col span="1" style="width: 20%;">
-                    <col span="1">
-                    <col span="1" style="width: 140px">
-                    ${this._calibration? html`<col span="1">` : ''}
-                </colgroup>
-                <thead>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Format</th>
-                    ${this._calibration? html`<th style="text-align: right;">Value in this setup</th>` : html``}
-                </thead>
-                <tbody>
-                ${this._outputs.map( io => html`
+                ${(this._outputs || []).map( io => html`
                     <tr>
+                        <td style="color: rgb(153, 153, 153); font-family: Raleway; font-size: 12px; text-align: right;">OUTPUT</td>
                         <td><span class="font-numbers clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
                             ${io.label}
                         </span></td>
@@ -975,8 +960,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <thead>
                         <th>Name</th>
                         <th>Description</th>
-                        <th style="text-align: right;">Default value</th>
-                        ${this._calibration? html`<th style="text-align: right;">Value in this setup</th>` : html``}
+                        <th style="text-align: right;"> ${this._calibration? 'Value in this setup' : 'Default value'} </th>
                     </thead>
                     <tbody>
                     ${this._parameters.sort((a,b) => (a.position < b.position) ? -1 : (a.position > b.position? 1 : 0)).map( (p:any) => html`
@@ -990,10 +974,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 The range is from ${p.minVal} to ${p.maxVal}
                                 ` : ''}
                             </td>
-                            <td class="font-numbers" style="text-align: right;">${p.defaultvalue}</td>
-                            ${this._calibration? html`<td class="font-numbers" style="text-align: right;">
-                                ${p.fixedValue ? p.fixedValue : html`<span style="color:#999999;">-</span>`}
-                           </td>` : html``}
+                            <td class="font-numbers" style="text-align: right;">
+                            ${this._calibration ? (p.fixedValue ? p.fixedValue : p.defaultvalue + ' (default)')
+                            : p.defaultvalue}
+                            </td>
                         </tr>`)}
                     </tbody>
                 </table>`

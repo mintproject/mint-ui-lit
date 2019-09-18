@@ -55,6 +55,9 @@ export const FETCH_SEARCH_MODEL                    = "FETCH_SEARCH_MODEL";
 export const FETCH_SEARCH_VAR                      = "FETCH_SEARCH_VAR";
 export const FETCH_SEARCH_MODEL_BY_VAR_SN          = "FETCH_SEARCH_MODEL_BY_VAR_SN";
 
+export const ADD_PARAMETERS                         = "ADD_PARAMETERS";
+export const ADD_CALIBRATION                        = "ADD_CALIBRATION";
+
 interface ActionData<T> extends Action<T> { data: any };
 interface UriParams<T> extends ActionData<T> { uri: string };
 interface TextParams<T> extends ActionData<T> { text: string };
@@ -98,6 +101,9 @@ interface ActionFetchSearchModel                   extends TextParams<'FETCH_SEA
 interface ActionFetchSearchVar                     extends TextParams<'FETCH_SEARCH_VAR'> {};
 interface ActionFetchSearchModelByVarSN            extends TextParams<'FETCH_SEARCH_MODEL_BY_VAR_SN'> {};          
 
+interface ActionAddParameters                       extends UriParams<'ADD_PARAMETERS'> {};
+interface ActionAddCalibration                      extends Action<'ADD_CALIBRATION'> {uri: string, label: string, config: string};
+
 export type ApiAction = ActionFetchModels | ActionFetchVersionsAndConfigs | ActionFetchCategories | ActionFetchConfigs |
                         ActionFetchConfigsAndIOs | ActionFetchInputsAndVarsSN | ActionFetchOutputsAndVarsSN |
                         ActionFetchVarsAndSN | ActionFetchMetadataForAny | ActionFetchVersionsForModel |
@@ -110,9 +116,26 @@ export type ApiAction = ActionFetchModels | ActionFetchVersionsAndConfigs | Acti
                         ActionFetchCalibrationsForVarSN | ActionFetchIOForVarSN | ActionFetchMetadataForVarSN |
                         ActionFetchProcessForCag | ActionFetchSearchModelByName | ActionFetchSearchModelByCategory |
                         ActionFetchSearchAny | ActionFetchSearchIO | ActionFetchSearchModel | ActionFetchSearchVar |
-                        ActionFetchSearchModelByVarSN | ActionAddURLs;
+                        ActionFetchSearchModelByVarSN | ActionAddURLs | ActionAddParameters | ActionAddCalibration;
 
 type ApiThunkResult = ThunkAction<void, RootState, undefined, ApiAction>;
+
+export const addParameters: ActionCreator<ApiThunkResult> = (uri:string, parameters: any) => (dispatch) => {
+    dispatch({
+        type: ADD_PARAMETERS,
+        uri: uri,
+        data: parameters
+    });
+}
+
+export const addCalibration: ActionCreator<ApiThunkResult> = (config: string, uri: string, label: string) => (dispatch) => {
+    dispatch({
+        type: ADD_CALIBRATION,
+        config: config,
+        uri: uri,
+        label: label
+    });
+}
 
 export const fetchModels: ActionCreator<ApiThunkResult> = () => (dispatch) => {
     //apiFetch({type: MODELS}).then((fetched) => { dispatch({type: FETCH_MODELS, data: fetched}); });
