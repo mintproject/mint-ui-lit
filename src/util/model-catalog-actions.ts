@@ -57,6 +57,8 @@ export const FETCH_SEARCH_MODEL_BY_VAR_SN          = "FETCH_SEARCH_MODEL_BY_VAR_
 
 export const ADD_PARAMETERS                         = "ADD_PARAMETERS";
 export const ADD_CALIBRATION                        = "ADD_CALIBRATION";
+export const ADD_METADATA                           = "ADD_METADATA";
+export const ADD_INPUTS                             = "ADD_INPUTS";
 
 interface ActionData<T> extends Action<T> { data: any };
 interface UriParams<T> extends ActionData<T> { uri: string };
@@ -102,6 +104,8 @@ interface ActionFetchSearchVar                     extends TextParams<'FETCH_SEA
 interface ActionFetchSearchModelByVarSN            extends TextParams<'FETCH_SEARCH_MODEL_BY_VAR_SN'> {};          
 
 interface ActionAddParameters                       extends UriParams<'ADD_PARAMETERS'> {};
+interface ActionAddMetadata                         extends UriParams<'ADD_METADATA'> {};
+interface ActionAddInputs                           extends UriParams<'ADD_INPUTS'> {};
 interface ActionAddCalibration                      extends Action<'ADD_CALIBRATION'> {uri: string, label: string, config: string};
 
 export type ApiAction = ActionFetchModels | ActionFetchVersionsAndConfigs | ActionFetchCategories | ActionFetchConfigs |
@@ -116,7 +120,8 @@ export type ApiAction = ActionFetchModels | ActionFetchVersionsAndConfigs | Acti
                         ActionFetchCalibrationsForVarSN | ActionFetchIOForVarSN | ActionFetchMetadataForVarSN |
                         ActionFetchProcessForCag | ActionFetchSearchModelByName | ActionFetchSearchModelByCategory |
                         ActionFetchSearchAny | ActionFetchSearchIO | ActionFetchSearchModel | ActionFetchSearchVar |
-                        ActionFetchSearchModelByVarSN | ActionAddURLs | ActionAddParameters | ActionAddCalibration;
+                        ActionFetchSearchModelByVarSN | ActionAddURLs | ActionAddParameters | ActionAddCalibration |
+                        ActionAddMetadata | ActionAddInputs;
 
 type ApiThunkResult = ThunkAction<void, RootState, undefined, ApiAction>;
 
@@ -134,6 +139,22 @@ export const addCalibration: ActionCreator<ApiThunkResult> = (config: string, ur
         config: config,
         uri: uri,
         label: label
+    });
+}
+
+export const addMetadata: ActionCreator<ApiThunkResult> = (uri: string, metadata:any) => (dispatch) => {
+    dispatch({
+        type: ADD_METADATA,
+        uri: uri,
+        data: metadata
+    });
+}
+
+export const addInputs: ActionCreator<ApiThunkResult> = (uri: string, inputs:any) => (dispatch) => {
+    dispatch({
+        type: ADD_INPUTS,
+        uri: uri,
+        data: inputs
     });
 }
 

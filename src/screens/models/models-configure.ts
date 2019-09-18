@@ -9,7 +9,8 @@ import { renderNotifications } from "../../util/ui_renders";
 import { showNotification } from "../../util/ui_functions";
 
 import { fetchIOAndVarsSNForConfig, fetchAuthorsForModelConfig, fetchParametersForConfig,
-         fetchMetadataNoioForModelConfig, addParameters, addCalibration } from '../../util/model-catalog-actions';
+         fetchMetadataNoioForModelConfig, addParameters, addCalibration, addMetadata,
+         addInputs } from '../../util/model-catalog-actions';
 
 import "weightless/slider";
 import "weightless/progress-spinner";
@@ -169,6 +170,10 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 line-height:32px;
                 color: #999;
             }
+
+            li > a {
+                cursor: pointer;
+            }
             `,
             SharedStyles
         ];
@@ -228,9 +233,14 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 for (let i = 0; i < params.length; i++) {
                     newSetupParameters[i]['fixedValue'] = params[i];
                 }
+                let newSetupMeta = Object.assign({}, this._configMetadata[0]);
+                newSetupMeta.desc = desc;
+                newSetupMeta.compLoc = '';
 
                 store.dispatch(addParameters(newUri, Object.values(newSetupParameters)));
                 store.dispatch(addCalibration(this._config.uri, newUri, label));
+                store.dispatch(addMetadata(newUri, [newSetupMeta]));
+                store.dispatch(addInputs(newUri, Object.values(Object.assign({}, this._configInputs))));
                 showNotification("saveNotification", this.shadowRoot!);
                 goToPage(this._url + '/' + id);
             }
@@ -381,7 +391,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 <col span="1">
             </colgroup>
             <thead>
-                <th><b>Label</b></th>
+                <th><b>Name</b></th>
                 <th><b>Description</b></th>
                 <th><b>File</b></th>
             </thead>
@@ -485,6 +495,37 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             </tr>`)}
             </tbody>
         </table>
+
+        <wl-title level="5" style="margin-top:1em;">INPUT FILES:</wl-title>
+        ${!this._configInputs ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
+        : html`
+        <table class="pure-table pure-table-striped" style="width: 100%">
+            <colgroup>
+                <col span="1">
+                <col span="1">
+                <col span="1">
+            </colgroup>
+            <thead>
+                <th><b>Name</b></th>
+                <th><b>Description</b></th>
+                <th style="text-align: right;"><b>Format</b></th>
+            </thead>
+            <tbody>
+            ${this._configInputs.length === 0 ?  html`
+                <tr>
+                    <td colspan="3">
+                        <div class="info-center">- This configuration has no input files -</div>
+                    </td>
+                </tr>`
+            : this._configInputs.map(i => html`
+                <tr>
+                    <td><code>${i.label}</code></td>
+                    <td>${i.desc}</td>
+                    <td style="text-align: right;">${i.format}</td>
+                </tr>
+            `)}
+            </tbody>`}
+
         ${this._renderButtons()}`
         : html`<p>${this._config.label} has no parameters.</p>`)}
         `
@@ -638,8 +679,20 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 }
 
                 if (db.parameters) {
-                    if (!this._configParameters && this._config) this._configParameters = db.parameters[this._selectedConfig];
-                    if (!this._calibrationParameters && this._calibration) this._calibrationParameters = db.parameters[this._selectedCalibration];
+                    if (!this._configParameters && this._config && db.parameters[this._selectedConfig]) {
+                        this._configParameters = db.parameters[this._selectedConfig].sort((a,b) => {
+                            let intA = Number(a.position);
+                            let intB = Number(b.position);
+                            return (intA < intB) ? -1 : (intA > intB? 1 : 0);
+                        })
+                    }
+                    if (!this._calibrationParameters && this._calibration && db.parameters[this._selectedCalibration]) {
+                        this._calibrationParameters = db.parameters[this._selectedCalibration].sort((a,b) => {
+                            let intA = Number(a.position);
+                            let intB = Number(b.position);
+                            return (intA < intB) ? -1 : (intA > intB? 1 : 0);
+                        })
+                    }
                 }
 
                 if (db.inputs) {
