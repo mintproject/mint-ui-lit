@@ -58,7 +58,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                 }
             ]
         }
-        else if(responseV == "Crop Yields") {
+        else if(responseV == "Grain Yield") {
             this.pathway.visualizations = [
                 {
                     type: 'web',
@@ -178,10 +178,12 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                                             <ul>
                                                 ${model.input_parameters.filter((input) => !input.value).map((io) => {
                                                     let bindings = model_ensemble[io.id!];
-                                                    let blist = bindings.join(", ");
-                                                    return html`
-                                                        <li>${io.name} = ${blist}</li>
-                                                    `;
+                                                    if(bindings) {
+                                                        let blist = bindings.join(", ");
+                                                        return html`
+                                                            <li>${io.name} = ${blist}</li>
+                                                        `;
+                                                    }
                                                 })}
                                             </ul>
                                             `;
@@ -211,7 +213,9 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                                                         `;
                                                     })}
                                                     </ul>
-                                                    Results: ${ensemble.results}
+                                                    Results: ${ensemble.results.map((result) => {
+                                                        return result.location.replace(/.+\//,'');
+                                                    }).join(", ")}
                                                 </li>
                                                 `
                                             }
@@ -227,7 +231,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                                     <ul>
                                         ${this.pathway.executable_ensembles!.map((ensemble: ExecutableEnsemble) => {
                                             let model = this.pathway.models![ensemble.modelid];
-                                            if(!ensemble.selected) {
+                                            if(!ensemble.selected && ensemble.runid) {
                                                 return html`
                                                 <li>Model: ${model.name}
                                                     <ul>

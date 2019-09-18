@@ -320,7 +320,7 @@ export const runPathwayExecutableEnsembles_old = (
 };
 
 const ensembleNotDone = (ensemble: ExecutableEnsemble) => {
-    return !ensemble.status || ensemble.status == "RUNNING" || ensemble.status == "WAITING";
+    return ensemble.runid && (!ensemble.status || ensemble.status == "RUNNING" || ensemble.status == "WAITING");
 }
 
 const pathwayExecutionMonitor = {};
@@ -330,7 +330,7 @@ export const checkPathwayEnsembleStatus = (scenario: Scenario, pathway: Pathway,
     let alldone = true;
     if(pathway == null) return;
     pathway.executable_ensembles.map((ensemble) => {
-        if(ensemble.runid && ensembleNotDone(ensemble)) {
+        if(ensembleNotDone(ensemble)) {
             alldone = false;
         }
     });

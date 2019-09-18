@@ -98,14 +98,26 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                     .sort((a, b) => a.name.localeCompare(b.name));
                 input_parameters.map((ip) => {
                     if(!ip.value)
-                    not_running_grouped_ensembles[model.id].params.push(ip);
+                        not_running_grouped_ensembles[model.id].params.push(ip);
                 })
                 model.input_files.map((inf) => {
                     if(!inf.value)
-                    not_running_grouped_ensembles[model.id].inputs.push(inf);
+                        not_running_grouped_ensembles[model.id].inputs.push(inf);
                 })
             }
-            not_running_grouped_ensembles[model.id].ensembles[index] = ensemble;
+            /* Check if everything is bound */
+            let allbound = true;
+            model.input_parameters.map((ip) => {
+                if(!ip.value && !ensemble.bindings[ip.id])
+                    allbound = false;
+            })
+            model.input_files.map((inf) => {
+                if(!inf.value && !ensemble.bindings[inf.id])
+                    allbound = false;
+            })
+
+            if(allbound)
+                not_running_grouped_ensembles[model.id].ensembles[index] = ensemble;
         });        
 
 
@@ -166,11 +178,13 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                             ${grouped_ensemble.inputs.map((input) => {
                                                 let dsid = ensemble.bindings[input.id];
                                                 let dataset = this.pathway.datasets![dsid];
-                                                // FIXME: This should be resolved to a collection of resources
-                                                let furl = this._getDatasetURL(dataset.name); 
-                                                return html`
-                                                    <td><a href="${furl}">${dataset.name}</a></td>
-                                                `;
+                                                if(dataset) {
+                                                    // FIXME: This should be resolved to a collection of resources
+                                                    let furl = this._getDatasetURL(dataset.name); 
+                                                    return html`
+                                                        <td><a href="${furl}">${dataset.name}</a></td>
+                                                    `;
+                                                }
                                             })}
                                             ${grouped_ensemble.params.map((param) => html`<td>${ensemble.bindings[param.id]}</td>` )}
                                         </tr>
@@ -222,6 +236,12 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                     </thead>
                                     <!-- Body -->
                                     <tbody>
+                                    ${Object.keys(grouped_ensemble.ensembles).length == 0 ? 
+                                        html`
+                                        <tr><td colspan="${grouped_ensemble.inputs.length + grouped_ensemble.params.length + 1}">
+                                            - No completed configuration -
+                                        </td></tr>` : ""
+                                    }
                                     ${Object.keys(grouped_ensemble.ensembles).map((index) => {
                                         let ensemble: ExecutableEnsemble = grouped_ensemble.ensembles[index];
                                         let model = this.pathway.models![ensemble.modelid];
@@ -231,13 +251,24 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                                 ${grouped_ensemble.inputs.map((input) => {
                                                     let dsid = ensemble.bindings[input.id];
                                                     let dataset = this.pathway.datasets![dsid];
-                                                    // FIXME: This should be resolved to a collection of resources
-                                                    let furl = this._getDatasetURL(dataset.name); 
-                                                    return html`
-                                                        <td><a href="${furl}">${dataset.name}</a></td>
-                                                    `;
+                                                    if(dataset) {
+                                                        // FIXME: This should be resolved to a collection of resources
+                                                        let furl = this._getDatasetURL(dataset.name); 
+                                                        return html`
+                                                            <td><a href="${furl}">${dataset.name}</a></td>
+                                                        `;
+                                                    }
+                                                    else {
+                                                        return html`<td> - </td>`;
+                                                    }
                                                 })}
-                                                ${grouped_ensemble.params.map((param) => html`<td>${ensemble.bindings[param.id]}</td>` )}
+                                                ${grouped_ensemble.params.map((param) => {
+                                                    let val = ensemble.bindings[param.id];
+                                                    if(val)
+                                                        return html `<td>${ensemble.bindings[param.id]}</td>`;
+                                                    else
+                                                        return html `<td> - </td>`;
+                                                })}
                                             </tr>
                                         `;
                                     })}

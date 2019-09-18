@@ -184,7 +184,7 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
         this._currentMode = mode;
 
         // TODO: Change the url to reflect mode change.
-        if(this.subgoal) {
+        if(this.subgoal && this.pathway) {
           let page = this._regionid + "/modeling/scenario/" + 
                 this.scenario.id + "/" + this.subgoal!.id + "/" + this.pathway.id + "/" + mode;
           window.history.pushState({}, mode, BASE_HREF + page);

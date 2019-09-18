@@ -33,12 +33,14 @@ export class MintResults extends connect(store)(MintPathwayPage) {
         }
         
         // If no models selected
+        /*
         if(getPathwayRunsStatus(this.pathway) != TASK_DONE) {
             return html `
             <p>This step is for browsing the results of the models that you ran earlier.</p>
             Please run some models first
             `
         }
+        */
 
         let running_ensembles = {};
         let not_running_ensembles = {};

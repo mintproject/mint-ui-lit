@@ -497,10 +497,10 @@ export const fetchWingsRunStatus = (ensemble: ExecutableEnsemble, config: UserPr
     return new Promise<ExecutableEnsemble>((resolve, reject) => {
         var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
         if(!ensemble.runid) {
-            resolve(ensemble);
+            reject();
             return;
         }
-        
+
         let data = {
             run_id: ensemble.runid,
         };
