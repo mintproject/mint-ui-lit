@@ -5,6 +5,8 @@ import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
+import { renderNotifications } from "../../util/ui_renders";
+import { showNotification } from "../../util/ui_functions";
 
 import { fetchIOAndVarsSNForConfig, fetchAuthorsForModelConfig, fetchParametersForConfig,
          fetchMetadataNoioForModelConfig, addParameters, addCalibration } from '../../util/model-catalog-actions';
@@ -203,6 +205,11 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 let desc = descEl.value;
                 let auth = authEl.value;
                 let params = Array.from(paramsEl).map(e => (<HTMLInputElement>e).value);
+                if (!label) {
+                    showNotification("formValuesIncompleteNotification", this.shadowRoot!);
+                    (<any>labelEl).refreshAttributes();
+                    return;
+                }
                 
                 let id = this._uuidv4();
                 let newUri = "https://w3id.org/okn/i/" + id;
@@ -215,7 +222,8 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
 
                 store.dispatch(addParameters(newUri, newSetupParameters));
                 store.dispatch(addCalibration(this._config.uri, newUri, label));
-
+                showNotification("saveNotification", this.shadowRoot!);
+                goToPage(this._url + '/' + id);
             }
         }
     }
@@ -292,13 +300,14 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 </div>
             </div>
         </div>
+        ${renderNotifications()}
         `
     }
 
     _renderNewSetup () {
         return html`
         <wl-title level="4">Creating a new setup</wl-title>
-        <wl-textfield id="new-setup-label" label="Setup name"></wl-textfield>
+        <wl-textfield id="new-setup-label" label="Setup name" required></wl-textfield>
         <wl-textarea id="new-setup-desc" style="--input-font-size: 15px;"label="Description"></wl-textarea>
         <wl-textfield id="new-setup-authors"label="Authors"></wl-textfield>
         <wl-title level="5" style="margin-top:1em;">PARAMETERS:</wl-title>

@@ -894,7 +894,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <col span="1" style="width: 60px;">
                     <col span="1" style="width: 20%;">
                     <col span="1">
-                    <col span="1" style="mac-width: 140px">
+                    <col span="1" style="max-width: 140px">
                     ${this._calibration? html`<col span="1">` : ''}
                 </colgroup>
                 <thead>
