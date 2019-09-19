@@ -10,7 +10,7 @@ import { showNotification } from "../../util/ui_functions";
 
 import { fetchIOAndVarsSNForConfig, fetchAuthorsForModelConfig, fetchParametersForConfig,
          fetchMetadataNoioForModelConfig, addParameters, addCalibration, addMetadata,
-         addInputs } from '../../util/model-catalog-actions';
+         addInputs, addAuthor } from '../../util/model-catalog-actions';
 
 import "weightless/slider";
 import "weightless/progress-spinner";
@@ -237,10 +237,13 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 newSetupMeta.desc = desc;
                 newSetupMeta.compLoc = '';
 
+                let newAuthor = {label: auth, name: auth};
+
                 store.dispatch(addParameters(newUri, Object.values(newSetupParameters)));
                 store.dispatch(addCalibration(this._config.uri, newUri, label));
                 store.dispatch(addMetadata(newUri, [newSetupMeta]));
                 store.dispatch(addInputs(newUri, Object.values(Object.assign({}, this._configInputs))));
+                store.dispatch(addAuthor(newUri, [newAuthor]))
                 showNotification("saveNotification", this.shadowRoot!);
                 goToPage(this._url + '/' + id);
             }
@@ -343,7 +346,13 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 <th style="text-align: right;"><b>Unit</b></th>
             </thead>
             <tbody>
-            ${!this._configParameters ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
+            ${!this._configParameters ? html`
+            <tr>
+                <td>
+                    <div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>
+                </td>
+            </tr>
+            `
             : (this._configParameters.length == 0 ? html`<tr><td colspan="6">
                 <div class="info-center">- This configuration has no parameters -</div>
             </td></tr>`
