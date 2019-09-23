@@ -171,39 +171,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                   text-align: justify;
                 }
 
-                .tooltip {
-                    cursor: help;
-                    display: inline-block;
-                    position: relative;
-                    float: right;
-                    margin: 5px 5px 0px 5px;
-                }
-
-                .tooltip:hover:after {
-                    background: #333;
-                    background: rgba(0, 0, 0, .8);
-                    border-radius: 5px;
-                    bottom: 26px;
-                    color: #fff;
-                    content: attr(tip);
-                    right: 20%;
-                    padding: 5px 15px;
-                    position: absolute;
-                    z-index: 98;
-                    width: 300px;
-                }
-
-                .tooltip:hover:before {
-                    border: solid;
-                    border-color: #333 transparent;
-                    border-width: 6px 6px 0 6px;
-                    bottom: 20px;
-                    content: "";
-                    right: 42%;
-                    position: absolute;
-                    z-index: 99;
-                }
-
                 #edit-model-icon {
                     float: right;
                     --icon-size: 26px;
@@ -223,7 +190,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     grid-template-columns: 1fr 1fr;
                     margin-bottom: 5px;
                 }
-                
+
                 .col-img {
                     grid-column: 1 / 2;
                     grid-row: 1;
@@ -889,7 +856,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         return html`
             ${(this._inputs || this._outputs) ? html`
             <h3> IO Files: </h3>
-            <table class="pure-table pure-table-striped">
+            <table class="pure-table pure-table-striped" style="overflow: visible;">
                 <colgroup>
                     <col span="1" style="width: 60px;">
                     <col span="1" style="width: 20%;">
@@ -902,7 +869,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <th>Name</th>
                     <th>Description</th>
                     <th>Format</th>
-                    ${this._calibration? html`<th style="text-align: right;">Value in this setup</th>` : html``}
+                    ${this._calibration? html`
+                    <th style="text-align: right;">
+                        Value on setup
+                        <span class="tooltip" tip="If a value is not set up in this field configuration defaul value will be used.">
+                            <wl-icon>help</wl-icon>
+                        </span>
+                    </th>` : html``}
                 </thead>
                 <tbody>
                 ${(this._inputs || []).map( io => html`
@@ -956,11 +929,18 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (this._parameters.length > 0) {
             return html`
                 <h3> Parameters: </h3>
-                <table class="pure-table pure-table-striped">
+                <table class="pure-table pure-table-striped" style="overflow: visible;">
                     <thead>
                         <th>Name</th>
                         <th>Description</th>
-                        <th style="text-align: right;"> ${this._calibration? 'Value in this setup' : 'Default value'} </th>
+                        <th style="text-align: right;">
+                            ${this._calibration? html`
+                            Value on setup 
+                            <span class="tooltip" tip="If a value is not set up in this field configuration defaul value will be used.">
+                                <wl-icon>help</wl-icon>
+                            </span>`
+                            : 'Default value'}
+                        </th>
                     </thead>
                     <tbody>
                     ${this._parameters.sort((a,b) => (a.position < b.position) ? -1 : (a.position > b.position? 1 : 0)).map( (p:any) => html`

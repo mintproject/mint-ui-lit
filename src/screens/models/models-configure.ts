@@ -7,6 +7,7 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
 import { renderNotifications } from "../../util/ui_renders";
 import { showNotification } from "../../util/ui_functions";
+import { ExplorerStyles } from './model-explore/explorer-styles'
 
 import { fetchIOAndVarsSNForConfig, fetchAuthorsForModelConfig, fetchParametersForConfig,
          fetchMetadataNoioForModelConfig, addParameters, addCalibration, addMetadata,
@@ -67,7 +68,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     private _selectedCalibration : string = '';
 
     static get styles() {
-        return [
+        return [ExplorerStyles,
             css `
             .cltrow wl-button {
                 padding: 2px;
@@ -148,9 +149,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             }
 
             th > wl-icon {
-                text-size: .8em;
                 vertical-align: bottom;
                 margin-left: 4px;
+                --icon-size: 14px;
             }
 
             .inline-new-button {
@@ -341,6 +342,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 <th><b>Datatype</b></th>
                 <th style="text-align: right;">
                     <b>Value in this setup</b>
+                    <span class="tooltip" tip="If a value is set up in this field, you will not be able to change it in run time. For example, a price adjustment is set up to be 10%, it won't be editable when running the the model">
+                        <wl-icon>help</wl-icon>
+                    </span>
                     <wl-icon>edit</wl-icon>
                 </th>
                 <th style="text-align: right;"><b>Unit</b></th>
@@ -560,6 +564,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 <th><b>Datatype</b></th>
                 <th style="text-align: right;">
                     <b>Value in this setup</b>
+                    <span class="tooltip" tip="If a value is set up in this field, you will not be able to change it in run time. For example, a price adjustment is set up to be 10%, it won't be editable when running the the model">
+                        <wl-icon>help</wl-icon>
+                    </span>
                     ${this._editing? html`<wl-icon>edit</wl-icon>` : ''}
                 </th>
                 <th style="text-align: right;"><b>Unit</b></th>
