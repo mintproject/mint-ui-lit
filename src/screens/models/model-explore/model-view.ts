@@ -737,6 +737,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     `}</wl-text>
                     `: '' }
                     <ul>
+                    ${meta[0].fundS ? html`<wl-text><b>Funding Source:</b> ${meta[0].fundS} </wl-text>` : ''}
                     ${meta[0].regionName ? html`<li><b>Region:</b> ${meta[0].regionName}</li>`: ''}
                     ${meta[0].tIValue && meta[0].tIUnits ? html`<li><b>Time interval:</b> ${meta[0].tIValue + ' ' + meta[0].tIUnits}</li>` : ''}
                     ${meta[0].gridType && meta[0].gridDim && meta[0].gridSpatial ? html`
