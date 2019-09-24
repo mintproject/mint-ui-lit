@@ -227,12 +227,14 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             let labelEl = this.shadowRoot.getElementById('new-setup-label') as HTMLInputElement;
             let descEl = this.shadowRoot.getElementById('new-setup-desc') as HTMLInputElement;
             let authEl = this.shadowRoot.getElementById('new-setup-authors') as HTMLInputElement;
-            let paramsEl = this.shadowRoot.querySelectorAll('.new-setup-param');
+            let paramEls = this.shadowRoot.querySelectorAll('.new-setup-param');
+            let inputEls = this.shadowRoot.querySelectorAll('.new-setup-input');
             if (labelEl && descEl && authEl) {
                 let label = labelEl.value;
                 let desc = descEl.value;
                 let auth = authEl.value;
-                let params = Array.from(paramsEl).map(e => (<HTMLInputElement>e).value);
+                let params = Array.from(paramEls).map(e => (<HTMLInputElement>e).value);
+                let inputs = Array.from(inputEls).map(e => (<HTMLInputElement>e).value);
                 if (!label) {
                     showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                     (<any>labelEl).refreshAttributes();
@@ -243,20 +245,25 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 let newUri = "https://w3id.org/okn/i/mint/" + id;
 
                 let newSetupParameters = Object.assign({}, this._configParameters);
-                //FIXME
                 for (let i = 0; i < params.length; i++) {
                     newSetupParameters[i]['fixedValue'] = params[i];
                 }
+
                 let newSetupMeta = Object.assign({}, this._configMetadata[0]);
                 newSetupMeta.desc = desc;
                 newSetupMeta.compLoc = '';
 
                 let newAuthor = {label: auth, name: auth};
 
+                let newSetupInputs = Object.assign({}, this._configInputs);
+                for (let i = 0; i < inputs.length; i++) {
+                    newSetupInputs[i]['fixedValueURL'] = inputs[i];
+                }
+
                 store.dispatch(addParameters(newUri, Object.values(newSetupParameters)));
                 store.dispatch(addCalibration(this._config.uri, newUri, label));
                 store.dispatch(addMetadata(newUri, [newSetupMeta]));
-                store.dispatch(addInputs(newUri, Object.values(Object.assign({}, this._configInputs))));
+                store.dispatch(addInputs(newUri, Object.values(Object.assign(newSetupInputs))));
                 store.dispatch(addAuthor(newUri, [newAuthor]))
                 showNotification("saveNotification", this.shadowRoot!);
                 goToPage(this._url + '/' + id);
@@ -433,7 +440,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     <td>${i.label}</td>
                     <td>${i.desc}</td>
                     <td>
-                        <input type="file" style="position: relative !important;height: unset;width: unset;">
+                        <input class="new-setup-input value-edit" style="width:100%; text-align: left;" type="url" placeholder="Add an URL"></input>
                     </td>
                 </tr>
             `)}
