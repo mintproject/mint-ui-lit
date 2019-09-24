@@ -487,6 +487,10 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         <div style="margin-bottom: 1em;">
             <b>Description:</b>
             ${loadingMeta ? html`<loading-dots style="--width: 20px"></loading-dots>` : meta.desc}
+            <br/>
+            <b>Authors:</b>
+            ${!this._configAuthors ?  html`<loading-dots style="--width: 20px"></loading-dots>`
+            : this._configAuthors.map(a => a.name).join(', ')}
         </div>
         ${loadingParams ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
         : (params ? html`
@@ -573,6 +577,10 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         <div style="margin-bottom: 1em;">
             <b>Description:</b>
             ${loadingMeta ? html`<loading-dots style="--width: 20px"></loading-dots>` : meta.desc}
+            <br/>
+            <b>Authors:</b>
+            ${!this._calibrationAuthors ? html`<loading-dots style="--width: 20px"></loading-dots>`
+            : this._calibrationAuthors.map(a => a.name).join(', ')}
         </div>
         ${loadingParams ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
         : (params ? html`
