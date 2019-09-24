@@ -666,16 +666,13 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _renderTabOverview () {
         return html`
-            ${this._config ? this._renderMetadataResume() : ''}
             ${this._model.purpose? html`
-            <details style="margin-bottom: 6px;">
-                <summary><b>Purpose</b></summary>
-                <ul>
-                ${this._model.purpose.map(a => a? html`<li>${a}.</li>`: '')}
-                </ul>
-            </details>`
-            :html``}
-
+            <wl-title level="2" style="font-size: 16px;">Model purpose:</wl-title>
+            <ul style="margin-top: 5px">
+                ${this._model.purpose.map(a => a? html`<li>${capitalizeFirstLetter(a)}.</li>`: '')}
+            </ul>`
+            :''}
+            ${this._config ? this._renderMetadataResume() : ''}
             ${this._model.assumptions? html`
             <details style="margin-bottom: 6px;">
                 <summary><b>Assumptions</b></summary>
