@@ -196,8 +196,8 @@ export class ModelPreview extends connect(store)(PageViewElement) {
               <tr>
                 <td class="left"> 
                   <div class="text-centered one-line">
-                    ${this._vers > 0 ? <string>this._vers + ' version' + (this._vers > 1? 's' :'') : 'No versions'},
-                    ${this._configs > 0 ? <string>this._configs + ' config' + (this._configs > 1? 's' :'') : 'No configs'}
+                    ${this._vers > 0 ? this._vers.toString() + ' version' + (this._vers > 1? 's' :'') : 'No versions'},
+                    ${this._configs > 0 ? this._configs.toString() + ' config' + (this._configs > 1? 's' :'') : 'No configs'}
                   </div>
                   <div>
                     <span class="helper"></span>${this._model.logo ? 

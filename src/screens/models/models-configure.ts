@@ -18,6 +18,12 @@ import "weightless/progress-spinner";
 import '../../components/loading-dots'
 import { UriModels } from '../../util/model-catalog-reducers';
 
+const sortByPosition = (a,b) => {
+    let intA = Number(a.position);
+    let intB = Number(b.position);
+    return (intA < intB) ? -1 : (intA > intB? 1 : 0);
+}
+
 @customElement('models-configure')
 export class ModelsConfigure extends connect(store)(PageViewElement) {
     @property({type: Boolean})
@@ -61,6 +67,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _configInputs : any = null;
+
+    @property({type: Object})
+    private _calibrationInputs : any = null;
 
     private _url : string = '';
     private _selectedModel : string = '';
@@ -175,6 +184,10 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             li > a {
                 cursor: pointer;
             }
+
+            .ta-right {
+                text-align: right;
+            }
             `,
             SharedStyles
         ];
@@ -288,7 +301,6 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     }
 
     protected render() {
-        //console.log(Object.values(this._models||{}).filter((m) => (!this._versions[m.uri] || this._versions[m.uri].length>0)));
         return html`
         <div class="twocolumns">
             <div class="${this._hideModels ? 'left_closed' : 'left'}">
@@ -333,10 +345,11 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         <wl-textfield id="new-setup-label" label="Setup name" required></wl-textfield>
         <wl-textarea id="new-setup-desc" style="--input-font-size: 15px;"label="Description"></wl-textarea>
         <wl-textfield id="new-setup-authors"label="Authors"></wl-textfield>
+
         <wl-title level="5" style="margin-top:1em;">PARAMETERS:</wl-title>
         <table class="pure-table pure-table-striped" style="width: 100%">
             <thead>
-                <th><b>#</b></th>
+                <th class="ta-right"><b>#</b></th>
                 <th><b>Label</b></th>
                 <th><b>Type</b></th>
                 <th><b>Datatype</b></th>
@@ -352,7 +365,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             <tbody>
             ${!this._configParameters ? html`
             <tr>
-                <td>
+                <td colspan="6">
                     <div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>
                 </td>
             </tr>
@@ -362,7 +375,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             </td></tr>`
             : this._configParameters.map((p:any) => html`
             <tr>
-                <td>${p.position}</td>
+                <td class="ta-right">${p.position}</td>
                 <td>
                     <b>${p.description}</b><br/>
                     <code>${p.paramlabel}</code>
@@ -472,7 +485,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         : (params ? html`
         <table class="pure-table pure-table-striped" style="width: 100%">
             <thead>
-                <th><b>#</b></th>
+                <th class="ta-right"><b>#</b></th>
                 <th><b>Label</b></th>
                 <th><b>Type</b></th>
                 <th><b>Datatype</b></th>
@@ -484,7 +497,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             </thead>
             <tbody>
             ${params.map((p:any) => html`<tr>
-                <td>${p.position}</td>
+                <td class="ta-right">${p.position}</td>
                 <td>
                     <b>${p.description}</b><br/>
                     <code>${p.paramlabel}</code>
@@ -557,8 +570,16 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         ${loadingParams ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
         : (params ? html`
         <table class="pure-table pure-table-striped" style="width: 100%">
+            <colgroup>
+                <col span="1" style="width: 44px">
+                <col span="1" style="width: 28%;">
+                <col span="1">
+                <col span="1">
+                <col span="1">
+                <col span="1">
+            </colgroup>
             <thead>
-                <th><b>#</b></th>
+                <th class="ta-right"><b>#</b></th>
                 <th><b>Label</b></th>
                 <th><b>Type</b></th>
                 <th><b>Datatype</b></th>
@@ -573,10 +594,10 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             </thead>
             <tbody>
             ${params.map((p:any) => html`<tr>
-                <td>${p.position}</td>
+                <td class="ta-right">${p.position}</td>
                 <td>
-                    <b>${p.description}</b><br/>
-                    <code>${p.paramlabel}</code>
+                    <code>${p.paramlabel}</code><br/>
+                    <b>${p.description}</b>
                 </td>
                 <td>${p.type}</td>
                 <td>
@@ -603,13 +624,49 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     `)}
                     `
                     : (p.fixedValue || p.defaultvalue + ' (default)')}
-
-
                 </td>
                 <td style="text-align: right;">${p.unit}</td>
             </tr>`)}
             </tbody>
         </table>
+
+        <wl-title level="5" style="margin-top:1em;">INPUT FILES:</wl-title>
+        ${!this._calibrationInputs ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
+        : html`
+        <table class="pure-table pure-table-striped" style="width: 100%">
+            <colgroup>
+                <col span="1" style="width: 44px">
+                <col span="1" style="width: 28%;">
+                <col span="1">
+            </colgroup>
+            <thead>
+                <th class="ta-right"><b>#</b></th>
+                <th><b>Name</b></th>
+                <th><b>File URL in this setup</b></th>
+            </thead>
+            <tbody>
+            ${this._calibrationInputs.length === 0 ?  html`
+                <tr>
+                    <td colspan="3">
+                        <div class="info-center">- This configuration has no input files -</div>
+                    </td>
+                </tr>`
+            : this._calibrationInputs.map(i => html`
+                <tr>
+                    <td class="ta-right">${i.position}</td>
+                    <td>
+                        <code>${i.label}</code><br/>
+                        <b>${i.desc}</b>
+                    </td>
+                    <td>${this._editing ? html`
+                    <input class="value-edit" style="width:100%; text-align: left;" type="url" placeholder="Add an URL" value="${i.fixedValueURL || ''}"></input>`
+                    : html`<a target="_blank" href="${i.fixedValueURL}">${i.fixedValueURL}</a>`}
+                    </td>
+                </tr>
+            `)}
+            </tbody>
+        </table> `}
+
         ${this._renderButtons()}`
         : html`<p>${this._calibration.label} has no parameters.</p>`)}
         `
@@ -647,12 +704,14 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     store.dispatch(fetchMetadataNoioForModelConfig(ui.selectedCalibration));
                     store.dispatch(fetchParametersForConfig(ui.selectedCalibration));
                     store.dispatch(fetchAuthorsForModelConfig(ui.selectedCalibration));
+                    store.dispatch(fetchIOAndVarsSNForConfig(ui.selectedCalibration));
                 }
                 this._selectedCalibration = ui.selectedCalibration;
                 this._calibration = null;
                 this._calibrationMetadata = null;
                 this._calibrationAuthors = null;
                 this._calibrationParameters = null;
+                this._calibrationInputs = null;
             }
 
             if (state.explorer) {
@@ -696,23 +755,18 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
 
                 if (db.parameters) {
                     if (!this._configParameters && this._config && db.parameters[this._selectedConfig]) {
-                        this._configParameters = db.parameters[this._selectedConfig].sort((a,b) => {
-                            let intA = Number(a.position);
-                            let intB = Number(b.position);
-                            return (intA < intB) ? -1 : (intA > intB? 1 : 0);
-                        })
+                        this._configParameters = db.parameters[this._selectedConfig].sort(sortByPosition);
                     }
                     if (!this._calibrationParameters && this._calibration && db.parameters[this._selectedCalibration]) {
-                        this._calibrationParameters = db.parameters[this._selectedCalibration].sort((a,b) => {
-                            let intA = Number(a.position);
-                            let intB = Number(b.position);
-                            return (intA < intB) ? -1 : (intA > intB? 1 : 0);
-                        })
+                        this._calibrationParameters = db.parameters[this._selectedCalibration].sort(sortByPosition);
                     }
                 }
 
                 if (db.inputs) {
                     if (!this._configInputs && this._config) this._configInputs = db.inputs[this._selectedConfig];
+                    if (!this._calibrationInputs && this._calibration && db.inputs[this._selectedCalibration]) {
+                        this._calibrationInputs = db.inputs[this._selectedCalibration].sort(sortByPosition);
+                    }
                 }
             }
         }
