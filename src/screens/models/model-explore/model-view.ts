@@ -1053,9 +1053,9 @@ export class ModelView extends connect(store)(PageViewElement) {
         let cInput = (compatibleVariables || []).reduce((acc, ci) => {
             let verTree = this._getVersionTree(ci.uri);
             if (!verTree.model) {
-                if (!acc['?']) acc['?'] = {configs: [], variables: new Set()};
-                acc['?'].configs.push(ci.uri);
-                ci.vars.forEach(v => acc['?'].variables.add(v));
+                if (!acc['Software Script']) acc['Software Script'] = {configs: [], variables: new Set()};
+                acc['Software Script'].configs.push(ci.uri);
+                ci.vars.forEach(v => acc['Software Script'].variables.add(v));
                 return acc;
             }
             if (!acc[verTree.model.label]) acc[verTree.model.label] = {configs: [], variables: new Set()}
