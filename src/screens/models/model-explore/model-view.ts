@@ -1069,7 +1069,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <thead>
                     <th>Model</th>
                     <th>Configuration</th>
-                    <th>Variables</th>
+                    <th>Standard Variables</th>
                 </thead>
                 <tbody>
                     ${Object.keys(cInput).map(model => html`
@@ -1094,12 +1094,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                    (this._compOutput && this._compOutput.length>0) ?
                 html`
                     ${(this._compInput && this._compInput.length>0)?
-                        html`<h3> This model configuration uses variables that can be produced from:</h3>
+                        html`<h3> This model configuration uses standard variables that can be produced from:</h3>
                         ${this._renderCompatibleVariableTable(this._compInput)}`
                         : html``
                     }
                     ${(this._compOutput && this._compOutput.length>0)?
-                        html`<h3> This model configuration produces variables that can be used by:</h3>
+                        html`<h3> This model configuration produces standard variables that can be used by:</h3>
                         ${this._renderCompatibleVariableTable(this._compOutput)}`
                         : html``
                     }`
