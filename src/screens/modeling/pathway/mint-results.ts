@@ -137,6 +137,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                     </p>
                     <wl-button class="submit"
                            @click="${() => this._publishAllResults(model.id)}">Publish all results</wl-button>
+                    <div style="height:400px;overflow:auto;width:100%;border:1px solid #EEE">
                     <div>
                         ${this.currentPage > 1 ? 
                             html `<wl-button flat inverted @click=${() => this._nextPage(model.id, -1)}>Back</wl-button>` :
@@ -151,7 +152,6 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                         <wl-button type="button" flat inverted 
                             @click="${() => this._fetchRuns(model.id, 1, this.pageSize)}">Load</wl-button>
                     </div>
-                    <div style="height:400px;overflow:auto;width:100%">                   
                     ${grouped_ensemble ? 
                        (grouped_ensemble.loading ? 
                            html`<wl-progress-spinner class="loading"></wl-progress-spinner>` :
