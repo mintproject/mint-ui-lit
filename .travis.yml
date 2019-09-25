@@ -32,7 +32,7 @@ deploy:
   script: bash scripts/deploy.sh $TRAVIS_BUILD_DIR/mint-ui-lit mintui_$TRAVIS_BRANCH
   on:
     all_branches: true
-    condition: "$TRAVIS_BRANCH =~ ^(master|mint-demo|mint-formative)$"
+    condition: "$TRAVIS_BRANCH =~ ^(dev|mint-demo|mint-formative)$"
 - provider: script
   skip_cleanup: true
   script: bash scripts/deploy.sh $TRAVIS_BUILD_DIR/mint-ui-lit mintui_$TRAVIS_TAG
