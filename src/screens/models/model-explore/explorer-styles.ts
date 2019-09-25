@@ -45,4 +45,46 @@ pre code {
 b.clickable, span.clickable {
     border-bottom: 1px dotted;
 }
-`
+
+.tooltip {
+    cursor: help;
+    display: inline-block;
+    position: relative;
+    float: right;
+    margin: 5px 5px 0px 5px;
+}
+
+.tooltip:hover:after {
+    background: #333;
+    background: rgba(0, 0, 0, .8);
+    border-radius: 5px;
+    bottom: 26px;
+    color: #fff;
+    content: attr(tip);
+    right: 20%;
+    padding: 5px 15px;
+    position: absolute;
+    z-index: 98;
+    width: 300px;
+}
+
+.tooltip:hover:before {
+    border: solid;
+    border-color: #333 transparent;
+    border-width: 6px 6px 0 6px;
+    bottom: 20px;
+    content: "";
+    right: 42%;
+    position: absolute;
+    z-index: 99;
+}
+
+th > span.tooltip {
+    margin: 0 0 0 4px;"
+    font-size: 14px;
+}
+
+th > span.tooltip > wl-icon {
+    --icon-size: 14px;
+    vertical-align: bottom;
+}`
