@@ -20,8 +20,8 @@ New version of the MINT-UI
 
 The deployment of the following the services is full-automatic:
 
-- <https://dev.mint.isi.edu> points dev branch - MINT version: Development
-- <https://formative.mint.isi.edu> points MINT-Formative - MINT version: Formative
+- <https://dev.mint.isi.edu>
+- <https://formative.mint.isi.edu>
 
 The deployment of the production webpage needs a manual step.
 
