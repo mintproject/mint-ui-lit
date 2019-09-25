@@ -4,7 +4,7 @@ interface Resource {
     desc?:  string;
 }
 
-export interface VersionDetail extends Resource { configs?: ConfigDetail[] }
+export interface VersionDetail extends Resource { configs?: ConfigDetail[], id: string }
 export interface ConfigDetail extends Resource { calibrations?: CalibrationDetail[] }
 export interface CalibrationDetail extends Resource {}
 export interface ExplanationDiagramDetail extends Resource { url: string, source?: string }

@@ -158,6 +158,10 @@ export const addInputs: ActionCreator<ApiThunkResult> = (uri: string, inputs:any
     });
 }
 
+export const addAuthor: ActionCreator<ApiThunkResult> = (uri: string, authors:any) => (dispatch) => {
+    dispatch({type: FETCH_AUTHORS_FOR_MODEL_CONFIG, uri: uri, data: authors});
+}
+
 export const fetchModels: ActionCreator<ApiThunkResult> = () => (dispatch) => {
     //apiFetch({type: MODELS}).then((fetched) => { dispatch({type: FETCH_MODELS, data: fetched}); });
     debug('Fetching all models');
