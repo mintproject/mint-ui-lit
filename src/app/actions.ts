@@ -19,7 +19,7 @@ import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, sel
 import { auth } from '../config/firebase';
 import { User } from 'firebase';
 import { UserPreferences } from './reducers';
-import { SAMPLE_USER_PREFERENCES, SAMPLE_USER } from 'offline_data/sample_user';
+import { SAMPLE_USER_PREFERENCES, SAMPLE_USER, SAMPLE_USER_PREFERENCES_LOCAL } from 'offline_data/sample_user';
 
 export const BASE_HREF = document.getElementsByTagName("base")[0].href.replace(/^http(s)?:\/\/.*?\//, "/");
 
@@ -151,6 +151,8 @@ const loadPage: ActionCreator<ThunkResult> =
                 }
               }
             }
+          } else {
+            store.dispatch(selectScenario(null));
           }
         });   
       }

@@ -4,14 +4,15 @@ import "firebase/firestore";
 import { FIREBASE_GOOGLE_API_KEY } from "./google-api-key";
 
 const firebaseConfig = {
-    apiKey: FIREBASE_GOOGLE_API_KEY,
-    authDomain: "mint-1523532371081.firebaseapp.com",
-    databaseURL: "https://mint-1523532371081.firebaseio.com",
-    projectId: "mint-1523532371081",
-    storageBucket: "mint-1523532371081.appspot.com",
-    messagingSenderId: "132628915232",
-    appId: "1:132628915232:web:c139f772cdfebc47"
+    apiKey: FIREBASE_GOOGLE_API_KEY, 
+    authDomain: "mint-full.firebaseapp.com",
+    databaseURL: "https://mint-full.firebaseio.com",
+    projectId: "mint-full",
+    storageBucket: "",
+    messagingSenderId: "128464392367",
+    appId: "1:128464392367:web:97eaa44bc1fcb5296c445a"
 };
+
 export const app = firebase.initializeApp(firebaseConfig);
 export const auth = firebase.auth(app);
 export const db = firebase.firestore(app);
