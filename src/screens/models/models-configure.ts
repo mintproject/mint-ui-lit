@@ -227,17 +227,20 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             let labelEl = this.shadowRoot.getElementById('new-setup-label') as HTMLInputElement;
             let descEl = this.shadowRoot.getElementById('new-setup-desc') as HTMLInputElement;
             let authEl = this.shadowRoot.getElementById('new-setup-authors') as HTMLInputElement;
+            let methodEl = this.shadowRoot.getElementById('new-setup-assign-method') as HTMLInputElement;
             let paramEls = this.shadowRoot.querySelectorAll('.new-setup-param');
             let inputEls = this.shadowRoot.querySelectorAll('.new-setup-input');
             if (labelEl && descEl && authEl) {
                 let label = labelEl.value;
                 let desc = descEl.value;
                 let auth = authEl.value;
+                let method = methodEl.value;
                 let params = Array.from(paramEls).map(e => (<HTMLInputElement>e).value);
                 let inputs = Array.from(inputEls).map(e => (<HTMLInputElement>e).value);
-                if (!label) {
+                if (!label || !method) {
                     showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                     (<any>labelEl).refreshAttributes();
+                    (<any>methodEl).refreshAttributes();
                     return;
                 }
                 
@@ -250,10 +253,11 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 }
 
                 let newSetupMeta = Object.assign({}, this._configMetadata[0]);
+                newSetupMeta.paramAssignMethod = method;
                 newSetupMeta.desc = desc;
                 newSetupMeta.compLoc = '';
 
-                let newAuthor = {label: auth, name: auth};
+                let newAuthor = auth ? {label: auth, name: auth} : {};
 
                 let newSetupInputs = Object.assign({}, this._configInputs);
                 for (let i = 0; i < inputs.length; i++) {
@@ -352,6 +356,11 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         <wl-textfield id="new-setup-label" label="Setup name" required></wl-textfield>
         <wl-textarea id="new-setup-desc" style="--input-font-size: 15px;"label="Description"></wl-textarea>
         <wl-textfield id="new-setup-authors"label="Authors"></wl-textfield>
+        <wl-select id="new-setup-assign-method" label="Parameter assignment method" placeholder="Select a parameter assignament method" required>
+            <option value="" disabled selected>Please select a parameter assignment method</option>
+            <option value="Calibration">Calibration</option>
+            <option value="Expert-tuned">Expert tuned</option>
+        </wl-select>
 
         <wl-title level="5" style="margin-top:1em;">PARAMETERS:</wl-title>
         <table class="pure-table pure-table-striped" style="width: 100%">
@@ -581,6 +590,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             <b>Authors:</b>
             ${!this._calibrationAuthors ? html`<loading-dots style="--width: 20px"></loading-dots>`
             : this._calibrationAuthors.map(a => a.name).join(', ')}
+            <br/>
+            <b>Parameter assignment method:</b>
+            ${loadingMeta ? html`<loading-dots style="--width: 20px"></loading-dots>` : meta.paramAssignMethod}
         </div>
         ${loadingParams ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
         : (params ? html`
