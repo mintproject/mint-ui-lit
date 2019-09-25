@@ -322,6 +322,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                     --height: 10px;
                     margin-left: 6px;
                 }
+
+                .table-title {
+                    padding-bottom: 0 !important;
+                    font-size: 13px !important;
+                    font-weight: bold !important;
+                }
                 `
         ];
     }
@@ -869,56 +875,70 @@ export class ModelView extends connect(store)(PageViewElement) {
     _renderTabIO () {
         return html`
             ${(this._inputs || this._outputs) ? html`
-            <h3> IO Files: </h3>
+            <h3> Files: </h3>
             <table class="pure-table pure-table-striped" style="overflow: visible;">
                 <colgroup>
-                    <col span="1" style="width: 60px;">
+                    <col span="1" style="width: 10px;">
                     <col span="1" style="width: 20%;">
                     <col span="1">
-                    <col span="1" style="max-width: 140px">
                     ${this._calibration? html`<col span="1">` : ''}
+                    <col span="1" style="max-width: 140px;">
                 </colgroup>
                 <thead>
-                    <th></th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Format</th>
-                    ${this._calibration? html`
-                    <th style="text-align: right;">
-                        Value on setup
-                        <span class="tooltip" tip="If a value is not set up in this field configuration defaul value will be used.">
-                            <wl-icon>help</wl-icon>
-                        </span>
-                    </th>` : html``}
+                    <tr>
+                        <th colspan="4" class="table-title">Input files</th>
+                    </tr>
+                    <tr>
+                        <th></th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        ${this._calibration? html`
+                        <th style="text-align: right;">
+                            Value on setup
+                            <span class="tooltip" tip="If a value is not set up in this field, the configuration default value will be used.">
+                                <wl-icon>help</wl-icon>
+                            </span>
+                        <th>Format</th>
+                        </th>` : html``}
+                    </tr>
                 </thead>
                 <tbody>
                 ${(this._inputs || []).map( io => html`
                     <tr>
-                        <td style="color: rgb(153, 153, 153); font-family: Raleway; font-size: 12px; text-align: right;">INPUT</td>
+                        <td></td>
                         <td><span class="font-numbers clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
                             ${io.label}
                         </span></td>
                         <td>${io.desc}</td>
-                        <td class="font-numbers">${io.format}</td>
                         ${this._calibration? html`
                         <td style="text-align: right;">${io.fixedValueURL ? html`
                             <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
                         ` : html`<span style="color:#999999;">-</span>`}</td>
                         ` : html``}
+                        <td class="font-numbers">${io.format}</td>
                     </tr>`)}
+                </tbody>
+
+                <thead>
+                    <tr>
+                        <th colspan="4" class="table-title">Output files</th>
+                    </tr>
+                    <tr>
+                        <th></th>
+                        <th>Name</th>
+                        <th colspan="${this._calibration? 2 : 1}">Description</th>
+                        <th>Format</th>
+                    </tr>
+                </thead>
+                <tbody>
                 ${(this._outputs || []).map( io => html`
                     <tr>
-                        <td style="color: rgb(153, 153, 153); font-family: Raleway; font-size: 12px; text-align: right;">OUTPUT</td>
+                        <td></td>
                         <td><span class="font-numbers clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
                             ${io.label}
                         </span></td>
-                        <td>${io.desc}</td>
+                        <td colspan="${this._calibration? 2 : 1}">${io.desc}</td>
                         <td class="font-numbers">${io.format}</td>
-                        ${this._calibration? html`
-                        <td style="text-align: right;">${io.fixedValueURL ? html`
-                            <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
-                        ` : html`<span style="color:#999999;">-</span>`}</td>
-                        ` : html``}
                     </tr>`)}
                 </tbody>
             </table>` : html``}
