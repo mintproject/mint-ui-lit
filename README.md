@@ -2,12 +2,24 @@
 
 New version of the MINT-UI 
 
+## Version
+
+### Active
+
+- <https://dev.mint.isi.edu> points dev branch - MINT version: Development
+- <https://formative.mint.isi.edu> points MINT-Formative - MINT version: Formative
+- <https://mint.isi.edu> points the last release/tag on GitHub - MINT version: Full
+
+### Snapshots
+- <https://demo.mint.isi.edu> DEMO release
+- <https://old.mint.isi.edu> Old release
+
 ## Deploy
 
 The deployment of the following the services is full-automatic:
 
-- <https://dev.mint.isi.edu> points master branch - MINT version: Formative
-- <https://demo.mint.isi.edu> points MINT-demo branch - MINT version: demo
+- <https://dev.mint.isi.edu> points dev branch - MINT version: Development
+- <https://formative.mint.isi.edu> points MINT-Formative - MINT version: Formative
 
 The deployment of the production webpage needs a manual step.
 
