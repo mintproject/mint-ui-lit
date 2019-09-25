@@ -6,9 +6,11 @@ New version of the MINT-UI
 
 ### Active
 
-- <https://dev.mint.isi.edu> points dev branch - MINT version: Development
-- <https://formative.mint.isi.edu> points MINT-Formative - MINT version: Formative
-- <https://mint.isi.edu> points the last release/tag on GitHub - MINT version: Full
+| Url                            | Name        | GitHub                                       | Firebase  |
+|--------------------------------|-------------|----------------------------------------------|-----------|
+| https://dev.mint.isi.edu       | Development | The last commit on dev branch                | MINT      |
+| https://formative.mint.isi.edu | Formative   | The last commit on dev MINT-Formative branch | MINT      |
+| https://mint.isi.edu           | Full        | The last release on dev master branch        | MINT-FULL |
 
 ### Snapshots
 - <https://demo.mint.isi.edu> DEMO release
