@@ -8,9 +8,10 @@ New version of the MINT-UI
 
 | Url                            | Name        | GitHub                                       | Firebase  |
 |--------------------------------|-------------|----------------------------------------------|-----------|
-| https://dev.mint.isi.edu       | Development | The last commit on dev branch                | MINT      |
+| https://dev.mint.isi.edu       | Development | The last commit on dev branch                | MINT-FULL |
 | https://formative.mint.isi.edu | Formative   | The last commit on dev MINT-Formative branch | MINT      |
 | https://mint.isi.edu           | Full        | The last release on dev master branch        | MINT-FULL |
+| https://demo.mint.isi.edu      | Demo        | The last commit on MINT-demo branch          | MINT-DEMO |
 
 ### Snapshots
 - <https://demo.mint.isi.edu> DEMO release
