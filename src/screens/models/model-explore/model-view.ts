@@ -29,7 +29,7 @@ function capitalizeFirstLetter (s:string) {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-const PAGE_PREFIX = 'models/explore/';
+const PAGE_PREFIX : string = 'models/explore/';
 
 @customElement('model-view')
 export class ModelView extends connect(store)(PageViewElement) {
@@ -630,8 +630,10 @@ export class ModelView extends connect(store)(PageViewElement) {
         `
     }
 
-    _changeTab (tabName: string) { //TODO
+    /* Change to tabName and scroll to fragmentId */
+    _changeTab (tabName: string, fragment?: string) {
         let tabId : string = '';
+        let fragId : string = '';
         switch (tabName) {
             case 'io':
                 tabId = 'tab-io';
@@ -641,9 +643,22 @@ export class ModelView extends connect(store)(PageViewElement) {
                 break;
             default: return;
         }
+        switch (fragment) {
+            case 'parameters':
+                fragId = 'parameters-table';
+                break;
+            default: break;
+        }
+
         let ioElement : HTMLElement | null = this.shadowRoot!.getElementById(tabId);
         if (ioElement && tabId) {
             ioElement.click();
+            if (fragId) {
+                setTimeout(() => {
+                    let frag : HTMLElement | null = this.shadowRoot!.getElementById(fragId);
+                    if (frag) frag.scrollIntoView({block: "end", behavior: "smooth"});
+                }, 200);
+            }
         }
     }
 
@@ -654,6 +669,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 let exp : HTMLElement | null = this.shadowRoot!.getElementById(varLabel);
                 if (exp) {
                     exp.click();
+                    exp.scrollIntoView({block: "start", behavior: "smooth"});
                 }
                 }, 200)
         }
@@ -749,8 +765,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${meta[0].processes ? html`<li><b>Processes:</b> ${meta[0].processes.join(', ')}</li>`: ''}
                     ${meta[0].paramAssignMethod ? html`<li><b>Parameter assignment method:</b> ${meta[0].paramAssignMethod}</li>`: ''}
                     ${meta[0].adjustableVariables ? html`<li><b>Adjustable parameters:</b> ${meta[0].adjustableVariables.map((v,i) => {
-                        if (i === 0) return html`<code>${v}</code>`;
-                        else return html`, <code>${v}</code>`;
+                        if (i === 0) return html`<code class="clickable" @click="${() => this._changeTab('io', 'parameters')}">${v}</code>`;
+                        else return html`, <code class="clickable" @click="${() => this._changeTab('io', 'parameters')}">${v}</code>`;
                     })}</li>`: ''}
                     ${meta[0].targetVariables ? html`<li><b>Target variables:</b> ${meta[0].targetVariables.map((v,i) => {
                         if (i === 0) return html`<code>${v}</code>`;
@@ -927,7 +943,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (this._parameters.length > 0) {
             return html`
                 <h3> Parameters: </h3>
-                <table class="pure-table pure-table-striped" style="overflow: visible;">
+                <table class="pure-table pure-table-striped" style="overflow: visible;" id="parameters-table">
                     <thead>
                         <th>Name</th>
                         <th>Description</th>
