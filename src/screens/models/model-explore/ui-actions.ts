@@ -47,7 +47,6 @@ export const explorerClearModel: ActionCreator<ExplorerThunkResult> = () => (dis
 
 export const explorerSetVersion: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
     let uri : string = id ? RESOURCE_PREFIX + id : '';
-    console.log('Version uri:', uri)
     dispatch({ type: EXPLORER_SELECT_VERSION, uri: uri})
 };
 

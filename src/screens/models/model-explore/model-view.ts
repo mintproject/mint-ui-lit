@@ -171,39 +171,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                   text-align: justify;
                 }
 
-                .tooltip {
-                    cursor: help;
-                    display: inline-block;
-                    position: relative;
-                    float: right;
-                    margin: 5px 5px 0px 5px;
-                }
-
-                .tooltip:hover:after {
-                    background: #333;
-                    background: rgba(0, 0, 0, .8);
-                    border-radius: 5px;
-                    bottom: 26px;
-                    color: #fff;
-                    content: attr(tip);
-                    right: 20%;
-                    padding: 5px 15px;
-                    position: absolute;
-                    z-index: 98;
-                    width: 300px;
-                }
-
-                .tooltip:hover:before {
-                    border: solid;
-                    border-color: #333 transparent;
-                    border-width: 6px 6px 0 6px;
-                    bottom: 20px;
-                    content: "";
-                    right: 42%;
-                    position: absolute;
-                    z-index: 99;
-                }
-
                 #edit-model-icon {
                     float: right;
                     --icon-size: 26px;
@@ -223,7 +190,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     grid-template-columns: 1fr 1fr;
                     margin-bottom: 5px;
                 }
-                
+
                 .col-img {
                     grid-column: 1 / 2;
                     grid-row: 1;
@@ -513,7 +480,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <wl-tab id="tab-overview" ?checked=${this._tab=='overview'} @click="${() => {this._tab = 'overview'}}"
                             >Overview</wl-tab>
                         <wl-tab id="tab-io" ?checked=${this._tab=='io'} @click="${() => {this._tab = 'io'}}"
-                            >Input/Output</wl-tab>
+                            >Files and parameters</wl-tab>
                         <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => {this._tab = 'variables'}}"
                             >Variables</wl-tab>
                         <wl-tab id="tab-software" @click="${() => {this._tab = 'software'}}"
@@ -699,16 +666,13 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _renderTabOverview () {
         return html`
-            ${this._config ? this._renderMetadataResume() : ''}
             ${this._model.purpose? html`
-            <details style="margin-bottom: 6px;">
-                <summary><b>Purpose</b></summary>
-                <ul>
-                ${this._model.purpose.map(a => a? html`<li>${a}.</li>`: '')}
-                </ul>
-            </details>`
-            :html``}
-
+            <wl-title level="2" style="font-size: 16px;">Model purpose:</wl-title>
+            <ul style="margin-top: 5px">
+                ${this._model.purpose.map(a => a? html`<li>${capitalizeFirstLetter(a)}.</li>`: '')}
+            </ul>`
+            :''}
+            ${this._config ? this._renderMetadataResume() : ''}
             ${this._model.assumptions? html`
             <details style="margin-bottom: 6px;">
                 <summary><b>Assumptions</b></summary>
@@ -770,6 +734,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     `}</wl-text>
                     `: '' }
                     <ul>
+                    ${meta[0].fundS ? html`<wl-text><b>Funding Source:</b> ${meta[0].fundS} </wl-text>` : ''}
                     ${meta[0].regionName ? html`<li><b>Region:</b> ${meta[0].regionName}</li>`: ''}
                     ${meta[0].tIValue && meta[0].tIUnits ? html`<li><b>Time interval:</b> ${meta[0].tIValue + ' ' + meta[0].tIUnits}</li>` : ''}
                     ${meta[0].gridType && meta[0].gridDim && meta[0].gridSpatial ? html`
@@ -889,7 +854,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         return html`
             ${(this._inputs || this._outputs) ? html`
             <h3> IO Files: </h3>
-            <table class="pure-table pure-table-striped">
+            <table class="pure-table pure-table-striped" style="overflow: visible;">
                 <colgroup>
                     <col span="1" style="width: 60px;">
                     <col span="1" style="width: 20%;">
@@ -902,7 +867,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <th>Name</th>
                     <th>Description</th>
                     <th>Format</th>
-                    ${this._calibration? html`<th style="text-align: right;">Value in this setup</th>` : html``}
+                    ${this._calibration? html`
+                    <th style="text-align: right;">
+                        Value on setup
+                        <span class="tooltip" tip="If a value is not set up in this field configuration defaul value will be used.">
+                            <wl-icon>help</wl-icon>
+                        </span>
+                    </th>` : html``}
                 </thead>
                 <tbody>
                 ${(this._inputs || []).map( io => html`
@@ -956,11 +927,18 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (this._parameters.length > 0) {
             return html`
                 <h3> Parameters: </h3>
-                <table class="pure-table pure-table-striped">
+                <table class="pure-table pure-table-striped" style="overflow: visible;">
                     <thead>
                         <th>Name</th>
                         <th>Description</th>
-                        <th style="text-align: right;"> ${this._calibration? 'Value in this setup' : 'Default value'} </th>
+                        <th style="text-align: right;">
+                            ${this._calibration? html`
+                            Value on setup 
+                            <span class="tooltip" tip="If a value is not set up in this field configuration defaul value will be used.">
+                                <wl-icon>help</wl-icon>
+                            </span>`
+                            : 'Default value'}
+                        </th>
                     </thead>
                     <tbody>
                     ${this._parameters.sort((a,b) => (a.position < b.position) ? -1 : (a.position > b.position? 1 : 0)).map( (p:any) => html`
@@ -1073,9 +1051,9 @@ export class ModelView extends connect(store)(PageViewElement) {
         let cInput = (compatibleVariables || []).reduce((acc, ci) => {
             let verTree = this._getVersionTree(ci.uri);
             if (!verTree.model) {
-                if (!acc['?']) acc['?'] = {configs: [], variables: new Set()};
-                acc['?'].configs.push(ci.uri);
-                ci.vars.forEach(v => acc['?'].variables.add(v));
+                if (!acc['Software Script']) acc['Software Script'] = {configs: [], variables: new Set()};
+                acc['Software Script'].configs.push(ci.uri);
+                ci.vars.forEach(v => acc['Software Script'].variables.add(v));
                 return acc;
             }
             if (!acc[verTree.model.label]) acc[verTree.model.label] = {configs: [], variables: new Set()}
@@ -1089,7 +1067,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <thead>
                     <th>Model</th>
                     <th>Configuration</th>
-                    <th>Variables</th>
+                    <th>Standard Variables</th>
                 </thead>
                 <tbody>
                     ${Object.keys(cInput).map(model => html`
@@ -1114,12 +1092,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                    (this._compOutput && this._compOutput.length>0) ?
                 html`
                     ${(this._compInput && this._compInput.length>0)?
-                        html`<h3> This model configuration uses variables that can be produced from:</h3>
+                        html`<h3> This model configuration uses standard variables that can be produced from:</h3>
                         ${this._renderCompatibleVariableTable(this._compInput)}`
                         : html``
                     }
                     ${(this._compOutput && this._compOutput.length>0)?
-                        html`<h3> This model configuration produces variables that can be used by:</h3>
+                        html`<h3> This model configuration produces standard variables that can be used by:</h3>
                         ${this._renderCompatibleVariableTable(this._compOutput)}`
                         : html``
                     }`
