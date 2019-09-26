@@ -1,6 +1,6 @@
 {
   "name": "mint-ui-lit",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "MINT UI",
   "author": "Varun Ratnakar",
   "license": "MIT",
@@ -27,6 +27,7 @@
     "redux": "^4.0.0",
     "redux-thunk": "^2.3.0",
     "reselect": "^4.0.0",
+    "ts-md5": "^1.2.6",
     "tslib": "^1.9.3",
     "weightless": "0.0.34"
   },

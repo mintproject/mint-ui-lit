@@ -8,7 +8,7 @@ import { SharedStyles } from "../../../styles/shared-styles";
 import { Model } from "../../models/reducers";
 import { queryDatasetsByVariables } from "../../datasets/actions";
 import { updatePathway } from "../actions";
-import { createPathwayExecutableEnsembles, removeDatasetFromPathway, matchVariables, getPathwayDatasetsStatus, TASK_DONE, getUISelectedSubgoal } from "../../../util/state_functions";
+import { removeDatasetFromPathway, matchVariables, getPathwayDatasetsStatus, TASK_DONE, getUISelectedSubgoal } from "../../../util/state_functions";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
 import { showNotification, showDialog } from "../../../util/ui_functions";
 import { selectPathwaySection } from "../../../app/ui-actions";
@@ -388,9 +388,6 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         // Turn off edit mode
         this._editMode = false;
 
-        // Update executable ensembles in the pathway
-        this.pathway = createPathwayExecutableEnsembles(this.pathway);
-
         // Update notes
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
         this.pathway.notes = {
@@ -414,7 +411,6 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     _removePathwayDataset(modelid: string, inputid: string, datasetid:string) {
         if(confirm("Are you sure you want to remove this dataset ?")) {
             this.pathway = removeDatasetFromPathway(this.pathway, datasetid, modelid, inputid);
-            this.pathway = createPathwayExecutableEnsembles(this.pathway);
             updatePathway(this.scenario, this.pathway);
         }
     }
