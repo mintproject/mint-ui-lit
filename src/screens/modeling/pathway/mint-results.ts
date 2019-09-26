@@ -128,6 +128,11 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                let model = this.pathway.models![modelid];
                let grouped_ensemble = grouped_ensembles[modelid];
                this.totalPages = Math.ceil(summary.total_runs/this.pageSize);
+
+                if(!grouped_ensemble) {
+                    this._fetchRuns(model.id, 1, this.pageSize)
+                }
+
                return html`
                <li>
                     <wl-title level="4"><a href="${this._getModelURL(model)}">${model.name}</a></wl-title>
@@ -139,8 +144,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                            @click="${() => this._publishAllResults(model.id)}">Publish all results</wl-button>
                     <br /><br />
 
-                    <div style="height:400px;overflow:auto;width:100%;border:1px solid #EEE">
-                    <div>
+                    <div style="width:100%; border:1px solid #EEE;border-bottom:0px;">
                         ${grouped_ensemble && !grouped_ensemble.loading ? 
                         html`
                         ${this.currentPage > 1 ? 
@@ -155,10 +159,11 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                         ` : ""
                         }
                         ${!grouped_ensemble || !grouped_ensemble.loading ?
-                        html`<wl-button type="button" flat inverted 
-                            @click="${() => this._fetchRuns(model.id, 1, this.pageSize)}">Load</wl-button>`: ""
+                        html`<wl-button type="button" flat inverted  style="float:right"
+                            @click="${() => this._fetchRuns(model.id, 1, this.pageSize)}">Reload</wl-button>`: ""
                         }
                     </div>
+                    <div style="height:400px;overflow:auto;width:100%;border:1px solid #EEE">
                     ${grouped_ensemble ? 
                        (grouped_ensemble.loading ? 
                            html`<wl-progress-spinner class="loading"></wl-progress-spinner>` :

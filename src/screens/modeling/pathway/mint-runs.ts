@@ -118,6 +118,10 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 let finished = (finished_runs == summary.total_runs);
                 let running = summary.submitted_runs - finished_runs;
 
+                if(!grouped_ensemble) {
+                    this._fetchRuns(model.id, 1, this.pageSize)
+                }
+
                 return html`
                 <li>
                     <wl-title level="4"><a href="${this._getModelURL(model)}">${model.name}</a></wl-title>
@@ -130,29 +134,29 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
 
                     ${!finished ? 
                         html`<br /><wl-button class="submit"
-                            @click="${() => this._checkStatusAllEnsembles(model.id)}">Reload status</wl-button> <br /><br />`
+                            @click="${() => this._checkStatusAllEnsembles(model.id)}">Recheck status</wl-button> <br /><br />`
                         : ""
                     }
                     </p>
 
+                    <div style="width: 100%; border:1px solid #EEE;border-bottom:0px;">
+                        ${grouped_ensemble && !grouped_ensemble.loading ? 
+                        html`
+                        ${this.currentPage > 1 ? 
+                            html `<wl-button flat inverted @click=${() => this._nextPage(model.id, -1)}>Back</wl-button>` :
+                            html `<wl-button flat inverted disabled>Back</wl-button>`
+                        }
+                        Page ${this.currentPage} of ${this.totalPages}
+                        ${this.currentPage < this.totalPages ? 
+                            html `<wl-button flat inverted @click=${() => this._nextPage(model.id, 1)}>Next</wl-button>` :
+                            html `<wl-button flat inverted disabled>Next</wl-button>`
+                        }
+                        ` : ""
+                        }
+                        <wl-button type="button" flat inverted style="float:right"
+                            @click="${() => this._fetchRuns(model.id, 1, this.pageSize)}">Reload</wl-button>
+                    </div>
                     <div style="height:400px;overflow:auto;width:100%;border:1px solid #EEE">
-                        <div>
-                            ${grouped_ensemble && !grouped_ensemble.loading ? 
-                            html`
-                            ${this.currentPage > 1 ? 
-                                html `<wl-button flat inverted @click=${() => this._nextPage(model.id, -1)}>Back</wl-button>` :
-                                html `<wl-button flat inverted disabled>Back</wl-button>`
-                            }
-                            Page ${this.currentPage} of ${this.totalPages}
-                            ${this.currentPage < this.totalPages ? 
-                                html `<wl-button flat inverted @click=${() => this._nextPage(model.id, 1)}>Next</wl-button>` :
-                                html `<wl-button flat inverted disabled>Next</wl-button>`
-                            }
-                            ` : ""
-                            }
-                            <wl-button type="button" flat inverted 
-                                @click="${() => this._fetchRuns(model.id, 1, this.pageSize)}">Load</wl-button>
-                        </div>
                         ${grouped_ensemble ? 
                             (grouped_ensemble.loading ? 
                                 html`<wl-progress-spinner class="loading"></wl-progress-spinner>` :
