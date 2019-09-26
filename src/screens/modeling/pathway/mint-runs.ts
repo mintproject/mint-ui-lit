@@ -130,13 +130,15 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
 
                     ${!finished ? 
                         html`<br /><wl-button class="submit"
-                            @click="${() => this._checkStatusAllEnsembles(model.id)}">Reload status</wl-button>`
+                            @click="${() => this._checkStatusAllEnsembles(model.id)}">Reload status</wl-button> <br /><br />`
                         : ""
                     }
                     </p>
 
                     <div style="height:400px;overflow:auto;width:100%;border:1px solid #EEE">
                         <div>
+                            ${grouped_ensemble && !grouped_ensemble.loading ? 
+                            html`
                             ${this.currentPage > 1 ? 
                                 html `<wl-button flat inverted @click=${() => this._nextPage(model.id, -1)}>Back</wl-button>` :
                                 html `<wl-button flat inverted disabled>Back</wl-button>`
@@ -146,7 +148,8 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                 html `<wl-button flat inverted @click=${() => this._nextPage(model.id, 1)}>Next</wl-button>` :
                                 html `<wl-button flat inverted disabled>Next</wl-button>`
                             }
-
+                            ` : ""
+                            }
                             <wl-button type="button" flat inverted 
                                 @click="${() => this._fetchRuns(model.id, 1, this.pageSize)}">Load</wl-button>
                         </div>
