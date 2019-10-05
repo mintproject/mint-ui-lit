@@ -95,7 +95,7 @@ export class MessagesList extends connect(store)(PageViewElement) {
 
   _addThreadDialog() {
     let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#threadForm")!;
-    resetForm(form);
+    resetForm(form, null);
     this._editor.value('');
 
     showDialog("threadDialog", this.shadowRoot!);

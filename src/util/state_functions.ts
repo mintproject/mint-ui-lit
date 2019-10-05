@@ -372,6 +372,11 @@ export const getPathwayDatasetsStatus = (pathway:Pathway) => {
 }
 
 export const getPathwayParametersStatus = (pathway:Pathway) => {
+    let sum = pathway.executable_ensemble_summary;
+    if(Object.keys(sum).length == 0) {
+        return TASK_NOT_STARTED;
+    }
+    
     //console.log(pathway.model_ensembles);
     if(getPathwayDatasetsStatus(pathway) != TASK_DONE)
         return TASK_NOT_STARTED;
@@ -395,11 +400,12 @@ export const getPathwayParametersStatus = (pathway:Pathway) => {
 
 export const getPathwayRunsStatus = (pathway:Pathway) => {
     let sum = pathway.executable_ensemble_summary;
-    if (sum) {
+    if (sum && Object.keys(sum).length > 0) {
         let ok = true;
         Object.keys(sum).map((modelid) => {
             let summary = sum[modelid];
-            if(summary.successful_runs + summary.failed_runs != summary.total_runs)
+            if(summary.total_runs == 0 || 
+                    (summary.successful_runs + summary.failed_runs != summary.total_runs))
                 ok = false;
         });
         if(ok)

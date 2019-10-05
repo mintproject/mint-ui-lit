@@ -6,14 +6,21 @@ import { REGIONS_LIST, REGIONS_QUERY } from "./actions";
 export type RegionList = IdMap<Region>;
 
 export interface Region extends IdNameObject {
-    geojson: string, // This points to the geojson uri
-    geojson_blob: string, // This contains the whole geojson itself
-    region_type?: string
+    geojson_blob?: string, // This contains the whole geojson itself
+    region_type?: string,
+    bounding_box?: BoundingBox
 }
 
 export interface RegionsState {
     regions?: RegionList,
     query_result?: AllRegionsQueryResults
+}
+
+export interface BoundingBox {
+    xmin: number
+    xmax: number
+    ymin: number
+    ymax: number
 }
 
 export type AllRegionsQueryResults = IdMap<RegionQueryResult>;

@@ -101,7 +101,6 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             Object.keys(this._regions || {}).map((regionid) => {
                 let region = this._regions![regionid];
                 let layer = new GoogleMapJsonLayer();
-                layer.url = region.geojson;
                 layer.json = JSON.parse(region.geojson_blob);
                 layer.region_id = region.id;
                 layer.region_name = region.name;

@@ -321,8 +321,6 @@ export const deleteAllPathwayEnsembleIds = async (scenarioid: string, pathwayid:
 
 export const getAllPathwayEnsembleIds = async (scenarioid: string, pathwayid: string,
         modelid: string) : Promise<string[]> => {
-    let batchid = 0;
-    let ensembleids : string[] = [];
     let pathwayEnsembleIdsRef = db.collection("scenarios").doc(scenarioid).collection("pathways").doc(pathwayid).collection("ensembleids")
         .where("modelid", "==", modelid);
 
