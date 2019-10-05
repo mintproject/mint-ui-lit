@@ -145,7 +145,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                         let model = this.pathway.models![modelid];
                         return html`
                         <li>
-                            <a href="${this._getModelURL(model)}">${model.name}</a>
+                            <a target="_blank" href="${this._getModelURL(model)}">${model.name}</a>
                         </li>
                         `
                     })}
@@ -208,7 +208,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                                         <tr>
                                             <td><input class="checkbox" type="checkbox" data-modelid="${model.id}"
                                                 ?checked="${modelids.indexOf(model.id!) >= 0}"></input></td>
-                                            <td><a href="${this._getModelURL(model)}">${model.name}</a></td> 
+                                            <td><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></td> 
                                             <td>${model.category}</td>
                                             <td>${model.calibrated_region}</td>
                                             <td>
@@ -292,9 +292,17 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     }
 
     _getModelURL (model:Model) {
-        return this._regionid + '/models/explore/' + model.original_model + '/'
-               + model.model_version + '/' + model.model_configuration + '/'
-               + model.localname;
+        let url = this._regionid + '/models/explore/' + model.original_model;
+        if (model.model_version) {
+            url += '/' + model.model_version;
+            if (model.model_configuration) {
+                url += '/' + model.model_configuration;
+                if (model.localname) {
+                    url += '/' + model.localname;
+                }
+            }
+        }
+        return url;
     }
 
     _getSelectedModels() {

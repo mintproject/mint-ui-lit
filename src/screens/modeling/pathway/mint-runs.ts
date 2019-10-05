@@ -104,7 +104,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                 let model = this.pathway.models![ensemble.modelid];
                                 return html`
                                 <tr>
-                                    <td><a href="${this._getModelURL(model)}">${model.name}</a></td>
+                                    <td><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></td>
                                     <td>
                                     ${Object.keys(ensemble.bindings).map((inputid) => {
                                         let inputname = inputid.substr(inputid.lastIndexOf('/') + 1);
@@ -155,7 +155,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                     return html`
                                     <tr>
                                         <td><input class="checkbox" type="checkbox" data-index="${index}"></input></td>                    
-                                        <td><a href="${this._getModelURL(model)}">${model.name}</a></td>
+                                        <td><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></td>
                                         <td>
                                         ${Object.keys(ensemble.bindings).map((inputid) => {
                                             let inputname = inputid.substr(inputid.lastIndexOf('/') + 1);
@@ -192,9 +192,17 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
     }
 
     _getModelURL (model:Model) {
-        return this._regionid + '/models/explore/' + model.original_model + '/'
-               + model.model_version + '/' + model.model_configuration + '/'
-               + model.localname;
+        let url = this._regionid + '/models/explore/' + model.original_model;
+        if (model.model_version) {
+            url += '/' + model.model_version;
+            if (model.model_configuration) {
+                url += '/' + model.model_configuration;
+                if (model.localname) {
+                    url += '/' + model.localname;
+                }
+            }
+        }
+        return url;
     }
 
     _runSelectedEnsembles() {

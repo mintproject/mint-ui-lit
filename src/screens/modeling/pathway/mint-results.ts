@@ -126,7 +126,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                         html ``
                                     }
                                     <td>
-                                        <a href="${this._getModelURL(model)}">${model.name}</a>
+                                        <a target="_blank" href="${this._getModelURL(model)}">${model.name}</a>
                                     </td>
                                     <td>
                                     ${Object.keys(ensemble.bindings).map((inputid) => {
@@ -199,9 +199,17 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     }
 
     _getModelURL (model:Model) {
-        return this._regionid + '/models/explore/' + model.original_model + '/'
-               + model.model_version + '/' + model.model_configuration + '/'
-               + model.localname;
+        let url = this._regionid + '/models/explore/' + model.original_model;
+        if (model.model_version) {
+            url += '/' + model.model_version;
+            if (model.model_configuration) {
+                url += '/' + model.model_configuration;
+                if (model.localname) {
+                    url += '/' + model.localname;
+                }
+            }
+        }
+        return url;
     }
 
     _getDatasetURL (result: any) {

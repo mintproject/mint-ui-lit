@@ -373,8 +373,15 @@ export class ModelView extends connect(store)(PageViewElement) {
             configSelector.value = this._config ? this._config.uri : '';
             (<any>configSelectorWl).refreshAttributes();
         } else if (configSelectorWl) {
-            //FIXME: Sometimes, when versions data load faster than the wl-selector renders, we could end here.
-            //The selectors will appear empty, but any update fixes it.
+            /* FIXME: Sometimes, when versions data load faster than the wl-selector renders, we could end here.
+             * The selectors will appear empty, but any update fixes it.
+             * Something like a configSelectorWl.addEventListener('DOMContentLoaded', update..) should fix it but i
+             * cannot make it works :-( */
+            setTimeout(() => {
+                this._updateConfigSelector();
+            }, 400);
+        } else {
+            //console.log('This can even happen?')
         }
     }
 
