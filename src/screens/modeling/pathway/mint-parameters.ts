@@ -2,16 +2,21 @@ import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 
-import { DataEnsembleMap, ModelEnsembleMap, StepUpdateInformation } from "../reducers";
+import { DataEnsembleMap, ModelEnsembleMap, StepUpdateInformation, ExecutableEnsemble, ExecutableEnsembleSummary } from "../reducers";
 import { SharedStyles } from "../../../styles/shared-styles";
 import { Model } from "../../models/reducers";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
-import { createPathwayExecutableEnsembles, runPathwayExecutableEnsembles, TASK_DONE, getPathwayParametersStatus } from "../../../util/state_functions";
-import { updatePathway } from "../actions";
-import { showNotification } from "../../../util/ui_functions";
+import { TASK_DONE, getPathwayParametersStatus, getModelInputConfigurations, getEnsembleHash, setupModelWorkflow, listEnsembles, runModelEnsembles, listExistingEnsembleIds } from "../../../util/state_functions";
+import { updatePathway, addPathwayEnsembles, setPathwayEnsembleIds, deleteAllPathwayEnsembleIds } from "../actions";
+import { showNotification, showDialog, hideDialog } from "../../../util/ui_functions";
 import { selectPathwaySection } from "../../../app/ui-actions";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { IdMap } from "../../../app/reducers";
+
+import "weightless/progress-bar";
+import { loginToWings, fetchWingsTemplate } from "util/wings_functions";
+
+const MAX_PARAMETER_COMBINATIONS = 3000;
 
 @customElement('mint-parameters')
 export class MintParameters extends connect(store)(MintPathwayPage) {
@@ -19,8 +24,20 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
     @property({type: Object})
     private _models!: IdMap<Model>;
 
+    @property({type: Array})
+    private _current_ensemble_ids: string[];
+
     @property({type: Boolean})
     private _editMode: Boolean = false;
+
+    @property({type: String})
+    private _progress_item: string;
+    @property({type: Number})
+    private _progress_total : number;
+    @property({type: Number})
+    private _progress_number : number;
+    @property({type: Boolean})
+    private _progress_abort: boolean;
 
     static get styles() {
         return [
@@ -173,6 +190,29 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         </div>
 
         ${renderNotifications()}
+        ${this._renderProgressDialog()}
+        `;
+    }
+
+    _renderProgressDialog() {
+        return html`
+        <wl-dialog id="progressDialog" fixed persistent backdrop blockscrolling>
+            <h3 slot="header">Saving and running model configurations</h3>
+            <div slot="content">
+                <p>
+                    Submitting runs for model "${this._progress_item}"
+                </p>
+                ${this._progress_number} out of ${this._progress_total}
+                <wl-progress-bar style="width:100%" mode="determinate"
+                    value="${this._progress_number/this._progress_total}"></wl-progress-bar>
+            </div>
+            <div slot="footer">
+                ${this._progress_number == this._progress_total ? 
+                    html`<wl-button @click="${this._onDialogDone}" class="submit">Done</wl-button>` :
+                    html`<wl-button @click="${this._onStopProgress}" inverted flat>Stop</wl-button>`
+                }
+            </div>            
+        </wl-dialog>
         `;
     }
 
@@ -191,7 +231,190 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
     _getParameterSelections(model: Model, inputid: string) {
         let form = this.shadowRoot!.querySelector<HTMLFormElement>("#form_"+this._valid(model.localname || model.id))!;
         let inputstr = (form.elements[inputid] as HTMLInputElement).value;
-        return inputstr.split(",");
+        return inputstr.split(/\s*,\s*/);
+    }
+
+    _onDialogDone() {
+        hideDialog("progressDialog", this.shadowRoot!);
+        this._savePathwayDetails();
+    }
+
+    _onStopProgress() {
+        this._progress_abort = true;
+        hideDialog("progressDialog", this.shadowRoot!);
+    }
+
+    async _saveAndRunExecutableEnsembles() {
+        if(!this.pathway.executable_ensemble_summary)
+            this.pathway.executable_ensemble_summary = {};
+
+        await loginToWings(this.prefs);
+        
+        Object.keys(this.pathway.model_ensembles).map( async(modelid) => {
+            let dataEnsemble = this.pathway.model_ensembles[modelid];
+            let model = this.pathway.models[modelid];
+            // Get input ids
+            let inputIds = [];
+            model.input_files.map((io) => {
+                if(!io.value) inputIds.push(io.id);
+            })
+            model.input_parameters.map((io) => {
+                if(!io.value) inputIds.push(io.id);
+            })
+            // Get cartesian product of inputs to get all model configurations
+            this._progress_abort = false;
+    
+            let configs = getModelInputConfigurations(dataEnsemble, inputIds);
+            if(configs != null) {
+                // Update executable ensembles in the pathway
+                this._progress_item = model.name;
+                this._progress_total = configs.length;
+                this._progress_number = 0;
+                showDialog("progressDialog", this.shadowRoot!);
+
+                // Delete existing pathway ensemble ids
+                deleteAllPathwayEnsembleIds(this.scenario.id, this.pathway.id, modelid);
+
+                // Setup Model for execution on Wings
+                let workflowid = await setupModelWorkflow(model, this.pathway, this.prefs);
+                let tpl_package = await fetchWingsTemplate(workflowid, this.prefs);
+
+                let datasets = {}; // Map of datasets to be registered (passed to Wings to keep track)
+            
+                // Setup some book-keeping to help in searching for results
+                this.pathway.executable_ensemble_summary[modelid] = {
+                    total_runs: configs.length,
+                    workflow_name: workflowid.replace(/.+#/, ''),
+                    submission_time: Date.now() - 20000 // Less 20 seconds to counter for clock skews
+                } as ExecutableEnsembleSummary
+
+                // Work in batches
+                let batchSize = 100; // Deal with ensembles from firebase in this batch size
+                let batchid = 0; // Use to create batchids in firebase for storing ensemble ids
+
+                let executionBatchSize = 10; // Run workflows in Wings in batches
+                
+                // Create ensembles in batches
+                for(let i=0; i<configs.length; i+= batchSize) {
+                    let bindings = configs.slice(i, i+batchSize);
+
+                    let ensembles = [];
+                    let ensembleids = [];
+
+                    if(this._progress_abort) {
+                        break;
+                    }
+
+                    // Create ensembles for this batch
+                    bindings.map((binding) => {
+                        let inputBindings = {};
+                        for(let j=0; j<inputIds.length; j++) {
+                            inputBindings[inputIds[j]] = binding[j];
+                        }
+                        let ensemble = {
+                            modelid: modelid,
+                            bindings: inputBindings,
+                            runid: null,
+                            status: null,
+                            results: [],
+                            submission_time: Date.now(),
+                            selected: false
+                        } as ExecutableEnsemble;
+                        ensemble.id = getEnsembleHash(ensemble);
+
+                        ensembleids.push(ensemble.id);
+                        ensembles.push(ensemble);
+                    })
+
+                    // Check if any current ensembles already exist 
+                    // - Note: ensemble ids are uniquely defined by the model id and inputs
+                    let current_ensemble_ids = await listExistingEnsembleIds(ensembleids);
+
+                    // Run ensembles in smaller batches
+                    for(let i=0; i<ensembles.length; i+= executionBatchSize) {
+                        let eslice = ensembles.slice(i, i+executionBatchSize);
+                        // Get ensembles that arent already run
+                        let eslice_nr = eslice.filter((ensemble) => current_ensemble_ids.indexOf(ensemble.id) < 0);
+                        if(eslice_nr.length > 0) {
+                            let runids = await runModelEnsembles(this.pathway, eslice_nr, datasets, tpl_package, this.prefs);
+                            for(let j=0; j<eslice_nr.length; j++) {
+                                eslice_nr[j].runid = runids[j];
+                                eslice_nr[j].status = "WAITING";
+                                eslice_nr[j].run_progress = 0;
+                            }
+                            addPathwayEnsembles(eslice_nr);
+                        }
+                        this._progress_number += eslice.length;
+                    }
+
+                    // Save pathway ensemble ids (to be used for later retrieval of ensembles)
+                    setPathwayEnsembleIds(this.scenario.id, this.pathway.id,
+                        model.id, batchid, ensembleids);
+
+                    batchid++;
+                }
+            }
+       })
+    }
+
+    _savePathwayDetails() {
+        // Update notes
+        let notes = "";
+        if(this.shadowRoot!.getElementById("notes"))
+            notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
+
+        this.pathway.notes = {
+            ...this.pathway.notes!,
+            parameters: notes
+        };
+        this.pathway.last_update = {
+            ...this.pathway.last_update!,
+            parameters: {
+                time: Date.now(),
+                user: this.user!.email
+            } as StepUpdateInformation
+        };
+
+        // Turn off edit mode
+        this._editMode = false;
+
+        // Update pathway
+        // - Just create the whole simulation matrix here
+        // - Show a message (creating workflow configuration i out of N)
+        // - Store the ensembles as separate documents under <pathway>/ensembles/<id>
+        // - Store workflow status
+        //   - pathway -> {total: number, successful: number, failed: number, running: number}
+        // Ability to search through the ensembles by certain values ?
+
+        // - Show paged table (i.e. fetch only details of the execution_ensemble_ids in page)
+        updatePathway(this.scenario, this.pathway);
+
+        // TODO: 
+        // Run pathway ensembles in the next step
+        // - Show ensemble (simulation matrix) as a paged table
+        // - Read current ensemble ids from ensembles collection
+        // - Run particular workflows
+        // - Run all workflows in page ?
+        // - Run all workflows in pathway
+        // - While running - Show a modal window
+        //      - DO NOT CLOSE while submitting workflows
+        //      - Submit 1 by 1 ? (or 4 by 4)
+        //      - Show progress bar (submitted i out of N workflows)
+        //      - After submission, update the ensemble with the run id returned
+        
+        // Monitoring pathway ensembles
+        // - 
+        
+        /*
+        let indices = []; // Run all ensembles that haven't already been run
+        for(let i=0; i<this.pathway.executable_ensembles!.length; i++) {
+            if(!this.pathway.executable_ensembles![i].runid)
+                indices.push(i);
+        }
+        runPathwayExecutableEnsembles(this.scenario, this.pathway, this.prefs, indices, this.shadowRoot); 
+
+        showNotification("runNotification", this.shadowRoot!);
+        */
     }
 
     _setPathwayParametersAndRun() {
@@ -226,37 +449,8 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                 }                        
             })
         });
-        // Turn off edit mode
-        this._editMode = false;
-
-        // Update executable ensembles in the pathway
-        this.pathway = createPathwayExecutableEnsembles(this.pathway);
-
-        // Update notes
-        let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        this.pathway.notes = {
-            ...this.pathway.notes!,
-            parameters: notes
-        };
-        this.pathway.last_update = {
-            ...this.pathway.last_update!,
-            parameters: {
-                time: Date.now(),
-                user: this.user!.email
-            } as StepUpdateInformation
-        };
-
-        // Update pathway itself
-        //updatePathway(this.scenario, this.pathway);
-        
-        let indices = []; // Run all ensembles that haven't already been run
-        for(let i=0; i<this.pathway.executable_ensembles!.length; i++) {
-            if(!this.pathway.executable_ensembles![i].runid)
-                indices.push(i);
-        }
-        runPathwayExecutableEnsembles(this.scenario, this.pathway, this.prefs, indices); 
-
-        showNotification("runNotification", this.shadowRoot!);
+ 
+        this._saveAndRunExecutableEnsembles();
     }
 
     stateChanged(state: RootState) {
@@ -266,8 +460,10 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         super.setPathway(state);
         if(this.pathway && this.pathway.models != this._models) {
             this._models = this.pathway.models!;
-            if(this.pathway.id != pathwayid) 
+            if(this.pathway.id != pathwayid)  {
                 this._resetEditMode();
+                this._current_ensemble_ids = [];
+            }
         }
     }    
 }

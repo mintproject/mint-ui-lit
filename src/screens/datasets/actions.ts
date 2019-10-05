@@ -166,7 +166,6 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
                     datasets: datasets,
                     loading: false
                 });
-                console.log(datasets);
             })
         });
     }

@@ -33,7 +33,6 @@ import '../screens/messages/messages-home';
 import { SharedStyles } from '../styles/shared-styles';
 import { showDialog, hideDialog, formElementsComplete } from '../util/ui_functions';
 import { User } from 'firebase';
-import { runPathwayExecutableEnsembles } from 'util/state_functions';
 
 @customElement('mint-app')
 export class MintApp extends connect(store)(LitElement) {
@@ -280,8 +279,6 @@ export class MintApp extends connect(store)(LitElement) {
   protected firstUpdated() {
     installRouter((location) => store.dispatch(navigate(decodeURIComponent(location.pathname))));
     store.dispatch(fetchUser());
-    store.dispatch(fetchUserPreferences());
-    store.dispatch(listTopRegions());
   }
 
   protected updated(changedProps: PropertyValues) {
@@ -299,6 +296,13 @@ export class MintApp extends connect(store)(LitElement) {
   stateChanged(state: RootState) {
     this._page = state.app!.page;
     this.user = state.app!.user!;
+    
+    if(this.user) {
+      if(!state.app.prefs)
+        store.dispatch(fetchUserPreferences());
+      if(!state.regions || !state.regions.regions)
+        store.dispatch(listTopRegions());
+    }
     /*
     if(state.app!.prefs && !this._once) {
       this._once = true;

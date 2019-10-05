@@ -2,7 +2,7 @@ import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../app/store";
 import { PageViewElement } from "../../components/page-view-element";
-import { ScenarioDetails, SubGoal, Goal, Pathway, Scenario, Notes } from "./reducers";
+import { ScenarioDetails, SubGoal, Goal, Pathway, Scenario, Notes, PathwayInfo } from "./reducers";
 import { SharedStyles } from "../../styles/shared-styles";
 import { addGoal, addPathway, addSubGoal, deletePathway, deleteGoal, deleteSubGoal, getScenarioDetail, addGoalFull, addSubGoalFull, updateSubGoal, updateGoal, updatePathway } from "./actions";
 
@@ -113,6 +113,9 @@ export class MintScenario extends connect(store)(PageViewElement) {
     }
 
     protected render() {
+        if(this._dispatched)
+            return html`<wl-progress-spinner class="loading"></wl-progress-spinner>`;
+
         //console.log("rendering");
         if(!this._scenario_details) {
             return html``;
@@ -209,22 +212,21 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                     ${!this._hideObjectives ? "fullscreen" : "fullscreen_exit"}</wl-icon>
                             </div>
                             <ul>
-                            ${((this._selectedSubgoal || {}).pathwayids || []).map((pathwayid) => {
-                                let pathway = this._scenario_details.pathways[pathwayid];
+                            ${Object.values((this._selectedSubgoal || {}).pathways || {}).map((pathway) => {
                                 let pname = pathway.name ? pathway.name : this._selectedSubgoal.name;
                                 let url = "modeling/scenario/" + this._scenario!.id + "/" + 
-                                    this._selectedSubgoal.id + "/" + pathwayid;
+                                    this._selectedSubgoal.id + "/" + pathway.id;
                                 return html`
-                                    <li class="active ${this._getPathwayClass(pathwayid!)}">
-                                        <div class="cltrow subgoalrow" id="pathway_${pathwayid}"
+                                    <li class="active ${this._getPathwayClass(pathway.id!)}">
+                                        <div class="cltrow subgoalrow" id="pathway_${pathway.id}"
                                                 @click="${this._onSelectPathway}"
-                                                data-pathwayid="${pathwayid}">
+                                                data-pathwayid="${pathway.id}">
                                             <div class="cltmain">${pname}</div>
                                             <wl-icon @click="${this._editPathwayDialog}" 
-                                                data-pathwayid="${pathwayid}"
+                                                data-pathwayid="${pathway.id}"
                                                 class="actionIcon editIcon">edit</wl-icon>
                                             <wl-icon @click="${this._onDeletePathway}" 
-                                                data-pathwayid="${pathwayid}"
+                                                data-pathwayid="${pathway.id}"
                                                 class="actionIcon deleteIcon">delete</wl-icon>
                                         </div>
                                     </li>
@@ -469,15 +471,15 @@ export class MintScenario extends connect(store)(PageViewElement) {
             } as Goal;
             let subgoal = {
                 name: subgoal_name,
-                pathwayids: []
+                pathways: {}
             } as SubGoal;
             let pathway = {
-                driving_variables: [driving_variable],
-                response_variables: [response_variable],
+                driving_variables: driving_variable ? [driving_variable] : [],
+                response_variables: response_variable ? [response_variable] : [],
                 models: {},
                 datasets: {},
                 model_ensembles: {},
-                executable_ensembles: [],
+                executable_ensemble_summary: {},
                 notes: {} as Notes
             } as Pathway;
 
@@ -515,7 +517,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
         let threadid = (e.currentTarget as HTMLButtonElement).dataset['pathwayid'];
         let dates = this._selectedSubgoal.dates || this._scenario.dates;
         if(threadid) {
-            let pathway = this._scenario_details!.pathways[threadid];
+            let pathway = this._selectedSubgoal!.pathways[threadid];
             if(pathway) {
                 if(pathway.dates)
                     dates = pathway.dates;
@@ -542,16 +544,17 @@ export class MintScenario extends connect(store)(PageViewElement) {
             let pathway_to = (form.elements["pathway_to"] as HTMLInputElement).value;
 
             // If no subgoalid, but goalid is there, then this is a new subgoal
-            let pathway : Pathway = null;
+            let pathway : PathwayInfo = null;
             if(pathwayid) {
                 // Edit Pathway 
-                pathway = this._scenario_details!.pathways[pathwayid];
+                pathway = this._selectedSubgoal!.pathways[pathwayid];
                 pathway.name = pathway_name;
                 pathway.dates = {
                     start_date: firestore.Timestamp.fromDate(new Date(pathway_from)),
                     end_date: firestore.Timestamp.fromDate(new Date(pathway_to))
                 };
-                updatePathway(this._scenario!, pathway);
+                //FIXME: 
+                // updatePathway(this._scenario!, pathway);
             }
             else {
                 // Add Pathway
@@ -566,7 +569,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                     models: {},
                     datasets: {},
                     model_ensembles: {},
-                    executable_ensembles: [],
+                    executable_ensemble_summary: {},
                     notes: {} as Notes
                 } as Pathway;
 
@@ -641,16 +644,16 @@ export class MintScenario extends connect(store)(PageViewElement) {
                         start_date: toTimeStamp(subgoal_from),
                         end_date: toTimeStamp(subgoal_to)
                     },
-                    pathwayids: []
+                    pathways: {}
                 } as SubGoal;
 
                 let pathway = {
-                    driving_variables: [driving_variable],
-                    response_variables: [response_variable],
+                    driving_variables: driving_variable ? [driving_variable] : [],
+                    response_variables: response_variable ? [response_variable] : [],
                     models: {},
                     datasets: {},
                     model_ensembles: {},
-                    executable_ensembles: [],
+                    executable_ensemble_summary: {},
                     notes: {} as Notes
                 } as Pathway;
 
@@ -680,7 +683,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
     _addSubGoal(name:string, goalid:string) {
         let subgoal = {
             name: name,
-            pathwayids: []
+            pathways: {}
         } as SubGoal;
         let subgoalid = addSubGoal(this._scenario!, goalid, subgoal);
         this._addPathway(subgoalid);
@@ -693,7 +696,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
             models: {},
             datasets: {},
             model_ensembles: {},
-            executable_ensembles: [],
+            executable_ensemble_summary: {},
             notes: {} as Notes
         } as Pathway;
         addPathway(this._scenario!, subgoalid!, pathway);
@@ -747,6 +750,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
             // Delete goal itself
             deleteGoal(this._scenario!, goalid);
             showNotification("deleteNotification", this.shadowRoot!);
+            goToPage("modeling/scenario/" + this._scenario!.id);
         }
     }
 
@@ -771,15 +775,15 @@ export class MintScenario extends connect(store)(PageViewElement) {
         if(goalid && subgoalid) {
             // Delete its pathways
             let subgoal = this._scenario_details!.subgoals[subgoalid];
-            if(subgoal && subgoal.pathwayids) {
-                subgoal.pathwayids.map((pathwayid) => {
-                    this._deletePathway(subgoalid!, pathwayid);
+            if(subgoal && subgoal.pathways) {
+                Object.values(subgoal.pathways).map((pathway) => {
+                    this._deletePathway(subgoalid!, pathway.id);
                 });
             }
             // Delete subgoal itself
             deleteSubGoal(this._scenario!, goalid, subgoalid);
-
             showNotification("deleteNotification", this.shadowRoot!);
+            goToPage("modeling/scenario/" + this._scenario!.id);
         }
     }
 
@@ -799,8 +803,10 @@ export class MintScenario extends connect(store)(PageViewElement) {
 
     _deletePathway(subgoalid: string, pathwayid: string) {
         if(subgoalid && pathwayid) {
-            deletePathway(this._scenario!, subgoalid, pathwayid);
-            delete this._scenario_details.pathways[pathwayid];
+            let subgoal = this._scenario_details.subgoals[subgoalid];
+            deletePathway(this._scenario!, subgoalid, subgoal.pathways[pathwayid]);
+            delete subgoal.pathways[pathwayid];
+            goToPage("modeling/scenario/" + this._scenario!.id + "/" + subgoal.id + "/");
         }
     }
 
@@ -810,18 +816,24 @@ export class MintScenario extends connect(store)(PageViewElement) {
         if(subgoal && (!this._selectedSubgoal || (this._selectedSubgoal.id != subgoalid))) {
             // Selecting the first pathway of the subgoal by default
             // TODO: Think about handling multiple pathways in an elegant manner
-            goToPage("modeling/scenario/" + this._scenario!.id + "/" + subgoal.id + "/" + subgoal.pathwayids![0]);
+            let pid = "";
+            for(let pathwayid in subgoal.pathways) {
+                pid = pathwayid; break;
+            }
+            // No pathway, go to the subgoal page
+            goToPage("modeling/scenario/" + this._scenario!.id + "/" + subgoal.id + "/" + pid);
         }
     }
 
     _onSelectPathway(e: Event) {
         let pathwayid = (e.currentTarget as HTMLButtonElement).dataset['pathwayid'];
-        let pathway = this._scenario_details!.pathways[pathwayid!];
         let subgoal = this._selectedSubgoal;
-        if(pathway && subgoal) {
+        if(subgoal) {
+            let pathway = subgoal!.pathways[pathwayid!];
             // Selecting the first pathway of the subgoal by default
             // TODO: Think about handling multiple pathways in an elegant manner
-            goToPage("modeling/scenario/" + this._scenario!.id + "/" + subgoal.id + "/" + pathway.id);
+            if(pathway)
+                goToPage("modeling/scenario/" + this._scenario!.id + "/" + subgoal.id + "/" + pathway.id);
         }
     }
 
@@ -854,7 +866,6 @@ export class MintScenario extends connect(store)(PageViewElement) {
         if(scenarioid && user) {
             // If we don't have the right details for the scenario, make a call to fetch the details
             if(!this._dispatched && (!state.modeling.scenario || (state.modeling.scenario.id != scenarioid))) {
-                
                 // Unsubscribe to any existing scenario details listener
                 if(state.modeling.scenario && state.modeling.scenario.unsubscribe) {
                     console.log("Unsubscribing to scenario " + state.modeling.scenario.id);
@@ -872,7 +883,6 @@ export class MintScenario extends connect(store)(PageViewElement) {
 
                 // Make a subscription call for the new scenario id
                 store.dispatch(getScenarioDetail(scenarioid));
-
                 return;
             }
 
@@ -880,23 +890,26 @@ export class MintScenario extends connect(store)(PageViewElement) {
             // - extract details from the state
             if(state.modeling.scenario && state.modeling.scenario.id == scenarioid) {
                 this._dispatched = false;
-                this._scenario_details = state.modeling.scenario;
-                this._scenario = {
-                    id: this._scenario_details.id,
-                    dates: this._scenario_details.dates,
-                    name: this._scenario_details.name,
-                    regionid: this._scenario_details.regionid,
-                    subregionid: this._scenario_details.subregionid,
-                    last_update: this._scenario_details.last_update
-                } as Scenario;
+                if(this.scenarioChanged(this._scenario_details, state.modeling.scenario)) {
+                    this._scenario_details = state.modeling.scenario;
+                    this._scenario = {
+                        id: this._scenario_details.id,
+                        dates: this._scenario_details.dates,
+                        name: this._scenario_details.name,
+                        regionid: this._scenario_details.regionid,
+                        subregionid: this._scenario_details.subregionid,
+                        last_update: this._scenario_details.last_update
+                    } as Scenario;
 
-                hideNotification("saveNotification", this.shadowRoot!);
-                hideNotification("deleteNotification", this.shadowRoot!);
+                    hideNotification("saveNotification", this.shadowRoot!);
+                    hideNotification("deleteNotification", this.shadowRoot!);
+                }
+            }
+            else if(!state.modeling.scenario) {
+                this._dispatched = false;
             }
         }
-
-        // If no subgoal/pathway selected, then show objectives tree
-        if(this._selectedSubgoal == null) {
+        else {
             this._hideObjectives = false;
         }
 
@@ -913,5 +926,17 @@ export class MintScenario extends connect(store)(PageViewElement) {
             }
             state.modeling.scenario = undefined;
         }
+    }
+
+    scenarioChanged(olds: ScenarioDetails, news: ScenarioDetails) {
+        if(!olds && news)
+            return true;
+        if(olds && news) {
+            let oldupdate = olds.last_update;
+            let newupdate = news.last_update;
+            if(oldupdate != newupdate) 
+                return true;
+        }
+        return false;        
     }
 }

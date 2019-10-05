@@ -11274,6 +11274,11 @@ trough@^1.0.0:
   dependencies:
     glob "^7.1.2"
 
+ts-md5@^1.2.6:
+  version "1.2.6"
+  resolved "https://registry.yarnpkg.com/ts-md5/-/ts-md5-1.2.6.tgz#a511b3023e46f729edbe6766d5899595a5643f1d"
+  integrity sha512-VFW6O4CTZsgTPDBhF31i83hPhfwd9Dcp5RnbfGOIJPDRro9IhvXMYd8xBycD0yXqHZiAvv+iDG8F+UFrPEyQ5w==
+
 ts-node@^8.0.2:
   version "8.3.0"
   resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-8.3.0.tgz#e4059618411371924a1fb5f3b125915f324efb57"

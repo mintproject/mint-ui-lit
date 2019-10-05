@@ -7,7 +7,7 @@ import models, { VariableModels, Model } from "../../models/reducers";
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { updatePathway } from "../actions";
-import { removeDatasetFromPathway, createPathwayExecutableEnsembles, matchVariables } from "../../../util/state_functions";
+import { removeDatasetFromPathway, matchVariables } from "../../../util/state_functions";
 
 import "weightless/tooltip";
 import "weightless/popover-card";
@@ -377,7 +377,6 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             models: models,
             model_ensembles: model_ensembles
         }
-        this.pathway = createPathwayExecutableEnsembles(this.pathway);
 
         // Update notes
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
@@ -421,7 +420,6 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                     models: models,
                     model_ensembles: model_ensembles
                 }
-                this.pathway = createPathwayExecutableEnsembles(this.pathway);
                 updatePathway(this.scenario, this.pathway);                   
             }
         }
