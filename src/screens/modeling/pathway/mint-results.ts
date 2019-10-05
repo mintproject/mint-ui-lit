@@ -135,7 +135,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
 
                return html`
                <li>
-                    <wl-title level="4"><a href="${this._getModelURL(model)}">${model.name}</a></wl-title>
+                    <wl-title level="4"><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></wl-title>
                     <p>
                     ${summary.submitted_runs} model runs were submitted, out of which 
                     ${summary.successful_runs} succeeded and produced results, and ${summary.failed_runs} failed.
@@ -337,9 +337,17 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     }
     
     _getModelURL (model:Model) {
-        return this._regionid + '/models/explore/' + model.original_model + '/'
-               + model.model_version + '/' + model.model_configuration + '/'
-               + model.localname;
+        let url = this._regionid + '/models/explore/' + model.original_model;
+        if (model.model_version) {
+            url += '/' + model.model_version;
+            if (model.model_configuration) {
+                url += '/' + model.model_configuration;
+                if (model.localname) {
+                    url += '/' + model.localname;
+                }
+            }
+        }
+        return url;
     }
 
     _getResultDatasetURL(result: any) {
