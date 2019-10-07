@@ -11,8 +11,8 @@ const firebaseConfig = {
     storageBucket: "mint-full.appspot.com",
     messagingSenderId: "128464392367",
     appId: "1:128464392367:web:97eaa44bc1fcb5296c445a"
-
 };
+
 export const app = firebase.initializeApp(firebaseConfig);
 export const auth = firebase.auth(app);
 export const db = firebase.firestore(app);

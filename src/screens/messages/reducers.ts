@@ -39,6 +39,7 @@ export interface Post extends IdNameObject {
     text: string,
     userid: string,
     username: string,
+    threadid: string,
     reference: ThreadReference,
     timestamp: firebase.firestore.Timestamp
 }

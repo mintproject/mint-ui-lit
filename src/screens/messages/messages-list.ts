@@ -11,6 +11,7 @@ import { ThreadList, Thread } from './reducers';
 
 import "weightless/list-item";
 import "weightless/icon";
+import EasyMDE from 'easymde';
 
 import { navigate, BASE_HREF, goToPage } from '../../app/actions';
 import { PageViewElement } from '../../components/page-view-element';
@@ -26,25 +27,19 @@ export class MessagesList extends connect(store)(PageViewElement) {
 
   private _userid: string;
   private _username: string;
+  private _editor: any;
 
   static get styles() {
     return [
       SharedStyles,
-      css`
-      `
+      css``
     ];
   }
 
   protected render() {
     return html`
-    <div class="cltrow scenariorow">
-        <div class="cltmain">
-            <wl-title level="3" style="margin: 0px">Message Board</wl-title>
-        </div>
-        <wl-icon @click="${this._addThreadDialog}" 
-        class="actionIcon bigActionIcon" id="addScenarioIcon">note_add</wl-icon>
-    </div>
-
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/easymde@2.8.0/dist/easymde.min.css">
     <!-- Show Thread List -->
     ${this._list && this._list.threadids.map((threadid) => {
         let thread = this._list.threads[threadid];
@@ -86,7 +81,7 @@ export class MessagesList extends connect(store)(PageViewElement) {
             Please enter thread details below
           </p>
           <div class="input_full">
-            <textarea name="thread_text"></textarea>
+            <textarea name="thread_text" id="new_thread_text"></textarea>
           </div>
         </form>
       </div>
@@ -100,20 +95,20 @@ export class MessagesList extends connect(store)(PageViewElement) {
 
   _addThreadDialog() {
     let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#threadForm")!;
-    resetForm(form);
+    resetForm(form, null);
+    this._editor.value('');
 
     showDialog("threadDialog", this.shadowRoot!);
   }
 
   _onAddThreadSubmit() {
     let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#threadForm")!;
-    if(formElementsComplete(form, ["thread_name", "thread_text"])) {
+    if(formElementsComplete(form, ["thread_name"]) && this._editor.value()) {
         let thread_name = (form.elements["thread_name"] as HTMLInputElement).value;
-        let thread_text = (form.elements["thread_text"] as HTMLTextAreaElement).value;
 
         let thread = {
           name: thread_name,
-          text: thread_text
+          text: this._editor.value()
         } as Thread;        
 
         let threadid = addThread(thread, this._userid, this._username);
@@ -145,12 +140,17 @@ export class MessagesList extends connect(store)(PageViewElement) {
   }
 
   protected firstUpdated() {    
-    store.dispatch(listThreads());
+      //this should happen here but im not getting the threads one at time
+    //store.dispatch(listThreads());
+    let textArea = this.shadowRoot.getElementById('new_thread_text')
+    if (textArea) {
+        this._editor = new EasyMDE({ element: textArea });
+    }
   }
 
   // This is called every time something is updated in the store.
   stateChanged(state: RootState) {
-    this.setRegionId(state);
+    //this.setRegionId(state);
     if(state.messages) {
       if(state.messages.threads) {
         this._list = state.messages.threads;

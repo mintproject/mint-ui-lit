@@ -92,6 +92,12 @@ export const SharedStyles = css`
     color: #444;
   }
 
+  wl-progress-spinner.loading {
+    --progress-spinner-color: #06436c;
+    margin-left: calc(50% - 20px);
+    margin-top: 50px;
+  }
+  
   wl-progress-bar {
     --progress-bar-height: 12px;
     --progress-bar-bg: #EEE;

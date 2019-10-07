@@ -2,12 +2,27 @@
 
 New version of the MINT-UI 
 
+## Version
+
+### Active
+
+| Url                            | Name        | GitHub                                       | Firebase  |
+|--------------------------------|-------------|----------------------------------------------|-----------|
+| https://dev.mint.isi.edu       | Development | The last commit on dev branch                | MINT-FULL |
+| https://formative.mint.isi.edu | Formative   | The last commit on MINT-Formative branch     | MINT      |
+| https://mint.isi.edu           | Full        | The last release on master branch            | MINT-FULL |
+| https://demo.mint.isi.edu      | Demo        | The last commit on MINT-demo branch          | MINT-DEMO |
+
+### Snapshots
+- <https://demo.mint.isi.edu> DEMO release
+- <https://old.mint.isi.edu> Old release
+
 ## Deploy
 
 The deployment of the following the services is full-automatic:
 
-- <https://dev.mint.isi.edu> points master branch - MINT version: Formative
-- <https://demo.mint.isi.edu> points MINT-demo branch - MINT version: demo
+- <https://dev.mint.isi.edu>
+- <https://formative.mint.isi.edu>
 
 The deployment of the production webpage needs a manual step.
 

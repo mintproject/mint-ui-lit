@@ -104,6 +104,13 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
                 ...state,
                 metadata: crMetadata
             };
+        /*case ADD_AUTHORS:
+            let crAuthors = { ...state.authors }
+            crAuthors[action.uri] = action.data;
+            return {
+                ...state,
+                authors: crAuthors
+            }*/
 
         case ADD_URLS:
             let newUrls = {...state.urls, ...action.data};
@@ -147,7 +154,9 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
             console.log(action); return { ...state };
         case FETCH_AUTHORS_FOR_MODEL_CONFIG:
             let newAuthors = { ...state.authors }
-            newAuthors[action.uri] = action.data;
+            if (!newAuthors[action.uri]) {
+                newAuthors[action.uri] = action.data;
+            }
             return {
                 ...state,
                 authors: newAuthors
@@ -184,7 +193,7 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
             }
         case FETCH_METADATA_NOIO_FOR_MODEL_CONFIG:
             let newMetadataNoIO = {...state.metadata};
-            if (action.data.length>0) newMetadataNoIO[action.uri] = action.data;
+            if (action.data.length>0 && !newMetadataNoIO[action.uri]) newMetadataNoIO[action.uri] = action.data;
             return {
                 ...state,
                 metadata: newMetadataNoIO

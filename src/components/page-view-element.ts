@@ -10,8 +10,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 import { LitElement, property } from 'lit-element';
 import { RootState } from '../app/store';
+import { Region, BoundingBox } from 'screens/regions/reducers';
 
 export class PageViewElement extends LitElement {
+  @property({type: Object})
+  protected _region: Region;
+
+  @property({type: Boolean})
+  private _loadingGeojson: Boolean;
+
   @property({type: String})
   protected _regionid: string | undefined;
   
@@ -40,5 +47,11 @@ export class PageViewElement extends LitElement {
       }
     }
     return false;
+  }
+
+  setRegion(state: RootState) {
+    if (this._regionid && state && state.regions && state.regions.regions && state.regions.regions[this._regionid]) {
+      this._region = state.regions.regions[this._regionid];
+    }
   }
 }

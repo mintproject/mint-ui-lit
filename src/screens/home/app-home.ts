@@ -95,7 +95,7 @@ export class AppHome extends connect(store)(PageViewElement) {
             ${Object.keys(this._regions || {}).map((regionid) => {
               let region = this._regions![regionid];
               return html`
-                <google-map-json-layer .region_id="${region.id}" .region_name="${region.name}" url="${region.geojson}" 
+                <google-map-json-layer .region_id="${region.id}" .region_name="${region.name}" json="${region.geojson_blob}" 
                   .selected="${region.id == this._regionid}"
                   @click=${(e: CustomEvent) => this.regionSelected(e.detail.id)}></google-map-json-layer>
               `;
