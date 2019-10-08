@@ -544,7 +544,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     ${(this._creating && !this._setup) ? 
                         ((this._config) ? this._renderNewSetup() : this._renderNewConfig())
                         : (this._editing ?
-                            (this._setup? this._renderEditCalibration() : (this._config? this._renderEditConfig() : '') )
+                            (this._setup? this._renderEditCalibration() : '')
                             : (this._setup ? 
                                 this._renderCalibration() 
                                 : ''))}

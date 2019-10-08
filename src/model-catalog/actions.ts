@@ -2,8 +2,8 @@ import { Action, ActionCreator } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
-import { Configuration, DefaultApi, ModelApi, SoftwareVersionApi, ModelConfigurationApi, ParameterApi,
-         DatasetSpecificationApi } from '@mintproject/modelcatalog_client';
+import { Configuration, DefaultApi, ModelApi, SoftwareVersionApi, ModelConfigurationApi, ParameterApi, GridApi,
+         DatasetSpecificationApi, PersonApi, ProcessApi, TimeIntervalApi } from '@mintproject/modelcatalog_client';
 
 function debug () {
     console.log('OBA:', ...arguments);
@@ -12,15 +12,6 @@ function debug () {
 const idReducer = (dic, elem) => {
     dic[elem.id] = elem;
     return dic;
-}
-
-const fixLabel = (resource:any) => {
-    // for some reason labels are returned in a stringify array
-    if (resource.label) {
-        return {...resource, label: resource.label.slice(2, resource.label.length - 2)}
-    } else {
-        return resource;
-    }
 }
 
 const fixPosition = (resource:any) => {
@@ -34,32 +25,15 @@ export const MODELS_GET = "MODELS_GET";
 interface MCAModelsGet extends Action<'MODELS_GET'> { payload: any };
 export const modelsGet: ActionCreator<ModelCatalogThunkResult> = () => (dispatch) => {
     debug('Fetching models');
-    let state: any = store.getState();
-    let status = state.app.prefs.modelCatalog.status;
-    let token = state.app.prefs.modelCatalog.accessToken;
-
-    if (status === 'DONE') {
-        let MApi = new ModelApi();
-        MApi.modelsGet({username: 'mint@isi.edu'})
-        .then((data) => {
-            data = data.map(fixLabel);
-            dispatch({
-                type: MODELS_GET,
-                payload: data.reduce(idReducer, {})
-            });
-        })
-        .catch((err) => {console.log('Error on getModels', err)})
-    } else if (status === 'LOADING') {
-        console.log('waiting...')
+    let MApi : ModelApi = new ModelApi();
+    MApi.modelsGet({username: 'mint@isi.edu'})
+    .then((data) => {
         dispatch({
-            type: 'WAIT_UNTIL',
-            predicate: action => (action.type === 'FETCH_MODEL_CATALOG_ACCESS_TOKEN'),
-            run: (dispatch, getState, action) => {
-                dispatch(modelsGet());
-                console.log('dispaching async')
-            }
-        })
-    }
+            type: MODELS_GET,
+            payload: data.reduce(idReducer, {})
+        });
+    })
+    .catch((err) => {console.log('Error on getModels', err)})
 }
 
 export const VERSIONS_GET = "VERSIONS_GET";
@@ -69,7 +43,6 @@ export const versionsGet: ActionCreator<ModelCatalogThunkResult> = () => (dispat
     let api = new SoftwareVersionApi();
     api.softwareversionsGet({username: 'mint@isi.edu'})
         .then((data) => {
-            data = data.map(fixLabel);
             dispatch({
                 type: VERSIONS_GET,
                 payload: data.reduce(idReducer, {})
@@ -85,7 +58,6 @@ export const configurationsGet: ActionCreator<ModelCatalogThunkResult> = () => (
     let api = new ModelConfigurationApi();
     api.modelconfigurationsGet({username: 'mint@isi.edu'})
         .then((data) => {
-            data = data.map(fixLabel);
             dispatch({
                 type: CONFIGURATIONS_GET,
                 payload: data.reduce(idReducer, {})
@@ -93,6 +65,67 @@ export const configurationsGet: ActionCreator<ModelCatalogThunkResult> = () => (
         })
         .catch((err) => {console.log('Error on getConfigs', err)})
 }
+
+export const CONFIGURATION_PUT = "CONFIGURATION_PUT";
+interface MCAConfigurationPut extends Action<'CONFIGURATION_PUT'> { payload: any };
+export const configurationPut: ActionCreator<ModelCatalogThunkResult> = (config) => (dispatch) => {
+    debug('Updating configuration', config.id);
+    let state: any = store.getState();
+    let status = state.app.prefs.modelCatalog.status;
+    let token = state.app.prefs.modelCatalog.accessToken;
+    let C : Configuration = new Configuration({accessToken: token});
+
+    if (status === 'DONE') {
+        let api = new ModelConfigurationApi(C);
+        api.modelconfigurationsIdPut({user: 'mint@isi.edu', id: config.id.split('/').pop(), modelConfiguration: config}) //<- my username
+            .then((data) => {
+                console.log(data);
+            })
+            .catch((err) => {console.log('Error on putConfigs', err)})
+    } else if (status === 'LOADING') {
+        console.log('waiting...')
+        dispatch({
+            type: 'WAIT_UNTIL',
+            predicate: action => (action.type === 'FETCH_MODEL_CATALOG_ACCESS_TOKEN'),
+            run: (dispatch, getState, action) => {
+                dispatch(configurationPut(config));
+                console.log('dispaching async')
+            }
+        })
+    }
+}
+
+export const CONFIGURATION_POST = "CONFIGURATION_POST";
+interface MCAConfigurationPost extends Action<'CONFIGURATION_POST'> { payload: any };
+export const configurationPost: ActionCreator<ModelCatalogThunkResult> = (config) => (dispatch) => {
+    debug('creating new configuration', config);
+
+    let state: any = store.getState();
+    let status = state.app.prefs.modelCatalog.status;
+    let token = state.app.prefs.modelCatalog.accessToken;
+    let C : Configuration = new Configuration({accessToken: token});
+
+    if (status === 'DONE') {
+        config.id = '';
+        let api = new ModelConfigurationApi(C);
+        api.modelconfigurationsPost({user: 'mint@isi.edu', modelConfiguration: config}) //<- my username
+            .then((data) => {
+                console.log(data);
+            })
+            .catch((err) => {console.log('Error on putConfigs', err)})
+    } else if (status === 'LOADING') {
+        console.log('waiting...')
+        dispatch({
+            type: 'WAIT_UNTIL',
+            predicate: action => (action.type === 'FETCH_MODEL_CATALOG_ACCESS_TOKEN'),
+            run: (dispatch, getState, action) => {
+                dispatch(configurationPost(config));
+                console.log('dispaching async')
+            }
+        })
+    }
+}
+
 
 export const PARAMETER_GET = "PARAMETER_GET";
 interface MCAParameterGet extends Action<'PARAMETER_GET'> { payload: any };
@@ -103,7 +136,7 @@ export const parameterGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (di
     api.parametersIdGet({username: 'mint@isi.edu', id: id})
         .then((resp) => {
             let data = {};
-            data[uri] = fixPosition(fixLabel(resp));
+            data[uri] = fixPosition(resp);
             dispatch({
                 type: PARAMETER_GET,
                 payload: data
@@ -121,7 +154,7 @@ export const datasetSpecificationGet: ActionCreator<ModelCatalogThunkResult> = (
     api.datasetspecificationsIdGet({username: 'mint@isi.edu', id: id})
         .then((resp) => {
             let data = {};
-            data[uri] = fixPosition(fixLabel(resp));
+            data[uri] = fixPosition(resp);
             dispatch({
                 type: DATASET_SPECIFICATION_GET,
                 payload: data
@@ -130,6 +163,78 @@ export const datasetSpecificationGet: ActionCreator<ModelCatalogThunkResult> = (
         .catch((err) => {console.log('Error on getDatasetSpecification', err)})
 }
 
-export type ModelCatalogAction = MCAModelsGet | MCAVersionsGet | MCAConfigurationsGet | MCAParameterGet |
-                                 MCADatasetSpecificationGet;
+export const PERSON_GET = "PERSON_GET";
+interface MCAPersonGet extends Action<'PERSON_GET'> { payload: any };
+export const personGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (dispatch) => {
+    debug('Fetching person', uri);
+    let id = uri.split('/').pop();
+    let api = new PersonApi();
+    api.personsIdGet({username: 'mint@isi.edu', id: id})
+        .then((resp) => {
+            let data = {};
+            data[uri] = resp;
+            dispatch({
+                type: PERSON_GET,
+                payload: data
+            });
+        })
+        .catch((err) => {console.log('Error on getPerson', err)})
+}
+
+export const GRID_GET = "GRID_GET";
+interface MCAGridGet extends Action<'GRID_GET'> { payload: any };
+export const gridGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (dispatch) => {
+    debug('Fetching grid', uri);
+    let id = uri.split('/').pop();
+    let api = new GridApi();
+    api.gridsIdGet({username: 'mint@isi.edu', id: id})
+        .then((resp) => {
+            let data = {};
+            data[uri] = resp;
+            dispatch({
+                type: GRID_GET,
+                payload: data
+            });
+        })
+        .catch((err) => {console.log('Error on getGrid', err)})
+}
+
+export const PROCESS_GET = "PROCESS_GET";
+interface MCAProcessGet extends Action<'PROCESS_GET'> { payload: any };
+export const processGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (dispatch) => {
+    debug('Fetching process', uri);
+    let id = uri.split('/').pop();
+    let api = new ProcessApi();
+    api.processsIdGet({username: 'mint@isi.edu', id: id})
+        .then((resp) => {
+            let data = {};
+            data[uri] = resp;
+            dispatch({
+                type: PROCESS_GET,
+                payload: data
+            });
+        })
+        .catch((err) => {console.log('Error on getProcess', err)})
+}
+
+export const TIME_INTERVAL_GET = "TIME_INTERVAL_GET";
+interface MCATimeIntervalGet extends Action<'TIME_INTERVAL_GET'> { payload: any };
+export const timeIntervalGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (dispatch) => {
+    debug('Fetching timeinterval', uri);
+    let id = uri.split('/').pop();
+    let api = new TimeIntervalApi();
+    api.timeintervalsIdGet({username: 'mint@isi.edu', id: id})
+        .then((resp) => {
+            let data = {};
+            data[uri] = resp;
+            dispatch({
+                type: TIME_INTERVAL_GET,
+                payload: data
+            });
+        })
+        .catch((err) => {console.log('Error on getTimeInterval', err)})
+}
+
+export type ModelCatalogAction = MCAModelsGet | MCAVersionsGet | MCAConfigurationsGet | MCAConfigurationPut | MCAParameterGet |
+                                 MCADatasetSpecificationGet | MCAGridGet | MCAProcess | MCATimeIntervalGet ;
 type ModelCatalogThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogAction>;

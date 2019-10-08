@@ -38,7 +38,7 @@ export const renderExternalLink = (uri, label?) => {
 export const renderParameterType = (param) => {
     let ptype = param.type.filter(p => p != 'Parameter').map(uri => uri.split('#').pop())
     return html`
-        ${ptype} ${param.hasDataType ? '(' + param.hasDataType + ')' : ''}
+        ${ptype} ${param.hasDataType ? html`(<span class="monospaced">${param.hasDataType}</span>)` : ''}
         ${(param.hasMinimumAcceptedValue || param.hasMaximumAcceptedValue) ?
             html`<br/><span style="font-size: 11px;">Range is from ${param.hasMinimumAcceptedValue} to ${param.hasMaximumAcceptedValue}</span>` : '' }
     `
