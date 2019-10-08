@@ -16,6 +16,7 @@ import { ExecutableEnsemble, ModelEnsembles } from "../reducers";
 import { IdMap } from "app/reducers";
 import { fetchPathwayEnsembles, updatePathwayEnsembles, updatePathway, getAllPathwayEnsembleIds } from "../actions";
 import { fetchWingsTemplate, loginToWings, fetchWingsRunResults, fetchWingsRunsStatuses} from "util/wings_functions";
+import { DataResource } from "screens/datasets/reducers";
 
 @customElement('mint-runs')
 export class MintRuns extends connect(store)(MintPathwayPage) {
@@ -117,8 +118,9 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 let finished_runs = summary.successful_runs + summary.failed_runs;
                 let finished = (finished_runs == summary.total_runs);
                 let running = summary.submitted_runs - finished_runs;
+                let pending = summary.total_runs - summary.submitted_runs;
 
-                if(!grouped_ensemble) {
+                if(!grouped_ensemble && model) {
                     this._fetchRuns(model.id, 1, this.pageSize)
                 }
 
@@ -129,8 +131,9 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                     The model setup created ${summary.total_runs} configurations. 
                     ${!finished ? "So far, " : ""} ${summary.submitted_runs} model runs
                     ${!finished ? "have been" : "were"} submitted, out of which 
-                    ${summary.successful_runs} succeeded, and ${summary.failed_runs} failed.
-                    ${running > 0 ? html `${running} model configurations are still running.` : ""}
+                    ${summary.successful_runs} succeeded, while ${summary.failed_runs} failed.
+                    ${running > 0 ? html `${running} are currently running` : ""}
+                    ${pending > 0 ? html `, and ${pending} are waiting to be run` : ""}
 
                     ${!finished ? 
                         html`<br /><wl-button class="submit"
@@ -200,13 +203,12 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                                     html`<td>No inputs or parameters</td>` : ""
                                                 }
                                                 ${grouped_ensemble.inputs.map((input) => {
-                                                    let dsid = ensemble.bindings[input.id];
-                                                    let dataset = this.pathway.datasets![dsid];
-                                                    if(dataset) {
+                                                    let res = ensemble.bindings[input.id] as DataResource;
+                                                    if(res) {
                                                         // FIXME: This should be resolved to a collection of resources
-                                                        let furl = this._getDatasetURL(dataset.name); 
+                                                        let furl = this._getDatasetURL(res.name); 
                                                         return html`
-                                                            <td><a href="${furl}">${dataset.name}</a></td>
+                                                            <td><a href="${furl}">${res.name}</a></td>
                                                         `;
                                                     }
                                                 })}
@@ -263,6 +265,10 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
 
     _onDialogDone() {
         updatePathway(this.scenario, this.pathway);
+        
+        Object.keys(this.pathway.models).map((modelid) => {
+            this._fetchRuns(modelid, 1, this.pageSize);
+        });
         hideDialog("progressDialog", this.shadowRoot!);
     }
 
@@ -442,12 +448,12 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         return url;
     } 
 
-    _getDatasetURL (dsname: string) {
+    _getDatasetURL (resname: string) {
         let config = this.prefs;
         let suffix = "/users/" + config.wings.username + "/" + config.wings.domain;
         var purl = config.wings.server + suffix
         var expurl = config.wings.export_url + "/export" + suffix;
-        let dsid = expurl + "/data/library.owl#" + dsname;
+        let dsid = expurl + "/data/library.owl#" + resname;
         return purl + "/data/fetch?data_id=" + escape(dsid);
     }
 

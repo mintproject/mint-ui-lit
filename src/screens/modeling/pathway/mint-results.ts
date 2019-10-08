@@ -13,6 +13,7 @@ import { renderLastUpdateText } from "../../../util/ui_renders";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { Model } from "screens/models/reducers";
 import { IdMap } from "app/reducers";
+import { DataResource } from "screens/datasets/reducers";
 
 @customElement('mint-results')
 export class MintResults extends connect(store)(MintPathwayPage) {
@@ -128,6 +129,10 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                let model = this.pathway.models![modelid];
                let grouped_ensemble = grouped_ensembles[modelid];
                this.totalPages = Math.ceil(summary.total_runs/this.pageSize);
+               let finished_runs = summary.successful_runs + summary.failed_runs;
+               let finished = (finished_runs == summary.total_runs);
+               let running = summary.submitted_runs - finished_runs;
+               let pending = summary.total_runs - summary.submitted_runs;
 
                 if(!grouped_ensemble) {
                     this._fetchRuns(model.id, 1, this.pageSize)
@@ -137,12 +142,19 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                <li>
                     <wl-title level="4"><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></wl-title>
                     <p>
-                    ${summary.submitted_runs} model runs were submitted, out of which 
-                    ${summary.successful_runs} succeeded and produced results, and ${summary.failed_runs} failed.
+                    The model setup created ${summary.total_runs} configurations. 
+                    ${!finished ? "So far, " : ""} ${summary.submitted_runs} model runs
+                    ${!finished ? "have been" : "were"} submitted, out of which 
+                    ${summary.successful_runs} succeeded and produced results, while ${summary.failed_runs} failed.
+                    ${running > 0 ? html `${running} are currently running` : ""}
+                    ${pending > 0 ? html `, and ${pending} are waiting to be run` : ""}
+
+                    ${finished ? 
+                        html` <wl-button class="submit"
+                        @click="${() => this._publishAllResults(model.id)}">Publish all results</wl-button>`
+                        : ""
+                    }
                     </p>
-                    <wl-button class="submit"
-                           @click="${() => this._publishAllResults(model.id)}">Publish all results</wl-button>
-                    <br /><br />
 
                     <div style="width:100%; border:1px solid #EEE;border-bottom:0px;">
                         ${grouped_ensemble && !grouped_ensemble.loading ? 
@@ -235,13 +247,14 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                                 });
                                             })}
                                             ${grouped_ensemble.inputs.map((input) => {
-                                                let dsid = ensemble.bindings[input.id];
-                                                let dataset = this.pathway.datasets![dsid];
-                                                // FIXME: This should be resolved to a collection of resources
-                                                let furl = this._getDatasetURL(dataset.name); 
-                                                return html`
-                                                    <td><a href="${furl}">${dataset.name}</a></td>
-                                                `;
+                                                let res = ensemble.bindings[input.id] as DataResource;
+                                                if(res) {
+                                                    // FIXME: This could be resolved to a collection of resources
+                                                    let furl = this._getDatasetURL(res.name); 
+                                                    return html`
+                                                        <td><a href="${furl}">${res.name}</a></td>
+                                                    `;
+                                                }
                                             })}
                                             ${grouped_ensemble.params.map((param) => html`<td>${ensemble.bindings[param.id]}</td>` )}
                                         </tr>
@@ -354,12 +367,12 @@ export class MintResults extends connect(store)(MintPathwayPage) {
         return this._getDatasetURL(result.location.replace(/.+\//, ''));
     }
 
-    _getDatasetURL (dsname: string) {
+    _getDatasetURL (resname: string) {
         let config = this.prefs;
         let suffix = "/users/" + config.wings.username + "/" + config.wings.domain;
         var purl = config.wings.server + suffix
         var expurl = config.wings.export_url + "/export" + suffix;
-        let dsid = expurl + "/data/library.owl#" + dsname;
+        let dsid = expurl + "/data/library.owl#" + resname;
         return purl + "/data/fetch?data_id=" + escape(dsid);
     }
 

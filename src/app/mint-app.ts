@@ -303,19 +303,10 @@ export class MintApp extends connect(store)(LitElement) {
       if(!state.regions || !state.regions.regions)
         store.dispatch(listTopRegions());
     }
-    /*
-    if(state.app!.prefs && !this._once) {
-      this._once = true;
-      console.log(state.app!.prefs);
-      runPathwayExecutableEnsembles(null, null, state.app!.prefs, null);
-    }*/
 
     let regionid = state.ui.selected_top_regionid;
     if (state && state.regions && state.regions.regions && state.regions.regions[regionid]) {
         this._selectedRegion = state.regions.regions[regionid].name;
     }
-    /*if(regionid) {
-      this._selectedRegion = regionid.replace(/_/g, ' ').toUpperCase();
-    }*/
   }
 }

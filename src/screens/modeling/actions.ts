@@ -449,7 +449,7 @@ export const updatePathway = (scenario: Scenario, pathway: Pathway) =>  {
     delete npathway.unsubscribe;
     let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc(pathway.id);
     console.log(scenario.id + " ---- update pathway: " + pathway.id);
-    console.log(pathway);
+    //console.log(pathway);
     return pathwayRef.set(npathway); //.then(() => updateScenario(scenario));
 };
 
