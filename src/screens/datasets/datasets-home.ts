@@ -32,7 +32,7 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
         let nav = [{label:'Explore Data', url:'datasets'}] 
         switch (this._subpage) {
             case 'browse':
-                nav.push({label: 'Browse Datasets for ' + (this._region ? this._region.name : ""), url: 'datasets/browse'});
+                nav.push({label: 'Browse Datasets', url: 'datasets/browse'});
                 break;
             case 'register':
                 nav.push({label: 'Add Datasets', url: 'datasets/register'});
@@ -79,6 +79,5 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         super.setSubPage(state);
         super.setRegionId(state);
-        super.setRegion(state);
     }
 }

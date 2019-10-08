@@ -17,6 +17,7 @@ import { IdMap } from "../../../app/reducers";
 import { fromTimeStampToDateString } from "util/date-utils";
 
 import "weightless/snackbar";
+import { Region } from "screens/regions/reducers";
 
 store.addReducers({
     datasets
@@ -24,6 +25,8 @@ store.addReducers({
 
 @customElement('mint-datasets')
 export class MintDatasets extends connect(store)(MintPathwayPage) {
+    @property({type: Object})
+    private _subgoal_region: Region;
 
     @property({type: Object})
     private _queriedDatasets!: ModelDatasets;
@@ -374,6 +377,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                         model_ensembles[modelid] = {};
                     if(!model_ensembles[modelid][inputid])
                         model_ensembles[modelid][inputid] = [];
+                    let ds = new_datasets[dsid];
                     model_ensembles[modelid][inputid].push(dsid!);
                     datasets[dsid] = new_datasets[dsid];
                 });
@@ -438,7 +442,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                             this._editMode) {
                         //console.log("Querying datasets for model: " + modelid+", input: " + input.id);
                         store.dispatch(queryDatasetsByVariables(
-                            modelid, input.id, input.variables, dates));
+                            modelid, input.id, input.variables, dates, this._subgoal_region));
                     } else {
                         this._queriedDatasets[modelid][input.id!] = {
                             loading: false,
@@ -457,6 +461,17 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
 
     stateChanged(state: RootState) {
         super.setUser(state);
+
+        super.setRegion(state);
+        if(state.regions && state.regions.query_result) {
+            let subregionid = this.subgoal.subregionid || this.scenario.subregionid || this.scenario.regionid;
+            if(subregionid == this._regionid) {
+                this._subgoal_region = this._region;
+            }
+            else if (state.regions.query_result[this._regionid]){
+                this._subgoal_region = state.regions.query_result[this._regionid]["*"][subregionid];
+            }
+        }
 
         let pathwayid = this.pathway ? this.pathway.id : null;
         super.setPathway(state);

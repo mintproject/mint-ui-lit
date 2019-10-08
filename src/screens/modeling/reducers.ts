@@ -2,7 +2,7 @@ import { Reducer } from "redux";
 import { RootAction } from "../../app/store";
 import { SCENARIOS_LIST, SCENARIO_DETAILS, SCENARIO_SUBSCRIPTION, PATHWAY_SUBSCRIPTION, PATHWAY_DETAILS, PATHWAY_ENSEMBLES_LIST } from "./actions";
 import { Model } from "../models/reducers";
-import { Dataset } from "../datasets/reducers";
+import { Dataset, DataResource } from "../datasets/reducers";
 import { IdMap, IdNameObject } from "../../app/reducers";
 import { REGIONS_LIST } from "../regions/actions";
 
@@ -137,7 +137,7 @@ export interface ExecutableEnsemble {
 }
 
 export interface InputBindings {
-    [input: string]: string
+    [input: string]: string | DataResource
 }
 
 const INITIAL_STATE: ModelingState = {};

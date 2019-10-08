@@ -140,9 +140,7 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
     }
 
     stateChanged(state: RootState) {
-        super.setRegionId(state);
         super.setRegion(state);
-
         if(state.datasets && state.datasets.dataset) {
             this._dataset = state.datasets.dataset;
             state.datasets.dataset = null;

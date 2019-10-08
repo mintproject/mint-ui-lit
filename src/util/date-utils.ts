@@ -22,6 +22,15 @@ export const fromTimeStampToString = (timestamp: firebase.firestore.Timestamp) :
     }
 }
 
+export const fromTimeStampToString2 = (timestamp: firebase.firestore.Timestamp) : string => {
+    if(timestamp instanceof firebase.firestore.Timestamp) {
+        return timestamp.toDate().toISOString().replace(/\.000Z$/, '');
+    }
+    else {
+        return timestamp;
+    }
+}
+
 export const fromTimeStampToDateString = (timestamp: firebase.firestore.Timestamp) : string => {
     return fromTimeStampToString(timestamp).replace(/T.*$/,'');
 }
