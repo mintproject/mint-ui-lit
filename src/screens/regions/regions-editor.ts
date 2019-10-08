@@ -257,9 +257,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     }
 
     stateChanged(state: RootState) {
-        super.setRegionId(state);
+        super.setRegion(state);
         
-        if(this._regionid) {
+        if(this._regionid && this._region) {
             let qr = state.regions.query_result;
             if(!qr || !qr[this._regionid] || !qr[this._regionid][this.regionType]) {
                 if(!this._dispatched) {
@@ -275,9 +275,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             }
 
             // Set parent region
-            if (state && state.regions && state.regions.regions && state.regions.regions[this._regionid]) {
-                this._parentRegionName = state.regions.regions[this._regionid].name;
-            }
+            this._parentRegionName = this._region.name;
         }
     }
 }

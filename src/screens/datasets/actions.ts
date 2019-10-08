@@ -6,7 +6,8 @@ import { EXAMPLE_DATASETS_QUERY } from "../../offline_data/sample_datasets";
 import { OFFLINE_DEMO_MODE } from "../../app/actions";
 import { IdMap } from "app/reducers";
 import { DateRange } from "screens/modeling/reducers";
-import { toTimeStamp, fromTimeStampToString } from "util/date-utils";
+import { toTimeStamp, fromTimeStampToString, fromTimeStampToString2 } from "util/date-utils";
+import { Region } from "screens/regions/reducers";
 
 export const DATASETS_VARIABLES_QUERY = 'DATASETS_VARIABLES_QUERY';
 export const DATASETS_GENERAL_QUERY = 'DATASETS_GENERAL_QUERY';
@@ -108,7 +109,7 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
             ds.time_period.start_date = tcoverstart;
         }
         if(!ds.time_period.end_date || ds.time_period.end_date < tcoverend) {
-            ds.time_period.end_date = tcoverstart;
+            ds.time_period.end_date = tcoverend;
         }
         
         ds.resources.push({
@@ -127,7 +128,7 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
 // Query Data Catalog by Variables
 type QueryDatasetsThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionVariablesQuery>;
 export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> = 
-        (modelid: string, inputid: string, driving_variables: string[], dates: DateRange ) => (dispatch) => {
+        (modelid: string, inputid: string, driving_variables: string[], dates: DateRange, region: Region ) => (dispatch) => {
     
     if(OFFLINE_DEMO_MODE) {
         let datasets = [] as Dataset[];
@@ -167,8 +168,12 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 standard_variable_names__in: driving_variables,
-                start_time__gte: fromTimeStampToString(dates.start_date).replace(/\.\d{3}Z$/,''),
-                end_time__lte: fromTimeStampToString(dates.end_date).replace(/\.\d{3}Z$/,''),
+                spatial_coverage__intersects: [
+                    region.bounding_box.xmin, region.bounding_box.ymin, 
+                    region.bounding_box.xmax, region.bounding_box.ymax 
+                ],
+                end_time__gte: fromTimeStampToString(dates.start_date).replace(/\.\d{3}Z$/,''),
+                start_time__lte: fromTimeStampToString(dates.end_date).replace(/\.\d{3}Z$/,''),
                 limit: 5000
             })
         }).then((response) => {
@@ -199,10 +204,10 @@ const _createQueryData = (queryConfig: DatasetQueryParameters) => {
           queryConfig.spatialCoverage.ymax];
     }
     if(queryConfig.dateRange && queryConfig.dateRange.end_date) {
-      data["end_time__gte"] = fromTimeStampToString(queryConfig.dateRange.start_date);
+      data["end_time__gte"] = fromTimeStampToString2(queryConfig.dateRange.start_date);
     }
     if(queryConfig.dateRange && queryConfig.dateRange.start_date) {
-      data["start_time__lte"] = fromTimeStampToString(queryConfig.dateRange.end_date);
+      data["start_time__lte"] = fromTimeStampToString2(queryConfig.dateRange.end_date);
     }
     if(queryConfig.name) {
       data["dataset_names__in"] = [ queryConfig.name ];
