@@ -2,7 +2,8 @@ import { Action, ActionCreator } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
-import { Configuration, DefaultApi, ModelApi, SoftwareVersionApi, ModelConfigurationApi, ParameterApi } from '@mintproject/modelcatalog_client';
+import { Configuration, DefaultApi, ModelApi, SoftwareVersionApi, ModelConfigurationApi, ParameterApi,
+         DatasetSpecificationApi } from '@mintproject/modelcatalog_client';
 
 function debug () {
     console.log('OBA:', ...arguments);
@@ -20,6 +21,13 @@ const fixLabel = (resource:any) => {
     } else {
         return resource;
     }
+}
+
+const fixPosition = (resource:any) => {
+    if (resource.position) {
+        resource.position = resource.position[0];
+    }
+    return resource;
 }
 
 export const MODELS_GET = "MODELS_GET";
@@ -95,7 +103,7 @@ export const parameterGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (di
     api.parametersIdGet({username: 'mint@isi.edu', id: id})
         .then((resp) => {
             let data = {};
-            data[uri] = fixLabel(resp);
+            data[uri] = fixPosition(fixLabel(resp));
             dispatch({
                 type: PARAMETER_GET,
                 payload: data
@@ -104,5 +112,24 @@ export const parameterGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (di
         .catch((err) => {console.log('Error on getParameter', err)})
 }
 
-export type ModelCatalogAction = MCAModelsGet | MCAVersionsGet | MCAConfigurationsGet | MCAParameterGet ;
+export const DATASET_SPECIFICATION_GET = "DATASET_SPECIFICATION_GET";
+interface MCADatasetSpecificationGet extends Action<'DATASET_SPECIFICATION_GET'> { payload: any };
+export const datasetSpecificationGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (dispatch) => {
+    debug('Fetching dataset specification', uri);
+    let id = uri.split('/').pop();
+    let api = new DatasetSpecificationApi();
+    api.datasetspecificationsIdGet({username: 'mint@isi.edu', id: id})
+        .then((resp) => {
+            let data = {};
+            data[uri] = fixPosition(fixLabel(resp));
+            dispatch({
+                type: DATASET_SPECIFICATION_GET,
+                payload: data
+            });
+        })
+        .catch((err) => {console.log('Error on getDatasetSpecification', err)})
+}
+
+export type ModelCatalogAction = MCAModelsGet | MCAVersionsGet | MCAConfigurationsGet | MCAParameterGet |
+                                 MCADatasetSpecificationGet;
 type ModelCatalogThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogAction>;

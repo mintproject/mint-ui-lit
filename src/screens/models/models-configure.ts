@@ -1034,35 +1034,6 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             : this._configAuthors.map(a => a.name).join(', ')}
             <br/>
          */
-         /*
-        <wl-title level="4" style="margin-top:1em;">Input files:</wl-title>
-        <table class="pure-table pure-table-striped" style="width: 100%">
-            <colgroup>
-                <col span="1">
-                <col span="1">
-                <col span="1">
-                <col span="1">
-            </colgroup>
-            <thead>
-                <th class="ta-right"><b>#</b></th>
-                <th><b>Name</b></th>
-                <th><b>Description</b></th>
-                <th style="text-align: right;"><b>Format</b></th>
-            </thead>
-            <tbody>
-            ${loadingIO ? html`<tr><td colspan="4" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td></tr>`
-            : (!inputs ?  html`<tr><td colspan="4" class="info-center">- This setup has no input files -</td></tr>`
-                : inputs.map(i => html`
-                <tr>
-                    <td class="ta-right">${i.position}</td>
-                    <td><code>${i.label}</code></td>
-                    <td>${i.desc}</td>
-                    <td style="text-align: right;">${i.format}</td>
-                </tr>
-            `))}
-            </tbody>
-        </table>
-         */
 
         return html`
         <table class="details-table">

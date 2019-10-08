@@ -11,7 +11,8 @@ import { goToPage } from 'app/actions';
 //import { renderNotifications } from "util/ui_renders";
 //import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { parameterGet } from 'model-catalog/actions';
+import { parameterGet, datasetSpecificationGet } from 'model-catalog/actions';
+import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
 import "weightless/slider";
 import "weightless/progress-spinner";
@@ -43,37 +44,22 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     private _config: any = null;
 
     @property({type: Object})
-    private _setup: any = null;
-
-    @property({type: Object})
     private _configParameters : any = {};
-
-    @property({type: Object})
-    private _setupParameters : any = null;
 
     @property({type: Object})
     private _configMetadata : any = null;
 
     @property({type: Object})
-    private _setupMetadata : any = null;
-
-    @property({type: Object})
     private _configAuthors : any = null;
 
     @property({type: Object})
-    private _setupAuthors : any = null;
+    private _configInputs : any = {};
 
-    @property({type: Object})
-    private _configInputs : any = null;
-
-    @property({type: Object})
-    private _setupInputs : any = null;
-
-    private _url : string = '';
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
     private _selectedConfig : string = '';
-    private _selectedSetup : string = '';
+    private _configParametersLoading : Set<string> = new Set();
+    private _configInputsLoading : Set<string> = new Set();
 
     static get styles() {
         return [ExplorerStyles, SharedStyles, css`
@@ -167,12 +153,11 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     }
 
     _cancel () {
-        /* this._url never stores /edit or /new so this go back */
-        goToPage(this._url);
+        goToPage(createUrl(this._model, this._version, this._config));
     }
 
     _edit () {
-        goToPage(this._url + '/edit');
+        goToPage(createUrl(this._model, this._version, this._config) + '/edit');
     }
 
     _saveConfig () {
@@ -231,33 +216,37 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         }
     }
 
-    _getId (resource) {
-        return resource.id.split('/').pop();
-    }
-
-    _createUrl (model, version?, config?, setup?) {
-        let url = 'models/configure/' + this._getId(model);
-        if (version) {
-            url += '/' + this._getId(version);
-            if (config) {
-                url += '/' + this._getId(config);
-                if (setup) {
-                    url += '/' + this._getId(setup);
-                }
-            }
-        }
-        return url;
-    }
-
-    _select (model, version, config, setup?) {
-        goToPage(this._createUrl(model, version, config, setup));
-    }
-
-    _selectNew (model, version, config?) {
-        goToPage(this._createUrl(model, version, config) + '/new');
-    }
-
     protected render() {
+        // Sort parameters by order
+        let paramOrder = []
+        if (this._config.hasParameter) {
+            Object.values(this._configParameters).sort(sortByPosition).forEach((id) => {
+                if (typeof id === 'object') id = id.id;
+                paramOrder.push(id);
+            });
+            this._config.hasParameter.forEach((id) => {
+                if (typeof id === 'object') id = id.id;
+                if (paramOrder.indexOf(id) < 0) {
+                    paramOrder.push(id)
+                }
+            })
+        }
+
+        // Sort inputs by order
+        let inputOrder = []
+        if (this._config.hasInput) {
+            Object.values(this._configInputs).sort(sortByPosition).forEach((id) => {
+                if (typeof id === 'object') id = id.id;
+                inputOrder.push(id);
+            });
+            this._config.hasInput.forEach((id) => {
+                if (typeof id === 'object') id = id.id;
+                if (inputOrder.indexOf(id) < 0) {
+                    inputOrder.push(id)
+                }
+            })
+        }
+
         return html`
         <table class="details-table">
             <tr>
@@ -274,16 +263,31 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             </tr>
             <tr>
                 <td>Component Location:</td>
-                <td>${this._renderExternalLink(this._config.hasComponentLocation)}<td>
+                <td>${renderExternalLink(this._config.hasComponentLocation)}<td>
             </tr>
             <tr>
                 <td>Grid:</td>
                 <td>${this._config.hasGrid ? this._config.hasGrid[0].id : 'No grid'}<td>
             </tr>
+            <tr>
+                <td>Time interval:</td>
+                <td>${this._config.hasOutputTimeInterval ? this._config.hasOutputTimeInterval.map(x=>x.id).join(', ') : 'No grid'}<td>
+            </tr>
+            <tr>
+                <td>Processes:</td>
+                <td>${this._config.hasProcess ? this._config.hasProcess.map(x => x.id).join(', ') : 'No grid'}<td>
+            </tr>
         </table>
 
         <wl-title level="4" style="margin-top:1em;">Parameters:</wl-title>
         <table class="pure-table pure-table-striped" style="width: 100%">
+            <colgroup>
+                <col span="1" style="width: 55px;">
+                <col span="1">
+                <col span="1">
+                <col span="1">
+                <col span="1">
+            </colgroup>
             <thead>
                 <th class="ta-right"><b>#</b></th>
                 <th><b>Label</b></th>
@@ -294,7 +298,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <th style="text-align: right;"><b>Unit</b></th>
             </thead>
             <tbody>
-            ${this._config.hasParameter ? this._config.hasParameter.map(x => typeof x === 'object' ? x.id : x).map((uri:string) => html`
+            ${this._config.hasParameter ? paramOrder.map((uri:string) => html`
             <tr>
                 ${this._configParameters[uri] ? html`
                 <td class="ta-right">${this._configParameters[uri].position}</td>
@@ -303,27 +307,50 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     <b>${this._configParameters[uri].description}</b>
                 </td>
                 <td>
-                    ${this._renderParameterType(this._configParameters[uri])}
+                    ${renderParameterType(this._configParameters[uri])}
                 </td>
                 <td style="text-align: right;">
                     ${this._configParameters[uri].hasDefaultValue ? this._configParameters[uri].hasDefaultValue : '-'}
                 </td>
                 <td style="text-align: right;">${this._configParameters[uri].usesUnit}</td>`
-                : html`<tr><td colspan="5" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td></tr>`}
+                : html`<td colspan="5" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
             </tr>`)
             : html`<tr><td colspan="5" class="info-center">- This configuration has no parameters -</td></tr>`}
             </tbody>
         </table>
 
+        <wl-title level="4" style="margin-top:1em;">Input files:</wl-title>
+        <table class="pure-table pure-table-striped" style="width: 100%">
+            <colgroup>
+                <col span="1" style="width: 55px;">
+                <col span="1">
+                <col span="1">
+                <col span="1">
+            </colgroup>
+            <thead>
+                <th class="ta-right"><b>#</b></th>
+                <th><b>Name</b></th>
+                <th><b>Description</b></th>
+                <th style="text-align: right;"><b>Format</b></th>
+            </thead>
+            <tbody>
+            ${this._config.hasInput ? inputOrder.map((uri:string) => html `
+            <tr>${this._configInputs[uri] ? html`
+                <td class="ta-right">${this._configInputs[uri].position}</td>
+                <td><code>${this._configInputs[uri].label}</code></td>
+                <td>${this._configInputs[uri].description}</td>
+                <td style="text-align: right;">${this._configInputs[uri].hasFormat}</td>`
+                : html`<td colspan="4" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
+            </tr>`)
+            : html`<tr><td colspan="4" class="info-center">- This configuration has no input files -</td></tr>`}
+            </tbody>
+        </table>
 
         <div style="float:right; margin-top: 1em;">
             <wl-button @click="${this._edit}">
                 <wl-icon>edit</wl-icon>&ensp;Edit
             </wl-button>
         </div>`
-        return html`
-        HI!
-        `
     }
 
     _renderEditConfig () {
@@ -404,7 +431,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             </thead>
             <tbody>
             ${loadingIO ? html`<tr><td colspan="3" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td></tr>`
-            : (!inputs ?  html`<tr><td colspan="3" class="info-center">- This setup has no input files -</td></tr>`
+            : (!inputs ?  html`<tr><td colspan="3" class="info-center">- This configuration has no input files -</td></tr>`
                 : inputs.map(i => html`
                 <tr>
                     <td class="ta-right">${i.position}</td>
@@ -427,80 +454,13 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     }
 
 
-    _renderExternalLink (uri, label?) {
-        return html`<a target='_blank' href="${uri}">${label? label : uri}</a>`
-    }
-
-    _renderParameterType (param) {
-        let ptype = param.type.filter(p => p != 'Parameter').map(uri => uri.split('#').pop())
-        return html`
-            ${ptype} ${param.hasDataType ? '(' + param.hasDataType + ')' : ''}
-            ${(param.hasMinimumAcceptedValue || param.hasMaximumAcceptedValue) ?
-                html`<br/><span style="font-size: 11px;">Range is from ${param.hasMinimumAcceptedValue} to ${param.hasMaximumAcceptedValue}</span>` : '' }
-        `
-    }
-
-    _renderConfig () {
-        /* OBA has no author, description or keywords for some reason
-            <b>Authors:</b>
-            ${!this._configAuthors ?  html`<loading-dots style="--width: 20px"></loading-dots>`
-            : this._configAuthors.map(a => a.name).join(', ')}
-            <br/>
-         */
-         /*
-        <wl-title level="4" style="margin-top:1em;">Input files:</wl-title>
-        <table class="pure-table pure-table-striped" style="width: 100%">
-            <colgroup>
-                <col span="1">
-                <col span="1">
-                <col span="1">
-                <col span="1">
-            </colgroup>
-            <thead>
-                <th class="ta-right"><b>#</b></th>
-                <th><b>Name</b></th>
-                <th><b>Description</b></th>
-                <th style="text-align: right;"><b>Format</b></th>
-            </thead>
-            <tbody>
-            ${loadingIO ? html`<tr><td colspan="4" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td></tr>`
-            : (!inputs ?  html`<tr><td colspan="4" class="info-center">- This setup has no input files -</td></tr>`
-                : inputs.map(i => html`
-                <tr>
-                    <td class="ta-right">${i.position}</td>
-                    <td><code>${i.label}</code></td>
-                    <td>${i.desc}</td>
-                    <td style="text-align: right;">${i.format}</td>
-                </tr>
-            `))}
-            </tbody>
-        </table>
-         */
-    }
-
     updated () {
         if (this._editing) {
-            if (this._setup) {
-                if (this._setupMetadata && this._setupMetadata.length > 0) {
-                    let passignEl = this.shadowRoot.getElementById('edit-setup-passign');
-                    if (passignEl) {
-                        let selectEl = passignEl.querySelector('select')
-                        if (selectEl) {
-                            selectEl.value = this._setupMetadata[0].paramAssignMethod;
-                            console.log(selectEl)
-                        }
-                    }
-                }
-                let keywordsEl = this.shadowRoot.getElementById('edit-setup-keywords');
-                if (keywordsEl) (<any>keywordsEl).refreshHeight();
-            } else {
-                let keywordsEl = this.shadowRoot.getElementById('edit-config-keywords');
-                if (keywordsEl) (<any>keywordsEl).refreshHeight();
-            }
+            let keywordsEl = this.shadowRoot.getElementById('edit-config-keywords');
+            if (keywordsEl) (<any>keywordsEl).refreshHeight();
         }
     }
 
-    private _configParametersLoading : Set<string> = new Set();
 
     stateChanged(state: RootState) {
         if (state.explorerUI) {
@@ -534,7 +494,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 this._configParameters = {};
                 this._configParametersLoading = new Set();
 
-                this._configInputs = null;
+                this._configInputs = {};
                 this._configInputsLoading = new Set();
             }
 
@@ -552,10 +512,29 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     if (!this._config && this._selectedConfig && db.configurations[this._selectedConfig]) {
                         this._config = db.configurations[this._selectedConfig];
                         //console.log('LOADED CONFIGURATION, FETCHING PARAMETERS...');
+                        // Fetching not loaded parameters 
                         (this._config.hasParameter || []).forEach((p) => {
                             if (typeof p === 'object') p = p.id;
-                            store.dispatch(parameterGet(p));
+                            if (!db.parameters || !db.parameters[p]) {
+                                store.dispatch(parameterGet(p));
+                            }
                             this._configParametersLoading.add(p);
+                        });
+
+                        // Fetching not loaded inputs 
+                        (this._config.hasInput || []).forEach((i) => {
+                            if (typeof i === 'object') {
+                                if (i.type.indexOf('DatasetSpecification') < 0) {
+                                    console.log(i, 'is not a DatasetSpecification (input)', this._config);
+                                }
+                                i = i.id;
+                            } else {
+                                console.log(i, 'is not an object (input)', this._config);
+                            }
+                            if (!db.datasetSpecifications || !db.datasetSpecifications[i]) {
+                                store.dispatch(datasetSpecificationGet(i));
+                            }
+                            this._configInputsLoading.add(i);
                         });
                     }
                 }
@@ -574,18 +553,19 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     }
                 }
 
-                if (db.inputs) {
-                    if (this._configParametersLoading.size > 0 && this._config && this._config.hasParameter) {
-                        this._configParametersLoading.forEach((uri:string) => {
-                            if (db.parameters[uri]) {
-                                let tmp = { ...this._configParameters };
-                                tmp[uri] = db.parameters[uri];
-                                this._configParameters = tmp;
-                                this._configParametersLoading.delete(uri);
+                if (db.datasetSpecifications) {
+                    if (this._configInputsLoading.size > 0 && this._config && this._config.hasParameter) {
+                        this._configInputsLoading.forEach((uri:string) => {
+                            if (db.datasetSpecifications[uri]) {
+                                let tmp = { ...this._configInputs };
+                                tmp[uri] = db.datasetSpecifications[uri];
+                                this._configInputs = tmp;
+                                this._configInputsLoading.delete(uri);
                             }
                         })
                     }
                 }
+
             }
         }
     }
