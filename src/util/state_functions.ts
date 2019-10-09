@@ -507,6 +507,17 @@ export const listExistingEnsembleIds = (ensembleids: string[]) : Promise<string[
     }));
 };
 
+// List Ensemble Ids (i.e. which ensemble ids exist)
+export const listAlreadyRunEnsembleIds = (ensembleids: string[]) : Promise<string[]> => {
+    let ensemblesRef = db.collection("ensembles");
+    return Promise.all(ensembleids.map((ensembleid) => {
+        return ensemblesRef.doc(ensembleid).get().then((sdoc) => {
+            if(sdoc.exists && (sdoc.data() as ExecutableEnsemble).status != "WAITING")
+                return ensembleid;
+        })
+    }));
+};
+
 const _crossProductInputs = (ensembles: DataEnsembleMap) => {
     let inputBindingsList: InputBindings[] = [{}];
     Object.keys(ensembles).map((inputid) => {

@@ -134,13 +134,13 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                     ${summary.successful_runs} succeeded, while ${summary.failed_runs} failed.
                     ${running > 0 ? html `${running} are currently running` : ""}
                     ${pending > 0 ? html `, and ${pending} are waiting to be run` : ""}
+                    </p>
 
                     ${!finished ? 
-                        html`<br /><wl-button class="submit"
+                        html`<wl-button class="submit"
                             @click="${() => this._checkStatusAllEnsembles(model.id)}">Recheck status</wl-button> <br /><br />`
                         : ""
                     }
-                    </p>
 
                     <div style="width: 100%; border:1px solid #EEE;border-bottom:0px;">
                         ${grouped_ensemble && !grouped_ensemble.loading ? 

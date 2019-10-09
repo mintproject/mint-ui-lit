@@ -467,8 +467,8 @@ export const addPathwayEnsembles = (ensembles: ExecutableEnsemble[]) => {
         docs.map((curdoc: firebase.firestore.DocumentSnapshot) => {
             // If doc doesn't exist, write ensemble
             let ensemble = ensembles[i++];
-            if(!curdoc.exists)
-                batch.set(curdoc.ref, ensemble);
+            //if(!curdoc.exists)
+            batch.set(curdoc.ref, ensemble);
         })
         return batch.commit();
     })

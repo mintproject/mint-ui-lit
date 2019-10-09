@@ -24,7 +24,7 @@ export interface ModelsActionDetail extends Action<'MODELS_DETAIL'> { model: Mod
 
 export type ModelsAction = ModelsActionList | ModelsActionVariablesQuery |  ModelsActionDetail ;
 
-const MODEL_CATALOG_URI = "https://query.mint.isi.edu/api/dgarijo/MINT-ModelCatalogQueries";
+const MODEL_CATALOG_URI = "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries";
 
 // List all Model Configurations
 type ListModelsThunkResult = ThunkAction<void, RootState, undefined, ModelsActionList>;
@@ -193,6 +193,9 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                         };
                         if(value.fixedValue)
                             param.value = value.fixedValue;
+                        // Hack to fix FALSE to false
+                        if(param.value == "FALSE")
+                            param.value = "false";
                         params[value.p] = param;
                         parameters.push(param);
                     });

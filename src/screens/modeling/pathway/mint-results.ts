@@ -148,13 +148,14 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                     ${summary.successful_runs} succeeded and produced results, while ${summary.failed_runs} failed.
                     ${running > 0 ? html `${running} are currently running` : ""}
                     ${pending > 0 ? html `, and ${pending} are waiting to be run` : ""}
+                    </p>
 
                     ${finished ? 
                         html` <wl-button class="submit"
                         @click="${() => this._publishAllResults(model.id)}">Publish all results</wl-button>`
                         : ""
                     }
-                    </p>
+                    <br /><br />
 
                     <div style="width:100%; border:1px solid #EEE;border-bottom:0px;">
                         ${grouped_ensemble && !grouped_ensemble.loading ? 

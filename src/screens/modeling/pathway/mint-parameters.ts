@@ -6,7 +6,7 @@ import { DataEnsembleMap, ModelEnsembleMap, StepUpdateInformation, ExecutableEns
 import { SharedStyles } from "../../../styles/shared-styles";
 import { Model } from "../../models/reducers";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
-import { TASK_DONE, getPathwayParametersStatus, getModelInputConfigurations, getEnsembleHash, setupModelWorkflow, listEnsembles, runModelEnsembles, listExistingEnsembleIds } from "../../../util/state_functions";
+import { TASK_DONE, getPathwayParametersStatus, getModelInputConfigurations, getEnsembleHash, setupModelWorkflow, listEnsembles, runModelEnsembles, listAlreadyRunEnsembleIds } from "../../../util/state_functions";
 import { updatePathway, addPathwayEnsembles, setPathwayEnsembleIds, deleteAllPathwayEnsembleIds } from "../actions";
 import { showNotification, showDialog, hideDialog } from "../../../util/ui_functions";
 import { selectPathwaySection } from "../../../app/ui-actions";
@@ -286,7 +286,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                 this._progress_number = 0;
                 showDialog("progressDialog", this.shadowRoot!);
 
-                // Delete existing pathway ensemble ids
+                // Delete existing pathway ensemble ids (*NOT DELETING GLOBAL ENSEMBLE DOCUMENTS .. Only clearing list of the pathway's ensemble ids)
                 deleteAllPathwayEnsembleIds(this.scenario.id, this.pathway.id, modelid);
 
                 // Setup Model for execution on Wings
@@ -342,7 +342,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
 
                     // Check if any current ensembles already exist 
                     // - Note: ensemble ids are uniquely defined by the model id and inputs
-                    let current_ensemble_ids = await listExistingEnsembleIds(ensembleids);
+                    let current_ensemble_ids = await listAlreadyRunEnsembleIds(ensembleids);
 
                     // Run ensembles in smaller batches
                     for(let i=0; i<ensembles.length; i+= executionBatchSize) {
