@@ -1,7 +1,7 @@
 import { Reducer } from "redux";
 import { RootAction } from "../app/store";
 import { MODELS_GET, VERSIONS_GET, CONFIGURATIONS_GET, PARAMETER_GET, DATASET_SPECIFICATION_GET, PERSON_GET,
-         GRID_GET, PROCESS_GET, TIME_INTERVAL_GET } from './actions'
+         GRID_GET, PROCESS_GET, TIME_INTERVAL_GET, SOFTWARE_IMAGE_GET } from './actions'
 
 export interface ModelCatalogState {
     models: any;
@@ -12,7 +12,8 @@ export interface ModelCatalogState {
     persons: any;
     grids: any;
     processes: any;
-    timeInterval: any;
+    timeIntervals: any;
+    softwareImages: any;
 }
 
 const INITIAL_STATE: ModelCatalogState = { 
@@ -24,7 +25,8 @@ const INITIAL_STATE: ModelCatalogState = {
     persons: null,
     grids: null,
     processes: null,
-    timeInterval: null
+    timeIntervals: null,
+    softwareImages: null
 }
 
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -73,6 +75,11 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             return {
                 ...state,
                 timeIntervals: {...state.timeIntervals, ...action.payload}
+            }
+        case SOFTWARE_IMAGE_GET:
+            return {
+                ...state,
+                softwareImages: {...state.softwareImages, ...action.payload}
             }
         default:
             return state;

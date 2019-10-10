@@ -456,12 +456,12 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 ${model.label}
                 ${!this._versions ? html`<loading-dots style="--width: 20px"></loading-dots>` : html`
                 <ul>
-                    ${model.hasVersion.map((v) => this._versions[v.id]).map((version) => html`
+                    ${model.hasVersion.filter(v => !!this._versions[v.id]).map((v) => this._versions[v.id]).map((version) => html`
                     <li>
                         ${version.label ? version.label : version.id.split('/').pop()}
                         ${!this._configs ? html`<loading-dots style="--width: 20px"></loading-dots>` : html`
                         <ul>
-                            ${(version.hasConfiguration || []).map((c) => this._configs[c.id]).map((config) => html`
+                            ${(version.hasConfiguration || []).filter(c => !!c.id).map((c) => this._configs[c.id]).map((config) => html`
                             <li>
                                 <a @click="${()=>{this._select(model, version, config)}}">
                                     ${config.label}
@@ -498,6 +498,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         </ul>`;
     }
 
+// <models-configure-configuration class="page" ?active="${this._config && !this._setup && !this._creating}"></models-configure-configuration>
     protected render() {
         return html`
         <div class="twocolumns">
@@ -540,7 +541,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     </div>
 
                     <div style="padding: 0px 20px;">
-                    <models-configure-configuration class="page" ?active="${this._config && !this._setup && !this._creating}"></models-configure-configuration>
+                        <models-configure-configuration class="page" ?active="${this._config && !this._setup && !this._creating}"></models-configure-configuration>
                     ${(this._creating && !this._setup) ? 
                         ((this._config) ? this._renderNewSetup() : this._renderNewConfig())
                         : (this._editing ?

@@ -3,7 +3,7 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
 import { Configuration, DefaultApi, ModelApi, SoftwareVersionApi, ModelConfigurationApi, ParameterApi, GridApi,
-         DatasetSpecificationApi, PersonApi, ProcessApi, TimeIntervalApi } from '@mintproject/modelcatalog_client';
+         DatasetSpecificationApi, PersonApi, ProcessApi, TimeIntervalApi, SoftwareImageApi } from '@mintproject/modelcatalog_client';
 
 function debug () {
     console.log('OBA:', ...arguments);
@@ -21,12 +21,14 @@ const fixPosition = (resource:any) => {
     return resource;
 }
 
+const DEFAULT_GRAPH = 'mint@isi.edu'
+
 export const MODELS_GET = "MODELS_GET";
 interface MCAModelsGet extends Action<'MODELS_GET'> { payload: any };
 export const modelsGet: ActionCreator<ModelCatalogThunkResult> = () => (dispatch) => {
     debug('Fetching models');
     let MApi : ModelApi = new ModelApi();
-    MApi.modelsGet({username: 'mint@isi.edu'})
+    MApi.modelsGet({username: DEFAULT_GRAPH})
     .then((data) => {
         dispatch({
             type: MODELS_GET,
@@ -41,8 +43,9 @@ interface MCAVersionsGet extends Action<'VERSIONS_GET'> { payload: any };
 export const versionsGet: ActionCreator<ModelCatalogThunkResult> = () => (dispatch) => {
     debug('Fetching versions');
     let api = new SoftwareVersionApi();
-    api.softwareversionsGet({username: 'mint@isi.edu'})
+    api.softwareversionsGet({username: DEFAULT_GRAPH})
         .then((data) => {
+            console.log(data);
             dispatch({
                 type: VERSIONS_GET,
                 payload: data.reduce(idReducer, {})
@@ -56,7 +59,7 @@ interface MCAConfigurationsGet extends Action<'CONFIGURATIONS_GET'> { payload: a
 export const configurationsGet: ActionCreator<ModelCatalogThunkResult> = () => (dispatch) => {
     debug('Fetching configurations');
     let api = new ModelConfigurationApi();
-    api.modelconfigurationsGet({username: 'mint@isi.edu'})
+    api.modelconfigurationsGet({username: DEFAULT_GRAPH})
         .then((data) => {
             dispatch({
                 type: CONFIGURATIONS_GET,
@@ -77,7 +80,8 @@ export const configurationPut: ActionCreator<ModelCatalogThunkResult> = (config)
 
     if (status === 'DONE') {
         let api = new ModelConfigurationApi(C);
-        api.modelconfigurationsIdPut({user: 'mint@isi.edu', id: config.id.split('/').pop(), modelConfiguration: config}) //<- my username
+        let id = config.id.split('/').pop();
+        api.modelconfigurationsIdPut({id: id, user: DEFAULT_GRAPH, modelConfiguration: config, username: DEFAULT_GRAPH}) //<- my username
             .then((data) => {
                 console.log(data);
             })
@@ -108,7 +112,7 @@ export const configurationPost: ActionCreator<ModelCatalogThunkResult> = (config
     if (status === 'DONE') {
         config.id = '';
         let api = new ModelConfigurationApi(C);
-        api.modelconfigurationsPost({user: 'mint@isi.edu', modelConfiguration: config}) //<- my username
+        api.modelconfigurationsPost({user: DEFAULT_GRAPH, modelConfiguration: config}) //<- my username
             .then((data) => {
                 console.log(data);
             })
@@ -133,7 +137,7 @@ export const parameterGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (di
     debug('Fetching parameter', uri);
     let id = uri.split('/').pop();
     let api = new ParameterApi();
-    api.parametersIdGet({username: 'mint@isi.edu', id: id})
+    api.parametersIdGet({username: DEFAULT_GRAPH, id: id})
         .then((resp) => {
             let data = {};
             data[uri] = fixPosition(resp);
@@ -151,7 +155,7 @@ export const datasetSpecificationGet: ActionCreator<ModelCatalogThunkResult> = (
     debug('Fetching dataset specification', uri);
     let id = uri.split('/').pop();
     let api = new DatasetSpecificationApi();
-    api.datasetspecificationsIdGet({username: 'mint@isi.edu', id: id})
+    api.datasetspecificationsIdGet({username: DEFAULT_GRAPH, id: id})
         .then((resp) => {
             let data = {};
             data[uri] = fixPosition(resp);
@@ -169,7 +173,7 @@ export const personGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (dispa
     debug('Fetching person', uri);
     let id = uri.split('/').pop();
     let api = new PersonApi();
-    api.personsIdGet({username: 'mint@isi.edu', id: id})
+    api.personsIdGet({username: DEFAULT_GRAPH, id: id})
         .then((resp) => {
             let data = {};
             data[uri] = resp;
@@ -187,7 +191,7 @@ export const gridGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (dispatc
     debug('Fetching grid', uri);
     let id = uri.split('/').pop();
     let api = new GridApi();
-    api.gridsIdGet({username: 'mint@isi.edu', id: id})
+    api.gridsIdGet({username: DEFAULT_GRAPH, id: id})
         .then((resp) => {
             let data = {};
             data[uri] = resp;
@@ -205,7 +209,7 @@ export const processGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (disp
     debug('Fetching process', uri);
     let id = uri.split('/').pop();
     let api = new ProcessApi();
-    api.processsIdGet({username: 'mint@isi.edu', id: id})
+    api.processsIdGet({username: DEFAULT_GRAPH, id: id})
         .then((resp) => {
             let data = {};
             data[uri] = resp;
@@ -223,7 +227,7 @@ export const timeIntervalGet: ActionCreator<ModelCatalogThunkResult> = (uri) => 
     debug('Fetching timeinterval', uri);
     let id = uri.split('/').pop();
     let api = new TimeIntervalApi();
-    api.timeintervalsIdGet({username: 'mint@isi.edu', id: id})
+    api.timeintervalsIdGet({username: DEFAULT_GRAPH, id: id})
         .then((resp) => {
             let data = {};
             data[uri] = resp;
@@ -235,6 +239,24 @@ export const timeIntervalGet: ActionCreator<ModelCatalogThunkResult> = (uri) => 
         .catch((err) => {console.log('Error on getTimeInterval', err)})
 }
 
+export const SOFTWARE_IMAGE_GET = "SOFTWARE_IMAGE_GET";
+interface MCASoftwareImageGet extends Action<'SOFTWARE_IMAGE_GET'> { payload: any };
+export const softwareImageGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (dispatch) => {
+    debug('Fetching software image', uri);
+    let id = uri.split('/').pop();
+    let api = new SoftwareImageApi();
+    api.softwareimagesIdGet({username: DEFAULT_GRAPH, id: id})
+        .then((resp) => {
+            let data = {};
+            data[uri] = resp;
+            dispatch({
+                type: SOFTWARE_IMAGE_GET,
+                payload: data
+            });
+        })
+        .catch((err) => {console.log('Error on getSoftwareImage', err)})
+}
+
 export type ModelCatalogAction = MCAModelsGet | MCAVersionsGet | MCAConfigurationsGet | MCAConfigurationPut | MCAParameterGet |
-                                 MCADatasetSpecificationGet | MCAGridGet | MCAProcess | MCATimeIntervalGet ;
+                                 MCADatasetSpecificationGet | MCAGridGet | MCAProcess | MCATimeIntervalGet | MCASoftwareImageGet;
 type ModelCatalogThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogAction>;
