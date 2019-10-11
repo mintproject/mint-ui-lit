@@ -8,11 +8,12 @@ import { store, RootState } from 'app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from 'app/actions';
 
-//import { renderNotifications } from "util/ui_renders";
-//import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
+import { renderNotifications } from "util/ui_renders";
+import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { parameterGet, datasetSpecificationGet, configurationPut, personGet, gridGet, timeIntervalGet,
-         configurationPost, processGet, softwareImageGet } from 'model-catalog/actions';
+import { personGet, personPost,
+         parameterGet, datasetSpecificationGet, configurationPut,  gridGet,
+         timeIntervalGet, configurationPost, processGet, softwareImageGet, } from 'model-catalog/actions';
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
 import "weightless/slider";
@@ -20,6 +21,8 @@ import "weightless/progress-spinner";
 //import "weightless/tab";
 //import "weightless/tab-group";
 import 'components/loading-dots'
+
+import './person';
 
 @customElement('models-configure-configuration')
 export class ModelsConfigureConfiguration extends connect(store)(PageViewElement) {
@@ -55,6 +58,9 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
 
     @property({type: Object})
     private _softwareImage : any = null;
+
+    @property({type: Boolean})
+    private _onDialog : boolean = false;
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
@@ -228,73 +234,32 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         let labelEl     = this.shadowRoot.getElementById('edit-config-name') as HTMLInputElement;
         let descEl      = this.shadowRoot.getElementById('edit-config-desc') as HTMLInputElement;
         let keywordsEl  = this.shadowRoot.getElementById('edit-config-keywords') as HTMLInputElement;
-        //let imgEl       = this.shadowRoot.getElementById('edit-config-sw-img') as HTMLInputElement;
         let complocEl   = this.shadowRoot.getElementById('edit-config-comp-loc') as HTMLInputElement;
-
-        /*
-        let authEl = this.shadowRoot.getElementById('edit-config-authors') as HTMLInputElement;
-        let repoEl = this.shadowRoot.getElementById('edit-config-repo') as HTMLInputElement;
-        let paramEls = this.shadowRoot.querySelectorAll('.edit-config-param');
-        // TODO: capture min and max val, check what to do with the inputs
-        let inputEls = this.shadowRoot.querySelectorAll('.edit-config-input');*/
 
         if (labelEl && descEl && keywordsEl && complocEl) {
             let label    = labelEl.value;
             let desc     = descEl.value;
             let keywords = keywordsEl.value;
-            //let dImg     = imgEl.value;
             let compLoc  = complocEl.value;
 
             if (!label) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>labelEl).refreshAttributes();
+                this._scrollUp();
                 return;
             }
+
             let editedConfig = {...this._config};
+
             editedConfig.label = [label];
             editedConfig.description = [desc];
             editedConfig.keywords = [keywords.split(/ *, */).join('; ')];
-            //editedConfig.hasSoftwareImage = [dImg];
             editedConfig.hasComponentLocation = [compLoc];
 
-            console.log(Object.keys(this._config).filter((key) => this._config[key] != editedConfig[key]));
             store.dispatch(configurationPut(editedConfig));
-        }
-
-        /*if (labelEl && descEl && authEl) {
-            let auth = authEl.value;
-            let repo = repoEl.value;
-            let params = Array.from(paramEls).map(e => (<HTMLInputElement>e).value);
-            let inputs = Array.from(inputEls).map(e => (<HTMLInputElement>e).value);
-
-
-
-            let newConfigMeta = Object.assign({}, this._configMetadata[0]);
-            newConfigMeta.desc = desc;
-            newConfigMeta.keywords = keywords.split(',');
-            newConfigMeta.repo = repo;
-            newConfigMeta.compLoc = compLoc;
-            newConfigMeta.dImg = dImg;
-
-            let newAuthors = auth.split(',').map(x => {return {label: x, name: x}});
-            
-            let newConfigParameters = Object.assign({}, this._parameters);
-            for (let i = 0; i < params.length; i++) {
-                newConfigParameters[i]['defaultvalue'] = params[i];
-            }
-
-            let newConfigInputs = Object.assign({}, this._inputs);
-            for (let i = 0; i < inputs.length; i++) {
-                newConfigInputs[i]['fixedValueURL'] = inputs[i];
-            }
-
-            store.dispatch(addParameters(this._config.uri, Object.values(newConfigParameters)));
-            store.dispatch(addMetadata(this._config.uri, [newConfigMeta]));
-            //store.dispatch(addInputs(this._config.uri, Object.values(Object.assign(newConfigInputs))));
-            //store.dispatch(addAuthor(this._config.uri, newAuthors))
             showNotification("saveNotification", this.shadowRoot!);
-            goToPage(this._url);
-        }*/
+            goToPage(createUrl(this._model, this._version, this._config));
+        }
     }
 
     protected render() {
@@ -335,7 +300,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         return html`
         <span id="start"/>
         ${this._editing ? html`
-        <wl-textfield id="edit-config-name" label="Configuration name" value="${this._config.label}"></wl-textfield>
+        <wl-textfield id="edit-config-name" label="Configuration name" value="${this._config.label}" required></wl-textfield>
         `:''}
 
         <table class="details-table">
@@ -360,19 +325,19 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             <tr>
                 <td>Authors:</td>
                 <td>
-                    ${this._config.author ? 
+                    ${this._config.author && this._config.author.length > 0? 
                     html`${this._config.author.map(a => typeof a === 'object' ? a.id : a).map((authorUri:string) => 
                         (this._authors[authorUri] ? html`
                         <span class="author">
-                            ${this._authors[authorUri].label}
-                            ${this._editing ? html`<wl-icon>edit</wl-icon>` : ''}
+                            ${this._authors[authorUri].label ? this._authors[authorUri].label : authorUri}
                         </span>`
                         : authorUri + ' ')
                     )}
                     ${this._authorsLoading.size > 0 ? html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`
                     : 'No authors'}
                     ${this._editing ? html`
-                    <wl-button style="float:right;" class="small" flat inverted><wl-icon>add</wl-icon></wl-button>
+                    <wl-button style="float:right;" class="small" flat inverted
+                        @click="${this._showAuthorDialog}"><wl-icon>edit</wl-icon></wl-button>
                     `: ''}
                 </td>
             </tr>
@@ -393,7 +358,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <td>Component Location:</td>
                 <td>
                     ${this._editing ? html`
-                    <textarea id="edit-config-keywords">${this._config.hasComponentLocation}</textarea>
+                    <textarea id="edit-config-comp-loc">${this._config.hasComponentLocation}</textarea>
                     ` : renderExternalLink(this._config.hasComponentLocation)}
                 </td>
             </tr>
@@ -540,7 +505,63 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             <wl-button @click="${this._edit}">
                 <wl-icon>edit</wl-icon>&ensp;Edit
             </wl-button>
-        </div>`}`
+        </div>`}
+        
+        ${this._renderDialogs()}
+        ${renderNotifications()}`
+    }
+
+    _renderDialogs () {
+        return html`
+        ${this._renderAuthorDialog()}
+        `
+    }
+
+    _renderAuthorDialog () {
+        let tab = 'author'
+        let selectedPersons = this._config.author ? this._config.author.reduce((acc, author) => {
+            if (!acc[author.id]) acc[author.id] = this._authors[author.id];
+            return acc;
+        }, {}) : {};
+        return html`
+        <wl-dialog class="larger" id="addAuthorDialog" fixed backdrop blockscrolling>
+            <h3 slot="header">Add Author</h3>
+            <div slot="content">
+                <wl-tab-group align="center" style="background-color: #F6F6F6;">
+                    <wl-tab style="background-color: #F6F6F6;" ?checked=${tab=='author'} @click="${() => {tab = 'author'}}">Person</wl-tab>
+                    <wl-tab style="background-color: #F6F6F6;" ?checked=${tab=='organization'} @click="${() => {tab = 'organization'}}" disabled>Organization</wl-tab>
+                </wl-tab-group>
+                <models-configure-person id="person-configurator" class="page" .selected="${selectedPersons}" 
+                 ?active="${this._onDialog && tab == 'author'}" ></models-configure-person>
+            </div>
+            <div slot="footer">
+                <wl-button @click="${this._onAuthorCancel}" style="margin-right: 5px;" inverted flat>Cancel</wl-button>
+                 <wl-button @click="${() => {this._onAuthorSubmit(selectedPersons)}}" class="submit"
+                            id="dialog-submit-button">Add selected authors</wl-button>
+            </div>
+        </wl-dialog>`
+    }
+
+    _onAuthorSubmit (personList) {
+        /*let personConfigurator = this.shadowRoot.getElementById('person-configurator');
+        console.log(personConfigurator)
+        personConfigurator.saveNewPerson();*/
+        this._config.author = [];
+        Object.keys(personList).filter(pid => !!personList[pid]).map(personId => {
+            this._config.author.push( {id: personId, type: ['Person']});
+            this._authors[personId] = personList[personId];
+        })
+        this._onAuthorCancel();
+    }
+
+    _onAuthorCancel () {
+        hideDialog("addAuthorDialog", this.shadowRoot);
+        this._onDialog = false; //this will not happen if the user press outside
+    }
+
+    _showAuthorDialog () {
+        showDialog("addAuthorDialog", this.shadowRoot);
+        this._onDialog = true;
     }
 
     //updated () { }
@@ -595,7 +616,8 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 }
                 if (db.configurations) {
                     if (!this._config && this._selectedConfig && db.configurations[this._selectedConfig]) {
-                        this._config = db.configurations[this._selectedConfig];
+                        console.log('config copied')
+                        this._config = { ...db.configurations[this._selectedConfig] }; //this to no change on store
                         //console.log('LOADED CONFIGURATION, FETCHING PARAMETERS...');
                         // Fetching not loaded parameters 
                         (this._config.hasParameter || []).forEach((p) => {

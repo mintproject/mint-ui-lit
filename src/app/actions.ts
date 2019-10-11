@@ -73,9 +73,11 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
             store.dispatch({type: FETCH_MODEL_CATALOG_ACCESS_TOKEN, accessToken: accessToken});
         } else {
             console.error('No access token on local storage!')
+            // Should log out
         }
       } else if (state.app.prefs.modelCatalog.status === 'ERROR') {
           console.error('Login failed!');
+          // Should log out
       }
 
       dispatch({
@@ -109,6 +111,7 @@ export const signIn = (email: string, password: string) => {
 
 export const signOut = () => {
   auth.signOut();
+  localStorage.removeItem('accessToken');
 };
 
 const modelCatalogLogin = (username: string, password: string) => {

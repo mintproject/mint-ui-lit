@@ -1,9 +1,12 @@
 import { Reducer } from "redux";
 import { RootAction } from "../app/store";
-import { MODELS_GET, VERSIONS_GET, CONFIGURATIONS_GET, PARAMETER_GET, DATASET_SPECIFICATION_GET, PERSON_GET,
-         GRID_GET, PROCESS_GET, TIME_INTERVAL_GET, SOFTWARE_IMAGE_GET } from './actions'
+import { START_LOADING, END_LOADING, MODELS_GET, VERSIONS_GET, CONFIGURATIONS_GET, PARAMETER_GET,
+         DATASET_SPECIFICATION_GET, PERSON_GET, ALL_PERSONS,
+         GRID_GET, PROCESS_GET, TIME_INTERVAL_GET, SOFTWARE_IMAGE_GET, PERSONS_GET } from './actions'
 
 export interface ModelCatalogState {
+    loading: {[key:string]: boolean},
+    loadedAll: {[key:string]: boolean},
     models: any;
     versions: any;
     configurations: any;
@@ -17,6 +20,8 @@ export interface ModelCatalogState {
 }
 
 const INITIAL_STATE: ModelCatalogState = { 
+    loading: {},
+    loadedAll: {},
     models: null,
     versions: null,
     configurations: null,
@@ -30,21 +35,53 @@ const INITIAL_STATE: ModelCatalogState = {
 }
 
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {
+    let tmp : any = {};
     switch (action.type) {
-        case MODELS_GET:
+        case START_LOADING:
+            tmp = { ...state.loading };
+            tmp[action.id] = true;
             return {
                 ...state,
+                loading: tmp,
+            }
+        case END_LOADING:
+            tmp = { ...state.loading };
+            tmp[action.id] = false
+            return {
+                ...state,
+                loading: tmp,
+            }
+        case MODELS_GET:
+            tmp = { ...state.loadedAll };
+            tmp['models'] = true;
+            return {
+                ...state,
+                loadedAll: tmp,
                 models: {...state.models, ...action.payload}
             }
         case VERSIONS_GET:
+            tmp = { ...state.loadedAll };
+            tmp['versions'] = true;
             return {
                 ...state,
+                loadedAll: tmp,
                 versions: {...state.version, ...action.payload}
             }
         case CONFIGURATIONS_GET:
+            tmp = { ...state.loadedAll };
+            tmp['configurations'] = true;
             return {
                 ...state,
+                loadedAll: tmp,
                 configurations: {...state.configuration, ...action.payload}
+            }
+        case PERSONS_GET:
+            tmp = { ...state.loadedAll };
+            tmp[ALL_PERSONS] = true;
+            return {
+                ...state,
+                loadedAll: tmp,
+                persons: {...state.persons, ...action.payload}
             }
         case PARAMETER_GET:
             return {
