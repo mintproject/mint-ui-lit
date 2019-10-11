@@ -45,7 +45,6 @@ export const versionsGet: ActionCreator<ModelCatalogThunkResult> = () => (dispat
     let api = new SoftwareVersionApi();
     api.softwareversionsGet({username: DEFAULT_GRAPH})
         .then((data) => {
-            console.log(data);
             dispatch({
                 type: VERSIONS_GET,
                 payload: data.reduce(idReducer, {})

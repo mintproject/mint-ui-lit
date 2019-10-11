@@ -159,6 +159,24 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 margin-bottom: 2px;
             }
 
+            .details-table > tbody > tr > td > span > wl-icon {
+                --icon-size: 16px;
+                cursor: pointer;
+                vertical-align: middle;
+            }
+
+            .details-table > tbody > tr > td > input, textarea {
+                background: transparent;
+                font-family: Raleway;
+                font-size: 14px;
+                width: calc(100% - 10px);
+                resize: vertical;
+            }
+
+            .details-table > tbody > tr > td > span > wl-icon:hover {
+                background-color: rgb(224, 224, 224);
+            }
+
             .details-table td {
                 padding: 5px 1px;
                 vertical-align: top;
@@ -179,20 +197,30 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             span.grid {
                 border: 2px solid teal;
             }
+
+            wl-button.small {
+                border: 1px solid gray;
+                margin-right: 5px;
+                --button-padding: 4px;
+            }
             `,
         ];
     }
 
+    _scrollUp () {
+        let el = this.shadowRoot.getElementById('start');
+        if (el) {
+            el.scrollIntoView({behavior: "smooth", block: "start"})
+        }
+    }
+
     _cancel () {
+        this._scrollUp();
         goToPage(createUrl(this._model, this._version, this._config));
     }
 
     _edit () {
-        let el = this.shadowRoot.getElementById('start');
-        console.log(el)
-        if (el) {
-            el.scrollIntoView({behavior: "smooth", block: "start"})
-        }
+        this._scrollUp();
         goToPage(createUrl(this._model, this._version, this._config) + '/edit');
     }
 
@@ -200,7 +228,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         let labelEl     = this.shadowRoot.getElementById('edit-config-name') as HTMLInputElement;
         let descEl      = this.shadowRoot.getElementById('edit-config-desc') as HTMLInputElement;
         let keywordsEl  = this.shadowRoot.getElementById('edit-config-keywords') as HTMLInputElement;
-        let imgEl       = this.shadowRoot.getElementById('edit-config-sw-img') as HTMLInputElement;
+        //let imgEl       = this.shadowRoot.getElementById('edit-config-sw-img') as HTMLInputElement;
         let complocEl   = this.shadowRoot.getElementById('edit-config-comp-loc') as HTMLInputElement;
 
         /*
@@ -210,11 +238,11 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         // TODO: capture min and max val, check what to do with the inputs
         let inputEls = this.shadowRoot.querySelectorAll('.edit-config-input');*/
 
-        if (labelEl && descEl && keywordsEl && imgEl && complocEl) {
+        if (labelEl && descEl && keywordsEl && complocEl) {
             let label    = labelEl.value;
             let desc     = descEl.value;
             let keywords = keywordsEl.value;
-            let dImg     = imgEl.value;
+            //let dImg     = imgEl.value;
             let compLoc  = complocEl.value;
 
             if (!label) {
@@ -226,7 +254,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             editedConfig.label = [label];
             editedConfig.description = [desc];
             editedConfig.keywords = [keywords.split(/ *, */).join('; ')];
-            editedConfig.hasSoftwareImage = [dImg];
+            //editedConfig.hasSoftwareImage = [dImg];
             editedConfig.hasComponentLocation = [compLoc];
 
             console.log(Object.keys(this._config).filter((key) => this._config[key] != editedConfig[key]));
@@ -306,31 +334,49 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
 
         return html`
         <span id="start"/>
+        ${this._editing ? html`
+        <wl-textfield id="edit-config-name" label="Configuration name" value="${this._config.label}"></wl-textfield>
+        `:''}
+
         <table class="details-table">
             <tr>
                 <td>Description:</td>
                 <td>
-                    ${this._config.description}
+                    ${this._editing ? html`
+                    <textarea id="edit-config-desc" name="description" rows="5">${this._config.description}</textarea>
+                    ` : this._config.description}
                 </td>
             </tr>
 
             <tr>
                 <td>Keywords:</td>
-                <td>${keywords}</td>
+                <td>
+                    ${this._editing ? html`
+                    <input id="edit-config-keywords" type="text" value="${keywords}"/>
+                    ` : keywords}
+                </td>
             </tr>
+
             <tr>
                 <td>Authors:</td>
                 <td>
                     ${this._config.author ? 
                     html`${this._config.author.map(a => typeof a === 'object' ? a.id : a).map((authorUri:string) => 
-                        (this._authors[authorUri] ?
-                            html`<span class="author">${this._authors[authorUri].label}</span>`
-                            : authorUri + ' ')
+                        (this._authors[authorUri] ? html`
+                        <span class="author">
+                            ${this._authors[authorUri].label}
+                            ${this._editing ? html`<wl-icon>edit</wl-icon>` : ''}
+                        </span>`
+                        : authorUri + ' ')
                     )}
                     ${this._authorsLoading.size > 0 ? html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`
                     : 'No authors'}
+                    ${this._editing ? html`
+                    <wl-button style="float:right;" class="small" flat inverted><wl-icon>add</wl-icon></wl-button>
+                    `: ''}
                 </td>
             </tr>
+
             <tr>
                 <td>Software Image:</td>
                 <td>
@@ -342,10 +388,16 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     : 'No software image'}
                 </td>
             </tr>
+
             <tr>
                 <td>Component Location:</td>
-                <td>${renderExternalLink(this._config.hasComponentLocation)}</td>
+                <td>
+                    ${this._editing ? html`
+                    <textarea id="edit-config-keywords">${this._config.hasComponentLocation}</textarea>
+                    ` : renderExternalLink(this._config.hasComponentLocation)}
+                </td>
             </tr>
+
             <tr>
                 <td>Grid:</td>
                 <td>
@@ -355,6 +407,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                         <span class="grid">
                             <span style="margin-right: 30px; text-decoration: underline;">${this._grid.label}</span>
                             <span style="font-style: oblique; color: gray;">${this._grid.type.filter(g => g != 'Grid')}</span>
+                            ${this._editing ? html`<wl-icon style="margin-left:10px">edit</wl-icon>` : ''}
                             <br/>
                             <div style="display: flex; justify-content: space-between;">
                                 <span style="font-size: 12px;">Spatial resolution:</span>
@@ -370,27 +423,38 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     : 'No grid'}
                 </td>
             </tr>
+
             <tr>
                 <td>Time interval:</td>
                 <td>
                     ${this._config.hasOutputTimeInterval ?
-                    (this._timeInterval ?
-                        html `<span class="time-interval">${this._timeInterval.label} (fixme)</span>`
+                    (this._timeInterval ? html`
+                        <span class="time-interval">
+                            ${this._timeInterval.label} (fixme)
+                            ${this._editing ? html`<wl-icon>edit</wl-icon>` : ''}
+                        </span>`
                         : html`${this._config.hasOutputTimeInterval[0].id} ${this._timeIntervalLoading ? 
                             html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`)
                     : 'No time interval'}
                 </td>
             </tr>
+
             <tr>
                 <td>Processes:</td>
                 <td>
                     ${this._config.hasProcess ?
                     html`${this._config.hasProcess.map(a => typeof a === 'object' ? a.id : a).map((procUri:string) => 
-                        (this._processes[procUri] ?
-                        html`<span class="process">${this._processes[procUri].label}</span>`
+                        (this._processes[procUri] ? html`
+                        <span class="process">
+                            ${this._processes[procUri].label}
+                            ${this._editing ? html`<wl-icon>edit</wl-icon>` : ''}
+                        </span>`
                         : procUri + ' '))}
                     ${this._processesLoading.size > 0 ? html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`
                     : 'No processes'}
+                    ${this._editing ? html`
+                    <wl-button style="float:right;" class="small" flat inverted><wl-icon>add</wl-icon></wl-button>
+                    `: ''}
                 </td>
             </tr>
         </table>
@@ -428,7 +492,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <td class="ta-right">
                     ${this._parameters[uri].hasDefaultValue ? this._parameters[uri].hasDefaultValue : '-'}
                 </td>
-                <td class="ta-right">${this._parameters[uri].usesUnit}</td>`
+                <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>`
                 : html`<td colspan="5" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
             </tr>`)
             : html`<tr><td colspan="5" class="info-center">- This configuration has no parameters -</td></tr>`}
@@ -479,106 +543,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         </div>`}`
     }
 
-    _renderEditConfig () {
-        let loadingMeta = !this._configMetadata;
-        let loadingParams = !this._parameters;
-        let loadingIO = !this._inputs
-        let meta = (!loadingMeta && this._configMetadata.length > 0) ? this._configMetadata[0] : null;
-        let params = (!loadingParams && this._parameters.length > 0) ? this._parameters : null;
-        let inputs = (!loadingIO && this._inputs.length > 0) ? this._inputs : null;
-
-        return html`
-        <div style="margin-bottom: 1em;">
-            <wl-textfield id="edit-config-name" label="Config name" value="${this._config.label}" disabled></wl-textfield>
-            <wl-textarea id="edit-config-desc" label="Description" value="${meta ? meta.desc : ''}"></wl-textarea>
-            <wl-textarea id="edit-config-keywords" label="Keywords" value="${meta ? meta.keywords.join(', ') : ''}"></wl-textarea>
-            <wl-textfield id="edit-config-authors" label="Authors" value="${this._authors && this._authors.length > 0 ?
-                this._authors.map(c => c.name).join(', ') : ''}" disabled></wl-textfield>
-            <br/>
-            <wl-textfield id="edit-config-sw-img" label="Software Image" value="${meta ? meta.dImg : ''}"></wl-textfield>
-            <wl-textfield id="edit-config-repo" label="Repository" value="${meta ? meta.repo : ''}"></wl-textfield>
-            <wl-textfield id="edit-config-comp-loc" label="Component Location" value="${meta ? meta.compLoc : ''}"></wl-textfield>
-        </div>
-
-        <wl-title level="4" style="margin-top:1em;">Parameters:</wl-title>
-        <table class="pure-table pure-table-striped" style="width: 100%">
-            <thead>
-                <th class="ta-right"><b>#</b></th>
-                <th><b>Label</b></th>
-                <th><b>Type</b></th>
-                <th class="ta-right">
-                    <b>Default Value</b>
-                </th>
-                <th class="ta-right"><b>Unit</b></th>
-            </thead>
-            <tbody>
-            ${loadingParams ? html`<tr><td colspan="5" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td></tr>`
-            : ( !params ? html`<tr><td colspan="5" class="info-center">- This configuration has no parameters -</td></tr>`
-                : params.map((p:any) => html`
-                <tr>
-                    <td class="ta-right">${p.position}</td>
-                    <td>
-                        <code>${p.paramlabel}</code><br/>
-                        <b>${p.description}</b>
-                    </td>
-                    <td>
-                        ${p.type} ${p.pdatatype ? '(' + p.pdatatype + ')' : ''}
-                        ${(p.minVal || p.maxVal) ? html`<br/><span style="font-size: 11px;">Range is from ${p.minVal} to ${p.maxVal}</span>` : '' }
-                    </td>
-                    <td class="ta-right">
-                    ${(p.minVal || p.maxVal) ? html`
-                    <wl-slider class="edit-config-param" thumblabel value="${p.defaultvalue}" min="${p.minVal}" max="${p.maxVal}"
-                            step="${p.pdatatype=='float' ? .01 : 1}">
-                        <input slot="before" class="input-range value-edit" type="number" placeholder="-" value="${p.minVal || ''}"></input>
-                        <input slot="after" class="input-range value-edit" type="number" placeholder="-" value="${p.maxVal || ''}"></input>
-                    </wl-slider>
-                    ` : html`
-                    <input class="value-edit edit-config-param" type="text" placeholder="-" value="${p.defaultvalue || ''}"></input>
-                    `}
-                    </td>
-                    <td class="ta-right">${p.unit}</td>
-                </tr>`))}
-            </tbody>
-        </table>
-
-        <wl-title level="4" style="margin-top:1em;">Input files:</wl-title>
-        <table class="pure-table pure-table-striped" style="width: 100%">
-            <colgroup>
-                <col span="1">
-                <col span="1">
-                <col span="1">
-                <col span="1">
-            </colgroup>
-            <thead>
-                <th class="ta-right"><b>#</b></th>
-                <th><b>Name</b></th>
-                <th><b>Description</b></th>
-                <th class="ta-right"><b>Format</b></th>
-            </thead>
-            <tbody>
-            ${loadingIO ? html`<tr><td colspan="3" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td></tr>`
-            : (!inputs ?  html`<tr><td colspan="3" class="info-center">- This configuration has no input files -</td></tr>`
-                : inputs.map(i => html`
-                <tr>
-                    <td class="ta-right">${i.position}</td>
-                    <td><code>${i.label}</code></td>
-                    <td>${i.desc}</td>
-                    <td class="ta-right">${i.format}</td>
-                </tr>
-            `))}
-            </tbody>
-        </table>
-`
-    }
-
-
-    updated () {
-        if (this._editing) {
-            let keywordsEl = this.shadowRoot.getElementById('edit-config-keywords');
-            if (keywordsEl) (<any>keywordsEl).refreshHeight();
-        }
-    }
-
+    //updated () { }
 
     stateChanged(state: RootState) {
         if (state.explorerUI) {
