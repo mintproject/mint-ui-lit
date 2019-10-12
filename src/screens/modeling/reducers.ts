@@ -101,6 +101,8 @@ export interface Goal extends IdNameObject {
 
 export interface SubGoal extends IdNameObject {
     dates?: DateRange,
+    response_variables: string[],
+    driving_variables: string[],
     subregionid?: string
     pathways?: IdMap<PathwayInfo>
 }

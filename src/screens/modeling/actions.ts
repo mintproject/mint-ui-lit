@@ -409,15 +409,18 @@ export const addSubGoalFull = (scenario:Scenario, goalid: string, subgoal: SubGo
         id: pathwayRef.id,
         name: pathway.name ? pathway.name : subgoal.name
     };
-
-    Promise.all([
-        db.collection("scenarios/"+scenario.id+"/goals").doc(goalid).update({
-            subgoalids: fieldValue.arrayUnion(subgoalRef.id)
-        }),
+    let promises = [
         pathwayRef.set(pathway),
         subgoalRef.set(subgoal)
-    ])
-    .then(() => updateScenario(scenario));
+    ];
+    if(goalid) {
+        promises.push(
+            db.collection("scenarios/"+scenario.id+"/goals").doc(goalid).update({
+                subgoalids: fieldValue.arrayUnion(subgoalRef.id)
+            })
+        );
+    }
+    Promise.all(promises).then(() => updateScenario(scenario));
 
     return subgoalRef.id;
 }
@@ -452,6 +455,17 @@ export const updatePathway = (scenario: Scenario, pathway: Pathway) =>  {
     //console.log(pathway);
     return pathwayRef.set(npathway); //.then(() => updateScenario(scenario));
 };
+
+export const updatePathwayInfo = (scenario: Scenario, subgoalid: string, pathwayinfo: PathwayInfo) => {
+    let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc(pathwayinfo.id);
+    Promise.all([
+        db.collection("scenarios/"+scenario.id+"/subgoals").doc(subgoalid).update({
+            [`pathways.${pathwayinfo.id}`]: pathwayinfo
+        }),
+        pathwayRef.set(pathwayinfo, {merge: true})
+    ])
+    .then(() => updateScenario(scenario));
+}
 
 // Add Ensembles
 export const addPathwayEnsembles = (ensembles: ExecutableEnsemble[]) => {
@@ -503,10 +517,12 @@ export const deleteGoal = (scenario:Scenario, goalid: string) =>  {
 // Delete SubGoal
 export const deleteSubGoal = (scenario:Scenario, goalid:string, subgoalid: string) =>  {
     let subgoalRef = db.collection("scenarios/"+scenario.id+"/subgoals").doc(subgoalid);
-    subgoalRef.delete();
-    db.collection("scenarios/"+scenario.id+"/goals").doc(goalid).update({
-        subgoalids: fieldValue.arrayRemove(subgoalid)
-    }).then(() => updateScenario(scenario));
+    if(goalid) {
+        db.collection("scenarios/"+scenario.id+"/goals").doc(goalid).update({
+            subgoalids: fieldValue.arrayRemove(subgoalid)
+        });
+    }
+    subgoalRef.delete().then(() => updateScenario(scenario));
 };
 
 // Delete Pathway

@@ -164,6 +164,25 @@ export const SharedStyles = css`
     background-color: #f17a60;
   }
 
+  .actionIcon.addIcon {
+    width: 44px;
+  }
+  .actionIcon.addIcon::before {
+    content: "ADD ";
+    font-size: 10px;
+    font-family: "Raleway";
+    vertical-align: 50%;
+    font-weight: bold;
+  }
+
+  .actionIcon.bigActionIcon.addIcon {
+    width: 50px;
+  }
+  .actionIcon.bigActionIcon.addIcon::before {
+    font-size: 12px;
+  }
+
+
   a {
     color: #0f7acf;
     text-decoration: none;
@@ -238,6 +257,19 @@ export const SharedStyles = css`
   }
   .clt ul li.highlighted .cltmain {
       font-weight: bold;
+  }
+  .navtop {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left:5px;
+    padding-top:5px;
+  }
+  .cltmain .description {
+    margin-left: 15px;
+    margin-top: 5px;
+    color: #888;
+    font-weight: normal;
   }
   .clt ul {
       list-style: none;

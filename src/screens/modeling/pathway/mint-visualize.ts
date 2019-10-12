@@ -110,106 +110,102 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
         <h2>${this.scenario.name}</h2>
         <div class="clt">
             <ul>
-                <li><h2>${this._goal.name}</h2>
+                <li>
+                    <h2>Task: ${this._subgoal.name}</h3>
                     <ul>
                         <li>
-                            <h3>${this._subgoal.name}</h3>
+                            Variables:
                             <ul>
-                                <li>
-                                    Variables:
-                                    <ul>
-                                        <li>Response: 
-                                            ${this.pathway.response_variables.map((v)=>
-                                                getVariableLongName(v) + " (" + v + ")").join(", ")}
-                                        </li>
-                                        <li>Driving: 
-                                            ${this.pathway.driving_variables.map((v)=>
-                                                getVariableLongName(v) + " (" + v + ")").join(", ")}
-                                        </li>
-                                    </ul>
-                                    <i>Notes: ${this.pathway.notes!.variables}</i>
+                                <li>Response: 
+                                    ${this.pathway.response_variables.map((v)=>
+                                        getVariableLongName(v) + " (" + v + ")").join(", ")}
                                 </li>
-                                <li>
-                                    Models:
-                                    <ul>
-                                        ${Object.keys(this.pathway.models!).map((modelid: string) => {
-                                            let model = this.pathway.models![modelid];
-                                            return html`
-                                            <li>${model.name}</li>
-                                            `;
-                                        })}
-                                    </ul>
-                                    <i>Notes: ${this.pathway.notes!.models}</i>
+                                <li>Driving: 
+                                    ${this.pathway.driving_variables.map((v)=>
+                                        getVariableLongName(v) + " (" + v + ")").join(", ")}
                                 </li>
-                                <li>
-                                    Datasets:
-                                    <ul>
-                                        ${Object.keys(this.pathway.model_ensembles!).map((modelid) => {
-                                            let model_ensemble = this.pathway.model_ensembles![modelid] as DataEnsembleMap;
-                                            let model = this.pathway.models![modelid];
-                                            return html`
-                                            Datasets for model : ${model.name}
-                                            <ul>
-                                                ${model.input_files.filter((input) => !input.value).map((io) => {
-                                                    let bindings = model_ensemble[io.id!];
-                                                    let blist = bindings.map((binding) => {
-                                                        let ds = this.pathway.datasets![binding];
-                                                        return ds.name;
-                                                    }).join(", ");
-
-                                                    return html`
-                                                        <li>${io.name} = ${blist}</li>
-                                                    `;
-                                                })}
-                                            </ul>
-                                            `;
-                                        })}
-                                    </ul>
-                                    <i>Notes: ${this.pathway.notes!.datasets}</i>
-                                </li>
-                                <li>
-                                    Setup:
-                                    <ul>
-                                        ${Object.keys(this.pathway.model_ensembles!).map((modelid) => {
-                                            let model_ensemble = this.pathway.model_ensembles![modelid] as DataEnsembleMap;
-                                            let model = this.pathway.models![modelid];
-                                            return html`
-                                            Adjustment Variables for model : ${model.name}
-                                            <ul>
-                                                ${model.input_parameters.filter((input) => !input.value).map((io) => {
-                                                    let bindings = model_ensemble[io.id!];
-                                                    if(bindings) {
-                                                        let blist = bindings.join(", ");
-                                                        return html`
-                                                            <li>${io.name} = ${blist}</li>
-                                                        `;
-                                                    }
-                                                })}
-                                            </ul>
-                                            `;
-                                        })}
-                                    </ul>
-                                    <i>Notes: ${this.pathway.notes!.parameters}</i>
-                                </li>
-                                <li>
-                                    Model Runs and Results:
-                                    <ul>
-                                        ${Object.keys(this.pathway.executable_ensemble_summary).map((modelid: string) => {
-                                            let model = this.pathway.models[modelid];
-                                            let summary = this.pathway.executable_ensemble_summary[modelid];
-                                            return html`
-                                            <li>
-                                                The model setup created ${summary.total_runs} configurations. 
-                                                ${summary.submitted_runs} model runs were submitted, out of which 
-                                                ${summary.successful_runs} succeeded, and ${summary.failed_runs} failed.
-                                            </li>
-                                            `
-                                        })}
-                                    </ul>
-                                    <i>Notes: ${this.pathway.notes!.results}</i>
-                                </li> 
                             </ul>
+                            <i>Notes: ${this.pathway.notes!.variables}</i>
                         </li>
+                        <li>
+                            Models:
+                            <ul>
+                                ${Object.keys(this.pathway.models!).map((modelid: string) => {
+                                    let model = this.pathway.models![modelid];
+                                    return html`
+                                    <li>${model.name}</li>
+                                    `;
+                                })}
+                            </ul>
+                            <i>Notes: ${this.pathway.notes!.models}</i>
+                        </li>
+                        <li>
+                            Datasets:
+                            <ul>
+                                ${Object.keys(this.pathway.model_ensembles!).map((modelid) => {
+                                    let model_ensemble = this.pathway.model_ensembles![modelid] as DataEnsembleMap;
+                                    let model = this.pathway.models![modelid];
+                                    return html`
+                                    Datasets for model : ${model.name}
+                                    <ul>
+                                        ${model.input_files.filter((input) => !input.value).map((io) => {
+                                            let bindings = model_ensemble[io.id!];
+                                            let blist = bindings.map((binding) => {
+                                                let ds = this.pathway.datasets![binding];
+                                                return ds.name;
+                                            }).join(", ");
+
+                                            return html`
+                                                <li>${io.name} = ${blist}</li>
+                                            `;
+                                        })}
+                                    </ul>
+                                    `;
+                                })}
+                            </ul>
+                            <i>Notes: ${this.pathway.notes!.datasets}</i>
+                        </li>
+                        <li>
+                            Setup:
+                            <ul>
+                                ${Object.keys(this.pathway.model_ensembles!).map((modelid) => {
+                                    let model_ensemble = this.pathway.model_ensembles![modelid] as DataEnsembleMap;
+                                    let model = this.pathway.models![modelid];
+                                    return html`
+                                    Adjustment Variables for model : ${model.name}
+                                    <ul>
+                                        ${model.input_parameters.filter((input) => !input.value).map((io) => {
+                                            let bindings = model_ensemble[io.id!];
+                                            if(bindings) {
+                                                let blist = bindings.join(", ");
+                                                return html`
+                                                    <li>${io.name} = ${blist}</li>
+                                                `;
+                                            }
+                                        })}
+                                    </ul>
+                                    `;
+                                })}
+                            </ul>
+                            <i>Notes: ${this.pathway.notes!.parameters}</i>
+                        </li>
+                        <li>
+                            Model Runs and Results:
+                            <ul>
+                                ${Object.keys(this.pathway.executable_ensemble_summary).map((modelid: string) => {
+                                    let model = this.pathway.models[modelid];
+                                    let summary = this.pathway.executable_ensemble_summary[modelid];
+                                    return html`
+                                    <li>
+                                        The model setup created ${summary.total_runs} configurations. 
+                                        ${summary.submitted_runs} model runs were submitted, out of which 
+                                        ${summary.successful_runs} succeeded, and ${summary.failed_runs} failed.
+                                    </li>
+                                    `
+                                })}
+                            </ul>
+                            <i>Notes: ${this.pathway.notes!.results}</i>
+                        </li> 
                     </ul>
                 </li>
             </ul>

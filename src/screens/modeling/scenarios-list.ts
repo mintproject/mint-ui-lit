@@ -58,11 +58,14 @@ export class ScenariosList extends connect(store)(PageViewElement) {
     return html`
 
     <div class="cltrow scenariorow">
-        <div class="cltmain">
-            <wl-title level="3" style="margin: 0px">Use Models</wl-title>
+        <wl-button flat inverted disabled>
+            <wl-icon>arrow_back_ios</wl-icon>
+        </wl-button>
+        <div class="cltmain navtop">
+            <wl-title level="3">Problem statements</wl-title>
         </div>
         <wl-icon @click="${this._addScenarioDialog}" 
-        class="actionIcon bigActionIcon" id="addScenarioIcon">note_add</wl-icon>
+          class="actionIcon bigActionIcon addIcon" id="addScenarioIcon">note_add</wl-icon>
     </div>
     <!-- Show Scenario List -->
     ${this._list && this._list.scenarioids.map((scenarioid) => {
@@ -74,8 +77,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
               @click="${this._onSelectScenario}"
               data-scenarioid="${scenario.id}">
               <wl-title level="4" style="margin: 0">${scenario.name}</wl-title>
-              <wl-title level="5">${region.name}</wl-title>
-              <span>Dates: ${fromTimeStampToDateString(scenario.dates.start_date)} to 
+              <span>${fromTimeStampToDateString(scenario.dates.start_date)} to 
                 ${fromTimeStampToDateString(scenario.dates.end_date)}</span>
               <div slot="after" style="display:flex">
                 <wl-icon @click="${this._editScenarioDialog}" data-scenarioid="${scenario.id}"
@@ -118,11 +120,11 @@ export class ScenariosList extends connect(store)(PageViewElement) {
   _renderDialogs() {
     return html`
     <wl-dialog id="scenarioDialog" fixed backdrop blockscrolling>
-      <h3 slot="header">What is your scenario ?</h3>
+      <h3 slot="header">What is your Problem statement ?</h3>
       <div slot="content">
         <form id="scenarioForm">
           <p>
-            Please enter a short text to describe the scenario that you would like to investigate
+            Please enter a short text to describe the overall problem that you would like to investigate
           </p>
           <input type="hidden" name="scenarioid"></input>
           <div class="input_full">
@@ -130,33 +132,8 @@ export class ScenariosList extends connect(store)(PageViewElement) {
           </div>
           
           <div style="height:10px;">&nbsp;</div>
-
-          <div class="formRow">
-            <div class="input_half">
-              <label>Region</label>
-              <select name="scenario_region">
-                ${this._top_region ? 
-                  html `<option value="${this._top_region.id}" selected>${this._top_region.name}</option>`
-                  : ""
-                }
-              </select>
-            </div>
-            <div class="input_half">
-              <label>Sub-Region</label>
-              <select name="scenario_subregion">
-                <option disabled selected>Select</option>
-                <option value="">None</option>
-                ${this._list && Object.keys(this._subRegions || {}).map((subRegionid) => {
-                  let subRegion = this._subRegions![subRegionid];
-                  return html`
-                    <option value="${subRegion.id}">${subRegion.name}</option>
-                  `;
-                })}
-              </select>
-            </div>            
-          </div>
-
-          <div style="height:20px;">&nbsp;</div>
+          <input type="hidden" name="scenario_region" value="${this._top_region.id}"></input>
+          <input type="hidden" name="scenario_subregion" value=""></input>
 
           <div class="input_full">
             <label>Time Period</label>
@@ -182,7 +159,10 @@ export class ScenariosList extends connect(store)(PageViewElement) {
 
   _addScenarioDialog() {
     let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#scenarioForm")!;
-    resetForm(form, "scenario_region");
+    (form.elements["scenarioid"] as HTMLInputElement).value = "";
+    (form.elements["scenario_name"] as HTMLInputElement).value = "";
+    (form.elements["scenario_from"] as HTMLInputElement).value = "";
+    (form.elements["scenario_to"] as HTMLInputElement).value = "";
 
     showDialog("scenarioDialog", this.shadowRoot!);
   }
@@ -192,8 +172,8 @@ export class ScenariosList extends connect(store)(PageViewElement) {
     if(formElementsComplete(form, ["scenario_name", "scenario_region", "scenario_from", "scenario_to"])) {
         let scenarioid = (form.elements["scenarioid"] as HTMLInputElement).value;
         let scenario_name = (form.elements["scenario_name"] as HTMLInputElement).value;
-        let scenario_region = (form.elements["scenario_region"] as HTMLSelectElement).value;
-        let scenario_subregion = (form.elements["scenario_subregion"] as HTMLSelectElement).value;
+        let scenario_region = (form.elements["scenario_region"] as HTMLInputElement).value;
+        let scenario_subregion = (form.elements["scenario_subregion"] as HTMLInputElement).value;
         let scenario_from = (form.elements["scenario_from"] as HTMLInputElement).value;
         let scenario_to = (form.elements["scenario_to"] as HTMLInputElement).value;
 

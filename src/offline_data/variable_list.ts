@@ -1,5 +1,72 @@
 export const VARIABLES = {
     "driving variable": {
+        "Agriculture": {
+            "var6": {
+                "long_name": "Amount of fertilizer added",
+                "SVO_name": "land_fertilizer__applied_mass"
+            },
+            "var7": {
+                "long_name": "Amount of weed",
+                "SVO_name": "crop__planting_count-per-area_density_fraction"
+            },
+            "var1": {
+                "long_name": "Start year for the simulation",
+                "SVO_name": "model__simulation_start_time"
+            },
+            "var2": {
+                "long_name": "End year for the simulation",
+                "SVO_name": "model__simulation_end_time"
+            },
+            "var4": {
+                "long_name": "Day of the year when planting starts",
+                "SVO_name": "crop__planting_start_time"
+            },
+            "var5": {
+                "long_name": "Day of the year when planting ends",
+                "SVO_name": "crop__planting_end_time"
+            },
+            "var3": {
+                "long_name": "Crop Name",
+                "SVO_name": "crop__name"
+            },
+        },
+        "Economic": {
+            "var1": {
+                "long_name": "Fertilizer cost",
+                "SVO_name": "fertilizer~nitrogen__usage-cost-per-applied-mass"
+            },
+            "var2": {
+                "long_name": "Crop Prices",
+                "SVO_name": "farmer_crop__received_price-per-mass"
+            },
+            "var3": {
+                "long_name": "Land Cost",
+                "SVO_name": "land_crop__production_cost-per-area"
+            },
+        }
+    },
+    "response variable": {
+        "Agriculture": {
+            "var1": {
+                "long_name": "Potential Crop Production",
+                "SVO_name": "grain~dry__mass-per-area_yield"
+            },
+            "var2": {
+                "long_name": "Seasonal Crop Production Index",
+                "SVO_name": "crop__production_index"
+            },
+        },
+        "Economic": {
+            "var1": {
+                "long_name": "Crop Production",
+                "SVO_name": "crop__simulated_produced_mass"
+            },
+        }
+    }
+};
+
+export const VARIABLES_OLD = {
+    "driving variable": {
         "Weather": {
             "var1": {
                 "long_name": "Precipitation",
