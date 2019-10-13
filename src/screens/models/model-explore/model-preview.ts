@@ -26,9 +26,6 @@ export class ModelPreview extends connect(store)(PageViewElement) {
     private _model! : FetchedModel;
 
     @property({type: String})
-    private _region : string = '';
-
-    @property({type: String})
     private _url : string = '';
 
     @property({type: Number})
@@ -233,7 +230,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                         <b>Keywords:</b> 
                         ${this._model.keywords?  html`${this._model.keywords.join(', ')}` : html`No keywords`}
                     </span>
-                    <a href="${this._region + '/'+ this._url}" class="details-button" @click="${this._goToThisModel}"> More details </a>
+                    <a href="${this._regionid + '/'+ this._url}" class="details-button" @click="${this._goToThisModel}"> More details </a>
                   </div>
                 </td>
               </tr>
@@ -255,6 +252,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
     }
 
     stateChanged(state: RootState) {
+        super.setRegionId(state);
         if (state.explorer) {
             let db = state.explorer;
             if (db.models && db.models[this.uri]) {
@@ -273,7 +271,6 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                 this._configs = 0;
             }
         }
-        this._region = state.ui['selected_top_regionid'];
         this._vers = this._model && this._model.versions ? this._model.versions.length : 0;
     }
 }

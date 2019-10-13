@@ -40,7 +40,7 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
                 nav.push({label: 'Compose Visualizations', url: 'analysis/aggregate'});
                 break;
             case 'report':
-                nav.push({label: 'Prepare Reports', url: 'analysis/report'});
+                nav.push({label: 'Available Reports', url: 'analysis/report'});
                 break;
             default:
                 break;
