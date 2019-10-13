@@ -52,6 +52,34 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
       .cltrow wl-button {
         padding: 2px;
       }
+
+      .two-column-grid {
+        display: inline-grid;
+        grid-template-columns: auto auto;
+        grid-gap: 0px 10px;
+      }
+
+      .two-column-grid > wl-title {
+        text-align: right;
+      }
+
+      .two-column-grid > span > div {
+        margin-top: 2px;
+      }
+
+      .main-content {
+        width: 75%;
+        margin: 0 auto;
+      }
+
+      .inner-content {
+        padding: 0px 30px;
+        margin-bottom: 15px;
+      }
+
+      .monospaced {
+        font: 12px Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace;
+      }
     `];
   }
 
@@ -59,14 +87,100 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
     //log('RENDER')
     log(this._selectedScenarioId, this._selectedTaskId, this._selectedPathwayId)
     if (this._selectedScenarioId && this._selectedTaskId && this._selectedPathwayId) {
-      return html`${this._selectedScenarioId + ' ' + this._selectedTaskId + ' ' + this._selectedPathwayId}
-        ${this._loading ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : '' }`
+      let scenario = this._scenarios[this._selectedScenarioId];
+      let task = this._tasks[this._selectedTaskId];
+      let pathway = this._pathways[this._selectedPathwayId];
+      return html`
+        ${task ? html `
+        <div class="main-content">
+          <wl-title level="2" class="two-column-grid" style="padding: 0px;">
+            <span>Task:</span>
+            <span>${task.name}</span>
+          </wl-title>
+
+          <wl-title level="3">Variables:</wl-title>
+          <div class="two-column-grid inner-content">
+            <wl-title level="4">Indicators:</wl-title>
+            <span>
+              ${!task.response_variables || task.response_variables.length == 0 ?
+                'No indicators' : task.response_variables.map((rv) => html`
+                <div>${getVariableLongName(rv)} (<span class="monospaced">${rv}</span>)</div>`)}
+            </span>
+            <wl-title level="4">Adjustable variables:</wl-title>
+            <span>
+              ${!task.driving_variables || task.driving_variables.length == 0 ?
+              'No adjustable variables' : task.driving_variables.map((dv) => html`
+                <div>${getVariableLongName(dv)} (<span class="monospaced">${dv}</span>)</div>`)}
+            </span>
+          </div>
+
+          ${pathway ? html`
+          <wl-title level="3">Models:</wl-title>
+          <div class="inner-content">
+            ${!pathway.models || Object.keys(pathway.models).length == 0 ?
+            'No models' :
+            Object.values(pathway.models).map((model) => model.name)}
+          </div>
+
+          <wl-title level="3">Datasets:</wl-title>
+          <div class="inner-content">
+            ${!pathway.datasets || Object.keys(pathway.datasets).length == 0 ?
+            'No datasets' :
+            Object.values(pathway.datasets).map((model) => model.name)}
+          </div>
+
+          <wl-title level="3">Setup:</wl-title>
+          <div class="inner-content">
+            ${!pathway.model_ensembles || Object.keys(pathway.model_ensembles).length == 0 ?
+            'No adjustable variables for this model' : html`
+            <table class="pure-table pure-table-striped" style="width: 100%">
+              <colgroup>
+                  <col span="1">
+                  <col span="1">
+              </colgroup>
+              <thead>
+                  <th><b>Variable</b></th>
+                  <th><b>Value</b></th>
+              </thead>
+              <tbody>
+                ${Object.values(pathway.model_ensembles).map((ens) => Object.keys(ens).map((key) => html`
+                <tr>
+                  <td>${key.split('/').pop()}</td>
+                  <td>${ens[key].join(', ')}</td>
+                </tr>
+                `))}
+              </tbody>
+            </table>
+            `}
+          </div>
+
+          <wl-title level="3">Model runs and Results:</wl-title>
+          <div class="inner-content">
+            ${!pathway.executable_ensemble_summary || Object.keys(pathway.executable_ensemble_summary).length == 0 ? 
+            'No information about this run' : Object.values(pathway.executable_ensemble_summary).map(execSum => html`
+            The model setup created ${execSum.total_runs} configurations.
+            ${execSum.submitted_runs} model runs were submitted,
+            out of which ${execSum.successful_runs} succeeded, 
+            and ${execSum.total_runs} failed.
+            `)}
+          </div>
+            `
+          :''}
+          <div style="height: 200px;"/>`
+          :''}
+          ${this._loading ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : '' }
+        </div>`
+
     } else if (!this._selectedScenarioId && !this._selectedTaskId && !this._selectedPathwayId)  {
       return html`
+        <span id="start"></span>
         ${Object.values(this._scenarios).map((scenario:any) => html`
-        <wl-title level="3">${scenario.name}</wl-title>
+        <wl-title level="3" style="margin: 12px 0px 0px 12px">${scenario.name}</wl-title>
           ${scenario.tasks.map((taskid) => this._tasks[taskid]).map((task) => html`
-            <wl-list-item class="active" @click="${() => {goToPage(PREFIX_REPORT + scenario.id + '/' + task.id + '/' + Object.keys(task.pathways)[0] ) }}">
+            <wl-list-item class="active" @click="${() => {
+              this._scrollUp();
+              goToPage(PREFIX_REPORT + scenario.id + '/' + task.id + '/' + Object.keys(task.pathways)[0]);
+            }}">
                 <wl-title level="4" style="margin: 0">
                   ${task.name}
                 </wl-title>
@@ -86,6 +200,13 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
         analysis details
         </p>
       `
+    }
+  }
+
+  _scrollUp () {
+    let el = this.shadowRoot.getElementById('start');
+    if (el) {
+      el.scrollIntoView({behavior: "smooth", block: "start"})
     }
   }
 
