@@ -217,9 +217,7 @@ const loadPage: ActionCreator<ThunkResult> =
     case 'analysis':
         if (subpage == 'home') {
             import('../screens/analysis/analysis-home').then((_module) => {
-              if(params.length > 0) {
-                //store.dispatch(queryRegionDetail(params[0]));
-              }
+                store.dispatch(selectScenario(null));
             });
         } else if (subpage == 'report') {
             import('../screens/analysis/analysis-report').then((_module) => {

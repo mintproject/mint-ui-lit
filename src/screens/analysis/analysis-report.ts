@@ -38,6 +38,15 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
   @property({type: Object})
   private _subRegions: RegionList;
 
+  @property({type: String})
+  private _selectedScenarioId : string = '';
+
+  @property({type: String})
+  private _selectedTaskId : string = '';
+
+  @property({type: String})
+  private _selectedPathwayId : string = '';
+
   static get styles() {
     return [SharedStyles, css`
       .cltrow wl-button {
@@ -47,31 +56,37 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
   }
 
   protected render() {
-    log('RENDER <----')
-    return html`
-      ${Object.values(this._scenarios).map((scenario:any) => html`
-      <wl-title level="3">${scenario.name}</wl-title>
-        ${scenario.tasks.map((taskid) => this._tasks[taskid]).map((task) => html`
-          <wl-list-item class="active" @click="${() => {goToPage(PREFIX_REPORT + scenario.id + '/' + task.id + '/' + Object.keys(task.pathways)[0] ) }}">
-              <wl-title level="4" style="margin: 0">
-                ${task.name}
-              </wl-title>
-              ${this._getSubgoalSummaryText(task)}
-              <div slot="after" style="display:flex">
-                ${this._renderDates(task, scenario)}
-              </div>
-          </wl-list-item>
+    //log('RENDER')
+    log(this._selectedScenarioId, this._selectedTaskId, this._selectedPathwayId)
+    if (this._selectedScenarioId && this._selectedTaskId && this._selectedPathwayId) {
+      return html`${this._selectedScenarioId + ' ' + this._selectedTaskId + ' ' + this._selectedPathwayId}
+        ${this._loading ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : '' }`
+    } else if (!this._selectedScenarioId && !this._selectedTaskId && !this._selectedPathwayId)  {
+      return html`
+        ${Object.values(this._scenarios).map((scenario:any) => html`
+        <wl-title level="3">${scenario.name}</wl-title>
+          ${scenario.tasks.map((taskid) => this._tasks[taskid]).map((task) => html`
+            <wl-list-item class="active" @click="${() => {goToPage(PREFIX_REPORT + scenario.id + '/' + task.id + '/' + Object.keys(task.pathways)[0] ) }}">
+                <wl-title level="4" style="margin: 0">
+                  ${task.name}
+                </wl-title>
+                ${this._getSubgoalSummaryText(task)}
+                <div slot="after" style="display:flex">
+                  ${this._renderDates(task, scenario)}
+                </div>
+            </wl-list-item>
 
+          `)}
         `)}
-      `)}
-
-      ${this._loading ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : '' }
-
-      <!--p>
-      This page is in progress, it will give you the ability to prepare reports with findings backed up with visualisations and
-      analysis details
-      </p-->
+        ${this._loading ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : '' }`
+    } else {
+      return html`
+        <p>
+        This page is in progress, it will give you the ability to prepare reports with findings backed up with visualisations and
+        analysis details
+        </p>
       `
+    }
   }
 
   _getSubgoalSummaryText(subgoal) {
@@ -138,15 +153,21 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
     this.active = (this._subpage === 'report');
     super.setRegionId(state);
 
-    if(state.ui && state.ui.selected_top_regionid && state.regions!.regions) {
-      if(!state.regions!.query_result || !state.regions!.query_result[state.ui.selected_top_regionid]) {
-        store.dispatch(queryRegions(state.ui.selected_top_regionid));
-      }
-      else {
-        this._subRegions = state.regions!.query_result[state.ui.selected_top_regionid]["*"];
+    if (state.ui) {
+      this._selectedScenarioId = state.ui.selected_scenarioid;
+      this._selectedTaskId = state.ui.selected_subgoalid;
+      this._selectedPathwayId = state.ui.selected_pathwayid;
+
+      if (state.ui.selected_top_regionid && state.regions!.regions) {
+        if (!state.regions!.query_result || !state.regions!.query_result[state.ui.selected_top_regionid]) {
+          store.dispatch(queryRegions(state.ui.selected_top_regionid));
+        } else {
+          this._subRegions = state.regions!.query_result[state.ui.selected_top_regionid]["*"];
+        }
       }
     }
   }
+
 }
 
 /* vim: set ts=2 sw=2 sts=2 tw=160 cc=160 : */

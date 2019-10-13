@@ -1,4 +1,4 @@
-import { html, customElement, css } from 'lit-element';
+import { html, customElement, css, property } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
 import { SharedStyles } from '../../styles/shared-styles';
@@ -18,6 +18,8 @@ store.addReducers({
 
 @customElement('analysis-home')
 export class AnalysisHome extends connect(store)(PageViewElement) {
+    @property({type: String})
+    private _selectedPathwayId : string = '';
 
     static get styles() {
         return [
@@ -41,13 +43,16 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
                 break;
             case 'report':
                 nav.push({label: 'Available Reports', url: 'analysis/report'});
+                if (this._selectedPathwayId) {
+                    nav.push({label: 'Available Reports', url: 'analysis/report'})
+                }
                 break;
             default:
                 break;
         }
 
         return html`
-            <nav-title .nav="${nav}"></nav-title>
+            <nav-title .nav="${nav}" max="2"></nav-title>
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
                 <a href="${this._regionid}/analysis/compare">
                     <wl-icon style="--icon-size: 81px;">compare</wl-icon>
@@ -78,6 +83,9 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         super.setRegionId(state);
         super.setSubPage(state);
+        if (state.ui) {
+            this._selectedPathwayId = state.ui.selected_pathwayid;
+        }
     }
 }
 
