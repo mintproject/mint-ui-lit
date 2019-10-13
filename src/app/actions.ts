@@ -215,11 +215,26 @@ const loadPage: ActionCreator<ThunkResult> =
         });
         break;
     case 'analysis':
-        import('../screens/analysis/analysis-home').then((_module) => {
-          if(params.length > 0) {
-            //store.dispatch(queryRegionDetail(params[0]));
-          }
-        });
+        if (subpage == 'home') {
+            import('../screens/analysis/analysis-home').then((_module) => {
+                store.dispatch(selectScenario(null));
+            });
+        } else if (subpage == 'report') {
+            import('../screens/analysis/analysis-report').then((_module) => {
+              if(params.length > 0) {
+                store.dispatch(selectScenario(params[0]));
+                if(params.length > 1) {
+                  store.dispatch(selectSubgoal(params[1]));
+                  if(params.length > 2) {
+                    store.dispatch(selectPathway(params[2]));
+                  }
+                }
+              } else {
+                store.dispatch(selectScenario(null));
+              }
+            });
+        }
+
         break;
     case 'datasets':
         import('../screens/datasets/datasets-home').then((_module) => {
