@@ -91,7 +91,7 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
                 } as DateRange,
                 description: row["description"] || "",
                 version: dmeta["version"] || "",
-                limitations: dmeta["limitataions"] || "",
+                limitations: dmeta["limitations"] || "",
                 source: {
                     name: dmeta["source"] || "",
                     url: dmeta["source_url"] || "",
