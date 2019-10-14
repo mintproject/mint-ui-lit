@@ -161,7 +161,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
             The model setup created ${execSum.total_runs} configurations.
             ${execSum.submitted_runs} model runs were submitted,
             out of which ${execSum.successful_runs} succeeded, 
-            and ${execSum.total_runs} failed.
+            and ${execSum.failed_runs} failed.
             `)}
           </div>
             `
