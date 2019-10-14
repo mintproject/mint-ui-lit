@@ -19,7 +19,8 @@ export interface Dataset extends IdNameObject {
 
 export interface DataResource extends IdNameObject {
     url: string
-    time_period?: DateRange
+    time_period?: DateRange,
+    spatial_coverage?: any
 }
 
 export interface DatasetDetail extends Dataset {

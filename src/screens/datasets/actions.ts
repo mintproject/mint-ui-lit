@@ -76,7 +76,7 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
         let dmeta = row["dataset_metadata"];
         let rmeta = row["resource_metadata"];
         let tcover = rmeta["temporal_coverage"];
-        //let scover = rmeta["spatial_coverage"];
+        let scover = rmeta["spatial_coverage"];
         let dsid = row["dataset_id"];
         let ds : Dataset = dsmap[dsid];
         if(ds == null) {
@@ -119,7 +119,8 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
             time_period: {
                 start_date: tcoverstart,
                 end_date: tcoverend
-            }
+            },
+            spatial_coverage: scover
         });
     });
     return datasets;
