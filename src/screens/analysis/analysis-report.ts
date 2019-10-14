@@ -7,7 +7,7 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from 'app/actions';
 
 import { IdMap } from 'app/reducers';
-import { Scenario, ScenarioList } from 'screens/modeling/reducers';
+import { Scenario, ScenarioList, Pathway } from 'screens/modeling/reducers';
 
 import { fromTimeStampToDateString } from "util/date-utils";
 import { getVariableLongName } from "offline_data/variable_list";
@@ -89,7 +89,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
     if (this._selectedScenarioId && this._selectedTaskId && this._selectedPathwayId) {
       let scenario = this._scenarios[this._selectedScenarioId];
       let task = this._tasks[this._selectedTaskId];
-      let pathway = this._pathways[this._selectedPathwayId];
+      let pathway = this._pathways[this._selectedPathwayId] as Pathway;
       return html`
         ${task ? html `
         <div class="main-content">
@@ -161,7 +161,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
             The model setup created ${execSum.total_runs} configurations.
             ${execSum.submitted_runs} model runs were submitted,
             out of which ${execSum.successful_runs} succeeded, 
-            and ${execSum.total_runs} failed.
+            and ${execSum.failed_runs} failed.
             `)}
           </div>
             `
