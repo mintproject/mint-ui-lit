@@ -114,7 +114,7 @@ export const configurationPut: ActionCreator<ModelCatalogThunkResult> = (config)
         api.modelconfigurationsIdPut({id: id, user: DEFAULT_GRAPH, modelConfiguration: config, username: DEFAULT_GRAPH}) //<- my username
             .then((data) => {
                 //FIXME: the api is returning nothing right now, so we need to get again
-                console.log(data);
+                console.log('RESPONSE PUT MODEL CONFIGURATION:', data);
             })
             .catch((err) => {console.log('Error on putConfigs', err)})
     } else if (status === 'LOADING') {

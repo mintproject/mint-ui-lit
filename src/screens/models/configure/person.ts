@@ -87,6 +87,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             <wl-textfield id="new-author-email" label="E-mail" required></wl-textfield>
             <wl-textfield id="new-author-web" label="Website"></wl-textfield>
         </form>
+        <wl-button @click="${this.saveNewPerson}"><wl-icon>save</wl-icon></wl-button>
         or <a @click="${() => {this.new = false;}}">search and select persons</a>
         `;
 
@@ -96,6 +97,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             ${Object.values(this._persons).map((person) => html`
             <div class="author-container">
                 <label>
+                    <!-- TODO: For some reason checked does not update -->
                     <input type="checkbox" .checked="${!!this.selected[person.id]}" @click="${() => {this._toggleSelection(person.id)}}">
                     <span>${person.label ? person.label : person.id}</span>
                 </label>
@@ -119,11 +121,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
     }
 
     saveNewPerson () {
-        console.log('SHOULD SAVE PERSON')
-    }
-
-    /*_onNewAuthorSubmit () {
-        console.log('submit')
+        console.log('Creating a new person')
         let nameEl = this.shadowRoot.getElementById('new-author-name')
         let emailEl = this.shadowRoot.getElementById('new-author-email')
         let webEl = this.shadowRoot.getElementById('new-author-web')
@@ -147,9 +145,11 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             store.dispatch(personPost(newPerson));
             showNotification("saveNotification", this.shadowRoot!);
         }
-    }*/
+    }
 
-    //updated () { }
+    reset () {
+        this.selected = {};
+    }
 
     firstUpdated() {
         store.dispatch(personsGet());

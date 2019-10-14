@@ -524,7 +524,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             return acc;
         }, {}) : {};
         return html`
-        <wl-dialog class="larger" id="addAuthorDialog" fixed backdrop blockscrolling>
+        <wl-dialog class="larger" id="addAuthorDialog" fixed backdrop blockscrolling persistent>
             <h3 slot="header">Add Author</h3>
             <div slot="content">
                 <wl-tab-group align="center" style="background-color: #F6F6F6;">
@@ -560,6 +560,8 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     }
 
     _showAuthorDialog () {
+        let personConfigurator = this.shadowRoot.getElementById('person-configurator');
+        personConfigurator.reset();
         showDialog("addAuthorDialog", this.shadowRoot);
         this._onDialog = true;
     }
@@ -616,7 +618,6 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 }
                 if (db.configurations) {
                     if (!this._config && this._selectedConfig && db.configurations[this._selectedConfig]) {
-                        console.log('config copied')
                         this._config = { ...db.configurations[this._selectedConfig] }; //this to no change on store
                         //console.log('LOADED CONFIGURATION, FETCHING PARAMETERS...');
                         // Fetching not loaded parameters 

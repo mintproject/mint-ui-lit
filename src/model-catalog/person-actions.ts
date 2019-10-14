@@ -56,7 +56,7 @@ interface MCAPersonPost extends Action<'PERSON_POST'> { payload: any };
 export const personPost: ActionCreator<ModelCatalogPersonThunkResult> = (person:Person) => (dispatch) => {
     debug('creating new person', person);
     let status : string, cfg : Configuration, user : string;
-    [status, cfg, user] = getStatusAndConfig();
+    [status, cfg, user] = getStatusConfigAndUser();
 
     if (status === 'DONE') {
         person.id = undefined;
@@ -64,7 +64,7 @@ export const personPost: ActionCreator<ModelCatalogPersonThunkResult> = (person:
         api.personsPost({user: DEFAULT_GRAPH, person: person}) // This should be my username on prod.
             .then((data) => {
                 //TODO its not returning right now,
-                console.log(data);
+                console.log('RESPONSE POST PERSON:', data);
             })
             .catch((err) => {console.log('Error on POST person', err)})
     } else if (status === 'LOADING') {
@@ -77,7 +77,7 @@ interface MCAPersonPut extends Action<'PERSON_PUT'> { payload: any };
 export const personPut: ActionCreator<ModelCatalogPersonThunkResult> = ( uri: string ) => (dispatch) => {
     debug('updating person', uri);
     let status : string, cfg : Configuration, user : string;
-    [status, cfg, user] = getStatusAndConfig();
+    [status, cfg, user] = getStatusConfigAndUser();
 
     if (status === 'DONE') {
         let api : PersonApi = new PersonApi(cfg);
