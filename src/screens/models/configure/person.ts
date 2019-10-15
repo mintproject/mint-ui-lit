@@ -9,7 +9,7 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from 'app/actions';
 
 import { renderNotifications } from "util/ui_renders";
-import { showNotification } from 'util/ui_functions';
+import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
 import { personGet, personsGet, personPost, personPut, ALL_PERSONS } from 'model-catalog/actions';
 
@@ -18,12 +18,14 @@ import { renderExternalLink } from './util';
 import "weightless/progress-spinner";
 import "weightless/textfield";
 import "weightless/card";
+import "weightless/dialog";
+import "weightless/checkbox";
 import 'components/loading-dots'
 
 @customElement('models-configure-person')
 export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
     @property({type: Boolean})
-    private new : boolean = false;
+    private _new : boolean = false;
 
     @property({type: Boolean})
     private _loading : boolean = false;
@@ -35,13 +37,10 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
     private _filter : string = '';
 
     @property({type: Object})
-    selected : {[key:string]: Person | undefined} = {};
+    private _selected : {[key:string]: Person | undefined} = {};
 
     @property({type: String})
-    personToEdit : string = '';
-
-    @property({type: Object})
-    private _personToEditData : Person | null = null;
+    private _selectedPersonId: string = '';
 
     static get styles() {
         return [ExplorerStyles, SharedStyles, css`
@@ -54,11 +53,16 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             padding: 1px 4px;
             margin-bottom: 5px;
         }
-        
-        :checked + span {
-            font-weight: bold;
+
+        .custom-checkbox {
+            vertical-align: middle;
+            margin-right: 10px;
         }
 
+        span.bold {
+            font-weight: bold;
+        }
+        
         .author-container > wl-button {
             --button-padding: 5px;
         }
@@ -71,57 +75,81 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
         ];
     }
 
-    protected render() {
-        if (this.personToEdit) return html`
-        <wl-title level="3">Editing person:</wl-title>
-        <form>
-            <wl-textfield id="edit-author-name" label="Name" value="${this._personToEditData.label}" required></wl-textfield>
-            <wl-textfield id="edit-author-email" label="E-mail" value="${this._personToEditData.email}" required></wl-textfield>
-            <wl-textfield id="edit-author-web" label="Website" value="${this._personToEditData.website}"></wl-textfield>
-        </form> `
-
-        if (this.new) return html`
-        <wl-title level="3">Register a new person:</wl-title>
-        <form>
-            <wl-textfield id="new-author-name" label="Name" required></wl-textfield>
-            <wl-textfield id="new-author-email" label="E-mail" required></wl-textfield>
-            <wl-textfield id="new-author-web" label="Website"></wl-textfield>
-        </form>
-        <wl-button @click="${this.saveNewPerson}"><wl-icon>save</wl-icon></wl-button>
-        or <a @click="${() => {this.new = false;}}">search and select persons</a>
-        `;
-
-        return html`
-        <wl-textfield label="Search persons" .value="${this._filter}"><wl-icon slot="after">search</wl-icon></wl-textfield>
-        <div class="results" style="margin-top: 5px;">
-            ${Object.values(this._persons).map((person) => html`
-            <div class="author-container">
-                <label>
-                    <!-- TODO: For some reason checked does not update -->
-                    <input type="checkbox" .checked="${!!this.selected[person.id]}" @click="${() => {this._toggleSelection(person.id)}}">
-                    <span>${person.label ? person.label : person.id}</span>
-                </label>
-                <wl-button flat inverted><wl-icon>edit</wl-icon></wl-button>
-            </div>
-            `)}
-            ${this._loading ? html`
-            <div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : ''}
-        </div>
-        <br/>
-        or <a @click="${() => {this.new = true;}}">create a new Person</a>
-        `
-    }
-
-    _toggleSelection (personId) {
-        if (this.selected[personId]) {
-            this.selected[personId] = undefined;
+    open () {
+        if (this.active) {
+            showDialog("authorDialog", this.shadowRoot);
         } else {
-            this.selected[personId] = this._persons[personId];
+            setTimeout(() => {this.open()}, 300);
         }
     }
 
-    saveNewPerson () {
-        console.log('Creating a new person')
+    setSelected (persons) {
+        this._selected = {...persons};
+    }
+
+    getSelected () {
+        return Object.keys(this._selected).filter(personId => this._selected[personId]).map(personId => this._persons[personId]);
+    }
+
+    protected render() {
+        let selectedPerson = this._persons[this._selectedPersonId];
+        return html`
+        <wl-dialog class="larger" id="authorDialog" fixed backdrop blockscrolling persistent>
+            <h3 slot="header">
+                ${this._new ? 'Register a new person' : (selectedPerson ? 'Editing person' : 'Selecting authors')}
+            </h3>
+            <div slot="content">
+                ${this._new ? html`
+                <form>
+                    <wl-textfield id="new-author-name" label="Name" required></wl-textfield>
+                    <wl-textfield id="new-author-email" label="E-mail" required></wl-textfield>
+                    <wl-textfield id="new-author-web" label="Website"></wl-textfield>
+                </form>`
+                : (selectedPerson ? html`
+                <form>
+                    <wl-textfield value="${selectedPerson.label ? selectedPerson.label : ''}"
+                        id="edit-author-name" label="Name" required></wl-textfield>
+                    <wl-textfield value="${selectedPerson.email ? selectedPerson.email : ''}"
+                        id="edit-author-email" label="E-mail" required></wl-textfield>
+                    <wl-textfield value="${selectedPerson.website ? selectedPerson.website : ''}"
+                        id="edit-author-web" label="Website" ></wl-textfield>
+                </form> `
+                : html`
+                <wl-textfield label="Search persons" .value="${this._filter}"><wl-icon slot="after">search</wl-icon></wl-textfield>
+                <div class="results" style="margin-top: 5px;">
+                    ${Object.values(this._persons).map((person) => html`
+                    <div class="author-container">
+                        <label @click="${() => {this._toggleSelection(person.id)}}">
+                            <wl-icon class="custom-checkbox">${this._selected[person.id] ? 'check_box' : 'check_box_outline_blank'}</wl-icon>
+                            <span class="${this._selected[person.id] ? 'bold' : ''}">${person.label ? person.label : person.id}</span>
+                        </label>
+                        <wl-button @click="${() => this._edit(person.id)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
+                    </div>
+                `)}
+                ${this._loading ? html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : ''}
+                </div>
+                or <a @click="${() => {this._new = true;}}">create a new Person</a>
+            `)}
+            </div>
+            <div slot="footer">
+                <wl-button @click="${this._cancel}" style="margin-right: 5px;" inverted flat>Cancel</wl-button>
+                ${this._new ? html`
+                <wl-button @click="${this._onCreateAuthor}" class="submit">Save</wl-button>`
+                : (selectedPerson ? html`
+                <wl-button @click="${this._onEditAuthor}" class="submit">Save</wl-button>`
+                : html`
+                <wl-button @click="${this._onSubmitAuthors}" class="submit">Add selected authors</wl-button>`
+                )}
+            </div>
+        </wl-dialog>`
+    }
+
+    _toggleSelection (personId) {
+        this._selected[personId] = !this._selected[personId];
+        this.requestUpdate();
+    }
+
+    _onCreateAuthor () {
         let nameEl = this.shadowRoot.getElementById('new-author-name')
         let emailEl = this.shadowRoot.getElementById('new-author-email')
         let webEl = this.shadowRoot.getElementById('new-author-web')
@@ -147,11 +175,52 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
         }
     }
 
-    reset () {
-        this.selected = {};
+    _onEditAuthor () {
+        let nameEl = this.shadowRoot.getElementById('edit-author-name')
+        let emailEl = this.shadowRoot.getElementById('edit-author-email')
+        let webEl = this.shadowRoot.getElementById('edit-author-web')
+        if (nameEl && emailEl && webEl) {
+            let name = nameEl.value;
+            let email = emailEl.value;
+            let web = webEl.value;
+            if (!name || !email) {
+                showNotification("formValuesIncompleteNotification", this.shadowRoot!);
+                (<any>nameEl).refreshAttributes();
+                (<any>emailEl).refreshAttributes();
+                return;
+            }
+
+            let editedPerson : Person = Object.assign({}, this._persons[this._selectedPersonId])
+            editedPerson.label = [name];
+            editedPerson.email = [email];
+            if (web) editedPerson.website = [web];
+
+            store.dispatch(personPut(editedPerson));
+            showNotification("saveNotification", this.shadowRoot!);
+        }
     }
 
-    firstUpdated() {
+    _onSubmitAuthors () {
+        this.dispatchEvent(new CustomEvent('authorsSelected', {composed: true}));
+        hideDialog("authorDialog", this.shadowRoot);
+    }
+
+    _cancel () {
+        if (this._new) {
+            this._new = false;
+        } else if (this._selectedPersonId) {
+            this._selectedPersonId = '';
+        } else {
+            this.dispatchEvent(new CustomEvent('dialogClosed', {composed: true}));
+            hideDialog("authorDialog", this.shadowRoot);
+        }
+    }
+
+    _edit (personId) {
+        this._selectedPersonId = personId;
+    }
+
+    firstUpdated () {
         store.dispatch(personsGet());
     }
 
@@ -160,11 +229,6 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             let db = state.modelCatalog;
             this._loading = db.loading[ALL_PERSONS]
             this._persons = db.persons;
-            if (this.personToEdit) {
-                this._personToEditData = db.persons[this.personToEdit];
-            } else {
-                this._personToEditData = null;
-            }
         }
     }
 }

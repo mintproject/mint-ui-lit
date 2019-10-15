@@ -59,8 +59,8 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     @property({type: Object})
     private _softwareImage : any = null;
 
-    @property({type: Boolean})
-    private _onDialog : boolean = false;
+    @property({type: String})
+    private _dialog : string = '';
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
@@ -507,66 +507,42 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             </wl-button>
         </div>`}
         
-        ${this._renderDialogs()}
+        <models-configure-person id="person-configurator" ?active=${this._dialog == 'person'} class="page"></models-configure-person>
         ${renderNotifications()}`
     }
 
-    _renderDialogs () {
-        return html`
-        ${this._renderAuthorDialog()}
-        `
-    }
-
-    _renderAuthorDialog () {
-        let tab = 'author'
-        let selectedPersons = this._config.author ? this._config.author.reduce((acc, author) => {
-            if (!acc[author.id]) acc[author.id] = this._authors[author.id];
-            return acc;
-        }, {}) : {};
-        return html`
-        <wl-dialog class="larger" id="addAuthorDialog" fixed backdrop blockscrolling persistent>
-            <h3 slot="header">Add Author</h3>
-            <div slot="content">
-                <wl-tab-group align="center" style="background-color: #F6F6F6;">
-                    <wl-tab style="background-color: #F6F6F6;" ?checked=${tab=='author'} @click="${() => {tab = 'author'}}">Person</wl-tab>
-                    <wl-tab style="background-color: #F6F6F6;" ?checked=${tab=='organization'} @click="${() => {tab = 'organization'}}" disabled>Organization</wl-tab>
-                </wl-tab-group>
-                <models-configure-person id="person-configurator" class="page" .selected="${selectedPersons}" 
-                 ?active="${this._onDialog && tab == 'author'}" ></models-configure-person>
-            </div>
-            <div slot="footer">
-                <wl-button @click="${this._onAuthorCancel}" style="margin-right: 5px;" inverted flat>Cancel</wl-button>
-                 <wl-button @click="${() => {this._onAuthorSubmit(selectedPersons)}}" class="submit"
-                            id="dialog-submit-button">Add selected authors</wl-button>
-            </div>
-        </wl-dialog>`
-    }
-
-    _onAuthorSubmit (personList) {
-        /*let personConfigurator = this.shadowRoot.getElementById('person-configurator');
-        console.log(personConfigurator)
-        personConfigurator.saveNewPerson();*/
-        this._config.author = [];
-        Object.keys(personList).filter(pid => !!personList[pid]).map(personId => {
-            this._config.author.push( {id: personId, type: ['Person']});
-            this._authors[personId] = personList[personId];
-        })
-        this._onAuthorCancel();
-    }
-
-    _onAuthorCancel () {
-        hideDialog("addAuthorDialog", this.shadowRoot);
-        this._onDialog = false; //this will not happen if the user press outside
-    }
-
     _showAuthorDialog () {
+        this._dialog = 'person';
+        console.log(this._config.author);
+        let selectedAuthors = this._config.author.filter(x => x.type === "Person").reduce((acc, author) => {
+            if (!acc[author.id]) acc[author.id] = true;
+            return acc;
+        }, {})
         let personConfigurator = this.shadowRoot.getElementById('person-configurator');
-        personConfigurator.reset();
-        showDialog("addAuthorDialog", this.shadowRoot);
-        this._onDialog = true;
+        personConfigurator.setSelected(selectedAuthors);
+        personConfigurator.open();
     }
 
-    //updated () { }
+    _onAuthorsSelected () {
+        let personConfigurator = this.shadowRoot.getElementById('person-configurator');
+        let selectedPersons = personConfigurator.getSelected();
+        console.log('SELECTED AUTHORS:',selectedPersons);
+        this._config.author = [];
+        selectedPersons.forEach((person) => {
+            this._config.author.push( {id: person.id, type: 'Person'} );
+            this._authors[person.id] = person;
+        });
+        this.requestUpdate();
+    }
+
+    _onClosedDialog () {
+        this._openedDialog = '';
+    }
+
+    firstUpdated () {
+        this.addEventListener('dialogClosed', this._onCloseDialog);
+        this.addEventListener('authorsSelected', this._onAuthorsSelected);
+    }
 
     stateChanged(state: RootState) {
         if (state.explorerUI) {
@@ -682,15 +658,15 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                             }
                         }
 
-                        // Fetching ONE softwareImage
-                        if (!this._softwareImage && this._config.hasSoftwareImage) {
+                        // Fetching ONE softwareImage FIXME
+                        /*if (!this._softwareImage && this._config.hasSoftwareImage) {
                             let si = this._config.hasSoftwareImage[0];
                             let siId = typeof si === 'object' ? si.id : si;
                             if (!db.softwareImages || !db.softwareImages[siId]) {
                                 store.dispatch(softwareImageGet(siId));
                                 this._softwareImageLoading = true;
                             }
-                        }
+                        }*/
 
                     }
                 }

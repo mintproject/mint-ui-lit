@@ -74,18 +74,24 @@ export const personPost: ActionCreator<ModelCatalogPersonThunkResult> = (person:
 
 export const PERSON_PUT = "PERSON_PUT";
 interface MCAPersonPut extends Action<'PERSON_PUT'> { payload: any };
-export const personPut: ActionCreator<ModelCatalogPersonThunkResult> = ( uri: string ) => (dispatch) => {
-    debug('updating person', uri);
+export const personPut: ActionCreator<ModelCatalogPersonThunkResult> = ( person: Person ) => (dispatch) => {
+    debug('updating person', person.id);
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
 
     if (status === 'DONE') {
         let api : PersonApi = new PersonApi(cfg);
-        let id : string = uri.split('/').pop();
+        let id : string = person.id.split('/').pop();
         api.personsIdPut({id: id, user: DEFAULT_GRAPH, person: person}) // This should be my username on prod.
-            .then((data) => {
+            .then((resp) => {
                 //TODO its not returning right now,
-                console.log(data);
+                console.log('Response for PUT person:', resp);
+                let data = {};
+                data[id] = resp;
+                dispatch({
+                    type: PERSON_GET,
+                    payload: data
+                });
             })
             .catch((err) => {console.log('Error on PUT person', err)})
     } else if (status === 'LOADING') {
