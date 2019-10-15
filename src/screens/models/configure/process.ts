@@ -11,7 +11,7 @@ import { goToPage } from 'app/actions';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { personGet, personsGet, personPost, personPut, ALL_PERSONS } from 'model-catalog/actions';
+import { processGet, processesGet, processPost, processPut, ALL_PROCESSES } from 'model-catalog/actions';
 
 import { renderExternalLink } from './util';
 
@@ -24,8 +24,8 @@ import 'components/loading-dots'
 
 let identifierId : number = 1;
 
-@customElement('models-configure-person')
-export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
+@customElement('models-configure-process')
+export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
     @property({type: Boolean})
     private _new : boolean = false;
 
@@ -33,7 +33,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
     private _loading : boolean = false;
 
     @property({type: Object})
-    private _persons : {[key:string]: Person} = {};
+    private _processes : {[key:string]: Process} = {};
 
     @property({type: String})
     private _filter : string = '';
@@ -45,14 +45,14 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
     private _waitingFor : string = '';
 
     @property({type: Object})
-    private _selected : {[key:string]: Person | undefined} = {};
+    private _selected : {[key:string]: Process | undefined} = {};
 
     @property({type: String})
-    private _selectedPersonId: string = '';
+    private _selectedProcessId: string = '';
 
     static get styles() {
         return [ExplorerStyles, SharedStyles, css`
-        .author-container {
+        .process-container {
             display: grid;
             grid-template-columns: auto 28px;
             border: 2px solid cadetblue;
@@ -71,7 +71,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             font-weight: bold;
         }
         
-        .author-container > wl-button {
+        .process-container > wl-button {
             --button-padding: 5px;
         }
 
@@ -85,19 +85,19 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
 
     open () {
         if (this.active) {
-            showDialog("authorDialog", this.shadowRoot);
+            showDialog("processDialog", this.shadowRoot);
             this._filter = '';
         } else {
             setTimeout(() => {this.open()}, 300);
         }
     }
 
-    setSelected (persons) {
-        this._selected = {...persons};
+    setSelected (processes) {
+        this._selected = {...processes};
     }
 
     getSelected () {
-        return Object.keys(this._selected).filter(personId => this._selected[personId]).map(personId => this._persons[personId]);
+        return Object.keys(this._selected).filter(processId => this._selected[processId]).map(processId => this._processes[processId]);
     }
 
     _searchPromise = null;
@@ -113,154 +113,137 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
         }, 300);
     }
 
+
     protected render() {
-        let selectedPerson = this._persons[this._selectedPersonId];
+        //TODO: ADD influences
+        let selectedProcess = this._processes[this._selectedProcessId];
         return html`
-        <wl-dialog class="larger" id="authorDialog" fixed backdrop blockscrolling persistent>
+        <wl-dialog class="larger" id="processDialog" fixed backdrop blockscrolling persistent>
             <h3 slot="header">
-                ${this._new ? 'Register a new person' : (selectedPerson ? 'Editing person' : 'Selecting authors')}
+                ${this._new ? 'Register a new process' : (selectedProcess ? 'Editing process' : 'Selecting processes')}
             </h3>
             <div slot="content">
                 ${this._new ? html`
                 <form>
-                    <wl-textfield id="new-author-name" label="Name" required></wl-textfield>
-                    <wl-textfield id="new-author-email" label="E-mail" required></wl-textfield>
-                    <wl-textfield id="new-author-web" label="Website"></wl-textfield>
+                    <wl-textfield id="new-process-name" label="Name" required></wl-textfield>
                 </form>`
-                : (selectedPerson ? html`
+                : (selectedProcess ? html`
+                <div style="font-size: 12px; color: darkgray;">${selectedProcess.id}</div>
                 <form>
-                    <wl-textfield value="${selectedPerson.label ? selectedPerson.label : ''}"
-                        id="edit-author-name" label="Name" required></wl-textfield>
-                    <wl-textfield value="${selectedPerson.email ? selectedPerson.email : ''}"
-                        id="edit-author-email" label="E-mail" required></wl-textfield>
-                    <wl-textfield value="${selectedPerson.website ? selectedPerson.website : ''}"
-                        id="edit-author-web" label="Website" ></wl-textfield>
+                    <wl-textfield value="${selectedProcess.label ? selectedProcess.label : ''}"
+                        id="edit-process-name" label="Name" required></wl-textfield>
                 </form> `
                 : html`
-                <wl-textfield label="Search persons" id="search-input" @input="${this._onSearchChange}"><wl-icon slot="after">search</wl-icon></wl-textfield>
+                <wl-textfield label="Search process" id="search-input" @input="${this._onSearchChange}"><wl-icon slot="after">search</wl-icon></wl-textfield>
                 <div class="results" style="margin-top: 5px;">
-                    ${Object.values(this._persons)
-                        .filter(person => (person.label||[]).join().toLowerCase().includes(this._filter.toLowerCase()))
-                        .map((person) => html`
-                    <div class="author-container">
-                        <label @click="${() => {this._toggleSelection(person.id)}}">
-                            <wl-icon class="custom-checkbox">${this._selected[person.id] ? 'check_box' : 'check_box_outline_blank'}</wl-icon>
-                            <span class="${this._selected[person.id] ? 'bold' : ''}">${person.label ? person.label : person.id}</span>
+                    ${Object.values(this._processes)
+                        .filter(process => (process.label||[]).join().toLowerCase().includes(this._filter.toLowerCase()))
+                        .map((process) => html`
+                    <div class="process-container">
+                        <label @click="${() => {this._toggleSelection(process.id)}}">
+                            <wl-icon class="custom-checkbox">${this._selected[process.id] ? 'check_box' : 'check_box_outline_blank'}</wl-icon>
+                            <span class="${this._selected[process.id] ? 'bold' : ''}">${process.label ? process.label : process.id}</span>
                         </label>
-                        <wl-button @click="${() => this._edit(person.id)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
+                        <wl-button @click="${() => this._edit(process.id)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
                     </div>
                 `)}
                 ${this._loading ? html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : ''}
                 </div>
-                or <a @click="${() => {this._new = true;}}">create a new Person</a>
+                or <a @click="${() => {this._new = true;}}">create a new Process</a>
             `)}
             </div>
             <div slot="footer">
                 <wl-button @click="${this._cancel}" style="margin-right: 5px;" inverted flat ?disabled="${this._waiting}">Cancel</wl-button>
                 ${this._new ? html`
-                <wl-button @click="${this._onCreateAuthor}" class="submit" ?disabled="${this._waiting}">
+                <wl-button @click="${this._onCreateProcess}" class="submit" ?disabled="${this._waiting}">
                     Save & Select ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
                 </wl-button>`
-                : (selectedPerson ? html`
-                <wl-button @click="${this._onEditAuthor}" class="submit" ?disabled="${this._waiting}">
+                : (selectedProcess ? html`
+                <wl-button @click="${this._onEditProcess}" class="submit" ?disabled="${this._waiting}">
                     Save & Select ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
                 </wl-button>`
                 : html`
-                <wl-button @click="${this._onSubmitAuthors}" class="submit">Add selected authors</wl-button>`
+                <wl-button @click="${this._onSubmitProcesses}" class="submit">Add selected processes</wl-button>`
                 )}
             </div>
         </wl-dialog>`
     }
 
-    _toggleSelection (personId) {
-        this._selected[personId] = !this._selected[personId];
+    _toggleSelection (processId) {
+        this._selected[processId] = !this._selected[processId];
         this.requestUpdate();
     }
 
-    _onCreateAuthor () {
-        let nameEl = this.shadowRoot.getElementById('new-author-name')
-        let emailEl = this.shadowRoot.getElementById('new-author-email')
-        let webEl = this.shadowRoot.getElementById('new-author-web')
-        if (nameEl && emailEl && webEl) {
+    _onCreateProcess () {
+        let nameEl = this.shadowRoot.getElementById('new-process-name')
+        if (nameEl) {
             let name = nameEl.value;
-            let email = emailEl.value;
-            let web = webEl.value;
-            if (!name || !email) {
+            if (!name) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>nameEl).refreshAttributes();
-                (<any>emailEl).refreshAttributes();
                 return;
             }
 
-            let newPerson : Person = {
-                email: [email],
+            let newProcess : Process = {
                 label: [name],
             }
-            if (web) newPerson.website = web;
 
-            this._waitingFor = 'PostPerson' + identifierId;
+            this._waitingFor = 'PostProcess' + identifierId;
             identifierId += 1;
-            store.dispatch(personPost(newPerson, this._waitingFor));
+            store.dispatch(processPost(newProcess, this._waitingFor));
             showNotification("saveNotification", this.shadowRoot!);
         }
     }
 
-    _onEditAuthor () {
-        let nameEl = this.shadowRoot.getElementById('edit-author-name')
-        let emailEl = this.shadowRoot.getElementById('edit-author-email')
-        let webEl = this.shadowRoot.getElementById('edit-author-web')
-        if (nameEl && emailEl && webEl) {
+    _onEditProcess () {
+        let nameEl = this.shadowRoot.getElementById('edit-process-name')
+        if (nameEl) {
             let name = nameEl.value;
-            let email = emailEl.value;
-            let web = webEl.value;
-            if (!name || !email) {
+            if (!name) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>nameEl).refreshAttributes();
-                (<any>emailEl).refreshAttributes();
                 return;
             }
 
-            let editedPerson : Person = Object.assign({}, this._persons[this._selectedPersonId])
-            editedPerson.label = [name];
-            editedPerson.email = [email];
-            if (web) editedPerson.website = [web];
+            let editedProcess : Process = Object.assign({}, this._processes[this._selectedProcessId])
+            editedProcess.label = [name];
 
-            this._waitingFor = editedPerson.id;
-            store.dispatch(personPut(editedPerson));
+            this._waitingFor = editedProcess.id;
+            store.dispatch(processPut(editedProcess));
             showNotification("saveNotification", this.shadowRoot!);
         }
     }
 
-    _onSubmitAuthors () {
-        this.dispatchEvent(new CustomEvent('authorsSelected', {composed: true}));
-        hideDialog("authorDialog", this.shadowRoot);
+    _onSubmitProcesses () {
+        this.dispatchEvent(new CustomEvent('processesSelected', {composed: true}));
+        hideDialog("processDialog", this.shadowRoot);
     }
 
     _cancel () {
         this._filter = '';
         if (this._new) {
             this._new = false;
-        } else if (this._selectedPersonId) {
-            this._selectedPersonId = '';
+        } else if (this._selectedProcessId) {
+            this._selectedProcessId = '';
         } else {
             this.dispatchEvent(new CustomEvent('dialogClosed', {composed: true}));
-            hideDialog("authorDialog", this.shadowRoot);
+            hideDialog("processDialog", this.shadowRoot);
         }
     }
 
-    _edit (personId) {
-        this._selectedPersonId = personId;
+    _edit (processId) {
+        this._selectedProcessId = processId;
     }
 
     firstUpdated () {
-        store.dispatch(personsGet());
+        store.dispatch(processesGet());
     }
 
     stateChanged(state: RootState) {
         if (state.modelCatalog) {
             let db = state.modelCatalog;
-            this._loading = db.loading[ALL_PERSONS]
-            this._persons = db.persons;
+            this._loading = db.loading[ALL_PROCESSES]
+            this._processes = db.processes;
             if (this._waitingFor) {
                 if (this._new) {
                     if (db.created[this._waitingFor]) {
@@ -275,7 +258,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
                     this._waiting = db.loading[this._waitingFor];
                     if (this._waiting === false) {
                         this._selected[this._waitingFor] = true;
-                        this._selectedPersonId = '';
+                        this._selectedProcessId = '';
                         this._waitingFor = '';
                     }
                 }

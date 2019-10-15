@@ -3,9 +3,10 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
 import { Configuration, DefaultApi, ModelApi, SoftwareVersionApi, ModelConfigurationApi, ParameterApi, GridApi,
-         DatasetSpecificationApi, Person, PersonApi, ProcessApi, TimeIntervalApi, SoftwareImageApi } from '@mintproject/modelcatalog_client';
+         DatasetSpecificationApi, Person, PersonApi, TimeIntervalApi, SoftwareImageApi } from '@mintproject/modelcatalog_client';
 
 export * from './person-actions';
+export * from './process-actions';
 import { ModelCatalogPersonAction } from './person-actions';
 
 function debug () {
@@ -223,24 +224,6 @@ export const gridGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (dispatc
         .catch((err) => {console.log('Error on getGrid', err)})
 }
 
-export const PROCESS_GET = "PROCESS_GET";
-interface MCAProcessGet extends Action<'PROCESS_GET'> { payload: any };
-export const processGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (dispatch) => {
-    debug('Fetching process', uri);
-    let id = uri.split('/').pop();
-    let api = new ProcessApi();
-    api.processsIdGet({username: DEFAULT_GRAPH, id: id})
-        .then((resp) => {
-            let data = {};
-            data[uri] = resp;
-            dispatch({
-                type: PROCESS_GET,
-                payload: data
-            });
-        })
-        .catch((err) => {console.log('Error on getProcess', err)})
-}
-
 export const TIME_INTERVAL_GET = "TIME_INTERVAL_GET";
 interface MCATimeIntervalGet extends Action<'TIME_INTERVAL_GET'> { payload: any };
 export const timeIntervalGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (dispatch) => {
@@ -279,7 +262,6 @@ export const softwareImageGet: ActionCreator<ModelCatalogThunkResult> = (uri) =>
 
 export type ModelCatalogAction = MCAStartLoading | MCAEndLoading | MCAEndPost | MCAStartPost | ModelCatalogPersonAction |
                                  MCAModelsGet | MCAVersionsGet | MCAConfigurationsGet | MCAConfigurationPut | MCAParameterGet |
-                                 MCADatasetSpecificationGet | MCAGridGet | MCAProcess | MCATimeIntervalGet |
-                                 MCASoftwareImageGet;
+                                 MCADatasetSpecificationGet | MCAGridGet | MCATimeIntervalGet | MCASoftwareImageGet;
 
 type ModelCatalogThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogAction>;

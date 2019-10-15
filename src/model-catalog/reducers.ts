@@ -2,8 +2,8 @@ import { Reducer } from "redux";
 import { RootAction } from "../app/store";
 import { START_LOADING, END_LOADING, START_POST, END_POST,
          MODELS_GET, VERSIONS_GET, CONFIGURATIONS_GET, PARAMETER_GET,
-         DATASET_SPECIFICATION_GET, PERSON_GET, ALL_PERSONS,
-         GRID_GET, PROCESS_GET, TIME_INTERVAL_GET, SOFTWARE_IMAGE_GET, PERSONS_GET } from './actions'
+         DATASET_SPECIFICATION_GET, PERSON_GET, ALL_PERSONS, ALL_PROCESSES, 
+         GRID_GET, PROCESS_GET, PROCESSES_GET, TIME_INTERVAL_GET, SOFTWARE_IMAGE_GET, PERSONS_GET } from './actions'
 
 export interface ModelCatalogState {
     loading: {[key:string]: boolean},
@@ -92,14 +92,6 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 loadedAll: tmp,
                 configurations: {...state.configuration, ...action.payload}
             }
-        case PERSONS_GET:
-            tmp = { ...state.loadedAll };
-            tmp[ALL_PERSONS] = true;
-            return {
-                ...state,
-                loadedAll: tmp,
-                persons: {...state.persons, ...action.payload}
-            }
         case PARAMETER_GET:
             return {
                 ...state,
@@ -115,9 +107,25 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 ...state,
                 persons: {...state.persons, ...action.payload}
             }
+        case PERSONS_GET:
+            tmp = { ...state.loadedAll };
+            tmp[ALL_PERSONS] = true;
+            return {
+                ...state,
+                loadedAll: tmp,
+                persons: {...state.persons, ...action.payload}
+            }
         case PROCESS_GET:
             return {
                 ...state,
+                processes: {...state.processes, ...action.payload}
+            }
+        case PROCESSES_GET:
+            tmp = { ...state.loadedAll };
+            tmp[ALL_PROCESSES] = true;
+            return {
+                ...state,
+                loadedAll: tmp,
                 processes: {...state.processes, ...action.payload}
             }
         case GRID_GET:

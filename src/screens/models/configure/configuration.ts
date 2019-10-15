@@ -23,6 +23,7 @@ import "weightless/progress-spinner";
 import 'components/loading-dots'
 
 import './person';
+import './process';
 
 @customElement('models-configure-configuration')
 export class ModelsConfigureConfiguration extends connect(store)(PageViewElement) {
@@ -69,7 +70,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     private _parametersLoading : Set<string> = new Set();
     private _inputsLoading : Set<string> = new Set();
     private _authorsLoading : Set<string> = new Set();
-    private _processsLoading : Set<string> = new Set();
+    private _processesLoading : Set<string> = new Set();
     private _softwareImageLoading : boolean = false;
     private _gridLoading : boolean = false;
     private _timeIntervalLoading : boolean = false;
@@ -412,13 +413,13 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                         (this._processes[procUri] ? html`
                         <span class="process">
                             ${this._processes[procUri].label}
-                            ${this._editing ? html`<wl-icon>edit</wl-icon>` : ''}
                         </span>`
                         : procUri + ' '))}
                     ${this._processesLoading.size > 0 ? html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`
                     : 'No processes'}
                     ${this._editing ? html`
-                    <wl-button style="float:right;" class="small" flat inverted><wl-icon>add</wl-icon></wl-button>
+                    <wl-button style="float:right;" class="small" flat inverted
+                        @click="${this._showProcessDialog}"><wl-icon>edit</wl-icon></wl-button>
                     `: ''}
                 </td>
             </tr>
@@ -508,6 +509,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         </div>`}
         
         <models-configure-person id="person-configurator" ?active=${this._dialog == 'person'} class="page"></models-configure-person>
+        <models-configure-process id="process-configurator" ?active=${this._dialog == 'process'} class="page"></models-configure-process>
         ${renderNotifications()}`
     }
 
@@ -539,9 +541,33 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         this._openedDialog = '';
     }
 
+    _showProcessDialog () {
+        this._dialog = 'process';
+        let selectedProcesses = this._config.hasProcess.reduce((acc, process) => {
+            if (!acc[process.id]) acc[process.id] = true;
+            return acc;
+        }, {})
+        let processConfigurator = this.shadowRoot.getElementById('process-configurator');
+        processConfigurator.setSelected(selectedProcesses);
+        processConfigurator.open();
+    }
+
+    _onProcessesSelected () {
+        let processConfigurator = this.shadowRoot.getElementById('process-configurator');
+        let selectedProcesses = processConfigurator.getSelected();
+        console.log('SELECTED PROCESS:',selectedProcesses);
+        this._config.hasProcess = [];
+        selectedProcesses.forEach((process) => {
+            this._config.hasProcess.push( {id: process.id, type: 'Process'} );
+            this._processes[process.id] = process;
+        });
+        this.requestUpdate();
+    }
+
     firstUpdated () {
         this.addEventListener('dialogClosed', this._onCloseDialog);
         this.addEventListener('authorsSelected', this._onAuthorsSelected);
+        this.addEventListener('processesSelected', this._onProcessesSelected);
     }
 
     stateChanged(state: RootState) {
