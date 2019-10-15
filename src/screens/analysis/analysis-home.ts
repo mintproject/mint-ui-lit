@@ -54,6 +54,10 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
         return html`
             <nav-title .nav="${nav}" max="2"></nav-title>
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
+                <a href="${this._regionid}/analysis/report">
+                    <wl-icon>search</wl-icon>
+                    <div>Browse reports</div>
+                </a>
                 <a href="${this._regionid}/analysis/compare">
                     <wl-icon style="--icon-size: 81px;">compare</wl-icon>
                     <div>Sensitivity analysis</div>
@@ -65,10 +69,6 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
                 <a href="${this._regionid}/analysis/aggregate">
                     <wl-icon style="--icon-size: 81px;">insert_chart</wl-icon>
                     <div>Compose visualizations</div>
-                </a>
-                <a href="${this._regionid}/analysis/report">
-                    <wl-icon>attachment</wl-icon>
-                    <div>Prepare reports</div>
                 </a>
             </div>
 
