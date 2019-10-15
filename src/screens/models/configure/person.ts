@@ -22,6 +22,8 @@ import "weightless/dialog";
 import "weightless/checkbox";
 import 'components/loading-dots'
 
+let identifierId : number = 1;
+
 @customElement('models-configure-person')
 export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
     @property({type: Boolean})
@@ -35,6 +37,12 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
 
     @property({type: String})
     private _filter : string = '';
+
+    @property({type: Boolean})
+    private _waiting : boolean = false;
+
+    @property({type: String})
+    private _waitingFor : string = '';
 
     @property({type: Object})
     private _selected : {[key:string]: Person | undefined} = {};
@@ -132,11 +140,15 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             `)}
             </div>
             <div slot="footer">
-                <wl-button @click="${this._cancel}" style="margin-right: 5px;" inverted flat>Cancel</wl-button>
+                <wl-button @click="${this._cancel}" style="margin-right: 5px;" inverted flat ?disabled="${this._waiting}">Cancel</wl-button>
                 ${this._new ? html`
-                <wl-button @click="${this._onCreateAuthor}" class="submit">Save</wl-button>`
+                <wl-button @click="${this._onCreateAuthor}" class="submit" ?disabled="${this._waiting}">
+                    Save & Select ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
+                </wl-button>`
                 : (selectedPerson ? html`
-                <wl-button @click="${this._onEditAuthor}" class="submit">Save</wl-button>`
+                <wl-button @click="${this._onEditAuthor}" class="submit" ?disabled="${this._waiting}">
+                    Save & Select ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
+                </wl-button>`
                 : html`
                 <wl-button @click="${this._onSubmitAuthors}" class="submit">Add selected authors</wl-button>`
                 )}
@@ -167,10 +179,12 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             let newPerson : Person = {
                 email: [email],
                 label: [name],
-                website: [web]
             }
+            if (web) newPerson.website = web;
 
-            store.dispatch(personPost(newPerson));
+            this._waitingFor = 'PostPerson' + identifierId;
+            identifierId += 1;
+            store.dispatch(personPost(newPerson, this._waitingFor));
             showNotification("saveNotification", this.shadowRoot!);
         }
     }
@@ -195,6 +209,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             editedPerson.email = [email];
             if (web) editedPerson.website = [web];
 
+            this._waitingFor = editedPerson.id;
             store.dispatch(personPut(editedPerson));
             showNotification("saveNotification", this.shadowRoot!);
         }
@@ -229,6 +244,25 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             let db = state.modelCatalog;
             this._loading = db.loading[ALL_PERSONS]
             this._persons = db.persons;
+            if (this._waitingFor) {
+                if (this._new) {
+                    if (db.created[this._waitingFor]) {
+                        this._waiting = false;
+                        this._selected[db.created[this._waitingFor]] = true;
+                        this._new = false;
+                        this._waitingFor = '';
+                    } else {
+                        this._waiting = true;
+                    }
+                } else {
+                    this._waiting = db.loading[this._waitingFor];
+                    if (this._waiting === false) {
+                        this._selected[this._waitingFor] = true;
+                        this._selectedPersonId = '';
+                        this._waitingFor = '';
+                    }
+                }
+            }
         }
     }
 }

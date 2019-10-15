@@ -47,10 +47,16 @@ export const repeatAction = (action, args) => {
 }
 
 export const DEFAULT_GRAPH = 'mint@isi.edu';
+
 export const START_LOADING = 'START_LOADING';
 interface MCAStartLoading extends Action<'START_LOADING'> { id: string };
 export const END_LOADING = 'END_LOADING';
 interface MCAEndLoading extends Action<'END_LOADING'> { id: string };
+
+export const START_POST = 'START_POST';
+interface MCAStartPost extends Action<'START_POST'> { id: string };
+export const END_POST = 'END_POST';
+interface MCAEndPost extends Action<'END_POST'> { id: string, uri: string };
 
 export const MODELS_GET = "MODELS_GET";
 interface MCAModelsGet extends Action<'MODELS_GET'> { payload: any };
@@ -270,7 +276,7 @@ export const softwareImageGet: ActionCreator<ModelCatalogThunkResult> = (uri) =>
         .catch((err) => {console.log('Error on getSoftwareImage', err)})
 }
 
-export type ModelCatalogAction = MCAStartLoading | MCAEndLoading | ModelCatalogPersonAction |
+export type ModelCatalogAction = MCAStartLoading | MCAEndLoading | MCAEndPost | MCAStartPost | ModelCatalogPersonAction |
                                  MCAModelsGet | MCAVersionsGet | MCAConfigurationsGet | MCAConfigurationPut | MCAParameterGet |
                                  MCADatasetSpecificationGet | MCAGridGet | MCAProcess | MCATimeIntervalGet |
                                  MCASoftwareImageGet;

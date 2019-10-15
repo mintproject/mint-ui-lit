@@ -1,12 +1,14 @@
 import { Reducer } from "redux";
 import { RootAction } from "../app/store";
-import { START_LOADING, END_LOADING, MODELS_GET, VERSIONS_GET, CONFIGURATIONS_GET, PARAMETER_GET,
+import { START_LOADING, END_LOADING, START_POST, END_POST,
+         MODELS_GET, VERSIONS_GET, CONFIGURATIONS_GET, PARAMETER_GET,
          DATASET_SPECIFICATION_GET, PERSON_GET, ALL_PERSONS,
          GRID_GET, PROCESS_GET, TIME_INTERVAL_GET, SOFTWARE_IMAGE_GET, PERSONS_GET } from './actions'
 
 export interface ModelCatalogState {
     loading: {[key:string]: boolean},
     loadedAll: {[key:string]: boolean},
+    created: {[key:string]: string}, //Here we assign some identifier to a POST request, when complete stores the URI
     models: any;
     versions: any;
     configurations: any;
@@ -22,6 +24,7 @@ export interface ModelCatalogState {
 const INITIAL_STATE: ModelCatalogState = { 
     loading: {},
     loadedAll: {},
+    created: {},
     models: null,
     versions: null,
     configurations: null,
@@ -37,6 +40,20 @@ const INITIAL_STATE: ModelCatalogState = {
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {
     let tmp : any = {};
     switch (action.type) {
+        case START_POST:
+            tmp = { ...state.created };
+            tmp[action.id] = '';
+            return {
+                ...state,
+                created: tmp,
+            }
+        case END_POST:
+            tmp = { ...state.created };
+            tmp[action.id] = action.uri;
+            return {
+                ...state,
+                created: tmp,
+            }
         case START_LOADING:
             tmp = { ...state.loading };
             tmp[action.id] = true;

@@ -3,7 +3,8 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
 import { Configuration, Person, PersonApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, repeatAction, DEFAULT_GRAPH, START_LOADING, END_LOADING } from './actions';
+import { idReducer, getStatusConfigAndUser, repeatAction, 
+         DEFAULT_GRAPH, START_LOADING, END_LOADING, START_POST, END_POST } from './actions';
 
 function debug () { console.log('OBA:', ...arguments); }
 
@@ -53,18 +54,25 @@ export const personGet: ActionCreator<ModelCatalogPersonThunkResult> = ( uri:str
 
 export const PERSON_POST = "PERSON_POST";
 interface MCAPersonPost extends Action<'PERSON_POST'> { payload: any };
-export const personPost: ActionCreator<ModelCatalogPersonThunkResult> = (person:Person) => (dispatch) => {
+export const personPost: ActionCreator<ModelCatalogPersonThunkResult> = (person:Person, identifier:string) => (dispatch) => {
     debug('creating new person', person);
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
 
     if (status === 'DONE') {
+        dispatch({type: START_POST, id: identifier});
         person.id = undefined;
         let api : PersonApi = new PersonApi(cfg);
         api.personsPost({user: DEFAULT_GRAPH, person: person}) // This should be my username on prod.
-            .then((data) => {
-                //TODO its not returning right now,
-                console.log('RESPONSE POST PERSON:', data);
+            .then((resp) => {
+                console.log('Response for POST person:', resp);
+                let data = {};
+                data[resp.id] = resp;
+                dispatch({
+                    type: PERSON_GET,
+                    payload: data
+                });
+                dispatch({type: END_POST, id: identifier, uri: resp.id});
             })
             .catch((err) => {console.log('Error on POST person', err)})
     } else if (status === 'LOADING') {
@@ -80,18 +88,19 @@ export const personPut: ActionCreator<ModelCatalogPersonThunkResult> = ( person:
     [status, cfg, user] = getStatusConfigAndUser();
 
     if (status === 'DONE') {
+        dispatch({type: START_LOADING, id: person.id});
         let api : PersonApi = new PersonApi(cfg);
         let id : string = person.id.split('/').pop();
         api.personsIdPut({id: id, user: DEFAULT_GRAPH, person: person}) // This should be my username on prod.
             .then((resp) => {
-                //TODO its not returning right now,
                 console.log('Response for PUT person:', resp);
                 let data = {};
-                data[id] = resp;
+                data[person.id] = resp;
                 dispatch({
                     type: PERSON_GET,
                     payload: data
                 });
+                dispatch({type: END_LOADING, id: person.id});
             })
             .catch((err) => {console.log('Error on PUT person', err)})
     } else if (status === 'LOADING') {
