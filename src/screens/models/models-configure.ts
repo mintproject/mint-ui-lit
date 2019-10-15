@@ -10,6 +10,7 @@ import { showNotification } from "../../util/ui_functions";
 import { ExplorerStyles } from './model-explore/explorer-styles'
 
 import './configure/configuration';
+import './configure/setup';
 
 import { fetchIOAndVarsSNForConfig, fetchAuthorsForModelConfig, fetchParametersForConfig,
          fetchMetadataNoioForModelConfig, addParameters, addCalibration, addMetadata,
@@ -467,7 +468,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                                     ${config.label}
                                 </a>
                                 <ul>
-                                    ${(config.hasCalibration || []).map((s) => this._configs[s.id]).map(setup => html`
+                                    ${(config.hasSetup || []).map((s) => this._configs[s.id]).map(setup => html`
                                     <li>
                                         <a @click="${()=>{this._select(model, version, config, setup)}}">
                                             ${setup.label}
@@ -542,13 +543,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
 
                     <div style="padding: 0px 20px;">
                         <models-configure-configuration class="page" ?active="${this._config && !this._setup && !this._creating}"></models-configure-configuration>
+                        <models-configure-setup class="page" ?active="${this._setup && !this._creating}"></models-configure-setup>
                     ${(this._creating && !this._setup) ? 
-                        ((this._config) ? this._renderNewSetup() : this._renderNewConfig())
-                        : (this._editing ?
-                            (this._setup? this._renderEditCalibration() : '')
-                            : (this._setup ? 
-                                this._renderCalibration() 
-                                : ''))}
+                        ((this._config) ? this._renderNewSetup() : this._renderNewConfig()) : '' }
 
                     </div>
                 </div>
