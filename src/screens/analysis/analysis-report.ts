@@ -77,6 +77,15 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
         margin-bottom: 15px;
       }
 
+      div.notes > span {
+        color: #999;
+        font-style: italic;
+      }
+
+      div.notes {
+        margin-top: 5px;
+      }
+
       .monospaced {
         font: 12px Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace;
       }
@@ -112,6 +121,10 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
               'No adjustable variables' : task.driving_variables.map((dv) => html`
                 <div>${getVariableLongName(dv)} (<span class="monospaced">${dv}</span>)</div>`)}
             </span>
+            <wl-title level="4">Notes:</wl-title>
+            <span class="notes" style="margin-top: 2px;">
+              ${pathway && pathway.notes && pathway.notes.variables ? pathway && pathway.notes && pathway.notes.variables : 'No notes'}
+            </span>
           </div>
 
           ${pathway ? html`
@@ -120,13 +133,21 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
             ${!pathway.models || Object.keys(pathway.models).length == 0 ?
             'No models' :
             Object.values(pathway.models).map((model) => model.name)}
+            <div class="notes">
+              Notes:
+              <span>${pathway.notes && pathway.notes.models ? pathway.notes.models : 'No notes'}</span>
+            </div>
           </div>
 
           <wl-title level="3">Datasets:</wl-title>
           <div class="inner-content">
             ${!pathway.datasets || Object.keys(pathway.datasets).length == 0 ?
             'No datasets' :
-            Object.values(pathway.datasets).map((model) => model.name)}
+            Object.values(pathway.datasets).map((dataset) => dataset.name)}
+            <div class="notes">
+              Notes:
+              <span>${pathway.notes && pathway.notes.models ? pathway.notes.models : 'No notes'}</span>
+            </div>
           </div>
 
           <wl-title level="3">Setup:</wl-title>
@@ -152,6 +173,10 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
               </tbody>
             </table>
             `}
+            <div class="notes">
+              Notes:
+              <span>${pathway.notes && pathway.notes.parameters ? pathway.notes.parameters : 'No notes'}</span>
+            </div>
           </div>
 
           <wl-title level="3">Model runs and Results:</wl-title>
