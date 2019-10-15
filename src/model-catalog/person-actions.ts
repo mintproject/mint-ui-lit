@@ -3,7 +3,7 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
 import { Configuration, Person, PersonApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, repeatAction, 
+import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, 
          DEFAULT_GRAPH, START_LOADING, END_LOADING, START_POST, END_POST } from './actions';
 
 function debug () { console.log('OBA:', ...arguments); }
@@ -66,13 +66,16 @@ export const personPost: ActionCreator<ModelCatalogPersonThunkResult> = (person:
         api.personsPost({user: DEFAULT_GRAPH, person: person}) // This should be my username on prod.
             .then((resp) => {
                 console.log('Response for POST person:', resp);
+                //Its returning the ID without the prefix
+                let uri = PREFIX_URI + resp.id;
                 let data = {};
-                data[resp.id] = resp;
+                data[uri] = resp;
+                resp.id = uri;
                 dispatch({
                     type: PERSON_GET,
                     payload: data
                 });
-                dispatch({type: END_POST, id: identifier, uri: resp.id});
+                dispatch({type: END_POST, id: identifier, uri: uri});
             })
             .catch((err) => {console.log('Error on POST person', err)})
     } else if (status === 'LOADING') {

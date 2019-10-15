@@ -47,6 +47,7 @@ export const repeatAction = (action, args) => {
 }
 
 export const DEFAULT_GRAPH = 'mint@isi.edu';
+export const PREFIX_URI = 'https://w3id.org/okn/i/mint/'
 
 export const START_LOADING = 'START_LOADING';
 interface MCAStartLoading extends Action<'START_LOADING'> { id: string };
