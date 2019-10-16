@@ -94,7 +94,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
 
   protected render() {
     //log('RENDER')
-    log(this._selectedScenarioId, this._selectedTaskId, this._selectedPathwayId)
+    //log(this._selectedScenarioId, this._selectedTaskId, this._selectedPathwayId)
     if (this._selectedScenarioId && this._selectedTaskId && this._selectedPathwayId) {
       let scenario = this._scenarios[this._selectedScenarioId];
       let task = this._tasks[this._selectedTaskId];
@@ -238,7 +238,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
   _getSubgoalSummaryText(subgoal) {
     let response = subgoal.response_variables ? getVariableLongName(subgoal.response_variables[0]) : "";
     let subregionid = (subgoal.subregionid && subgoal.subregionid != "Select") ? subgoal.subregionid : null;
-    let regionname = subregionid ? this._subRegions[subregionid].name : this._region.name;
+    let regionname = subregionid && this._subRegions && this._subRegions[subregionid] ? this._subRegions[subregionid].name : this._region.name;
     return (response ? response + ": " : "") + regionname
   }
 
