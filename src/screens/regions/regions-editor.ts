@@ -94,10 +94,13 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     }
 
     public addRegionsToMap() {
+        /*FIXME: This does not work, changestate executes this a lot of times and for some
+         * reason the layers are being created one on top of other */
         this.clearMap();                
 
         let mapelement = this.shadowRoot.querySelector("google-map") as GoogleMap;
         if(mapelement && mapelement.map) {
+
             Object.keys(this._regions || {}).map((regionid) => {
                 let region = this._regions![regionid];
                 let layer = new GoogleMapJsonLayer();
@@ -106,6 +109,14 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 layer.region_name = region.name;
                 mapelement.appendChild(layer);
             });
+            mapelement.map.data.addListener('click', function(ev) {
+                mapelement.dispatchEvent(new CustomEvent('map-click', 
+                    {composed: true, detail: {
+                        id: ev.feature.getProperty('region_id'),
+                        name: ev.feature.getProperty('region_name'),
+                    }})
+                );
+            })
         }
     }
 
