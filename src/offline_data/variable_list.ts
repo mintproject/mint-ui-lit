@@ -53,7 +53,7 @@ export const VARIABLES = {
             },
             "var2": {
                 "long_name": "Seasonal Crop Production Index",
-                "SVO_name": "crop__production_index"
+                "SVO_name": "crop_production__seasonal_production_index"
             },
         },
         "Economic": {
