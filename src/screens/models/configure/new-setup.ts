@@ -11,9 +11,9 @@ import { goToPage } from 'app/actions';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { personGet, personPost, modelConfigurationPut,
+import { personGet, personPost, modelConfigurationPost, parameterPost, modelConfigurationPut,
          parameterGet, datasetSpecificationGet, gridGet,
-         timeIntervalGet, processGet, softwareImageGet, } from 'model-catalog/actions';
+         timeIntervalGet,  processGet, softwareImageGet, } from 'model-catalog/actions';
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
 import "weightless/slider";
@@ -25,8 +25,8 @@ import 'components/loading-dots'
 import './person';
 import './process';
 
-@customElement('models-configure-setup')
-export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
+@customElement('models-new-setup')
+export class ModelsNewSetup extends connect(store)(PageViewElement) {
     @property({type: Boolean})
     private _editing : boolean = false;
 
@@ -40,7 +40,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     private _config: any = null;
 
     @property({type: Object})
-    private _setup: any = null;
+    private _originalConfig : any = null;
 
     @property({type: Object})
     private _parameters : any = {};
@@ -60,11 +60,14 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _timeInterval : any = null;
 
+    @property({type: Boolean})
+    private _waiting : boolean = false;
+
     @property({type: Object})
     private _softwareImage : any = null;
 
     @property({type: String})
-    private _dialog : string = '';
+    private _dialog : 'person' | 'process' | 'parameter' = '';
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
@@ -226,55 +229,145 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
 
     _cancel () {
         this._scrollUp();
-        goToPage(createUrl(this._model, this._version, this._setup, this._setup));
+        goToPage(createUrl(this._model, this._version, this._config));
     }
 
-    _edit () {
-        this._scrollUp();
-        goToPage(createUrl(this._model, this._version, this._setup, this._setup) + '/edit');
+    _addSetupToConfig (setupId) {
+        if (!this._originalConfig.hasSetup) {
+            this._originalConfig.hasSetup = []
+        }
+        this._originalConfig.hasSetup.push({id: setupId})
+        store.dispatch(modelConfigurationPut(this._originalConfig));
     }
 
-    _saveConfig () {
-        let labelEl     = this.shadowRoot.getElementById('edit-config-name') as HTMLInputElement;
-        let descEl      = this.shadowRoot.getElementById('edit-config-desc') as HTMLInputElement;
-        let keywordsEl  = this.shadowRoot.getElementById('edit-config-keywords') as HTMLInputElement;
-        let complocEl   = this.shadowRoot.getElementById('edit-config-comp-loc') as HTMLInputElement;
+    private _parameterIdentifier = 0;
+    private _waitingParameters : Set<string> = new Set();
+    private _newParametersUris : string[] = [];
+    private _setupIdentifier = 0;
+    private _waitingFor : string = '';
 
-        if (labelEl && descEl && keywordsEl && complocEl) {
-            let label    = labelEl.value;
-            let desc     = descEl.value;
-            let keywords = keywordsEl.value;
-            let compLoc  = complocEl.value;
+    _saveNewSetup () {
+        let nameEl      = this.shadowRoot.getElementById('new-setup-name') as HTMLInputElement;
+        let descEl      = this.shadowRoot.getElementById('new-setup-desc') as HTMLInputElement;
+        let keywordsEl  = this.shadowRoot.getElementById('new-setup-keywords') as HTMLInputElement;
+        let assignMeEl  = this.shadowRoot.getElementById('new-setup-assign-method') as HTMLInputElement;
+        let complocEl   = this.shadowRoot.getElementById('new-setup-comp-loc') as HTMLInputElement;
 
-            if (!label) {
+        if (nameEl && descEl && keywordsEl && assignMeEl && complocEl) {
+            let name        = nameEl.value;
+            let desc        = descEl.value;
+            let keywords    = keywordsEl.value;
+            let assignMe    = assignMeEl.value;
+            let comploc     = complocEl.value;
+
+            if (!name || !assignMe) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
-                (<any>labelEl).refreshAttributes();
+                (<any>nameEl).refreshAttributes();
+                (<any>assignMeEl).refreshAttributes();
                 this._scrollUp();
                 return;
             }
 
-            let editedConfig = {...this._setup};
+            let setupCreated = {...this._config};
 
-            editedConfig.label = [label];
-            editedConfig.description = [desc];
-            editedConfig.keywords = [keywords.split(/ *, */).join('; ')];
-            editedConfig.hasComponentLocation = [compLoc];
+            setupCreated.id = undefined;
+            setupCreated.label = [name];
+            setupCreated.description = [desc];
+            setupCreated.keywords = [keywords.split(/ *, */).join('; ')];
+            setupCreated.hasComponentLocation = [comploc];
+            setupCreated.parameterAssignmentMethod = [assignMe];
 
-            store.dispatch(modelConfigurationPut(editedConfig));
-            showNotification("saveNotification", this.shadowRoot!);
-            goToPage(createUrl(this._model, this._version, this._setup));
+            /* FIXME: Parameters are returning 400, numbers are not objects!!
+            setupCreated.hasParameter = this._newParametersUris.map((uri) => {
+                return {'id': uri}
+            });
+            */
+
+            this._waitingFor = 'PostSetup' + this._setupIdentifier;
+            this._setupIdentifier += 1;
+
+            store.dispatch(modelConfigurationPost(setupCreated, this._waitingFor));
+            console.log(setupCreated);
+            
+
+            //showNotification("saveNotification", this.shadowRoot!);
+            //goToPage(createUrl(this._model, this._version, this._config));
         }
     }
+
+    _newSetup () {
+        let nameEl      = this.shadowRoot.getElementById('new-setup-name') as HTMLInputElement;
+        let assignMeEl  = this.shadowRoot.getElementById('new-setup-assign-method') as HTMLInputElement;
+
+        if (nameEl && assignMeEl) {
+            let name        = nameEl.value;
+            let assignMe    = assignMeEl.value;
+
+            if (!name || !assignMe) {
+                showNotification("formValuesIncompleteNotification", this.shadowRoot!);
+                (<any>nameEl).refreshAttributes();
+                (<any>assignMeEl).refreshAttributes();
+                this._scrollUp();
+                return;
+            }
+
+            let parametersToCreate = this._config.hasParameter.map(e => typeof e === 'object' ? e.id :e);
+
+            parametersToCreate.forEach(id => {
+                let newParam = { ... this._parameters[id] };
+                newParam.id = undefined
+                newParam.position = [newParam.position];
+                let identifier = 'PParameter' + this._parameterIdentifier;
+                store.dispatch(parameterPost(newParam, identifier));
+                this._waitingParameters.add(identifier);
+                this._parameterIdentifier += 1;
+            });
+            this._waiting = true;
+
+            showNotification("saveNotification", this.shadowRoot!);
+        }
+    }
+
+    /*
+            <tr>
+                <td>Software Image:</td>
+                <td>
+                    ${this._config.hasSoftwareImage ? 
+                    ((this._softwareImage && Object.keys(this._softwareImage).length > 0) ?
+                        html`TODO: ${Object.keys(this._softwareImage)}`
+                        : html`${this._config.hasSoftwareImage[0].id} ${this._softwareImageLoading ?
+                            html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`)
+                    : 'No software image'}
+                </td>
+            </tr>
+
+            <tr>
+                <td>Time interval:</td>
+                <td>
+                    ${this._config.hasOutputTimeInterval ?
+                    (this._timeInterval ? html`
+                        <span class="time-interval">
+                            ${this._timeInterval.label} (fixme)
+                            <wl-icon>edit</wl-icon>
+                        </span>`
+                        : html`${this._config.hasOutputTimeInterval[0].id} ${this._timeIntervalLoading ? 
+                            html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`)
+                    : 'No time interval'}
+                </td>
+            </tr>
+
+    */
+
 
     protected render() {
         // Sort parameters by order
         let paramOrder = []
-        if (this._setup && this._setup.hasParameter) {
+        if (this._config.hasParameter) {
             Object.values(this._parameters).sort(sortByPosition).forEach((id) => {
                 if (typeof id === 'object') id = id.id;
                 paramOrder.push(id);
             });
-            this._setup.hasParameter.forEach((id) => {
+            this._config.hasParameter.forEach((id) => {
                 if (typeof id === 'object') id = id.id;
                 if (paramOrder.indexOf(id) < 0) {
                     paramOrder.push(id)
@@ -284,12 +377,12 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
 
         // Sort inputs by order
         let inputOrder = []
-        if (this._setup && this._setup.hasInput) {
+        if (this._config.hasInput) {
             Object.values(this._inputs).sort(sortByPosition).forEach((id) => {
                 if (typeof id === 'object') id = id.id;
                 inputOrder.push(id);
             });
-            this._setup.hasInput.forEach((id) => {
+            this._config.hasInput.forEach((id) => {
                 if (typeof id === 'object') id = id.id;
                 if (inputOrder.indexOf(id) < 0) {
                     inputOrder.push(id)
@@ -297,41 +390,34 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             })
         }
         let keywords = ''
-        if (this._setup.keywords) {
-            keywords = this._setup.keywords[0].split(/ *; */).join(', ');
+        if (this._config.keywords) {
+            keywords = this._config.keywords[0].split(/ *; */).join(', ');
         }
 
         return html`
         <span id="start"/>
-        ${this._editing ? html`
-        <wl-textfield id="edit-config-name" label="Setup name" value="${this._setup.label}" required></wl-textfield>
-        `:''}
-
+        <wl-textfield id="new-setup-name" label="New setup name" value="" required></wl-textfield>
 
         <table class="details-table">
             <tr>
                 <td>Description:</td>
                 <td>
-                    ${this._editing ? html`
-                    <textarea id="edit-config-desc" name="description" rows="5">${this._setup.description}</textarea>
-                    ` : this._setup.description}
+                    <textarea id="new-setup-desc" name="description" rows="5"></textarea>
                 </td>
             </tr>
 
             <tr>
                 <td>Keywords:</td>
                 <td>
-                    ${this._editing ? html`
-                    <input id="edit-config-keywords" type="text" value="${keywords}"/>
-                    ` : keywords}
+                    <input id="new-setup-keywords" type="text" value="${keywords}"/>
                 </td>
             </tr>
 
             <tr>
                 <td>Authors:</td>
                 <td>
-                    ${this._setup.author && this._setup.author.length > 0? 
-                    html`${this._setup.author.map(a => typeof a === 'object' ? a.id : a).map((authorUri:string) => 
+                    ${this._config.author && this._config.author.length > 0? 
+                    html`${this._config.author.map(a => typeof a === 'object' ? a.id : a).map((authorUri:string) => 
                         (this._authors[authorUri] ? html`
                         <span class="author">
                             ${this._authors[authorUri].label ? this._authors[authorUri].label : authorUri}
@@ -340,58 +426,39 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     )}
                     ${this._authorsLoading.size > 0 ? html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`
                     : 'No authors'}
-                    ${this._editing ? html`
                     <wl-button style="float:right;" class="small" flat inverted
                         @click="${this._showAuthorDialog}"><wl-icon>edit</wl-icon></wl-button>
-                    `: ''}
                 </td>
             </tr>
 
             <tr>
                 <td>Parameter assignment method:</td>
                 <td>
-                    ${this._editing ? html`
                     <wl-select id="new-setup-assign-method" label="Parameter assignment method" placeholder="Select a parameter assignament method" required>
                         <option value="" disabled selected>Please select a parameter assignment method</option>
                         <option value="Calibration">Calibration</option>
                         <option value="Expert-tuned">Expert tuned</option>
-                    </wl-select>`
-                    : this._setup.parameterAssignmentMethod }
-                </td>
-            </tr>
-
-
-            <tr>
-                <td>Software Image:</td>
-                <td>
-                    ${this._setup.hasSoftwareImage ? 
-                    ((this._softwareImage && Object.keys(this._softwareImage).length > 0) ?
-                        html`TODO: ${Object.keys(this._softwareImage)}`
-                        : html`${this._setup.hasSoftwareImage[0].id} ${this._softwareImageLoading ?
-                            html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`)
-                    : 'No software image'}
+                    </wl-select>
                 </td>
             </tr>
 
             <tr>
                 <td>Component Location:</td>
                 <td>
-                    ${this._editing ? html`
-                    <textarea id="edit-config-comp-loc">${this._setup.hasComponentLocation}</textarea>
-                    ` : renderExternalLink(this._setup.hasComponentLocation)}
+                    <textarea id="new-setup-comp-loc"></textarea>
                 </td>
             </tr>
 
             <tr>
                 <td>Grid:</td>
                 <td>
-                    ${this._setup.hasGrid ?
+                    ${this._config.hasGrid ?
                     (this._grid ?
                         html`
                         <span class="grid">
                             <span style="margin-right: 30px; text-decoration: underline;">${this._grid.label}</span>
                             <span style="font-style: oblique; color: gray;">${this._grid.type.filter(g => g != 'Grid')}</span>
-                            ${this._editing ? html`<wl-icon style="margin-left:10px">edit</wl-icon>` : ''}
+                            <wl-icon style="margin-left:10px">edit</wl-icon>
                             <br/>
                             <div style="display: flex; justify-content: space-between;">
                                 <span style="font-size: 12px;">Spatial resolution:</span>
@@ -402,32 +469,17 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                                 <span style="font-size: 14px" class="monospaced">${this._grid.hasShape}</span>
                             </div>
                         </span>`
-                        : html`${this._setup.hasGrid[0].id} ${this._gridLoading ?
+                        : html`${this._config.hasGrid[0].id} ${this._gridLoading ?
                             html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`) 
                     : 'No grid'}
                 </td>
             </tr>
 
             <tr>
-                <td>Time interval:</td>
-                <td>
-                    ${this._setup.hasOutputTimeInterval ?
-                    (this._timeInterval ? html`
-                        <span class="time-interval">
-                            ${this._timeInterval.label} (fixme)
-                            ${this._editing ? html`<wl-icon>edit</wl-icon>` : ''}
-                        </span>`
-                        : html`${this._setup.hasOutputTimeInterval[0].id} ${this._timeIntervalLoading ? 
-                            html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`)
-                    : 'No time interval'}
-                </td>
-            </tr>
-
-            <tr>
                 <td>Processes:</td>
                 <td>
-                    ${this._setup.hasProcess ?
-                    html`${this._setup.hasProcess.map(a => typeof a === 'object' ? a.id : a).map((procUri:string) => 
+                    ${this._config.hasProcess ?
+                    html`${this._config.hasProcess.map(a => typeof a === 'object' ? a.id : a).map((procUri:string) => 
                         (this._processes[procUri] ? html`
                         <span class="process">
                             ${this._processes[procUri].label}
@@ -435,10 +487,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         : procUri + ' '))}
                     ${this._processesLoading.size > 0 ? html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`
                     : 'No processes'}
-                    ${this._editing ? html`
                     <wl-button style="float:right;" class="small" flat inverted
                         @click="${this._showProcessDialog}"><wl-icon>edit</wl-icon></wl-button>
-                    `: ''}
                 </td>
             </tr>
         </table>
@@ -451,7 +501,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 <col span="1">
                 <col span="1">
                 <col span="1">
-                ${this._editing? html`<col span="1">` : ''}
+                <col span="1">
             </colgroup>
             <thead>
                 <th class="ta-right"><b>#</b></th>
@@ -464,10 +514,10 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     </span>
                 </th>
                 <th class="ta-right"><b>Unit</b></th>
-                ${this._editing? html`<th class="ta-right"></th>` : ''}
+                <th class="ta-right"></th>
             </thead>
             <tbody>
-            ${this._setup.hasParameter ? paramOrder.map((uri:string) => html`
+            ${this._config.hasParameter ? paramOrder.map((uri:string) => html`
             <tr>
                 ${this._parameters[uri] ? html`
                 <td class="ta-right">${this._parameters[uri].position}</td>
@@ -485,11 +535,9 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     )}
                 </td>
                 <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
-                ${this._editing? html `
                 <td style="text-align: right;">
-                    <wl-button class="small"><wl-icon>edit</wl-icon></wl-button>
+                    <wl-button @click="${() => this._showParameterDialog(uri)}"class="small"><wl-icon>edit</wl-icon></wl-button>
                 </td>
-                ` : ''}
                 `
                 : html`<td colspan="5" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
             </tr>`)
@@ -508,62 +556,41 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             <thead>
                 <th class="ta-right"><b>#</b></th>
                 <th><b>Name</b></th>
-                <th><b>File URL in this setup</b></th>
+                <th><b>Description</b></th>
                 <th class="ta-right"><b>Format</b></th>
             </thead>
             <tbody>
-            ${this._setup.hasInput ? inputOrder.map((uri:string, i:number) => html `
+            ${this._config.hasInput ? inputOrder.map((uri:string) => html `
             <tr>${this._inputs[uri] ? html`
                 <td class="ta-right">${this._inputs[uri].position}</td>
-                <td>
-                    <code>${this._inputs[uri].label}</code><br/>
-                    <b>${this._inputs[uri].description}</b>
-                </td>
-                <td>
-                    ${this._editing ? html`
-                    <input style="width: 100%;" id="edit-config-input-${i}" type="text" value="${
-                        this._inputs[uri].hasFixedResource && this._inputs[uri].hasFixedResource.length > 0 ? 
-                        this._inputs[uri].hasFixedResource[0].id : ''
-                    }"/>
-                    ` : this._inputs[uri].hasFixedResource && this._inputs[uri].hasFixedResource.length > 0 ? 
-                        this._inputs[uri].hasFixedResource[0].id : '-'
-                    }
-                </td>
+                <td><code>${this._inputs[uri].label}</code></td>
+                <td>${this._inputs[uri].description}</td>
                 <td class="ta-right monospaced">${this._inputs[uri].hasFormat}</td>`
                 : html`<td colspan="4" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
             </tr>`)
-            : html`<tr><td colspan="4" class="info-center">- This setup has no input files -</td></tr>`}
+            : html`<tr><td colspan="4" class="info-center">- This configuration has no input files -</td></tr>`}
             </tbody>
         </table>
 
-        ${console.log(this._parameters)}
-        ${console.log(this._inputs)}
-
-        ${this._editing? html`
         <div style="float:right; margin-top: 1em;">
             <wl-button @click="${this._cancel}" style="margin-right: 1em;" flat inverted>
                 <wl-icon>cancel</wl-icon>&ensp;Discard changes
             </wl-button>
-            <wl-button @click="${this._saveConfig}">
+            <wl-button @click="${this._saveNewSetup}">
                 <wl-icon>save</wl-icon>&ensp;Save
             </wl-button>
-        </div>` 
-        :html`
-        <div style="float:right; margin-top: 1em;">
-            <wl-button @click="${this._edit}">
-                <wl-icon>edit</wl-icon>&ensp;Edit
-            </wl-button>
-        </div>`}
+        </div>
         
         <models-configure-person id="person-configurator" ?active=${this._dialog == 'person'} class="page"></models-configure-person>
         <models-configure-process id="process-configurator" ?active=${this._dialog == 'process'} class="page"></models-configure-process>
+        <models-configure-parameter id="parameter-configurator" ?active=${this._dialog == 'parameter'} class="page"></models-configure-parameter>
         ${renderNotifications()}`
     }
 
     _showAuthorDialog () {
         this._dialog = 'person';
-        console.log(this._setup.author);
-        let selectedAuthors = this._setup.author.filter(x => x.type === "Person").reduce((acc, author) => {
+        console.log(this._config.author);
+        let selectedAuthors = this._config.author.filter(x => x.type === "Person").reduce((acc, author) => {
             if (!acc[author.id]) acc[author.id] = true;
             return acc;
         }, {})
@@ -576,9 +603,9 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         let personConfigurator = this.shadowRoot.getElementById('person-configurator');
         let selectedPersons = personConfigurator.getSelected();
         console.log('SELECTED AUTHORS:',selectedPersons);
-        this._setup.author = [];
+        this._config.author = [];
         selectedPersons.forEach((person) => {
-            this._setup.author.push( {id: person.id, type: 'Person'} );
+            this._config.author.push( {id: person.id, type: 'Person'} );
             this._authors[person.id] = person;
         });
         this.requestUpdate();
@@ -590,7 +617,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
 
     _showProcessDialog () {
         this._dialog = 'process';
-        let selectedProcesses = this._setup.hasProcess.reduce((acc, process) => {
+        let selectedProcesses = this._config.hasProcess.reduce((acc, process) => {
             if (!acc[process.id]) acc[process.id] = true;
             return acc;
         }, {})
@@ -603,18 +630,35 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         let processConfigurator = this.shadowRoot.getElementById('process-configurator');
         let selectedProcesses = processConfigurator.getSelected();
         console.log('SELECTED PROCESS:',selectedProcesses);
-        this._setup.hasProcess = [];
+        this._config.hasProcess = [];
         selectedProcesses.forEach((process) => {
-            this._setup.hasProcess.push( {id: process.id, type: 'Process'} );
+            this._config.hasProcess.push( {id: process.id, type: 'Process'} );
             this._processes[process.id] = process;
         });
         this.requestUpdate();
+    }
+
+    _showParameterDialog (parameterID: string) {
+        //FIXME
+        this._dialog = 'parameter';
+        let parameterConfigurator = this.shadowRoot.getElementById('parameter-configurator');
+        parameterConfigurator.edit(parameterID);
+    }
+
+    _onParameterEdited (ev) {
+        //console.log(ev);
+        let editedParameter = ev.detail;
+        this._parameters[editedParameter.id] = editedParameter;
+        this.requestUpdate();
+        //let parameterConfigurator = this.shadowRoot.getElementById('parameter-configurator');
+        //FIXME
     }
 
     firstUpdated () {
         this.addEventListener('dialogClosed', this._onCloseDialog);
         this.addEventListener('authorsSelected', this._onAuthorsSelected);
         this.addEventListener('processesSelected', this._onProcessesSelected);
+        this.addEventListener('parameterEdited', this._onParameterEdited);
     }
 
     stateChanged(state: RootState) {
@@ -624,7 +668,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             let modelChanged : boolean = (ui.selectedModel !== this._selectedModel);
             let versionChanged : boolean = (modelChanged || ui.selectedVersion !== this._selectedVersion)
             let configChanged : boolean = (versionChanged || ui.selectedConfig !== this._selectedConfig);
-            let setupChanged : boolean = (configChanged || ui.selectedCalibration !== this._selectedSetup);
             this._editing = (ui.mode === 'edit');
 
             if (modelChanged) {
@@ -638,10 +681,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             if (configChanged) {
                 this._selectedConfig = ui.selectedConfig;
                 this._config = null;
-            }
-            if (setupChanged) {
-                this._selectedSetup = ui.selectedCalibration;
-                this._setup = null;
 
                 this._grid = null;
                 this._gridLoading = false
@@ -663,6 +702,32 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             if (state.modelCatalog) {
                 let db = state.modelCatalog;
 
+                //TO SAVE
+                if (this._waitingFor) {
+                    if (db.created[this._waitingFor]) {
+                        let newid = this._waitingFor;
+                        this._waitingFor = '';
+                        this._addSetupToConfig(db.created[newid]);
+                    }
+                }
+                /*if (this._waiting) {
+                    if (this._waitingFor && db.created[this._waitingFor]) {
+                        console.log(db.created[this._waitingFor]);
+                    } else {
+                        if (this._waitingParameters.size > 0) {
+                            this._waitingParameters.forEach((id) => {
+                                if (db.created[id]) {
+                                    this._newParametersUris.push(db.created[id]);
+                                    this._waitingParameters.delete(id);
+                                }
+                            });
+                        } else {
+                            console.log('NEW PARAMS URIS:', this._newParametersUris)
+                            this._saveNewSetup();
+                        }
+                    }
+                }*/
+
                 // Set selected resources
                 if (!this._model && db.models && this._selectedModel && db.models[this._selectedModel]) {
                     this._model = db.models[this._selectedModel];
@@ -672,13 +737,14 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 }
                 if (db.configurations) {
                     if (!this._config && this._selectedConfig && db.configurations[this._selectedConfig]) {
-                        this._config =  db.configurations[this._selectedConfig];
-                    }
-                    if (!this._setup && this._selectedSetup && db.configurations[this._selectedSetup]) {
-                        this._setup = { ...db.configurations[this._selectedSetup] }; //this to no change on store
+                        this._config = { ...db.configurations[this._selectedConfig] }; //this to no change on store
+                        this._originalConfig = { ...db.configurations[this._selectedConfig] }; //this to no change on store
+                        this._config.author = [];
+                        this._waitingParameters = new Set();
+                        this._newParametersUris = [];
                         //console.log('LOADED CONFIGURATION, FETCHING PARAMETERS...');
                         // Fetching not loaded parameters 
-                        (this._setup.hasParameter || []).forEach((p) => {
+                        (this._config.hasParameter || []).forEach((p) => {
                             if (typeof p === 'object') p = p.id;
                             if (!db.parameters || !db.parameters[p]) {
                                 store.dispatch(parameterGet(p));
@@ -687,14 +753,14 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         });
 
                         // Fetching not loaded inputs 
-                        (this._setup.hasInput || []).forEach((i) => {
+                        (this._config.hasInput || []).forEach((i) => {
                             if (typeof i === 'object') {
                                 if (i.type.indexOf('DatasetSpecification') < 0) {
-                                    console.log(i, 'is not a DatasetSpecification (input)', this._setup);
+                                    console.log(i, 'is not a DatasetSpecification (input)', this._config);
                                 }
                                 i = i.id;
                             } else {
-                                console.log(i, 'is not an object (input)', this._setup);
+                                console.log(i, 'is not an object (input)', this._config);
                             }
                             if (!db.datasetSpecifications || !db.datasetSpecifications[i]) {
                                 store.dispatch(datasetSpecificationGet(i));
@@ -703,7 +769,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         });
 
                         // Fetching not loaded authors, for the momen only Persons TODO
-                        (this._setup.author || []).forEach((authorUri) => {
+                        (this._config.author || []).forEach((authorUri) => {
                             if (typeof authorUri === 'object') authorUri = authorUri.id;
                             if (!db.persons || !db.persons[authorUri]) {
                                 store.dispatch(personGet(authorUri));
@@ -712,7 +778,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         });
 
                         // Fetching not loaded processes
-                        (this._setup.hasProcess || []).forEach((processUri) => {
+                        (this._config.hasProcess || []).forEach((processUri) => {
                             if (typeof processUri === 'object') processUri = processUri.id;
                             if (!db.processes || !db.processes[processUri]) {
                                 store.dispatch(processGet(processUri));
@@ -721,8 +787,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         });
 
                         // Fetching ONE grid
-                        if (!this._grid && this._setup.hasGrid) {
-                            let gridId = typeof this._setup.hasGrid[0] === 'object' ?  this._setup.hasGrid[0].id : this._setup.hasGrid[0];
+                        if (!this._grid && this._config.hasGrid) {
+                            let gridId = typeof this._config.hasGrid[0] === 'object' ?  this._config.hasGrid[0].id : this._config.hasGrid[0];
                             if (!db.grids || !db.grids[gridId]) {
                                 store.dispatch(gridGet(gridId));
                                 this._gridLoading = true;
@@ -730,8 +796,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         }
 
                         // Fetching ONE time interval
-                        if (!this._timeInterval && this._setup.hasOutputTimeInterval) {
-                            let ti = this._setup.hasOutputTimeInterval[0];
+                        if (!this._timeInterval && this._config.hasOutputTimeInterval) {
+                            let ti = this._config.hasOutputTimeInterval[0];
                             let tiId = typeof ti === 'object' ? ti.id : ti;
                             if (!db.timeIntervals || !db.timeIntervals[tiId]) {
                                 store.dispatch(timeIntervalGet(tiId));
@@ -740,8 +806,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         }
 
                         // Fetching ONE softwareImage FIXME
-                        /*if (!this._softwareImage && this._setup.hasSoftwareImage) {
-                            let si = this._setup.hasSoftwareImage[0];
+                        /*if (!this._softwareImage && this._config.hasSoftwareImage) {
+                            let si = this._config.hasSoftwareImage[0];
                             let siId = typeof si === 'object' ? si.id : si;
                             if (!db.softwareImages || !db.softwareImages[siId]) {
                                 store.dispatch(softwareImageGet(siId));
@@ -753,9 +819,9 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 }
 
                 // Other resources
-                if (this._setup) {
+                if (this._config) {
                     if (db.parameters) {
-                        if (this._parametersLoading.size > 0 && this._setup.hasParameter) {
+                        if (this._parametersLoading.size > 0 && this._config.hasParameter) {
                             this._parametersLoading.forEach((uri:string) => {
                                 if (db.parameters[uri]) {
                                     let tmp = { ...this._parameters };
@@ -768,7 +834,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     }
 
                     if (db.datasetSpecifications) {
-                        if (this._inputsLoading.size > 0 && this._setup.hasParameter) {
+                        if (this._inputsLoading.size > 0 && this._config.hasParameter) {
                             this._inputsLoading.forEach((uri:string) => {
                                 if (db.datasetSpecifications[uri]) {
                                     let tmp = { ...this._inputs };
@@ -781,7 +847,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     }
 
                     if (db.persons) {
-                        if (this._authorsLoading.size > 0 && this._setup.author) {
+                        if (this._authorsLoading.size > 0 && this._config.author) {
                             this._authorsLoading.forEach((uri:string) => {
                                 if (db.persons[uri]) {
                                     let tmp = { ...this._authors };
@@ -794,7 +860,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     }
 
                     if (db.processes) {
-                        if (this._processesLoading.size > 0 && this._setup.hasProcess) {
+                        if (this._processesLoading.size > 0 && this._config.hasProcess) {
                             this._processesLoading.forEach((uri:string) => {
                                 if (db.processes[uri]) {
                                     let tmp = { ...this._processes };
@@ -806,16 +872,16 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         }
                     }
 
-                    if (db.grids && !this._grid && this._setup.hasGrid) {
-                        let gridId = typeof this._setup.hasGrid[0] === 'object' ?  this._setup.hasGrid[0].id : this._setup.hasGrid[0];
+                    if (db.grids && !this._grid && this._config.hasGrid) {
+                        let gridId = typeof this._config.hasGrid[0] === 'object' ?  this._config.hasGrid[0].id : this._config.hasGrid[0];
                         if (db.grids[gridId]) {
                             this._grid = db.grids[gridId];
                             this._gridLoading = false;
                         }
                     }
 
-                    if (db.timeIntervals && !this._timeInterval && this._setup.hasOutputTimeInterval) {
-                        let ti = this._setup.hasOutputTimeInterval[0];
+                    if (db.timeIntervals && !this._timeInterval && this._config.hasOutputTimeInterval) {
+                        let ti = this._config.hasOutputTimeInterval[0];
                         let tiId = typeof ti === 'object' ? ti.id : ti;
                         if (db.timeIntervals[tiId]) {
                             this._timeInterval = db.timeIntervals[tiId];
@@ -823,8 +889,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         }
                     }
 
-                    if (db.softwareImages && !this._softwareImage && this._setup.hasSoftwareImage) {
-                        let si = this._setup.hasSoftwareImage[0];
+                    if (db.softwareImages && !this._softwareImage && this._config.hasSoftwareImage) {
+                        let si = this._config.hasSoftwareImage[0];
                         let siId = typeof si === 'object' ? si.id : si;
                         if (db.softwareImages[siId]) {
                             this._softwareImage = db.softwareImages[siId];

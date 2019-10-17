@@ -1,9 +1,13 @@
 import { Reducer } from "redux";
 import { RootAction } from "../app/store";
 import { START_LOADING, END_LOADING, START_POST, END_POST,
-         MODELS_GET, VERSIONS_GET, CONFIGURATIONS_GET, PARAMETER_GET,
-         DATASET_SPECIFICATION_GET, PERSON_GET, ALL_PERSONS, ALL_PROCESSES, 
-         GRID_GET, PROCESS_GET, PROCESSES_GET, TIME_INTERVAL_GET, SOFTWARE_IMAGE_GET, PERSONS_GET } from './actions'
+         PERSON_GET, PERSONS_GET, ALL_PERSONS,
+         PROCESS_GET, PROCESSES_GET, ALL_PROCESSES,  
+         PARAMETER_GET, PARAMETERS_GET, ALL_PARAMETERS,
+         MODEL_CONFIGURATION_GET, MODEL_CONFIGURATIONS_GET, ALL_MODEL_CONFIGURATIONS,
+         MODELS_GET, VERSIONS_GET,
+         DATASET_SPECIFICATION_GET,
+         GRID_GET, TIME_INTERVAL_GET, SOFTWARE_IMAGE_GET } from './actions'
 
 export interface ModelCatalogState {
     loading: {[key:string]: boolean},
@@ -84,7 +88,12 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 loadedAll: tmp,
                 versions: {...state.version, ...action.payload}
             }
-        case CONFIGURATIONS_GET:
+        case MODEL_CONFIGURATION_GET:
+            return {
+                ...state,
+                configurations: {...state.configurations, ...action.payload}
+            }
+        case MODEL_CONFIGURATIONS_GET:
             tmp = { ...state.loadedAll };
             tmp['configurations'] = true;
             return {
@@ -95,6 +104,14 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
         case PARAMETER_GET:
             return {
                 ...state,
+                parameters: {...state.parameters, ...action.payload}
+            }
+        case PARAMETERS_GET:
+            tmp = { ...state.loadedAll };
+            tmp[ALL_PARAMETERS] = true;
+            return {
+                ...state,
+                loadedAll: tmp,
                 parameters: {...state.parameters, ...action.payload}
             }
         case DATASET_SPECIFICATION_GET:

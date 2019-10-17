@@ -11,9 +11,9 @@ import { goToPage } from 'app/actions';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { personGet, personPost,
-         parameterGet, datasetSpecificationGet, configurationPut,  gridGet,
-         timeIntervalGet, configurationPost, processGet, softwareImageGet, } from 'model-catalog/actions';
+import { personGet, personPost, modelConfigurationPut,
+         parameterGet, datasetSpecificationGet, gridGet,
+         timeIntervalGet, processGet, softwareImageGet, } from 'model-catalog/actions';
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
 import "weightless/slider";
@@ -257,7 +257,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             editedConfig.keywords = [keywords.split(/ *, */).join('; ')];
             editedConfig.hasComponentLocation = [compLoc];
 
-            store.dispatch(configurationPut(editedConfig));
+            store.dispatch(modelConfigurationPut(editedConfig));
             showNotification("saveNotification", this.shadowRoot!);
             goToPage(createUrl(this._model, this._version, this._config));
         }
@@ -433,6 +433,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <col span="1">
                 <col span="1">
                 <col span="1">
+                ${this._editing? html`<col span="1">` : ''}
             </colgroup>
             <thead>
                 <th class="ta-right"><b>#</b></th>
@@ -442,6 +443,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     <b>Default Value</b>
                 </th>
                 <th class="ta-right"><b>Unit</b></th>
+                ${this._editing? html`<th class="ta-right"></th>` : ''}
             </thead>
             <tbody>
             ${this._config.hasParameter ? paramOrder.map((uri:string) => html`
@@ -458,7 +460,13 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <td class="ta-right">
                     ${this._parameters[uri].hasDefaultValue ? this._parameters[uri].hasDefaultValue : '-'}
                 </td>
-                <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>`
+                <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
+                ${this._editing? html `
+                <td style="text-align: right;">
+                    <wl-button class="small"><wl-icon>edit</wl-icon></wl-button>
+                </td>
+                ` : ''}
+                `
                 : html`<td colspan="5" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
             </tr>`)
             : html`<tr><td colspan="5" class="info-center">- This configuration has no parameters -</td></tr>`}

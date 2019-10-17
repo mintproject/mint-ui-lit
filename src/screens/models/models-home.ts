@@ -20,7 +20,7 @@ store.addReducers({
 });
 
 import modelCatalog from 'model-catalog/reducers'
-import { modelsGet, versionsGet, configurationsGet } from '../../model-catalog/actions';
+import { modelsGet, versionsGet, modelConfigurationsGet } from '../../model-catalog/actions';
 
 store.addReducers({
     modelCatalog
@@ -120,12 +120,12 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     }
 
     firstUpdated() {
-        /*store.dispatch(fetchModels());
-        store.dispatch(fetchVersionsAndConfigs());*/
+        store.dispatch(fetchModels());
+        store.dispatch(fetchVersionsAndConfigs());
 
         store.dispatch(modelsGet());
         store.dispatch(versionsGet());
-        store.dispatch(configurationsGet());
+        store.dispatch(modelConfigurationsGet());
     }
 
     stateChanged(state: RootState) {

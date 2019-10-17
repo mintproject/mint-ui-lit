@@ -7,6 +7,8 @@ import { Configuration, DefaultApi, ModelApi, SoftwareVersionApi, ModelConfigura
 
 export * from './person-actions';
 export * from './process-actions';
+export * from './parameter-actions';
+export * from './model-configuration-actions';
 import { ModelCatalogPersonAction } from './person-actions';
 
 function debug () {
@@ -90,85 +92,6 @@ export const versionsGet: ActionCreator<ModelCatalogThunkResult> = () => (dispat
         })
         .catch((err) => {console.log('Error on getVersions', err)})
 }
-
-export const CONFIGURATIONS_GET = "CONFIGURATIONS_GET";
-interface MCAConfigurationsGet extends Action<'CONFIGURATIONS_GET'> { payload: any };
-export const configurationsGet: ActionCreator<ModelCatalogThunkResult> = () => (dispatch) => {
-    debug('Fetching configurations');
-    let api = new ModelConfigurationApi();
-    api.modelconfigurationsGet({username: DEFAULT_GRAPH})
-        .then((data) => {
-            console.log(data);
-            dispatch({
-                type: CONFIGURATIONS_GET,
-                payload: data.reduce(idReducer, {})
-            });
-        })
-        .catch((err) => {console.log('Error on getConfigs', err)})
-}
-
-export const CONFIGURATION_PUT = "CONFIGURATION_PUT";
-interface MCAConfigurationPut extends Action<'CONFIGURATION_PUT'> { payload: any };
-export const configurationPut: ActionCreator<ModelCatalogThunkResult> = (config) => (dispatch) => {
-    debug('Updating configuration', config.id);
-    let state: any = store.getState();
-    let status = state.app.prefs.modelCatalog.status;
-    let token = state.app.prefs.modelCatalog.accessToken;
-    let C : Configuration = new Configuration({accessToken: token});
-
-    if (status === 'DONE') {
-        let api = new ModelConfigurationApi(C);
-        let id = config.id.split('/').pop();
-        api.modelconfigurationsIdPut({id: id, user: DEFAULT_GRAPH, modelConfiguration: config, username: DEFAULT_GRAPH}) //<- my username
-            .then((data) => {
-                //FIXME: the api is returning nothing right now, so we need to get again
-                console.log('RESPONSE PUT MODEL CONFIGURATION:', data);
-            })
-            .catch((err) => {console.log('Error on putConfigs', err)})
-    } else if (status === 'LOADING') {
-        console.log('waiting...')
-        dispatch({
-            type: 'WAIT_UNTIL',
-            predicate: action => (action.type === 'FETCH_MODEL_CATALOG_ACCESS_TOKEN'),
-            run: (dispatch, getState, action) => {
-                dispatch(configurationPut(config));
-                console.log('dispaching async')
-            }
-        })
-    }
-}
-
-export const CONFIGURATION_POST = "CONFIGURATION_POST";
-interface MCAConfigurationPost extends Action<'CONFIGURATION_POST'> { payload: any };
-export const configurationPost: ActionCreator<ModelCatalogThunkResult> = (config) => (dispatch) => {
-    debug('creating new configuration', config);
-
-    let state: any = store.getState();
-    let status = state.app.prefs.modelCatalog.status;
-    let token = state.app.prefs.modelCatalog.accessToken;
-    let C : Configuration = new Configuration({accessToken: token});
-
-    if (status === 'DONE') {
-        config.id = '';
-        let api = new ModelConfigurationApi(C);
-        api.modelconfigurationsPost({user: DEFAULT_GRAPH, modelConfiguration: config}) //<- my username
-            .then((data) => {
-                console.log(data);
-            })
-            .catch((err) => {console.log('Error on putConfigs', err)})
-    } else if (status === 'LOADING') {
-        console.log('waiting...')
-        dispatch({
-            type: 'WAIT_UNTIL',
-            predicate: action => (action.type === 'FETCH_MODEL_CATALOG_ACCESS_TOKEN'),
-            run: (dispatch, getState, action) => {
-                dispatch(configurationPost(config));
-                console.log('dispaching async')
-            }
-        })
-    }
-}
-
 
 export const PARAMETER_GET = "PARAMETER_GET";
 interface MCAParameterGet extends Action<'PARAMETER_GET'> { payload: any };
@@ -261,7 +184,8 @@ export const softwareImageGet: ActionCreator<ModelCatalogThunkResult> = (uri) =>
 }
 
 export type ModelCatalogAction = MCAStartLoading | MCAEndLoading | MCAEndPost | MCAStartPost | ModelCatalogPersonAction |
-                                 MCAModelsGet | MCAVersionsGet | MCAConfigurationsGet | MCAConfigurationPut | MCAParameterGet |
+                                 ModelCatalogParameterAction | ModelCatalogProcessAction | ModelCatalogModelConfigurationAction |
+                                 MCAModelsGet | MCAVersionsGet |
                                  MCADatasetSpecificationGet | MCAGridGet | MCATimeIntervalGet | MCASoftwareImageGet;
 
 type ModelCatalogThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogAction>;
