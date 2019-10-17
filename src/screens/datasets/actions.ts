@@ -72,6 +72,8 @@ export const listAllDatasets: ActionCreator<ListDatasetsThunkResult> = () => (di
 const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQueryParameters) => {
     let dsmap: IdMap<Dataset> = {};
     let datasets: Dataset[] = [];
+    let dsresourcemap = {};
+
     obj.resources.map((row: any) => {
         let dmeta = row["dataset_metadata"];
         let rmeta = row["resource_metadata"];
@@ -79,6 +81,7 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
         let scover = rmeta["spatial_coverage"];
         let dsid = row["dataset_id"];
         let ds : Dataset = dsmap[dsid];
+        let resourcemap = dsresourcemap[dsid];
         if(ds == null) {
             ds = {
                 id: dsid,
@@ -89,7 +92,7 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
                     start_date: null, //tcover["start_time"].replace(/T.+$/, ''),
                     end_date: null
                 } as DateRange,
-                description: row["description"] || "",
+                description: row["dataset_description"] || "",
                 version: dmeta["version"] || "",
                 limitations: dmeta["limitations"] || "",
                 source: {
@@ -103,6 +106,15 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
             datasets.push(ds);
             dsmap[ds.id] = ds;
         }
+        if (resourcemap == null) {
+            resourcemap = {};
+            dsresourcemap[dsid] = resourcemap;
+        }
+        let dataurl = row["resource_data_url"];
+        if (resourcemap[dataurl]) // If this is a duplicate resource, ignore it
+            return;
+        resourcemap[dataurl] = true;
+        
         let tcoverstart = toTimeStamp(tcover["start_time"]);
         let tcoverend = toTimeStamp(tcover["end_time"]);
         if(!ds.time_period.start_date || ds.time_period.start_date > tcoverstart) {
