@@ -45,14 +45,14 @@ export class MessagesThread extends connect(store)(PageViewElement) {
     .main-thread {
         border: 2px solid #d9d9d9;
         border-radius: 10px;
-        padding: 8px 5px;
+        padding: 0px 12px;
         display: block;
     }
 
     .post {
         border: 1px solid #6D6D6D;
         border-radius: 10px;
-        padding: 8px 5px;
+        padding: 0px 12px;
         margin-bottom: 10px;
         margin-left: 10px;
     }

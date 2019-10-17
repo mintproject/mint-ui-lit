@@ -128,6 +128,12 @@ export class MintApp extends connect(store)(LitElement) {
       .breadcrumbs li:first:after {
         border-left-color: #629b30;
       }
+      .message-button {
+        --button-padding: 6px;
+      }
+      .message-button:hover {
+        background-color: rgb(224, 224, 224);
+      }
       `
     ];
   }
@@ -188,6 +194,9 @@ export class MintApp extends connect(store)(LitElement) {
             `
             :
             html `
+            <wl-button flat inverted class="message-button" @click="${() => goToPage('messages')}">
+              Messages <wl-icon style="margin-left: 4px;">message</wl-icon>
+            </wl-button>
             <wl-button flat inverted @click="${signOut}">
               LOGOUT ${this.user.email}
             </wl-button>
