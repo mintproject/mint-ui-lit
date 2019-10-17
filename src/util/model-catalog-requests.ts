@@ -1,4 +1,4 @@
-const API_URI = "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries/";
+const API_URI = "https://query.mint.isi.edu/api/dgarijo/MINT-ModelCatalogQueries/";
 export const RESOURCE_PREFIX = "https://w3id.org/okn/i/mint/";
 
 export const MODELS                          = "MODELS";

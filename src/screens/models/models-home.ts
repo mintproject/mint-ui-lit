@@ -19,6 +19,13 @@ store.addReducers({
     models
 });
 
+import modelCatalog from 'model-catalog/reducers'
+import { modelsGet, versionsGet, modelConfigurationsGet } from '../../model-catalog/actions';
+
+store.addReducers({
+    modelCatalog
+});
+
 @customElement('models-home')
 export class ModelsHome extends connect(store)(PageViewElement) {
     @property({type: String})
@@ -115,6 +122,10 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     firstUpdated() {
         store.dispatch(fetchModels());
         store.dispatch(fetchVersionsAndConfigs());
+
+        store.dispatch(modelsGet());
+        store.dispatch(versionsGet());
+        store.dispatch(modelConfigurationsGet());
     }
 
     stateChanged(state: RootState) {
