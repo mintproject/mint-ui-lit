@@ -33,7 +33,6 @@ import '../screens/messages/messages-home';
 import { SharedStyles } from '../styles/shared-styles';
 import { showDialog, hideDialog, formElementsComplete } from '../util/ui_functions';
 import { User } from 'firebase';
-import { runPathwayExecutableEnsembles } from 'util/state_functions';
 
 @customElement('mint-app')
 export class MintApp extends connect(store)(LitElement) {
