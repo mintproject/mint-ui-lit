@@ -11,7 +11,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 import { Reducer } from 'redux';
 import { RootAction } from './store';
 import { User } from 'firebase';
-import { UPDATE_PAGE, FETCH_USER, FETCH_USER_PREFERENCES } from './actions';
+import { UPDATE_PAGE, FETCH_USER, FETCH_USER_PREFERENCES, FETCH_MODEL_CATALOG_ACCESS_TOKEN,
+         STATUS_MODEL_CATALOG_ACCESS_TOKEN } from './actions';
 
 
 export interface IdMap<T> {
@@ -31,7 +32,8 @@ export interface AppState {
 }
 
 export interface UserPreferences {
-  wings: WingsPreferences
+  wings: WingsPreferences,
+  modelCatalog: ModelCatalogPreferences
 }
 
 export interface WingsPreferences {
@@ -46,9 +48,17 @@ export interface WingsPreferences {
   api: string
 }
 
+type ModelCatalogStatus = 'LOADING' | 'DONE' | 'ERROR';
+export interface ModelCatalogPreferences {
+  username: string,
+  accessToken: string,
+  status: ModelCatalogStatus
+}
+
 const INITIAL_STATE: AppState = {
   page: '',
-  subpage: ''
+  subpage: '',
+  prefs: {wings: {}, modelCatalog: {}}
 };
 
 const app: Reducer<AppState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -65,10 +75,23 @@ const app: Reducer<AppState, RootAction> = (state = INITIAL_STATE, action) => {
         user: action.user!
       };
     case FETCH_USER_PREFERENCES:
+      let newPrefs = {...state.prefs, ...action.prefs};
       return {
         ...state,
-        prefs: action.prefs!
+        prefs: newPrefs
       };
+    case FETCH_MODEL_CATALOG_ACCESS_TOKEN:
+      let newMCPrefs = { ...state.prefs.modelCatalog, accessToken: action.accessToken, status: 'DONE' };
+      return {
+        ...state,
+        prefs: {...state.prefs, modelCatalog: newMCPrefs}
+      }
+    case STATUS_MODEL_CATALOG_ACCESS_TOKEN:
+      let newMCStatus = { ...state.prefs.modelCatalog, status: action.status };
+      return {
+        ...state,
+        prefs: {...state.prefs, modelCatalog: newMCStatus}
+      }
     default:
       return state;
   }
