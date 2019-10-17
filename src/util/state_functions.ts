@@ -512,8 +512,12 @@ export const listAlreadyRunEnsembleIds = (ensembleids: string[]) : Promise<strin
     let ensemblesRef = db.collection("ensembles");
     return Promise.all(ensembleids.map((ensembleid) => {
         return ensemblesRef.doc(ensembleid).get().then((sdoc) => {
-            if(sdoc.exists && (sdoc.data() as ExecutableEnsemble).status != "WAITING")
-                return ensembleid;
+            if(sdoc.exists) {
+                let ensemble = sdoc.data() as ExecutableEnsemble;
+                if(ensemble.status == "SUCCESS" && ensemble.results) {
+                    return ensembleid;
+                }
+            }
         })
     }));
 };
