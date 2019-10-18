@@ -205,10 +205,10 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
             }
 
             let newParameter : Parameter = {
-                email: [email],
+                //email: [email],
                 label: [name],
             }
-            if (web) newParameter.website = web;
+            //if (web) newParameter.website = web;
 
             this._waitingFor = 'PostParameter' + identifierId;
             identifierId += 1;

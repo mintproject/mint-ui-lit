@@ -1,30 +1,12 @@
-"use strict";
 // <!-- Copyright (c) 2015 Google Inc. All rights reserved. -->
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-var google_map_child_element_js_1 = require("./lib/google-map-child-element.js");
-var markerEvents = [
+import { GoogleMapChildElement, customElement, property } from './lib/google-map-child-element.js';
+const markerEvents = [
     'animation_changed',
     'click',
     'clickable_changed',
@@ -75,55 +57,53 @@ var markerEvents = [
  *         hidden></google-map-marker>
  *
  */
-var GoogleMapMarker = /** @class */ (function (_super) {
-    __extends(GoogleMapMarker, _super);
+let GoogleMapMarker = class GoogleMapMarker extends GoogleMapChildElement {
     // observers: [
     //   '_updatePosition(latitude, longitude)'
     // ],
-    function GoogleMapMarker() {
-        var _this = _super.call(this) || this;
+    constructor() {
+        super();
         /**
          * When true, marker *click events are automatically registered.
          */
-        _this.clickEvents = false;
+        this.clickEvents = false;
         /**
          * When true, marker drag* events are automatically registered.
          */
-        _this.dragEvents = false;
+        this.dragEvents = false;
         /**
          * When true, marker mouse* events are automatically registered.
          */
-        _this.mouseEvents = false;
+        this.mouseEvents = false;
         /**
          * Z-index for the marker icon.
          */
-        _this.zIndex = 0;
+        this.zIndex = 0;
         /**
          * Specifies whether the InfoWindow is open or not
          */
-        _this.open = false;
+        this.open = false;
         /**
          * @this {GoogleMapMarkerElement} This function is called with .bind(this) in setupDragHandler
          *_above.
           */
-        _this._onDragEnd = function (e, _details, _sender) {
-            _this.latitude = e.latLng.lat();
-            _this.longitude = e.latLng.lng();
+        this._onDragEnd = (e, _details, _sender) => {
+            this.latitude = e.latLng.lat();
+            this.longitude = e.latLng.lng();
         };
         console.log('google-map-marker');
-        return _this;
     }
-    GoogleMapMarker.prototype.update = function (changedProperties) {
+    update(changedProperties) {
         if (changedProperties.has('map')) {
             this._mapChanged();
         }
         if (changedProperties.has('open')) {
             this._openChanged();
         }
-        _super.prototype.update.call(this, changedProperties);
-    };
-    GoogleMapMarker.prototype.disconnectedCallback = function () {
-        _super.prototype.disconnectedCallback.call(this);
+        super.update(changedProperties);
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
         if (this.marker) {
             google.maps.event.clearInstanceListeners(this.marker);
             this._listeners = {};
@@ -132,40 +112,40 @@ var GoogleMapMarker = /** @class */ (function (_super) {
         // if (this._contentObserver) {
         //   this._contentObserver.disconnect();
         // }
-    };
-    GoogleMapMarker.prototype.connectedCallback = function () {
-        _super.prototype.connectedCallback.call(this);
+    }
+    connectedCallback() {
+        super.connectedCallback();
         // If element is added back to DOM, put it back on the map.
         if (this.marker) {
             this.marker.setMap(this.map);
         }
-    };
-    GoogleMapMarker.prototype._updatePosition = function () {
+    }
+    _updatePosition() {
         if (this.marker && this.latitude !== undefined && this.longitude !== undefined) {
             this.marker.setPosition(new google.maps.LatLng(this.latitude, this.longitude));
         }
-    };
-    GoogleMapMarker.prototype._animationChanged = function () {
+    }
+    _animationChanged() {
         if (this.marker) {
             this.marker.setAnimation(this.animation === undefined ? null : this.animation);
         }
-    };
-    GoogleMapMarker.prototype._labelChanged = function () {
+    }
+    _labelChanged() {
         if (this.marker && this.label !== undefined) {
             this.marker.setLabel(this.label);
         }
-    };
-    GoogleMapMarker.prototype._iconChanged = function () {
+    }
+    _iconChanged() {
         if (this.marker && this.icon !== undefined) {
             this.marker.setIcon(this.icon);
         }
-    };
-    GoogleMapMarker.prototype._zIndexChanged = function () {
+    }
+    _zIndexChanged() {
         if (this.marker) {
             this.marker.setZIndex(this.zIndex);
         }
-    };
-    GoogleMapMarker.prototype._mapChanged = function () {
+    }
+    _mapChanged() {
         console.log('_mapChanged');
         // Marker will be rebuilt, so disconnect existing one from old map and listeners.
         if (this.marker) {
@@ -175,8 +155,8 @@ var GoogleMapMarker = /** @class */ (function (_super) {
         if (this.map instanceof google.maps.Map) {
             this._mapReady();
         }
-    };
-    GoogleMapMarker.prototype._contentChanged = function () {
+    }
+    _contentChanged() {
         // if (this._contentObserver)
         //   this._contentObserver.disconnect();
         // // Watch for future updates.
@@ -185,19 +165,18 @@ var GoogleMapMarker = /** @class */ (function (_super) {
         //   childList: true,
         //   subtree: true
         // });
-        var _this = this;
         // TODO(justinfagnani): no, no, no... Use Nodes, not innerHTML.
-        var content = this.innerHTML.trim();
+        const content = this.innerHTML.trim();
         console.log('_contentChanged', content, this.infoWindow);
         if (content) {
             if (!this.infoWindow) {
                 // Create a new infowindow
                 this.infoWindow = new google.maps.InfoWindow();
-                this._openInfoHandler = google.maps.event.addListener(this.marker, 'click', function () {
-                    _this.open = true;
+                this._openInfoHandler = google.maps.event.addListener(this.marker, 'click', () => {
+                    this.open = true;
                 });
-                this._closeInfoHandler = google.maps.event.addListener(this.infoWindow, 'closeclick', function () {
-                    _this.open = false;
+                this._closeInfoHandler = google.maps.event.addListener(this.infoWindow, 'closeclick', () => {
+                    this.open = false;
                 });
             }
             this.infoWindow.setContent(content);
@@ -210,8 +189,8 @@ var GoogleMapMarker = /** @class */ (function (_super) {
                 this.infoWindow = undefined;
             }
         }
-    };
-    GoogleMapMarker.prototype._openChanged = function () {
+    }
+    _openChanged() {
         if (this.infoWindow) {
             if (this.open) {
                 this.infoWindow.open(this.map, this.marker);
@@ -222,10 +201,9 @@ var GoogleMapMarker = /** @class */ (function (_super) {
                 this.dispatchEvent(new CustomEvent('google-map-marker-close'));
             }
         }
-    };
+    }
     // TODO(justinfagnani): call from GoogleMapChildElement
-    GoogleMapMarker.prototype._mapReady = function () {
-        var _this = this;
+    _mapReady() {
         console.log('_mapReady');
         this._listeners = {};
         this.marker = new google.maps.Marker({
@@ -243,23 +221,22 @@ var GoogleMapMarker = /** @class */ (function (_super) {
             zIndex: this.zIndex
         });
         this._contentChanged();
-        markerEvents.forEach(function (e) { return _this._forwardEvent(e); });
+        markerEvents.forEach((e) => this._forwardEvent(e));
         this._openChanged();
         this._setupDragHandler();
-    };
+    }
     // TODO(justinfagnani): move to utils / base class
-    GoogleMapMarker.prototype._forwardEvent = function (name) {
-        var _this = this;
-        this._listeners[name] = google.maps.event.addListener(this.marker, name, function (event) {
-            _this.dispatchEvent(new CustomEvent("google-map-marker-" + name, {
+    _forwardEvent(name) {
+        this._listeners[name] = google.maps.event.addListener(this.marker, name, (event) => {
+            this.dispatchEvent(new CustomEvent(`google-map-marker-${name}`, {
                 detail: {
                     mapsEvent: event,
                 }
             }));
         });
-    };
-    GoogleMapMarker.prototype.attributeChangedCallback = function (name, oldValue, newValue) {
-        _super.prototype.attributeChangedCallback.call(this, name, oldValue, newValue);
+    }
+    attributeChangedCallback(name, oldValue, newValue) {
+        super.attributeChangedCallback(name, oldValue, newValue);
         if (!this.marker) {
             return;
         }
@@ -276,12 +253,12 @@ var GoogleMapMarker = /** @class */ (function (_super) {
                 this.marker.setTitle(this.title);
                 break;
         }
-    };
+    }
     /**
      * @this {GoogleMapMarkerElement} This function is called  with .bind(this) in the map
      * marker element below.
      */
-    GoogleMapMarker.prototype._setupDragHandler = function () {
+    _setupDragHandler() {
         if (this.draggable) {
             this._dragHandler = google.maps.event.addListener(this.marker, 'dragend', this._onDragEnd);
         }
@@ -289,51 +266,39 @@ var GoogleMapMarker = /** @class */ (function (_super) {
             google.maps.event.removeListener(this._dragHandler);
             this._dragHandler = undefined;
         }
-    };
-    __decorate([
-        google_map_child_element_js_1.property({ type: Boolean }),
-        __metadata("design:type", Object)
-    ], GoogleMapMarker.prototype, "clickEvents", void 0);
-    __decorate([
-        google_map_child_element_js_1.property({ type: Boolean }),
-        __metadata("design:type", Object)
-    ], GoogleMapMarker.prototype, "dragEvents", void 0);
-    __decorate([
-        google_map_child_element_js_1.property({ type: Boolean }),
-        __metadata("design:type", Object)
-    ], GoogleMapMarker.prototype, "mouseEvents", void 0);
-    __decorate([
-        google_map_child_element_js_1.property(),
-        __metadata("design:type", Object)
-    ], GoogleMapMarker.prototype, "icon", void 0);
-    __decorate([
-        google_map_child_element_js_1.property({ type: Number }),
-        __metadata("design:type", Number)
-    ], GoogleMapMarker.prototype, "zIndex", void 0);
-    __decorate([
-        google_map_child_element_js_1.property({ type: Number, reflect: true }),
-        __metadata("design:type", Number)
-    ], GoogleMapMarker.prototype, "latitude", void 0);
-    __decorate([
-        google_map_child_element_js_1.property({ type: Number, reflect: true }),
-        __metadata("design:type", Number)
-    ], GoogleMapMarker.prototype, "longitude", void 0);
-    __decorate([
-        google_map_child_element_js_1.property({ type: String }),
-        __metadata("design:type", String)
-    ], GoogleMapMarker.prototype, "label", void 0);
-    __decorate([
-        google_map_child_element_js_1.property({ type: String }),
-        __metadata("design:type", Number)
-    ], GoogleMapMarker.prototype, "animation", void 0);
-    __decorate([
-        google_map_child_element_js_1.property({ type: Boolean }),
-        __metadata("design:type", Object)
-    ], GoogleMapMarker.prototype, "open", void 0);
-    GoogleMapMarker = __decorate([
-        google_map_child_element_js_1.customElement('google-map-marker'),
-        __metadata("design:paramtypes", [])
-    ], GoogleMapMarker);
-    return GoogleMapMarker;
-}(google_map_child_element_js_1.GoogleMapChildElement));
-exports.GoogleMapMarker = GoogleMapMarker;
+    }
+};
+__decorate([
+    property({ type: Boolean })
+], GoogleMapMarker.prototype, "clickEvents", void 0);
+__decorate([
+    property({ type: Boolean })
+], GoogleMapMarker.prototype, "dragEvents", void 0);
+__decorate([
+    property({ type: Boolean })
+], GoogleMapMarker.prototype, "mouseEvents", void 0);
+__decorate([
+    property()
+], GoogleMapMarker.prototype, "icon", void 0);
+__decorate([
+    property({ type: Number })
+], GoogleMapMarker.prototype, "zIndex", void 0);
+__decorate([
+    property({ type: Number, reflect: true })
+], GoogleMapMarker.prototype, "latitude", void 0);
+__decorate([
+    property({ type: Number, reflect: true })
+], GoogleMapMarker.prototype, "longitude", void 0);
+__decorate([
+    property({ type: String })
+], GoogleMapMarker.prototype, "label", void 0);
+__decorate([
+    property({ type: String })
+], GoogleMapMarker.prototype, "animation", void 0);
+__decorate([
+    property({ type: Boolean })
+], GoogleMapMarker.prototype, "open", void 0);
+GoogleMapMarker = __decorate([
+    customElement('google-map-marker')
+], GoogleMapMarker);
+export { GoogleMapMarker };
