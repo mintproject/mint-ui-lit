@@ -138,17 +138,17 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
                 <ul>
                     <li>
                         <wl-title level="4">
-                            Response Variables*
+                            Indicators*
                             <wl-icon @click="${() => {this._editMode = true}}" id="addVariablesIcon" class="actionIcon">add</wl-icon>
                         </wl-title>
                         <ul>
                             <li>
                                 <div class="input_half">
                                 ${responseids.length == 0 ?
-                                    renderResponseVariables("")
+                                    renderResponseVariables("", false)
                                 :
                                     responseids.map((responseid) => {
-                                        return renderResponseVariables(responseid);
+                                        return renderResponseVariables(responseid, false);
                                     })
                                 }
                                 </div>
@@ -157,17 +157,17 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
                     </li>
                     <li>
                         <wl-title level="4">
-                            Driving Variables
+                            Adjustable Variables
                             <wl-icon @click="${() => {this._editMode = true}}" id="addVariablesIcon" class="actionIcon">add</wl-icon>
                         </wl-title>
                         <ul>
                             <li>
                                 <div class="input_half">
                                 ${driverids.length == 0 ?
-                                    renderDrivingVariables("")
+                                    renderDrivingVariables("", false)
                                     :
                                     driverids.map((driverid) => {
-                                        return renderDrivingVariables(driverid);
+                                        return renderDrivingVariables(driverid, false);
                                     })
                                 }
                                 </div>

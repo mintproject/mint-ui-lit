@@ -264,7 +264,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
         return html`
         <ul>
-            ${Object.values(this._models).filter((model) => !!model.hasVersion).map((model) => html`
+            ${Object.values(this._models).filter((model: any) => !!model.hasVersion).map((model: any) => html`
             <li>
                 ${model.label}
                 ${!this._versions ? html`<loading-dots style="--width: 20px"></loading-dots>` : html`

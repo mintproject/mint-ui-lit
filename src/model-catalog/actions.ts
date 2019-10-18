@@ -10,12 +10,15 @@ export * from './process-actions';
 export * from './parameter-actions';
 export * from './model-configuration-actions';
 import { ModelCatalogPersonAction } from './person-actions';
+import { ModelCatalogParameterAction } from "./parameter-actions";
+import { ModelCatalogProcessAction } from "./process-actions";
+import { ModelCatalogModelConfigurationAction } from "./model-configuration-actions";
 
-function debug () {
-    console.log('OBA:', ...arguments);
+function debug (...args: any[]) {
+    console.log('OBA:', ...args);
 }
 
-export const idReducer = (dic, elem) => {
+export const idReducer = (dic:any, elem:any) => {
     dic[elem.id] = elem;
     return dic;
 }
@@ -37,7 +40,7 @@ export const getStatusConfigAndUser = () => {
 }
 
 // Repeat an action when the TOKEN is ready
-export const repeatAction = (action, args) => {
+export const repeatAction = (action, args) => (dispatch) => {
     console.log('Action', action, 'waiting for token...');
     dispatch({
         type: 'WAIT_UNTIL',
@@ -53,14 +56,14 @@ export const DEFAULT_GRAPH = 'mint@isi.edu';
 export const PREFIX_URI = 'https://w3id.org/okn/i/mint/'
 
 export const START_LOADING = 'START_LOADING';
-interface MCAStartLoading extends Action<'START_LOADING'> { id: string };
+export interface MCAStartLoading extends Action<'START_LOADING'> { id: string };
 export const END_LOADING = 'END_LOADING';
-interface MCAEndLoading extends Action<'END_LOADING'> { id: string };
+export interface MCAEndLoading extends Action<'END_LOADING'> { id: string };
 
 export const START_POST = 'START_POST';
-interface MCAStartPost extends Action<'START_POST'> { id: string };
+export interface MCAStartPost extends Action<'START_POST'> { id: string };
 export const END_POST = 'END_POST';
-interface MCAEndPost extends Action<'END_POST'> { id: string, uri: string };
+export interface MCAEndPost extends Action<'END_POST'> { id: string, uri: string };
 
 export const MODELS_GET = "MODELS_GET";
 interface MCAModelsGet extends Action<'MODELS_GET'> { payload: any };

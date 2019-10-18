@@ -14,7 +14,9 @@ export interface ModelCatalogState {
     loadedAll: {[key:string]: boolean},
     created: {[key:string]: string}, //Here we assign some identifier to a POST request, when complete stores the URI
     models: any;
+    version: any;
     versions: any;
+    configuration: any;
     configurations: any;
     parameters: any;
     datasetSpecifications: any;
@@ -39,7 +41,7 @@ const INITIAL_STATE: ModelCatalogState = {
     processes: null,
     timeIntervals: null,
     softwareImages: null
-}
+} as ModelCatalogState;
 
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {
     let tmp : any = {};

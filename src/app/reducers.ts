@@ -58,7 +58,7 @@ export interface ModelCatalogPreferences {
 const INITIAL_STATE: AppState = {
   page: '',
   subpage: '',
-  prefs: {wings: {}, modelCatalog: {}}
+  prefs: {wings: {} as WingsPreferences, modelCatalog: {} as ModelCatalogPreferences}
 };
 
 const app: Reducer<AppState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -81,13 +81,13 @@ const app: Reducer<AppState, RootAction> = (state = INITIAL_STATE, action) => {
         prefs: newPrefs
       };
     case FETCH_MODEL_CATALOG_ACCESS_TOKEN:
-      let newMCPrefs = { ...state.prefs.modelCatalog, accessToken: action.accessToken, status: 'DONE' };
+      let newMCPrefs = { ...state.prefs.modelCatalog, accessToken: action.accessToken, status: 'DONE' } as ModelCatalogPreferences;
       return {
         ...state,
         prefs: {...state.prefs, modelCatalog: newMCPrefs}
       }
     case STATUS_MODEL_CATALOG_ACCESS_TOKEN:
-      let newMCStatus = { ...state.prefs.modelCatalog, status: action.status };
+      let newMCStatus = { ...state.prefs.modelCatalog, status: action.status } as ModelCatalogPreferences;
       return {
         ...state,
         prefs: {...state.prefs, modelCatalog: newMCStatus}

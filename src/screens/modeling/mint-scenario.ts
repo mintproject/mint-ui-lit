@@ -196,7 +196,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                     ${!this._hideObjectives ? "fullscreen" : "fullscreen_exit"}</wl-icon>
                             </div>
                             <ul>
-                            ${Object.values((this._selectedSubgoal || {}).pathways || {}).map((pathway) => {
+                            ${Object.values(((this._selectedSubgoal || {}) as SubGoal).pathways || {}).map((pathway: PathwayInfo) => {
                                 let pname = pathway.name ? pathway.name : this._selectedSubgoal.name;
                                 let url = "modeling/scenario/" + this._scenario!.id + "/" + 
                                     this._selectedSubgoal.id + "/" + pathway.id;

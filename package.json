@@ -19,6 +19,7 @@
     "@mintproject/modelcatalog_client": "^1.1.5-dev",
     "@polymer/app-layout": "^3.0.2",
     "@polymer/polymer": "^3.1.0",
+    "@types/codemirror": "^0.0.78",
     "@webcomponents/webcomponentsjs": "^2.2.7",
     "codemirror": "^5.49.0",
     "codemirror-spell-checker": "^1.1.2",

@@ -4,9 +4,9 @@ import { RootState, store } from 'app/store';
 
 import { Configuration, Process, ProcessApi } from '@mintproject/modelcatalog_client';
 import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, 
-         DEFAULT_GRAPH, START_LOADING, END_LOADING, START_POST, END_POST } from './actions';
+         DEFAULT_GRAPH, START_LOADING, END_LOADING, START_POST, END_POST, MCAStartPost, MCAEndPost, MCAStartLoading, MCAEndLoading } from './actions';
 
-function debug () { console.log('OBA:', ...arguments); }
+function debug (...args: any[]) { console.log('OBA:', ...args); }
 
 export const ALL_PROCESSES = 'ALL_PROCESSES'
 
@@ -112,5 +112,5 @@ export const processPut: ActionCreator<ModelCatalogProcessThunkResult> = ( proce
     }
 }
 
-export type ModelCatalogProcessAction =  MCAProcessesGet | MCAProcessGet | MCAProcessPost | MCAProcessPut;
+export type ModelCatalogProcessAction =  MCAStartPost | MCAEndPost | MCAStartLoading | MCAEndLoading | MCAProcessesGet | MCAProcessGet | MCAProcessPost | MCAProcessPut;
 type ModelCatalogProcessThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogProcessAction>;

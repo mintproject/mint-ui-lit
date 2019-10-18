@@ -76,7 +76,7 @@ const devCompose: <Ext0, Ext1, StateExt0, StateExt1>(
 ) => StoreEnhancer<Ext0 & Ext1, StateExt0 & StateExt1> =
   window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 
-import {waitUntilService} from 'thirdparty/wait-service'
+
 // Initializes the Redux store with a lazyReducerEnhancer (so that you can
 // lazily add reducers after the store has been created) and redux-thunk (so
 // that you can dispatch async actions). See the "Redux and state management"
@@ -87,7 +87,6 @@ export const store = createStore(
   devCompose(
     lazyReducerEnhancer(combineReducers),
     applyMiddleware(thunk as ThunkMiddleware<RootState, RootAction>),
-    applyMiddleware(waitUntilService)
   )
 );
 

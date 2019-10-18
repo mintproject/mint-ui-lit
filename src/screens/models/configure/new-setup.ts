@@ -24,6 +24,9 @@ import 'components/loading-dots'
 
 import './person';
 import './process';
+import { ModelsConfigurePerson } from './person';
+import { ModelsConfigureProcess } from './process';
+import { ModelsConfigureParameter } from './parameter';
 
 @customElement('models-new-setup')
 export class ModelsNewSetup extends connect(store)(PageViewElement) {
@@ -67,11 +70,12 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
     private _softwareImage : any = null;
 
     @property({type: String})
-    private _dialog : 'person' | 'process' | 'parameter' = '';
+    private _dialog : 'person' | 'process' | 'parameter' | undefined;
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
     private _selectedConfig : string = '';
+    private _openedDialog : string = '';
 
     private _parametersLoading : Set<string> = new Set();
     private _inputsLoading : Set<string> = new Set();
@@ -363,11 +367,11 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         // Sort parameters by order
         let paramOrder = []
         if (this._config.hasParameter) {
-            Object.values(this._parameters).sort(sortByPosition).forEach((id) => {
+            Object.values(this._parameters).sort(sortByPosition).forEach((id: any) => {
                 if (typeof id === 'object') id = id.id;
                 paramOrder.push(id);
             });
-            this._config.hasParameter.forEach((id) => {
+            this._config.hasParameter.forEach((id: any) => {
                 if (typeof id === 'object') id = id.id;
                 if (paramOrder.indexOf(id) < 0) {
                     paramOrder.push(id)
@@ -378,11 +382,11 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         // Sort inputs by order
         let inputOrder = []
         if (this._config.hasInput) {
-            Object.values(this._inputs).sort(sortByPosition).forEach((id) => {
+            Object.values(this._inputs).sort(sortByPosition).forEach((id: any) => {
                 if (typeof id === 'object') id = id.id;
                 inputOrder.push(id);
             });
-            this._config.hasInput.forEach((id) => {
+            this._config.hasInput.forEach((id: any) => {
                 if (typeof id === 'object') id = id.id;
                 if (inputOrder.indexOf(id) < 0) {
                     inputOrder.push(id)
@@ -594,13 +598,13 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             if (!acc[author.id]) acc[author.id] = true;
             return acc;
         }, {})
-        let personConfigurator = this.shadowRoot.getElementById('person-configurator');
+        let personConfigurator = this.shadowRoot.getElementById('person-configurator') as ModelsConfigurePerson;
         personConfigurator.setSelected(selectedAuthors);
         personConfigurator.open();
     }
 
     _onAuthorsSelected () {
-        let personConfigurator = this.shadowRoot.getElementById('person-configurator');
+        let personConfigurator = this.shadowRoot.getElementById('person-configurator') as ModelsConfigurePerson;
         let selectedPersons = personConfigurator.getSelected();
         console.log('SELECTED AUTHORS:',selectedPersons);
         this._config.author = [];
@@ -617,17 +621,17 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
 
     _showProcessDialog () {
         this._dialog = 'process';
-        let selectedProcesses = this._config.hasProcess.reduce((acc, process) => {
+        let selectedProcesses = this._config.hasProcess.reduce((acc: any, process: any) => {
             if (!acc[process.id]) acc[process.id] = true;
             return acc;
         }, {})
-        let processConfigurator = this.shadowRoot.getElementById('process-configurator');
+        let processConfigurator = this.shadowRoot.getElementById('process-configurator') as ModelsConfigureProcess;
         processConfigurator.setSelected(selectedProcesses);
         processConfigurator.open();
     }
 
     _onProcessesSelected () {
-        let processConfigurator = this.shadowRoot.getElementById('process-configurator');
+        let processConfigurator = this.shadowRoot.getElementById('process-configurator') as ModelsConfigureProcess;
         let selectedProcesses = processConfigurator.getSelected();
         console.log('SELECTED PROCESS:',selectedProcesses);
         this._config.hasProcess = [];
@@ -641,7 +645,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
     _showParameterDialog (parameterID: string) {
         //FIXME
         this._dialog = 'parameter';
-        let parameterConfigurator = this.shadowRoot.getElementById('parameter-configurator');
+        let parameterConfigurator = this.shadowRoot.getElementById('parameter-configurator') as ModelsConfigureParameter;
         parameterConfigurator.edit(parameterID);
     }
 
@@ -655,7 +659,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
     }
 
     firstUpdated () {
-        this.addEventListener('dialogClosed', this._onCloseDialog);
+        this.addEventListener('dialogClosed', this._onClosedDialog);
         this.addEventListener('authorsSelected', this._onAuthorsSelected);
         this.addEventListener('processesSelected', this._onProcessesSelected);
         this.addEventListener('parameterEdited', this._onParameterEdited);

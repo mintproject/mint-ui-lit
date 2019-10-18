@@ -21,6 +21,8 @@ import "weightless/card";
 import "weightless/dialog";
 import "weightless/checkbox";
 import 'components/loading-dots'
+import { Person } from '@mintproject/modelcatalog_client';
+import { Textfield } from 'weightless/textfield';
 
 let identifierId : number = 1;
 
@@ -45,7 +47,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
     private _waitingFor : string = '';
 
     @property({type: Object})
-    private _selected : {[key:string]: Person | undefined} = {};
+    private _selected : {[key:string]: boolean | undefined} = {};
 
     @property({type: String})
     private _selectedPersonId: string = '';
@@ -102,7 +104,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
 
     _searchPromise = null;
     _onSearchChange () {
-        let searchEl = this.shadowRoot.getElementById('search-input');
+        let searchEl = this.shadowRoot.getElementById('search-input') as Textfield;
         if (this._searchPromise) {
             clearTimeout(this._searchPromise);
         }
@@ -178,9 +180,9 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
     }
 
     _onCreateAuthor () {
-        let nameEl = this.shadowRoot.getElementById('new-author-name')
-        let emailEl = this.shadowRoot.getElementById('new-author-email')
-        let webEl = this.shadowRoot.getElementById('new-author-web')
+        let nameEl = this.shadowRoot.getElementById('new-author-name') as Textfield;
+        let emailEl = this.shadowRoot.getElementById('new-author-email') as Textfield;
+        let webEl = this.shadowRoot.getElementById('new-author-web') as Textfield;
         if (nameEl && emailEl && webEl) {
             let name = nameEl.value;
             let email = emailEl.value;
@@ -196,7 +198,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
                 email: [email],
                 label: [name],
             }
-            if (web) newPerson.website = web;
+            if (web) newPerson.website = [web];
 
             this._waitingFor = 'PostPerson' + identifierId;
             identifierId += 1;
@@ -206,9 +208,9 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
     }
 
     _onEditAuthor () {
-        let nameEl = this.shadowRoot.getElementById('edit-author-name')
-        let emailEl = this.shadowRoot.getElementById('edit-author-email')
-        let webEl = this.shadowRoot.getElementById('edit-author-web')
+        let nameEl = this.shadowRoot.getElementById('edit-author-name') as Textfield;
+        let emailEl = this.shadowRoot.getElementById('edit-author-email') as Textfield;
+        let webEl = this.shadowRoot.getElementById('edit-author-web') as Textfield;
         if (nameEl && emailEl && webEl) {
             let name = nameEl.value;
             let email = emailEl.value;

@@ -20,6 +20,8 @@ import "weightless/card";
 import "weightless/dialog";
 import "weightless/checkbox";
 import 'components/loading-dots'
+import { Parameter } from '@mintproject/modelcatalog_client';
+import { Textfield } from 'weightless/textfield';
 
 let identifierId : number = 1;
 
@@ -44,7 +46,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
     private _waitingFor : string = '';
 
     @property({type: Object})
-    private _selected : {[key:string]: Parameter | undefined} = {};
+    private _selected : {[key:string]: boolean | undefined} = {};
 
     @property({type: String})
     private _selectedParameterId: string = '';
@@ -110,7 +112,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
 
     _searchPromise = null;
     _onSearchChange () {
-        let searchEl = this.shadowRoot.getElementById('search-input');
+        let searchEl = this.shadowRoot.getElementById('search-input') as Textfield;;
         if (this._searchPromise) {
             clearTimeout(this._searchPromise);
         }
@@ -143,7 +145,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
                         id="edit-parameter-fixed-value" label="${selectedParameter.label}"
                         value="${selectedParameter.hasFixedValue? selectedParameter.hasFixedValue: ''}"
                         placeholder="${selectedParameter.hasDefaultValue}" required>
-                        <span slot="after">${selectedParameter.usesUnit ?selectedParameter.usesUnit[0].label : ''}</span>
+                        <span slot="after">${selectedParameter.usesUnit ?(selectedParameter.usesUnit[0] as any).label : ''}</span>
                     </wl-textfield>
                 </form> `
                 : html`
@@ -188,9 +190,9 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
     }
 
     _onCreateParameter () {
-        let nameEl = this.shadowRoot.getElementById('new-parameter-name')
-        let emailEl = this.shadowRoot.getElementById('new-parameter-email')
-        let webEl = this.shadowRoot.getElementById('new-parameter-web')
+        let nameEl = this.shadowRoot.getElementById('new-parameter-name') as Textfield;
+        let emailEl = this.shadowRoot.getElementById('new-parameter-email') as Textfield;
+        let webEl = this.shadowRoot.getElementById('new-parameter-web') as Textfield;
         if (nameEl && emailEl && webEl) {
             let name = nameEl.value;
             let email = emailEl.value;
@@ -216,7 +218,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
     }
 
     _onEditParameter () {
-        let fixedValEl = this.shadowRoot.getElementById('edit-parameter-fixed-value')
+        let fixedValEl = this.shadowRoot.getElementById('edit-parameter-fixed-value') as Textfield;
         if (fixedValEl) {
             let fixedVal = fixedValEl.value;
             if (!fixedVal) {
@@ -226,7 +228,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
             }
 
             let editedParameter : Parameter = Object.assign({}, this._parameters[this._selectedParameterId])
-            editedParameter.hasFixedValue = [fixedVal];
+            editedParameter.hasFixedValue = [fixedVal as any];
             //console.log(editedParameter)
             this.dispatchEvent(new CustomEvent('parameterEdited', {composed: true, detail: editedParameter }));
             this._cancel();

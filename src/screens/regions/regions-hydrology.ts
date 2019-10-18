@@ -87,7 +87,7 @@ export class RegionsHydrology extends connect(store)(PageViewElement)  {
     }
 
     protected render() {
-        let items : Array;
+        let items : Array<any>;
         if (this._regionid === 'south_sudan') {
             items = [
             {   label: "South Sudan River Basins (PIHM)",
@@ -170,7 +170,7 @@ export class RegionsHydrology extends connect(store)(PageViewElement)  {
     }
 
     firstUpdated() {
-        this.addEventListener('map-click', (ev) => {
+        this.addEventListener('map-click', (ev: any) => {
             this._selectedSubRegionId = ev.detail.id;
             this._selectedSubRegionName = ev.detail.name;
             this._getTasks();

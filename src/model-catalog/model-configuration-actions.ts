@@ -4,9 +4,9 @@ import { RootState, store } from 'app/store';
 
 import { Configuration, ModelConfiguration, ModelConfigurationApi } from '@mintproject/modelcatalog_client';
 import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, 
-         DEFAULT_GRAPH, START_LOADING, END_LOADING, START_POST, END_POST } from './actions';
+         DEFAULT_GRAPH, START_LOADING, END_LOADING, START_POST, END_POST, MCAStartLoading, MCAEndLoading, MCAEndPost, MCAStartPost } from './actions';
 
-function debug () { console.log('OBA:', ...arguments); }
+function debug (...args: any[]) { console.log('OBA:', ...args); }
 
 export const ALL_MODEL_CONFIGURATIONS = 'ALL_MODEL_CONFIGURATIONS'
 
@@ -111,5 +111,5 @@ export const modelConfigurationPut: ActionCreator<ModelCatalogModelConfiguration
     }
 }
 
-export type ModelCatalogModelConfigurationAction =  MCAModelConfigurationsGet | MCAModelConfigurationGet | MCAModelConfigurationPost | MCAModelConfigurationPut;
+export type ModelCatalogModelConfigurationAction =  MCAStartPost | MCAEndPost | MCAStartLoading | MCAEndLoading | MCAModelConfigurationsGet | MCAModelConfigurationGet | MCAModelConfigurationPost | MCAModelConfigurationPut;
 type ModelCatalogModelConfigurationThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogModelConfigurationAction>;

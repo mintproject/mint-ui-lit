@@ -1051,6 +1051,11 @@
     "@types/istanbul-reports" "^1.1.1"
     "@types/yargs" "^12.0.9"
 
+"@mintproject/modelcatalog_client@^1.1.5-dev":
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@mintproject/modelcatalog_client/-/modelcatalog_client-1.2.1.tgz#762fa6bdfc517674702cae7d19ffe7f115400c2a"
+  integrity sha512-EJpNxwueCUTXGdKBN4/FKk+jANAKh0woOrLB2Hxz3sLNu58sQMZgZUJuuJyrf0XOWjgfMM961CfpjFzRiDiNfA==
+
 "@mrmlnc/readdir-enhanced@^2.2.1":
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/@mrmlnc/readdir-enhanced/-/readdir-enhanced-2.2.1.tgz#524af240d1a360527b730475ecfa1344aa540dde"
@@ -1289,6 +1294,13 @@
   dependencies:
     "@types/webpack" "*"
 
+"@types/codemirror@^0.0.78":
+  version "0.0.78"
+  resolved "https://registry.yarnpkg.com/@types/codemirror/-/codemirror-0.0.78.tgz#75a8eabda268c8e734855fb24e8c86192e2e18ad"
+  integrity sha512-QpMQUpEL+ZNcpEhjvYM/H6jqDx9nNcJqymA2kbkNthFS2I7ekL7ofEZ7+MoQAFTBuJers91K0FGCMpL7MwC9TQ==
+  dependencies:
+    "@types/tern" "*"
+
 "@types/copy-webpack-plugin@^4.4.2":
   version "4.4.4"
   resolved "https://registry.yarnpkg.com/@types/copy-webpack-plugin/-/copy-webpack-plugin-4.4.4.tgz#fefc44f0c3526a4852a0b708dadfed9fc4ad22b0"
@@ -1297,6 +1309,11 @@
     "@types/minimatch" "*"
     "@types/node" "*"
     "@types/webpack" "*"
+
+"@types/estree@*":
+  version "0.0.39"
+  resolved "https://registry.yarnpkg.com/@types/estree/-/estree-0.0.39.tgz#e177e699ee1b8c22d23174caaa7422644389509f"
+  integrity sha512-EYNwp3bU+98cpU4lAWYYL7Zz+2gryWH1qbdDTidVd6hkiR6weksdbMadyXKXNPEkQFhXM+hVO9ZygomHXp+AIw==
 
 "@types/events@*":
   version "3.0.0"
@@ -1487,6 +1504,13 @@
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/@types/tapable/-/tapable-1.0.4.tgz#b4ffc7dc97b498c969b360a41eee247f82616370"
   integrity sha512-78AdXtlhpCHT0K3EytMpn4JNxaf5tbqbLcbIRoQIHzpTIyjpxLQKRoxU55ujBXAtg3Nl2h/XWvfDa9dsMOd0pQ==
+
+"@types/tern@*":
+  version "0.23.3"
+  resolved "https://registry.yarnpkg.com/@types/tern/-/tern-0.23.3.tgz#4b54538f04a88c9ff79de1f6f94f575a7f339460"
+  integrity sha512-imDtS4TAoTcXk0g7u4kkWqedB3E4qpjXzCpD2LU5M5NAXHzCDsypyvXSaG7mM8DKYkCRa7tFp4tS/lp/Wo7Q3w==
+  dependencies:
+    "@types/estree" "*"
 
 "@types/uglify-js@*":
   version "3.0.4"

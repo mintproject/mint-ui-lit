@@ -1,3 +1,5 @@
+import { ModelCatalogPreferences } from "app/reducers";
+
 export const SAMPLE_USER = {
     uid: "234234234234", 
     email: "varunratnakar@gmail.com"
@@ -14,7 +16,8 @@ export const SAMPLE_USER_PREFERENCES = {
         "dotpath": "/usr/bin/dot",
         "onturl": "http://www.wings-workflows.org/ontology",
         "api": "https://api.wings.mint.isi.edu/v1.0.0"
-    }
+    },
+    "modelCatalog": {} as ModelCatalogPreferences
 };
 
 export const SAMPLE_USER_PREFERENCES_LOCAL = {
@@ -28,5 +31,6 @@ export const SAMPLE_USER_PREFERENCES_LOCAL = {
         "dotpath": "/usr/local/bin/dot",
         "onturl": "http://www.wings-workflows.org/ontology",
         "api": "http://localhost:8080/v1.0.0"
-    }
+    },
+    "modelCatalog": {} as ModelCatalogPreferences
 };

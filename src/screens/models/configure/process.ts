@@ -21,6 +21,8 @@ import "weightless/card";
 import "weightless/dialog";
 import "weightless/checkbox";
 import 'components/loading-dots'
+import { Process } from '@mintproject/modelcatalog_client';
+import { Textfield } from 'weightless/textfield';
 
 let identifierId : number = 1;
 
@@ -45,7 +47,7 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
     private _waitingFor : string = '';
 
     @property({type: Object})
-    private _selected : {[key:string]: Process | undefined} = {};
+    private _selected : {[key:string]: boolean | undefined} = {};
 
     @property({type: String})
     private _selectedProcessId: string = '';
@@ -102,7 +104,7 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
 
     _searchPromise = null;
     _onSearchChange () {
-        let searchEl = this.shadowRoot.getElementById('search-input');
+        let searchEl = this.shadowRoot.getElementById('search-input') as Textfield;
         if (this._searchPromise) {
             clearTimeout(this._searchPromise);
         }
@@ -175,7 +177,7 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
     }
 
     _onCreateProcess () {
-        let nameEl = this.shadowRoot.getElementById('new-process-name')
+        let nameEl = this.shadowRoot.getElementById('new-process-name') as Textfield;
         if (nameEl) {
             let name = nameEl.value;
             if (!name) {
@@ -196,7 +198,7 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
     }
 
     _onEditProcess () {
-        let nameEl = this.shadowRoot.getElementById('edit-process-name')
+        let nameEl = this.shadowRoot.getElementById('edit-process-name') as Textfield
         if (nameEl) {
             let name = nameEl.value;
             if (!name) {
