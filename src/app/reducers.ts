@@ -13,7 +13,7 @@ import { RootAction } from './store';
 import { User } from 'firebase';
 import { UPDATE_PAGE, FETCH_USER, FETCH_USER_PREFERENCES, FETCH_MODEL_CATALOG_ACCESS_TOKEN,
          STATUS_MODEL_CATALOG_ACCESS_TOKEN } from './actions';
-
+import { SAMPLE_WINGS_PREFERENCES } from 'offline_data/sample_user';
 
 export interface IdMap<T> {
   [id: string]: T
@@ -58,7 +58,7 @@ export interface ModelCatalogPreferences {
 const INITIAL_STATE: AppState = {
   page: '',
   subpage: '',
-  prefs: {wings: {} as WingsPreferences, modelCatalog: {} as ModelCatalogPreferences}
+  prefs: {wings: SAMPLE_WINGS_PREFERENCES as WingsPreferences, modelCatalog: {} as ModelCatalogPreferences}
 };
 
 const app: Reducer<AppState, RootAction> = (state = INITIAL_STATE, action) => {
