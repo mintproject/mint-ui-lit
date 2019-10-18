@@ -125,11 +125,11 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                                 </td>
                                 <td>
                                     ${(bindings && bindings.length > 0 && !this._editMode) ? 
-                                        bindings.join(",")
+                                        bindings.join(", ")
                                         :
                                         html`
                                         <div class="input_full">
-                                            <input type="text" name="${input.id}" value="${(bindings||[]).join(",")}"></input>
+                                            <input type="text" name="${input.id}" value="${(bindings||[]).join(", ")}"></input>
                                         </div>
                                         `
                                     }
