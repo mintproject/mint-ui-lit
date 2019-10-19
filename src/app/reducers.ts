@@ -13,7 +13,7 @@ import { RootAction } from './store';
 import { User } from 'firebase';
 import { UPDATE_PAGE, FETCH_USER, FETCH_USER_PREFERENCES, FETCH_MODEL_CATALOG_ACCESS_TOKEN,
          STATUS_MODEL_CATALOG_ACCESS_TOKEN } from './actions';
-import { SAMPLE_WINGS_PREFERENCES } from 'offline_data/sample_user';
+import { SAMPLE_MINT_PREFERENCES } from 'offline_data/sample_user';
 
 export interface IdMap<T> {
   [id: string]: T
@@ -32,8 +32,14 @@ export interface AppState {
 }
 
 export interface UserPreferences {
-  wings: WingsPreferences,
+  mint: MintPreferences,
   modelCatalog: ModelCatalogPreferences
+}
+
+export interface MintPreferences {
+  wings: WingsPreferences,
+  ingestion_api: string,
+  visualization_url: string
 }
 
 export interface WingsPreferences {
@@ -45,7 +51,7 @@ export interface WingsPreferences {
   storage: string,
   dotpath: string,
   onturl: string,
-  api: string
+  api: string,
 }
 
 type ModelCatalogStatus = 'LOADING' | 'DONE' | 'ERROR';
@@ -58,7 +64,7 @@ export interface ModelCatalogPreferences {
 const INITIAL_STATE: AppState = {
   page: '',
   subpage: '',
-  prefs: {wings: SAMPLE_WINGS_PREFERENCES as WingsPreferences, modelCatalog: {} as ModelCatalogPreferences}
+  prefs: {mint: SAMPLE_MINT_PREFERENCES as MintPreferences, modelCatalog: {} as ModelCatalogPreferences}
 };
 
 const app: Reducer<AppState, RootAction> = (state = INITIAL_STATE, action) => {

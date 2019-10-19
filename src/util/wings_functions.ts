@@ -167,18 +167,19 @@ export interface WingsTemplateSeed {
 
 
 export const loginToWings = async(config: UserPreferences) : Promise<void> => {
+    let config_wings = config.mint.wings;
     return new Promise<void>((resolve, reject) => {
         getResource({
-            url: config.wings.server + '/login',
+            url: config_wings.server + '/login',
             onLoad: function(e: any) {
               var txt = e.target.responseText;
               if(txt.match(/j_security_check/)) {
                 var data = {
-                  j_username: config.wings.username,
-                  j_password: config.wings.password
+                  j_username: config_wings.username,
+                  j_password: config_wings.password
                 };
                 postFormResource({
-                  url: config.wings.server + '/j_security_check',
+                  url: config_wings.server + '/j_security_check',
                   onLoad: function(e2: any) {
                     var txt2 = e2.target.responseText;
                     if(txt2.match(/j_security_check/)) {
@@ -193,7 +194,7 @@ export const loginToWings = async(config: UserPreferences) : Promise<void> => {
                   onError: function() {
                     //console.log("Cannot login");
                     getResource({
-                      url: config.wings.server + '/login',
+                      url: config_wings.server + '/login',
                       onLoad: function(e2: any) {
                         var match = /USER_ID\s*=\s*"(.+)"\s*;/.exec(e2.target.responseText);
                         if(match) {
@@ -226,9 +227,10 @@ export const loginToWings = async(config: UserPreferences) : Promise<void> => {
 }
 
 export const fetchWingsComponent = async(cname: string, config: UserPreferences) : Promise<WingsComponent> => {
+    let config_wings = config.mint.wings;
     return new Promise<WingsComponent>((resolve, reject) => {
-        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
-        var exurl = config.wings.export_url + "/export/users/" + config.wings.username + "/" + config.wings.domain;
+        var purl = config_wings.server + "/users/" + config_wings.username + "/" + config_wings.domain;
+        var exurl = config_wings.export_url + "/export/users/" + config_wings.username + "/" + config_wings.domain;
         var cid = exurl + "/components/library.owl#" + cname;
 
         getResource({
@@ -245,9 +247,10 @@ export const fetchWingsComponent = async(cname: string, config: UserPreferences)
 }
 
 export const logoutFromWings = async(config: UserPreferences) : Promise<void> => {
+    let config_wings = config.mint.wings;
     return new Promise<void>((resolve, reject) => {
         getResource({
-        url: config.wings.server + '/jsp/login/logout.jsp',
+        url: config_wings.server + '/jsp/login/logout.jsp',
         onLoad: function(e: any) {
             resolve();
             //console.log("Logged out");
@@ -261,8 +264,9 @@ export const logoutFromWings = async(config: UserPreferences) : Promise<void> =>
 }
 
 export const fetchWingsTemplatesList = async(config: UserPreferences) : Promise<string[]> => {
+    let config_wings = config.mint.wings;
     return new Promise<string[]>((resolve, reject) => {
-        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
+        var purl = config_wings.server + "/users/" + config_wings.username + "/" + config_wings.domain;
         getResource({
             url: purl + "/workflows/getTemplatesListJSON",
             onLoad: function(e: any) {
@@ -277,9 +281,10 @@ export const fetchWingsTemplatesList = async(config: UserPreferences) : Promise<
 }
 
 export const fetchWingsTemplate = async(tid: string, config: UserPreferences) : Promise<WingsTemplatePackage> => {
+    let config_wings = config.mint.wings;
     return new Promise<WingsTemplatePackage>((resolve, reject) => {
-        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
-        //var exurl = config.wings.export_url + "/export/users/" + config.wings.username + "/" + config.wings.domain;
+        var purl = config_wings.server + "/users/" + config_wings.username + "/" + config_wings.domain;
+        //var exurl = config_wings.export_url + "/export/users/" + config_wings.username + "/" + config_wings.domain;
         //var tid = exurl + "/workflows/" + tname + ".owl#" + tname;
 
         getResource({
@@ -299,9 +304,10 @@ export const saveWingsTemplate = async(tpl: WingsTemplatePackage, config: UserPr
     //TODO: Get a MD5 Hash for template to check if it is already saved.
     // - To avoid cluttering up template library
 
+    let config_wings = config.mint.wings;
     // Get url prefix for operations
     return new Promise<void>((resolve, reject) => {
-        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
+        var purl = config_wings.server + "/users/" + config_wings.username + "/" + config_wings.domain;
         var data = {
             template_id: tpl.template.id,
             constraints_json: JSON.stringify(tpl.constraints),
@@ -322,10 +328,11 @@ export const saveWingsTemplate = async(tpl: WingsTemplatePackage, config: UserPr
 
 export const layoutWingsTemplate = async(tpl: WingsTemplate, config: UserPreferences) 
         : Promise<WingsTemplatePackage> => {
-
+    
+    let config_wings = config.mint.wings;
     return new Promise<WingsTemplatePackage>((resolve, reject) => {
         // Get url prefix for operations
-        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
+        var purl = config_wings.server + "/users/" + config_wings.username + "/" + config_wings.domain;
         postJSONResource({
             url: purl + "/workflows/layoutTemplate",
             onLoad: function(e: any) {
@@ -341,10 +348,11 @@ export const layoutWingsTemplate = async(tpl: WingsTemplate, config: UserPrefere
 
 export const elaborateWingsTemplate = async(tpl: WingsTemplatePackage, config: UserPreferences) 
         : Promise<WingsTemplate> => {
-
+    
+    let config_wings = config.mint.wings;
     return new Promise<WingsTemplate>((resolve, reject) => {
         // Get url prefix for operations
-        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
+        var purl = config_wings.server + "/users/" + config_wings.username + "/" + config_wings.domain;
         var data = {
             template_id: tpl.template.id,
             constraints_json: JSON.stringify(tpl.constraints),
@@ -380,9 +388,10 @@ export const getWingsExpandedTemplates = async(
     config: UserPreferences) 
         : Promise<WingsWorkflowExpansions> => {
 
+    let config_wings = config.mint.wings;
     return new Promise<WingsWorkflowExpansions>((resolve, reject) => {
         // Get url prefix for operations
-        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
+        var purl = config_wings.server + "/users/" + config_wings.username + "/" + config_wings.domain;
         var data = {
             templateId: tpl.template.id,
             parameterBindings: parameterBindings,
@@ -413,9 +422,10 @@ export const executeWingsExpandedWorkflow = async(xtpl: WingsTemplatePackage,
     seed: WingsTemplatePackage, config: UserPreferences) 
         : Promise<string> => {
 
+    let config_wings = config.mint.wings;
     return new Promise<string>((resolve, reject) => {
         // Get url prefix for operations
-        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
+        var purl = config_wings.server + "/users/" + config_wings.username + "/" + config_wings.domain;
         var data = {
             template_id: seed.template.id,
             json: JSON.stringify(xtpl.template),
@@ -445,9 +455,10 @@ export const expandAndRunWingsWorkflow = async(
     config: UserPreferences) 
         : Promise<string> => {
 
+    let config_wings = config.mint.wings;
     return new Promise<string>((resolve, reject) => {
         // Get url prefix for operations
-        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
+        var purl = config_wings.server + "/users/" + config_wings.username + "/" + config_wings.domain;
         var data = {
             templateId: tpl.template.id,
             parameterBindings: parameterBindings,
@@ -511,8 +522,10 @@ export const fetchWingsRunsStatuses = (template_name: string, start_time: number
 
 const _fetchWingsRunsStatuses = (template_name: string, start_time: number, start: number, limit: number, config: UserPreferences)
         : Promise<Map<string, any>> => {
+    
+    let config_wings = config.mint.wings;
     return new Promise<Map<string, any>>((resolve, reject) => {
-        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
+        var purl = config_wings.server + "/users/" + config_wings.username + "/" + config_wings.domain;
         getResource({
             url: purl + "/executions/getRunListSimple?pattern="+template_name+"&start="+start+"&limit="+limit+"&sort=startTime&dir=ASC&started_after="+start_time,
             onLoad: function(e: any) {
@@ -536,8 +549,10 @@ const _fetchWingsRunsStatuses = (template_name: string, start_time: number, star
 
 export const fetchWingsRunStatus = (ensemble: ExecutableEnsemble, config: UserPreferences)
         : Promise<ExecutableEnsemble> => {
+
+    let config_wings = config.mint.wings;
     return new Promise<ExecutableEnsemble>((resolve, reject) => {
-        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
+        var purl = config_wings.server + "/users/" + config_wings.username + "/" + config_wings.domain;
         if(!ensemble.runid) {
             reject();
             return;
@@ -591,8 +606,10 @@ export const fetchWingsRunStatus = (ensemble: ExecutableEnsemble, config: UserPr
 
 export const fetchWingsRunResults = (ensemble: ExecutableEnsemble, config: UserPreferences)
         : Promise<any> => {
+
+    let config_wings = config.mint.wings;
     return new Promise<any>((resolve, reject) => {
-        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
+        var purl = config_wings.server + "/users/" + config_wings.username + "/" + config_wings.domain;
         if(!ensemble.runid) {
             reject();
             return;
@@ -629,19 +646,20 @@ export const fetchWingsRunResults = (ensemble: ExecutableEnsemble, config: UserP
 }
 
 export const createSingleComponentTemplate = (comp: WingsComponent, config: UserPreferences) : WingsTemplate => {
+    let config_wings = config.mint.wings;
     var cname = comp.id.replace(/^.+#/, '');
-    var exurl = config.wings.export_url + "/export/users/" + config.wings.username + "/" + config.wings.domain;
+    var exurl = config_wings.export_url + "/export/users/" + config_wings.username + "/" + config_wings.domain;
     var tname = "workflow_" + cname;
     var tns = exurl + "/workflows/" + tname + ".owl#";
     var tid = tns + tname;
 
-    var storage = config.wings.storage;
-    var dotpath = config.wings.dotpath;
-    var ontpfx = config.wings.onturl;
+    var storage = config_wings.storage;
+    var dotpath = config_wings.dotpath;
+    var ontpfx = config_wings.onturl;
 
     var clibns = exurl + "/components/library.owl#";
-    var usfx = "/users/" + config.wings.username + "/" + config.wings.domain;
-    var purl = config.wings.server + usfx;
+    var usfx = "/users/" + config_wings.username + "/" + config_wings.domain;
+    var purl = config_wings.server + usfx;
     var pdir = storage + usfx;
 
     let tpl : WingsTemplate = {
@@ -665,18 +683,18 @@ export const createSingleComponentTemplate = (comp: WingsComponent, config: User
           "lib.domain.execution.url": exurl + "/executions/library.owl",
           "lib.domain.code.storage": pdir + "/code/library",
           "domain.workflows.dir.url": exurl + "/workflows",
-          "user.id": config.wings.username,
+          "user.id": config_wings.username,
           "tdb.repository.dir": storage + "/TDB",
-          "viewer.id": config.wings.username,
+          "viewer.id": config_wings.username,
           "domain.executions.dir.url": exurl + "/executions",
           "lib.domain.data.url": exurl + "/data/library.owl",
           "ont.domain.data.url": exurl + "/data/ontology.owl",
           "lib.abstract.url": exurl + "/components/abstract.owl",
-          "lib.provenance.url": config.wings.export_url + "/export/common/provenance/library.owl",
+          "lib.provenance.url": config_wings.export_url + "/export/common/provenance/library.owl",
           "ont.data.url": ontpfx + "/data.owl",
           "lib.domain.data.storage": pdir + "/data",
           "lib.domain.workflow.url": exurl + "/workflows/library.owl",
-          "lib.resource.url": config.wings.export_url + "/export/common/resource/library.owl",
+          "lib.resource.url": config_wings.export_url + "/export/common/resource/library.owl",
           "ont.component.url": ontpfx + "/component.owl",
           "ont.workflow.url": ontpfx + "/workflow.owl",
           "ont.dir.url": ontpfx,
@@ -784,20 +802,22 @@ export const createSingleComponentTemplate = (comp: WingsComponent, config: User
 /* WCM API based Wings calls */
 export const registerWingsComponent = async(name: string, uri: string, config: UserPreferences) 
         : Promise<string> => {
+
+    let config_wings = config.mint.wings;
     let data = {
         id: name,
         model_catalog_uri: uri,
         wings_instance: {
-            server: config.wings.server,
-            export_url: config.wings.export_url,
-            domain: config.wings.domain,
-            username: config.wings.username,
-            password: config.wings.password
+            server: config_wings.server,
+            export_url: config_wings.export_url,
+            domain: config_wings.domain,
+            username: config_wings.username,
+            password: config_wings.password
         }
     }
     return new Promise<string>((resolve, reject) => {
         postJSONResource({
-            url: config.wings.api + "/components",
+            url: config_wings.api + "/components",
             onLoad: function(e: any) {
                 let compjson = JSON.parse(e.target.responseText);
                 resolve(compjson.id);
@@ -811,22 +831,24 @@ export const registerWingsComponent = async(name: string, uri: string, config: U
 
 export const registerWingsDataset = async(dcid: string, name: string, type: string, uri: string, config: UserPreferences) 
         : Promise<void> => {
+
+    let config_wings = config.mint.wings;
     let data = {
         data_catalog_id: dcid,
         id: name,
         type: type,
         url: uri,
         wings_instance: {
-            server: config.wings.server,
-            export_url: config.wings.export_url,
-            domain: config.wings.domain,
-            username: config.wings.username,
-            password: config.wings.password
+            server: config_wings.server,
+            export_url: config_wings.export_url,
+            domain: config_wings.domain,
+            username: config_wings.username,
+            password: config_wings.password
         }
     }
     return new Promise<void>((resolve, reject) => {
         postJSONResource({
-            url: config.wings.api + "/datasets",
+            url: config_wings.api + "/datasets",
             onLoad: function(e: any) {
                 resolve();
             },

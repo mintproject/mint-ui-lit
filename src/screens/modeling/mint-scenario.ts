@@ -186,14 +186,16 @@ export class MintScenario extends connect(store)(PageViewElement) {
                         <div class="clt">
                             <div class="cltrow scenariorow">
                                 <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                                    <wl-title level="4">Modeling threads</wl-title>
+                                    <wl-title level="4">
+                                        Modeling threads
+                                        &nbsp;&nbsp;
+                                        <wl-icon @click="${() => this._hideObjectives = !this._hideObjectives}"
+                                            class="actionIcon bigActionIcon" style="vertical-align:bottom">
+                                            ${!this._hideObjectives ? "fullscreen" : "fullscreen_exit"}</wl-icon>
+                                    </wl-title>
                                 </div>
                                 <wl-icon @click="${this._editPathwayDialog}" 
                                     class="actionIcon addIcon">note_add</wl-icon>
-                                &nbsp;&nbsp;
-                                <wl-icon @click="${() => this._hideObjectives = !this._hideObjectives}"
-                                    class="actionIcon bigActionIcon" style="float:right">
-                                    ${!this._hideObjectives ? "fullscreen" : "fullscreen_exit"}</wl-icon>
                             </div>
                             <ul>
                             ${Object.values(((this._selectedSubgoal || {}) as SubGoal).pathways || {}).map((pathway: PathwayInfo) => {

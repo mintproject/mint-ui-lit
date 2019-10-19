@@ -54,15 +54,15 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
             this.pathway.visualizations = [
                 {
                     type: 'web',
-                    url: 'https://dev.viz.mint.isi.edu/economic'
+                    url: 'https://dev.viz.mint.isi.edu/economic?thread_id=' + this.pathway.id
                 }
             ]
         }
-        else if(responseV == "Grain Yield") {
+        else if(responseV == "Potential Crop Production") {
             this.pathway.visualizations = [
                 {
                     type: 'web',
-                    url: 'https://dev.viz.mint.isi.edu/cycles'
+                    url: 'https://dev.viz.mint.isi.edu/cycles?thread_id=' + this.pathway.id
                 }
             ]
         }

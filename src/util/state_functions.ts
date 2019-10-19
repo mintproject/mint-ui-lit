@@ -10,6 +10,7 @@ import {Md5} from 'ts-md5/dist/md5'
 import { db } from "config/firebase";
 import { Model } from "screens/models/reducers";
 import { isObject } from "util";
+import { postJSONResource } from "./mint-requests";
 
 export const removeDatasetFromPathway = (pathway: Pathway,
         datasetid: string, modelid: string, inputid: string) => {
@@ -146,7 +147,7 @@ const _createModelTemplate = (
 
     return new Promise((resolve, reject) => {
         loginToWings(prefs).then(() => {
-            let config = prefs.wings;
+            let config = prefs.mint.wings;
             let expfx = config.export_url + "/export/users/" + config.username + "/" + config.domain;
 
             
@@ -183,7 +184,7 @@ const _runModelTemplates = (
         tpl_package: WingsTemplatePackage,
         prefs: UserPreferences) : Promise<string[]> => {
             
-    let config = prefs.wings;
+    let config = prefs.mint.wings;
     let expfx = config.export_url + "/export/users/" + config.username + "/" + config.domain;
     return Promise.all(
         seeds.map((seed) => {
@@ -414,6 +415,20 @@ export const getPathwayRunsStatus = (pathway:Pathway) => {
 }
 
 export const getPathwayResultsStatus = (pathway:Pathway) => {
+    if(getPathwayRunsStatus(pathway) != TASK_DONE)
+        return TASK_NOT_STARTED;
+    
+    let sum = pathway.executable_ensemble_summary;
+    if (sum && Object.keys(sum).length > 0) {
+        let ok = true;
+        Object.keys(sum).map((modelid) => {
+            let summary = sum[modelid];
+            if(!summary.submitted_for_ingestion)
+                ok = false;
+        });
+        if(ok)
+            return TASK_DONE;
+    }
     return TASK_NOT_STARTED;
 }
 
@@ -557,5 +572,24 @@ export const getEnsembleHash = (ensemble: ExecutableEnsemble) : string => {
         str += varid + "=" + bindingid + "&";
     })
     return Md5.hashStr(str).toString();
+}
+
+export const sendDataForIngestion = (scenarioid: string, subgoalid: string, threadid: string, prefs: UserPreferences) => {
+    let data = {
+        scenario_id: scenarioid,
+        subgoal_id: subgoalid,
+        thread_id: threadid
+    };
+    return new Promise<void>((resolve, reject) => {
+        postJSONResource({
+            url: prefs.mint.ingestion_api + "/modelthreads",
+            onLoad: function(e: any) {
+                resolve();
+            },
+            onError: function() {
+                reject("Cannot ingest thread");
+            }
+        }, data, false);
+    });    
 }
 /* End of Helper Functions */

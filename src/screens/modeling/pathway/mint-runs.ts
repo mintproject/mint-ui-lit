@@ -449,7 +449,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
     } 
 
     _getDatasetURL (resname: string) {
-        let config = this.prefs;
+        let config = this.prefs.mint;
         let suffix = "/users/" + config.wings.username + "/" + config.wings.domain;
         var purl = config.wings.server + suffix
         var expurl = config.wings.export_url + "/export" + suffix;

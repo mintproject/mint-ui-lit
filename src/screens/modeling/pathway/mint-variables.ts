@@ -39,8 +39,8 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
         let responseids = (this.pathway ? this.pathway.response_variables: []) || [];
         return html `
         <p>
-            This step is for selecting driving and response variables for your analysis. The response variable indicates the kind of results that you are interested in. 
-            An optional driving variable indicates the kind of inputs that you want to use to drive the results. 
+            This step is for selecting indicators and adjustable variables for your analysis. The indicator indicates the kind of results that you are interested in. 
+            An adjustable driving variable indicates the kind of inputs that you want to use to drive the results. 
         </p>
         ${(responseids.length > 0 && !this._editMode) ? 
             // Response variable chosen already
@@ -63,7 +63,7 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
                 <ul>
                     <li>
                         <wl-title level="4">
-                            Response Variables
+                            Indicators
                         </wl-title>
                         <ul>
                             ${responseids.length > 0 ?
@@ -87,7 +87,7 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
                     </li>
                     <li>
                         <wl-title level="4">
-                            Driving Variables
+                            Adjustable Variables
                         </wl-title>
                         <ul>
                             ${driverids.length > 0 ? 

@@ -4,7 +4,7 @@ import { store, RootState } from "../../../app/store";
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { BASE_HREF } from "../../../app/actions";
-import { getPathwayRunsStatus, TASK_DONE, matchVariables } from "../../../util/state_functions";
+import { getPathwayRunsStatus, TASK_DONE, matchVariables, sendDataForIngestion, getUISelectedSubgoal } from "../../../util/state_functions";
 import { ExecutableEnsemble, StepUpdateInformation, ModelEnsembles } from "../reducers";
 import { updatePathway, getAllPathwayEnsembleIds, fetchPathwayEnsembles } from "../actions";
 import { showNotification, hideDialog, showDialog } from "../../../util/ui_functions";
@@ -39,6 +39,9 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     private currentPage = 1;
     @property({type: Number})
     private pageSize = 100;
+
+    @property({type: String})
+    private subgoalid: string;
 
     private pathwayModelEnsembleIds: IdMap<string[]> = {};
     
@@ -369,22 +372,12 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     }
 
     _getDatasetURL (resname: string) {
-        let config = this.prefs;
+        let config = this.prefs.mint;
         let suffix = "/users/" + config.wings.username + "/" + config.wings.domain;
         var purl = config.wings.server + suffix
         var expurl = config.wings.export_url + "/export" + suffix;
         let dsid = expurl + "/data/library.owl#" + resname;
         return purl + "/data/fetch?data_id=" + escape(dsid);
-    }
-
-    stateChanged(state: RootState) {
-        super.setUser(state);
-        super.setRegionId(state);
-        super.setPathway(state);
-
-        if(state.modeling.ensembles) {
-            this._ensembles = state.modeling.ensembles;
-        }
     }
 
     _publishAllResults(modelid) {
@@ -399,35 +392,41 @@ export class MintResults extends connect(store)(MintPathwayPage) {
         let executionBatchSize = 4;
 
         /*
-        For each run
+        -> Ingest thread to visualization database
+        -> Register outputs to the data catalog        
         -> Publish run to provenance catalog
-            - Get output public url
-        -> Register output to the data catalog
-        -> Create aggregated CSV for each model
-        -> model-[uuid].csv
-            -> [ensembleid] [runid] [input1] ... [inputn] [param1] ... [paramn] [out1] ... [outn]
         */
+        sendDataForIngestion(this.scenario.id, this.subgoalid, this.pathway.id, this.prefs).then(() => {
+            this.pathway.executable_ensemble_summary[modelid].submitted_for_ingestion = true;
+            this._progress_number = this._progress_total;
+            /*
+            let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
+            this.pathway.notes = {
+                ...this.pathway.notes!,
+                results: notes
+            };
+            this.pathway.last_update = {
+                ...this.pathway.last_update!,
+                results: {
+                    time: Date.now(),
+                    user: this.user!.email
+                } as StepUpdateInformation
+            };
+            */          
+        })
+    }
 
-        /*
-        // Update notes
-        let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        this.pathway.notes = {
-            ...this.pathway.notes!,
-            results: notes
-        };
-        this.pathway.last_update = {
-            ...this.pathway.last_update!,
-            results: {
-                time: Date.now(),
-                user: this.user!.email
-            } as StepUpdateInformation
-        };
+    stateChanged(state: RootState) {
+        super.setUser(state);
+        super.setRegionId(state);
+        super.setPathway(state);
 
-        // Update pathway itself
-        updatePathway(this.scenario, this.pathway);
-        
-        this._editMode = false;
-        showNotification("saveNotification", this.shadowRoot!);
-        */
+        if(state.ui) {
+            this.subgoalid = state.ui.selected_subgoalid
+        }
+
+        if(state.modeling.ensembles) {
+            this._ensembles = state.modeling.ensembles;
+        }
     }
 }
