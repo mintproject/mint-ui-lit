@@ -133,6 +133,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                let grouped_ensemble = grouped_ensembles[modelid];
                this.totalPages = Math.ceil(summary.total_runs/this.pageSize);
                let finished_runs = summary.successful_runs + summary.failed_runs;
+               let submitted = this.pathway.executable_ensemble_summary[modelid].submitted_for_ingestion;
                let finished = (finished_runs == summary.total_runs);
                let running = summary.submitted_runs - finished_runs;
                let pending = summary.total_runs - summary.submitted_runs;
@@ -153,7 +154,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                     ${pending > 0 ? html `, and ${pending} are waiting to be run` : ""}
                     </p>
 
-                    ${finished ? 
+                    ${finished && !submitted ? 
                         html` <wl-button class="submit"
                         @click="${() => this._publishAllResults(model.id)}">Publish all results</wl-button>`
                         : ""
@@ -328,9 +329,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                 <p>
                     Publishing results for ${this._progress_item ? this._progress_item.name : ""}
                 </p>
-                ${this._progress_number} out of ${this._progress_total}
-                <wl-progress-bar style="width:100%" mode="determinate"
-                    value="${this._progress_number/this._progress_total}"></wl-progress-bar>
+                <wl-progress-bar style="width:100%" mode="indeterminate"></wl-progress-bar>
             </div>
             <div slot="footer">
                 ${this._progress_number == this._progress_total ? 
