@@ -182,12 +182,17 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                     let params: any = {};
                     let parameters:ModelParameter[] = [];
                     values[2].map((value: any) => {
+                        if(params[value.p]) {
+                            // Do not add duplicate parameters
+                            return;
+                        }
                         let param: ModelParameter =  {
                             id: value.p,
                             name: value.paramlabel,
                             type: value.pdatatype,
                             min: value.minVal || "",
                             max: value.maxVal || "",
+                            unit: value.unit || "",
                             default: value.defaultvalue || "",
                             description: value.description || ""
                         };
