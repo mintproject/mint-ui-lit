@@ -62,9 +62,17 @@ export class RegionsHome extends connect(store)(PageViewElement) {
             <nav-title .nav="${nav}"></nav-title>
 
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
-                <a href="${this._regionid}/regions/manual">
-                    <wl-icon>edit</wl-icon>
-                    <div>Manual Outline</div>
+                <a href="${this._regionid}/regions/agriculture">
+                    <div class="svgicon">
+                        ${cropsIcon}
+                    </div>
+                    <div>Agriculture</div>
+                </a>                
+                <a href="${this._regionid}/regions/hydrology">
+                    <div class="svgicon">
+                        ${mountainRiverIcon}
+                    </div>                
+                    <div>Hydrology</div>
                 </a>
                 <a href="${this._regionid}/regions/administrative">
                     <div class="svgicon">
@@ -72,18 +80,10 @@ export class RegionsHome extends connect(store)(PageViewElement) {
                     </div> 
                     <div>Administrative</div>
                 </a>
-                <a href="${this._regionid}/regions/hydrology">
-                    <div class="svgicon">
-                        ${mountainRiverIcon}
-                    </div>                
-                    <div>Hydrology</div>
-                </a>
-                <a href="${this._regionid}/regions/agriculture">
-                    <div class="svgicon">
-                        ${cropsIcon}
-                    </div>
-                    <div>Agriculture</div>
-                </a>
+                <a href="${this._regionid}/regions/manual">
+                    <wl-icon>edit</wl-icon>
+                    <div>Manual Outline</div>
+                </a>                                
             </div>
 
             <regions-manual class="page" ?active="${this._subpage == 'manual'}"></regions-manual>
