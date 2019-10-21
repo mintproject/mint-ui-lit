@@ -70,6 +70,7 @@ export interface Notes {
     models: string,
     datasets: string,
     parameters: string,
+    visualization: string,
     results: string
 }
 
