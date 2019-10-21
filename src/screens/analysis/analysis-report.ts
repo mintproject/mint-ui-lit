@@ -93,9 +93,10 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
       }
 
       iframe {
-        width:100%;
+        width: calc(100vw - 100px);
+        margin-left: -17.5%;
         border: 0px solid black;
-        height: 200vh;
+        height: 100vh;
       }
     `];
   }
@@ -119,11 +120,14 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
       let scenario = this._scenarios[this._selectedScenarioId];
       let task = this._tasks[this._selectedTaskId];
       let pathway = this._pathways[this._selectedPathwayId] as Pathway;
+      if (!pathway) {
+        return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
+      }
 
-      let responseV = pathway.response_variables.length > 0?
-      getVariableLongName(pathway.response_variables[0]) : '';
-      let drivingV = pathway.driving_variables.length > 0?
-      getVariableLongName(pathway.driving_variables[0]) : '';
+      let responseV = pathway.response_variables && pathway.response_variables.length > 0 ?
+          getVariableLongName(pathway.response_variables[0]) : '';
+      let drivingV = pathway.driving_variables && pathway.driving_variables.length > 0?
+          getVariableLongName(pathway.driving_variables[0]) : '';
 
       let vizurl = '';
       if(responseV == "Crop Production") {
@@ -226,6 +230,11 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
 
           <wl-title level="3">Thread visualizations:</wl-title>
           <div class="inner-content">
+            <div class="notes">
+              Notes:
+              <span>${pathway.notes && pathway.notes.visualization ? pathway.notes.visualization : 'No notes'}</span>
+            </div>
+
           ${!vizurl || !pathway.executable_ensemble_summary || Object.keys(pathway.executable_ensemble_summary).length == 0 ? 
             'No visualizations for this run' : 
             html `<iframe src="${vizurl}"></iframe>`
