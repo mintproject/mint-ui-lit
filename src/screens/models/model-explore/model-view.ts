@@ -226,6 +226,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                     --icon-size: 24px;
                 }
 
+                .tooltip-text {
+                    display: inline;
+                    border-bottom: 1px dotted;
+                }
+
                 #desc-ext {
                     padding: 10px 5px 0px 5px;
                 }
@@ -957,7 +962,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <wl-icon>help</wl-icon>
                             </span>
                         </th>` : html``}
-                        <th>Format</th>
+                        <th style="text-align: right;">Format</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -977,7 +982,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                             <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
                         ` : html`<span style="color:#999999;">-</span>`}</td>
                         ` : html``}
-                        <td class="font-numbers">${io.format}</td>
+                        <td style="text-align: right;" class="font-numbers">${io.format}</td>
                     </tr>`)}
                 </tbody>`
                 : ''}
@@ -991,7 +996,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <th></th>
                         <th>Name</th>
                         <th colspan="${this._calibration? 2 : 1}">Description</th>
-                        <th>Format</th>
+                        <th style="text-align: right;">Format</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1006,7 +1011,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                             ${io.label}
                         </span></td>
                         <td colspan="${this._calibration? 2 : 1}">${io.desc}</td>
-                        <td class="font-numbers">${io.format}</td>
+                        <td style="text-align: right;" class="font-numbers">${io.format}</td>
                     </tr>`)}
                 </tbody>`
                 :''}
@@ -1032,12 +1037,14 @@ export class ModelView extends connect(store)(PageViewElement) {
             return html`
                 <h3> Parameters: </h3>
                 <table class="pure-table pure-table-striped" style="overflow: visible;" id="parameters-table">
-                    <col span="1" style="width: 320px;">
+                    <col span="1" style="width: 180;">
+                    <col span="1">
                     <col span="1">
                     <col span="1" style="width: 130px;">
                     <thead>
                         <th>Parameter</th>
-                        <th>Intervention</th>
+                        <th>Description</th>
+                        <th style="text-align: right;">Relevant for intervention</th>
                         <th style="text-align: right;">
                             ${this._calibration? html`
                             Value on setup 
@@ -1051,15 +1058,18 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${this._parameters.sort((a,b) => (a.position < b.position) ? -1 : (a.position > b.position? 1 : 0)).map( (p:any) => html`
                         <tr>
                             <td>
-                                ${p.description ? html`<b style="font-size: 14px;">${capitalizeFirstLetter(p.description)}</b><br/>`: ''}
                                 <code>${p.paramlabel}</code><br/>
                                 ${p.minVal && p.maxVal ? html`
                                 The range is from ${p.minVal} to ${p.maxVal}
                                 ` : ''}
                             </td>
                             <td>
-                                <b style="font-size: 14px;">${ p.intervention }</b><br/>
-                                ${p.interventionDesc}
+                                ${p.description ? html`<b style="font-size: 14px;">${capitalizeFirstLetter(p.description)}</b><br/>`: ''}
+                            </td>
+                            <td>
+                                ${ p.intervention ? html`<span class="tooltip tooltip-text" tip="${p.interventionDesc}">
+                                    ${p.intervention}
+                                </span>` : ''}
                             </td>
                             <td class="font-numbers" style="text-align: right;">
                             ${this._calibration ? (p.fixedValue ? p.fixedValue : p.defaultvalue + ' (default)')
