@@ -962,7 +962,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <wl-icon>help</wl-icon>
                             </span>
                         </th>` : html``}
-                        <th>Format</th>
+                        <th style="text-align: right;">Format</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -982,7 +982,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                             <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
                         ` : html`<span style="color:#999999;">-</span>`}</td>
                         ` : html``}
-                        <td class="font-numbers">${io.format}</td>
+                        <td style="text-align: right;" class="font-numbers">${io.format}</td>
                     </tr>`)}
                 </tbody>`
                 : ''}
@@ -996,7 +996,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <th></th>
                         <th>Name</th>
                         <th colspan="${this._calibration? 2 : 1}">Description</th>
-                        <th>Format</th>
+                        <th style="text-align: right;">Format</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1011,7 +1011,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                             ${io.label}
                         </span></td>
                         <td colspan="${this._calibration? 2 : 1}">${io.desc}</td>
-                        <td class="font-numbers">${io.format}</td>
+                        <td style="text-align: right;" class="font-numbers">${io.format}</td>
                     </tr>`)}
                 </tbody>`
                 :''}
@@ -1044,7 +1044,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <thead>
                         <th>Parameter</th>
                         <th>Description</th>
-                        <th>Intervention</th>
+                        <th style="text-align: right;">Relevant for intervention</th>
                         <th style="text-align: right;">
                             ${this._calibration? html`
                             Value on setup 
