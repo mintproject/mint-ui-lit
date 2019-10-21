@@ -428,7 +428,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         <wl-title level="4" style="margin-top:1em;">Parameters:</wl-title>
         <table class="pure-table pure-table-striped" style="width: 100%">
             <colgroup>
-                <col span="1" style="width: 55px;">
                 <col span="1">
                 <col span="1">
                 <col span="1">
@@ -436,7 +435,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 ${this._editing? html`<col span="1">` : ''}
             </colgroup>
             <thead>
-                <th class="ta-right"><b>#</b></th>
                 <th><b>Label</b></th>
                 <th><b>Type</b></th>
                 <th class="ta-right">
@@ -452,7 +450,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             ${this._setup.hasParameter ? paramOrder.map((uri:string) => html`
             <tr>
                 ${this._parameters[uri] ? html`
-                <td class="ta-right">${this._parameters[uri].position}</td>
                 <td>
                     <code>${this._parameters[uri].label}</code><br/>
                     <b>${this._parameters[uri].description}</b>
@@ -482,13 +479,11 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         <wl-title level="4" style="margin-top:1em;">Input files:</wl-title>
         <table class="pure-table pure-table-striped" style="width: 100%">
             <colgroup>
-                <col span="1" style="width: 55px;">
                 <col span="1">
                 <col span="1">
                 <col span="1">
             </colgroup>
             <thead>
-                <th class="ta-right"><b>#</b></th>
                 <th><b>Name</b></th>
                 <th><b>File URL in this setup</b></th>
                 <th class="ta-right"><b>Format</b></th>
@@ -496,7 +491,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             <tbody>
             ${this._setup.hasInput ? inputOrder.map((uri:string, i:number) => html `
             <tr>${this._inputs[uri] ? html`
-                <td class="ta-right">${this._inputs[uri].position}</td>
                 <td>
                     <code>${this._inputs[uri].label}</code><br/>
                     <b>${this._inputs[uri].description}</b>
