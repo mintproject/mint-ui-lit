@@ -65,7 +65,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 right: 0px;
                 padding: 10px;
                 padding-top: 5px;
-                height: calc(100% - 40px);
+                height: calc(100% - 73px);
                 background: #FFFFFF;
             }
 
@@ -197,6 +197,11 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                 <wl-icon @click="${this._editPathwayDialog}" 
                                     class="actionIcon addIcon">note_add</wl-icon>
                             </div>
+                            <div style="padding-left:5px;padding-bottom:8px;font-size:10px;color:#999">
+                                Each task on the left can be explored with several modeling threads, each pursuing a different analysis. 
+                                For example, the same task can be explored with a thread that uses model M1 and another that uses model M2, 
+                                and additional threads that use different parameter settings or assumptions for M1 and for M2
+                            </div>                            
                             <ul>
                             ${Object.values(((this._selectedSubgoal || {}) as SubGoal).pathways || {}).map((pathway: PathwayInfo) => {
                                 let pname = pathway.name ? pathway.name : this._selectedSubgoal.name;

@@ -63,7 +63,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         ${this.regionType ? 
             html`
             <p>
-                The following map shows the current ${this.regionType} areas of ${this._parentRegionName || this._regionid}
+                The following map shows the current areas of interest for ${this.regionType} modeling in ${this._parentRegionName || this._regionid}
                 <wl-icon @click="${this._showAddRegionsDialog}" style="float:right;"
                     class="actionIcon bigActionIcon">note_add</wl-icon>
             </p>

@@ -39,8 +39,9 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
         let responseids = (this.pathway ? this.pathway.response_variables: []) || [];
         return html `
         <p>
-            This step is for selecting indicators and adjustable variables for your analysis. The indicator indicates the kind of results that you are interested in. 
-            An adjustable driving variable indicates the kind of inputs that you want to use to drive the results. 
+            This step is for selecting indicators and adjustable variables for your analysis. 
+            An indicator is an index or a variable of interest that results from a model.
+            An adjustable variable indicates the kind of inputs that you want to use to drive the results. 
         </p>
         ${(responseids.length > 0 && !this._editMode) ? 
             // Response variable chosen already

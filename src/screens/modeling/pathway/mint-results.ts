@@ -122,7 +122,6 @@ export class MintResults extends connect(store)(MintPathwayPage) {
        return html`
        <p>
             This step is for browsing the results of the models that you ran earlier. 
-            You can select the results that you would like to keep, and they will be recorded.
        </p>
        <wl-title level="3">Results</wl-title>
        <div class="clt">
@@ -145,6 +144,11 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                return html`
                <li>
                     <wl-title level="4"><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></wl-title>
+                    <p>
+                        Below are the results of all the model executions that run successfully and were completed. 
+                        The results are shown on the left. The file can be downloaded/viewed by clicking on the link. 
+                        Click on the RELOAD button if you are waiting for more runs to complete
+                    </p>
                     <p>
                     The model setup created ${summary.total_runs} configurations. 
                     ${!finished ? "So far, " : ""} ${summary.submitted_runs} model runs

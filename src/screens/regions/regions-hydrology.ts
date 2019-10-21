@@ -159,7 +159,7 @@ export class RegionsHydrology extends connect(store)(PageViewElement)  {
             ${items.length > 0 ? html`
             <wl-divider style="margin: 20px 0px;"></wl-divider>
             <p>
-                Below are some example hydrological regions identified for ${this._region ? this._region.name : 'this country'}:
+                The following are areas of interest for hydrology modeling in this region
             </p>
             <div style="width: 90%; margin: 0px auto;">
                 <image-gallery style="--width: 300px; --height: 160px;" .items="${items}"></image-gallery>

@@ -64,8 +64,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         if(!this.pathway.executable_ensemble_summary) {
             return html `
             <p>
-                This step is for monitoring model runs. You can view results of these runs in the next step.  You can
-                also see if runs failed, and look into the reasons so the model can be used properly.
+                This step is for monitoring model runs.
             </p>
             Please setup and run some models first
             `
@@ -105,7 +104,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
 
         return html`
         <p>
-            This step is for monitoring model runs. You can view results of these runs in the next step
+            This step is for monitoring model runs.
         </p>
         <wl-title level="3">Runs</wl-title>
         <div class="clt">
@@ -127,6 +126,12 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 return html`
                 <li>
                     <wl-title level="4"><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></wl-title>
+                    <p>
+                        Below is the status of all the runs for the model with the different setups that you selected earlier. 
+                        A green status bar means that the run is completed. A partially green and grey/partially grey status bar indicates 
+                        that the run is still ongoing. A red bar indicates that the run failed. You can view results of the 
+                        completed runs by going to the Results tab even when other runs are still not completed.
+                    </p>                    
                     <p>
                     The model setup created ${summary.total_runs} configurations. 
                     ${!finished ? "So far, " : ""} ${summary.submitted_runs} model runs
