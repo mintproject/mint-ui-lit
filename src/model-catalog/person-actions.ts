@@ -3,8 +3,8 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
 import { Configuration, Person, PersonApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, 
-         DEFAULT_GRAPH, START_LOADING, END_LOADING, START_POST, END_POST, MCAStartPost, MCAEndPost, MCAStartLoading, MCAEndLoading } from './actions';
+import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, DEFAULT_GRAPH,
+         START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
 
 function debug (...args: any[]) { console.log('OBA:', ...args); }
 
@@ -111,5 +111,37 @@ export const personPut: ActionCreator<ModelCatalogPersonThunkResult> = ( person:
     }
 }
 
-export type ModelCatalogPersonAction =  MCAStartPost | MCAEndPost | MCAStartLoading | MCAEndLoading | MCAPersonsGet | MCAPersonGet | MCAPersonPost | MCAPersonPut;
+export const PERSON_DELETE = "PERSON_DELETE";
+interface MCAPersonDelete extends Action<'PERSON_DELETE'> { uri: string };
+export const personDelete: ActionCreator<ModelCatalogPersonThunkResult> = ( uri: string ) => (dispatch) => {
+    debug('deleting person', uri);
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+
+    if (status === 'DONE') {
+        let api : PersonApi = new PersonApi(cfg);
+        let id : string = uri.split('/').pop();
+        api.personsIdDelete({id: id, user: DEFAULT_GRAPH}) // This should be my username on prod.
+            .then((resp) => {
+                dispatch({
+                    type: PERSON_DELETE,
+                    uri: uri
+                });
+                /*console.log('Response for DELETE person:', resp);
+                let data = {};
+                data[person.id] = resp;
+                dispatch({
+                    type: PERSON_GET,
+                    payload: data
+                });
+                dispatch({type: END_LOADING, id: person.id});*/
+            })
+            .catch((err) => {console.log('Error on DELETE person', err)})
+    } else if (status === 'LOADING') {
+        repeatAction(personDelete, uri);
+    }
+}
+
+export type ModelCatalogPersonAction =  MCACommon | MCAPersonsGet | MCAPersonGet | MCAPersonPost | MCAPersonPut |
+                                        MCAPersonDelete;
 type ModelCatalogPersonThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogPersonAction>;

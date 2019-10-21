@@ -4,7 +4,7 @@ import { RootState, store } from 'app/store';
 
 import { Configuration, Process, ProcessApi } from '@mintproject/modelcatalog_client';
 import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, 
-         DEFAULT_GRAPH, START_LOADING, END_LOADING, START_POST, END_POST, MCAStartPost, MCAEndPost, MCAStartLoading, MCAEndLoading } from './actions';
+         DEFAULT_GRAPH, START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
 
 function debug (...args: any[]) { console.log('OBA:', ...args); }
 
@@ -112,5 +112,30 @@ export const processPut: ActionCreator<ModelCatalogProcessThunkResult> = ( proce
     }
 }
 
-export type ModelCatalogProcessAction =  MCAStartPost | MCAEndPost | MCAStartLoading | MCAEndLoading | MCAProcessesGet | MCAProcessGet | MCAProcessPost | MCAProcessPut;
+export const PROCESS_DELETE = "PROCESS_DELETE";
+interface MCAProcessDelete extends Action<'PROCESS_DELETE'> {uri: string};
+export const processDelete: ActionCreator<ModelCatalogProcessThunkResult> = ( uri: string) => (dispatch) => {
+    debug('updating process', uri);
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+
+    if (status === 'DONE') {
+        let api : ProcessApi = new ProcessApi(cfg);
+        let id : string = uri.split('/').pop();
+        api.processsIdDelete({id: id, user: DEFAULT_GRAPH}) // This should be my username on prod.
+            .then((resp) => {
+                console.log('Response for DELETE process:', resp);
+                dispatch({
+                    type: PROCESS_DELETE,
+                    uri: uri
+                });
+            })
+            .catch((err) => {console.log('Error on DELETE process', err)})
+    } else if (status === 'LOADING') {
+        repeatAction(processDelete, uri);
+    }
+}
+
+export type ModelCatalogProcessAction =  MCACommon | MCAProcessesGet | MCAProcessGet | MCAProcessPost | MCAProcessPut |
+                                         MCAProcessDelete;
 type ModelCatalogProcessThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogProcessAction>;

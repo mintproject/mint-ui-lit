@@ -11,7 +11,8 @@ import { goToPage } from 'app/actions';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { parameterGet, parametersGet, parameterPost, parameterPut, ALL_PARAMETERS } from 'model-catalog/actions';
+import { parameterGet, parametersGet, parameterPost, parameterPut, 
+         parameterDelete, ALL_PARAMETERS } from 'model-catalog/actions';
 import { renderExternalLink, renderParameterType } from './util';
 
 import "weightless/progress-spinner";
@@ -49,13 +50,13 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
     private _selected : {[key:string]: boolean | undefined} = {};
 
     @property({type: String})
-    private _selectedParameterId: string = '';
+    private _selectedParameterUri: string = '';
 
     static get styles() {
         return [ExplorerStyles, SharedStyles, css`
         .parameter-container {
             display: grid;
-            grid-template-columns: auto 28px;
+            grid-template-columns: auto 28px 28px;
             border: 2px solid cadetblue;
             border-radius: 4px;
             line-height: 28px;
@@ -68,12 +69,17 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
             margin-right: 10px;
         }
 
+        wl-icon.warning:hover {
+            color: darkred;
+        }
+
         span.bold {
             font-weight: bold;
         }
         
         .parameter-container > wl-button {
             --button-padding: 5px;
+            width: 28px;
         }
 
         .results {
@@ -86,7 +92,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
 
     edit (parameterID) {
         if (this.active) {
-            this._selectedParameterId = parameterID
+            this._selectedParameterUri = parameterID
             showDialog("parameterDialog", this.shadowRoot);
         } else {
             setTimeout(() => {this.edit(parameterID)}, 300);
@@ -124,7 +130,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
     }
 
     protected render() {
-        let selectedParameter = this._parameters[this._selectedParameterId];
+        let selectedParameter = this._parameters && this._selectedParameterUri ? this._parameters[this._selectedParameterUri] : null;
         return html`
         <wl-dialog class="larger" id="parameterDialog" fixed backdrop blockscrolling persistent>
             <h3 slot="header">
@@ -151,7 +157,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
                 : html`
                 <wl-textfield label="Search parameters" id="search-input" @input="${this._onSearchChange}"><wl-icon slot="after">search</wl-icon></wl-textfield>
                 <div class="results" style="margin-top: 5px;">
-                    ${Object.values(this._parameters)
+                    ${Object.values(this._parameters || {})
                         .filter(parameter => (parameter.label||[]).join().toLowerCase().includes(this._filter.toLowerCase()))
                         .map((parameter) => html`
                     <div class="parameter-container">
@@ -160,6 +166,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
                             <span class="${this._selected[parameter.id] ? 'bold' : ''}">${parameter.label ? parameter.label : parameter.id}</span>
                         </label>
                         <wl-button @click="${() => this._edit(parameter.id)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
+                        <wl-button @click="${() => this._delete(parameter.id)}" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
                     </div>
                 `)}
                 ${this._loading ? html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : ''}
@@ -227,7 +234,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
                 return;
             }
 
-            let editedParameter : Parameter = Object.assign({}, this._parameters[this._selectedParameterId])
+            let editedParameter : Parameter = Object.assign({}, this._parameters[this._selectedParameterUri])
             editedParameter.hasFixedValue = [fixedVal as any];
             //console.log(editedParameter)
             this.dispatchEvent(new CustomEvent('parameterEdited', {composed: true, detail: editedParameter }));
@@ -244,9 +251,9 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
         this._filter = '';
         if (this._new) {
             this._new = false;
-        } else if (this._selectedParameterId) {
+        } else if (this._selectedParameterUri) {
             hideDialog("parameterDialog", this.shadowRoot);
-            this._selectedParameterId = '';
+            this._selectedParameterUri = '';
             this.dispatchEvent(new CustomEvent('dialogClosed', {composed: true}));
         } else {
             this.dispatchEvent(new CustomEvent('dialogClosed', {composed: true}));
@@ -254,12 +261,16 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
         }
     }
 
-    _edit (parameterId) {
-        this._selectedParameterId = parameterId;
+    _edit (parameterUri) {
+        this._selectedParameterUri = parameterUri;
     }
 
-    firstUpdated () {
-        //store.dispatch(parametersGet());
+    _delete (parameterUri) {
+        if (confirm('This Parameter will be deleted on all related resources')) {
+            store.dispatch(parameterDelete(parameterUri));
+            if (this._selected[parameterUri])
+                delete this._selected[parameterUri];
+        }
     }
 
     stateChanged(state: RootState) {
@@ -281,7 +292,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
                     this._waiting = db.loading[this._waitingFor];
                     if (this._waiting === false) {
                         this._selected[this._waitingFor] = true;
-                        this._selectedParameterId = '';
+                        this._selectedParameterUri = '';
                         this._waitingFor = '';
                     }
                 }

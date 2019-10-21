@@ -486,6 +486,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                     html`${this._config.hasProcess.map(a => typeof a === 'object' ? a.id : a).map((procUri:string) => 
                         (this._processes[procUri] ? html`
                         <span class="process">
+                        ${console.log(procUri, this._processes[procUri].label )}
                             ${this._processes[procUri].label}
                         </span>`
                         : procUri + ' '))}
@@ -867,6 +868,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         if (this._processesLoading.size > 0 && this._config.hasProcess) {
                             this._processesLoading.forEach((uri:string) => {
                                 if (db.processes[uri]) {
+                                    //console.log(uri, db.process[uri].label)
                                     let tmp = { ...this._processes };
                                     tmp[uri] = db.processes[uri];
                                     this._processes = tmp;

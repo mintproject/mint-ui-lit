@@ -568,10 +568,10 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     _showAuthorDialog () {
         this._dialog = 'person';
         console.log(this._setup.author);
-        let selectedAuthors = this._setup.author.filter(x => x.type === "Person").reduce((acc: any, author: any) => {
+        let selectedAuthors = this._setup.authors ? this._setup.author.filter(x => x.type === "Person").reduce((acc: any, author: any) => {
             if (!acc[author.id]) acc[author.id] = true;
             return acc;
-        }, {})
+        }, {}) : {};
         let personConfigurator = this.shadowRoot.getElementById('person-configurator') as ModelsConfigurePerson;
         personConfigurator.setSelected(selectedAuthors);
         personConfigurator.open();

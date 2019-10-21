@@ -329,6 +329,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                     margin-left: 6px;
                 }
 
+                #img-placeholder {
+                    vertical-align: middle;
+                    --icon-size: 200px;
+                }
+
                 .table-title {
                     padding-bottom: 0 !important;
                     font-size: 13px !important;
@@ -348,7 +353,7 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _setEditMode () {
         //TODO: this is work in progress!
-        //store.dispatch(explorerSetMode('edit')); 
+        store.dispatch(explorerSetMode('edit')); 
     }
 
     _updateConfigSelector () {
@@ -483,7 +488,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <div class="col-img text-centered">
                     ${this._model.logo ? 
                     html`<img src="${this._model.logo}"/>`
-                    : html`<img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>`}
+                    : html`<wl-icon id="img-placeholder">image</wl-icon>`}
                     ${this._model.dateC ? html`<div><b>Creation date:</b> ${this._model.dateC}</div>`:''}
                     ${this._model.categories ? html`<div><b>Category:</b> ${this._model.categories}</div>`:''}
                     ${this._model.type ? html`<div><b>Model type:</b> ${this._model.type}</div>`:''}
@@ -1333,7 +1338,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             // Fetch & reset data
             if (modelChanged) {
                 if (ui.selectedModel) {
-                    //store.dispatch(fetchVersionsForModel(ui.selectedModel));
+                    store.dispatch(fetchVersionsForModel(ui.selectedModel));
                     store.dispatch(fetchDiagramsForModelConfig(ui.selectedModel));
                     store.dispatch(fetchSampleVisForModelConfig(ui.selectedModel));
                     store.dispatch(fetchScreenshotsForModelConfig(ui.selectedModel));
