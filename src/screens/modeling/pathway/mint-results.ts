@@ -233,6 +233,8 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                 ${Object.keys(grouped_ensemble.ensembles).map((index) => {
                                     let ensemble: ExecutableEnsemble = grouped_ensemble.ensembles[index];
                                     let model = this.pathway.models![ensemble.modelid];
+                                    let param_defaults = {};
+                                    model.input_parameters.map((param) => param_defaults[param.id] = param.default);
                                     return html`
                                         <tr>
                                             ${!readmode ? 
@@ -268,7 +270,13 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                                     `;
                                                 }
                                             })}
-                                            ${grouped_ensemble.params.map((param) => html`<td>${ensemble.bindings[param.id]}</td>` )}
+                                            ${grouped_ensemble.params.map((param) => html`<td>
+                                                    ${ensemble.bindings[param.id] ? 
+                                                        ensemble.bindings[param.id] : 
+                                                        param_defaults[param.id]
+                                                    }
+                                                </td>` 
+                                            )}
                                         </tr>
                                     `;
                                 })}
