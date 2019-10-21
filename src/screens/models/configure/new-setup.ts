@@ -159,14 +159,6 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 background-color: rgb(246, 246, 246);
             }
 
-            .monospaced {
-                font: 12px Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace;
-            }
-
-            .number {
-                font-family: helvetica;
-            }
-
             .details-table > tbody > tr > td > span {
                 display: inline-block;
                 border-radius: 4px;
@@ -197,22 +189,6 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             .details-table td {
                 padding: 5px 1px;
                 vertical-align: top;
-            }
-
-            span.author {
-                border: 2px solid cadetblue;
-            }
-
-            span.process {
-                border: 2px solid purple;
-            }
-
-            span.time-interval {
-                border: 2px solid burlywood;
-            }
-
-            span.grid {
-                border: 2px solid teal;
             }
 
             wl-button.small {
@@ -332,37 +308,6 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         }
     }
 
-    /*
-            <tr>
-                <td>Software Image:</td>
-                <td>
-                    ${this._config.hasSoftwareImage ? 
-                    ((this._softwareImage && Object.keys(this._softwareImage).length > 0) ?
-                        html`TODO: ${Object.keys(this._softwareImage)}`
-                        : html`${this._config.hasSoftwareImage[0].id} ${this._softwareImageLoading ?
-                            html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`)
-                    : 'No software image'}
-                </td>
-            </tr>
-
-            <tr>
-                <td>Time interval:</td>
-                <td>
-                    ${this._config.hasOutputTimeInterval ?
-                    (this._timeInterval ? html`
-                        <span class="time-interval">
-                            ${this._timeInterval.label} (fixme)
-                            <wl-icon>edit</wl-icon>
-                        </span>`
-                        : html`${this._config.hasOutputTimeInterval[0].id} ${this._timeIntervalLoading ? 
-                            html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`)
-                    : 'No time interval'}
-                </td>
-            </tr>
-
-    */
-
-
     protected render() {
         // Sort parameters by order
         let paramOrder = []
@@ -403,6 +348,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         <wl-textfield id="new-setup-name" label="New setup name" value="" required></wl-textfield>
 
         <table class="details-table">
+            <colgroup width="150px">
             <tr>
                 <td>Description:</td>
                 <td>
@@ -447,6 +393,13 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             </tr>
 
             <tr>
+                <td>Software Image:</td>
+                <td>
+                    <input id="new-setup-software-image" type="text" value="${this._softwareImage ? this._softwareImage.label : ''}"/>
+                </td>
+            </tr>
+
+            <tr>
                 <td>Component Location:</td>
                 <td>
                     <textarea id="new-setup-comp-loc"></textarea>
@@ -476,6 +429,21 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         : html`${this._config.hasGrid[0].id} ${this._gridLoading ?
                             html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`) 
                     : 'No grid'}
+                </td>
+            </tr>
+
+            <tr>
+                <td>Time interval:</td>
+                <td>
+                    ${this._config.hasOutputTimeInterval ?
+                    (this._timeInterval ? html`
+                        <span class="time-interval">
+                            ${this._timeInterval.label}
+                            <wl-icon style="margin-left:10px">edit</wl-icon>
+                        </span>`
+                        : html`${this._config.hasOutputTimeInterval[0].id} ${this._timeIntervalLoading ? 
+                            html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`)
+                    : 'No time interval'}
                 </td>
             </tr>
 
@@ -772,7 +740,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                             this._inputsLoading.add(i);
                         });
 
-                        // Fetching not loaded authors, for the momen only Persons TODO
+                        // Fetching not loaded authors, for the moment only Persons
                         (this._config.author || []).forEach((authorUri) => {
                             if (typeof authorUri === 'object') authorUri = authorUri.id;
                             if (!db.persons || !db.persons[authorUri]) {
@@ -809,15 +777,15 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                             }
                         }
 
-                        // Fetching ONE softwareImage FIXME
-                        /*if (!this._softwareImage && this._config.hasSoftwareImage) {
+                        // Fetching ONE softwareImage
+                        if (!this._softwareImage && this._config.hasSoftwareImage) {
                             let si = this._config.hasSoftwareImage[0];
                             let siId = typeof si === 'object' ? si.id : si;
                             if (!db.softwareImages || !db.softwareImages[siId]) {
                                 store.dispatch(softwareImageGet(siId));
                                 this._softwareImageLoading = true;
                             }
-                        }*/
+                        }
 
                     }
                 }
@@ -867,6 +835,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         if (this._processesLoading.size > 0 && this._config.hasProcess) {
                             this._processesLoading.forEach((uri:string) => {
                                 if (db.processes[uri]) {
+                                    //console.log(uri, db.process[uri].label)
                                     let tmp = { ...this._processes };
                                     tmp[uri] = db.processes[uri];
                                     this._processes = tmp;

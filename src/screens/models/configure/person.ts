@@ -11,7 +11,7 @@ import { goToPage } from 'app/actions';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { personGet, personsGet, personPost, personPut, ALL_PERSONS } from 'model-catalog/actions';
+import { personGet, personsGet, personPost, personPut, personDelete, ALL_PERSONS } from 'model-catalog/actions';
 
 import { renderExternalLink } from './util';
 
@@ -50,13 +50,13 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
     private _selected : {[key:string]: boolean | undefined} = {};
 
     @property({type: String})
-    private _selectedPersonId: string = '';
+    private _selectedPersonUri: string = '';
 
     static get styles() {
         return [ExplorerStyles, SharedStyles, css`
         .author-container {
             display: grid;
-            grid-template-columns: auto 28px;
+            grid-template-columns: auto 28px 28px;
             border: 2px solid cadetblue;
             border-radius: 4px;
             line-height: 28px;
@@ -69,12 +69,17 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             margin-right: 10px;
         }
 
+        wl-icon.warning:hover {
+            color: darkred;
+        }
+
         span.bold {
             font-weight: bold;
         }
         
         .author-container > wl-button {
             --button-padding: 5px;
+            width: 28px;
         }
 
         .results {
@@ -116,7 +121,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
     }
 
     protected render() {
-        let selectedPerson = this._persons[this._selectedPersonId];
+        let selectedPerson = this._persons && this._selectedPersonUri ? this._persons[this._selectedPersonUri] : null;
         return html`
         <wl-dialog class="larger" id="authorDialog" fixed backdrop blockscrolling persistent>
             <h3 slot="header">
@@ -126,7 +131,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
                 ${this._new ? html`
                 <form>
                     <wl-textfield id="new-author-name" label="Name" required></wl-textfield>
-                    <wl-textfield id="new-author-email" label="E-mail" required></wl-textfield>
+                    <wl-textfield id="new-author-email" label="E-mail"></wl-textfield>
                     <wl-textfield id="new-author-web" label="Website"></wl-textfield>
                 </form>`
                 : (selectedPerson ? html`
@@ -141,7 +146,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
                 : html`
                 <wl-textfield label="Search persons" id="search-input" @input="${this._onSearchChange}"><wl-icon slot="after">search</wl-icon></wl-textfield>
                 <div class="results" style="margin-top: 5px;">
-                    ${Object.values(this._persons)
+                    ${Object.values(this._persons || {})
                         .filter(person => (person.label||[]).join().toLowerCase().includes(this._filter.toLowerCase()))
                         .map((person) => html`
                     <div class="author-container">
@@ -150,6 +155,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
                             <span class="${this._selected[person.id] ? 'bold' : ''}">${person.label ? person.label : person.id}</span>
                         </label>
                         <wl-button @click="${() => this._edit(person.id)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
+                        <wl-button @click="${() => this._delete(person.id)}" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
                     </div>
                 `)}
                 ${this._loading ? html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : ''}
@@ -171,7 +177,8 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
                 <wl-button @click="${this._onSubmitAuthors}" class="submit">Add selected authors</wl-button>`
                 )}
             </div>
-        </wl-dialog>`
+        </wl-dialog>
+        ${renderNotifications()}`
     }
 
     _toggleSelection (personId) {
@@ -187,17 +194,16 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             let name = nameEl.value;
             let email = emailEl.value;
             let web = webEl.value;
-            if (!name || !email) {
+            if (!name) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>nameEl).refreshAttributes();
-                (<any>emailEl).refreshAttributes();
                 return;
             }
 
             let newPerson : Person = {
-                email: [email],
                 label: [name],
             }
+            if (email) newPerson.email = [email];
             if (web) newPerson.website = [web];
 
             this._waitingFor = 'PostPerson' + identifierId;
@@ -215,16 +221,15 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             let name = nameEl.value;
             let email = emailEl.value;
             let web = webEl.value;
-            if (!name || !email) {
+            if (!name) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>nameEl).refreshAttributes();
-                (<any>emailEl).refreshAttributes();
                 return;
             }
 
-            let editedPerson : Person = Object.assign({}, this._persons[this._selectedPersonId])
+            let editedPerson : Person = Object.assign({}, this._persons[this._selectedPersonUri])
             editedPerson.label = [name];
-            editedPerson.email = [email];
+            if (email) editedPerson.email = [email];
             if (web) editedPerson.website = [web];
 
             this._waitingFor = editedPerson.id;
@@ -242,16 +247,24 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
         this._filter = '';
         if (this._new) {
             this._new = false;
-        } else if (this._selectedPersonId) {
-            this._selectedPersonId = '';
+        } else if (this._selectedPersonUri) {
+            this._selectedPersonUri = '';
         } else {
             this.dispatchEvent(new CustomEvent('dialogClosed', {composed: true}));
             hideDialog("authorDialog", this.shadowRoot);
         }
     }
 
-    _edit (personId) {
-        this._selectedPersonId = personId;
+    _edit (personUri) {
+        this._selectedPersonUri = personUri;
+    }
+
+    _delete (personUri) {
+        if (confirm('This Person will be deleted on all related resources')) {
+            store.dispatch(personDelete(personUri));
+            if (this._selected[personUri])
+                delete this._selected[personUri];
+        }
     }
 
     firstUpdated () {
@@ -277,7 +290,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
                     this._waiting = db.loading[this._waitingFor];
                     if (this._waiting === false) {
                         this._selected[this._waitingFor] = true;
-                        this._selectedPersonId = '';
+                        this._selectedPersonUri = '';
                         this._waitingFor = '';
                     }
                 }

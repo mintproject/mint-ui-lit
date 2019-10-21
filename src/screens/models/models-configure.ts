@@ -17,7 +17,7 @@ import './configure/parameter';
 import { fetchIOAndVarsSNForConfig, fetchAuthorsForModelConfig, fetchParametersForConfig,
          fetchMetadataNoioForModelConfig, addParameters, addCalibration, addMetadata,
          addInputs, addAuthor } from '../../util/model-catalog-actions';
-import { parameterGet } from 'model-catalog/actions';
+import { parameterGet, processesGet } from 'model-catalog/actions';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
 
@@ -277,13 +277,13 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                             ${(version.hasConfiguration || []).filter(c => !!c.id).map((c) => this._configs[c.id]).map((config) => html`
                             <li>
                                 <a @click="${()=>{this._select(model, version, config)}}">
-                                    ${config.label}
+                                    ${config ? config.label : 'ERR: no-config-label'}
                                 </a>
                                 <ul>
-                                    ${(config.hasSetup || []).map((s) => this._configs[s.id]).map(setup => html`
+                                    ${((config ? config.hasSetup : []) || []).map((s) => this._configs[s.id]).map(setup => html`
                                     <li>
                                         <a @click="${()=>{this._select(model, version, config, setup)}}">
-                                            ${setup.label}
+                                            ${setup ? setup.label : 'ERR: no-setup-label'}
                                         </a>
                                     </li>
                                     `)}
@@ -366,6 +366,10 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     }
 
     private _configParametersLoading : Set<string> = new Set();
+
+    firstUpdated () {
+        store.dispatch(processesGet());
+    }
     
     stateChanged(state: RootState) {
         if (state.explorerUI) {

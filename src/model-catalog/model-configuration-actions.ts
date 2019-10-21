@@ -3,8 +3,8 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
 import { Configuration, ModelConfiguration, ModelConfigurationApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, 
-         DEFAULT_GRAPH, START_LOADING, END_LOADING, START_POST, END_POST, MCAStartLoading, MCAEndLoading, MCAEndPost, MCAStartPost } from './actions';
+import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, DEFAULT_GRAPH,
+         START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
 
 function debug (...args: any[]) { console.log('OBA:', ...args); }
 
@@ -111,5 +111,30 @@ export const modelConfigurationPut: ActionCreator<ModelCatalogModelConfiguration
     }
 }
 
-export type ModelCatalogModelConfigurationAction =  MCAStartPost | MCAEndPost | MCAStartLoading | MCAEndLoading | MCAModelConfigurationsGet | MCAModelConfigurationGet | MCAModelConfigurationPost | MCAModelConfigurationPut;
+export const MODEL_CONFIGURATION_DELETE = "MODEL_CONFIGURATION_DELETE";
+interface MCAModelConfigurationDelete extends Action<'MODEL_CONFIGURATION_DELETE'> { uri: string };
+export const modelConfigurationDelete: ActionCreator<ModelCatalogModelConfigurationThunkResult> = ( uri : string ) => (dispatch) => {
+    debug('deleting modelConfiguration', uri);
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+
+    if (status === 'DONE') {
+        let api : ModelConfigurationApi = new ModelConfigurationApi(cfg);
+        let id : string = uri.split('/').pop();
+        api.modelconfigurationsIdDelete({id: id, user: DEFAULT_GRAPH}) // This should be my username on prod.
+            .then((resp) => {
+                console.log('Response for DELETE modelConfiguration:', resp);
+                dispatch({
+                    type: MODEL_CONFIGURATION_DELETE,
+                    uri: uri
+                });
+            })
+            .catch((err) => {console.log('Error on DELETE modelConfiguration', err)})
+    } else if (status === 'LOADING') {
+        repeatAction(modelConfigurationDelete, uri);
+    }
+}
+
+export type ModelCatalogModelConfigurationAction =  MCACommon | MCAModelConfigurationsGet | MCAModelConfigurationGet | 
+                                                    MCAModelConfigurationPost | MCAModelConfigurationPut | MCAModelConfigurationDelete;
 type ModelCatalogModelConfigurationThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogModelConfigurationAction>;

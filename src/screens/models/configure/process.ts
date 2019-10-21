@@ -11,7 +11,7 @@ import { goToPage } from 'app/actions';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { processGet, processesGet, processPost, processPut, ALL_PROCESSES } from 'model-catalog/actions';
+import { processGet, processesGet, processPost, processPut,  processDelete, ALL_PROCESSES } from 'model-catalog/actions';
 
 import { renderExternalLink } from './util';
 
@@ -25,6 +25,7 @@ import { Process } from '@mintproject/modelcatalog_client';
 import { Textfield } from 'weightless/textfield';
 
 let identifierId : number = 1;
+const nil = {};
 
 @customElement('models-configure-process')
 export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
@@ -49,14 +50,17 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _selected : {[key:string]: boolean | undefined} = {};
 
+    @property({type: Object})
+    private _secondarySelected : {[key:string]: boolean | undefined} = {};
+
     @property({type: String})
-    private _selectedProcessId: string = '';
+    private _selectedProcessUri: string = '';
 
     static get styles() {
         return [ExplorerStyles, SharedStyles, css`
         .process-container {
             display: grid;
-            grid-template-columns: auto 28px;
+            grid-template-columns: auto 28px 28px;
             border: 2px solid cadetblue;
             border-radius: 4px;
             line-height: 28px;
@@ -67,6 +71,10 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
         .custom-checkbox {
             vertical-align: middle;
             margin-right: 10px;
+        }
+
+        wl-icon.warning:hover {
+            color: darkred;
         }
 
         span.bold {
@@ -99,7 +107,7 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
     }
 
     getSelected () {
-        return Object.keys(this._selected).filter(processId => this._selected[processId]).map(processId => this._processes[processId]);
+        return Object.keys(this._selected).filter(processUri => this._selected[processUri]).map(processUri => this._processes[processUri]);
     }
 
     _searchPromise = null;
@@ -118,7 +126,7 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
 
     protected render() {
         //TODO: ADD influences
-        let selectedProcess = this._processes[this._selectedProcessId];
+        let selectedProcess = this._processes && this._selectedProcessUri ? this._processes[this._selectedProcessUri] : null;
         return html`
         <wl-dialog class="larger" id="processDialog" fixed backdrop blockscrolling persistent>
             <h3 slot="header">
@@ -128,6 +136,27 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
                 ${this._new ? html`
                 <form>
                     <wl-textfield id="new-process-name" label="Name" required></wl-textfield>
+                    <wl-textarea id="new-process-desc" label="Description"></wl-textarea>
+
+                    <wl-textfield label="Process influecers" id="search-input" @input="${this._onSearchChange}">
+                        <wl-icon slot="after">search</wl-icon>
+                    </wl-textfield>
+                    <div class="results" style="margin-top: 5px;">
+                        ${Object.values(this._processes || nil)
+                            .filter((process:Process) => (process.label||[]).join().toLowerCase().includes(this._filter.toLowerCase()))
+                            .map((process:Process) => html`
+                        <div class="process-container">
+                            <label @click="${() => {this._toggleSecondarySelection(process.id)}}">
+                                <wl-icon class="custom-checkbox">
+                                    ${this._secondarySelected[process.id] ? 'check_box' : 'check_box_outline_blank'}
+                                </wl-icon>
+                                <span class="${this._secondarySelected[process.id] ? 'bold' : ''}">
+                                    ${process.label ? process.label : process.id}
+                                </span>
+                            </label>
+                        </div>`)}
+
+                    </div>
                 </form>`
                 : (selectedProcess ? html`
                 <div style="font-size: 12px; color: darkgray;">${selectedProcess.id}</div>
@@ -138,20 +167,21 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
                 : html`
                 <wl-textfield label="Search process" id="search-input" @input="${this._onSearchChange}"><wl-icon slot="after">search</wl-icon></wl-textfield>
                 <div class="results" style="margin-top: 5px;">
-                    ${Object.values(this._processes)
-                        .filter(process => (process.label||[]).join().toLowerCase().includes(this._filter.toLowerCase()))
-                        .map((process) => html`
+                    ${Object.values(this._processes || nil)
+                        .filter((process:Process) => (process.label||[]).join().toLowerCase().includes(this._filter.toLowerCase()))
+                        .map((process:Process) => html`
                     <div class="process-container">
                         <label @click="${() => {this._toggleSelection(process.id)}}">
                             <wl-icon class="custom-checkbox">${this._selected[process.id] ? 'check_box' : 'check_box_outline_blank'}</wl-icon>
                             <span class="${this._selected[process.id] ? 'bold' : ''}">${process.label ? process.label : process.id}</span>
                         </label>
                         <wl-button @click="${() => this._edit(process.id)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
+                        <wl-button @click="${() => this._delete(process.id)}" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
                     </div>
                 `)}
                 ${this._loading ? html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : ''}
                 </div>
-                or <a @click="${() => {this._new = true;}}">create a new Process</a>
+                or <a @click="${this._onNewButton}">create a new Process</a>
             `)}
             </div>
             <div slot="footer">
@@ -168,18 +198,31 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
                 <wl-button @click="${this._onSubmitProcesses}" class="submit">Add selected processes</wl-button>`
                 )}
             </div>
-        </wl-dialog>`
+        </wl-dialog>
+        ${renderNotifications()}`
     }
 
-    _toggleSelection (processId) {
-        this._selected[processId] = !this._selected[processId];
+    _onNewButton () {
+        this._new = true;
+        this._secondarySelected = {};
+    }
+
+    _toggleSelection (processUri) {
+        this._selected[processUri] = !this._selected[processUri];
+        this.requestUpdate();
+    }
+
+    _toggleSecondarySelection (processUri) {
+        this._secondarySelected[processUri] = !this._secondarySelected[processUri];
         this.requestUpdate();
     }
 
     _onCreateProcess () {
         let nameEl = this.shadowRoot.getElementById('new-process-name') as Textfield;
+        let descEl = this.shadowRoot.getElementById('new-process-desc') as Textfield;
         if (nameEl) {
             let name = nameEl.value;
+            let desc = descEl.value;
             if (!name) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>nameEl).refreshAttributes();
@@ -187,7 +230,13 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
             }
 
             let newProcess : Process = {
-                label: [name],
+                label: [name]
+            }
+            if (desc) newProcess.description = [desc];
+            let influences : Process [] = Object.keys(this._secondarySelected).filter(uri => this._secondarySelected[uri])
+                    .map((uri:string) => { return {id: uri} as Process });
+            if (influences.length > 0) {
+                newProcess.influences = influences;
             }
 
             this._waitingFor = 'PostProcess' + identifierId;
@@ -207,8 +256,13 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
                 return;
             }
 
-            let editedProcess : Process = Object.assign({}, this._processes[this._selectedProcessId])
+            let editedProcess : Process = Object.assign({}, this._processes[this._selectedProcessUri])
             editedProcess.label = [name];
+            let influences : Process[] = Object.keys(this._secondarySelected).filter(uri => this._secondarySelected[uri])
+                    .map((uri:string) => { return {id: uri} as Process });
+            if (influences.length > 0) {
+                editedProcess.influences = { ...editedProcess.influences, ...influences };
+            }
 
             this._waitingFor = editedProcess.id;
             store.dispatch(processPut(editedProcess));
@@ -223,18 +277,27 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
 
     _cancel () {
         this._filter = '';
+        this._secondarySelected = {};
         if (this._new) {
             this._new = false;
-        } else if (this._selectedProcessId) {
-            this._selectedProcessId = '';
+        } else if (this._selectedProcessUri) {
+            this._selectedProcessUri = '';
         } else {
             this.dispatchEvent(new CustomEvent('dialogClosed', {composed: true}));
             hideDialog("processDialog", this.shadowRoot);
         }
     }
 
-    _edit (processId) {
-        this._selectedProcessId = processId;
+    _edit (processUri) {
+        this._selectedProcessUri = processUri;
+    }
+
+    _delete (processUri) {
+        if (confirm('This Process will be deleted on all related resources')) {
+            store.dispatch(processDelete(processUri));
+            if (this._selected[processUri])
+                delete this._selected[processUri];
+        }
     }
 
     firstUpdated () {
@@ -260,7 +323,7 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
                     this._waiting = db.loading[this._waitingFor];
                     if (this._waiting === false) {
                         this._selected[this._waitingFor] = true;
-                        this._selectedProcessId = '';
+                        this._selectedProcessUri = '';
                         this._waitingFor = '';
                     }
                 }

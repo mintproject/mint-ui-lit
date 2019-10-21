@@ -3,12 +3,13 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
 import { Configuration, DefaultApi, ModelApi, SoftwareVersionApi, ModelConfigurationApi, ParameterApi, GridApi,
-         DatasetSpecificationApi, Person, PersonApi, TimeIntervalApi, SoftwareImageApi } from '@mintproject/modelcatalog_client';
+         DatasetSpecificationApi, TimeIntervalApi, SoftwareImageApi } from '@mintproject/modelcatalog_client';
 
 export * from './person-actions';
 export * from './process-actions';
 export * from './parameter-actions';
 export * from './model-configuration-actions';
+
 import { ModelCatalogPersonAction } from './person-actions';
 import { ModelCatalogParameterAction } from "./parameter-actions";
 import { ModelCatalogProcessAction } from "./process-actions";
@@ -42,14 +43,15 @@ export const getStatusConfigAndUser = () => {
 // Repeat an action when the TOKEN is ready
 export const repeatAction = (action, args) => (dispatch) => {
     console.log('Action', action, 'waiting for token...');
-    dispatch({
+    //FIXME: this is not working now.
+    /*dispatch({
         type: 'WAIT_UNTIL',
         predicate: action => (action.type === 'FETCH_MODEL_CATALOG_ACCESS_TOKEN'),
         run: (dispatch, getState, action) => {
             dispatch(action(args));
             console.log('Dispaching', action, 'async');
         }
-    })
+    })*/
 }
 
 export const DEFAULT_GRAPH = 'mint@isi.edu';
@@ -64,6 +66,8 @@ export const START_POST = 'START_POST';
 export interface MCAStartPost extends Action<'START_POST'> { id: string };
 export const END_POST = 'END_POST';
 export interface MCAEndPost extends Action<'END_POST'> { id: string, uri: string };
+
+export type MCACommon = MCAStartLoading | MCAEndLoading | MCAStartPost | MCAEndPost ;
 
 export const MODELS_GET = "MODELS_GET";
 interface MCAModelsGet extends Action<'MODELS_GET'> { payload: any };
@@ -186,8 +190,8 @@ export const softwareImageGet: ActionCreator<ModelCatalogThunkResult> = (uri) =>
         .catch((err) => {console.log('Error on getSoftwareImage', err)})
 }
 
-export type ModelCatalogAction = MCAStartLoading | MCAEndLoading | MCAEndPost | MCAStartPost | ModelCatalogPersonAction |
-                                 ModelCatalogParameterAction | ModelCatalogProcessAction | ModelCatalogModelConfigurationAction |
+export type ModelCatalogAction = MCACommon | ModelCatalogPersonAction | ModelCatalogParameterAction | ModelCatalogProcessAction |
+                                 ModelCatalogModelConfigurationAction |
                                  MCAModelsGet | MCAVersionsGet |
                                  MCADatasetSpecificationGet | MCAGridGet | MCATimeIntervalGet | MCASoftwareImageGet;
 

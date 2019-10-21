@@ -11,7 +11,8 @@ import { goToPage } from 'app/actions';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { parameterGet, parametersGet, parameterPost, parameterPut, ALL_PARAMETERS } from 'model-catalog/actions';
+import { parameterGet, parametersGet, parameterPost, parameterPut, 
+         parameterDelete, ALL_PARAMETERS } from 'model-catalog/actions';
 import { renderExternalLink, renderParameterType } from './util';
 
 import "weightless/progress-spinner";
@@ -49,13 +50,16 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
     private _selected : {[key:string]: boolean | undefined} = {};
 
     @property({type: String})
-    private _selectedParameterId: string = '';
+    private _selectedParameterUri: string = '';
+
+    @property({type: Boolean})
+    public onSetup : boolean = false;
 
     static get styles() {
         return [ExplorerStyles, SharedStyles, css`
         .parameter-container {
             display: grid;
-            grid-template-columns: auto 28px;
+            grid-template-columns: auto 28px 28px;
             border: 2px solid cadetblue;
             border-radius: 4px;
             line-height: 28px;
@@ -68,12 +72,17 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
             margin-right: 10px;
         }
 
+        wl-icon.warning:hover {
+            color: darkred;
+        }
+
         span.bold {
             font-weight: bold;
         }
         
         .parameter-container > wl-button {
             --button-padding: 5px;
+            width: 28px;
         }
 
         .results {
@@ -86,7 +95,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
 
     edit (parameterID) {
         if (this.active) {
-            this._selectedParameterId = parameterID
+            this._selectedParameterUri = parameterID
             showDialog("parameterDialog", this.shadowRoot);
         } else {
             setTimeout(() => {this.edit(parameterID)}, 300);
@@ -124,64 +133,59 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
     }
 
     protected render() {
-        let selectedParameter = this._parameters[this._selectedParameterId];
+        let selectedParameter = this._parameters && this._selectedParameterUri ? this._parameters[this._selectedParameterUri] : null;
+        let inputType : string = 'text';
+        if (selectedParameter && selectedParameter.hasDataType && selectedParameter.hasDataType.length > 0) {
+            switch (selectedParameter.hasDataType[0]) {
+                case 'float':
+                case 'int':
+                    inputType = 'number';
+                    break;
+                default:
+                    inputType = 'text';
+            }
+        }
         return html`
         <wl-dialog class="larger" id="parameterDialog" fixed backdrop blockscrolling persistent>
             <h3 slot="header">
-                ${this._new ? 'Register a new parameter' : (selectedParameter ? 'Editing parameter' : 'Selecting parameters')}
+                ${selectedParameter ? 'Editing parameter' : 'Register a new parameter'}
             </h3>
             <div slot="content">
-                ${this._new ? html`
-                <form>
-                    <wl-textfield id="new-parameter-name" label="Name" required></wl-textfield>
-                    <wl-textfield id="new-parameter-email" label="E-mail" required></wl-textfield>
-                    <wl-textfield id="new-parameter-web" label="Website"></wl-textfield>
-                </form>`
-                : (selectedParameter ? html`
+                ${selectedParameter ? html`
                 <wl-title level="4">${selectedParameter.description}</wl-title>
                 ${renderParameterType(selectedParameter)}
                 <form>
                     <wl-textfield 
+                        type="${inputType}"
+                        min="${ selectedParameter.hasMinimumAcceptedValue ? selectedParameter.hasMinimumAcceptedValue[0] : ''}"
+                        max="${ selectedParameter.hasMaximumAcceptedValue ? selectedParameter.hasMaximumAcceptedValue[0] : ''}"
                         id="edit-parameter-fixed-value" label="${selectedParameter.label}"
                         value="${selectedParameter.hasFixedValue? selectedParameter.hasFixedValue: ''}"
                         placeholder="${selectedParameter.hasDefaultValue}" required>
                         <span slot="after">${selectedParameter.usesUnit ?(selectedParameter.usesUnit[0] as any).label : ''}</span>
                     </wl-textfield>
-                </form> `
-                : html`
-                <wl-textfield label="Search parameters" id="search-input" @input="${this._onSearchChange}"><wl-icon slot="after">search</wl-icon></wl-textfield>
-                <div class="results" style="margin-top: 5px;">
-                    ${Object.values(this._parameters)
-                        .filter(parameter => (parameter.label||[]).join().toLowerCase().includes(this._filter.toLowerCase()))
-                        .map((parameter) => html`
-                    <div class="parameter-container">
-                        <label @click="${() => {this._toggleSelection(parameter.id)}}">
-                            <wl-icon class="custom-checkbox">${this._selected[parameter.id] ? 'check_box' : 'check_box_outline_blank'}</wl-icon>
-                            <span class="${this._selected[parameter.id] ? 'bold' : ''}">${parameter.label ? parameter.label : parameter.id}</span>
-                        </label>
-                        <wl-button @click="${() => this._edit(parameter.id)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
-                    </div>
-                `)}
-                ${this._loading ? html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : ''}
-                </div>
-                or <a @click="${() => {this._new = true;}}">create a new Parameter</a>
-            `)}
+                </form> ` : html`
+                <form>
+                    <wl-textfield id="new-parameter-name" label="Name" required></wl-textfield>
+                </form>`
+                }
             </div>
             <div slot="footer">
                 <wl-button @click="${this._cancel}" style="margin-right: 5px;" inverted flat ?disabled="${this._waiting}">Cancel</wl-button>
                 ${this._new ? html`
-                <wl-button @click="${this._onCreateParameter}" class="submit" ?disabled="${this._waiting}">
+                <wl-button @click="${this._onCreateParameter}" ?disabled="${this._waiting}">
                     Save & Select ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
                 </wl-button>`
                 : (selectedParameter ? html`
-                <wl-button @click="${this._onEditParameter}" class="submit" ?disabled="${this._waiting}">
+                <wl-button @click="${this._onEditParameter}" ?disabled="${this._waiting}">
                     Save ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
                 </wl-button>`
                 : html`
-                <wl-button @click="${this._onSubmitParameters}" class="submit">Add selected parameters</wl-button>`
+                <wl-button @click="${this._onSubmitParameters}">Add selected parameters</wl-button>`
                 )}
             </div>
-        </wl-dialog>`
+        </wl-dialog>
+        ${renderNotifications()}`
     }
 
     _toggleSelection (parameterId) {
@@ -220,14 +224,22 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
     _onEditParameter () {
         let fixedValEl = this.shadowRoot.getElementById('edit-parameter-fixed-value') as Textfield;
         if (fixedValEl) {
+            let originalParameter : Parameter = this._parameters[this._selectedParameterUri];
+            let min : number, max : number;
+            if (originalParameter.hasMinimumAcceptedValue && originalParameter.hasMinimumAcceptedValue.length > 0) {
+                min = Number(originalParameter.hasMinimumAcceptedValue[0]);
+            }
+            if (originalParameter.hasMaximumAcceptedValue && originalParameter.hasMaximumAcceptedValue.length > 0) {
+                max = Number(originalParameter.hasMaximumAcceptedValue[0]);
+            }
             let fixedVal = fixedValEl.value;
-            if (!fixedVal) {
+            if (!fixedVal || (min!=undefined && Number(fixedVal)<min) || (max!=undefined && Number(fixedVal)>max)) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>fixedValEl).refreshAttributes();
                 return;
             }
 
-            let editedParameter : Parameter = Object.assign({}, this._parameters[this._selectedParameterId])
+            let editedParameter : Parameter = Object.assign({}, originalParameter);
             editedParameter.hasFixedValue = [fixedVal as any];
             //console.log(editedParameter)
             this.dispatchEvent(new CustomEvent('parameterEdited', {composed: true, detail: editedParameter }));
@@ -244,9 +256,9 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
         this._filter = '';
         if (this._new) {
             this._new = false;
-        } else if (this._selectedParameterId) {
+        } else if (this._selectedParameterUri) {
             hideDialog("parameterDialog", this.shadowRoot);
-            this._selectedParameterId = '';
+            this._selectedParameterUri = '';
             this.dispatchEvent(new CustomEvent('dialogClosed', {composed: true}));
         } else {
             this.dispatchEvent(new CustomEvent('dialogClosed', {composed: true}));
@@ -254,12 +266,16 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
         }
     }
 
-    _edit (parameterId) {
-        this._selectedParameterId = parameterId;
+    _edit (parameterUri) {
+        this._selectedParameterUri = parameterUri;
     }
 
-    firstUpdated () {
-        //store.dispatch(parametersGet());
+    _delete (parameterUri) {
+        if (confirm('This Parameter will be deleted on all related resources')) {
+            store.dispatch(parameterDelete(parameterUri));
+            if (this._selected[parameterUri])
+                delete this._selected[parameterUri];
+        }
     }
 
     stateChanged(state: RootState) {
@@ -281,7 +297,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
                     this._waiting = db.loading[this._waitingFor];
                     if (this._waiting === false) {
                         this._selected[this._waitingFor] = true;
-                        this._selectedParameterId = '';
+                        this._selectedParameterUri = '';
                         this._waitingFor = '';
                     }
                 }
