@@ -67,6 +67,9 @@ export class ScenariosList extends connect(store)(PageViewElement) {
         <wl-icon @click="${this._addScenarioDialog}" 
           class="actionIcon bigActionIcon addIcon" id="addScenarioIcon">note_add</wl-icon>
     </div>
+    <p style="margin-left: 44px">
+    Choose an existing problem from the list below or click add to create a new one. 
+    </p>
     <!-- Show Scenario List -->
     ${this._list && this._list.scenarioids.map((scenarioid) => {
         let scenario = this._list.scenarios[scenarioid];
@@ -124,7 +127,9 @@ export class ScenariosList extends connect(store)(PageViewElement) {
       <div slot="content">
         <form id="scenarioForm">
           <p>
-            Please enter a short text to describe the overall problem that you would like to investigate
+          Please enter a short text to describe the overall problem. 
+          For instance, “Explore interventions to increase agricultural productivity in South Sudan”,  
+          “Explore interventions to improve farmer livelihoods in Gambella”. 
           </p>
           <input type="hidden" name="scenarioid"></input>
           <div class="input_full">

@@ -104,6 +104,13 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 width: 100%;
             }
 
+            .header_description {
+                padding-left:5px;
+                padding-bottom:8px;
+                font-size:10px;
+                color:#999;
+            }
+
             h2 {
                 border-bottom: 1px solid #F0F0F0;
                 padding-bottom: 10px;
@@ -144,7 +151,18 @@ export class MintScenario extends connect(store)(PageViewElement) {
                             </div>
                             <wl-icon @click="${this._addSubGoalDialog}" 
                                 class="actionIcon addIcon">note_add</wl-icon>
-                        </div>                    
+                        </div>
+                        <div class="header_description" style="padding-left: 10px">
+                            Tasks are used to model indicators relevant to the problem. 
+                            For instance, “Flooding effect on crop production during the growing season.” 
+                            Note that the timeframe for the task need not be the same as the problem statement. 
+                            For instance, flooding may be relevant during the growing season leading to the lean season.
+                            <br />
+                            Tasks can be organized in modeling threads in order to investigate the impacts of 
+                            various interventions or obtain modeling products relevant to the task at hand. 
+                            For instance, a flooding map may be relevant to model possible planting time for a region.
+                        </div>
+
                         <ul>
                         ${Object.keys(this._scenario_details.subgoals).map((subgoalid) => {
                             const subgoal = this._scenario_details!.subgoals[subgoalid];
@@ -197,7 +215,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                 <wl-icon @click="${this._editPathwayDialog}" 
                                     class="actionIcon addIcon">note_add</wl-icon>
                             </div>
-                            <div style="padding-left:5px;padding-bottom:8px;font-size:10px;color:#999">
+                            <div class="header_description">
                                 Each task on the left can be explored with several modeling threads, each pursuing a different analysis. 
                                 For example, the same task can be explored with a thread that uses model M1 and another that uses model M2, 
                                 and additional threads that use different parameter settings or assumptions for M1 and for M2

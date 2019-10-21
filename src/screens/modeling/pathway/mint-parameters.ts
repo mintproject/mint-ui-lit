@@ -59,7 +59,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         if(!this.pathway.models || !Object.keys(this.pathway.models).length) {
             return html `
             <p>
-                This step is for specifying input values for the models that you selected earlier.
+                This step is for specifying values for the adjustable parameters of the models that you selected earlier.
             </p>
             Please select model(s) first
             `
@@ -70,7 +70,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         // If models have been selected, go over each model
         return html `
         <p>
-            This step is for specifying input values for the models that you selected earlier.
+            This step is for specifying values for the adjustable parameters of the models that you selected earlier.
         </p>
         ${done && !this._editMode ? html`<p>Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes.</p>`: html``}
         <div class="clt">
@@ -83,7 +83,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
             <wl-tooltip anchor="#editParametersIcon" 
                 .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
                 anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
-                Change Adjustable Variable Values
+                Change Adjustable Parameter Values
             </wl-tooltip>
             <ul>
             ${(Object.keys(this.pathway.models) || []).map((modelid) => {
@@ -105,7 +105,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                         <form id="form_${this._valid(model.localname || model.id)}">
                         <table class="pure-table pure-table-striped">
                         <thead>
-                            <th><b>Adjustable Variable</b></th>
+                            <th><b>Adjustable Parameter</b></th>
                             <th>Values</th>
                         </thead>
                         <tbody>
