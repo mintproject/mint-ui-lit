@@ -1175,7 +1175,32 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _renderTabSoftware () {
-        return html`${(this._config)?
+        return html`
+        ${(this._compModels && this._compModels.length > 0)? html`
+        <h3> Related models: </h3>
+        <table class="pure-table pure-table-bordered">
+            <thead>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Description</th>
+            </thead>
+            <tbody>
+            ${this._compModels.map( (m:any) => html`
+                <tr>
+                    <td><a @click="${() => {this._goToModel(m)}}">${m.label}</a></td>
+                    <td>${m.categories.join(', ')}</td>
+                    <td>${m.desc}</td>
+                </tr>`)}
+            </tbody>
+        </table>
+        `:html`
+        <br/><h3 style="margin-left:30px">
+            No compatible software has been described in the model catalog yet.
+        </h3>
+        `}
+        `
+
+        /*return html`${(this._config)?
             html`${(this._compInput && this._compInput.length>0) || 
                    (this._compOutput && this._compOutput.length>0) ?
                 html`
@@ -1219,7 +1244,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             `
             :html``
         }
-        `
+        `*/
     }
 
     _goToModel (model:any) {
