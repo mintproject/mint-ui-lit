@@ -59,7 +59,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         if(!this.pathway.models || !Object.keys(this.pathway.models).length) {
             return html `
             <p>
-                This step is for specifying values for the adjustable parameters of the models that you selected earlier.
+                Please specify the values for the adjustable parameters.
             </p>
             Please select model(s) first
             `
