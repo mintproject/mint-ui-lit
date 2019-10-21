@@ -395,12 +395,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Software Image:</td>
                 <td>
-                    ${this._config.hasSoftwareImage ? 
-                    ((this._softwareImage && Object.keys(this._softwareImage).length > 0) ?
-                        html`<span class="software-image">${this._softwareImage.label}</span>`
-                        : html`${this._config.hasSoftwareImage[0].id} ${this._softwareImageLoading ?
-                            html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`)
-                    : 'No software image'}
+                    <input id="new-setup-software-image" type="text" value="${this._softwareImage ? this._softwareImage.label : ''}"/>
                 </td>
             </tr>
 

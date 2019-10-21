@@ -177,7 +177,8 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
                 <wl-button @click="${this._onSubmitAuthors}" class="submit">Add selected authors</wl-button>`
                 )}
             </div>
-        </wl-dialog>`
+        </wl-dialog>
+        ${renderNotifications()}`
     }
 
     _toggleSelection (personId) {

@@ -52,6 +52,9 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
     @property({type: String})
     private _selectedParameterUri: string = '';
 
+    @property({type: Boolean})
+    public onSetup : boolean = false;
+
     static get styles() {
         return [ExplorerStyles, SharedStyles, css`
         .parameter-container {
@@ -131,64 +134,58 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
 
     protected render() {
         let selectedParameter = this._parameters && this._selectedParameterUri ? this._parameters[this._selectedParameterUri] : null;
+        let inputType : string = 'text';
+        if (selectedParameter && selectedParameter.hasDataType && selectedParameter.hasDataType.length > 0) {
+            switch (selectedParameter.hasDataType[0]) {
+                case 'float':
+                case 'int':
+                    inputType = 'number';
+                    break;
+                default:
+                    inputType = 'text';
+            }
+        }
         return html`
         <wl-dialog class="larger" id="parameterDialog" fixed backdrop blockscrolling persistent>
             <h3 slot="header">
-                ${this._new ? 'Register a new parameter' : (selectedParameter ? 'Editing parameter' : 'Selecting parameters')}
+                ${selectedParameter ? 'Editing parameter' : 'Register a new parameter'}
             </h3>
             <div slot="content">
-                ${this._new ? html`
-                <form>
-                    <wl-textfield id="new-parameter-name" label="Name" required></wl-textfield>
-                    <wl-textfield id="new-parameter-email" label="E-mail" required></wl-textfield>
-                    <wl-textfield id="new-parameter-web" label="Website"></wl-textfield>
-                </form>`
-                : (selectedParameter ? html`
+                ${selectedParameter ? html`
                 <wl-title level="4">${selectedParameter.description}</wl-title>
                 ${renderParameterType(selectedParameter)}
                 <form>
                     <wl-textfield 
+                        type="${inputType}"
+                        min="${ selectedParameter.hasMinimumAcceptedValue ? selectedParameter.hasMinimumAcceptedValue[0] : ''}"
+                        max="${ selectedParameter.hasMaximumAcceptedValue ? selectedParameter.hasMaximumAcceptedValue[0] : ''}"
                         id="edit-parameter-fixed-value" label="${selectedParameter.label}"
                         value="${selectedParameter.hasFixedValue? selectedParameter.hasFixedValue: ''}"
                         placeholder="${selectedParameter.hasDefaultValue}" required>
                         <span slot="after">${selectedParameter.usesUnit ?(selectedParameter.usesUnit[0] as any).label : ''}</span>
                     </wl-textfield>
-                </form> `
-                : html`
-                <wl-textfield label="Search parameters" id="search-input" @input="${this._onSearchChange}"><wl-icon slot="after">search</wl-icon></wl-textfield>
-                <div class="results" style="margin-top: 5px;">
-                    ${Object.values(this._parameters || {})
-                        .filter(parameter => (parameter.label||[]).join().toLowerCase().includes(this._filter.toLowerCase()))
-                        .map((parameter) => html`
-                    <div class="parameter-container">
-                        <label @click="${() => {this._toggleSelection(parameter.id)}}">
-                            <wl-icon class="custom-checkbox">${this._selected[parameter.id] ? 'check_box' : 'check_box_outline_blank'}</wl-icon>
-                            <span class="${this._selected[parameter.id] ? 'bold' : ''}">${parameter.label ? parameter.label : parameter.id}</span>
-                        </label>
-                        <wl-button @click="${() => this._edit(parameter.id)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
-                        <wl-button @click="${() => this._delete(parameter.id)}" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
-                    </div>
-                `)}
-                ${this._loading ? html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : ''}
-                </div>
-                or <a @click="${() => {this._new = true;}}">create a new Parameter</a>
-            `)}
+                </form> ` : html`
+                <form>
+                    <wl-textfield id="new-parameter-name" label="Name" required></wl-textfield>
+                </form>`
+                }
             </div>
             <div slot="footer">
                 <wl-button @click="${this._cancel}" style="margin-right: 5px;" inverted flat ?disabled="${this._waiting}">Cancel</wl-button>
                 ${this._new ? html`
-                <wl-button @click="${this._onCreateParameter}" class="submit" ?disabled="${this._waiting}">
+                <wl-button @click="${this._onCreateParameter}" ?disabled="${this._waiting}">
                     Save & Select ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
                 </wl-button>`
                 : (selectedParameter ? html`
-                <wl-button @click="${this._onEditParameter}" class="submit" ?disabled="${this._waiting}">
+                <wl-button @click="${this._onEditParameter}" ?disabled="${this._waiting}">
                     Save ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
                 </wl-button>`
                 : html`
-                <wl-button @click="${this._onSubmitParameters}" class="submit">Add selected parameters</wl-button>`
+                <wl-button @click="${this._onSubmitParameters}">Add selected parameters</wl-button>`
                 )}
             </div>
-        </wl-dialog>`
+        </wl-dialog>
+        ${renderNotifications()}`
     }
 
     _toggleSelection (parameterId) {
@@ -227,14 +224,22 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
     _onEditParameter () {
         let fixedValEl = this.shadowRoot.getElementById('edit-parameter-fixed-value') as Textfield;
         if (fixedValEl) {
+            let originalParameter : Parameter = this._parameters[this._selectedParameterUri];
+            let min : number, max : number;
+            if (originalParameter.hasMinimumAcceptedValue && originalParameter.hasMinimumAcceptedValue.length > 0) {
+                min = Number(originalParameter.hasMinimumAcceptedValue[0]);
+            }
+            if (originalParameter.hasMaximumAcceptedValue && originalParameter.hasMaximumAcceptedValue.length > 0) {
+                max = Number(originalParameter.hasMaximumAcceptedValue[0]);
+            }
             let fixedVal = fixedValEl.value;
-            if (!fixedVal) {
+            if (!fixedVal || (min!=undefined && Number(fixedVal)<min) || (max!=undefined && Number(fixedVal)>max)) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>fixedValEl).refreshAttributes();
                 return;
             }
 
-            let editedParameter : Parameter = Object.assign({}, this._parameters[this._selectedParameterUri])
+            let editedParameter : Parameter = Object.assign({}, originalParameter);
             editedParameter.hasFixedValue = [fixedVal as any];
             //console.log(editedParameter)
             this.dispatchEvent(new CustomEvent('parameterEdited', {composed: true, detail: editedParameter }));
