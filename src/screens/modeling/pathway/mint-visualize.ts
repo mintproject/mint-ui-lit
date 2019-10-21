@@ -77,8 +77,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
         </style>
         ${(this.pathway.visualizations && this.pathway.visualizations.length > 0)? html`
             <h2>Visualizations 
-                ${responseV? 'of response variable ' + responseV : ''}
-                ${drivingV? 'to explore driving variable ' + drivingV : ''}
+                ${responseV? 'of indicator ' + responseV : ''}
             </h2>
             ${this.pathway.visualizations.map((viz) => this._renderVisualization(viz))}
             <fieldset class="notes">

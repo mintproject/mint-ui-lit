@@ -91,6 +91,12 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
       .monospaced {
         font: 12px Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace;
       }
+
+      iframe {
+        width:100%;
+        border: 0px solid black;
+        height: 200vh;
+      }
     `];
   }
 
@@ -113,6 +119,20 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
       let scenario = this._scenarios[this._selectedScenarioId];
       let task = this._tasks[this._selectedTaskId];
       let pathway = this._pathways[this._selectedPathwayId] as Pathway;
+
+      let responseV = pathway.response_variables.length > 0?
+      getVariableLongName(pathway.response_variables[0]) : '';
+      let drivingV = pathway.driving_variables.length > 0?
+      getVariableLongName(pathway.driving_variables[0]) : '';
+
+      let vizurl = '';
+      if(responseV == "Crop Production") {
+        vizurl = 'https://dev.viz.mint.isi.edu/economic?thread_id=' + pathway.id
+      }
+      else if(responseV == "Potential Crop Production") {
+        vizurl = 'https://dev.viz.mint.isi.edu/cycles?thread_id=' + pathway.id
+      }
+
       return html`
         ${task ? html `
         <div class="main-content">
@@ -203,7 +223,16 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
             and ${execSum.failed_runs} failed.
             `)}
           </div>
-            `
+
+          <wl-title level="3">Thread visualizations:</wl-title>
+          <div class="inner-content">
+          ${!vizurl || !pathway.executable_ensemble_summary || Object.keys(pathway.executable_ensemble_summary).length == 0 ? 
+            'No visualizations for this run' : 
+            html `<iframe src="${vizurl}"></iframe>`
+          }
+          </div>
+          
+          `
           :''}
           <div style="height: 200px;"/>`
           :''}
