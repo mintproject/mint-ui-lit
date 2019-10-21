@@ -376,6 +376,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                 })
             })
             configSelector.value = this._config ? this._config.uri : '';
+            // FIX ARROW
+            let arrowEl = configSelectorWl.shadowRoot.getElementById('arrow');
+            if (arrowEl) {
+                arrowEl.style.pointerEvents = "none";
+            }
             (<any>configSelectorWl).refreshAttributes();
         } else if (configSelectorWl) {
             /* FIXME: Sometimes, when versions data load faster than the wl-selector renders, we could end here.
@@ -408,6 +413,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                 calibrationSelector.add(newOption, null);
             })
             calibrationSelector.value = this._calibration ? this._calibration.uri : '';
+            // FIX ARROW
+            let arrowEl = calibrationSelectorWl.shadowRoot.getElementById('arrow');
+            if (arrowEl) {
+                arrowEl.style.pointerEvents = "none";
+            }
             (<any>calibrationSelectorWl).refreshAttributes();
         }
     }
