@@ -160,8 +160,11 @@ export class MintResults extends connect(store)(MintPathwayPage) {
 
                     ${finished && !submitted ? 
                         html` <wl-button class="submit"
-                        @click="${() => this._publishAllResults(model.id)}">Publish all results</wl-button>`
+                        @click="${() => this._publishAllResults(model.id)}">Save all results</wl-button>`
                         : ""
+                    }
+                    ${finished && submitted ? 
+                        "Results have been saved" : ''
                     }
                     <br /><br />
 
@@ -415,7 +418,8 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                     user: this.user!.email
                 } as StepUpdateInformation
             };
-            */          
+            */      
+           this._onDialogDone();    
         })
     }
 
