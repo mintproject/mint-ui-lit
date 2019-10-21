@@ -1,10 +1,10 @@
 import { Reducer } from "redux";
 import { RootAction } from "../app/store";
 import { START_LOADING, END_LOADING, START_POST, END_POST,
-         PERSON_GET, PERSONS_GET, ALL_PERSONS,
-         PROCESS_GET, PROCESSES_GET, ALL_PROCESSES,  
-         PARAMETER_GET, PARAMETERS_GET, ALL_PARAMETERS,
-         MODEL_CONFIGURATION_GET, MODEL_CONFIGURATIONS_GET, ALL_MODEL_CONFIGURATIONS,
+         PERSON_GET, PERSONS_GET, ALL_PERSONS, PERSON_DELETE, 
+         PROCESS_GET, PROCESSES_GET, ALL_PROCESSES,  PROCESS_DELETE,
+         PARAMETER_GET, PARAMETERS_GET, ALL_PARAMETERS, PARAMETER_DELETE,
+         MODEL_CONFIGURATION_GET, MODEL_CONFIGURATIONS_GET, ALL_MODEL_CONFIGURATIONS, MODEL_CONFIGURATION_DELETE,
          MODELS_GET, VERSIONS_GET,
          DATASET_SPECIFICATION_GET,
          GRID_GET, TIME_INTERVAL_GET, SOFTWARE_IMAGE_GET } from './actions'
@@ -74,6 +74,7 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 ...state,
                 loading: tmp,
             }
+
         case MODELS_GET:
             tmp = { ...state.loadedAll };
             tmp['models'] = true;
@@ -90,6 +91,14 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 loadedAll: tmp,
                 versions: {...state.version, ...action.payload}
             }
+
+        case MODEL_CONFIGURATION_DELETE:
+            tmp = { ...state.configurations }
+            tmp[action.uri] = undefined
+            return {
+                ...state,
+                configurations: tmp
+            }
         case MODEL_CONFIGURATION_GET:
             return {
                 ...state,
@@ -102,6 +111,14 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 ...state,
                 loadedAll: tmp,
                 configurations: {...state.configuration, ...action.payload}
+            }
+
+        case PARAMETER_DELETE:
+            tmp = { ...state.parameters };
+            delete tmp[action.uri];
+            return {
+                ...state,
+                parameters: tmp
             }
         case PARAMETER_GET:
             return {
@@ -116,10 +133,19 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 loadedAll: tmp,
                 parameters: {...state.parameters, ...action.payload}
             }
+
         case DATASET_SPECIFICATION_GET:
             return {
                 ...state,
                 datasetSpecifications: {...state.datasetSpecifications, ...action.payload}
+            }
+
+        case PERSON_DELETE:
+            tmp = { ...state.persons };
+            delete tmp[action.uri];
+            return {
+                ...state,
+                persons: tmp
             }
         case PERSON_GET:
             return {
@@ -134,6 +160,14 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 loadedAll: tmp,
                 persons: {...state.persons, ...action.payload}
             }
+
+        case PROCESS_DELETE:
+            tmp = { ...state.processes };
+            delete tmp[action.uri];
+            return {
+                ...state,
+                processes: tmp
+            }
         case PROCESS_GET:
             return {
                 ...state,
@@ -147,6 +181,7 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 loadedAll: tmp,
                 processes: {...state.processes, ...action.payload}
             }
+
         case GRID_GET:
             return {
                 ...state,

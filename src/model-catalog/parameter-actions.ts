@@ -3,8 +3,8 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
 import { Configuration, Parameter, ParameterApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, 
-         DEFAULT_GRAPH, START_LOADING, END_LOADING, START_POST, END_POST, MCAStartPost, MCAEndPost, MCAStartLoading, MCAEndLoading } from './actions';
+import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, DEFAULT_GRAPH,
+         START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
 
 function debug (...args: any[]) { console.log('OBA:', ...args); }
 
@@ -111,5 +111,30 @@ export const parameterPut: ActionCreator<ModelCatalogParameterThunkResult> = ( p
     }
 }
 
-export type ModelCatalogParameterAction =  MCAStartPost | MCAEndPost | MCAStartLoading | MCAEndLoading | MCAParametersGet | MCAParameterGet | MCAParameterPost | MCAParameterPut;
+export const PARAMETER_DELETE = "PARAMETER_DELETE";
+interface MCAParameterDelete extends Action<'PARAMETER_DELETE'> {uri: string};
+export const parameterDelete: ActionCreator<ModelCatalogParameterThunkResult> = ( uri: string ) => (dispatch) => {
+    debug('updating parameter', uri);
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+
+    if (status === 'DONE') {
+        let api : ParameterApi = new ParameterApi(cfg);
+        let id : string = uri.split('/').pop();
+        api.parametersIdDelete({id: id, user: DEFAULT_GRAPH}) // This should be my username on prod.
+            .then((resp) => {
+                console.log('Response for DELETE parameter:', resp);
+                dispatch({
+                    type: PARAMETER_DELETE,
+                    uri: uri
+                });
+            })
+            .catch((err) => {console.log('Error on DELETE parameter', err)})
+    } else if (status === 'LOADING') {
+        repeatAction(parameterDelete, uri);
+    }
+}
+
+export type ModelCatalogParameterAction =  MCACommon | MCAParametersGet | MCAParameterGet | MCAParameterPost |
+                                           MCAParameterPut | MCAParameterDelete;
 type ModelCatalogParameterThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogParameterAction>;

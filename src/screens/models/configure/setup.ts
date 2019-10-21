@@ -157,14 +157,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 background-color: rgb(246, 246, 246);
             }
 
-            .monospaced {
-                font: 12px Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace;
-            }
-
-            .number {
-                font-family: helvetica;
-            }
-
             .details-table > tbody > tr > td > span {
                 display: inline-block;
                 border-radius: 4px;
@@ -195,22 +187,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             .details-table td {
                 padding: 5px 1px;
                 vertical-align: top;
-            }
-
-            span.author {
-                border: 2px solid cadetblue;
-            }
-
-            span.process {
-                border: 2px solid purple;
-            }
-
-            span.time-interval {
-                border: 2px solid burlywood;
-            }
-
-            span.grid {
-                border: 2px solid teal;
             }
 
             wl-button.small {
@@ -314,6 +290,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
 
 
         <table class="details-table">
+            <colgroup width="150px">
             <tr>
                 <td>Description:</td>
                 <td>
@@ -371,7 +348,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 <td>
                     ${this._setup.hasSoftwareImage ? 
                     ((this._softwareImage && Object.keys(this._softwareImage).length > 0) ?
-                        html`TODO: ${Object.keys(this._softwareImage)}`
+                        html`<span class="software-image">${this._softwareImage.label}</span>`
                         : html`${this._setup.hasSoftwareImage[0].id} ${this._softwareImageLoading ?
                             html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`)
                     : 'No software image'}
@@ -419,8 +396,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     ${this._setup.hasOutputTimeInterval ?
                     (this._timeInterval ? html`
                         <span class="time-interval">
-                            ${this._timeInterval.label} (fixme)
-                            ${this._editing ? html`<wl-icon>edit</wl-icon>` : ''}
+                            ${this._timeInterval.label}
+                            ${this._editing ? html`<wl-icon style="margin-left:10px">edit</wl-icon>` : ''}
                         </span>`
                         : html`${this._setup.hasOutputTimeInterval[0].id} ${this._timeIntervalLoading ? 
                             html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`)
@@ -568,10 +545,10 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     _showAuthorDialog () {
         this._dialog = 'person';
         console.log(this._setup.author);
-        let selectedAuthors = this._setup.author.filter(x => x.type === "Person").reduce((acc: any, author: any) => {
+        let selectedAuthors = this._setup.authors ? this._setup.author.filter(x => x.type === "Person").reduce((acc: any, author: any) => {
             if (!acc[author.id]) acc[author.id] = true;
             return acc;
-        }, {})
+        }, {}) : {};
         let personConfigurator = this.shadowRoot.getElementById('person-configurator') as ModelsConfigurePerson;
         personConfigurator.setSelected(selectedAuthors);
         personConfigurator.open();
