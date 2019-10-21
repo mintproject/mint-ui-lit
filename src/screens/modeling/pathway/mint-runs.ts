@@ -435,6 +435,9 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
     }
 
     _getModelURL (model:Model) {
+        if(!model) {
+            return "";
+        }
         let url = this._regionid + '/models/explore/' + model.original_model;
         if (model.model_version) {
             url += '/' + model.model_version;
