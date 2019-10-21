@@ -17,7 +17,7 @@ import './configure/parameter';
 import { fetchIOAndVarsSNForConfig, fetchAuthorsForModelConfig, fetchParametersForConfig,
          fetchMetadataNoioForModelConfig, addParameters, addCalibration, addMetadata,
          addInputs, addAuthor } from '../../util/model-catalog-actions';
-import { parameterGet } from 'model-catalog/actions';
+import { parameterGet, processesGet } from 'model-catalog/actions';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
 
@@ -366,6 +366,10 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     }
 
     private _configParametersLoading : Set<string> = new Set();
+
+    firstUpdated () {
+        store.dispatch(processesGet());
+    }
     
     stateChanged(state: RootState) {
         if (state.explorerUI) {
