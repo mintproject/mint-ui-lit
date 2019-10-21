@@ -131,6 +131,13 @@ export class MintApp extends connect(store)(LitElement) {
       .message-button {
         --button-padding: 6px;
       }
+      .message-button.selected {
+        background-color: rgb(98, 155, 48);
+        color: white;
+      }
+      .message-button.selected:hover {
+        background-color: rgb(98, 155, 48);
+      }
       .message-button:hover {
         background-color: rgb(224, 224, 224);
       }
@@ -194,7 +201,7 @@ export class MintApp extends connect(store)(LitElement) {
             `
             :
             html `
-            <wl-button flat inverted class="message-button" @click="${() => goToPage('messages')}">
+            <wl-button flat inverted class="message-button ${this._page == 'messages' ? 'selected' : ''}" @click="${() => goToPage('messages')}">
               Messages <wl-icon style="margin-left: 4px;">message</wl-icon>
             </wl-button>
             <wl-button flat inverted @click="${signOut}">

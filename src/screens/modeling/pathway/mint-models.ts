@@ -123,7 +123,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         let availableModels = this._queriedModels[this._responseVariables.join(",")] || [];
         return html`
         <p>
-            This step is for selecting models that are appropriate for the indicators and adjustable variables that you selected earlier.
+            The models below are appropriate for the indicators of interest. You can select multiple calibrated models and compare them.  
         </p>
         ${done && !this._editMode ? html`<p>Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes.</p>`: html``}
         ${(done && !this._editMode) ?

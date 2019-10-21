@@ -46,6 +46,7 @@ export interface FetchedModel extends Resource {
     explanationDiagrams?:   string; // URI of explanation diagrams.
     sampleVisualization?:   string; // URL of Sample visualizations
     web?:                   string; // URL to web page
+    indices?:               string;
     // ???
     grid?:                  string; // URI of one grid
     versions?:              string[]; // URI versions ,

@@ -3,6 +3,9 @@ import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 
 import { SharedStyles } from "../../../styles/shared-styles";
+import { updatePathway } from "../actions";
+import { renderNotifications } from "../../../util/ui_renders";
+import { showNotification } from "../../../util/ui_functions";
 import { ExecutableEnsemble, Goal, SubGoal, DataEnsembleMap, Visualization } from "../reducers";
 import { getUISelectedSubgoal, getUISelectedGoal } from "../../../util/state_functions";
 import { MintPathwayPage } from "./mint-pathway-page";
@@ -80,10 +83,15 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                 ${responseV? 'of indicator ' + responseV : ''}
             </h2>
             ${this.pathway.visualizations.map((viz) => this._renderVisualization(viz))}
+
             <fieldset class="notes">
                 <legend>Notes</legend>
-                <textarea id="notes">Write some notes here.</textarea>
+                <textarea id="notes">${this.pathway.notes ? this.pathway.notes.visualization : ""}</textarea>
             </fieldset>
+            <div class="footer">
+                <wl-button type="button" class="submit" @click="${this._saveNotes}">Save</wl-button>
+            </div>
+            ${renderNotifications()}
             <br/>
             <details>
                 <summary>Summary of models explored to generate visualizations</summary>
@@ -93,6 +101,16 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
             ${this._renderSummary()}
         `}
         `;
+    }
+
+    _saveNotes () {
+        let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
+        this.pathway.notes = {
+            ...this.pathway.notes!,
+            visualization: notes
+        };
+        updatePathway(this.scenario, this.pathway); 
+        showNotification("saveNotification", this.shadowRoot!);
     }
 
     _renderVisualization (visualization: Visualization) {
