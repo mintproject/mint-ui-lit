@@ -51,6 +51,9 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
                 break;
         }
 
+        return html`<analysis-report class="page" ?active="${this._subpage == 'report'}"></analysis-report>`;
+
+        /*
         return html`
             <nav-title .nav="${nav}" max="2"></nav-title>
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
@@ -78,6 +81,7 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
             <analysis-aggregate class="page" ?active="${this._subpage == 'aggregate'}"></analysis-aggregate>
             <analysis-report class="page" ?active="${this._subpage == 'report'}"></analysis-report>
         `
+        */
     }
 
     stateChanged(state: RootState) {

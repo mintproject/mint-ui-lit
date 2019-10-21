@@ -173,7 +173,7 @@ export class MintApp extends connect(store)(LitElement) {
                 <li @click="${()=>goToPage('modeling')}"
                     class=${(this._page == 'modeling') ? 'active': ''}
                   class="active">Use Models</li>
-                <li @click="${()=>goToPage('analysis')}"
+                <li @click="${()=>goToPage('analysis/report')}"
                     class=${(this._page == 'analysis'? 'active': '')}
                   >Prepare Reports</li>
                 `

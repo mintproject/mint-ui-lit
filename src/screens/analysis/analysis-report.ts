@@ -17,6 +17,8 @@ import { RegionList } from "screens/regions/reducers";
 import { queryRegions } from 'screens/regions/actions';
 import { db } from '../../config/firebase';
 
+import '../../components/nav-title'
+
 function log (...args: any) {console.log('REPORT:', ...args)}
 
 const PREFIX_REPORT = 'analysis/report/';
@@ -93,6 +95,18 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
   }
 
   protected render() {
+    let nav = [{label:'Available Reports', url:'analysis/report'}] 
+    if (this._selectedPathwayId) {
+      nav.push({label: 'Available Reports', url: 'analysis/report'})
+    }
+
+    return html`
+        <nav-title .nav="${nav}" max="2"></nav-title>
+        ${this._loadReportsPage()}
+    `;
+  }
+
+  private _loadReportsPage() {
     //log('RENDER')
     //log(this._selectedScenarioId, this._selectedTaskId, this._selectedPathwayId)
     if (this._selectedScenarioId && this._selectedTaskId && this._selectedPathwayId) {
