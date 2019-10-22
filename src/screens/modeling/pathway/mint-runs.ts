@@ -114,13 +114,20 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 let model = this.pathway.models![modelid];
                 let grouped_ensemble = grouped_ensembles[modelid];
                 this.totalPages = Math.ceil(summary.total_runs/this.pageSize);
-                let finished_runs = summary.successful_runs + summary.failed_runs;
+                let submitted_runs = summary.submitted_runs ? summary.submitted_runs : 0;
+                let failed_runs = summary.failed_runs ? summary.failed_runs : 0;
+                let successful_runs = summary.successful_runs ? summary.successful_runs : 0;
+                let finished_runs = successful_runs + failed_runs;
+                
                 let finished = (finished_runs == summary.total_runs);
-                let running = summary.submitted_runs - finished_runs;
-                let pending = summary.total_runs - summary.submitted_runs;
+                let running = submitted_runs - finished_runs;
+                let pending = summary.total_runs - submitted_runs;
 
                 if(!grouped_ensemble && model) {
                     this._fetchRuns(model.id, 1, this.pageSize)
+                }
+                if(!model) {
+                    return "";
                 }
 
                 return html`
@@ -134,9 +141,9 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                     </p>                    
                     <p>
                     The model setup created ${summary.total_runs} configurations. 
-                    ${!finished ? "So far, " : ""} ${summary.submitted_runs} model runs
+                    ${!finished ? "So far, " : ""} ${submitted_runs} model runs
                     ${!finished ? "have been" : "were"} submitted, out of which 
-                    ${summary.successful_runs} succeeded, while ${summary.failed_runs} failed.
+                    ${successful_runs} succeeded, while ${failed_runs} failed.
                     ${running > 0 ? html `${running} are currently running` : ""}
                     ${pending > 0 ? html `, and ${pending} are waiting to be run` : ""}
                     </p>
