@@ -5,12 +5,12 @@ import { FIREBASE_GOOGLE_API_KEY } from "./google-api-key";
 
 const firebaseConfig = {
     apiKey: FIREBASE_GOOGLE_API_KEY,
-    authDomain: "mint-full.firebaseapp.com",
-    databaseURL: "https://mint-full.firebaseio.com",
-    projectId: "mint-full",
-    storageBucket: "mint-full.appspot.com",
-    messagingSenderId: "128464392367",
-    appId: "1:128464392367:web:97eaa44bc1fcb5296c445a"
+    authDomain: "mint-demo-9bf45.firebaseapp.com",
+    databaseURL: "https://mint-demo-9bf45.firebaseio.com",
+    projectId: "mint-demo-9bf45",
+    storageBucket: "mint-demo-9bf45.appspot.com",
+    messagingSenderId: "506125229598",
+    appId: "1:506125229598:web:6c6ce25b2521d883"    
 };
 
 export const app = firebase.initializeApp(firebaseConfig);
