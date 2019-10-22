@@ -685,7 +685,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <td><b>Language:</b></td>
                         <td>${this._calibrationMetadata[0].pLanguage}</td>
                     </tr>` : '' }
-                </tbody>
             </table>
             <br/>
             ` : ''}
@@ -751,7 +750,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             </ul>`
             :''}
             ${this._model.indices ? html`
-            <wl-title level="2" style="font-size: 16px;">Relevant for calulcating index:</wl-title>
+            <wl-title level="2" style="font-size: 16px;">Relevant for calculating index:</wl-title>
             <ul style="margin-top: 5px">
                 <li>${this._model.indices.split('/').pop()}</li>
             </ul>`
@@ -840,14 +839,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                         if (i === 0) return html`<code>${v}</code>`;
                         else return html`, <code>${v}</code>`;
                     })}</li>`: ''}
-                    ${meta[0].compLoc ?  html`
-                        <li><b>Download:</b> ${this._renderLink(meta[0].compLoc)}
-                            <span tip="This download is an executable containing the code used to execute this ${title}." class="tooltip">
-                                <wl-icon style="--icon-size: 18px; vertical-align: text-bottom; margin-left: 5px;">help_outline</wl-icon>
-                            </span>
-                        </li>`
-                        : ''}
-                    </ul>
                     `
                 )}
             </fieldset>
