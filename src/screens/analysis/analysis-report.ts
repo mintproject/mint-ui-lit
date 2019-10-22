@@ -18,6 +18,7 @@ import { queryRegions } from 'screens/regions/actions';
 import { db } from '../../config/firebase';
 
 import '../../components/nav-title'
+import { getVisualizationURL } from 'util/state_functions';
 
 function log (...args: any) {console.log('REPORT:', ...args)}
 
@@ -129,13 +130,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
       let drivingV = pathway.driving_variables && pathway.driving_variables.length > 0?
           getVariableLongName(pathway.driving_variables[0]) : '';
 
-      let vizurl = '';
-      if(responseV == "Crop Production") {
-        vizurl = 'https://dev.viz.mint.isi.edu/economic?thread_id=' + pathway.id
-      }
-      else if(responseV == "Potential Crop Production") {
-        vizurl = 'https://dev.viz.mint.isi.edu/cycles?thread_id=' + pathway.id
-      }
+      let vizurl = getVisualizationURL(pathway)
 
       return html`
         ${task ? html `
