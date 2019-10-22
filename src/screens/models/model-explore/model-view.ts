@@ -350,6 +350,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                     margin-top: 6px;
                     margin-bottom: 4px;
                 }
+
+                .link {
+                    border-bottom: 1px dotted;
+                    cursor: pointer;
+                }
                 `
         ];
     }
@@ -1102,7 +1107,7 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _renderTabVariables () {
         return html`<div id="hack">${this._count}</div>
-            ${(this._inputs) ? html`
+            ${(this._inputs && this._inputs.length > 0) ? html`
             <wl-title level="3">Inputs:</wl-title>
             ${this._inputs.map(input => html`
             <wl-expansion id="${input.label}" name="groupInput" @click="${()=>{this.expandIO(input.uri)}}">
@@ -1126,7 +1131,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <td>${v.label}</td>
                                 <td>${v.longName}</td>
                                 <td>${v.desc}</td>
-                                <td style="word-wrap: break-word;">${v.sn}</td>
+                                <td style="word-wrap: break-word;">
+                                    <a class="monospaced link" target="_blank" href="${v.snURI}">${v.sn}</a>
+                                </td>
                                 <td style="min-width: 80px;">${v.unit}</td>
                             </tr>`)}
                         </tbody>
@@ -1141,7 +1148,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             </wl-expansion>`)}`
             : html``}
 
-            ${(this._outputs) ? html`
+            ${(this._outputs && this._outputs.length > 0) ? html`
             <wl-title level="3">Outputs:</wl-title>
             ${this._outputs.map(output => html`
             <wl-expansion id="${output.label}" name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}">
@@ -1165,7 +1172,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <td>${v.label}</td>
                                 <td>${v.longName}</td>
                                 <td>${v.desc}</td>
-                                <td style="word-wrap: break-word;">${v.sn}</td>
+                                <td style="word-wrap: break-word;">
+                                    <a class="monospaced link" target="_blank" href="${v.snURI}">${v.sn}</a>
+                                </td>
                                 <td style="min-width: 80px;">${v.unit}</td>
                             </tr>`)}
                         </tbody>
