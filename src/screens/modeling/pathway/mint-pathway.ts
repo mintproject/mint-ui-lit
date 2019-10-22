@@ -82,9 +82,6 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
     private _renderProgressBar() {
         return html`
             <ul class="breadcrumbs">
-                <li id="variables_breadcrumb" 
-                    class="${this._getBreadcrumbClass('variables')}" 
-                    @click="${() => { this._selectMode('variables') }}">Variables</li>
                 <li id="models_breadcrumb" 
                     class="${this._getBreadcrumbClass('models')}" 
                     @click="${() => { this._selectMode('models') }}">Models</li>

@@ -467,6 +467,20 @@ export const updatePathwayInfo = (scenario: Scenario, subgoalid: string, pathway
     .then(() => updateScenario(scenario));
 }
 
+export const updatePathwayVariables = (scenarioid: string, pathwayid: string, 
+        driving_variables: string[], response_variables: string[]) =>  {
+    let pathwayRef = db.collection("scenarios/"+scenarioid+"/pathways").doc(pathwayid);
+    return pathwayRef.set({
+        driving_variables: driving_variables,
+        response_variables: response_variables
+    }, {merge: true});
+};
+
+export const updatePathwayFromPathwayInformation = (scenarioid: string, pathwayid: string, pathwayinfo: PathwayInfo) => {
+    let pathwayRef = db.collection("scenarios/"+scenarioid+"/pathways").doc(pathwayinfo.id);
+    return pathwayRef.set(pathwayinfo, {merge: true});
+}
+
 // Add Ensembles
 export const addPathwayEnsembles = (ensembles: ExecutableEnsemble[]) => {
     let ensemblesRef = db.collection("ensembles");

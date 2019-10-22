@@ -272,10 +272,10 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         <wl-dialog class="comparison" fixed backdrop blockscrolling id="comparisonDialog">
             <table class="pure-table pure-table-striped">
                 <thead>
-                    <th></th>
+                    <th style="border-right:1px solid #EEE"></th>
                     ${this._datasetsToCompare.map((model) => {
                         return html`
-                        <th><b>${model.name}</b></th>
+                        <th .style="width:${100/(this._datasetsToCompare.length)}%"><b>${model.name}</b></th>
                         `
                     })}
                 </thead>
@@ -283,7 +283,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                     ${this._comparisonFeatures.map((feature) => {
                         return html`
                         <tr>
-                            <td><b>${feature.name}</b></td>
+                            <td style="border-right:1px solid #EEE"><b>${feature.name}</b></td>
                             ${this._datasetsToCompare.map((model) => {
                                 return html`
                                     <td>${feature.fn(model)}</td>
