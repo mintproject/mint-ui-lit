@@ -13,6 +13,7 @@ import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersio
 import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
+import marked from 'marked';
 
 import { goToPage } from '../../../app/actions';
 import "weightless/expansion";
@@ -534,6 +535,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                             >Files and parameters</wl-tab>
                         <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => {this._tab = 'variables'}}"
                             >Variables</wl-tab>
+
+                        ${this._model.example? html`
+                        <wl-tab id="tab-example" @click="${() => {this._tab = 'example'}}"
+                            >Example</wl-tab>
+                        ` : ''}
+
                         <wl-tab id="tab-software" @click="${() => {this._tab = 'software'}}"
                             >Compatible Software</wl-tab>
                         <wl-tab id="tab-overview" ?checked=${this._tab=='tech'} @click="${() => {this._tab = 'tech'}}"
@@ -546,6 +553,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${(this._tab === 'tech') ? this._renderTabTechnical() : ''}
                     ${(this._tab === 'io') ? this._renderTabIO() : ''}
                     ${(this._tab === 'variables') ? this._renderTabVariables() : ''}
+                    ${(this._tab === 'example') ? this._renderTabExample() : ''}
                     ${(this._tab === 'software') ? this._renderTabSoftware() : ''}
                 </div>
             </div>`
@@ -1084,6 +1092,10 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
     }
 
+    _renderTabExample () {
+        return html`<div id="mk-example"></div>`
+    }
+
     _renderTabVariables () {
         return html`<div id="hack">${this._count}</div>
             ${(this._inputs) ? html`<h3>Inputs:</h3>${this._inputs.map(input => html`
@@ -1346,6 +1358,12 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (this._versions) {
             this._updateConfigSelector();
             this._updateCalibrationSelector();
+        }
+        if (this._tab == 'example' && this._model.example) {
+            let example = this.shadowRoot.getElementById('mk-example');
+            if (example) {
+                example.innerHTML = marked(this._model.example);
+            }
         }
     }
 
