@@ -13,6 +13,7 @@ export const MODELS_DETAIL = 'MODELS_DETAIL';
 import { apiFetch,  CALIBRATIONS_FOR_VAR_SN, METADATA_NOIO_FOR_MODEL_CONFIG, PARAMETERS_FOR_CONFIG,
 IO_AND_VARS_SN_FOR_CONFIG } from '../../util/model-catalog-requests';
 import { Dataset } from "../datasets/reducers";
+import { getVariableProperty } from "offline_data/variable_list";
 
 export interface ModelsActionList extends Action<'MODELS_LIST'> { models: Model[] };
 export interface ModelsActionVariablesQuery extends Action<'MODELS_VARIABLES_QUERY'> { 
@@ -93,6 +94,10 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
     let variables = response_variables[0].split(/\s*,\s/);
     Promise.all(
         variables.map((variable) => {
+            let fromvar = getVariableProperty(variable, "created_from");
+            if(fromvar) {
+                variable = fromvar;
+            }
             return apiFetch({
                 type: CALIBRATIONS_FOR_VAR_SN,
                 std: variable,
