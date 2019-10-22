@@ -297,8 +297,12 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
   }
 
   // checking executable_ensemble_summary
-  protected async firstUpdated() {    
+  protected async fetchReports() {    
     this._loading = true;
+    this._pathways = {};
+    this._scenarios = {};
+    this._tasks = {};
+
     await db.collectionGroup("pathways").get().then((snapshot) => {
       snapshot.forEach((pathway) => {
         let execSumRaw = pathway.get('executable_ensemble_summary')
@@ -344,7 +348,11 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
     /* This could stay active when moving to another page for links, so autoupdate active property */
     super.setSubPage(state);
     this.active = (this._subpage === 'report');
-    super.setRegionId(state);
+
+    if(super.setRegionId(state)) {
+      //console.log("Region id changed to " + this._regionid);
+      this.fetchReports();
+    }
 
     if (state.ui) {
       this._selectedScenarioId = state.ui.selected_scenarioid;
