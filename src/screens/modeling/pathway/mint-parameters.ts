@@ -6,7 +6,7 @@ import { DataEnsembleMap, ModelEnsembleMap, StepUpdateInformation, ExecutableEns
 import { SharedStyles } from "../../../styles/shared-styles";
 import { Model } from "../../models/reducers";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
-import { TASK_DONE, getPathwayParametersStatus, getModelInputConfigurations, getEnsembleHash, setupModelWorkflow, listEnsembles, runModelEnsembles, listExistingEnsembleIds } from "../../../util/state_functions";
+import { TASK_DONE, getPathwayParametersStatus, getModelInputConfigurations, getEnsembleHash, setupModelWorkflow, listEnsembles, runModelEnsembles, listAlreadyRunEnsembleIds } from "../../../util/state_functions";
 import { updatePathway, addPathwayEnsembles, setPathwayEnsembleIds, deleteAllPathwayEnsembleIds } from "../actions";
 import { showNotification, showDialog, hideDialog } from "../../../util/ui_functions";
 import { selectPathwaySection } from "../../../app/ui-actions";
@@ -59,7 +59,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         if(!this.pathway.models || !Object.keys(this.pathway.models).length) {
             return html `
             <p>
-                This step is for specifying input values for the models that you selected earlier.
+                Please specify the values for the adjustable parameters.
             </p>
             Please select model(s) first
             `
@@ -70,7 +70,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         // If models have been selected, go over each model
         return html `
         <p>
-            This step is for specifying input values for the models that you selected earlier.
+            This step is for specifying values for the adjustable parameters of the models that you selected earlier.
         </p>
         ${done && !this._editMode ? html`<p>Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes.</p>`: html``}
         <div class="clt">
@@ -83,7 +83,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
             <wl-tooltip anchor="#editParametersIcon" 
                 .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
                 anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
-                Change Adjustable Variable Values
+                Change Adjustable Parameter Values
             </wl-tooltip>
             <ul>
             ${(Object.keys(this.pathway.models) || []).map((modelid) => {
@@ -105,7 +105,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                         <form id="form_${this._valid(model.localname || model.id)}">
                         <table class="pure-table pure-table-striped">
                         <thead>
-                            <th><b>Adjustable Variable</b></th>
+                            <th><b>Adjustable Parameter</b></th>
                             <th>Values</th>
                         </thead>
                         <tbody>
@@ -113,7 +113,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                             let bindings:string[] = ensembles[input.id!];
                             return html`
                             <tr>
-                                <td>
+                                <td style="width:60%">
                                     <wl-title level="5">${input.name}</wl-title>
                                     <div class="caption">${input.description}.</div>
                                     <div class="caption">
@@ -125,11 +125,11 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                                 </td>
                                 <td>
                                     ${(bindings && bindings.length > 0 && !this._editMode) ? 
-                                        bindings.join(",")
+                                        bindings.join(", ")
                                         :
                                         html`
                                         <div class="input_full">
-                                            <input type="text" name="${input.id}" value="${(bindings||[]).join(",")}"></input>
+                                            <input type="text" name="${input.id}" value="${(bindings||[]).join(", ")}"></input>
                                         </div>
                                         `
                                     }
@@ -286,7 +286,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                 this._progress_number = 0;
                 showDialog("progressDialog", this.shadowRoot!);
 
-                // Delete existing pathway ensemble ids
+                // Delete existing pathway ensemble ids (*NOT DELETING GLOBAL ENSEMBLE DOCUMENTS .. Only clearing list of the pathway's ensemble ids)
                 deleteAllPathwayEnsembleIds(this.scenario.id, this.pathway.id, modelid);
 
                 // Setup Model for execution on Wings
@@ -342,7 +342,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
 
                     // Check if any current ensembles already exist 
                     // - Note: ensemble ids are uniquely defined by the model id and inputs
-                    let current_ensemble_ids = await listExistingEnsembleIds(ensembleids);
+                    let current_ensemble_ids = await listAlreadyRunEnsembleIds(ensembleids);
 
                     // Run ensembles in smaller batches
                     for(let i=0; i<ensembles.length; i+= executionBatchSize) {

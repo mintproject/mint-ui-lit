@@ -26,7 +26,7 @@ export class MessagesHome extends connect(store)(PageViewElement) {
     private _selectedThread! : Thread;
 
     static get styles() {
-        return [
+        return [SharedStyles,
             css `
         nav-title {
           display: inline-block;
@@ -47,18 +47,24 @@ export class MessagesHome extends connect(store)(PageViewElement) {
           margin-right: 16px;
           width: 320px;
         }
-            `,
-            SharedStyles
-        ];
+
+        .info {
+            width: 75%;
+            border-radius: 10px;
+            margin: 0 auto;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        `];
     }
 
     protected render() {
-        let nav = [{label:'Message Board', url:'messages'}]; 
+        let nav = [{label:'Discussion topics', url:'messages'}]; 
         switch (this._subpage) {
             case 'thread':
                 if (this._selectedThread) {
                     nav.push({
-                        label: this._selectedThread.name,
+                        label: 'Topic: ' + this._selectedThread.name,
                         url:'messages/thread/' + this._selectedThread.id
                     });
                 }
@@ -71,14 +77,25 @@ export class MessagesHome extends connect(store)(PageViewElement) {
             <div style="grid-row: 1;">
                 <nav-title .nav="${nav}"></nav-title>
                 <div class="nav-search" style="${this._subpage === 'home' ? '' : 'display:none;'}">
-                    <!--wl-textfield type="text" placeholder="Search thread" label="Search thread">
+                    <!--wl-textfield type="text" placeholder="Search topic" label="Search topic">
                         <wl-icon slot="before">search</wl-icon>
                     </wl-textfield-->
-                    <wl-button @click="${this._newThread}"><wl-icon>note_add</wl-icon>New thread</wl-button>
+                    <wl-button @click="${this._newThread}"><wl-icon>note_add</wl-icon>New topic</wl-button>
                 </div>
             </div>
 
-            <div style="grid-row: 2;">
+            <wl-list-item active style="grid-row: 2; display:${this._subpage != 'home' ? 'none' : ''}" class="info">
+               <wl-icon slot="before" style="--icon-size: 30px; margin-right: 15px">info</wl-icon>
+               <span slot="after"></span>
+               <wl-title level="4" style="margin: 0">
+                Please make sure to check messages for the topics you are interested in regularly.
+               </wl-title>
+               <span>
+                This version of the message board will not send alerts when a new message is posted.
+               </span>
+            </wl-list-item>
+
+            <div style="grid-row: 3;">
                 <messages-list id="message-list" class="page fullpage" ?active="${this._subpage == 'home'}"></messages-list>
                 <messages-thread class="page fullpage" ?active="${this._subpage == 'thread'}"></messages-thread>
             </div>

@@ -19,7 +19,8 @@ import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, sel
 import { auth } from '../config/firebase';
 import { User } from 'firebase';
 import { UserPreferences } from './reducers';
-import { SAMPLE_USER_PREFERENCES, SAMPLE_USER, SAMPLE_USER_PREFERENCES_LOCAL } from 'offline_data/sample_user';
+import { SAMPLE_USER, SAMPLE_MINT_PREFERENCES_LOCAL, SAMPLE_MINT_PREFERENCES } from 'offline_data/sample_user';
+import { DefaultApi } from '@mintproject/modelcatalog_client';
 
 export const BASE_HREF = document.getElementsByTagName("base")[0].href.replace(/^http(s)?:\/\/.*?\//, "/");
 
@@ -28,14 +29,23 @@ export const LOGIN = 'LOGIN';
 export const LOGOUT = 'LOGOUT';
 export const FETCH_USER = 'FETCH_USER';
 export const FETCH_USER_PREFERENCES = 'FETCH_USER_PREFERENCES';
+export const FETCH_MODEL_CATALOG_ACCESS_TOKEN = 'FETCH_MODEL_CATALOG_ACCESS_TOKEN';
+export const STATUS_MODEL_CATALOG_ACCESS_TOKEN = 'STATUS_MODEL_CATALOG_ACCESS_TOKEN';
 
 export interface AppActionUpdatePage extends Action<'UPDATE_PAGE'> { regionid?: string, page?: string, subpage?:string };
 export interface AppActionFetchUser extends Action<'FETCH_USER'> { user?: User | null };
 export interface AppActionFetchUserPreferences extends Action<'FETCH_USER_PREFERENCES'> { 
   prefs?: UserPreferences | null 
 };
+export interface AppActionFetchModelCatalogAccessToken extends Action<'FETCH_MODEL_CATALOG_ACCESS_TOKEN'> {
+    accessToken: string
+};
+export interface AppActionStatusModelCatalogAccessToken extends Action<'STATUS_MODEL_CATALOG_ACCESS_TOKEN'> {
+    status: string
+};
 
-export type AppAction = AppActionUpdatePage | AppActionFetchUser | AppActionFetchUserPreferences;
+export type AppAction = AppActionUpdatePage | AppActionFetchUser | AppActionFetchUserPreferences |
+                        AppActionFetchModelCatalogAccessToken | AppActionStatusModelCatalogAccessToken;
 
 type ThunkResult = ThunkAction<void, RootState, undefined, AppAction>;
 
@@ -54,6 +64,22 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
   //console.log("Subscribing to user authentication updates");
   auth.onAuthStateChanged(user => {
     if (user) {
+      // Check the state of the model-catalog access token.
+      let state: any = store.getState();
+      if (!state.app.prefs.modelCatalog.status) {
+        // This happen when we are already auth on firebase, the access token should be on local storage
+        let accessToken = localStorage.getItem('accessToken');
+        if (accessToken) {
+            store.dispatch({type: FETCH_MODEL_CATALOG_ACCESS_TOKEN, accessToken: accessToken});
+        } else {
+            console.error('No access token on local storage!')
+            // Should log out
+        }
+      } else if (state.app.prefs.modelCatalog.status === 'ERROR') {
+          console.error('Login failed!');
+          // Should log out
+      }
+
       dispatch({
         type: FETCH_USER,
         user: user
@@ -72,21 +98,42 @@ export const fetchUserPreferences: ActionCreator<UserPrefsThunkResult> = () => (
   //if(OFFLINE_DEMO_MODE) {
     dispatch({
       type: FETCH_USER_PREFERENCES,
-      prefs: SAMPLE_USER_PREFERENCES
+      prefs: { mint: SAMPLE_MINT_PREFERENCES, modelCatalog: {} } as UserPreferences
     });
     return;
   //}
 };
 
 export const signIn = (email: string, password: string) => {
-  auth
-    .signInWithEmailAndPassword(email, password);
+  auth.signInWithEmailAndPassword(email, password);
+  modelCatalogLogin(email, password);
 };
 
 export const signOut = () => {
   auth.signOut();
+  localStorage.removeItem('accessToken');
 };
 
+const modelCatalogLogin = (username: string, password: string) => {
+  let API = new DefaultApi();
+  store.dispatch({type: STATUS_MODEL_CATALOG_ACCESS_TOKEN, status: 'LOADING'})
+  API.userLoginGet({username: username, password: password})
+    .then((data:any) => {
+        let accessToken : string = JSON.parse(data)['access_token'];
+        if (accessToken) {
+            localStorage.setItem('accessToken', accessToken);
+            console.log('NEW TOKEN:', accessToken);
+            store.dispatch({type: FETCH_MODEL_CATALOG_ACCESS_TOKEN, accessToken: accessToken});
+        } else {
+            store.dispatch({type: STATUS_MODEL_CATALOG_ACCESS_TOKEN, status: 'ERROR'})
+            console.error('Error fetching the model catalog token!');
+        }
+    })
+    .catch((err) => {
+        console.log('Error login to the model catalog', err)
+        store.dispatch({type: STATUS_MODEL_CATALOG_ACCESS_TOKEN, status: 'ERROR'})
+    });
+}
 
 export const goToPage = (page:string) => {
   let state: any = store.getState();
@@ -215,11 +262,26 @@ const loadPage: ActionCreator<ThunkResult> =
         });
         break;
     case 'analysis':
-        import('../screens/analysis/analysis-home').then((_module) => {
-          if(params.length > 0) {
-            //store.dispatch(queryRegionDetail(params[0]));
-          }
-        });
+        if (subpage == 'home') {
+            import('../screens/analysis/analysis-home').then((_module) => {
+                store.dispatch(selectScenario(null));
+            });
+        } else if (subpage == 'report') {
+            import('../screens/analysis/analysis-report').then((_module) => {
+              if(params.length > 0) {
+                store.dispatch(selectScenario(params[0]));
+                if(params.length > 1) {
+                  store.dispatch(selectSubgoal(params[1]));
+                  if(params.length > 2) {
+                    store.dispatch(selectPathway(params[2]));
+                  }
+                }
+              } else {
+                store.dispatch(selectScenario(null));
+              }
+            });
+        }
+
         break;
     case 'datasets':
         import('../screens/datasets/datasets-home').then((_module) => {

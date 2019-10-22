@@ -68,17 +68,17 @@ export class MessagesList extends connect(store)(PageViewElement) {
   _renderDialogs() {
     return html`
     <wl-dialog id="threadDialog" fixed backdrop blockscrolling>
-      <h3 slot="header">New Thread</h3>
+      <h3 slot="header">New Topic</h3>
       <div slot="content">
         <form id="threadForm">
           <p>
-            Thread title
+            Topic title
           </p>
           <div class="input_full">
             <input name="thread_name"></input>
           </div>        
           <p>
-            Please enter thread details below
+            Please enter topic details below
           </p>
           <div class="input_full">
             <textarea name="thread_text" id="new_thread_text"></textarea>

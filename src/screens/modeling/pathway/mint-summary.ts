@@ -131,70 +131,22 @@ export class MintSummary extends connect(store)(MintPathwayPage) {
                                     <i>Notes: ${this.pathway.notes!.parameters}</i>
                                 </li>
                                 <li>
-                                    Selected Results:
+                                    Model Runs and Results:
                                     <ul>
-                                        ${this.pathway.executable_ensembles!.map((ensemble: ExecutableEnsemble) => {
-                                            if(ensemble.selected) {
-                                                let model = this.pathway.models![ensemble.modelid];
-                                                return html`
-                                                <li>Model: ${model.name}
-                                                    <ul>
-                                                    ${model.input_files.filter((input) => !input.value).map((input) => {
-                                                        let binding = ensemble.bindings[input.id!];
-                                                        return html`
-                                                        <li>${input.name} = ${binding}</li>
-                                                        `;
-                                                    })}
-                                                    ${model.input_parameters.filter((input) => !input.value).map((input) => {
-                                                        let binding = ensemble.bindings[input.id!];
-                                                        return html`
-                                                        <li>${input.name} = ${binding}</li>
-                                                        `;
-                                                    })}
-                                                    </ul>
-                                                    Results: ${ensemble.results}
-                                                </li>
-                                                `
-                                            }
-                                            else {
-                                                return html``;
-                                            }
+                                        ${Object.keys(this.pathway.executable_ensemble_summary).map((modelid: string) => {
+                                            let model = this.pathway.models[modelid];
+                                            let summary = this.pathway.executable_ensemble_summary[modelid];
+                                            return html`
+                                            <li>
+                                                The model setup created ${summary.total_runs} configurations. 
+                                                ${summary.submitted_runs} model runs were submitted, out of which 
+                                                ${summary.successful_runs} succeeded, and ${summary.failed_runs} failed.
+                                            </li>
+                                            `
                                         })}
                                     </ul>
                                     <i>Notes: ${this.pathway.notes!.results}</i>
-                                </li>                                
-                                <li>
-                                    Model execution results that were not recorded:
-                                    <ul>
-                                        ${this.pathway.executable_ensembles!.map((ensemble: ExecutableEnsemble) => {
-                                            let model = this.pathway.models![ensemble.modelid];
-                                            if(!ensemble.selected) {
-                                                return html`
-                                                <li>Model: ${model.name}
-                                                    <ul>
-                                                    ${model.input_files.filter((input) => !input.value).map((input) => {
-                                                        let binding = ensemble.bindings[input.id!];
-                                                        return html`
-                                                        <li>${input.name} = ${binding}</li>
-                                                        `;
-                                                    })}
-                                                    ${model.input_parameters.filter((input) => !input.value).map((input) => {
-                                                        let binding = ensemble.bindings[input.id!];
-                                                        return html`
-                                                        <li>${input.name} = ${binding}</li>
-                                                        `;
-                                                    })}
-                                                    </ul>
-                                                    Results: ${ensemble.results}
-                                                </li>
-                                                `
-                                            }
-                                            else {
-                                                return html``;
-                                            }
-                                        })}
-                                    </ul>
-                                </li>
+                                </li> 
                             </ul>
                         </li>
                     </ul>

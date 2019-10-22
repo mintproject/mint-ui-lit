@@ -10,6 +10,8 @@ import {Md5} from 'ts-md5/dist/md5'
 import { db } from "config/firebase";
 import { Model } from "screens/models/reducers";
 import { isObject } from "util";
+import { postJSONResource } from "./mint-requests";
+import { getVariableLongName } from "offline_data/variable_list";
 
 export const removeDatasetFromPathway = (pathway: Pathway,
         datasetid: string, modelid: string, inputid: string) => {
@@ -146,7 +148,7 @@ const _createModelTemplate = (
 
     return new Promise((resolve, reject) => {
         loginToWings(prefs).then(() => {
-            let config = prefs.wings;
+            let config = prefs.mint.wings;
             let expfx = config.export_url + "/export/users/" + config.username + "/" + config.domain;
 
             
@@ -183,7 +185,7 @@ const _runModelTemplates = (
         tpl_package: WingsTemplatePackage,
         prefs: UserPreferences) : Promise<string[]> => {
             
-    let config = prefs.wings;
+    let config = prefs.mint.wings;
     let expfx = config.export_url + "/export/users/" + config.username + "/" + config.domain;
     return Promise.all(
         seeds.map((seed) => {
@@ -414,6 +416,20 @@ export const getPathwayRunsStatus = (pathway:Pathway) => {
 }
 
 export const getPathwayResultsStatus = (pathway:Pathway) => {
+    if(getPathwayRunsStatus(pathway) != TASK_DONE)
+        return TASK_NOT_STARTED;
+    
+    let sum = pathway.executable_ensemble_summary;
+    if (sum && Object.keys(sum).length > 0) {
+        let ok = true;
+        Object.keys(sum).map((modelid) => {
+            let summary = sum[modelid];
+            if(!summary.submitted_for_ingestion)
+                ok = false;
+        });
+        if(ok)
+            return TASK_DONE;
+    }
     return TASK_NOT_STARTED;
 }
 
@@ -507,6 +523,21 @@ export const listExistingEnsembleIds = (ensembleids: string[]) : Promise<string[
     }));
 };
 
+// List Ensemble Ids (i.e. which ensemble ids exist)
+export const listAlreadyRunEnsembleIds = (ensembleids: string[]) : Promise<string[]> => {
+    let ensemblesRef = db.collection("ensembles");
+    return Promise.all(ensembleids.map((ensembleid) => {
+        return ensemblesRef.doc(ensembleid).get().then((sdoc) => {
+            if(sdoc.exists) {
+                let ensemble = sdoc.data() as ExecutableEnsemble;
+                if(ensemble.status == "SUCCESS" && ensemble.results) {
+                    return ensembleid;
+                }
+            }
+        })
+    }));
+};
+
 const _crossProductInputs = (ensembles: DataEnsembleMap) => {
     let inputBindingsList: InputBindings[] = [{}];
     Object.keys(ensembles).map((inputid) => {
@@ -542,5 +573,40 @@ export const getEnsembleHash = (ensemble: ExecutableEnsemble) : string => {
         str += varid + "=" + bindingid + "&";
     })
     return Md5.hashStr(str).toString();
+}
+
+export const sendDataForIngestion = (scenarioid: string, subgoalid: string, threadid: string, prefs: UserPreferences) => {
+    let data = {
+        scenario_id: scenarioid,
+        subgoal_id: subgoalid,
+        thread_id: threadid
+    };
+    return new Promise<void>((resolve, reject) => {
+        postJSONResource({
+            url: prefs.mint.ingestion_api + "/modelthreads",
+            onLoad: function(e: any) {
+                resolve();
+            },
+            onError: function() {
+                reject("Cannot ingest thread");
+            }
+        }, data, false);
+    });    
+}
+
+export const getVisualizationURL = (pathway: Pathway) => {
+    if(getPathwayResultsStatus(pathway) == "TASK_DONE") {
+        let responseV = pathway.response_variables.length > 0?
+            getVariableLongName(pathway.response_variables[0]) : '';
+        let drivingV = pathway.driving_variables.length > 0?
+            getVariableLongName(pathway.driving_variables[0]) : '';
+
+        // FIXME: Hack
+        if(responseV == "Potential Crop Production")
+            return "https://dev.viz.mint.isi.edu/cycles?thread_id=" + pathway.id;
+        else
+            return "https://dev.viz.mint.isi.edu/scatter_plot?thread_id=" + pathway.id;
+    }
+    return null;
 }
 /* End of Helper Functions */

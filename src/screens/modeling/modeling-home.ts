@@ -40,7 +40,6 @@ export class ModelingHome extends connect(store)(PageViewElement) {
   }
 
   protected render() {
-    //console.log("rendering");
     return html`
 
     <div>  

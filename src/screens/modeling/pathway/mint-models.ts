@@ -123,7 +123,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         let availableModels = this._queriedModels[this._responseVariables.join(",")] || [];
         return html`
         <p>
-            This step is for selecting models that are appropriate for the response variables that you selected earlier.
+            The models below are appropriate for the indicators of interest. You can select multiple calibrated models and compare them.  
         </p>
         ${done && !this._editMode ? html`<p>Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes.</p>`: html``}
         ${(done && !this._editMode) ?
@@ -180,10 +180,10 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                     Models
                 </wl-title>
                 <p>
-                    The models below generate data that includes the response variables that you selected earlier: 
+                    The models below generate data that includes the indicator that you selected earlier: 
                     "${this.pathway.response_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
                     Other models that are available in the system do not generate that kind of result.
-                    The column “Relevant Output File” shows the output file that contains the response variable.
+                    The column "Relevant Output File" shows the output file that contains the response variable.
                 </p>
                 <ul>
                     <li>

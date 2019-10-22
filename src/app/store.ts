@@ -48,6 +48,9 @@ import { ExplorerUIState } from '../screens/models/model-explore/ui-reducers';
 import { MessagesState } from 'screens/messages/reducers';
 import { MessagesAction } from 'screens/messages/actions';
 
+import { ModelCatalogAction } from 'model-catalog/actions';
+import { ModelCatalogState } from 'model-catalog/reducers';
+
 // Overall state extends static states and partials lazy states.
 export interface RootState {
   app: AppState;
@@ -58,12 +61,13 @@ export interface RootState {
   explorer?: ExplorerState;
   messages?: MessagesState;
   explorerUI?: ExplorerUIState;
+  modelCatalog: ModelCatalogState;
   ui: UIState
 }
 
 export type RootAction = AppAction | ModelingAction | ModelsAction | DatasetsAction |
                          RegionsAction | UIAction | ApiAction | ExplorerUIAction |
-                         MessagesAction ;
+                         MessagesAction | ModelCatalogAction;
 
 // Sets up a Chrome extension for time travel debugging.
 // See https://github.com/zalmoxisus/redux-devtools-extension for more information.
@@ -71,6 +75,7 @@ const devCompose: <Ext0, Ext1, StateExt0, StateExt1>(
   f1: StoreEnhancer<Ext0, StateExt0>, f2: StoreEnhancer<Ext1, StateExt1>
 ) => StoreEnhancer<Ext0 & Ext1, StateExt0 & StateExt1> =
   window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+
 
 // Initializes the Redux store with a lazyReducerEnhancer (so that you can
 // lazily add reducers after the store has been created) and redux-thunk (so
@@ -81,7 +86,8 @@ export const store = createStore(
   state => state as Reducer<RootState, RootAction>,
   devCompose(
     lazyReducerEnhancer(combineReducers),
-    applyMiddleware(thunk as ThunkMiddleware<RootState, RootAction>))
+    applyMiddleware(thunk as ThunkMiddleware<RootState, RootAction>),
+  )
 );
 
 // Initially loaded reducers.

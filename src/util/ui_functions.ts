@@ -56,7 +56,9 @@ export const formElementsComplete = (form: HTMLFormElement, element_names: strin
     let errors:Boolean[] = [];
     element_names.map((name) => {
         let element = (form.elements[name] as HTMLInputElement | HTMLSelectElement);
-        errors.push(_isEmpty(element));
+        if(element) {
+            errors.push(_isEmpty(element));
+        }
     });
     if(errors[0] || errors[1] || errors[2]) {
         return false;

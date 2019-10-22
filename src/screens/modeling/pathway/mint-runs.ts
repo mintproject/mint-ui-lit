@@ -64,8 +64,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         if(!this.pathway.executable_ensemble_summary) {
             return html `
             <p>
-                This step is for monitoring model runs. You can view results of these runs in the next step.  You can
-                also see if runs failed, and look into the reasons so the model can be used properly.
+                This step is for monitoring model runs.
             </p>
             Please setup and run some models first
             `
@@ -105,7 +104,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
 
         return html`
         <p>
-            This step is for monitoring model runs. You can view results of these runs in the next step
+            This step is for monitoring model runs.
         </p>
         <wl-title level="3">Runs</wl-title>
         <div class="clt">
@@ -115,32 +114,45 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 let model = this.pathway.models![modelid];
                 let grouped_ensemble = grouped_ensembles[modelid];
                 this.totalPages = Math.ceil(summary.total_runs/this.pageSize);
-                let finished_runs = summary.successful_runs + summary.failed_runs;
+                let submitted_runs = summary.submitted_runs ? summary.submitted_runs : 0;
+                let failed_runs = summary.failed_runs ? summary.failed_runs : 0;
+                let successful_runs = summary.successful_runs ? summary.successful_runs : 0;
+                let finished_runs = successful_runs + failed_runs;
+                
                 let finished = (finished_runs == summary.total_runs);
-                let running = summary.submitted_runs - finished_runs;
-                let pending = summary.total_runs - summary.submitted_runs;
+                let running = submitted_runs - finished_runs;
+                let pending = summary.total_runs - submitted_runs;
 
                 if(!grouped_ensemble && model) {
                     this._fetchRuns(model.id, 1, this.pageSize)
+                }
+                if(!model) {
+                    return "";
                 }
 
                 return html`
                 <li>
                     <wl-title level="4"><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></wl-title>
                     <p>
+                        Below is the status of all the runs for the model with the different setups that you selected earlier. 
+                        A green status bar means that the run is completed. A partially green and grey/partially grey status bar indicates 
+                        that the run is still ongoing. A red bar indicates that the run failed. You can view results of the 
+                        completed runs by going to the Results tab even when other runs are still not completed.
+                    </p>                    
+                    <p>
                     The model setup created ${summary.total_runs} configurations. 
-                    ${!finished ? "So far, " : ""} ${summary.submitted_runs} model runs
+                    ${!finished ? "So far, " : ""} ${submitted_runs} model runs
                     ${!finished ? "have been" : "were"} submitted, out of which 
-                    ${summary.successful_runs} succeeded, while ${summary.failed_runs} failed.
+                    ${successful_runs} succeeded, while ${failed_runs} failed.
                     ${running > 0 ? html `${running} are currently running` : ""}
                     ${pending > 0 ? html `, and ${pending} are waiting to be run` : ""}
+                    </p>
 
                     ${!finished ? 
-                        html`<br /><wl-button class="submit"
+                        html`<wl-button class="submit"
                             @click="${() => this._checkStatusAllEnsembles(model.id)}">Recheck status</wl-button> <br /><br />`
                         : ""
                     }
-                    </p>
 
                     <div style="width: 100%; border:1px solid #EEE;border-bottom:0px;">
                         ${grouped_ensemble && !grouped_ensemble.loading ? 
@@ -193,6 +205,8 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                     ${Object.keys(grouped_ensemble.ensembles).map((index) => {
                                         let ensemble: ExecutableEnsemble = grouped_ensemble.ensembles[index];
                                         let model = this.pathway.models![ensemble.modelid];
+                                        let param_defaults = {};
+                                        model.input_parameters.map((param) => param_defaults[param.id] = param.default);
                                         return html`
                                             <tr>
                                                 <td>
@@ -212,7 +226,12 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                                         `;
                                                     }
                                                 })}
-                                                ${grouped_ensemble.params.map((param) => html`<td>${ensemble.bindings[param.id]}</td>` )}
+                                                ${grouped_ensemble.params.map((param) => html`<td>
+                                                    ${ensemble.bindings[param.id] ? 
+                                                        ensemble.bindings[param.id] : 
+                                                        param_defaults[param.id]
+                                                    }
+                                                </td>` )}
                                             </tr>
                                         `;
                                     })}
@@ -435,6 +454,9 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
     }
 
     _getModelURL (model:Model) {
+        if(!model) {
+            return "";
+        }
         let url = this._regionid + '/models/explore/' + model.original_model;
         if (model.model_version) {
             url += '/' + model.model_version;
@@ -449,7 +471,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
     } 
 
     _getDatasetURL (resname: string) {
-        let config = this.prefs;
+        let config = this.prefs.mint;
         let suffix = "/users/" + config.wings.username + "/" + config.wings.domain;
         var purl = config.wings.server + suffix
         var expurl = config.wings.export_url + "/export" + suffix;

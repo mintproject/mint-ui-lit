@@ -13,6 +13,7 @@ export const MODELS_DETAIL = 'MODELS_DETAIL';
 import { apiFetch,  CALIBRATIONS_FOR_VAR_SN, METADATA_NOIO_FOR_MODEL_CONFIG, PARAMETERS_FOR_CONFIG,
 IO_AND_VARS_SN_FOR_CONFIG } from '../../util/model-catalog-requests';
 import { Dataset } from "../datasets/reducers";
+import { getVariableProperty } from "offline_data/variable_list";
 
 export interface ModelsActionList extends Action<'MODELS_LIST'> { models: Model[] };
 export interface ModelsActionVariablesQuery extends Action<'MODELS_VARIABLES_QUERY'> { 
@@ -24,7 +25,7 @@ export interface ModelsActionDetail extends Action<'MODELS_DETAIL'> { model: Mod
 
 export type ModelsAction = ModelsActionList | ModelsActionVariablesQuery |  ModelsActionDetail ;
 
-const MODEL_CATALOG_URI = "https://query.mint.isi.edu/api/dgarijo/MINT-ModelCatalogQueries";
+const MODEL_CATALOG_URI = "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries";
 
 // List all Model Configurations
 type ListModelsThunkResult = ThunkAction<void, RootState, undefined, ModelsActionList>;
@@ -93,6 +94,10 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
     let variables = response_variables[0].split(/\s*,\s/);
     Promise.all(
         variables.map((variable) => {
+            let fromvar = getVariableProperty(variable, "created_from");
+            if(fromvar) {
+                variable = fromvar;
+            }
             return apiFetch({
                 type: CALIBRATIONS_FOR_VAR_SN,
                 std: variable,
@@ -182,17 +187,25 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                     let params: any = {};
                     let parameters:ModelParameter[] = [];
                     values[2].map((value: any) => {
+                        if(params[value.p]) {
+                            // Do not add duplicate parameters
+                            return;
+                        }
                         let param: ModelParameter =  {
                             id: value.p,
                             name: value.paramlabel,
                             type: value.pdatatype,
                             min: value.minVal || "",
                             max: value.maxVal || "",
+                            unit: value.unit || "",
                             default: value.defaultvalue || "",
                             description: value.description || ""
                         };
                         if(value.fixedValue)
                             param.value = value.fixedValue;
+                        // Hack to fix FALSE to false
+                        if(param.value == "FALSE")
+                            param.value = "false";
                         params[value.p] = param;
                         parameters.push(param);
                     });

@@ -39,6 +39,7 @@ export interface ModelParameter extends IdNameObject {
     description?: string,
     min?: string,
     max?: string,
+    unit?: string,
     default?: string,
     value?: string
 }

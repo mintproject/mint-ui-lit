@@ -468,7 +468,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
             if(subregionid == this._regionid) {
                 this._subgoal_region = this._region;
             }
-            else if (state.regions.query_result[this._regionid]){
+            else if (state.regions.query_result[this._regionid] && state.regions.query_result[this._regionid]["*"]){
                 this._subgoal_region = state.regions.query_result[this._regionid]["*"][subregionid];
             }
         }

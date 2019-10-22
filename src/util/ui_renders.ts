@@ -2,20 +2,20 @@ import { html } from "lit-element";
 import { StepUpdateInformation } from "../screens/modeling/reducers";
 import { VARIABLES } from "../offline_data/variable_list";
 
-export const renderVariables = () => {
+export const renderVariables = (readonly: boolean) => {
     return html`
         <p>
-        Please select a driving and a response variable. A response variable indicates the kind of results that you're interested in. 
-        An optional driving variable indicates the kind of inputs that you want to use to drive the results. 
-        </p>        
+        Indicators are the variables or index that indicates the state of the system being modeled.
+        Adjustable parameters are the variables and interventions you are interested in changing to explore outcomes on the indicator.
+        </p>
         <div class="formRow">
             <div class="input_half">
-                <label>Response Variable</label>
-                ${renderResponseVariables("")}
+                <label>Indicators/Response of interest</label>
+                ${renderResponseVariables("", readonly)}
             </div>  
             <div class="input_half">
-                <label>Driving Variable</label>
-                ${renderDrivingVariables("")}
+                <label>Adjustable Variables</label>
+                ${renderDrivingVariables("", readonly)}
             </div>                            
         </div>     
     `;
@@ -55,12 +55,11 @@ export const renderNotifications = () => {
     `;
 }
 
-export const renderResponseVariables = (variableid: string) => {
+export const renderResponseVariables = (variableid: string, readonly: boolean) => {
     return html`
-        <select name="response_variable">
-            <option value disabled selected>Select Response Variable</option>
-            ${Object.keys(VARIABLES['response variable']).map((categoryname) => {
-                let category = VARIABLES['response variable'][categoryname];
+        <select name="response_variable" ?disabled="${readonly}">
+            ${Object.keys(VARIABLES['indicators']).map((categoryname) => {
+                let category = VARIABLES['indicators'][categoryname];
                 return html`
                 <optgroup label="${categoryname}">
                 ${Object.keys(category).map((varid) => {
@@ -79,13 +78,12 @@ export const renderResponseVariables = (variableid: string) => {
     `;
 }
 
-export const renderDrivingVariables = (variableid: string) => {
+export const renderDrivingVariables = (variableid: string, readonly: boolean) => {
     return html`
-        <select name="driving_variable">
-            <option value disabled selected>Select Driving Variable</option>
+        <select name="driving_variable" ?disabled="${readonly}">
             <option value="">None</option>
-            ${Object.keys(VARIABLES['driving variable']).map((categoryname) => {
-                let category = VARIABLES['driving variable'][categoryname];
+            ${Object.keys(VARIABLES['adjustment_variables']).map((categoryname) => {
+                let category = VARIABLES['adjustment_variables'][categoryname];
                 return html`
                 <optgroup label="${categoryname}">
                 ${Object.keys(category).map((varid) => {

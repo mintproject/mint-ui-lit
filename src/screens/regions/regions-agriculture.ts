@@ -42,8 +42,7 @@ export class RegionsAgriculture extends connect(store)(PageViewElement) {
         return html`
         <div class="content">
             <p>
-                This page is in progress, it will allow you to run tools to identify agricultural regions of interest.
-                Below are some example agricultural regions identified for South Sudan:
+                The following are agricultural areas of interest in this region.
             </p>
             <div style="width: 90%; margin: 0px auto;">
                 <image-gallery style="--width: 300px; --height: 160px;" .items="${items}"></image-gallery>

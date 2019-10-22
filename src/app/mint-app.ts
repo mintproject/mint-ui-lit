@@ -128,6 +128,19 @@ export class MintApp extends connect(store)(LitElement) {
       .breadcrumbs li:first:after {
         border-left-color: #629b30;
       }
+      .message-button {
+        --button-padding: 6px;
+      }
+      .message-button.selected {
+        background-color: rgb(98, 155, 48);
+        color: white;
+      }
+      .message-button.selected:hover {
+        background-color: rgb(98, 155, 48);
+      }
+      .message-button:hover {
+        background-color: rgb(224, 224, 224);
+      }
       `
     ];
   }
@@ -160,14 +173,14 @@ export class MintApp extends connect(store)(LitElement) {
                   >Explore Data</li>
                 <li @click="${()=>goToPage('regions')}"
                     class=${(this._page == 'regions'? 'active': '')}
-                  >Define Regions</li>
+                  >Select Areas</li>
                 <li @click="${()=>goToPage('models')}"
                     class=${(this._page == 'models'? 'active': '')}
                   >Prepare Models</li>
                 <li @click="${()=>goToPage('modeling')}"
                     class=${(this._page == 'modeling') ? 'active': ''}
                   class="active">Use Models</li>
-                <li @click="${()=>goToPage('analysis')}"
+                <li @click="${()=>goToPage('analysis/report')}"
                     class=${(this._page == 'analysis'? 'active': '')}
                   >Prepare Reports</li>
                 `
@@ -188,6 +201,9 @@ export class MintApp extends connect(store)(LitElement) {
             `
             :
             html `
+            <wl-button flat inverted class="message-button ${this._page == 'messages' ? 'selected' : ''}" @click="${() => goToPage('messages')}">
+              Messages <wl-icon style="margin-left: 4px;">message</wl-icon>
+            </wl-button>
             <wl-button flat inverted @click="${signOut}">
               LOGOUT ${this.user.email}
             </wl-button>

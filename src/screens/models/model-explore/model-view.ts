@@ -13,6 +13,7 @@ import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersio
 import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
+import marked from 'marked';
 
 import { goToPage } from '../../../app/actions';
 import "weightless/expansion";
@@ -102,7 +103,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _screenshots : any = null;
 
     @property({type: String})
-    private _tab : 'overview'|'io'|'variables'|'software'|'tech' = 'overview';
+    private _tab : 'overview'|'io'|'variables'|'software'|'tech'|'assumptions'|'example' = 'overview';
 
     // URIs of selected resources
     private _selectedModel = null;
@@ -226,6 +227,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                     --icon-size: 24px;
                 }
 
+                .tooltip-text {
+                    display: inline;
+                    border-bottom: 1px dotted;
+                }
+
                 #desc-ext {
                     padding: 10px 5px 0px 5px;
                 }
@@ -329,10 +335,25 @@ export class ModelView extends connect(store)(PageViewElement) {
                     margin-left: 6px;
                 }
 
+                #img-placeholder {
+                    vertical-align: middle;
+                    --icon-size: 200px;
+                }
+
                 .table-title {
                     padding-bottom: 0 !important;
                     font-size: 13px !important;
                     font-weight: bold !important;
+                }
+
+                .row-tab-content > wl-title {
+                    margin-top: 6px;
+                    margin-bottom: 4px;
+                }
+
+                .link {
+                    border-bottom: 1px dotted;
+                    cursor: pointer;
                 }
                 `
         ];
@@ -348,7 +369,7 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _setEditMode () {
         //TODO: this is work in progress!
-        //store.dispatch(explorerSetMode('edit')); 
+        store.dispatch(explorerSetMode('edit')); 
     }
 
     _updateConfigSelector () {
@@ -371,6 +392,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                 })
             })
             configSelector.value = this._config ? this._config.uri : '';
+            // FIX ARROW
+            let arrowEl = configSelectorWl.shadowRoot.getElementById('arrow');
+            if (arrowEl) {
+                arrowEl.style.pointerEvents = "none";
+            }
             (<any>configSelectorWl).refreshAttributes();
         } else if (configSelectorWl) {
             /* FIXME: Sometimes, when versions data load faster than the wl-selector renders, we could end here.
@@ -403,6 +429,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                 calibrationSelector.add(newOption, null);
             })
             calibrationSelector.value = this._calibration ? this._calibration.uri : '';
+            // FIX ARROW
+            let arrowEl = calibrationSelectorWl.shadowRoot.getElementById('arrow');
+            if (arrowEl) {
+                arrowEl.style.pointerEvents = "none";
+            }
             (<any>calibrationSelectorWl).refreshAttributes();
         }
     }
@@ -483,7 +514,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <div class="col-img text-centered">
                     ${this._model.logo ? 
                     html`<img src="${this._model.logo}"/>`
-                    : html`<img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>`}
+                    : html`<wl-icon id="img-placeholder">image</wl-icon>`}
                     ${this._model.dateC ? html`<div><b>Creation date:</b> ${this._model.dateC}</div>`:''}
                     ${this._model.categories ? html`<div><b>Category:</b> ${this._model.categories}</div>`:''}
                     ${this._model.type ? html`<div><b>Model type:</b> ${this._model.type}</div>`:''}
@@ -511,9 +542,19 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <wl-tab id="tab-overview" ?checked=${this._tab=='overview'} @click="${() => {this._tab = 'overview'}}"
                             >Overview</wl-tab>
                         <wl-tab id="tab-io" ?checked=${this._tab=='io'} @click="${() => {this._tab = 'io'}}"
-                            >Files and parameters</wl-tab>
+                            >Parameters and Files</wl-tab>
                         <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => {this._tab = 'variables'}}"
                             >Variables</wl-tab>
+
+                        ${this._model.assumptions? html`
+                        <wl-tab id="tab-assumptions" @click="${() => {this._tab = 'assumptions'}}"
+                            >Assumptions</wl-tab>
+                        ` : ''}
+                        ${this._model.example? html`
+                        <wl-tab id="tab-example" @click="${() => {this._tab = 'example'}}"
+                            >Example</wl-tab>
+                        ` : ''}
+
                         <wl-tab id="tab-software" @click="${() => {this._tab = 'software'}}"
                             >Compatible Software</wl-tab>
                         <wl-tab id="tab-overview" ?checked=${this._tab=='tech'} @click="${() => {this._tab = 'tech'}}"
@@ -526,6 +567,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${(this._tab === 'tech') ? this._renderTabTechnical() : ''}
                     ${(this._tab === 'io') ? this._renderTabIO() : ''}
                     ${(this._tab === 'variables') ? this._renderTabVariables() : ''}
+                    ${(this._tab === 'example') ? this._renderTabExample() : ''}
+                    ${(this._tab === 'assumptions') ? this._renderTabAssumptions() : ''}
                     ${(this._tab === 'software') ? this._renderTabSoftware() : ''}
                 </div>
             </div>`
@@ -536,7 +579,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         this._model.downloadURL || this._model.sourceC || this._model.doc || this._model.installInstr;
         return html`
             ${showModel ? html`
-            <br/>
+            <wl-title level="3"> Technical Information: </wl-title>
             <table class="pure-table pure-table-striped">
                 <thead>
                     <tr><th colspan="2">MODEL: 
@@ -657,7 +700,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <td><b>Language:</b></td>
                         <td>${this._calibrationMetadata[0].pLanguage}</td>
                     </tr>` : '' }
-                </tbody>
             </table>
             <br/>
             ` : ''}
@@ -722,15 +764,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${this._model.purpose.map(a => a? html`<li>${capitalizeFirstLetter(a)}.</li>`: '')}
             </ul>`
             :''}
+            ${this._model.indices ? html`
+            <wl-title level="2" style="font-size: 16px;">Relevant for calculating index:</wl-title>
+            <ul style="margin-top: 5px">
+                <li>${this._model.indices.split('/').pop()}</li>
+            </ul>`
+            :''}
             ${this._config ? this._renderMetadataResume() : ''}
-            ${this._model.assumptions? html`
-            <details style="margin-bottom: 6px;">
-                <summary><b>Assumptions</b></summary>
-                <ul>
-                ${this._model.assumptions.split('.').map(a=> a?html`<li>${a}.</li>`:'')}
-                </ul>
-            </details>
-            `:html``}
 
             ${this._renderGallery()}`
     }
@@ -806,14 +846,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                         if (i === 0) return html`<code>${v}</code>`;
                         else return html`, <code>${v}</code>`;
                     })}</li>`: ''}
-                    ${meta[0].compLoc ?  html`
-                        <li><b>Download:</b> ${this._renderLink(meta[0].compLoc)}
-                            <span tip="This download is an executable containing the code used to execute this ${title}." class="tooltip">
-                                <wl-icon style="--icon-size: 18px; vertical-align: text-bottom; margin-left: 5px;">help_outline</wl-icon>
-                            </span>
-                        </li>`
-                        : ''}
-                    </ul>
                     `
                 )}
             </fieldset>
@@ -909,8 +941,12 @@ export class ModelView extends connect(store)(PageViewElement) {
             </h3>`
         }
         return html`
+            ${(this._parameters)? this._renderParametersTable() : html``}
             ${(!this._inputs || this._inputs.length > 0 || !this._outputs || this._outputs.length > 0) ? html`
-            <h3> Files: </h3>
+            <wl-title level="3"> Files: </wl-title> 
+            <wl-text style="font-style: italic; padding-left: 20px;">
+                Look at the Variables tab to see more information about the contents of the inputs and outputs.
+            </wl-text>
             <table class="pure-table pure-table-striped" style="overflow: visible;">
                 <colgroup>
                     <col span="1" style="width: 10px;">
@@ -935,7 +971,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <wl-icon>help</wl-icon>
                             </span>
                         </th>` : html``}
-                        <th>Format</th>
+                        <th style="text-align: right;">Format</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -946,7 +982,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     : this._inputs.map(io => html`
                     <tr>
                         <td></td>
-                        <td><span class="font-numbers clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
+                        <td><span class="monospaced"> 
                             ${io.label}
                         </span></td>
                         <td>${io.desc}</td>
@@ -955,7 +991,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                             <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
                         ` : html`<span style="color:#999999;">-</span>`}</td>
                         ` : html``}
-                        <td class="font-numbers">${io.format}</td>
+                        <td style="text-align: right;" class="number">${io.format}</td>
                     </tr>`)}
                 </tbody>`
                 : ''}
@@ -969,7 +1005,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <th></th>
                         <th>Name</th>
                         <th colspan="${this._calibration? 2 : 1}">Description</th>
-                        <th>Format</th>
+                        <th style="text-align: right;">Format</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -980,17 +1016,16 @@ export class ModelView extends connect(store)(PageViewElement) {
                     : this._outputs.map(io => html`
                     <tr>
                         <td></td>
-                        <td><span class="font-numbers clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
+                        <td><span class="monospaced">
                             ${io.label}
                         </span></td>
                         <td colspan="${this._calibration? 2 : 1}">${io.desc}</td>
-                        <td class="font-numbers">${io.format}</td>
+                        <td style="text-align: right;" class="number">${io.format}</td>
                     </tr>`)}
                 </tbody>`
                 :''}
             </table>` : ''}
 
-            ${(this._parameters)? this._renderParametersTable() : html``}
             ${(!this._inputs && !this._outputs && !this._parameters)? html`
             <br/>
             <h3 style="margin-left:30px">
@@ -1009,11 +1044,16 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
         if (this._parameters.length > 0) {
             return html`
-                <h3> Parameters: </h3>
+                <wl-title level="3"> Parameters: </wl-title> 
                 <table class="pure-table pure-table-striped" style="overflow: visible;" id="parameters-table">
+                    <col span="1" style="width: 180;">
+                    <col span="1">
+                    <col span="1">
+                    <col span="1" style="width: 130px;">
                     <thead>
-                        <th>Name</th>
+                        <th>Parameter</th>
                         <th>Description</th>
+                        <th style="text-align: right;">Relevant for intervention</th>
                         <th style="text-align: right;">
                             ${this._calibration? html`
                             Value on setup 
@@ -1028,12 +1068,17 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <tr>
                             <td>
                                 <code>${p.paramlabel}</code><br/>
-                            </td>
-                            <td>
-                                <b style="font-size: 14px;">${ capitalizeFirstLetter(p.description) }</b><br/>
                                 ${p.minVal && p.maxVal ? html`
                                 The range is from ${p.minVal} to ${p.maxVal}
                                 ` : ''}
+                            </td>
+                            <td>
+                                ${p.description ? html`<b style="font-size: 14px;">${capitalizeFirstLetter(p.description)}</b><br/>`: ''}
+                            </td>
+                            <td>
+                                ${ p.intervention ? html`<span class="tooltip tooltip-text" tip="${p.interventionDesc}">
+                                    ${p.intervention}
+                                </span>` : ''}
                             </td>
                             <td class="font-numbers" style="text-align: right;">
                             ${this._calibration ? (p.fixedValue ? p.fixedValue : p.defaultvalue + ' (default)')
@@ -1048,9 +1093,23 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
     }
 
+    _renderTabAssumptions () {
+        return html`
+        <wl-title level="3">Assumptions:</wl-title>
+        <ul>
+        ${this._model.assumptions.split('.').map(a=> a?html`<li>${a}.</li>`:'')}
+        </ul>`
+    }
+
+    _renderTabExample () {
+        return html`<div id="mk-example"></div>`
+    }
+
     _renderTabVariables () {
         return html`<div id="hack">${this._count}</div>
-            ${(this._inputs) ? html`<h3>Inputs:</h3>${this._inputs.map(input => html`
+            ${(this._inputs && this._inputs.length > 0) ? html`
+            <wl-title level="3">Inputs:</wl-title>
+            ${this._inputs.map(input => html`
             <wl-expansion id="${input.label}" name="groupInput" @click="${()=>{this.expandIO(input.uri)}}">
                 <span slot="title">${input.label}</span>
                 <span slot="description">${input.desc}</span>
@@ -1072,7 +1131,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <td>${v.label}</td>
                                 <td>${v.longName}</td>
                                 <td>${v.desc}</td>
-                                <td style="word-wrap: break-word;">${v.sn}</td>
+                                <td style="word-wrap: break-word;">
+                                    <a class="monospaced link" target="_blank" href="${v.snURI}">${v.sn}</a>
+                                </td>
                                 <td style="min-width: 80px;">${v.unit}</td>
                             </tr>`)}
                         </tbody>
@@ -1087,7 +1148,9 @@ export class ModelView extends connect(store)(PageViewElement) {
             </wl-expansion>`)}`
             : html``}
 
-            ${(this._outputs) ? html`<h3>Outputs:</h3>${this._outputs.map(output => html`
+            ${(this._outputs && this._outputs.length > 0) ? html`
+            <wl-title level="3">Outputs:</wl-title>
+            ${this._outputs.map(output => html`
             <wl-expansion id="${output.label}" name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}">
                 <span slot="title">${output.label}</span>
                 <span slot="description">${output.desc}</span>
@@ -1109,7 +1172,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <td>${v.label}</td>
                                 <td>${v.longName}</td>
                                 <td>${v.desc}</td>
-                                <td style="word-wrap: break-word;">${v.sn}</td>
+                                <td style="word-wrap: break-word;">
+                                    <a class="monospaced link" target="_blank" href="${v.snURI}">${v.sn}</a>
+                                </td>
                                 <td style="min-width: 80px;">${v.unit}</td>
                             </tr>`)}
                         </tbody>
@@ -1170,7 +1235,32 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _renderTabSoftware () {
-        return html`${(this._config)?
+        return html`
+        ${(this._compModels && this._compModels.length > 0)? html`
+        <wl-title level="3"> Related models: </wl-title>
+        <table class="pure-table pure-table-bordered">
+            <thead>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Description</th>
+            </thead>
+            <tbody>
+            ${this._compModels.map( (m:any) => html`
+                <tr>
+                    <td><a @click="${() => {this._goToModel(m)}}">${m.label}</a></td>
+                    <td>${m.categories.join(', ')}</td>
+                    <td>${m.desc}</td>
+                </tr>`)}
+            </tbody>
+        </table>
+        `:html`
+        <br/><h3 style="margin-left:30px">
+            No compatible software has been described in the model catalog yet.
+        </h3>
+        `}
+        `
+
+        /*return html`${(this._config)?
             html`${(this._compInput && this._compInput.length>0) || 
                    (this._compOutput && this._compOutput.length>0) ?
                 html`
@@ -1214,7 +1304,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             `
             :html``
         }
-        `
+        `*/
     }
 
     _goToModel (model:any) {
@@ -1286,6 +1376,12 @@ export class ModelView extends connect(store)(PageViewElement) {
             this._updateConfigSelector();
             this._updateCalibrationSelector();
         }
+        if (this._tab == 'example' && this._model.example) {
+            let example = this.shadowRoot.getElementById('mk-example');
+            if (example) {
+                example.innerHTML = marked(this._model.example);
+            }
+        }
     }
 
     _getVersionTree (uri:string) {
@@ -1333,7 +1429,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             // Fetch & reset data
             if (modelChanged) {
                 if (ui.selectedModel) {
-                    //store.dispatch(fetchVersionsForModel(ui.selectedModel));
+                    store.dispatch(fetchVersionsForModel(ui.selectedModel));
                     store.dispatch(fetchDiagramsForModelConfig(ui.selectedModel));
                     store.dispatch(fetchSampleVisForModelConfig(ui.selectedModel));
                     store.dispatch(fetchScreenshotsForModelConfig(ui.selectedModel));
