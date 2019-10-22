@@ -37,6 +37,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     private _dispatched: Boolean = false;
 
     private _responseVariables: string[] = [];
+    private _drivingVariables: string[] = [];
 
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
@@ -204,6 +205,8 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                             <tbody>
                                 ${availableModels.length>0 ?
                                     availableModels.map((model: Model) => {
+                                        if(!model)
+                                            return;
                                         return html`
                                         <tr>
                                             <td><input class="checkbox" type="checkbox" data-modelid="${model.id}"
@@ -265,10 +268,10 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         <wl-dialog class="comparison" fixed backdrop blockscrolling id="comparisonDialog">
             <table class="pure-table pure-table-striped">
                 <thead>
-                    <th></th>
+                    <th style="border-right:1px solid #EEE"></th>
                     ${this._modelsToCompare.map((model) => {
                         return html`
-                        <th><b>${model.name}</b></th>
+                        <th .style="width:${100/(this._modelsToCompare.length)}%"><b>${model.name}</b></th>
                         `
                     })}
                 </thead>
@@ -276,7 +279,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                     ${this._comparisonFeatures.map((feature) => {
                         return html`
                         <tr>
-                            <td><b>${feature.name}</b></td>
+                            <td style="border-right:1px solid #EEE"><b>${feature.name}</b></td>
                             ${this._modelsToCompare.map((model) => {
                                 return html`
                                     <td>${feature.fn(model)}</td>
@@ -432,7 +435,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             if(this._responseVariables && this._responseVariables.length > 0) {
                 //console.log("Querying model catalog for " + this._responseVariables);
                 this._dispatched = true;
-                store.dispatch(queryModelsByVariables(this._responseVariables));
+                store.dispatch(queryModelsByVariables(this._responseVariables, this._drivingVariables));
             }
         }       
     }
@@ -443,8 +446,12 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         //let pathwayid = this.pathway ? this.pathway.id : null;
         super.setPathway(state);
 
-        if(this.pathway && this.pathway.response_variables != this._responseVariables && !this._dispatched) {
+        if(this.pathway && 
+                this.pathway.response_variables != this._responseVariables && 
+                this.pathway.driving_variables != this._drivingVariables && 
+                !this._dispatched) {
             this._responseVariables = this.pathway.response_variables;
+            this._drivingVariables = this.pathway.driving_variables;
             this._queryModelCatalog();
             this._setEditMode(false);
         }
