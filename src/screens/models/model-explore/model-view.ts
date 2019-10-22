@@ -345,6 +345,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                     font-size: 13px !important;
                     font-weight: bold !important;
                 }
+
+                .row-tab-content > wl-title {
+                    margin-top: 6px;
+                    margin-bottom: 4px;
+                }
                 `
         ];
     }
@@ -536,6 +541,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => {this._tab = 'variables'}}"
                             >Variables</wl-tab>
 
+                        ${this._model.assumptions? html`
+                        <wl-tab id="tab-assumptions" @click="${() => {this._tab = 'assumptions'}}"
+                            >Assumptions</wl-tab>
+                        ` : ''}
                         ${this._model.example? html`
                         <wl-tab id="tab-example" @click="${() => {this._tab = 'example'}}"
                             >Example</wl-tab>
@@ -554,6 +563,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${(this._tab === 'io') ? this._renderTabIO() : ''}
                     ${(this._tab === 'variables') ? this._renderTabVariables() : ''}
                     ${(this._tab === 'example') ? this._renderTabExample() : ''}
+                    ${(this._tab === 'assumptions') ? this._renderTabAssumptions() : ''}
                     ${(this._tab === 'software') ? this._renderTabSoftware() : ''}
                 </div>
             </div>`
@@ -564,7 +574,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         this._model.downloadURL || this._model.sourceC || this._model.doc || this._model.installInstr;
         return html`
             ${showModel ? html`
-            <br/>
+            <wl-title level="3"> Technical Information: </wl-title>
             <table class="pure-table pure-table-striped">
                 <thead>
                     <tr><th colspan="2">MODEL: 
@@ -756,14 +766,6 @@ export class ModelView extends connect(store)(PageViewElement) {
             </ul>`
             :''}
             ${this._config ? this._renderMetadataResume() : ''}
-            ${this._model.assumptions? html`
-            <details style="margin-bottom: 6px;">
-                <summary><b>Assumptions</b></summary>
-                <ul>
-                ${this._model.assumptions.split('.').map(a=> a?html`<li>${a}.</li>`:'')}
-                </ul>
-            </details>
-            `:html``}
 
             ${this._renderGallery()}`
     }
@@ -936,7 +938,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         return html`
             ${(this._parameters)? this._renderParametersTable() : html``}
             ${(!this._inputs || this._inputs.length > 0 || !this._outputs || this._outputs.length > 0) ? html`
-            <h3> Files: </h3>
+            <wl-title level="3"> Files: </wl-title> 
             <wl-text style="font-style: italic; padding-left: 20px;">
                 Look at the Variables tab to see more information about the contents of the inputs and outputs.
             </wl-text>
@@ -1037,7 +1039,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
         if (this._parameters.length > 0) {
             return html`
-                <h3> Parameters: </h3>
+                <wl-title level="3"> Parameters: </wl-title> 
                 <table class="pure-table pure-table-striped" style="overflow: visible;" id="parameters-table">
                     <col span="1" style="width: 180;">
                     <col span="1">
@@ -1086,13 +1088,23 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
     }
 
+    _renderTabAssumptions () {
+        return html`
+        <wl-title level="3">Assumptions:</wl-title>
+        <ul>
+        ${this._model.assumptions.split('.').map(a=> a?html`<li>${a}.</li>`:'')}
+        </ul>`
+    }
+
     _renderTabExample () {
         return html`<div id="mk-example"></div>`
     }
 
     _renderTabVariables () {
         return html`<div id="hack">${this._count}</div>
-            ${(this._inputs) ? html`<h3>Inputs:</h3>${this._inputs.map(input => html`
+            ${(this._inputs) ? html`
+            <wl-title level="3">Inputs:</wl-title>
+            ${this._inputs.map(input => html`
             <wl-expansion id="${input.label}" name="groupInput" @click="${()=>{this.expandIO(input.uri)}}">
                 <span slot="title">${input.label}</span>
                 <span slot="description">${input.desc}</span>
@@ -1129,7 +1141,9 @@ export class ModelView extends connect(store)(PageViewElement) {
             </wl-expansion>`)}`
             : html``}
 
-            ${(this._outputs) ? html`<h3>Outputs:</h3>${this._outputs.map(output => html`
+            ${(this._outputs) ? html`
+            <wl-title level="3">Outputs:</wl-title>
+            ${this._outputs.map(output => html`
             <wl-expansion id="${output.label}" name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}">
                 <span slot="title">${output.label}</span>
                 <span slot="description">${output.desc}</span>
@@ -1214,7 +1228,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     _renderTabSoftware () {
         return html`
         ${(this._compModels && this._compModels.length > 0)? html`
-        <h3> Related models: </h3>
+        <wl-title level="3"> Related models: </wl-title>
         <table class="pure-table pure-table-bordered">
             <thead>
                 <th>Name</th>
