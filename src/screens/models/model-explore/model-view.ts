@@ -103,7 +103,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _screenshots : any = null;
 
     @property({type: String})
-    private _tab : 'overview'|'io'|'variables'|'software'|'tech' = 'overview';
+    private _tab : 'overview'|'io'|'variables'|'software'|'tech'|'assumptions'|'example' = 'overview';
 
     // URIs of selected resources
     private _selectedModel = null;
