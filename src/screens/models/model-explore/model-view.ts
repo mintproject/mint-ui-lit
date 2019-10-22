@@ -532,7 +532,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <wl-tab id="tab-overview" ?checked=${this._tab=='overview'} @click="${() => {this._tab = 'overview'}}"
                             >Overview</wl-tab>
                         <wl-tab id="tab-io" ?checked=${this._tab=='io'} @click="${() => {this._tab = 'io'}}"
-                            >Files and parameters</wl-tab>
+                            >Parameters and Files</wl-tab>
                         <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => {this._tab = 'variables'}}"
                             >Variables</wl-tab>
 
@@ -946,6 +946,9 @@ export class ModelView extends connect(store)(PageViewElement) {
             ${(this._parameters)? this._renderParametersTable() : html``}
             ${(!this._inputs || this._inputs.length > 0 || !this._outputs || this._outputs.length > 0) ? html`
             <h3> Files: </h3>
+            <wl-text style="font-style: italic; padding-left: 20px;">
+                Look at the Variables tab to see more information about the contents of the inputs and outputs.
+            </wl-text>
             <table class="pure-table pure-table-striped" style="overflow: visible;">
                 <colgroup>
                     <col span="1" style="width: 10px;">
@@ -981,7 +984,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     : this._inputs.map(io => html`
                     <tr>
                         <td></td>
-                        <td><span class="font-numbers clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
+                        <td><span class="monospaced"> 
                             ${io.label}
                         </span></td>
                         <td>${io.desc}</td>
@@ -990,7 +993,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                             <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
                         ` : html`<span style="color:#999999;">-</span>`}</td>
                         ` : html``}
-                        <td style="text-align: right;" class="font-numbers">${io.format}</td>
+                        <td style="text-align: right;" class="number">${io.format}</td>
                     </tr>`)}
                 </tbody>`
                 : ''}
@@ -1015,11 +1018,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                     : this._outputs.map(io => html`
                     <tr>
                         <td></td>
-                        <td><span class="font-numbers clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
+                        <td><span class="monospaced">
                             ${io.label}
                         </span></td>
                         <td colspan="${this._calibration? 2 : 1}">${io.desc}</td>
-                        <td style="text-align: right;" class="font-numbers">${io.format}</td>
+                        <td style="text-align: right;" class="number">${io.format}</td>
                     </tr>`)}
                 </tbody>`
                 :''}
