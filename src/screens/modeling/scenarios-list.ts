@@ -1,22 +1,10 @@
-/**
-@license
-Copyright (c) 2018 The Polymer Project Authors. All rights reserved.
-This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
-The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
-The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
-Code distributed by Google as part of the polymer project is also
-subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
-*/
-
 import { html, customElement, property, css } from 'lit-element';
 
-// These are the shared styles needed by this element.
 import { SharedStyles } from '../../styles/shared-styles';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from '../../app/store';
 
-// Actions needed by this element
-import { listScenarios, addScenario } from './actions';
+import { listScenarios, addScenario, deleteScenario, updateScenario } from './actions';
 import { ScenarioList, Scenario } from './reducers';
 
 import "weightless/list-item";
@@ -35,14 +23,21 @@ import "./mint-scenario";
 import { navigate, BASE_HREF, goToPage } from '../../app/actions';
 import { PageViewElement } from '../../components/page-view-element';
 import { renderNotifications } from '../../util/ui_renders';
-import { formElementsComplete, showDialog, hideDialog, showNotification, resetForm } from '../../util/ui_functions';
-import { listRegions } from '../regions/actions';
-import { RegionList } from '../regions/reducers';
+import { formElementsComplete, showDialog, hideDialog, showNotification, resetForm, hideNotification } from '../../util/ui_functions';
+import { listTopRegions, queryRegions } from '../regions/actions';
+import { RegionList, Region } from '../regions/reducers';
+import { toTimeStamp, fromTimeStampToDateString } from 'util/date-utils';
 
 @customElement('scenarios-list')
 export class ScenariosList extends connect(store)(PageViewElement) {
   @property({type: Object})
+  private _top_region: Region;
+
+  @property({type: Object})
   private _regions!: RegionList;
+
+  @property({type: Object})
+  private _subRegions!: RegionList;
 
   @property({type: Object})
   private _list!: ScenarioList;
@@ -73,14 +68,21 @@ export class ScenariosList extends connect(store)(PageViewElement) {
     ${this._list && this._list.scenarioids.map((scenarioid) => {
         let scenario = this._list.scenarios[scenarioid];
         let region = this._regions[scenario.regionid];
-        if(region.id == this._top_regionid) {
+        if(scenario.regionid == this._top_regionid) {
           return html`
           <wl-list-item class="active"
               @click="${this._onSelectScenario}"
-              data-index="${scenario.id}">
+              data-scenarioid="${scenario.id}">
               <wl-title level="4" style="margin: 0">${scenario.name}</wl-title>
               <wl-title level="5">${region.name}</wl-title>
-              <span>Dates: ${scenario.dates.start_date} to ${scenario.dates.end_date}</span>
+              <span>Dates: ${fromTimeStampToDateString(scenario.dates.start_date)} to 
+                ${fromTimeStampToDateString(scenario.dates.end_date)}</span>
+              <div slot="after" style="display:flex">
+                <wl-icon @click="${this._editScenarioDialog}" data-scenarioid="${scenario.id}"
+                    id="editScenarioIcon" class="actionIcon editIcon">edit</wl-icon>
+                <wl-icon @click="${this._onDeleteScenario}" data-scenarioid="${scenario.id}"
+                    id="delScenarioIcon" class="actionIcon deleteIcon">delete</wl-icon>
+              </div>
           </wl-list-item>
           `
         }
@@ -100,6 +102,16 @@ export class ScenariosList extends connect(store)(PageViewElement) {
       anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
       Add a Scenario
     </wl-tooltip>
+    <wl-tooltip anchor="#editScenarioIcon" 
+      .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
+      anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
+      Edit Scenario 
+    </wl-tooltip>
+    <wl-tooltip anchor="#delScenarioIcon" 
+      .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
+      anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
+      Delete Scenario
+    </wl-tooltip>    
     `
   }
 
@@ -112,6 +124,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
           <p>
             Please enter a short text to describe the scenario that you would like to investigate
           </p>
+          <input type="hidden" name="scenarioid"></input>
           <div class="input_full">
             <input name="scenario_name"></input>
           </div>
@@ -122,21 +135,23 @@ export class ScenariosList extends connect(store)(PageViewElement) {
             <div class="input_half">
               <label>Region</label>
               <select name="scenario_region">
-                <option value disabled selected>Select</option>
-                ${this._list && Object.keys(this._regions || {}).map((regionid) => {
-                  let region = this._regions![regionid];
-                  return html`
-                    <option value="${region.id}">${region.name}</option>
-                  `;
-                })}
+                ${this._top_region ? 
+                  html `<option value="${this._top_region.id}" selected>${this._top_region.name}</option>`
+                  : ""
+                }
               </select>
             </div>
             <div class="input_half">
               <label>Sub-Region</label>
               <select name="scenario_subregion">
-                <option value disabled selected>Select</option>
-                <option value="pongo_basin">Pongo Basin</option>
-                <option value="gel_aliab">Gel-Aliab</option>
+                <option disabled selected>Select</option>
+                <option value="">None</option>
+                ${this._list && Object.keys(this._subRegions || {}).map((subRegionid) => {
+                  let subRegion = this._subRegions![subRegionid];
+                  return html`
+                    <option value="${subRegion.id}">${subRegion.name}</option>
+                  `;
+                })}
               </select>
             </div>            
           </div>
@@ -158,8 +173,8 @@ export class ScenariosList extends connect(store)(PageViewElement) {
         </form>
       </div>
       <div slot="footer">
-          <wl-button @click="${this._onAddScenarioCancel}" inverted flat>Cancel</wl-button>
-          <wl-button @click="${this._onAddScenarioSubmit}" class="submit" id="dialog-submit-button">Submit</wl-button>
+          <wl-button @click="${this._onAddEditScenarioCancel}" inverted flat>Cancel</wl-button>
+          <wl-button @click="${this._onAddEditScenarioSubmit}" class="submit" id="dialog-submit-button">Submit</wl-button>
       </div>
     </wl-dialog>
     `;
@@ -167,36 +182,42 @@ export class ScenariosList extends connect(store)(PageViewElement) {
 
   _addScenarioDialog() {
     let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#scenarioForm")!;
-    resetForm(form);
+    resetForm(form, "scenario_region");
 
     showDialog("scenarioDialog", this.shadowRoot!);
   }
 
-  _onAddScenarioSubmit() {
+  _onAddEditScenarioSubmit() {
     let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#scenarioForm")!;
     if(formElementsComplete(form, ["scenario_name", "scenario_region", "scenario_from", "scenario_to"])) {
+        let scenarioid = (form.elements["scenarioid"] as HTMLInputElement).value;
         let scenario_name = (form.elements["scenario_name"] as HTMLInputElement).value;
         let scenario_region = (form.elements["scenario_region"] as HTMLSelectElement).value;
+        let scenario_subregion = (form.elements["scenario_subregion"] as HTMLSelectElement).value;
         let scenario_from = (form.elements["scenario_from"] as HTMLInputElement).value;
         let scenario_to = (form.elements["scenario_to"] as HTMLInputElement).value;
 
         let scenario = {
           name: scenario_name,
           regionid: scenario_region,
+          subregionid: scenario_subregion,
           dates: {
-            start_date: scenario_from,
-            end_date: scenario_to
+            start_date: toTimeStamp(scenario_from),
+            end_date: toTimeStamp(scenario_to)
           }
-        } as Scenario;        
-
-        let scenarioid = addScenario(scenario);
+        } as Scenario;
+        if(scenarioid) {
+          scenario.id = scenarioid;
+          updateScenario(scenario);
+        }
+        else {
+          scenarioid = addScenario(scenario);
+        }
 
         hideDialog("scenarioDialog", this.shadowRoot!);
         showNotification("saveNotification", this.shadowRoot!);
     
-        let path = BASE_HREF+"scenario/"+scenarioid;
-        window.history.pushState({}, "MINT", path);
-        store.dispatch(navigate(decodeURIComponent(path)));
+        goToPage("modeling/scenario/"+scenarioid);
 
     }
     else {
@@ -204,8 +225,50 @@ export class ScenariosList extends connect(store)(PageViewElement) {
     }    
   }
 
-  _onAddScenarioCancel() {
+  _onAddEditScenarioCancel() {
     hideDialog("scenarioDialog", this.shadowRoot!);
+  }
+
+  _editScenarioDialog(e: Event) {
+    let scenarioid = (e.currentTarget as HTMLButtonElement).dataset['scenarioid'];
+    if(scenarioid) {
+        let scenario = this._list!.scenarios[scenarioid];
+        if(scenario) {
+            let form = this.shadowRoot!.querySelector<HTMLFormElement>("#scenarioForm")!;
+            resetForm(form, null);
+            let dates = scenario.dates;
+            (form.elements["scenarioid"] as HTMLInputElement).value = scenario.id;
+            (form.elements["scenario_name"] as HTMLInputElement).value = scenario.name;
+            (form.elements["scenario_region"] as HTMLInputElement).value = scenario.regionid;
+            (form.elements["scenario_subregion"] as HTMLInputElement).value = scenario.subregionid;
+            (form.elements["scenario_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
+            (form.elements["scenario_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
+            showDialog("scenarioDialog", this.shadowRoot!);
+        }
+    }
+    e.stopPropagation();
+    e.preventDefault();
+    return false;
+  }
+
+  _onDeleteScenario(e: Event) {
+    let scenarioid = (e.currentTarget as HTMLButtonElement).dataset['scenarioid'];
+    e.stopPropagation();
+    e.preventDefault();
+    if(scenarioid) {
+      let scenario = this._list!.scenarios[scenarioid];
+      if(scenario) {
+        if(!confirm("Do you want to delete the scenario '" + scenario.name + "' ?"))
+            return false;
+
+        showNotification("deleteNotification", this.shadowRoot!);
+        // Delete scenario itself. Scenario deletion returns a "Promise"
+        deleteScenario(scenario!).then(() => {
+          hideNotification("deleteNotification", this.shadowRoot!);
+        });
+      }
+    }
+    return false;
   }
 
   _showScenarios() {
@@ -223,19 +286,9 @@ export class ScenariosList extends connect(store)(PageViewElement) {
     item2!.className = "middle2 active";
   }
 
-  _removeScenario(e: Event) {
-    console.log(e);
-    /*
-    let scenarioId = (e.currentTarget as HTMLButtonElement).dataset['index']+"";
-    store.dispatch(removeScenario(scenarioId));
-    if(this._selectedId == scenarioId) {
-      store.dispatch(selectScenario(null));
-    }
-    */
-  }
 
   _onSelectScenario(e: Event) {
-    let selectedScenarioId = (e.currentTarget as HTMLButtonElement).dataset['index']+"";    
+    let selectedScenarioId = (e.currentTarget as HTMLButtonElement).dataset['scenarioid']+"";    
     this._selectScenario(selectedScenarioId);
   }
 
@@ -244,7 +297,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
   }
 
   protected firstUpdated() {    
-    store.dispatch(listRegions());
+    //store.dispatch(listTopRegions()); done by mint-app
     store.dispatch(listScenarios());
     // list summaries of datasets, models, etc
   }
@@ -253,13 +306,21 @@ export class ScenariosList extends connect(store)(PageViewElement) {
   stateChanged(state: RootState) {
     //console.log(state);
     if(state.modeling) {
-      if(state.modeling.scenarios && state.regions!.regions) {
+      if(state.modeling.scenarios) {
         this._list = state.modeling.scenarios;
-        this._regions = state.regions!.regions;
       }
     }
-    if(state.ui && state.ui.selected_top_regionid) {
+    if(state.ui && state.ui.selected_top_regionid && state.regions!.regions) {
       this._top_regionid = state.ui.selected_top_regionid;
+      this._regions = state.regions!.regions;
+      this._top_region = this._regions[this._top_regionid];
+
+      if(!state.regions!.query_result || !state.regions!.query_result[this._top_regionid]) {
+        store.dispatch(queryRegions(this._top_regionid));
+      }
+      else {
+        this._subRegions = state.regions!.query_result[this._top_regionid]["*"];
+      }
     }
     super.setRegionId(state);
   }

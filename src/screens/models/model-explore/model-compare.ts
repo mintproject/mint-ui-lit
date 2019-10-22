@@ -8,8 +8,8 @@ import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
 
 import { ComparisonEntry } from './ui-reducers';
-import { FetchedModel, VersionDetail } from './api-interfaces';
-import { explorerFetchVersions, explorerFetchMetadata } from './actions';
+import { FetchedModel, VersionDetail } from '../../../util/api-interfaces';
+import { fetchMetadataForModelConfig } from '../../../util/model-catalog-actions';
 import { explorerSetCompareA, explorerSetCompareB } from './ui-actions'
 
 //import { goToPage } from '../../../app/actions';
@@ -83,7 +83,7 @@ export class ModelCompare extends connect(store)(PageViewElement) {
         {key: 'processes', label: 'Processes', fn: (proc:any) => proc.join(', ')},
 
         {key: 'paramAssignMethod', label: 'Parameter assignment method'},
-        {key: 'adjustableVariables', label: 'Adjustable variables', fn: (av:any) => av.join(', ')},
+        {key: 'adjustableVariables', label: 'Adjustable parameters', fn: (av:any) => av.join(', ')},
         {key: 'targetVariables', label: 'Target variables', fn: (av:any) => av.join(', ')},
 
         {key: 'gridDim', label: 'Spatial dimensionality'},
@@ -349,7 +349,7 @@ export class ModelCompare extends connect(store)(PageViewElement) {
         if (selector) {
             this._configMetadataA = null;
             this._calibrationMetadataA = null;
-            if (selector['value']) store.dispatch(explorerFetchMetadata(selector['value']));
+            if (selector['value']) store.dispatch(fetchMetadataForModelConfig(selector['value']));
             store.dispatch(explorerSetCompareA({...this._compareA, config: selector['value']? selector['value'] : '', calibration: ''}));
         }
     }
@@ -358,7 +358,7 @@ export class ModelCompare extends connect(store)(PageViewElement) {
         let selector : HTMLElement | null = this.shadowRoot!.getElementById('selector-calibration-a');
         if (selector) {
             this._calibrationMetadataA = null;
-            if (selector['value']) store.dispatch(explorerFetchMetadata(selector['value']));
+            if (selector['value']) store.dispatch(fetchMetadataForModelConfig(selector['value']));
             store.dispatch(explorerSetCompareA({...this._compareA, calibration: selector['value'] ? selector['value'] : ''}));
         }
     }
@@ -376,7 +376,7 @@ export class ModelCompare extends connect(store)(PageViewElement) {
         if (selector) {
             this._configMetadataB = null;
             this._calibrationMetadataB = null;
-            if (selector['value']) store.dispatch(explorerFetchMetadata(selector['value']));
+            if (selector['value']) store.dispatch(fetchMetadataForModelConfig(selector['value']));
             store.dispatch(explorerSetCompareB({...this._compareB, config: selector['value']? selector['value'] : '', calibration: ''}));
         }
     }
@@ -385,7 +385,7 @@ export class ModelCompare extends connect(store)(PageViewElement) {
         let selector : HTMLElement | null = this.shadowRoot!.getElementById('selector-calibration-b');
         if (selector) {
             this._calibrationMetadataB = null;
-            if (selector['value']) store.dispatch(explorerFetchMetadata(selector['value']));
+            if (selector['value']) store.dispatch(fetchMetadataForModelConfig(selector['value']));
             store.dispatch(explorerSetCompareB({...this._compareB, calibration: selector['value'] ? selector['value'] : ''}));
         }
     }
@@ -438,9 +438,6 @@ export class ModelCompare extends connect(store)(PageViewElement) {
                 } else if (!this._compareA || state.explorerUI.compareA.model !== this._compareA.model) {
                     if (state.explorer && state.explorer.models && state.explorer.models[state.explorerUI.compareA.model]) {
                         this._modelA = state.explorer.models[state.explorerUI.compareA.model];
-                        if (!state.explorer.versions || !state.explorer.versions[this._modelA!.uri]) {
-                            store.dispatch(explorerFetchVersions(this._modelA!.uri));
-                        }
                     } else {
                         this._modelA = null;
                     }
@@ -454,9 +451,6 @@ export class ModelCompare extends connect(store)(PageViewElement) {
                 } else if (!this._compareB || state.explorerUI.compareB.model !== this._compareB.model) {
                     if (state.explorer && state.explorer.models && state.explorer.models[state.explorerUI.compareB.model]) {
                         this._modelB = state.explorer.models[state.explorerUI.compareB.model];
-                        if (!state.explorer.versions || !state.explorer.versions[this._modelB!.uri]) {
-                            store.dispatch(explorerFetchVersions(this._modelB!.uri));
-                        }
                     } else {
                         this._modelB = null;
                     }
@@ -488,16 +482,16 @@ export class ModelCompare extends connect(store)(PageViewElement) {
                         this._updateSelectOptions('selector-calibration-a', this._calibrationsA, this._compareA.calibration);
                     }
 
-                    if (state.explorer.modelMetadata && state.explorer.modelMetadata[this._compareA.config]) {
-                        this._configMetadataA = state.explorer.modelMetadata[this._compareA.config][0];
+                    if (state.explorer.metadata && state.explorer.metadata[this._compareA.config]) {
+                        this._configMetadataA = state.explorer.metadata[this._compareA.config][0];
                     } else {
                         this._configMetadataA = null;
                     }
                 }
 
-                if (this._compareA.calibration && state.explorer.modelMetadata &&
-                    state.explorer.modelMetadata[this._compareA.calibration]) {
-                    this._calibrationMetadataA = state.explorer.modelMetadata[this._compareA.calibration][0];
+                if (this._compareA.calibration && state.explorer.metadata &&
+                    state.explorer.metadata[this._compareA.calibration]) {
+                    this._calibrationMetadataA = state.explorer.metadata[this._compareA.calibration][0];
                 } else {
                     this._calibrationMetadataA = null;
                 }
@@ -525,16 +519,16 @@ export class ModelCompare extends connect(store)(PageViewElement) {
                         this._updateSelectOptions('selector-calibration-b', this._calibrationsB, this._compareB.calibration);
                     }
 
-                    if (state.explorer.modelMetadata && state.explorer.modelMetadata[this._compareB.config]) {
-                        this._configMetadataB = state.explorer.modelMetadata[this._compareB.config][0];
+                    if (state.explorer.metadata && state.explorer.metadata[this._compareB.config]) {
+                        this._configMetadataB = state.explorer.metadata[this._compareB.config][0];
                     } else {
                         this._configMetadataB = null;
                     }
                 }
 
-                if (this._compareB.calibration && state.explorer.modelMetadata &&
-                    state.explorer.modelMetadata[this._compareB.calibration]) {
-                    this._calibrationMetadataB = state.explorer.modelMetadata[this._compareB.calibration][0];
+                if (this._compareB.calibration && state.explorer.metadata &&
+                    state.explorer.metadata[this._compareB.calibration]) {
+                    this._calibrationMetadataB = state.explorer.metadata[this._compareB.calibration][0];
                 } else {
                     this._calibrationMetadataB = null;
                 }

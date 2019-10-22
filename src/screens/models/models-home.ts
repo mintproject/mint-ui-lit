@@ -7,6 +7,8 @@ import { store, RootState } from '../../app/store';
 import models from './reducers';
 import { connect } from 'pwa-helpers/connect-mixin';
 
+import { fetchVersionsAndConfigs, fetchModels } from '../../util/model-catalog-actions';
+
 import './model-explore/model-explore';
 import './models-register';
 import './models-calibrate';
@@ -64,6 +66,9 @@ export class ModelsHome extends connect(store)(PageViewElement) {
         switch (this._subpage) {
             case 'explore':
                 nav.push({label: 'Model Catalog', url: 'models/explore'});
+                if (this._selectedModelId) {
+                    nav.push({label: this._selectedModelId, url: 'models/explore/'+this._selectedModelId });
+                }
                 break;
             case 'register':
                 nav.push({label: 'Add Models', url: 'models/register'});
@@ -76,10 +81,6 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                 break;
             default:
                 break;
-        }
-
-        if (this._selectedModelId) {
-            nav.push({label: this._selectedModelId, url: 'models/explore/'+this._selectedModelId });
         }
 
         return html`
@@ -109,6 +110,11 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             <models-configure class="page" ?active="${this._subpage == 'configure'}"></models-configure>
             <models-calibrate class="page" ?active="${this._subpage == 'calibrate'}"></models-calibrate>
         `
+    }
+
+    firstUpdated() {
+        store.dispatch(fetchModels());
+        store.dispatch(fetchVersionsAndConfigs());
     }
 
     stateChanged(state: RootState) {

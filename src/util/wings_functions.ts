@@ -155,6 +155,14 @@ export interface WingsParameterTypes {
     [inputid: string] : string
 }
 
+export interface WingsTemplateSeed {
+    tid?: string,
+    datasets: Object,
+    parameters: Object,
+    paramtypes: Object,
+}
+
+
 /* End of Wings Types */
 
 
@@ -268,11 +276,11 @@ export const fetchWingsTemplatesList = async(config: UserPreferences) : Promise<
     });
 }
 
-export const fetchWingsTemplate = async(tname: string, config: UserPreferences) : Promise<WingsTemplatePackage> => {
+export const fetchWingsTemplate = async(tid: string, config: UserPreferences) : Promise<WingsTemplatePackage> => {
     return new Promise<WingsTemplatePackage>((resolve, reject) => {
         var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
-        var exurl = config.wings.export_url + "/export/users/" + config.wings.username + "/" + config.wings.domain;
-        var tid = exurl + "/workflows/" + tname + ".owl#" + tname;
+        //var exurl = config.wings.export_url + "/export/users/" + config.wings.username + "/" + config.wings.domain;
+        //var tid = exurl + "/workflows/" + tname + ".owl#" + tname;
 
         getResource({
             url: purl + "/workflows/getEditorJSON?template_id=" + escape(tid),
@@ -429,6 +437,43 @@ export const executeWingsExpandedWorkflow = async(xtpl: WingsTemplatePackage,
     });
 }
 
+export const expandAndRunWingsWorkflow = async(
+    tpl: WingsTemplatePackage, 
+    dataBindings: WingsDataBindings,
+    parameterBindings: WingsParameterBindings,
+    parameterTypes: WingsParameterBindings,
+    config: UserPreferences) 
+        : Promise<string> => {
+
+    return new Promise<string>((resolve, reject) => {
+        // Get url prefix for operations
+        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
+        var data = {
+            templateId: tpl.template.id,
+            parameterBindings: parameterBindings,
+            parameterTypes: parameterTypes,
+            componentBindings: _getComponentBindings(tpl),
+            dataBindings: dataBindings            
+        }
+        postJSONResource({
+            url: purl + "/executions/expandAndRunWorkflow",
+            onLoad: function(e: any) {
+                var runid = e.target.responseText;
+                if(runid) {
+                    resolve(runid);
+                }
+                else {
+                    reject("Could not run workflow");
+                }
+              },
+              onError: function() {
+                reject("Cannot run workflow");
+              }
+            }, 
+        data, true);
+    });
+}
+
 export const executeWingsWorkflow = async(
         tpl_package : WingsTemplatePackage, 
         dataBindings: WingsDataBindings,
@@ -447,20 +492,68 @@ export const executeWingsWorkflow = async(
     });
 }
 
+export const fetchWingsRunsStatuses = (template_name: string, start_time: number, total_runs: number, config: UserPreferences) 
+        : Promise<Map<string, any>> => {
+    return new Promise<Map<string, any>>((resolve, reject) => {
+        let statuses = {} as Map<string, any>;
+        let promises = [];
+        for(let i=0; i<total_runs; i+= 500) {
+            promises.push(_fetchWingsRunsStatuses(template_name, start_time, i, 500, config));
+        }
+        Promise.all(promises).then((vals) => {
+            vals.map((val) => {
+                statuses =  Object.assign({}, statuses, val); 
+            });
+            resolve(statuses);
+        })
+    })
+}
+
+const _fetchWingsRunsStatuses = (template_name: string, start_time: number, start: number, limit: number, config: UserPreferences)
+        : Promise<Map<string, any>> => {
+    return new Promise<Map<string, any>>((resolve, reject) => {
+        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
+        getResource({
+            url: purl + "/executions/getRunListSimple?pattern="+template_name+"&start="+start+"&limit="+limit+"&sort=startTime&dir=ASC&started_after="+start_time,
+            onLoad: function(e: any) {
+                let runsjson = JSON.parse(e.target.responseText);
+                if(runsjson.success) {
+                    let statuses: Map<string, string> = {} as Map<string, string>;
+                    let runslist : any[] = runsjson.rows;
+                    runslist.map((runjson) => {
+                        let runid = runjson.id;
+                        statuses[runid] = runjson.runtimeInfo;
+                    })
+                    resolve(statuses);
+                }
+            },
+            onError: function() {
+                reject("Cannot fetch runs");
+            }
+        }, true);
+    });
+}
+
 export const fetchWingsRunStatus = (ensemble: ExecutableEnsemble, config: UserPreferences)
         : Promise<ExecutableEnsemble> => {
     return new Promise<ExecutableEnsemble>((resolve, reject) => {
         var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
+        if(!ensemble.runid) {
+            reject();
+            return;
+        }
+
         let data = {
             run_id: ensemble.runid,
         };
         postFormResource({
-            url: purl + "/executions/getRunDetails",
+            url: purl + "/executions/getRunPlan",
             onLoad: function(e: any) {
-                let compjson = JSON.parse(e.target.responseText);
-                let ex = compjson.execution;
+                let ex = JSON.parse(e.target.responseText);
                 let nensemble = Object.assign({}, ensemble);
                 nensemble.status = ex.runtimeInfo.status;
+                if(!ex.queue) 
+                    return;
                 let totalsteps = ex.queue.steps.length;
                 let numdone = 0;
                 ex.queue.steps.map((step: any) => {
@@ -469,10 +562,67 @@ export const fetchWingsRunStatus = (ensemble: ExecutableEnsemble, config: UserPr
                     }
                 });
                 nensemble.run_progress = numdone/totalsteps;
+                nensemble.results = [];
+                if(nensemble.status == "SUCCESS") {
+                    nensemble.run_progress = 1;
+                    
+                    // Look for outputs that aren't inputs to any other steps
+                    let outputfiles = {};
+                    ex.plan.steps.map((step: any) => {
+                        step.outputFiles.map((file: any) => {
+                            outputfiles[file.id] = file;
+                        })
+                    })
+                    ex.plan.steps.map((step: any) => {
+                        step.inputFiles.map((file: any) => {
+                            delete outputfiles[file.id];
+                        })
+                    })
+                    nensemble.results = Object.values(outputfiles);
+                }
                 resolve(nensemble);
             },
             onError: function() {
                 reject("Cannot create component");
+            }
+        }, data, true);
+    });
+}
+
+export const fetchWingsRunResults = (ensemble: ExecutableEnsemble, config: UserPreferences)
+        : Promise<any> => {
+    return new Promise<any>((resolve, reject) => {
+        var purl = config.wings.server + "/users/" + config.wings.username + "/" + config.wings.domain;
+        if(!ensemble.runid) {
+            reject();
+            return;
+        }
+
+        let data = {
+            run_id: ensemble.runid,
+        };
+        postFormResource({
+            url: purl + "/executions/getRunPlan",
+            onLoad: function(e: any) {
+                let ex = JSON.parse(e.target.responseText);
+                if(ensemble.status == "SUCCESS") {                    
+                    // Look for outputs that aren't inputs to any other steps
+                    let outputfiles = {};
+                    ex.plan.steps.map((step: any) => {
+                        step.outputFiles.map((file: any) => {
+                            outputfiles[file.id] = file;
+                        })
+                    })
+                    ex.plan.steps.map((step: any) => {
+                        step.inputFiles.map((file: any) => {
+                            delete outputfiles[file.id];
+                        })
+                    })
+                    resolve(outputfiles);
+                }
+            },
+            onError: function() {
+                reject("Cannot get run details");
             }
         }, data, true);
     });

@@ -127,9 +127,13 @@ export const VARIABLES = {
             },
             "var3": {
                 "long_name": "Grain Yield",
-                "SVO_name": "grain~dry__mass-per-area_yield"
+                "SVO_name": "grain~dry__mass-per-area_yield, crop~mature~dry__harvest_mass-per-area_yield"
             },
             "var4": {
+                "long_name": "Crop Yields",
+                "SVO_name": "land_crop__simulated_mass-per-area_yield"
+            },
+            "var5": {
                 "long_name": "Tops Dry Weight",
                 "SVO_name": "crop~mature~dry_tops__mass-per-area_yield"
             }
@@ -138,10 +142,6 @@ export const VARIABLES = {
             "var1": {
                 "long_name": "Crop Production",
                 "SVO_name": "crop__simulated_produced_mass"
-            },
-            "var2": {
-                "long_name": "Crop Yields",
-                "SVO_name": "land_crop__simulated_mass-per-area_yield"
             },
             "var3": {
                 "long_name": "Land Area",
@@ -159,9 +159,11 @@ const _addToVariableMap = (vars: Object) => {
     Object.keys(vars).map((categoryname) => {
         let category = vars[categoryname];
         Object.keys(category).map((varid) => {
-            let stdname = category[varid]["SVO_name"];
+            let stdname = category[varid]["SVO_name"].split(/,\s*/);
             let name = category[varid]["long_name"];
-            VARIABLE_MAP[stdname] = name;
+            stdname.forEach((stdn) => {
+                VARIABLE_MAP[stdn] = name;
+            });
         })
     })
 }
@@ -171,5 +173,6 @@ _addToVariableMap(VARIABLES['driving variable']);
 _addToVariableMap(VARIABLES['response variable']);
 
 export const getVariableLongName = (stdname: string) => {
-    return VARIABLE_MAP[stdname];
+    let stdn = stdname.split(/,\s*/)[0];
+    return VARIABLE_MAP[stdn];
 }

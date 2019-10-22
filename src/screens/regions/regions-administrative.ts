@@ -3,28 +3,26 @@ import { html, customElement, css } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
 import { SharedStyles } from '../../styles/shared-styles';
+
 import { store } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
+import './regions-editor';
 
 @customElement('regions-administrative')
-export class RegionsAdministrative extends connect(store)(PageViewElement) {
+export class RegionsAdministrative extends PageViewElement {
 
     static get styles() {
         return [
-            css `
-            .cltrow wl-button {
-                padding: 2px;
-            }
-            `,
-            SharedStyles
+            SharedStyles,
+            css ``
         ];
     }
 
     protected render() {
         return html`
-        <p>
-        This page is in progress, it will show you the administrative region boundaries.
-        </p>
-        `
+        <regions-editor active
+            regionType="Administrative"
+        ></regions-editor>
+        `;
     }
 }

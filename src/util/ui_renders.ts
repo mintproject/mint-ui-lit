@@ -8,7 +8,7 @@ export const renderVariables = () => {
         Please select a driving and a response variable. A response variable indicates the kind of results that you're interested in. 
         An optional driving variable indicates the kind of inputs that you want to use to drive the results. 
         </p>        
-        <div class="formRow">                                      
+        <div class="formRow">
             <div class="input_half">
                 <label>Response Variable</label>
                 ${renderResponseVariables("")}
@@ -36,10 +36,22 @@ export const renderNotifications = () => {
         <wl-icon slot="icon">delete</wl-icon>
         <span>Deleting...</span>
     </wl-snackbar>   
-    <wl-snackbar id="runNotification" hideDelay="10000" fixed backdrop>
+    <wl-snackbar id="runNotification" persistent fixed backdrop>
         <wl-icon slot="icon">settings</wl-icon>
         <span>Sending runs...Please wait</span>
     </wl-snackbar>       
+    <wl-snackbar id="selectOneModelNotification" fixed backdrop>
+        <wl-icon slot="icon">error</wl-icon>
+        <span>Please select at least one model.</span>
+    </wl-snackbar>
+    <wl-snackbar id="selectTwoModelsNotification" fixed backdrop>
+        <wl-icon slot="icon">error</wl-icon>
+        <span>Please select at least two models.</span>
+    </wl-snackbar>
+    <wl-snackbar id="cantSave" fixed backdrop>
+        <wl-icon slot="icon">error</wl-icon>
+        <span>Cannot save in this moment. Sorry!</span>
+    </wl-snackbar>
     `;
 }
 

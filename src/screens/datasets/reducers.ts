@@ -1,19 +1,26 @@
 import { IdNameObject } from "../../app/reducers";
 import { Reducer } from "redux";
 import { RootAction } from "../../app/store";
-import { DATASETS_VARIABLES_QUERY, DATASETS_DETAIL, DATASETS_LIST } from "./actions";
+import { DATASETS_VARIABLES_QUERY, DATASETS_DETAIL, DATASETS_LIST, DATASETS_GENERAL_QUERY } from "./actions";
+import { DateRange } from "screens/modeling/reducers";
+import { BoundingBox } from "screens/regions/reducers";
 
 export interface Dataset extends IdNameObject {
     region: string,
     variables: string[],
-    time_period: string,
+    time_period: DateRange,
     description: string,
     version: string,
     limitations: string,
     source: Source,
-    url?: string,
-    categories?: string[]
+    categories?: string[],
+    resources: DataResource[]
 };
+
+export interface DataResource extends IdNameObject {
+    url: string
+    time_period?: DateRange
+}
 
 export interface DatasetDetail extends Dataset {
     documentation: string,
@@ -24,6 +31,13 @@ export interface Source {
     name: string,
     url: string,
     type: string
+}
+
+export interface DatasetQueryParameters {
+    spatialCoverage?: BoundingBox,
+    dateRange?: DateRange,
+    name?: string,
+    variables?: string[]
 }
 
 export interface DatasetsState {
@@ -59,10 +73,14 @@ const datasets: Reducer<DatasetsState, RootAction> = (state = INITIAL_STATE, act
             };
 
         case DATASETS_LIST:
+        case DATASETS_GENERAL_QUERY:
             // Return datasets
             state.datasets = { ...state.datasets };
             state.datasets["*"] = {
-                "*" : action.datasets
+                "*" : {
+                    loading: action.loading,
+                    datasets: action.datasets
+                }
             };
             return {
                 ...state

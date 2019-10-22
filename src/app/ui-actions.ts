@@ -6,15 +6,17 @@ export const UI_SELECT_SUBGOAL = 'UI_SELECT_SUBGOAL';
 export const UI_SELECT_PATHWAY = 'UI_SELECT_PATHWAY';
 export const UI_SELECT_PATHWAY_SECTION = 'UI_SELECT_PATHWAY_SECTION';
 export const UI_SELECT_TOP_REGION = 'SELECT_TOP_REGION';
+export const UI_SELECT_THREAD = 'SELECT_THREAD';
 
 export interface UIActionSelectScenario extends Action<'UI_SELECT_SCENARIO'> { scenarioid: string }
 export interface UIActionSelectSubgoal extends Action<'UI_SELECT_SUBGOAL'> { subgoalid: string }
 export interface UIActionSelectPathway extends Action<'UI_SELECT_PATHWAY'> { pathwayid: string }
 export interface UIActionSelectPathwaySection extends Action<'UI_SELECT_PATHWAY_SECTION'> { section: string }
 export interface UIActionSelectTopRegion extends Action<'SELECT_TOP_REGION'> { regionid?: string };
+export interface UIActionSelectThread extends Action<'SELECT_THREAD'> { threadid?: string };
 
 export type UIAction = UIActionSelectScenario | UIActionSelectSubgoal | UIActionSelectPathway 
-    | UIActionSelectPathwaySection | UIActionSelectTopRegion;
+    | UIActionSelectPathwaySection | UIActionSelectTopRegion | UIActionSelectThread;
 
 export const selectScenario: ActionCreator<UIActionSelectScenario> = (scenarioid:string) => {
     console.log("SelectScenario:" + scenarioid);
@@ -52,5 +54,12 @@ export const selectTopRegion: ActionCreator<UIActionSelectTopRegion> = (regionid
     return {
         type: UI_SELECT_TOP_REGION,
         regionid: regionid
+    }
+}
+
+export const selectThread: ActionCreator<UIActionSelectThread> = (threadid: string) => {
+    return {
+        type: UI_SELECT_THREAD,
+        threadid: threadid
     }
 }

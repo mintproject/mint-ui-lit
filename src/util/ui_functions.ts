@@ -21,12 +21,20 @@ export const showNotification = (id: string, shadowRoot: ShadowRoot) => {
 
 export const hideNotification = (id: string, shadowRoot: ShadowRoot) => {
     let notification:Snackbar = shadowRoot.querySelector<Snackbar>("#" + id)!;
-    if(notification)
-        notification.hide();
+    try {
+        if(notification)
+            notification.hide();
+    }
+    catch(e) {
+        
+    }
 }
 
-export const resetForm = (form: HTMLFormElement) => {
+export const resetForm = (form: HTMLFormElement, exclude: any) => {
     Object.keys(form.elements).map((name) => {
+        if(exclude && exclude[name]) {
+            return;
+        }
         let element = (form.elements[name] as HTMLInputElement | HTMLSelectElement);
         element.value = "";
         element.parentElement!.classList.remove("error");

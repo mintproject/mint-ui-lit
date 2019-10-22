@@ -24,9 +24,18 @@ export class RegionsHome extends connect(store)(PageViewElement) {
 
     static get styles() {
         return [
+            SharedStyles,
             css `
+            .card {
+                height: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+
+            regions-administrative, regions-hydrology {
+                height: calc(100% - 40px);
+            }
             `,
-            SharedStyles
         ];
     }
 

@@ -14,12 +14,12 @@ import { RootState, store } from './store';
 import { queryDatasetDetail } from '../screens/datasets/actions';
 import { queryModelDetail } from '../screens/models/actions';
 import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetConfig,
-         explorerSetCalibration } from '../screens/models/model-explore/ui-actions';
-import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion } from './ui-actions';
+         explorerSetCalibration, explorerSetMode } from '../screens/models/model-explore/ui-actions';
+import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread } from './ui-actions';
 import { auth } from '../config/firebase';
 import { User } from 'firebase';
 import { UserPreferences } from './reducers';
-import { SAMPLE_USER_PREFERENCES, SAMPLE_USER } from 'offline_data/sample_user';
+import { SAMPLE_USER_PREFERENCES, SAMPLE_USER, SAMPLE_USER_PREFERENCES_LOCAL } from 'offline_data/sample_user';
 
 export const BASE_HREF = document.getElementsByTagName("base")[0].href.replace(/^http(s)?:\/\/.*?\//, "/");
 
@@ -123,6 +123,7 @@ export const navigate: ActionCreator<ThunkResult> = (path: string) => (dispatch)
 
 const loadPage: ActionCreator<ThunkResult> = 
     (page: string, subpage: string, params: Array<String>) => (dispatch) => {
+
   switch(page) {
     case 'home':
       import('../screens/home/app-home').then((_module) => {
@@ -136,7 +137,7 @@ const loadPage: ActionCreator<ThunkResult> =
           store.dispatch(selectPathway(null));
         });
       }
-      else if(subpage == "scenario") {
+      else if(subpage == 'scenario') {
         // Scenario passed in. Load scenario
         import('../screens/modeling/mint-scenario').then((_module) => {
           if(params.length > 0) {
@@ -150,6 +151,8 @@ const loadPage: ActionCreator<ThunkResult> =
                 }
               }
             }
+          } else {
+            store.dispatch(selectScenario(null));
           }
         });   
       }
@@ -162,8 +165,31 @@ const loadPage: ActionCreator<ThunkResult> =
                     store.dispatch(queryModelDetail(params[0]));
                 }
             });
-        } else if (subpage == "explore") {
+        } else if (subpage == 'explore') {
             import('../screens/models/model-explore/model-explore').then((_module) => {
+                store.dispatch(explorerSetMode('view'));
+                if(params.length > 0) {
+                    store.dispatch(explorerSetModel(params[0]));
+                    if (params.length > 1) {
+                        store.dispatch(explorerSetVersion(params[1]));
+                        if (params.length > 2) {
+                            store.dispatch(explorerSetConfig(params[2]));
+                            if (params.length > 3) {
+                                store.dispatch(explorerSetCalibration(params[3]));
+                            }
+                        }
+                    }
+                } else {
+                    store.dispatch(explorerClearModel());
+                }
+            });
+        } else if (subpage == 'configure') {
+            import('../screens/models/models-configure').then((_module) => {
+                if (params[params.length -1] === 'edit' || params[params.length -1] === 'new') {
+                    store.dispatch(explorerSetMode(params.pop()));
+                } else {
+                    store.dispatch(explorerSetMode('view'));
+                }
                 if(params.length > 0) {
                     store.dispatch(explorerSetModel(params[0]));
                     if (params.length > 1) {
@@ -210,6 +236,21 @@ const loadPage: ActionCreator<ThunkResult> =
             //store.dispatch(queryVariableDetail(params[0]));
           }
         });
+        break;
+    case 'messages':
+        if(subpage == 'home') {
+          // No parameters. Load Modeling Home (List of Scenarios)
+          import('../screens/messages/messages-home').then((_module) => {
+          });
+        }
+        else if(subpage == "thread") {
+          // Scenario passed in. Load scenario
+          import('../screens/messages/messages-thread').then((_module) => {
+            if(params.length > 0) {
+              store.dispatch(selectThread(params[0]));
+            }
+          });   
+        }
         break;
     default:
       page = 'view404';

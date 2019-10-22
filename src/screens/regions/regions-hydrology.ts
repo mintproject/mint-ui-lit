@@ -1,18 +1,23 @@
 
-import { html, customElement, css } from 'lit-element';
+import { html, customElement, css, property } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
 import { SharedStyles } from '../../styles/shared-styles';
-import { store } from '../../app/store';
+import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
+import { goToPage } from '../../app/actions';
+import { queryRegions } from './actions';
+import { RegionsEditor } from './regions-editor';
+import { RegionList } from './reducers';
 
+import './regions-editor';
 import '../../components/image-gallery'
 
 @customElement('regions-hydrology')
-export class RegionsHydrology extends connect(store)(PageViewElement) {
-
+export class RegionsHydrology extends PageViewElement {
     static get styles() {
         return [
+            SharedStyles,
             css `
             .cltrow wl-button {
                 padding: 2px;
@@ -30,8 +35,7 @@ export class RegionsHydrology extends connect(store)(PageViewElement) {
             .content {
                 margin: 0 auto;
             }
-            `,
-            SharedStyles
+            `
         ];
     }
 
@@ -63,15 +67,22 @@ export class RegionsHydrology extends connect(store)(PageViewElement) {
                 src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Dashilo_relief_river_boundary.png"},
         ]
         return html`
+
         <div class="content">
+            <regions-editor active
+                style="--map-height: 450px;"
+                regionType="Hydrology"
+            ></regions-editor>
+
+            <br/>
             <p>
-                This page is in progress, it will allow you to run tools to identify hydrological regions of interest. 
+                <!--This page is in progress, it will allow you to run tools to identify hydrological regions of interest.-->
                 Below are some example hydrological regions identified for South Sudan:
             </p>
             <div style="width: 90%; margin: 0px auto;">
                 <image-gallery style="--width: 300px; --height: 160px;" .items="${items}"></image-gallery>
             </div>
         </div>
-        `
+        `;
     }
 }

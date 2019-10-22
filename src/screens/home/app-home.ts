@@ -5,14 +5,13 @@ import { PageViewElement } from '../../components/page-view-element';
 import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { listRegions } from '../regions/actions';
+import { listTopRegions } from '../regions/actions';
 import { RegionList } from '../regions/reducers';
 import { GOOGLE_API_KEY } from '../../config/google-api-key';
 
 import "../../components/stats-blurb";
 import "../../thirdparty/google-map/src/google-map";
 import "../../components/google-map-json-layer";
-import "../../components/google-map-kml-layer";
 import { selectTopRegion } from '../../app/ui-actions';
 
 @customElement('app-home')
@@ -21,8 +20,7 @@ export class AppHome extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _regions!: RegionList;
 
-    @property({type:Array})
-    private _mapStyles = '[{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"gamma":2.15},{"lightness":12}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"visibility":"on"},{"lightness":24}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]}]';
+    private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
     
     static get styles() {
       return [
@@ -97,7 +95,7 @@ export class AppHome extends connect(store)(PageViewElement) {
             ${Object.keys(this._regions || {}).map((regionid) => {
               let region = this._regions![regionid];
               return html`
-                <google-map-json-layer id="${region.id}" url="${region.geojson}" 
+                <google-map-json-layer .region_id="${region.id}" .region_name="${region.name}" json="${region.geojson_blob}" 
                   .selected="${region.id == this._regionid}"
                   @click=${(e: CustomEvent) => this.regionSelected(e.detail.id)}></google-map-json-layer>
               `;
@@ -111,9 +109,10 @@ export class AppHome extends connect(store)(PageViewElement) {
       store.dispatch(selectTopRegion(regionid));
     }
 
+    /* This is done by mint-app now
     protected firstUpdated() {
-      store.dispatch(listRegions());
-    }
+      store.dispatch(listTopRegions());
+    }*/
 
     // This is called every time something is updated in the store.
     stateChanged(state: RootState) {

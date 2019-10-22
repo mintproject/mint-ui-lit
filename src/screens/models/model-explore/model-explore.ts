@@ -8,14 +8,15 @@ import { store, RootState } from '../../../app/store';
 
 import { goToPage } from '../../../app/actions';
 
-import { explorerFetch, explorerSearchByVarName } from './actions';
+import { fetchSearchModelByVarSN } from '../../../util/model-catalog-actions';
 import { explorerSetCompareA, explorerSetCompareB } from "./ui-actions";
-import explorer from "./reducers";
+import explorer from '../../../util/model-catalog-reducers';
 import explorerUI from "./ui-reducers";
-import { UriModels } from './reducers';
+import { UriModels } from '../../../util/model-catalog-reducers';
 
-import './model-facet'
-import './model-facet-big'
+import './model-preview'
+import './model-view'
+import './model-edit'
 import './model-compare'
 
 import "weightless/textfield";
@@ -34,6 +35,9 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     @property({type: String})
     private _selectedUri : string = '';
+
+    @property({type: String})
+    private _mode : string = 'view';
 
     @property({type: String})
     private _filter : string = '';
@@ -76,6 +80,8 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             #model-comparison {
                 margin: 0 auto;
                 width: 75%;
+                max-height: 100%;
+                overflow: scroll;
             }
 
             #model-search-results {
@@ -85,7 +91,20 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 width: 100%;
             }
 
-            #model-search-results > model-facet {
+            #model-search-results > model-preview {
+                margin: 0 auto;
+                display: block;
+                width: 75%;
+            }
+
+            #model-view-cont {
+                margin: 0 auto;
+                overflow: scroll;
+                height: 100%;
+                width: 100%;
+            }
+
+            #model-view-cont > model-view, model-edit {
                 margin: 0 auto;
                 display: block;
                 width: 75%;
@@ -131,7 +150,10 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         return html`
             ${this._selectedUri? 
                 //Display only selected model or the search
-                html`<model-facet-big></model-facet-big>`
+                (this._mode === 'view' ?
+                    html`<div id="model-view-cont"><model-view></model-view></div>`
+                    : html`<div id="model-view-cont"><model-edit></model-edit></div>`
+                )
                 : this._renderSearch()
             }
         `;
@@ -147,7 +169,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 <!-- https://github.com/andreasbm/weightless/issues/58 -->
                 <wl-textfield id="search-input" label="Search models" @input=${this._onSearchInput} value="${this._filter}">
                     <div slot="after"> 
-                        <wl-icon style .="${this._filter == '' ? 'display:none;' : ''}" @click="${this._clearSearchInput}">clear</wl-icon> 
+                        <wl-icon style="${this._filter == '' ? 'display:none;' : ''}" @click="${this._clearSearchInput}">clear</wl-icon> 
                     </div>
                     <div slot="before"> <wl-icon>search</wl-icon> </div>
                 </wl-textfield><!--
@@ -167,17 +189,25 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 </div>
 
                 ${Object.keys(this._models).map( (key:string) => html`
-                    <model-facet 
+                    <model-preview 
                         uri="${key}"
                         altDesc="${this._variables[key] ? this._variables[key] : ''}"
                         altTitle="${this._variables[key] ? 'With Variables ('+this._variables[key].split(';').length+'):' : ''}"
                         .style="${!this._activeModels[key]? 'display: none;' : ''}">
-                    </model-facet>
+                    </model-preview>
                     `
                 )}
             </div>
             ` : html``}
         `
+    }
+
+    updated () {
+        let searchSelector = this.shadowRoot.getElementById('search-type-selector');
+        let arrow = searchSelector ? searchSelector.shadowRoot.getElementById('arrow') : null;
+        if (arrow) {
+            arrow.style.pointerEvents = "none";
+        }
     }
 
     _onSearchInput () {
@@ -235,16 +265,12 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             })
             this._activeCount = 0;
             this._lastTimeout = setTimeout(
-                ()=>{ store.dispatch(explorerSearchByVarName(input)); },
+                ()=>{ store.dispatch(fetchSearchModelByVarSN(input)); },
                 750);
         } else {
             this._loading=false;
             this._clearSearchInput();
         }
-    }
-
-    firstUpdated() {
-        store.dispatch(explorerFetch());
     }
 
     stateChanged(state: RootState) {
@@ -296,6 +322,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             this._comparing = 0;
             if ( state.explorerUI.compareA && state.explorerUI.compareA.model) this._comparing += 1;
             if ( state.explorerUI.compareB && state.explorerUI.compareB.model) this._comparing += 1;
+            this._mode = state.explorerUI.mode;
         }
     }
 }

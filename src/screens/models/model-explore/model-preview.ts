@@ -7,12 +7,12 @@ import { html, property, customElement, css } from 'lit-element';
 
 import { goToPage } from '../../../app/actions';
 
-import { FetchedModel } from "./api-interfaces";
+import { FetchedModel } from "../../../util/api-interfaces";
 import { ExplorerStyles } from './explorer-styles'
 import { explorerCompareModel } from './ui-actions'
 
-@customElement('model-facet')
-export class ModelFacet extends connect(store)(PageViewElement) {
+@customElement('model-preview')
+export class ModelPreview extends connect(store)(PageViewElement) {
     @property({type: String})
         uri : string = "";
 
@@ -25,7 +25,17 @@ export class ModelFacet extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _model! : FetchedModel;
 
-    private _id : String = '';
+    @property({type: String})
+    private _region : string = '';
+
+    @property({type: String})
+    private _url : string = '';
+
+    @property({type: Number})
+    private _vers : number = -1;
+
+    @property({type: Number})
+    private _configs : number = -1;
 
     constructor () {
         super();
@@ -102,6 +112,11 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                     border: 1px solid black;
                     max-width: calc(100% - 8px);
                     max-height: calc(150px - 3.6em - 2px);
+                }
+
+                #img-placeholder {
+                    vertical-align: middle;
+                    --icon-size: 80px;
                 }
 
                 .helper {
@@ -181,12 +196,14 @@ export class ModelFacet extends connect(store)(PageViewElement) {
               <tr>
                 <td class="left"> 
                   <div class="text-centered one-line">
-                    ${this._model.ver? html`${this._model.ver.length} version${this._model.ver.length>1?'s':''}`: html`No versions`}
+                    ${this._vers > 0 ? this._vers.toString() + ' version' + (this._vers > 1? 's' :'') : 'No versions'},
+                    ${this._configs > 0 ? this._configs.toString() + ' config' + (this._configs > 1? 's' :'') : 'No configs'}
                   </div>
                   <div>
                     <span class="helper"></span>${this._model.logo ? 
                         html`<img src="${this._model.logo}"/>`
-                        : html`<img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>`}
+                        : html`<wl-icon id="img-placeholder">image</wl-icon>`
+                    }
                   </div>
                   <div class="text-centered two-lines">
                     Category: ${this._model.categories? html`${this._model.categories[0]}` : html`-`}
@@ -216,9 +233,7 @@ export class ModelFacet extends connect(store)(PageViewElement) {
                         <b>Keywords:</b> 
                         ${this._model.keywords?  html`${this._model.keywords.join(', ')}` : html`No keywords`}
                     </span>
-                    <span class="details-button"
-                          @click="${()=>{goToPage('models/explore/' + this._id)}}"
-                           > More details </span>
+                    <a href="${this._region + '/'+ this._url}" class="details-button" @click="${this._goToThisModel}"> More details </a>
                   </div>
                 </td>
               </tr>
@@ -229,20 +244,36 @@ export class ModelFacet extends connect(store)(PageViewElement) {
         }
     }
 
+    _goToThisModel (e) {
+        e.preventDefault();
+        goToPage(this._url);
+        return false;
+    }
+
     _compare (uri:string) {
         store.dispatch(explorerCompareModel(uri));
     }
 
-    firstUpdated() {
-        let sp = this.uri.split('/');
-        if (sp.length > 1) {
-            this._id = sp[sp.length - 1];
-        }
-    }
-
     stateChanged(state: RootState) {
-        if (state.explorer && state.explorer.models) {
-            this._model = state.explorer.models[this.uri];
+        if (state.explorer) {
+            let db = state.explorer;
+            if (db.models && db.models[this.uri]) {
+                this._model = db.models[this.uri];
+            }
+
+            if (db.urls && db.urls[this.uri]) {
+                this._url = 'models/explore/' + db.urls[this.uri];
+            } else {
+                this._url = 'models/explore/' + this.uri.split('/').pop();
+            }
+
+            if (db.versions && db.versions[this.uri]) {
+                this._configs = db.versions[this.uri].reduce((acc, ver) => acc + (ver.configs ? ver.configs.length : 0), 0)
+            } else {
+                this._configs = 0;
+            }
         }
+        this._region = state.ui['selected_top_regionid'];
+        this._vers = this._model && this._model.versions ? this._model.versions.length : 0;
     }
 }
