@@ -564,8 +564,8 @@ export class MintScenario extends connect(store)(PageViewElement) {
                         start_date: toTimeStamp(pathway_from),
                         end_date: toTimeStamp(pathway_to)
                     },
-                    driving_variables: [],
-                    response_variables: [],
+                    driving_variables: this._selectedSubgoal.driving_variables,
+                    response_variables: this._selectedSubgoal.response_variables,
                     models: {},
                     datasets: {},
                     model_ensembles: {},
