@@ -41,7 +41,8 @@ export interface ModelParameter extends IdNameObject {
     max?: string,
     unit?: string,
     default?: string,
-    value?: string
+    value?: string,
+    adjustment_variable?: string
 }
 
 export interface ModelDetail extends Model {

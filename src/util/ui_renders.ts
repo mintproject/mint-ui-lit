@@ -58,8 +58,8 @@ export const renderNotifications = () => {
 export const renderResponseVariables = (variableid: string, readonly: boolean) => {
     return html`
         <select name="response_variable" ?disabled="${readonly}">
-            ${Object.keys(VARIABLES['response variable']).map((categoryname) => {
-                let category = VARIABLES['response variable'][categoryname];
+            ${Object.keys(VARIABLES['indicators']).map((categoryname) => {
+                let category = VARIABLES['indicators'][categoryname];
                 return html`
                 <optgroup label="${categoryname}">
                 ${Object.keys(category).map((varid) => {
@@ -82,8 +82,8 @@ export const renderDrivingVariables = (variableid: string, readonly: boolean) =>
     return html`
         <select name="driving_variable" ?disabled="${readonly}">
             <option value="">None</option>
-            ${Object.keys(VARIABLES['driving variable']).map((categoryname) => {
-                let category = VARIABLES['driving variable'][categoryname];
+            ${Object.keys(VARIABLES['adjustment_variables']).map((categoryname) => {
+                let category = VARIABLES['adjustment_variables'][categoryname];
                 return html`
                 <optgroup label="${categoryname}">
                 ${Object.keys(category).map((varid) => {

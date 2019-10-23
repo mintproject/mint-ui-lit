@@ -7,7 +7,7 @@ import { updatePathway } from "../actions";
 import { renderNotifications } from "../../../util/ui_renders";
 import { showNotification } from "../../../util/ui_functions";
 import { ExecutableEnsemble, Goal, SubGoal, DataEnsembleMap, Visualization } from "../reducers";
-import { getUISelectedSubgoal, getUISelectedGoal } from "../../../util/state_functions";
+import { getUISelectedSubgoal, getUISelectedGoal, getVisualizationURL } from "../../../util/state_functions";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { getVariableLongName } from "../../../offline_data/variable_list";
 
@@ -46,29 +46,9 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
         if(!this.pathway) {
             return html ``;
         }
-
+        let vizurl = getVisualizationURL(this.pathway)
         let responseV = this.pathway.response_variables.length > 0?
-                            getVariableLongName(this.pathway.response_variables[0]) : '';
-        let drivingV = this.pathway.driving_variables.length > 0?
-                            getVariableLongName(this.pathway.driving_variables[0]) : '';
-
-        // FIXME: Hack
-        if(responseV == "Crop Production") {
-            this.pathway.visualizations = [
-                {
-                    type: 'web',
-                    url: 'https://dev.viz.mint.isi.edu/economic?thread_id=' + this.pathway.id
-                }
-            ]
-        }
-        else if(responseV == "Potential Crop Production") {
-            this.pathway.visualizations = [
-                {
-                    type: 'web',
-                    url: 'https://dev.viz.mint.isi.edu/cycles?thread_id=' + this.pathway.id
-                }
-            ]
-        }
+            getVariableLongName(this.pathway.response_variables[0]) : '';
 
         return html`
         <style>
@@ -78,11 +58,11 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
             color: #999;
         }
         </style>
-        ${(this.pathway.visualizations && this.pathway.visualizations.length > 0)? html`
-            <h2>Visualizations 
+        ${(vizurl)? html`
+            <h2>Visualization
                 ${responseV? 'of indicator ' + responseV : ''}
             </h2>
-            ${this.pathway.visualizations.map((viz) => this._renderVisualization(viz))}
+            <iframe src="${vizurl}"></iframe>
 
             <fieldset class="notes">
                 <legend>Notes</legend>
@@ -111,15 +91,6 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
         };
         updatePathway(this.scenario, this.pathway); 
         showNotification("saveNotification", this.shadowRoot!);
-    }
-
-    _renderVisualization (visualization: Visualization) {
-        switch (visualization.type) {
-            case 'web':
-                return html`<iframe src="${visualization.url}"></iframe>`;
-            default:
-                return html`<a href="${visualization.url}" target="_blank">${visualization.url}</a>`;
-        }
     }
 
     _renderSummary () {

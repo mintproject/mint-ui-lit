@@ -4,7 +4,7 @@ import { store, RootState } from "../../app/store";
 import { PageViewElement } from "../../components/page-view-element";
 import { ScenarioDetails, SubGoal, Goal, Pathway, Scenario, Notes, PathwayInfo } from "./reducers";
 import { SharedStyles } from "../../styles/shared-styles";
-import { addGoal, addPathway, addSubGoal, deletePathway, deleteGoal, deleteSubGoal, getScenarioDetail, addGoalFull, addSubGoalFull, updateSubGoal, updateGoal, updatePathway, updatePathwayInfo } from "./actions";
+import { addGoal, addPathway, addSubGoal, deletePathway, deleteGoal, deleteSubGoal, getScenarioDetail, addGoalFull, addSubGoalFull, updateSubGoal, updateGoal, updatePathway, updatePathwayInfo, updatePathwayVariables } from "./actions";
 
 import "weightless/icon";
 import "weightless/tooltip";
@@ -564,8 +564,8 @@ export class MintScenario extends connect(store)(PageViewElement) {
                         start_date: toTimeStamp(pathway_from),
                         end_date: toTimeStamp(pathway_to)
                     },
-                    driving_variables: [],
-                    response_variables: [],
+                    driving_variables: this._selectedSubgoal.driving_variables,
+                    response_variables: this._selectedSubgoal.response_variables,
                     models: {},
                     datasets: {},
                     model_ensembles: {},
@@ -644,6 +644,10 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 // End of Temporary Addition
 
                 updateSubGoal(this._scenario!, subgoal);
+                Object.values(subgoal.pathways!).map((pathway: PathwayInfo) => {
+                    updatePathwayVariables(this._scenario!.id, pathway.id, 
+                        subgoal.driving_variables, subgoal.response_variables);
+                })
             }
             else {
                 // Add Subgoal

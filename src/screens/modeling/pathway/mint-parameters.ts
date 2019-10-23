@@ -113,7 +113,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                             let bindings:string[] = ensembles[input.id!];
                             return html`
                             <tr>
-                                <td>
+                                <td style="width:60%">
                                     <wl-title level="5">${input.name}</wl-title>
                                     <div class="caption">${input.description}.</div>
                                     <div class="caption">

@@ -11,6 +11,7 @@ import { db } from "config/firebase";
 import { Model } from "screens/models/reducers";
 import { isObject } from "util";
 import { postJSONResource } from "./mint-requests";
+import { getVariableLongName } from "offline_data/variable_list";
 
 export const removeDatasetFromPathway = (pathway: Pathway,
         datasetid: string, modelid: string, inputid: string) => {
@@ -251,7 +252,7 @@ export const runModelEnsembles = async(pathway: Pathway,
             if(resources.length > 0) {
                 let type = io.type.replace(/^.*#/, '');
                 resources.map((res) => {
-                    if(!res.name && res.url) {
+                    if(res.url) {
                         res.name =  res.url.replace(/^.*(#|\/)/, '');
                         if(!res.id)
                             res.id = res.name;
@@ -591,5 +592,21 @@ export const sendDataForIngestion = (scenarioid: string, subgoalid: string, thre
             }
         }, data, false);
     });    
+}
+
+export const getVisualizationURL = (pathway: Pathway) => {
+    if(getPathwayResultsStatus(pathway) == "TASK_DONE") {
+        let responseV = pathway.response_variables.length > 0?
+            getVariableLongName(pathway.response_variables[0]) : '';
+        let drivingV = pathway.driving_variables.length > 0?
+            getVariableLongName(pathway.driving_variables[0]) : '';
+
+        // FIXME: Hack
+        if(responseV == "Potential Crop Production")
+            return "https://dev.viz.mint.isi.edu/cycles?thread_id=" + pathway.id;
+        else
+            return "https://dev.viz.mint.isi.edu/scatter_plot?thread_id=" + pathway.id;
+    }
+    return null;
 }
 /* End of Helper Functions */
