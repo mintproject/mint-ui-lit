@@ -237,7 +237,7 @@ export class ModelEdit extends connect(store)(PageViewElement) {
                     <wl-textarea label="Assumptions" value="${this._model.assumptions?  this._model.assumptions.replace(/\. /g, '.\n') : ''}"></wl-textarea>
                 </div>
                 <div class="row-buttons">
-                    <wl-button style="float: right;">Save</wl-button>
+                    <wl-button style="float: right;" @click="${() => alert('Sorry! Save function is not available yet.')}">Save</wl-button>
                     <wl-button style="float: right; margin-right: 6px;" @click="${this._cancel}">Cancel</wl-button>
                 </div>
             </div>`

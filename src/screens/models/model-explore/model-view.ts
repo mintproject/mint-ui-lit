@@ -9,7 +9,7 @@ import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
 import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersionsForModel, 
         fetchIOAndVarsSNForConfig, fetchVarsSNAndUnitsForIO, fetchDiagramsForModelConfig,  fetchSampleVisForModelConfig,
         fetchMetadataForModelConfig, fetchMetadataNoioForModelConfig, fetchScreenshotsForModelConfig,
-        fetchAuthorsForModelConfig } from '../../../util/model-catalog-actions';
+        fetchAuthorsForModelConfig, fetchDescriptionForVar } from '../../../util/model-catalog-actions';
 import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
@@ -45,6 +45,9 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _configMetadata: any = null;
+
+    @property({type: Object})
+    private _indices: any = null;
 
     @property({type: Object})
     private _calibrationMetadata: any = null;
@@ -767,7 +770,19 @@ export class ModelView extends connect(store)(PageViewElement) {
             ${this._model.indices ? html`
             <wl-title level="2" style="font-size: 16px;">Relevant for calculating index:</wl-title>
             <ul style="margin-top: 5px">
-                <li>${this._model.indices.split('/').pop()}</li>
+                <li>
+                ${this._indices ? (this._indices.length === 0 ? html`
+                    ${this._model.indices.split('/').pop()} 
+                ` : html`
+                    <details>
+                        <summary>${this._indices[0].label}</summary>
+                        <div id="indice-description"></div>
+                    </details>
+                `)
+                : html`
+                    ${this._model.indices.split('/').pop()} 
+                    <loading-dots style="--width: 20px"></loading-dots> `}
+                </li>
             </ul>`
             :''}
             ${this._config ? this._renderMetadataResume() : ''}
@@ -1145,9 +1160,13 @@ export class ModelView extends connect(store)(PageViewElement) {
             ${(this._inputs && this._inputs.length > 0) ? html`
             <wl-title level="3">Inputs:</wl-title>
             ${this._inputs.map(input => html`
-            <wl-expansion id="${input.label}" name="groupInput" @click="${()=>{this.expandIO(input.uri)}}">
-                <span slot="title">${input.label}</span>
-                <span slot="description">${input.desc}</span>
+            <wl-expansion id="${input.label}" name="groupInput" @click="${()=>{this.expandIO(input.uri)}}" style="overflow-y: hidden;">
+                <span slot="title">
+                    ${input.label}
+                </span>
+                <span slot="description">
+                    ${input.desc}
+                </span>
                 ${this._variables[input.uri] ? 
                 html`${this._variables[input.uri].length>0?
                     html`
@@ -1186,7 +1205,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             ${(this._outputs && this._outputs.length > 0) ? html`
             <wl-title level="3">Outputs:</wl-title>
             ${this._outputs.map(output => html`
-            <wl-expansion id="${output.label}" name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}">
+            <wl-expansion id="${output.label}" name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}" style="overflow-y: hidden;">
                 <span slot="title">${output.label}</span>
                 <span slot="description">${output.desc}</span>
                 ${this._variables[output.uri] ? 
@@ -1417,6 +1436,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                 example.innerHTML = marked(this._model.example);
             }
         }
+        if (this._tab == 'overview' && this._model && this._model.indices && this._indices && this._indices.length > 0) {
+            let indiceDesc = this.shadowRoot.getElementById('indice-description');
+            if (indiceDesc) {
+                indiceDesc.innerHTML = this._indices[0].description;
+            }
+        }
     }
 
     _getVersionTree (uri:string) {
@@ -1472,6 +1497,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 this._selectedModel = ui.selectedModel;
 
                 this._model = null;
+                this._indices = null;
                 this._versions = null;
                 this._compModels = null;
                 this._explDiagrams = null;
@@ -1529,6 +1555,9 @@ export class ModelView extends connect(store)(PageViewElement) {
 
                 if (db.models && !this._model) {
                     this._model = db.models[this._selectedModel];
+                    if (this._model && this._model.indices) {
+                        store.dispatch(fetchDescriptionForVar(this._model.indices));
+                    }
                 }
                 if (db.versions && !this._versions) {
                     this._versions = db.versions[this._selectedModel];
@@ -1564,6 +1593,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                             }
                         })
                     })
+                }
+                if (!this._indices && db.vars && this._model && this._model.indices) {
+                    this._indices = db.vars[this._model.indices];
                 }
                 if (!this._explDiagrams && db.explDiagrams) {
                     this._explDiagrams = db.explDiagrams[this._selectedModel];
