@@ -235,6 +235,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                     border-bottom: 1px dotted;
                 }
 
+                .tooltip.nm {
+                    float: unset;
+                    margin: 0;
+                }
+
                 #desc-ext {
                     padding: 10px 5px 0px 5px;
                 }
@@ -893,21 +898,26 @@ export class ModelView extends connect(store)(PageViewElement) {
                             <div>Parameters</div>
                             <div>${!this._parameters ? html`
                                 <loading-dots style="--width: 20px"></loading-dots>`
-                                : this._parameters.filter(x => !!x.fixedValue).length + '/' + this._parameters.length }
+                                : html`
+                                <span class="tooltip nm" style="text-align: center;"
+                                    tip="${this._parameters.length - this._parameters.filter(x => !!x.fixedValue).length} parameters can be selected in this setup">
+                                ${ (this._parameters.length - this._parameters.filter(x => !!x.fixedValue).length) +
+                                   '/' + this._parameters.length }
+                                </span>`
+                                }
                             </div>
                         </div>
                         <div class="button-preview" @click=${() => this._changeTab('io')}>
                             <div>Input files</div>
                             <div>${!this._inputs? html`
                                 <loading-dots style="--width: 20px"></loading-dots>`
-                                : this._inputs.filter(x => !!x.fixedValueURL).length + '/' + this._inputs.length }
+                                : html `
+                                <span class="tooltip nm" style="text-align: center;"
+                                    tip="${this._inputs.length - this._inputs.filter(x => !!x.fixedValueURL).length} inputs can be selected in this setup">
+                                ${ (this._inputs.length - this._inputs.filter(x => !!x.fixedValueURL).length) +
+                                   '/' + this._inputs.length }
+                                </span>`}
                             </div>
-                        </div>
-                        <div style="display: inline-block; height: 24px; vertical-align: sub;">
-                            <span tip="Number of files or parameters that can be selected/Total number of files or parameters" 
-                                  class="tooltip">
-                            <wl-icon>help_outline</wl-icon>
-                        </span>
                         </div>
                     </div>
 
