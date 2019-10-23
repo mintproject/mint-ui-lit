@@ -32,7 +32,9 @@ export class RegionsHome extends connect(store)(PageViewElement) {
                 padding: 0px;
             }
 
-            regions-administrative, regions-hydrology {
+            regions-administrative, 
+            regions-hydrology, 
+            regions-agriculture {
                 height: calc(100% - 40px);
             }
             `,
