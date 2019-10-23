@@ -62,7 +62,7 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
-        <iframe src="http://mint-data-catalog-ui-dev.s3-website-us-east-1.amazonaws.com/"></iframe>
+        <iframe src="https://data-catalog.mint.isi.edu/"></iframe>
 
         <!--
         <div style="display:flex">
