@@ -772,12 +772,13 @@ export class ModelView extends connect(store)(PageViewElement) {
             <ul style="margin-top: 5px">
                 <li>
                 ${this._indices ? (this._indices.length === 0 ? html`
-                    ${this._model.indices.split('/').pop()} 
+                    <a target="_blank" href="${this._model.indices}">
+                        ${this._model.indices.split('/').pop().split('#').pop()}
+                    </a>
                 ` : html`
-                    <details>
-                        <summary>${this._indices[0].label}</summary>
-                        <div id="indice-description"></div>
-                    </details>
+                    <a target="_blank" href="${this._model.indices}">
+                        ${this._indices[0].label}
+                    </a>
                 `)
                 : html`
                     ${this._model.indices.split('/').pop()} 
@@ -789,6 +790,12 @@ export class ModelView extends connect(store)(PageViewElement) {
 
             ${this._renderGallery()}`
     }
+    /* HTML description are not working 
+                    <details>
+                        <summary>${this._indices[0].label}</summary>
+                        <div id="indice-description"></div>
+                    </details>
+                    */
 
     _renderMetadataResume () {
         if (this._config) {
@@ -895,6 +902,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <loading-dots style="--width: 20px"></loading-dots>`
                                 : this._inputs.filter(x => !!x.fixedValueURL).length + '/' + this._inputs.length }
                             </div>
+                        </div>
+                        <div style="display: inline-block; height: 24px; vertical-align: sub;">
+                            <span tip="Number of files or parameters that can be selected/Total number of files or parameters" 
+                                  class="tooltip">
+                            <wl-icon>help_outline</wl-icon>
+                        </span>
                         </div>
                     </div>
 
@@ -1436,12 +1449,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                 example.innerHTML = marked(this._model.example);
             }
         }
+        /* HTML description are not working
         if (this._tab == 'overview' && this._model && this._model.indices && this._indices && this._indices.length > 0) {
             let indiceDesc = this.shadowRoot.getElementById('indice-description');
             if (indiceDesc) {
                 indiceDesc.innerHTML = this._indices[0].description;
             }
-        }
+        }*/
     }
 
     _getVersionTree (uri:string) {
