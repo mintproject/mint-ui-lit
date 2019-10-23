@@ -252,7 +252,7 @@ export const runModelEnsembles = async(pathway: Pathway,
             if(resources.length > 0) {
                 let type = io.type.replace(/^.*#/, '');
                 resources.map((res) => {
-                    if(!res.name && res.url) {
+                    if(res.url) {
                         res.name =  res.url.replace(/^.*(#|\/)/, '');
                         if(!res.id)
                             res.id = res.name;

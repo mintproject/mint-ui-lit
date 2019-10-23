@@ -27,6 +27,12 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
                 padding: 2px;
             }
 
+            iframe {
+                width:100%;
+                border: 0px solid black;
+                height: 100%;
+            }
+            
             #iframe-container {
                 padding: 15px;
             }
@@ -56,15 +62,9 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
-        ${this._dataset && this._dataset.name ? 
-            html`
-            <h2>${this._dataset.name}</h2>
-            Details about the dataset here
-            `
-            : html ``
-        }
-        <br />
+        <iframe src="http://mint-data-catalog-ui-dev.s3-website-us-east-1.amazonaws.com/"></iframe>
 
+        <!--
         <div style="display:flex">
             <div style="width:20%"><b>Name</b></div>
             <div style="width:20%"><b>Variables</b></div>
@@ -79,9 +79,10 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
             <input style="width:20%" type="date" id="ds_start_date"></input>
             <input style="width:20%" type="date" id="ds_end_date"></input>
             <input type="button" 
-                @click="${this._findDatasets}" 
+                @click="this._findDatasets" 
                 style="height:33px;width:20%;border:0px;margin-left:20px;background:#EEE" value="Search"></input>
         </div>
+        -->
 
         ${this._datasets && this._datasets.loading ? 
             html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : "" }

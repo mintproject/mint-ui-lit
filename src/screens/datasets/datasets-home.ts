@@ -23,6 +23,9 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
     static get styles() {
         return [
             css `
+            datasets-browse {
+                height: calc(100% - 40px)
+            }
             `,
             SharedStyles
         ];
