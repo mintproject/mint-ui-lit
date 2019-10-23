@@ -903,6 +903,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 : this._inputs.filter(x => !!x.fixedValueURL).length + '/' + this._inputs.length }
                             </div>
                         </div>
+                        <div style="display: inline-block; height: 24px; vertical-align: sub;">
+                            <span tip="Number of files or parameters that can be selected/Total number of files or parameters" 
+                                  class="tooltip">
+                            <wl-icon>help_outline</wl-icon>
+                        </span>
+                        </div>
                     </div>
 
                     <wl-title level="2" style="font-size: 16px;">${this._calibration.label}</wl-title>
