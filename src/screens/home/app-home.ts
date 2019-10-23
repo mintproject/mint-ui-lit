@@ -5,7 +5,7 @@ import { PageViewElement } from '../../components/page-view-element';
 import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { listTopRegions } from '../regions/actions';
+import { listTopRegions, calculateMapDetails } from '../regions/actions';
 import { RegionList } from '../regions/reducers';
 import { GOOGLE_API_KEY } from '../../config/google-api-key';
 
@@ -19,6 +19,9 @@ export class AppHome extends connect(store)(PageViewElement) {
   
     @property({type: Object})
     private _regions!: RegionList;
+
+    @property({type: Object})
+    private _midpoint: any
 
     private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
     
@@ -88,19 +91,26 @@ export class AppHome extends connect(store)(PageViewElement) {
             </p>
         </div>
         
-        <google-map class="middle2main" api-key="${GOOGLE_API_KEY}" 
-            latitude="8" longitude="40" zoom="5" disable-default-ui="true" draggable="true"
-            mapTypeId="terrain" styles="${this._mapStyles}">
+        ${this._regions && this._midpoint ?
+          html`
+          <google-map class="middle2main" api-key="${GOOGLE_API_KEY}" 
+              latitude="${this._midpoint.latitude}" 
+              longitude="${this._midpoint.longitude}" 
+              zoom="${this._midpoint.zoom}" disable-default-ui="true" draggable="true"
+              mapTypeId="terrain" styles="${this._mapStyles}">
 
-            ${Object.keys(this._regions || {}).map((regionid) => {
-              let region = this._regions![regionid];
-              return html`
-                <google-map-json-layer .region_id="${region.id}" .region_name="${region.name}" json="${region.geojson_blob}" 
-                  .selected="${region.id == this._regionid}"
-                  @click=${(e: CustomEvent) => this.regionSelected(e.detail.id)}></google-map-json-layer>
-              `;
-            })}
-        </google-map>
+              ${Object.keys(this._regions || {}).map((regionid) => {
+                let region = this._regions![regionid];
+                return html`
+                  <google-map-json-layer .region_id="${region.id}" .region_name="${region.name}" json="${region.geojson_blob}" 
+                    .selected="${region.id == this._regionid}"
+                    @click=${(e: CustomEvent) => this.regionSelected(e.detail.id)}></google-map-json-layer>
+                `;
+              })}
+          </google-map>
+          `
+          : ""
+        }
 
       `
     }
@@ -118,6 +128,8 @@ export class AppHome extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         if(state.regions && state.regions.regions) {
             this._regions = state.regions.regions;
+            //let rect = this.getBoundingClientRect();
+            this._midpoint = calculateMapDetails(Object.values(this._regions), 800, 400);
         }
         super.setRegionId(state);
     }    

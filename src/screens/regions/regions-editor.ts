@@ -5,7 +5,7 @@ import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
-import { queryRegions, addRegions, listTopRegions } from './actions';
+import { queryRegions, addRegions, listTopRegions, calculateMapDetails } from './actions';
 import { GOOGLE_API_KEY } from 'config/google-api-key';
 import { RegionList, Region } from './reducers';
 
@@ -33,6 +33,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     @property({type: String})
     private _geojson_nameprop : string;
+
+    @property({type: Object})
+    private _midpoint: any
 
     private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
     
@@ -72,10 +75,17 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         }
 
         <!-- FIXME: Latitude, Longitude, Zoom should be automatically generated from the regions -->
-        <google-map class="map" api-key="${GOOGLE_API_KEY}" id="map_${this._regionid}"
-            latitude="8" longitude="40" zoom="5" disable-default-ui="true" draggable="true"
-            mapTypeId="terrain" styles="${this._mapStyles}">
-        </google-map>
+        ${this._region && this._midpoint ? 
+            html`
+            <google-map class="map" api-key="${GOOGLE_API_KEY}" id="map_${this._regionid}"
+                latitude="${this._midpoint.latitude}" 
+                longitude="${this._midpoint.longitude}" 
+                zoom="${this._midpoint.zoom}" disable-default-ui="true" draggable="true"
+                mapTypeId="terrain" styles="${this._mapStyles}">
+            </google-map>
+            `
+            : ""
+        }
 
         ${this._renderAddRegionsDialog()}
         `
@@ -216,7 +226,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                                                 <div class="input_full">
                                                     <input type="text" class="regionname"
                                                         value="${this._geojson_nameprop ? 
-                                                            newregion.properties[this._geojson_nameprop] : ''}">
+                                                            newregion.properties['_mint_name'] : ''}">
                                                     </input>
                                                 </div>
                                             </td>
@@ -241,7 +251,25 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     _selectGeojsonNameProperty(e: any) {
         this._geojson_nameprop = e.target.value;
+        this._setMintNameProperty();
     }
+
+    _setMintNameProperty() {
+        let dupesmap = {}
+        this._newregions = this._newregions.map((region) => {
+            let orig_region_name = region.properties[this._geojson_nameprop];
+            let new_region_name = orig_region_name;
+            if(!dupesmap[orig_region_name]) {
+                dupesmap[orig_region_name] = 1;
+            }
+            else {
+                new_region_name += "_" + dupesmap[orig_region_name];
+                dupesmap[orig_region_name] ++ ;
+            }
+            region.properties["_mint_name"]  = new_region_name;
+            return region;
+        })
+    }    
 
     _onGeoJsonUpload(e : any) {
         let files = e.target.files;
@@ -259,7 +287,8 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 else {
                     newregions = [ geojson ];
                 }
-                me._newregions = newregions;
+                me._newregions = newregions.filter((region) => 
+                    region.geometry && region.geometry.coordinates && region.geometry.coordinates.length > 0);
                 //console.log(me._newregions);
               };
             })(f);
@@ -287,6 +316,19 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
             // Set parent region
             this._parentRegionName = this._region.name;
+
+            //let rect = this.getBoundingClientRect();
+            this._midpoint = calculateMapDetails([this._region], 800, 400);
+            /*
+            // FIXME
+            let map: GoogleMap = this.shadowRoot!.getElementById("map_" + this._regionid) as GoogleMap;
+            if(map) {
+                map.latitude = this._midpoint.latitude;
+                map.longitude = this._midpoint.longitude;
+                map.zoom = this._midpoint.zoom;
+                map.requestUpdate();
+            }
+            */
         }
     }
 }

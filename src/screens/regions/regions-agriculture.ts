@@ -3,16 +3,15 @@ import { html, customElement, css } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
 import { SharedStyles } from '../../styles/shared-styles';
-import { store } from '../../app/store';
-import { connect } from 'pwa-helpers/connect-mixin';
 
-import '../../components/image-gallery'
+import './regions-editor';
 
 @customElement('regions-agriculture')
-export class RegionsAgriculture extends connect(store)(PageViewElement) {
+export class RegionsAgriculture extends PageViewElement {
 
     static get styles() {
         return [
+            SharedStyles,
             css `
             .cltrow wl-button {
                 padding: 2px;
@@ -30,8 +29,7 @@ export class RegionsAgriculture extends connect(store)(PageViewElement) {
             .content {
                 margin: 0 auto;
             }
-            `,
-            SharedStyles
+            `
         ];
     }
 
@@ -41,13 +39,17 @@ export class RegionsAgriculture extends connect(store)(PageViewElement) {
             src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/PIHMtoAgri/map_Landuse.png"}]
         return html`
         <div class="content">
+            <regions-editor active
+                style="--map-height: 450px;"
+                regionType="Agriculture"
+            ></regions-editor>
             <p>
                 The following are agricultural areas of interest in this region.
             </p>
             <div style="width: 90%; margin: 0px auto;">
                 <image-gallery style="--width: 300px; --height: 160px;" .items="${items}"></image-gallery>
             </div>
-        </div>
-        `
+        </div>        
+        `;
     }
 }
