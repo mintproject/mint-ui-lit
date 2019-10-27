@@ -157,10 +157,6 @@ export class MintScenario extends connect(store)(PageViewElement) {
                             For instance, “Flooding effect on crop production during the growing season.” 
                             Note that the timeframe for the task need not be the same as the problem statement. 
                             For instance, flooding may be relevant during the growing season leading to the lean season.
-                            <br />
-                            Tasks can be organized in modeling threads in order to investigate the impacts of 
-                            various interventions or obtain modeling products relevant to the task at hand. 
-                            For instance, a flooding map may be relevant to model possible planting time for a region.
                         </div>
 
                         <ul>
