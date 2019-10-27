@@ -111,6 +111,7 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
             <p>
             This page is in progress, it will allow you to run tools that create datasets from raw remote sensing data, that can be then used 
             in hydrological or other models.
+            ${(this._regionid === 'ethiopia') ? html`
             Below are some example results of a tool that simulates river guage data by processing remote sensing data for Ethiopia.
             </p>
             <a target="_blank" href="http://umnlcc.cs.umn.edu/carto-test/"><wl-title level="4">
@@ -135,7 +136,11 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
             <div style="width: 90%; margin: 0px auto;">
                 <image-gallery .items="${items}"></image-gallery>
             <div>
-
+            ` : ''}
         </div>`
+    }
+
+    stateChanged(state: RootState) {
+        super.setRegionId(state);
     }
 }
