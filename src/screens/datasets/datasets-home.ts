@@ -58,7 +58,8 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
                     <wl-icon>search</wl-icon>
                     <div>Browse Datasets</div>
                 </a>
-                <a href="${this._regionid}/datasets/register">
+                <!--a href="this._regionid/datasets/register"-->
+                <a disabled>
                     <wl-icon>library_add</wl-icon>
                     <div>Add Datasets</div>
                 </a>

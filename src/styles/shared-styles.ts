@@ -220,6 +220,11 @@ export const SharedStyles = css`
       --icon-size: 100px;
       margin-top: 10px;
   }
+  .icongrid > a[disabled]{
+    color: gray;
+    border-color: gray;
+    cursor: not-allowed;
+  }
   .svgicon {
       width: 100px;
       height: 100px;

@@ -215,10 +215,10 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                 <wl-icon @click="${this._editPathwayDialog}" 
                                     class="actionIcon addIcon">note_add</wl-icon>
                             </div>
-                            <div class="header_description">
-                                Each task on the left can be explored with several modeling threads, each pursuing a different analysis. 
-                                For example, the same task can be explored with a thread that uses model M1 and another that uses model M2, 
-                                and additional threads that use different parameter settings or assumptions for M1 and for M2
+                            <div class="header_description" style="font-size: 13px;">
+                                For a given task, you can investigate different initial conditions or different models.  Each of them can be explored by creating a new modeling thread for that task.  For example, a task can have a thread that sets a parameter to a low value and another thread that sets a parameter to a high value.  Or a thread could use model M1 and another thread that uses model M2.
+                                <br/>
+You can also use threads to investigate possible interventions.  For example, changing planting windows to an earlier time might increase crop production, which can be analyzed using an agriculture model. Another possible intervention to increase crop yield is the use of fertilizer subsidies, which can be studied by using an economic model.
                             </div>                            
                             <ul>
                             ${Object.values(((this._selectedSubgoal || {}) as SubGoal).pathways || {}).map((pathway: PathwayInfo) => {

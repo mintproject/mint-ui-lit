@@ -346,13 +346,29 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                             </wl-title>
                             ${!this._version ? html`
                             <wl-text>
-                                Welcome to the configure models tool, here you can create or edit new
-                                configurations and setups.
+                                You can create custom configurations of a model, by fixing parameter 
+                                values or input datasets or by constraining the ranges that parameters can take.
                             </wl-text>
+                            <wl-title level="4">
+                                Select a model from the left panel, and edit the parameters and files accordingly.
+                            </wl-title>
                             ` :''}
                         </div>
                     </div>
 
+                    ${this._config || this._setup ? html`<div style="font-size: 13px">
+                        <p>
+                            Model configurations are customizations of the model that use a subset of all the processes
+                            and functions that are possible with the general model software.
+                            Model set ups are manual configurations of a model for a specific geographical area or region,
+                            where some of the input data or parameters are constrained or fixed.
+                        </p>
+                        <p>
+                            You can create a new model set up or do further customization of an existing one by editing
+                            the parameters to constrain their values further or to set defaults, fix input data files 
+                            by providing a URL to them, and edit the descriptions of the model configuration to reflect the changes.
+                        </p>
+                    </div>` : ''}
                     <div style="padding: 0px 20px;">
                         <models-configure-configuration class="page" ?active="${this._config && !this._setup && !this._creating}"></models-configure-configuration>
                         <models-configure-setup class="page" ?active="${this._setup && !this._creating}"></models-configure-setup>

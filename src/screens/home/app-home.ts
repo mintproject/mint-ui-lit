@@ -59,7 +59,8 @@ export class AppHome extends connect(store)(PageViewElement) {
           }
 
           .middle2main {
-            height: calc(100% - 110px);
+            //height: calc(100% - 110px);
+            height: calc(100% - 240px);
           }
           
         `
@@ -80,15 +81,15 @@ export class AppHome extends connect(store)(PageViewElement) {
         <div class="middle">
             <wl-title level="3">Welcome to MINT</wl-title>
             <p>
-            Major societal and environmental challenges require forecasting how natural processes and human activities affect one another. 
-            There are many areas of the globe where climate affects water resources and therefore food availability, with major economic 
-            and social implications. Today, such analyses require significant effort to integrate highly heterogeneous models from 
-            separate disciplines, including geosciences, agriculture, economics, and social sciences. 
-            
-            Model integration requires resolving semantic, spatio-temporal, and execution mismatches, which are largely done by hand today 
-            and may take more than two years. The Model INTegration (MINT) project is developing a modeling environment to significantly 
-            reduce the time needed to develop new integrated models while ensuring their utility and accuracy.
+            MINT assists analysts to easily use sophisticated simulation models and data in order to explore the role of weather and climate in water on food availability in select regions of the world. For example, an analyst can use MINT to investigate the expected crop yields given different rainfall predictions through its effect on flooding and drought. MINT’s simulation models are quantitative and contain extensive subject matter knowledge.  For example, a hydrology model contains physical laws that describe how water moves through a river basin, and uses data about the elevation of the terrain and the soil types to determine how much water is absorbed in the ground and how the water flows over a land surface.  MINT provides assistance along the way to significantly reduce the time needed to develop new integrated models while ensuring their utility and accuracy
             </p>
+            <p>
+            Different analysts may have different expertise and run different types of models.  Each analyst is given a separate account in MINT, and their activities noted with their user name.  All analysts can see the same information in their interface, so when one completes a task all the results are accessible to all the analysts.  Analysts can communicate through the Messages Board on the top right.
+            </p>
+            <p>
+            You can move through the steps above in order to: 1) select regions of interest and areas for modeling (river basins, administrative areas, etc), 2) browse the data available for those areas, 3) browse the models that have been customized for those areas, 4) use the models by setting up initial conditions (including interventions) and running them, and 5) preparing reports that summarize the analyses.
+            </p>
+            <wl-title level="4">Select a region by hovering over it and clicking.</wl-title>
         </div>
         
         ${this._regions && this._midpoint ?

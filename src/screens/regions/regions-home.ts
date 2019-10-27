@@ -82,7 +82,8 @@ export class RegionsHome extends connect(store)(PageViewElement) {
                     </div> 
                     <div>Administrative</div>
                 </a>
-                <a href="${this._regionid}/regions/manual">
+                <!--a href="{this._regionid}/regions/manual"-->
+                <a disabled>
                     <wl-icon>edit</wl-icon>
                     <div>Manual Outline</div>
                 </a>                                
