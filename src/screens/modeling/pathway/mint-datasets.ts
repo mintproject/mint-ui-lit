@@ -52,6 +52,9 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     @property({type: Boolean})
     private _selectionUpdate: boolean;
 
+    @property({type: Boolean})
+    private _selectResourcesImmediateUpdate: boolean;
+
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
             name: "More information",
@@ -170,7 +173,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                                 <br />
                                                 ( ${selected_resources.length} / ${resources.length} resources - 
                                                 <a style="cursor:pointer"
-                                                    @click="${() => this._selectDatasetResources(dataset)}">Change</a> )
+                                                    @click="${() => this._selectDatasetResources(dataset, true)}">Change</a> )
                                             `
                                             : ""}
                                         </li>
@@ -228,7 +231,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                                                 <br />
                                                                 ( ${selected_resources.length} / ${resources.length} resources -  
                                                                 <a style="cursor:pointer"
-                                                                    @click="${() => this._selectDatasetResources(dataset)}">Change</a> )
+                                                                    @click="${() => this._selectDatasetResources(dataset, false)}">Change</a> )
                                                             `
                                                             : ""}
                                                         </td>
@@ -426,9 +429,10 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         return selected_datasets;     
     }
 
-    _selectDatasetResources(dataset: Dataset) {
+    _selectDatasetResources(dataset: Dataset, immediate_update: boolean) {
         this._selectResourcesDataset = dataset;
         this._selectionUpdate = false;
+        this._selectResourcesImmediateUpdate = immediate_update;
         showDialog("resourceSelectionDialog", this.shadowRoot!);
     }
 
@@ -445,6 +449,10 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
             res.selected = resource_selected[res.id];
         })
         this._selectionUpdate = true;
+        if(this._selectResourcesImmediateUpdate) {
+            updatePathway(this.scenario, this.pathway);
+            showNotification("saveNotification", this.shadowRoot!);
+        }
         hideDialog("resourceSelectionDialog", this.shadowRoot);
     }
 
