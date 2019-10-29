@@ -79,7 +79,16 @@ export class GoogleMapCustom extends GoogleMap {
         return {
           fillColor: selected ? '#d51990' : '#1990d5',
           strokeColor: selected ? '#d51990' : '#1990d5',
-          strokeWeight: 1
+          strokeWeight: 1,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: '#1990d5',
+            fillOpacity: 0.6,
+            strokeColor: '#1990d5',
+            strokeOpacity: 0.9,
+            strokeWeight: 1,
+            scale: 2
+          }
         }
       });
 

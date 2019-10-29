@@ -287,7 +287,8 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
         loading: true
     });
     let queryBody = {
-        "dataset_ids__in": [dsid]
+        "dataset_ids__in": [dsid],
+        "limit": 2000
     };
 
     fetch(DATA_CATALOG_URI + "/datasets/find", {
