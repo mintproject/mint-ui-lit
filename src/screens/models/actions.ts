@@ -217,13 +217,12 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                         parameters.push(param);
 
                         // If some driving/adjustment variables are passed, make sure they are matched
-                        if (!driving_variables || !driving_variables.length || 
-                            (!param.value && driving_variables.indexOf(adjustment_variable) >= 0)) {
-                                matched_driving_variable = true;
+                        if (!param.value && driving_variables && driving_variables.indexOf(adjustment_variable) >= 0) {
+                            matched_driving_variable = true;
                         }
                     });
 
-                    if(matched_driving_variable) {
+                    if(!driving_variables || !driving_variables.length || matched_driving_variable) {
                         // If this model matches the adjustment/driving variable
 
                         let input_parameters = parameters

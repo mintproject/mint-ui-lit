@@ -3,7 +3,7 @@ import { RootState } from "../../app/store";
 import { ActionCreator, Action } from "redux";
 import { EXAMPLE_REGION_DATA } from "../../offline_data/sample_scenarios";
 import { db } from "../../config/firebase";
-import { RegionList, Region, BoundingBox } from "./reducers";
+import { RegionList, Region, BoundingBox, Point } from "./reducers";
 import { OFFLINE_DEMO_MODE } from "../../app/actions";
 
 export const REGIONS_LIST = 'REGIONS_LIST';
@@ -80,6 +80,32 @@ const _calculateBoundingBox = (geojsonBlob: any) => {
     } as BoundingBox;
 }
 
+export const calculateMapDetailsForPoints = (points: Point[], mapWidth: number, mapHeight: number) => {
+    let extent = {
+      xmin: 99999, xmax: -99999,
+      ymin: 99999, ymax: -99999
+    }
+    points.map((point) => {
+      if(point.x < extent.xmin)
+          extent.xmin = point.x - 0.00001;
+      if(point.y < extent.ymin)
+          extent.ymin = point.y - 0.00001;            
+      if(point.x > extent.xmax)
+          extent.xmax = point.x + 0.00001;
+      if(point.y > extent.ymax)
+          extent.ymax = point.y + 0.00001;
+    })
+
+    let zoom = _calculateZoom(extent, mapWidth, mapHeight)
+    if (zoom < 2)
+        zoom = 2;
+    return {
+      latitude: (extent.ymin + extent.ymax)/2,
+      longitude: (extent.xmin + extent.xmax)/2,
+      zoom: zoom
+    }
+}
+
 export const calculateMapDetails = (regions: Region[], mapWidth: number, mapHeight: number) => {
     let extent = {
       xmin: 99999, xmax: -99999,
@@ -109,7 +135,7 @@ export const calculateMapDetails = (regions: Region[], mapWidth: number, mapHeig
 
 const _calculateZoom = (extent : any, mapWidth: number, mapHeight: number) => {
     var WORLD_DIM = { height: 256, width: 256 };
-    var ZOOM_MAX = 21;
+    var ZOOM_MAX = 15;
 
     function zoom(mapPx: number, worldPx: number, fraction: number) {
         return Math.floor(Math.log(mapPx / worldPx / fraction) / Math.LN2);

@@ -291,7 +291,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             })}
             </ul>
             <div class="footer">
-                <wl-button type="button" class="submit" @click="${() => store.dispatch(selectPathwaySection("results"))}">Continue</wl-button>
+                <wl-button type="button" class="submit" @click="${() => store.dispatch(selectPathwaySection("visualize"))}">Continue</wl-button>
             </div>
         </div>
 

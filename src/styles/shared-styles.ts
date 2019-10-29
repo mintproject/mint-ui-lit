@@ -99,10 +99,10 @@ export const SharedStyles = css`
   }
   
   wl-progress-bar {
-    --progress-bar-height: 12px;
+    --progress-bar-height: 10px;
     --progress-bar-bg: #EEE;
     --progress-bar-color: #629b30;
-    width: 150px;
+    width: 120px;
   }  
   wl-progress-bar.FAILURE {
     --progress-bar-color: red;
@@ -592,7 +592,7 @@ export const SharedStyles = css`
   .breadcrumbs .icon {
     font-size: 14px;
   }
-  .breadcrumbs li {
+  .breadcrumbs a {
     float: left;
     cursor: pointer;
     min-width: 70px;
@@ -609,7 +609,7 @@ export const SharedStyles = css`
     text-align: center;
     margin: 2px 23px 1px 0px;
   }
-  .breadcrumbs li:before, .breadcrumbs li:after {
+  .breadcrumbs a:before, .breadcrumbs a:after {
     content: "";
     position: absolute;
     top: 0;
@@ -618,33 +618,33 @@ export const SharedStyles = css`
     width: 0;
     height: 0;
   }
-  .breadcrumbs li:before {
+  .breadcrumbs a:before {
     left: -19px;
     border-left-color: transparent;
   }
-  .breadcrumbs li:after {
+  .breadcrumbs a:after {
     left: 100%;
     border-color: transparent;
     border-left-color: #f0f0f0;
   }
-  .breadcrumbs li:hover {
+  .breadcrumbs a:hover {
     background-color: #e0e0e0;
   }
-  .breadcrumbs li:hover:before {
+  .breadcrumbs a:hover:before {
     border-color: #e0e0e0;
     border-left-color: transparent;
   }
-  .breadcrumbs li:hover:after {
+  .breadcrumbs a:hover:after {
     border-left-color: #e0e0e0;
   }
 
-  .breadcrumbs li:first-child {
+  .breadcrumbs a:first-child {
     padding-left: 8px;
     -moz-border-radius: 2px 0 0 2px;
     -webkit-border-radius: 4px;
     border-radius: 2px 0 0 2px;
   }
-  .breadcrumbs li:first-child:before {
+  .breadcrumbs a:first-child:before {
     border: none;
   }
   
@@ -683,13 +683,13 @@ export const SharedStyles = css`
   /* End of input type = file */
 
   @media (max-width: 768px) {
-    .breadcrumbs li {
+    .breadcrumbs a {
       font-size: 12px;
       width: 70px;
     }
   }
   @media (max-width: 480px) {
-    .breadcrumbs li {
+    .breadcrumbs a {
       font-size: 9px;
       width: 49px;
     }

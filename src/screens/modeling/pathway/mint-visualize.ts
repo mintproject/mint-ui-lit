@@ -94,6 +94,10 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
     }
 
     _renderSummary () {
+        if(!this._subgoal) {
+            return "";
+        }
+        
         return html`
         <h2>${this.scenario.name}</h2>
         <div class="clt">

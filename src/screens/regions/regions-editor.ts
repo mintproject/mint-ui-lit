@@ -9,12 +9,11 @@ import { queryRegions, addRegions, listTopRegions, calculateMapDetails } from '.
 import { GOOGLE_API_KEY } from 'config/google-api-key';
 import { RegionList, Region } from './reducers';
 
-import "../../thirdparty/google-map/src/google-map";
-import "../../components/google-map-json-layer";
+import 'components/google-map-custom';
+import 'weightless/progress-spinner';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
-import { GoogleMap } from '../../thirdparty/google-map/src/google-map';
-import { GoogleMapJsonLayer } from '../../components/google-map-json-layer';
+import { GoogleMapCustom } from 'components/google-map-custom';
 
 @customElement('regions-editor')
 export class RegionsEditor extends connect(store)(PageViewElement)  {
@@ -34,8 +33,8 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     @property({type: String})
     private _geojson_nameprop : string;
 
-    @property({type: Object})
-    private _midpoint: any
+    @property({type: Boolean})
+    private _mapReady: boolean = false;
 
     private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
     
@@ -75,60 +74,42 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             : ""
         }
 
-        <!-- FIXME: Latitude, Longitude, Zoom should be automatically generated from the regions -->
-        ${this._region && this._midpoint ? 
-            html`
-            <google-map class="map" api-key="${GOOGLE_API_KEY}" id="map_${this._regionid}"
-                latitude="${this._midpoint.latitude}" 
-                longitude="${this._midpoint.longitude}" 
-                zoom="${this._midpoint.zoom}" disable-default-ui="true" draggable="true"
-                mapTypeId="terrain" styles="${this._mapStyles}">
-            </google-map>
-            `
-            : ""
-        }
+        ${!this._mapReady ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
+        <google-map-custom class="map" api-key="${GOOGLE_API_KEY}" 
+            .style="visibility: ${this._mapReady ? 'visible': 'hidden'}"
+            disable-default-ui="true" draggable="true"
+            @click="${this._handleMapClick}"
+            mapTypeId="terrain" styles="${this._mapStyles}">
+        </google-map-custom>
 
         ${this._renderAddRegionsDialog()}
         `
     }
 
-    public clearMap() {
-        //console.log("Clearing Map");
-        let mapelement = this.shadowRoot.querySelector("google-map") as GoogleMap;
-        if(mapelement && mapelement.map) {
-            let map = mapelement.map;
-            map.data.forEach((feature) => {
-                mapelement.map.data.remove(feature);
-            });
-            mapelement.innerHTML = "";
+    public addRegionsToMap() {   
+        let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
+        if(map && this._regions) {
+            let regions = Object.values(this._regions);
+            if(regions.length == 0)
+                regions = [this._region];
+            try {
+                map.setRegions(regions, null);
+                this._mapReady = true;
+            }
+            catch {
+                map.addEventListener("google-map-ready", (e) => {
+                    map.setRegions(regions, this._regionid);
+                    this._mapReady = true;
+                })
+            }
         }
     }
 
-    public addRegionsToMap() {
-        /*FIXME: This does not work, changestate executes this a lot of times and for some
-         * reason the layers are being created one on top of other */
-        this.clearMap();                
-
-        let mapelement = this.shadowRoot.querySelector("google-map") as GoogleMap;
-        if(mapelement && mapelement.map) {
-
-            Object.keys(this._regions || {}).map((regionid) => {
-                let region = this._regions![regionid];
-                let layer = new GoogleMapJsonLayer();
-                layer.json = JSON.parse(region.geojson_blob);
-                layer.region_id = region.id;
-                layer.region_name = region.name;
-                mapelement.appendChild(layer);
-            });
-            mapelement.map.data.addListener('click', function(ev) {
-                mapelement.dispatchEvent(new CustomEvent('map-click', 
-                    {composed: true, detail: {
-                        id: ev.feature.getProperty('region_id'),
-                        name: ev.feature.getProperty('region_name'),
-                    }})
-                );
-            })
-        }
+    private _handleMapClick(ev) {
+        let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
+        if(ev.detail && ev.detail.id) 
+            this.dispatchEvent(new CustomEvent('map-click', 
+                {composed: true, detail: ev.detail}));
     }
 
     _showAddRegionsDialog() {
@@ -317,19 +298,6 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
             // Set parent region
             this._parentRegionName = this._region.name;
-
-            //let rect = this.getBoundingClientRect();
-            this._midpoint = calculateMapDetails([this._region], 800, 400);
-            /*
-            // FIXME
-            let map: GoogleMap = this.shadowRoot!.getElementById("map_" + this._regionid) as GoogleMap;
-            if(map) {
-                map.latitude = this._midpoint.latitude;
-                map.longitude = this._midpoint.longitude;
-                map.zoom = this._midpoint.zoom;
-                map.requestUpdate();
-            }
-            */
         }
     }
 }

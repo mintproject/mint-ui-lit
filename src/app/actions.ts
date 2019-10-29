@@ -11,7 +11,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 import { Action, ActionCreator } from 'redux';
 import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from './store';
-import { queryDatasetDetail } from '../screens/datasets/actions';
+import { queryDatasetResources } from '../screens/datasets/actions';
 import { queryModelDetail } from '../screens/models/actions';
 import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetConfig,
          explorerSetCalibration, explorerSetMode } from '../screens/models/model-explore/ui-actions';
@@ -21,6 +21,7 @@ import { User } from 'firebase';
 import { UserPreferences } from './reducers';
 import { SAMPLE_USER, SAMPLE_MINT_PREFERENCES_LOCAL, SAMPLE_MINT_PREFERENCES } from 'offline_data/sample_user';
 import { DefaultApi } from '@mintproject/modelcatalog_client';
+import { dexplorerSelectDataset } from 'screens/datasets/ui-actions';
 
 export const BASE_HREF = document.getElementsByTagName("base")[0].href.replace(/^http(s)?:\/\/.*?\//, "/");
 
@@ -285,10 +286,13 @@ const loadPage: ActionCreator<ThunkResult> =
         break;
     case 'datasets':
         import('../screens/datasets/datasets-home').then((_module) => {
-          if(params.length > 0) {
-            if(subpage == "browse") {
-              store.dispatch(queryDatasetDetail(params[0]));
-            }
+          if(subpage == "browse") {
+              if(params.length > 0) {
+                store.dispatch(dexplorerSelectDataset(params[0]));
+              }
+              else {
+                store.dispatch(dexplorerSelectDataset(null));
+              }
           }
         });
         break;

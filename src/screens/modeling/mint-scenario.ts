@@ -147,18 +147,19 @@ export class MintScenario extends connect(store)(PageViewElement) {
                     <div class="clt">
                         <div class="cltrow_padded scenariorow">
                             <div class="cltmain">
-                                <wl-title level="4" style="margin: 0px">TASKS</wl-title>
+                                <wl-title level="4" style="margin: 0px">
+                                    TASKS
+                                </wl-title>
                             </div>
                             <wl-icon @click="${this._addSubGoalDialog}" 
                                 class="actionIcon addIcon">note_add</wl-icon>
                         </div>
-                        <div class="header_description" style="padding-left: 10px">
+                        <div class="cltrow_padded" style="font-size:12.5px;padding-top:0px;">
                             Tasks are used to model indicators relevant to the problem. 
-                            For instance, “Flooding effect on crop production during the growing season.” 
-                            Note that the timeframe for the task need not be the same as the problem statement. 
-                            For instance, flooding may be relevant during the growing season leading to the lean season.
+                            &nbsp;
+                            <wl-icon @click="${() => showDialog('tasksHelpDialog', this.shadowRoot)}"
+                                class="actionIcon">help</wl-icon>  
                         </div>
-
                         <ul>
                         ${Object.keys(this._scenario_details.subgoals).map((subgoalid) => {
                             const subgoal = this._scenario_details!.subgoals[subgoalid];
@@ -211,11 +212,13 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                 <wl-icon @click="${this._editPathwayDialog}" 
                                     class="actionIcon addIcon">note_add</wl-icon>
                             </div>
-                            <div class="header_description" style="font-size: 13px;">
-                                For a given task, you can investigate different initial conditions or different models.  Each of them can be explored by creating a new modeling thread for that task.  For example, a task can have a thread that sets a parameter to a low value and another thread that sets a parameter to a high value.  Or a thread could use model M1 and another thread that uses model M2.
-                                <br/>
-You can also use threads to investigate possible interventions.  For example, changing planting windows to an earlier time might increase crop production, which can be analyzed using an agriculture model. Another possible intervention to increase crop yield is the use of fertilizer subsidies, which can be studied by using an economic model.
-                            </div>                            
+                            <div class="cltrow_padded" style="font-size:12.5px; padding-left: 5px; padding-top: 0px">
+                                For a given task, you can investigate different initial conditions or different models.  
+                                Each of them can be explored by creating a new modeling thread for that task.
+                                &nbsp;
+                                <wl-icon @click="${() => showDialog('threadsHelpDialog', this.shadowRoot)}"
+                                    class="actionIcon">help</wl-icon>
+                            </div>
                             <ul>
                             ${Object.values(((this._selectedSubgoal || {}) as SubGoal).pathways || {}).map((pathway: PathwayInfo) => {
                                 let pname = pathway.name ? pathway.name : this._selectedSubgoal.name;
@@ -263,6 +266,7 @@ You can also use threads to investigate possible interventions.  For example, ch
         ${this._renderObjectiveDialog()}
         ${this._renderSubObjectiveDialog()}
         ${this._renderThreadDialog()}
+        ${this._renderHelpDialogs()}
         `;
     }
 
@@ -291,6 +295,54 @@ You can also use threads to investigate possible interventions.  For example, ch
             `
         })}        
         `        
+    }
+
+    _renderHelpDialogs() {
+        return html`
+        <wl-dialog class="larger" id="threadsHelpDialog" fixed backdrop blockscrolling>
+            <h3 slot="header">Modeling Threads</h3>
+            <div slot="content">
+                <p>
+                    For a given task, you can investigate different initial conditions or different models.  
+                    Each of them can be explored by creating a new modeling thread for that task.  
+                    For example, a task can have a thread that sets a parameter to a low value and 
+                    another thread that sets a parameter to a high value.  Or a thread could use 
+                    model M1 and another thread that uses model M2.
+                </p>
+                <p>
+                    You can also use threads to investigate possible interventions.  For example, 
+                    changing planting windows to an earlier time might increase crop production, 
+                    which can be analyzed using an agriculture model. Another possible intervention to 
+                    increase crop yield is the use of fertilizer subsidies, which can be studied 
+                    by using an economic model.
+                </p>   
+                <p>
+                    Create a new thread, then click on the first of the steps shown.  
+                    You can move from one step to the next, and you can always go back and change any of the steps.  
+                    At the bottom of the step, there is a notepad where you can document your decisions, 
+                    and your notes will be added to the final report so others can undertand your modeling decisions.
+                </p>       
+            </div>
+            <div slot="footer">
+                <wl-button @click="${() => hideDialog('threadsHelpDialog', this.shadowRoot)}" inverted flat>Close</wl-button>
+            </div>
+        </wl-dialog>
+
+        <wl-dialog class="larger" id="tasksHelpDialog" fixed backdrop blockscrolling>
+            <h3 slot="header">Tasks</h3>
+            <div slot="content">
+                <p>
+                    Tasks are used to model indicators relevant to the problem. 
+                    For instance, “Flooding effect on crop production during the growing season.” 
+                    Note that the timeframe for the task need not be the same as the problem statement. 
+                    For instance, flooding may be relevant during the growing season leading to the lean season.
+                </p>        
+            </div>
+            <div slot="footer">
+                <wl-button @click="${() => hideDialog('tasksHelpDialog', this.shadowRoot)}" inverted flat>Close</wl-button>
+            </div>
+        </wl-dialog>        
+        `;
     }
 
     _renderObjectiveDialog() {

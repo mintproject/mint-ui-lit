@@ -43,6 +43,9 @@ export const VARIABLES = {
                 "long_name": "Land Cost",
                 "SVO_name": "land_crop__production_cost-per-area"
             },
+        },
+        "Hydrology": {
+            
         }
     },
     "indicators": {
@@ -62,6 +65,20 @@ export const VARIABLES = {
                 "long_name": "Crop Production",
                 "SVO_name": "crop__simulated_produced_mass"
             },
+        },
+        "Hydrology": {
+            "var1": {
+                "long_name": "Water table level",
+                "SVO_name": "water_table__level_height"
+            },
+            "var2": {
+                "long_name": "Streamflow Location",
+                "SVO_name": "streamflow_location"
+            },
+            "var3": {
+                "long_name": "Total Water Storage",
+                "SVO_name": "total_water_storage"
+            }
         }
     }
 };

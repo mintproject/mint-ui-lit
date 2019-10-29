@@ -197,7 +197,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
     _renderProgressDialog() {
         return html`
         <wl-dialog id="progressDialog" fixed persistent backdrop blockscrolling>
-            <h3 slot="header">Saving and running model configurations</h3>
+            <h3 slot="header">Running models with all the parameter settings specified</h3>
             <div slot="content">
                 <p>
                     Submitting runs for model "${this._progress_item}"
@@ -266,7 +266,11 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                         let nensemble = [];
                         dataEnsemble[io.id].map((dsid) => {
                             let ds = this.pathway.datasets[dsid];
-                            nensemble = nensemble.concat(nensemble, ds.resources);
+                            let selected_resources = ds.resources.filter((res) => res.selected);
+                            // Fix for older saved resources
+                            if(selected_resources.length == 0) 
+                                selected_resources = ds.resources;
+                            nensemble = nensemble.concat(nensemble, selected_resources);
                         });
                         dataEnsemble[io.id] = nensemble;
                     }

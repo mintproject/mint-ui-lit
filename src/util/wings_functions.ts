@@ -645,6 +645,36 @@ export const fetchWingsRunResults = (ensemble: ExecutableEnsemble, config: UserP
     });
 }
 
+export const fetchWingsRunLog = (runid: string, config: UserPreferences)
+        : Promise<any> => {
+
+    let config_wings = config.mint.wings;
+    return new Promise<any>((resolve, reject) => {
+        var purl = config_wings.server + "/users/" + config_wings.username + "/" + config_wings.domain;
+        let data = {
+            run_id: runid,
+        };
+        postFormResource({
+            url: purl + "/executions/getRunDetails",
+            onLoad: function(e: any) {
+                let response = JSON.parse(e.target.responseText);
+                let ex = response.execution;
+                let log = ex.runtimeInfo.log;
+                log += "\n----------------------------------------------\n";
+                ex.queue.steps.map((step: any) => {
+                    log += step.id.replace(/.*#/, '') + "\n"
+                    log += step.runtimeInfo.log;
+                    log += "\n----------------------------------------------\n";
+                })
+                resolve(log);
+            },
+            onError: function() {
+                reject("Cannot get run details");
+            }
+        }, data, true);
+    });
+}
+
 export const createSingleComponentTemplate = (comp: WingsComponent, config: UserPreferences) : WingsTemplate => {
     let config_wings = config.mint.wings;
     var cname = comp.id.replace(/^.+#/, '');

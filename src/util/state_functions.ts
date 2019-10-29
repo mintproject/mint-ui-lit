@@ -474,6 +474,17 @@ export const getUISelectedPathway = (state: RootState) => {
     }
     return null;
 }
+
+export const getUISelectedSubgoalRegion = (state: RootState) => {
+    let subgoal = getUISelectedSubgoal(state);
+    if(subgoal && subgoal.subregionid && state.regions && state.regions.query_result) {
+        let res = state.regions.query_result[state.ui.selected_top_regionid]["*"]
+        if(res && res[subgoal.subregionid]) {
+            return res[subgoal.subregionid];
+        }
+    }
+    return null;
+}
 /* End of UI Functions */
 
 /* Helper Functions */

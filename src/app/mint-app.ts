@@ -33,6 +33,7 @@ import '../screens/messages/messages-home';
 import { SharedStyles } from '../styles/shared-styles';
 import { showDialog, hideDialog, formElementsComplete } from '../util/ui_functions';
 import { User } from 'firebase';
+import { Region } from 'screens/regions/reducers';
 
 @customElement('mint-app')
 export class MintApp extends connect(store)(LitElement) {
@@ -49,7 +50,7 @@ export class MintApp extends connect(store)(LitElement) {
   private user!: User;
 
   @property({type: Object})
-  private _selectedRegion? : string;
+  private _selectedRegion? : Region;
 
   _once = false;
 
@@ -105,27 +106,27 @@ export class MintApp extends connect(store)(LitElement) {
         margin-left: 0px;
       }
 
-      .breadcrumbs li.active {
+      .breadcrumbs a.active {
         background-color: #629b30;
         color: white;
       }
-      .breadcrumbs li.active:before {
+      .breadcrumbs a.active:before {
         border-color: #629b30;
         border-left-color: transparent;
       }
-      .breadcrumbs li.active:after {
+      .breadcrumbs a.active:after {
         border-left-color: #629b30;
       }
 
-      .breadcrumbs li:first {
+      .breadcrumbs a:first {
         background-color: #629b30;
         color: white;
       }
-      .breadcrumbs li:first:before {
+      .breadcrumbs a:first:before {
         border-color: #629b30;
         border-left-color: transparent;
       }
-      .breadcrumbs li:first:after {
+      .breadcrumbs a:first:after {
         border-left-color: #629b30;
       }
       .message-button {
@@ -158,31 +159,32 @@ export class MintApp extends connect(store)(LitElement) {
           ${this.user ? 
             html `
             <ul class="breadcrumbs">
-              <li @click="${()=>goToPage('home')}"
+              <a href="${this._selectedRegion ? this._selectedRegion.id : ""}/home"
                   class=${(this._page == 'home' ? 'active' : '')}>
                   <div style="vertical-align:middle">
                     ▶
-                    ${this._selectedRegion ?  this._selectedRegion.toUpperCase() : "Select Country"}
+                    ${this._selectedRegion ? 
+                      this._selectedRegion.name.toUpperCase() : "Select Region"}
                   </div>
-              </li>
+              </a>
               ${!this._selectedRegion ? 
                 "" : 
                 html`
-                <li @click="${()=>goToPage('datasets')}"
-                    class=${(this._page == 'datasets'? 'active': '')}
-                  >Explore Data</li>
-                <li @click="${()=>goToPage('regions')}"
+                <a href='${this._selectedRegion.id}/regions'
                     class=${(this._page == 'regions'? 'active': '')}
-                  >Select Areas</li>
-                <li @click="${()=>goToPage('models')}"
+                  >Select Areas</a>                
+                <a href='${this._selectedRegion.id}/models'
                     class=${(this._page == 'models'? 'active': '')}
-                  >Prepare Models</li>
-                <li @click="${()=>goToPage('modeling')}"
+                  >Prepare Models</a>
+                <a href='${this._selectedRegion.id}/datasets'
+                    class=${(this._page == 'datasets'? 'active': '')}
+                  >Explore Data</a>                  
+                <a href='${this._selectedRegion.id}/modeling'
                     class=${(this._page == 'modeling') ? 'active': ''}
-                  class="active">Use Models</li>
-                <li @click="${()=>goToPage('analysis/report')}"
+                  class="active">Use Models</a>
+                <a href='${this._selectedRegion.id}/analysis/report'
                     class=${(this._page == 'analysis'? 'active': '')}
-                  >Prepare Reports</li>
+                  >Prepare Reports</a>
                 `
               }
             </ul>
@@ -322,7 +324,7 @@ export class MintApp extends connect(store)(LitElement) {
 
     let regionid = state.ui.selected_top_regionid;
     if (state && state.regions && state.regions.regions && state.regions.regions[regionid]) {
-        this._selectedRegion = state.regions.regions[regionid].name;
+        this._selectedRegion = state.regions.regions[regionid];
     }
   }
 }
