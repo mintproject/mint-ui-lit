@@ -34,6 +34,9 @@ export class ModelPreview extends connect(store)(PageViewElement) {
     @property({type: Number})
     private _configs : number = -1;
 
+    @property({type: Boolean})
+    private _ready : boolean = false;
+
     constructor () {
         super();
         this.active = true;
@@ -125,7 +128,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                 .title {
                     display: inline-block;
                     padding: 0px 10px 3px 10px;
-                    width: calc(100% - 2.6em - 20px);
+                    //width: calc(100% - 2.6em - 20px);
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
@@ -175,6 +178,14 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                     white-space: nowrap;
                 }
 
+                .setup-text {
+                    float: right;
+                    font-weight: bold;
+                    font-size: 13px;
+                    padding-right: 3px;
+                    line-height: 1.6em;
+                }
+
                 .details-button {
                     display: inline-block;
                     float: right;
@@ -216,6 +227,9 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                         ${this._model.doc ? html`<a target="_blank" href="${this._model.doc}"><wl-icon>open_in_new</wl-icon></a>`: html``}
                     </span>
                     <span class="icon"><wl-icon @click="${()=>{this._compare(this._model.uri)}}">compare_arrows</wl-icon></span>
+                    ${this._ready ? html`
+                        <span class="setup-text">Executable in MINT</span>
+                    `: ''} 
                   </div>
                   <div class="content" style="${this.altDesc? '' : 'text-align: justify;'}">
                     ${this.altDesc ? 
@@ -267,6 +281,13 @@ export class ModelPreview extends connect(store)(PageViewElement) {
 
             if (db.versions && db.versions[this.uri]) {
                 this._configs = db.versions[this.uri].reduce((acc, ver) => acc + (ver.configs ? ver.configs.length : 0), 0)
+                db.versions[this.uri].forEach((v) => {
+                    (v.configs || []).forEach((c) => {
+                        if (c.calibrations && c.calibrations.length > 0) {
+                            this._ready = true;
+                        }
+                    });
+                });
             } else {
                 this._configs = 0;
             }
