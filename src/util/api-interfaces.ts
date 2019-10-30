@@ -48,6 +48,7 @@ export interface FetchedModel extends Resource {
     web?:                   string; // URL to web page
     indices?:               string;
     example?:               string;
+    regions?:               string;
     // ???
     grid?:                  string; // URI of one grid
     versions?:              string[]; // URI versions ,

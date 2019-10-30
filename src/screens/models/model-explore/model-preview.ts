@@ -239,7 +239,14 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                         })}`: 
                         this._model.desc}
                   </div>
-                  <div class="footer one-line">
+                  ${this._model.regions ? html `
+                  <div class="footer one-line" style="height: auto;">
+                    <span class="keywords"> 
+                        <b>Regions:</b> 
+                        ${this._model.regions}
+                    </span>
+                  </div>` : ''}
+                  <div class="footer one-line" style="padding-top: 0px;">
                     <span class="keywords"> 
                         <b>Keywords:</b> 
                         ${this._model.keywords?  html`${this._model.keywords.join(', ')}` : html`No keywords`}
@@ -283,7 +290,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                 this._configs = db.versions[this.uri].reduce((acc, ver) => acc + (ver.configs ? ver.configs.length : 0), 0)
                 db.versions[this.uri].forEach((v) => {
                     (v.configs || []).forEach((c) => {
-                        if (c.calibrations && c.calibrations.length > 0) {
+                        if (c.calibrations && c.calibrations.length > 0 && this._model.regions) {
                             this._ready = true;
                         }
                     });

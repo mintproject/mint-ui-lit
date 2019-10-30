@@ -302,7 +302,9 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     this._fullText[key] = (model.label
                                            + (model.desc? model.desc : '')
                                            + (model.keywords? model.keywords : '') 
-                                           + (model.type? model.type : '')).toLowerCase();
+                                           + (model.type? model.type : ''))
+                                           + (model.regions ? model.regions : '');
+                    this._fullText[key] = this._fullText[key].toLowerCase();
                     this._filter = '';
                     this._activeModels[key] = true;
                     count += 1;
