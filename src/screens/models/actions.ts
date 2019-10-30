@@ -156,7 +156,6 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                     let fileio: any = {};
                     let inputs:ModelIO[] = [];
                     let outputs:ModelIO[] = [];
-                    let vpstmap: any = {};
                     values[1].map((value: any) => {
                         let io: ModelIO = fileio[value.io];
                         if(!io) {
@@ -183,7 +182,6 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                         }
                         if(value.st) {
                             io.variables.push(value.st);
-                            vpstmap[value.vp] = value.st;
                         }
                     });
                     
@@ -196,7 +194,7 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                             // Do not add duplicate parameters
                             return;
                         }
-                        let adjustment_variable = vpstmap[value.var] || "";
+                        let adjustment_variable = value.standardV || "";
                         let param: ModelParameter =  {
                             id: value.p,
                             name: value.paramlabel,
