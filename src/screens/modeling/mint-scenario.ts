@@ -154,7 +154,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                             <wl-icon @click="${this._addSubGoalDialog}" 
                                 class="actionIcon addIcon">note_add</wl-icon>
                         </div>
-                        <div style="font-size:12.5px; padding:5px; padding-top:0px;">
+                        <div style="font-size:12.5px; color: #888; padding:5px; padding-left: 10px; padding-top:0px;">
                             Tasks are used to model indicators relevant to the problem. 
                             <a style="cursor:pointer" 
                                 @click="${() => showDialog('tasksHelpDialog', this.shadowRoot)}">Read more</a>
@@ -211,7 +211,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                 <wl-icon @click="${this._editPathwayDialog}" 
                                     class="actionIcon addIcon">note_add</wl-icon>
                             </div>
-                            <div style="font-size:12.5px; padding: 5px; padding-top: 0px">
+                            <div style="font-size:12.5px; color: #888; padding: 5px; padding-top: 0px">
                                 For a given task, you can investigate different initial conditions or different models.  
                                 Each of them can be explored by creating a new modeling thread for that task.
                                 <a style="cursor:pointer" 
