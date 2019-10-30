@@ -26,7 +26,7 @@ export const SAMPLE_MINT_PREFERENCES_LOCAL = {
         "export_url": "http://localhost:9090/wings-portal",
         "username": "admin",
         "password": "admin123",
-        "domain": "mintTest",
+        "domain": "mint-production",
         "storage": "/Users/varun/.wings/storage",
         "dotpath": "/usr/local/bin/dot",
         "onturl": "http://www.wings-workflows.org/ontology",

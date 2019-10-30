@@ -3,7 +3,7 @@ import { html, customElement, css } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
 import { SharedStyles } from '../../styles/shared-styles';
-import { store } from '../../app/store';
+import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 
 import '../../components/image-gallery'
@@ -82,7 +82,7 @@ export class DatasetsQualityWorkflows extends connect(store)(PageViewElement) {
             <p>
             This page is in progress, it will allow you to run tools that improve the quality of datasets. 
             ${(this._regionid === 'ethiopia') ? html`Below is an example of the results of a tool that improves the
-            quality of elevation models for a small area of Ethiopia` : ''}
+            quality of elevation models for a small area of Ethiopia` : 'No tools or datasets available for this region'}
             </p>
             <image-gallery style="--width: 300px; --height: 160px;" .items="${items}"></image-gallery>
         </div>

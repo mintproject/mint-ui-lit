@@ -164,7 +164,7 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
         let params : DatasetQueryParameters = {};
         switch (this._searchType) {
             case 'dataset_names':
-                params.name = input + "*";
+                params.name = "*" + input + "*";
                 break;
             case 'standard_variable_names':
                 params.variables = [ "*" + input + "*" ]
