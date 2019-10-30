@@ -1,6 +1,7 @@
 
 import { html, customElement, css } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
+import { RootState } from 'app/store';
 
 import { SharedStyles } from '../../styles/shared-styles';
 import { store } from '../../app/store';

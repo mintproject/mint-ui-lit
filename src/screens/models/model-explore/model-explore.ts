@@ -134,6 +134,14 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             #model-search-form > wl-textfield > div[slot="after"] > wl-icon {
                 cursor: pointer;
             }
+
+            .explanation {
+                display: block;
+                margin: 0 auto;
+                width: 75%;
+                color: rgb(102, 102, 102);
+                font-size: 13px;
+            }
             `
         ];
     }
@@ -165,6 +173,15 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             <div id="model-comparison" style="padding-bottom: 1em;"> <model-compare></model-compare> </div>
             ` :html``}
             ${this._comparing<2? html`
+            <wl-text class="explanation">
+                The model catalog browser lets you explore the characteristics of different models
+                included in MINT. Models include different configurations that expose a unique way
+                of running that model; and configuration setups that provide default files and
+                parameters to facilitate their execution in MINT.
+                <br/>
+                In the search bar below you can search a model by its name, keywords or variables.
+                For example try searching <i>'fertilizer'</i> or <i>'flow'</i>.
+            </wl-text>
             <div id="model-search-form">
                 <!-- https://github.com/andreasbm/weightless/issues/58 -->
                 <wl-textfield id="search-input" label="Search models" @input=${this._onSearchInput} value="${this._filter}">
