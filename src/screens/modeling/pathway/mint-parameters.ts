@@ -4,7 +4,7 @@ import { store, RootState } from "../../../app/store";
 
 import { DataEnsembleMap, ModelEnsembleMap, StepUpdateInformation, ExecutableEnsemble, ExecutableEnsembleSummary } from "../reducers";
 import { SharedStyles } from "../../../styles/shared-styles";
-import { Model } from "../../models/reducers";
+import { Model, ModelParameter } from "../../models/reducers";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
 import { TASK_DONE, getPathwayParametersStatus, getModelInputConfigurations, getEnsembleHash, setupModelWorkflow, listEnsembles, runModelEnsembles, listAlreadyRunEnsembleIds } from "../../../util/state_functions";
 import { updatePathway, addPathwayEnsembles, setPathwayEnsembleIds, deleteAllPathwayEnsembleIds } from "../actions";
@@ -129,8 +129,12 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                                         :
                                         html`
                                         <div class="input_full">
-                                            <input type="text" name="${input.id}" value="${(bindings||[]).join(", ")}"></input>
+                                            <input type="text" name="${input.id}" 
+                                                @change="${() => this._validateInput(model, input)}"
+                                                value="${(bindings||[]).join(", ")}"></input>
                                         </div>
+                                        <div id="message_${this._valid(input.name)}" 
+                                            style="color:red; font-size: 12px;"></div>
                                         `
                                     }
                                 </td>
@@ -192,6 +196,37 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         ${renderNotifications()}
         ${this._renderProgressDialog()}
         `;
+    }
+
+    _validateInput(model: Model, input: ModelParameter) {
+        let paramvalues = this._getParameterSelections(model, input.id);
+        let ok = true;
+        let error = "";
+        paramvalues.map((value) => {
+            if(input.type == "string") {
+                if(input.accepted_values && input.accepted_values.indexOf(value) < 0) {
+                    ok = false;
+                    error = "Accepted values are " + input.accepted_values.join(", ");
+                }
+            }
+            else if(input.type == "int") {
+                let intvalue = parseInt(value);
+                if((intvalue < parseInt(input.min)) || (intvalue > parseInt(input.max))) {
+                    ok = false;
+                    error = "Values should be between " + input.min + " and " + input.max;
+                }
+            }
+            else if(input.type == "float") {
+                let floatvalue = parseFloat(value);
+                if((floatvalue < parseFloat(input.min)) || (floatvalue > parseFloat(input.max))) {
+                    ok = false;
+                    error = "Values should be between " + input.min + " and " + input.max;
+                }
+            }
+        })
+        let div = this.shadowRoot!.querySelector<HTMLDivElement>("#message_"+this._valid(input.name))!;
+        div.innerHTML = ok ? "" : error;
+        return ok;
     }
 
     _renderProgressDialog() {

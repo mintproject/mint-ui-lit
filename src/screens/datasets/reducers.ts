@@ -1,7 +1,7 @@
 import { IdNameObject } from "../../app/reducers";
 import { Reducer } from "redux";
 import { RootAction } from "../../app/store";
-import { DATASETS_VARIABLES_QUERY, DATASETS_GENERAL_QUERY, DATASETS_RESOURCE_QUERY } from "./actions";
+import { DATASETS_VARIABLES_QUERY, DATASETS_GENERAL_QUERY, DATASETS_RESOURCE_QUERY, DATASETS_REGION_QUERY } from "./actions";
 import { DateRange } from "screens/modeling/reducers";
 import { BoundingBox } from "screens/regions/reducers";
 
@@ -46,6 +46,7 @@ export interface DatasetQueryParameters {
 export interface DatasetsState {
     model_datasets?: ModelDatasets
     query_datasets?: DatasetsWithStatus
+    region_datasets?: DatasetsWithStatus
     dataset?: DatasetWithStatus
 }
 export interface DatasetsWithStatus {
@@ -87,6 +88,16 @@ const datasets: Reducer<DatasetsState, RootAction> = (state = INITIAL_STATE, act
                 ...state
             };
 
+        case DATASETS_REGION_QUERY:
+            // Return datasets
+            state.dataset = null;
+            state.region_datasets = {
+                loading: action.loading,
+                datasets: action.datasets
+            };
+            return {
+                ...state
+            };
         case DATASETS_RESOURCE_QUERY:
             // Return model details
             state.dataset = {

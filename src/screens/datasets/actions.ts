@@ -11,6 +11,7 @@ import { Region } from "screens/regions/reducers";
 
 export const DATASETS_VARIABLES_QUERY = 'DATASETS_VARIABLES_QUERY';
 export const DATASETS_GENERAL_QUERY = 'DATASETS_GENERAL_QUERY';
+export const DATASETS_REGION_QUERY = 'DATASETS_REGION_QUERY';
 export const DATASETS_RESOURCE_QUERY = 'DATASETS_RESOURCE_QUERY';
 export const DATASETS_LIST = 'DATASETS_LIST';
 
@@ -25,6 +26,11 @@ export interface DatasetsActionGeneralQuery extends Action<'DATASETS_GENERAL_QUE
     datasets: Dataset[] | null,
     loading: boolean
 };
+export interface DatasetsActionRegionQuery extends Action<'DATASETS_REGION_QUERY'> { 
+    region: Region,
+    datasets: Dataset[] | null,
+    loading: boolean
+};
 export interface DatasetsActionDatasetResourceQuery extends Action<'DATASETS_RESOURCE_QUERY'> {
     dsid: string,
     dataset: Dataset,
@@ -32,7 +38,7 @@ export interface DatasetsActionDatasetResourceQuery extends Action<'DATASETS_RES
 };
 export interface DatasetsActionDetail extends Action<'DATASETS_DETAIL'> { dataset: DatasetDetail };
 
-export type DatasetsAction = DatasetsActionVariablesQuery | DatasetsActionGeneralQuery | DatasetsActionDatasetResourceQuery ;
+export type DatasetsAction = DatasetsActionVariablesQuery | DatasetsActionGeneralQuery | DatasetsActionRegionQuery | DatasetsActionDatasetResourceQuery ;
 
 const DATA_CATALOG_URI = "https://api.mint-data-catalog.org";
 
@@ -304,6 +310,39 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
                 type: DATASETS_RESOURCE_QUERY,
                 dsid: dsid,
                 dataset: dataset,
+                loading: false
+            });
+        })
+    });
+};
+
+// Query Data Catalog by Region
+type QueryDatasetsByRegionThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionRegionQuery>;
+export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResult> = (region: Region) => (dispatch) => {
+    dispatch({
+        type: DATASETS_REGION_QUERY,
+        region: region,
+        datasets: null,
+        loading: true
+    });
+
+    fetch(DATA_CATALOG_URI + "/datasets/find", {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            spatial_coverage__within: [
+                region.bounding_box.xmin, region.bounding_box.ymin, 
+                region.bounding_box.xmax, region.bounding_box.ymax 
+            ],
+            limit: 5000
+        })
+    }).then((response) => {
+        response.json().then((obj) => {
+            let datasets: Dataset[] = getResourceObjectsFromDCResponse(obj, {} as DatasetQueryParameters)
+            dispatch({
+                type: DATASETS_REGION_QUERY,
+                region: region,
+                datasets: datasets,
                 loading: false
             });
         })

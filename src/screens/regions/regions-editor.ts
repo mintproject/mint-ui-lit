@@ -14,6 +14,11 @@ import 'weightless/progress-spinner';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
 import { GoogleMapCustom } from 'components/google-map-custom';
+import { selectSubRegion } from 'app/ui-actions';
+
+import "./region-models";
+import "./region-datasets";
+import "./region-tasks";
 
 @customElement('regions-editor')
 export class RegionsEditor extends connect(store)(PageViewElement)  {
@@ -25,7 +30,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     private _parentRegionName: string;
 
     @property({type: Object})
-    private _regions: RegionList = {};
+    private _regions: RegionList;
 
     @property({type: Array})
     private _newregions: Array<any> = [];
@@ -82,6 +87,10 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             mapTypeId="terrain" styles="${this._mapStyles}">
         </google-map-custom>
 
+        <region-models class="page" ?active="${this._mapReady}" regionType="${this.regionType}"></region-models>
+        <region-datasets class="page" ?active="${this._mapReady}" regionType="${this.regionType}"></region-datasets>
+        <region-tasks class="page" ?active="${this._mapReady}" regionType="${this.regionType}"></region-tasks>
+
         ${this._renderAddRegionsDialog()}
         `
     }
@@ -105,11 +114,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         }
     }
 
-    private _handleMapClick(ev) {
-        let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
-        if(ev.detail && ev.detail.id) 
-            this.dispatchEvent(new CustomEvent('map-click', 
-                {composed: true, detail: ev.detail}));
+    private _handleMapClick(ev: any) {
+        if(ev.detail && ev.detail.id)
+            store.dispatch(selectSubRegion(ev.detail.id));
     }
 
     _showAddRegionsDialog() {
@@ -279,21 +286,24 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     }
 
     stateChanged(state: RootState) {
+        let cur_regionid = this._regionid;
         super.setRegion(state);
         
         if(this._regionid && this._region) {
-            let qr = state.regions.query_result;
-            if(!qr || !qr[this._regionid] || !qr[this._regionid][this.regionType]) {
-                if(!this._dispatched) {
-                    this._dispatched = true;
-                    store.dispatch(queryRegions(this._regionid, this.regionType));
+            if(this._regionid != cur_regionid || !this._regions) {
+                let qr = state.regions.query_result;
+                if(!qr || !qr[this._regionid] || !qr[this._regionid][this.regionType]) {
+                    if(!this._dispatched) {
+                        this._dispatched = true;
+                        store.dispatch(queryRegions(this._regionid, this.regionType));
+                    }
                 }
-            }
-            else {
-                this._dispatched = false;
-                this._regions = qr[this._regionid][this.regionType];                
-                this.addRegionsToMap();
-                //console.log(this._regions);
+                else {
+                    this._dispatched = false;
+                    this._regions = qr[this._regionid][this.regionType];                
+                    this.addRegionsToMap();
+                    //console.log(this._regions);
+                }
             }
 
             // Set parent region

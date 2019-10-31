@@ -195,6 +195,7 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                             return;
                         }
                         let adjustment_variable = value.standardV || "";
+                        let accepted_values = value.acceptedValues ? value.acceptedValues.split(/\s*;\s*/) : null
                         let param: ModelParameter =  {
                             id: value.p,
                             name: value.paramlabel,
@@ -204,7 +205,8 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                             unit: value.unit || "",
                             default: value.defaultvalue || "",
                             description: value.description || "",
-                            adjustment_variable: adjustment_variable
+                            adjustment_variable: adjustment_variable,
+                            accepted_values: accepted_values
                         };
                         if(value.fixedValue)
                             param.value = value.fixedValue;
