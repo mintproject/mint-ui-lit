@@ -318,6 +318,12 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
             this._progress_abort = false;
     
             let configs = getModelInputConfigurations(dataEnsemble, inputIds);
+            // FIXME: Hack for restricting the number of runs for analysts
+            if(this.user.email.match(/^analyst/i) && configs.length > 100) {
+                alert("Error: Too many Input combinations: " + configs.length +". Max allowed : " + 100);
+                return;
+            }
+
             if(configs != null) {
                 // Update executable ensembles in the pathway
                 this._progress_item = model.name;
