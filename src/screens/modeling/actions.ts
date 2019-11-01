@@ -409,15 +409,18 @@ export const addSubGoalFull = (scenario:Scenario, goalid: string, subgoal: SubGo
         id: pathwayRef.id,
         name: pathway.name ? pathway.name : subgoal.name
     };
-
-    Promise.all([
-        db.collection("scenarios/"+scenario.id+"/goals").doc(goalid).update({
-            subgoalids: fieldValue.arrayUnion(subgoalRef.id)
-        }),
+    let promises = [
         pathwayRef.set(pathway),
         subgoalRef.set(subgoal)
-    ])
-    .then(() => updateScenario(scenario));
+    ];
+    if(goalid) {
+        promises.push(
+            db.collection("scenarios/"+scenario.id+"/goals").doc(goalid).update({
+                subgoalids: fieldValue.arrayUnion(subgoalRef.id)
+            })
+        );
+    }
+    Promise.all(promises).then(() => updateScenario(scenario));
 
     return subgoalRef.id;
 }
@@ -453,6 +456,31 @@ export const updatePathway = (scenario: Scenario, pathway: Pathway) =>  {
     return pathwayRef.set(npathway); //.then(() => updateScenario(scenario));
 };
 
+export const updatePathwayInfo = (scenario: Scenario, subgoalid: string, pathwayinfo: PathwayInfo) => {
+    let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc(pathwayinfo.id);
+    Promise.all([
+        db.collection("scenarios/"+scenario.id+"/subgoals").doc(subgoalid).update({
+            [`pathways.${pathwayinfo.id}`]: pathwayinfo
+        }),
+        pathwayRef.set(pathwayinfo, {merge: true})
+    ])
+    .then(() => updateScenario(scenario));
+}
+
+export const updatePathwayVariables = (scenarioid: string, pathwayid: string, 
+        driving_variables: string[], response_variables: string[]) =>  {
+    let pathwayRef = db.collection("scenarios/"+scenarioid+"/pathways").doc(pathwayid);
+    return pathwayRef.set({
+        driving_variables: driving_variables,
+        response_variables: response_variables
+    }, {merge: true});
+};
+
+export const updatePathwayFromPathwayInformation = (scenarioid: string, pathwayid: string, pathwayinfo: PathwayInfo) => {
+    let pathwayRef = db.collection("scenarios/"+scenarioid+"/pathways").doc(pathwayinfo.id);
+    return pathwayRef.set(pathwayinfo, {merge: true});
+}
+
 // Add Ensembles
 export const addPathwayEnsembles = (ensembles: ExecutableEnsemble[]) => {
     let ensemblesRef = db.collection("ensembles");
@@ -467,8 +495,8 @@ export const addPathwayEnsembles = (ensembles: ExecutableEnsemble[]) => {
         docs.map((curdoc: firebase.firestore.DocumentSnapshot) => {
             // If doc doesn't exist, write ensemble
             let ensemble = ensembles[i++];
-            if(!curdoc.exists)
-                batch.set(curdoc.ref, ensemble);
+            //if(!curdoc.exists)
+            batch.set(curdoc.ref, ensemble);
         })
         return batch.commit();
     })
@@ -503,10 +531,12 @@ export const deleteGoal = (scenario:Scenario, goalid: string) =>  {
 // Delete SubGoal
 export const deleteSubGoal = (scenario:Scenario, goalid:string, subgoalid: string) =>  {
     let subgoalRef = db.collection("scenarios/"+scenario.id+"/subgoals").doc(subgoalid);
-    subgoalRef.delete();
-    db.collection("scenarios/"+scenario.id+"/goals").doc(goalid).update({
-        subgoalids: fieldValue.arrayRemove(subgoalid)
-    }).then(() => updateScenario(scenario));
+    if(goalid) {
+        db.collection("scenarios/"+scenario.id+"/goals").doc(goalid).update({
+            subgoalids: fieldValue.arrayRemove(subgoalid)
+        });
+    }
+    subgoalRef.delete().then(() => updateScenario(scenario));
 };
 
 // Delete Pathway

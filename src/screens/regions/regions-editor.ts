@@ -5,16 +5,20 @@ import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
-import { queryRegions, addRegions, listTopRegions } from './actions';
+import { queryRegions, addRegions, listTopRegions, calculateMapDetails } from './actions';
 import { GOOGLE_API_KEY } from 'config/google-api-key';
 import { RegionList, Region } from './reducers';
 
-import "../../thirdparty/google-map/src/google-map";
-import "../../components/google-map-json-layer";
+import 'components/google-map-custom';
+import 'weightless/progress-spinner';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
-import { GoogleMap } from '../../thirdparty/google-map/src/google-map';
-import { GoogleMapJsonLayer } from '../../components/google-map-json-layer';
+import { GoogleMapCustom } from 'components/google-map-custom';
+import { selectSubRegion } from 'app/ui-actions';
+
+import "./region-models";
+import "./region-datasets";
+import "./region-tasks";
 
 @customElement('regions-editor')
 export class RegionsEditor extends connect(store)(PageViewElement)  {
@@ -26,13 +30,16 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     private _parentRegionName: string;
 
     @property({type: Object})
-    private _regions: RegionList = {};
+    private _regions: RegionList;
 
     @property({type: Array})
     private _newregions: Array<any> = [];
 
     @property({type: String})
     private _geojson_nameprop : string;
+
+    @property({type: Boolean})
+    private _mapReady: boolean = false;
 
     private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
     
@@ -63,7 +70,8 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         ${this.regionType ? 
             html`
             <p>
-                The following map shows the current ${this.regionType} areas of ${this._parentRegionName || this._regionid}
+                The following map shows the current areas of interest for ${this.regionType ?
+                this.regionType.toLowerCase() : ''} modeling in ${this._parentRegionName || this._regionid}
                 <wl-icon @click="${this._showAddRegionsDialog}" style="float:right;"
                     class="actionIcon bigActionIcon">note_add</wl-icon>
             </p>
@@ -71,42 +79,44 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             : ""
         }
 
-        <!-- FIXME: Latitude, Longitude, Zoom should be automatically generated from the regions -->
-        <google-map class="map" api-key="${GOOGLE_API_KEY}" id="map_${this._regionid}"
-            latitude="8" longitude="40" zoom="5" disable-default-ui="true" draggable="true"
+        ${!this._mapReady ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
+        <google-map-custom class="map" api-key="${GOOGLE_API_KEY}" 
+            .style="visibility: ${this._mapReady ? 'visible': 'hidden'}"
+            disable-default-ui="true" draggable="true"
+            @click="${this._handleMapClick}"
             mapTypeId="terrain" styles="${this._mapStyles}">
-        </google-map>
+        </google-map-custom>
+
+        <region-models class="page" ?active="${this._mapReady}" regionType="${this.regionType}"></region-models>
+        <region-datasets class="page" ?active="${this._mapReady}" regionType="${this.regionType}"></region-datasets>
+        <region-tasks class="page" ?active="${this._mapReady}" regionType="${this.regionType}"></region-tasks>
 
         ${this._renderAddRegionsDialog()}
         `
     }
 
-    public clearMap() {
-        //console.log("Clearing Map");
-        let mapelement = this.shadowRoot.querySelector("google-map") as GoogleMap;
-        if(mapelement && mapelement.map) {
-            let map = mapelement.map;
-            map.data.forEach((feature) => {
-                mapelement.map.data.remove(feature);
-            });
-            mapelement.innerHTML = "";
+    public addRegionsToMap() {   
+        let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
+        if(map && this._regions) {
+            let regions = Object.values(this._regions);
+            if(regions.length == 0)
+                regions = [this._region];
+            try {
+                map.setRegions(regions, null);
+                this._mapReady = true;
+            }
+            catch {
+                map.addEventListener("google-map-ready", (e) => {
+                    map.setRegions(regions, this._regionid);
+                    this._mapReady = true;
+                })
+            }
         }
     }
 
-    public addRegionsToMap() {
-        this.clearMap();                
-
-        let mapelement = this.shadowRoot.querySelector("google-map") as GoogleMap;
-        if(mapelement && mapelement.map) {
-            Object.keys(this._regions || {}).map((regionid) => {
-                let region = this._regions![regionid];
-                let layer = new GoogleMapJsonLayer();
-                layer.json = JSON.parse(region.geojson_blob);
-                layer.region_id = region.id;
-                layer.region_name = region.name;
-                mapelement.appendChild(layer);
-            });
-        }
+    private _handleMapClick(ev: any) {
+        if(ev.detail && ev.detail.id)
+            store.dispatch(selectSubRegion(ev.detail.id));
     }
 
     _showAddRegionsDialog() {
@@ -205,7 +215,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                                                 <div class="input_full">
                                                     <input type="text" class="regionname"
                                                         value="${this._geojson_nameprop ? 
-                                                            newregion.properties[this._geojson_nameprop] : ''}">
+                                                            newregion.properties['_mint_name'] : ''}">
                                                     </input>
                                                 </div>
                                             </td>
@@ -230,7 +240,25 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     _selectGeojsonNameProperty(e: any) {
         this._geojson_nameprop = e.target.value;
+        this._setMintNameProperty();
     }
+
+    _setMintNameProperty() {
+        let dupesmap = {}
+        this._newregions = this._newregions.map((region) => {
+            let orig_region_name = region.properties[this._geojson_nameprop];
+            let new_region_name = orig_region_name;
+            if(!dupesmap[orig_region_name]) {
+                dupesmap[orig_region_name] = 1;
+            }
+            else {
+                new_region_name += "_" + dupesmap[orig_region_name];
+                dupesmap[orig_region_name] ++ ;
+            }
+            region.properties["_mint_name"]  = new_region_name;
+            return region;
+        })
+    }    
 
     _onGeoJsonUpload(e : any) {
         let files = e.target.files;
@@ -248,7 +276,8 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 else {
                     newregions = [ geojson ];
                 }
-                me._newregions = newregions;
+                me._newregions = newregions.filter((region) => 
+                    region.geometry && region.geometry.coordinates && region.geometry.coordinates.length > 0);
                 //console.log(me._newregions);
               };
             })(f);
@@ -257,21 +286,24 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     }
 
     stateChanged(state: RootState) {
+        let cur_regionid = this._regionid;
         super.setRegion(state);
         
         if(this._regionid && this._region) {
-            let qr = state.regions.query_result;
-            if(!qr || !qr[this._regionid] || !qr[this._regionid][this.regionType]) {
-                if(!this._dispatched) {
-                    this._dispatched = true;
-                    store.dispatch(queryRegions(this._regionid, this.regionType));
+            if(this._regionid != cur_regionid || !this._regions) {
+                let qr = state.regions.query_result;
+                if(!qr || !qr[this._regionid] || !qr[this._regionid][this.regionType]) {
+                    if(!this._dispatched) {
+                        this._dispatched = true;
+                        store.dispatch(queryRegions(this._regionid, this.regionType));
+                    }
                 }
-            }
-            else {
-                this._dispatched = false;
-                this._regions = qr[this._regionid][this.regionType];                
-                this.addRegionsToMap();
-                //console.log(this._regions);
+                else {
+                    this._dispatched = false;
+                    this._regions = qr[this._regionid][this.regionType];                
+                    this.addRegionsToMap();
+                    //console.log(this._regions);
+                }
             }
 
             // Set parent region

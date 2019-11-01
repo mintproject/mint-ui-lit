@@ -23,5 +23,8 @@
   "include": [
     "typings/**/*.d.ts",
     "src/**/*.ts"
+  ],
+  "exclude": [
+    "src/thirdparty"
   ]
 }

@@ -9,10 +9,11 @@ import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail,
 import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersionsForModel, 
         fetchIOAndVarsSNForConfig, fetchVarsSNAndUnitsForIO, fetchDiagramsForModelConfig,  fetchSampleVisForModelConfig,
         fetchMetadataForModelConfig, fetchMetadataNoioForModelConfig, fetchScreenshotsForModelConfig,
-        fetchAuthorsForModelConfig } from '../../../util/model-catalog-actions';
+        fetchAuthorsForModelConfig, fetchDescriptionForVar } from '../../../util/model-catalog-actions';
 import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
+import marked from 'marked';
 
 import { goToPage } from '../../../app/actions';
 import "weightless/expansion";
@@ -44,6 +45,9 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _configMetadata: any = null;
+
+    @property({type: Object})
+    private _indices: any = null;
 
     @property({type: Object})
     private _calibrationMetadata: any = null;
@@ -102,7 +106,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _screenshots : any = null;
 
     @property({type: String})
-    private _tab : 'overview'|'io'|'variables'|'software'|'tech' = 'overview';
+    private _tab : 'overview'|'io'|'variables'|'software'|'tech'|'assumptions'|'example' = 'overview';
 
     // URIs of selected resources
     private _selectedModel = null;
@@ -226,6 +230,16 @@ export class ModelView extends connect(store)(PageViewElement) {
                     --icon-size: 24px;
                 }
 
+                .tooltip-text {
+                    display: inline;
+                    border-bottom: 1px dotted;
+                }
+
+                .tooltip.nm {
+                    float: unset;
+                    margin: 0;
+                }
+
                 #desc-ext {
                     padding: 10px 5px 0px 5px;
                 }
@@ -329,10 +343,25 @@ export class ModelView extends connect(store)(PageViewElement) {
                     margin-left: 6px;
                 }
 
+                #img-placeholder {
+                    vertical-align: middle;
+                    --icon-size: 200px;
+                }
+
                 .table-title {
                     padding-bottom: 0 !important;
                     font-size: 13px !important;
                     font-weight: bold !important;
+                }
+
+                .row-tab-content > wl-title {
+                    margin-top: 6px;
+                    margin-bottom: 4px;
+                }
+
+                .link {
+                    border-bottom: 1px dotted;
+                    cursor: pointer;
                 }
                 `
         ];
@@ -348,7 +377,7 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _setEditMode () {
         //TODO: this is work in progress!
-        //store.dispatch(explorerSetMode('edit')); 
+        store.dispatch(explorerSetMode('edit')); 
     }
 
     _updateConfigSelector () {
@@ -371,6 +400,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                 })
             })
             configSelector.value = this._config ? this._config.uri : '';
+            // FIX ARROW
+            let arrowEl = configSelectorWl.shadowRoot.getElementById('arrow');
+            if (arrowEl) {
+                arrowEl.style.pointerEvents = "none";
+            }
             (<any>configSelectorWl).refreshAttributes();
         } else if (configSelectorWl) {
             /* FIXME: Sometimes, when versions data load faster than the wl-selector renders, we could end here.
@@ -403,6 +437,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                 calibrationSelector.add(newOption, null);
             })
             calibrationSelector.value = this._calibration ? this._calibration.uri : '';
+            // FIX ARROW
+            let arrowEl = calibrationSelectorWl.shadowRoot.getElementById('arrow');
+            if (arrowEl) {
+                arrowEl.style.pointerEvents = "none";
+            }
             (<any>calibrationSelectorWl).refreshAttributes();
         }
     }
@@ -483,7 +522,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <div class="col-img text-centered">
                     ${this._model.logo ? 
                     html`<img src="${this._model.logo}"/>`
-                    : html`<img src="http://www.sclance.com/pngs/image-placeholder-png/image_placeholder_png_698412.png"/>`}
+                    : html`<wl-icon id="img-placeholder">image</wl-icon>`}
                     ${this._model.dateC ? html`<div><b>Creation date:</b> ${this._model.dateC}</div>`:''}
                     ${this._model.categories ? html`<div><b>Category:</b> ${this._model.categories}</div>`:''}
                     ${this._model.type ? html`<div><b>Model type:</b> ${this._model.type}</div>`:''}
@@ -511,9 +550,19 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <wl-tab id="tab-overview" ?checked=${this._tab=='overview'} @click="${() => {this._tab = 'overview'}}"
                             >Overview</wl-tab>
                         <wl-tab id="tab-io" ?checked=${this._tab=='io'} @click="${() => {this._tab = 'io'}}"
-                            >Files and parameters</wl-tab>
+                            >Parameters and Files</wl-tab>
                         <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => {this._tab = 'variables'}}"
                             >Variables</wl-tab>
+
+                        ${this._model.assumptions? html`
+                        <wl-tab id="tab-assumptions" @click="${() => {this._tab = 'assumptions'}}"
+                            >Assumptions</wl-tab>
+                        ` : ''}
+                        ${this._model.example? html`
+                        <wl-tab id="tab-example" @click="${() => {this._tab = 'example'}}"
+                            >Example</wl-tab>
+                        ` : ''}
+
                         <wl-tab id="tab-software" @click="${() => {this._tab = 'software'}}"
                             >Compatible Software</wl-tab>
                         <wl-tab id="tab-overview" ?checked=${this._tab=='tech'} @click="${() => {this._tab = 'tech'}}"
@@ -526,6 +575,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${(this._tab === 'tech') ? this._renderTabTechnical() : ''}
                     ${(this._tab === 'io') ? this._renderTabIO() : ''}
                     ${(this._tab === 'variables') ? this._renderTabVariables() : ''}
+                    ${(this._tab === 'example') ? this._renderTabExample() : ''}
+                    ${(this._tab === 'assumptions') ? this._renderTabAssumptions() : ''}
                     ${(this._tab === 'software') ? this._renderTabSoftware() : ''}
                 </div>
             </div>`
@@ -536,7 +587,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         this._model.downloadURL || this._model.sourceC || this._model.doc || this._model.installInstr;
         return html`
             ${showModel ? html`
-            <br/>
+            <wl-title level="3"> Technical Information: </wl-title>
             <table class="pure-table pure-table-striped">
                 <thead>
                     <tr><th colspan="2">MODEL: 
@@ -657,7 +708,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <td><b>Language:</b></td>
                         <td>${this._calibrationMetadata[0].pLanguage}</td>
                     </tr>` : '' }
-                </tbody>
             </table>
             <br/>
             ` : ''}
@@ -722,31 +772,54 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${this._model.purpose.map(a => a? html`<li>${capitalizeFirstLetter(a)}.</li>`: '')}
             </ul>`
             :''}
+            ${this._model.indices ? html`
+            <wl-title level="2" style="font-size: 16px;">Relevant for calculating index:</wl-title>
+            <ul style="margin-top: 5px">
+                <li>
+                ${this._indices ? (this._indices.length === 0 ? html`
+                    <a target="_blank" href="${this._model.indices}">
+                        ${this._model.indices.split('/').pop().split('#').pop()}
+                    </a>
+                ` : html`
+                    <a target="_blank" href="${this._model.indices}">
+                        ${this._indices[0].label}
+                    </a>
+                `)
+                : html`
+                    ${this._model.indices.split('/').pop()} 
+                    <loading-dots style="--width: 20px"></loading-dots> `}
+                </li>
+            </ul>`
+            :''}
             ${this._config ? this._renderMetadataResume() : ''}
-            ${this._model.assumptions? html`
-            <details style="margin-bottom: 6px;">
-                <summary><b>Assumptions</b></summary>
-                <ul>
-                ${this._model.assumptions.split('.').map(a=> a?html`<li>${a}.</li>`:'')}
-                </ul>
-            </details>
-            `:html``}
 
             ${this._renderGallery()}`
     }
+    /* HTML description are not working 
+                    <details>
+                        <summary>${this._indices[0].label}</summary>
+                        <div id="indice-description"></div>
+                    </details>
+                    */
 
     _renderMetadataResume () {
-        let data = [
-            [this._config, this._configMetadata, 'configuration', (this._configAuthors || []).map(x => x.name).join(', ')], 
-            [this._calibration, this._calibrationMetadata, 'configuration setup', (this._calibrationAuthors || []).map(x => x.name).join(', ')]
-        ]
-        return data.map(([obj, meta, title, authors]) => 
-            obj ? html` 
+        if (this._config) {
+        let calProc = [];
+        if (this._config && this._calibration && this._configMetadata && this._calibrationMetadata) {
+            calProc = this._calibrationMetadata[0].processes ? this._calibrationMetadata[0].processes
+                .filter(p => (this._configMetadata[0].processes || []).indexOf(p) < 0) : [];
+        }
+        return html`
             <fieldset style="border-radius: 5px; padding-top: 0px; border: 2px solid #D9D9D9; margin-bottom: 8px;">
-                <legend style="font-weight: bold; font-size: 12px; color: gray;">Selected ${title}</legend>
-
-
+                <legend style="font-weight: bold; font-size: 12px; color: gray;">Selected configuration</legend>
                 <div class="metadata-top-buttons">
+                    <div class="button-preview" @click=${() => this._changeTab('io')}>
+                        <div>Parameters</div>
+                        <div>${!this._parameters ? html`
+                            <loading-dots style="--width: 20px"></loading-dots>`
+                            : this._parameters.length}
+                        </div>
+                    </div>
                     <div class="button-preview" @click=${() => this._changeTab('io')}>
                         <div>Input files</div>
                         <div>${!this._inputs? html`
@@ -761,143 +834,175 @@ export class ModelView extends connect(store)(PageViewElement) {
                             : this._outputs.length}
                         </div>
                     </div>
-                    <div class="button-preview" @click=${() => this._changeTab('io')}>
-                        <div>Parameters</div>
-                        <div>${!this._parameters ? html`
-                            <loading-dots style="--width: 20px"></loading-dots>`
-                            : this._parameters.length}
-                        </div>
-                    </div>
                 </div>
-                <wl-title level="2" style="font-size: 16px;">${obj.label}</wl-title>
 
-                ${!meta ? 
+                <wl-title level="2" style="font-size: 16px;">${this._config.label}</wl-title>
+                ${!this._configMetadata ? 
                 html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`
-                : (meta.length==0 ?
+                : (this._configMetadata.length==0 ?
                     html`<div class="info-center">- No metadata available. -</div>`
                     : html `
-                    <wl-text>${meta[0].desc}</wl-text>
-                    ${(!this._configAuthors || (this._configAuthors.length > 0 && authors)) ? html`
+                    <wl-text>${this._configMetadata[0].desc}</wl-text>
+                    ${(!this._configAuthors || this._configAuthors.length > 0) ? html`
                     <br/>
-                    <wl-text><b>Authors:</b> ${this._configAuthors ?  authors : html`
-                        <loading-dots style="--height: 8px"></loading-dots>
-                    `}</wl-text>
+                    <wl-text>
+                        <b>Authors:</b>
+                        ${this._configAuthors ? 
+                            (this._configAuthors || []).map(x => x.name).join(', ') 
+                            : html`<loading-dots style="--height: 8px"></loading-dots>`}
+                    </wl-text>
                     `: '' }
                     <ul>
-                    ${meta[0].fundS ? html`<wl-text><b>Funding Source:</b> ${meta[0].fundS} </wl-text>` : ''}
-                    ${meta[0].regionName ? html`<li><b>Region:</b> ${meta[0].regionName}</li>`: ''}
-                    ${meta[0].tIValue && meta[0].tIUnits ? html`<li><b>Time interval:</b> ${meta[0].tIValue + ' ' + meta[0].tIUnits}</li>` : ''}
-                    ${meta[0].gridType && meta[0].gridDim && meta[0].gridSpatial ? html`
+                    ${this._configMetadata[0].fundS ? 
+                        html`<wl-text><b>Funding Source:</b> ${this._configMetadata[0].fundS} </wl-text>` : ''}
+                    ${this._configMetadata[0].regionName ?
+                        html`<li><b>Region:</b> ${this._configMetadata[0].regionName}</li>`: ''}
+                    ${this._configMetadata[0].tIValue && this._configMetadata[0].tIUnits ?
+                        html`<li><b>Time interval:</b> ${this._configMetadata[0].tIValue + ' ' + this._configMetadata[0].tIUnits}</li>` : ''}
+                    ${this._configMetadata[0].gridType && this._configMetadata[0].gridDim && this._configMetadata[0].gridSpatial ?
+                        html`
                         <li><b>Grid details:</b> 
                             <ul>
-                                <li><b>Type:</b> ${meta[0].gridType}</li>
-                                <li><b>Dimentions:</b> <span style="font-family: system-ui;">${meta[0].gridDim}</span></li>
-                                <li><b>Spatial resolution:</b> ${meta[0].gridSpatial}</li>
+                                <li><b>Type:</b> ${this._configMetadata[0].gridType}</li>
+                                <li>
+                                    <b>Dimentions:</b>
+                                    <span style="font-family: system-ui;">${this._configMetadata[0].gridDim}</span>
+                                </li>
+                                <li><b>Spatial resolution:</b> ${this._configMetadata[0].gridSpatial}</li>
                             </ul>
                         </li>
                     `: ''}
-                    ${meta[0].processes ? html`<li><b>Processes:</b> ${meta[0].processes.join(', ')}</li>`: ''}
-                    ${meta[0].paramAssignMethod ? html`<li><b>Parameter assignment method:</b> ${meta[0].paramAssignMethod}</li>`: ''}
-                    ${meta[0].adjustableVariables ? html`<li><b>Adjustable parameters:</b> ${meta[0].adjustableVariables.map((v,i) => {
-                        if (i === 0) return html`<code class="clickable" @click="${() => this._changeTab('io', 'parameters')}">${v}</code>`;
-                        else return html`, <code class="clickable" @click="${() => this._changeTab('io', 'parameters')}">${v}</code>`;
-                    })}</li>`: ''}
-                    ${meta[0].targetVariables ? html`<li><b>Target variables:</b> ${meta[0].targetVariables.map((v,i) => {
-                        if (i === 0) return html`<code>${v}</code>`;
-                        else return html`, <code>${v}</code>`;
-                    })}</li>`: ''}
-                    ${meta[0].compLoc ?  html`
-                        <li><b>Download:</b> ${this._renderLink(meta[0].compLoc)}
-                            <span tip="This download is an executable containing the code used to execute this ${title}." class="tooltip">
-                                <wl-icon style="--icon-size: 18px; vertical-align: text-bottom; margin-left: 5px;">help_outline</wl-icon>
-                            </span>
-                        </li>`
-                        : ''}
-                    </ul>
+                    ${this._configMetadata[0].processes ?
+                        html`<li><b>Processes:</b> ${this._configMetadata[0].processes.join(', ')}</li>`: ''}
+                    ${this._configMetadata[0].paramAssignMethod ?
+                        html`<li><b>Parameter assignment method:</b> ${this._configMetadata[0].paramAssignMethod}</li>`: ''}
+                    ${this._configMetadata[0].adjustableVariables ?
+                        html`<li><b>Adjustable parameters:</b>
+                        ${this._configMetadata[0].adjustableVariables.map((v,i) => {
+                            if (i === 0) return html`<code class="clickable" @click="${() => this._changeTab('io', 'parameters')}">${v}</code>`;
+                            else return html`, <code class="clickable" @click="${() => this._changeTab('io', 'parameters')}">${v}</code>`;
+                        })}</li>`: ''}
+                    ${this._configMetadata[0].targetVariables ?
+                        html`<li><b>Target variables:</b> ${this._configMetadata[0].targetVariables.map((v,i) => {
+                            if (i === 0) return html`<code>${v}</code>`;
+                            else return html`, <code>${v}</code>`;
+                        })}</li>`: ''}
                     `
                 )}
+
+                ${this._calibration ? html`
+                <fieldset style="border-radius: 5px; padding-top: 0px; border: 2px solid #D9D9D9; margin-bottom: 8px;">
+                    <legend style="font-weight: bold; font-size: 12px; color: gray;">Selected setup</legend>
+                    <div class="metadata-top-buttons">
+                        <div class="button-preview" @click=${() => this._changeTab('io')}>
+                            <div>Parameters</div>
+                            <div>${!this._parameters ? html`
+                                <loading-dots style="--width: 20px"></loading-dots>`
+                                : html`
+                                <span class="tooltip nm" style="text-align: center;"
+                                    tip="${this._parameters.length - this._parameters.filter(x => !!x.fixedValue).length} parameters can be selected in this setup">
+                                ${ (this._parameters.length - this._parameters.filter(x => !!x.fixedValue).length) +
+                                   '/' + this._parameters.length }
+                                </span>`
+                                }
+                            </div>
+                        </div>
+                        <div class="button-preview" @click=${() => this._changeTab('io')}>
+                            <div>Input files</div>
+                            <div>${!this._inputs? html`
+                                <loading-dots style="--width: 20px"></loading-dots>`
+                                : html `
+                                <span class="tooltip nm" style="text-align: center;"
+                                    tip="${this._inputs.length - this._inputs.filter(x => !!x.fixedValueURL).length} inputs can be selected in this setup">
+                                ${ (this._inputs.length - this._inputs.filter(x => !!x.fixedValueURL).length) +
+                                   '/' + this._inputs.length }
+                                </span>`}
+                            </div>
+                        </div>
+                    </div>
+
+                    <wl-title level="2" style="font-size: 16px;">${this._calibration.label}</wl-title>
+                    ${!this._calibrationMetadata ? 
+                    html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`
+                    : (this._calibrationMetadata.length==0 ?
+                        html`<div class="info-center">- No metadata available. -</div>`
+                        : html `
+                        <wl-text>${this._calibrationMetadata[0].desc}</wl-text>
+                        ${(!this._calibrationAuthors || this._calibrationAuthors.length > 0) ? html`
+                        <br/>
+                        <wl-text>
+                            <b>Authors:</b>
+                            ${this._calibrationAuthors ? 
+                                (this._calibrationAuthors || []).map(x => x.name).join(', ') 
+                                : html`<loading-dots style="--height: 8px"></loading-dots>`}
+                        </wl-text>
+                        `: '' }
+                        <ul>
+                        ${this._calibrationMetadata[0].paramAssignMethod ?
+                            html`<li><b>Parameter assignment method:</b> ${this._calibrationMetadata[0].paramAssignMethod}</li>`: ''}
+                        ${this._calibrationMetadata[0].fundS && this._configMetadata[0].fundS != this._calibrationMetadata[0].fundS? 
+                            html`<wl-text><b>Funding Source:</b> ${this._configMetadata[0].fundS} </wl-text>` : ''}
+                        ${this._calibrationMetadata[0].regionName && 
+                          this._calibrationMetadata[0].regionName != this._configMetadata[0].regionName ?
+                            html`<li><b>Region:</b> ${this._calibrationMetadata[0].regionName}</li>`: ''}
+
+                        ${(this._calibrationMetadata[0].tIValue && this._calibrationMetadata[0].tIUnits && 
+                          (this._configMetadata[0].tIValue != this._calibrationMetadata[0].tIValue) && 
+                          (this._configMetadata[0].tIUnits != this._calibrationMetadata[0].tIUnits)) ?
+                            html`<li><b>Time interval:</b>
+                            ${this._calibrationMetadata[0].tIValue + ' ' + this._calibrationMetadata[0].tIUnits}</li>` : ''}
+
+                        ${this._calibrationMetadata[0].gridType &&
+                          this._calibrationMetadata[0].gridDim && 
+                          this._calibrationMetadata[0].gridSpatial &&
+                          ((this._configMetadata[0].gridType != this._calibrationMetadata[0].gridType) ||
+                          (this._calibrationMetadata[0].gridDim != this._configMetadata[0].gridDim) ||
+                          (this._configMetadata[0].gridSpatial != this._calibrationMetadata[0].gridSpatial)) ?
+                            html`
+                            <li><b>Grid details:</b> 
+                                <ul>
+                                    ${this._configMetadata[0].gridType != this._calibrationMetadata[0].gridType ?
+                                    html`
+                                        <li><b>Type:</b> ${this._calibrationMetadata[0].gridType}</li>
+                                    ` : ''}
+                                    ${this._calibrationMetadata[0].gridDim != this._configMetadata[0].gridDim ?
+                                    html`
+                                    <li>
+                                        <b>Dimentions:</b>
+                                        <span style="font-family: system-ui;">${this._calibrationMetadata[0].gridDim}</span>
+                                    </li>
+                                    `:''}
+                                    ${this._configMetadata[0].gridSpatial != this._calibrationMetadata[0].gridSpatial ?
+                                    html`
+                                    <li><b>Spatial resolution:</b> ${this._calibrationMetadata[0].gridSpatial}</li>
+                                    `: ''}
+                                </ul>
+                            </li>
+                        `: ''}
+
+                        ${calProc.length > 0 ? html`
+                            <li><b>Processes:</b> ${calProc.join(', ')}</li>
+                        `: '' }
+
+                        ${this._calibrationMetadata[0].adjustableVariables ?
+                            html`<li><b>Adjustable parameters:</b>
+                            ${this._calibrationMetadata[0].adjustableVariables.map((v,i) => {
+                                if (i === 0) return html`<code class="clickable" @click="${() => this._changeTab('io', 'parameters')}">${v}</code>`;
+                                else return html`, <code class="clickable" @click="${() => this._changeTab('io', 'parameters')}">${v}</code>`;
+                            })}</li>`: ''}
+                        ${this._calibrationMetadata[0].targetVariables ?
+                            html`<li><b>Target variables:</b> ${this._calibrationMetadata[0].targetVariables.map((v,i) => {
+                                if (i === 0) return html`<code>${v}</code>`;
+                                else return html`, <code>${v}</code>`;
+                            })}</li>`: ''}
+                        `
+                    )}
+                </fieldset>
+                `:''}
+
             </fieldset>
-            ` : '' )
-    }
-
-    _renderMetadataTable () {
-        if (!this._configMetadata && !this._calibrationMetadata && this._config) {
-            return html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`;
+        `
         }
-
-        let meta = [];
-        if (this._configMetadata && this._configMetadata.length>0) meta.push(this._configMetadata[0]);
-        if (this._calibrationMetadata && this._calibrationMetadata.length>0) meta.push(this._calibrationMetadata[0]);
-
-        if (meta.length === 0) {
-            return html``;
-        }
-
-        let features = [];
-        if (meta.filter((m:any) => m['regionName']).length>0)
-            features.push({name: 'Region name', render: (m) => m['regionName']})
-        if (meta.filter((m:any) => m['desc']).length>0)
-            features.push({name: 'Description', render: (m) => m['desc']})
-        if (meta.filter((m:any) => m['input_variables']).length>0)
-            features.push({name: 'Input files', render: (m) => m['input_variables'].join(', ')})
-        if (meta.filter((m:any) => m['output_variables']).length>0)
-            features.push({name: 'Output files', render: (m) => m['output_variables'].join(', ')})
-        if (meta.filter((m:any) => m['parameters']).length>0)
-            features.push({name: 'Parameters', render: (m) => m['parameters'].join(', ')})
-        if (meta.filter((m:any) => m['processes']).length>0)
-            features.push({name: 'Processes', render: (m) => m['processes'].join(', ')})
-        if (meta.filter((m:any) => m['tIValue']).length>0 && meta.filter((m:any) => m['tIUnits']))
-            features.push({name: 'Time interval', render: (m) => m['tIValue'] + ' ' + m['tIUnits']})
-        if (meta.filter((m:any) => m['gridType']).length>0)
-            features.push({name: 'Grid type', render: (m) => m['gridType']})
-        if (meta.filter((m:any) => m['gridDim']).length>0)
-            features.push({name: 'Grid dimentions', render: (m) => m['gridDim']})
-        if (meta.filter((m:any) => m['gridSpatial']).length>0)
-            features.push({name: 'Spatial resolution', render: (m) => m['gridSpatial']})
-        if (meta.filter((m:any) => m['paramAssignMethod']).length>0)
-            features.push({name: 'Parameter assignment method', render: (m) => m['paramAssignMethod']})
-        if (meta.filter((m:any) => m['adjustableVariables']).length>0)
-            features.push({name: 'Adjustable parameters', render: (m) => (m['adjustableVariables']||[]).join(', ')})
-        if (meta.filter((m:any) => m['targetVariables']).length>0)
-            features.push({name: 'Target variables', render: (m) => (m['targetVariables']||[]).join(', ')})
-        if (meta.filter((m:any) => m['compLoc']).length>0)
-            features.push({name: 'Download', render: (m) => m['compLoc'] ? this._renderLink(m['compLoc']) : ''})
-
-
-        return html`
-            <h3>Metadata:</h3>
-            <table class="pure-table pure-table-striped">
-                <thead>
-                    <th></th>
-                    <th>
-                        <div style="font-size: 12px;">Selected configuration:</div>
-                        <div style="font-size: 14px; color: black; font-weight: bold;">${meta[0].label}<b>
-                    </th>
-                    ${this._calibration && (!this._calibrationMetadata || this._calibrationMetadata.length > 0) ? html`
-                    <th>${(this._calibrationMetadata || []).length > 0 ? html`
-                        <div style="font-size: 12px;">Selected configuration setup:</div>
-                        <div style="font-size: 14px; color: black; font-weight: bold;">${meta[1].label}<b>`
-                        : html`
-                        <div style="font-size: 12px;">Loading setup...</div>
-                        <wl-progress-bar style="width: 100px"></wl-progress-bar>
-                        `}
-                    </th>`
-                    :''}
-                </thead>
-                <tbody>
-                    ${features.map((ft:any) => html`
-                    <tr>
-                        <td><b>${ft.name}</b></td>
-                        ${meta.map((m:any) => html`<td>${ft.render(m)}</td>`)}
-                    </tr>
-                    `)}
-                    <tr>
-                        <td>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        `;
     }
 
     _renderTabIO () {
@@ -909,8 +1014,12 @@ export class ModelView extends connect(store)(PageViewElement) {
             </h3>`
         }
         return html`
+            ${(this._parameters)? this._renderParametersTable() : html``}
             ${(!this._inputs || this._inputs.length > 0 || !this._outputs || this._outputs.length > 0) ? html`
-            <h3> Files: </h3>
+            <wl-title level="3"> Files: </wl-title> 
+            <wl-text style="font-style: italic; padding-left: 20px;">
+                Look at the Variables tab to see more information about the contents of the inputs and outputs.
+            </wl-text>
             <table class="pure-table pure-table-striped" style="overflow: visible;">
                 <colgroup>
                     <col span="1" style="width: 10px;">
@@ -935,7 +1044,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <wl-icon>help</wl-icon>
                             </span>
                         </th>` : html``}
-                        <th>Format</th>
+                        <th style="text-align: right;">Format</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -946,7 +1055,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     : this._inputs.map(io => html`
                     <tr>
                         <td></td>
-                        <td><span class="font-numbers clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
+                        <td><span class="monospaced"> 
                             ${io.label}
                         </span></td>
                         <td>${io.desc}</td>
@@ -955,7 +1064,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                             <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
                         ` : html`<span style="color:#999999;">-</span>`}</td>
                         ` : html``}
-                        <td class="font-numbers">${io.format}</td>
+                        <td style="text-align: right;" class="number">${io.format}</td>
                     </tr>`)}
                 </tbody>`
                 : ''}
@@ -969,7 +1078,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <th></th>
                         <th>Name</th>
                         <th colspan="${this._calibration? 2 : 1}">Description</th>
-                        <th>Format</th>
+                        <th style="text-align: right;">Format</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -980,17 +1089,16 @@ export class ModelView extends connect(store)(PageViewElement) {
                     : this._outputs.map(io => html`
                     <tr>
                         <td></td>
-                        <td><span class="font-numbers clickable" @click="${()=>{this._expandVariable(io.label as string)}}">
+                        <td><span class="monospaced">
                             ${io.label}
                         </span></td>
                         <td colspan="${this._calibration? 2 : 1}">${io.desc}</td>
-                        <td class="font-numbers">${io.format}</td>
+                        <td style="text-align: right;" class="number">${io.format}</td>
                     </tr>`)}
                 </tbody>`
                 :''}
             </table>` : ''}
 
-            ${(this._parameters)? this._renderParametersTable() : html``}
             ${(!this._inputs && !this._outputs && !this._parameters)? html`
             <br/>
             <h3 style="margin-left:30px">
@@ -1009,15 +1117,20 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
         if (this._parameters.length > 0) {
             return html`
-                <h3> Parameters: </h3>
+                <wl-title level="3"> Parameters: </wl-title> 
                 <table class="pure-table pure-table-striped" style="overflow: visible;" id="parameters-table">
+                    <col span="1" style="width: 180;">
+                    <col span="1">
+                    <col span="1">
+                    <col span="1" style="width: 130px;">
                     <thead>
-                        <th>Name</th>
+                        <th>Parameter</th>
                         <th>Description</th>
+                        <th style="text-align: right;">Relevant for intervention</th>
                         <th style="text-align: right;">
                             ${this._calibration? html`
                             Value on setup 
-                            <span class="tooltip" tip="If a value is not set up in this field configuration defaul value will be used.">
+                            <span class="tooltip" tip="If a value is not set up in this field configuration default value will be used.">
                                 <wl-icon>help</wl-icon>
                             </span>`
                             : 'Default value'}
@@ -1028,12 +1141,17 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <tr>
                             <td>
                                 <code>${p.paramlabel}</code><br/>
-                            </td>
-                            <td>
-                                <b style="font-size: 14px;">${ capitalizeFirstLetter(p.description) }</b><br/>
                                 ${p.minVal && p.maxVal ? html`
                                 The range is from ${p.minVal} to ${p.maxVal}
                                 ` : ''}
+                            </td>
+                            <td>
+                                ${p.description ? html`<b style="font-size: 14px;">${capitalizeFirstLetter(p.description)}</b><br/>`: ''}
+                            </td>
+                            <td>
+                                ${ p.intervention ? html`<span class="tooltip tooltip-text" tip="${p.interventionDesc}">
+                                    ${p.intervention}
+                                </span>` : ''}
                             </td>
                             <td class="font-numbers" style="text-align: right;">
                             ${this._calibration ? (p.fixedValue ? p.fixedValue : p.defaultvalue + ' (default)')
@@ -1048,12 +1166,30 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
     }
 
+    _renderTabAssumptions () {
+        return html`
+        <wl-title level="3">Assumptions:</wl-title>
+        <ul>
+        ${this._model.assumptions.split('.').map(a=> a?html`<li>${a}.</li>`:'')}
+        </ul>`
+    }
+
+    _renderTabExample () {
+        return html`<div id="mk-example"></div>`
+    }
+
     _renderTabVariables () {
         return html`<div id="hack">${this._count}</div>
-            ${(this._inputs) ? html`<h3>Inputs:</h3>${this._inputs.map(input => html`
-            <wl-expansion id="${input.label}" name="groupInput" @click="${()=>{this.expandIO(input.uri)}}">
-                <span slot="title">${input.label}</span>
-                <span slot="description">${input.desc}</span>
+            ${(this._inputs && this._inputs.length > 0) ? html`
+            <wl-title level="3">Inputs:</wl-title>
+            ${this._inputs.map(input => html`
+            <wl-expansion id="${input.label}" name="groupInput" @click="${()=>{this.expandIO(input.uri)}}" style="overflow-y: hidden;">
+                <span slot="title">
+                    ${input.label}
+                </span>
+                <span slot="description">
+                    ${input.desc}
+                </span>
                 ${this._variables[input.uri] ? 
                 html`${this._variables[input.uri].length>0?
                     html`
@@ -1072,7 +1208,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <td>${v.label}</td>
                                 <td>${v.longName}</td>
                                 <td>${v.desc}</td>
-                                <td style="word-wrap: break-word;">${v.sn}</td>
+                                <td style="word-wrap: break-word;">
+                                    <a class="monospaced link" target="_blank" href="${v.snURI}">${v.sn}</a>
+                                </td>
                                 <td style="min-width: 80px;">${v.unit}</td>
                             </tr>`)}
                         </tbody>
@@ -1087,8 +1225,10 @@ export class ModelView extends connect(store)(PageViewElement) {
             </wl-expansion>`)}`
             : html``}
 
-            ${(this._outputs) ? html`<h3>Outputs:</h3>${this._outputs.map(output => html`
-            <wl-expansion id="${output.label}" name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}">
+            ${(this._outputs && this._outputs.length > 0) ? html`
+            <wl-title level="3">Outputs:</wl-title>
+            ${this._outputs.map(output => html`
+            <wl-expansion id="${output.label}" name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}" style="overflow-y: hidden;">
                 <span slot="title">${output.label}</span>
                 <span slot="description">${output.desc}</span>
                 ${this._variables[output.uri] ? 
@@ -1109,7 +1249,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <td>${v.label}</td>
                                 <td>${v.longName}</td>
                                 <td>${v.desc}</td>
-                                <td style="word-wrap: break-word;">${v.sn}</td>
+                                <td style="word-wrap: break-word;">
+                                    <a class="monospaced link" target="_blank" href="${v.snURI}">${v.sn}</a>
+                                </td>
                                 <td style="min-width: 80px;">${v.unit}</td>
                             </tr>`)}
                         </tbody>
@@ -1170,7 +1312,32 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _renderTabSoftware () {
-        return html`${(this._config)?
+        return html`
+        ${(this._compModels && this._compModels.length > 0)? html`
+        <wl-title level="3"> Related models: </wl-title>
+        <table class="pure-table pure-table-bordered">
+            <thead>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Description</th>
+            </thead>
+            <tbody>
+            ${this._compModels.map( (m:any) => html`
+                <tr>
+                    <td><a @click="${() => {this._goToModel(m)}}">${m.label}</a></td>
+                    <td>${m.categories.join(', ')}</td>
+                    <td>${m.desc}</td>
+                </tr>`)}
+            </tbody>
+        </table>
+        `:html`
+        <br/><h3 style="margin-left:30px">
+            No compatible software has been described in the model catalog yet.
+        </h3>
+        `}
+        `
+
+        /*return html`${(this._config)?
             html`${(this._compInput && this._compInput.length>0) || 
                    (this._compOutput && this._compOutput.length>0) ?
                 html`
@@ -1214,7 +1381,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             `
             :html``
         }
-        `
+        `*/
     }
 
     _goToModel (model:any) {
@@ -1245,6 +1412,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (this._sampleVis) {
             this._sampleVis.forEach((sv, i) => {
                 let newItem = {label: 'Sample visualization ' + (i>0? i+1 : ''), src: sv.url, desc: sv.desc};
+                if (sv.source) newItem['source'] = {label: sv.source.split('/').pop(), url: sv.source};
                 items.push(newItem);
             });
         }
@@ -1286,6 +1454,19 @@ export class ModelView extends connect(store)(PageViewElement) {
             this._updateConfigSelector();
             this._updateCalibrationSelector();
         }
+        if (this._tab == 'example' && this._model.example) {
+            let example = this.shadowRoot.getElementById('mk-example');
+            if (example) {
+                example.innerHTML = marked(this._model.example);
+            }
+        }
+        /* HTML description are not working
+        if (this._tab == 'overview' && this._model && this._model.indices && this._indices && this._indices.length > 0) {
+            let indiceDesc = this.shadowRoot.getElementById('indice-description');
+            if (indiceDesc) {
+                indiceDesc.innerHTML = this._indices[0].description;
+            }
+        }*/
     }
 
     _getVersionTree (uri:string) {
@@ -1333,7 +1514,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             // Fetch & reset data
             if (modelChanged) {
                 if (ui.selectedModel) {
-                    //store.dispatch(fetchVersionsForModel(ui.selectedModel));
+                    store.dispatch(fetchVersionsForModel(ui.selectedModel));
                     store.dispatch(fetchDiagramsForModelConfig(ui.selectedModel));
                     store.dispatch(fetchSampleVisForModelConfig(ui.selectedModel));
                     store.dispatch(fetchScreenshotsForModelConfig(ui.selectedModel));
@@ -1341,6 +1522,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 this._selectedModel = ui.selectedModel;
 
                 this._model = null;
+                this._indices = null;
                 this._versions = null;
                 this._compModels = null;
                 this._explDiagrams = null;
@@ -1398,6 +1580,9 @@ export class ModelView extends connect(store)(PageViewElement) {
 
                 if (db.models && !this._model) {
                     this._model = db.models[this._selectedModel];
+                    if (this._model && this._model.indices) {
+                        store.dispatch(fetchDescriptionForVar(this._model.indices));
+                    }
                 }
                 if (db.versions && !this._versions) {
                     this._versions = db.versions[this._selectedModel];
@@ -1433,6 +1618,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                             }
                         })
                     })
+                }
+                if (!this._indices && db.vars && this._model && this._model.indices) {
+                    this._indices = db.vars[this._model.indices];
                 }
                 if (!this._explDiagrams && db.explDiagrams) {
                     this._explDiagrams = db.explDiagrams[this._selectedModel];

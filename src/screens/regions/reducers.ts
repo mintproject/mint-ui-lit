@@ -23,6 +23,11 @@ export interface BoundingBox {
     ymax: number
 }
 
+export interface Point {
+    x: number,
+    y: number
+}
+
 export type AllRegionsQueryResults = IdMap<RegionQueryResult>;
 export type RegionQueryResult = IdMap<RegionList>;
 

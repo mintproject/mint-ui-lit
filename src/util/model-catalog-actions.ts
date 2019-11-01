@@ -9,7 +9,7 @@ import { apiFetch, MODELS, VERSIONS_AND_CONFIGS, CATEGORIES, CONFIGS, CONFIGS_AN
          IO_FOR_CONFIG, IO_AND_VARS_SN_FOR_CONFIG, VARS_SN_AND_UNITS_FOR_IO, CONFIGS_FOR_VAR, CONFIGS_FOR_VAR_SN, 
          CALIBRATIONS_FOR_VAR_SN, IO_FOR_VAR_SN, METADATA_FOR_VAR_SN, PROCESS_FOR_CAG, SEARCH_MODEL_BY_NAME, 
          SEARCH_MODEL_BY_CATEGORY, SEARCH_ANY, SEARCH_IO, SEARCH_MODEL, SEARCH_VAR, SEARCH_MODEL_BY_VAR_SN,
-         SAMPLE_VIS_FOR_MODEL_CONFIG } from './model-catalog-requests';
+         SAMPLE_VIS_FOR_MODEL_CONFIG, DESCRIPTION_FOR_VAR } from './model-catalog-requests';
 import { UriModels } from "./model-catalog-reducers";
 
 function debug (...args) {
@@ -54,6 +54,7 @@ export const FETCH_SEARCH_IO                       = "FETCH_SEARCH_IO";
 export const FETCH_SEARCH_MODEL                    = "FETCH_SEARCH_MODEL";
 export const FETCH_SEARCH_VAR                      = "FETCH_SEARCH_VAR";
 export const FETCH_SEARCH_MODEL_BY_VAR_SN          = "FETCH_SEARCH_MODEL_BY_VAR_SN";
+export const FETCH_DESCRIPTION_FOR_VAR             = "FETCH_DESCRIPTION_FOR_VAR";
 
 export const ADD_PARAMETERS                         = "ADD_PARAMETERS";
 export const ADD_CALIBRATION                        = "ADD_CALIBRATION";
@@ -95,6 +96,7 @@ interface ActionFetchCalibrationsForVarSN          extends UriParams<'FETCH_CALI
 interface ActionFetchIOForVarSN                    extends UriParams<'FETCH_IO_FOR_VAR_SN'> {};
 interface ActionFetchMetadataForVarSN              extends UriParams<'FETCH_METADATA_FOR_VAR_SN'> {};
 interface ActionFetchProcessForCag                 extends UriParams<'FETCH_PROCESS_FOR_CAG'> {};
+interface ActionFetchDescriptionForVar             extends UriParams<'FETCH_DESCRIPTION_FOR_VAR'> {};
 interface ActionFetchSearchModelByName             extends TextParams<'FETCH_SEARCH_MODEL_BY_NAME'> {};
 interface ActionFetchSearchModelByCategory         extends TextParams<'FETCH_SEARCH_MODEL_BY_CATEGORY'> {};
 interface ActionFetchSearchAny                     extends TextParams<'FETCH_SEARCH_ANY'> {};
@@ -121,7 +123,7 @@ export type ApiAction = ActionFetchModels | ActionFetchVersionsAndConfigs | Acti
                         ActionFetchProcessForCag | ActionFetchSearchModelByName | ActionFetchSearchModelByCategory |
                         ActionFetchSearchAny | ActionFetchSearchIO | ActionFetchSearchModel | ActionFetchSearchVar |
                         ActionFetchSearchModelByVarSN | ActionAddURLs | ActionAddParameters | ActionAddCalibration |
-                        ActionAddMetadata | ActionAddInputs;
+                        ActionAddMetadata | ActionAddInputs | ActionFetchDescriptionForVar;
 
 type ApiThunkResult = ThunkAction<void, RootState, undefined, ApiAction>;
 
@@ -234,13 +236,23 @@ export const fetchVersionsAndConfigs: ActionCreator<ApiThunkResult> = () => (dis
         Object.keys(data).forEach((modelUri) => {
             let baseUrl = modelUri.split('/').pop();
             // create urls going backwards on versions 
-            Object.values(data[modelUri]).forEach((ver:any, i:number) => {
+            //Object.values(data[modelUri]).forEach((ver:any, i:number) => {
+            Object.keys(data[modelUri]).sort((a,b) => {
+                let A = data[modelUri][a];
+                let B = data[modelUri][b];
+                let na = Number(A.id.match(/\d+(.\d+)?/)[0]);
+                let nb = Number(B.id.match(/\d+(.\d+)?/)[0]);
+                //console.log(na, nb)
+                return nb - na;
+            }).map(key => data[modelUri][key]).forEach((ver:any, i:number) => {
                 let verUrl = baseUrl + '/' + ver.id;
                 let cfgUrl, calUrl;
-                for (let j = (ver.configs ? ver.configs.length : 0)-1; j >= 0; j--) {
+                //for (let j = (ver.configs ? ver.configs.length : 0)-1; j >= 0; j--) {
+                for (let j = 0; j < (ver.configs ? ver.configs.length : 0); j++) {
                     cfgUrl = verUrl + '/' + ver.configs[j].uri.split('/').pop();
                     calUrl = '';
-                    for (let k = (ver.configs[j].calibrations ? ver.configs[j].calibrations.length : 0)-1; k >= 0; k--) {
+                    //for (let k = (ver.configs[j].calibrations ? ver.configs[j].calibrations.length : 0)-1; k >= 0; k--) {
+                    for (let k = 0;  k < (ver.configs[j].calibrations ? ver.configs[j].calibrations.length : 0); k++) {
                         calUrl = cfgUrl + '/' + ver.configs[j].calibrations[k].uri.split('/').pop();
                         urls[ver.configs[j].calibrations[k].uri] = calUrl;
                     }
@@ -569,6 +581,12 @@ export const fetchVarsSNAndUnitsForIO: ActionCreator<ApiThunkResult> = (uri:stri
             data: fetched
         })
     })
+}
+
+export const fetchDescriptionForVar: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {
+    apiFetch({type: DESCRIPTION_FOR_VAR, v: uri}).then((fetched) => { 
+        dispatch({type: FETCH_DESCRIPTION_FOR_VAR, uri:uri, data: fetched});
+    });
 }
 
 export const fetchConfigsForVar: ActionCreator<ApiThunkResult> = (uri:string) => (dispatch) => {

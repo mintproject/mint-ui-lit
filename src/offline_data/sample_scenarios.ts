@@ -94,18 +94,18 @@ export const EXAMPLE_SCENARIO_DETAILS = {
         "subgoal1": {
             "id": "subgoal1",
             "name": "View historical precipitation data",
-            "pathwayids": [ "pathway1" ]
-        },
+            //"pathwayids": [ "pathway1" ]
+        } as SubGoal,
         "subgoal2": {
             "id": "subgoal2",
             "name": "Forecast crop production details",
-            "pathwayids": [ "pathway2" ]
-        },
+            //"pathwayids": [ "pathway2" ]
+        } as SubGoal,
         "subgoal3": {
             "id": "subgoal3",
             "name": "Check transportation map",
-            "pathwayids": [ "pathway3" ]
-        },
+            //"pathwayids": [ "pathway3" ]
+        } as SubGoal,
     } as IdMap<SubGoal>,
     "pathways": {
         "pathway1": {
@@ -120,6 +120,7 @@ export const EXAMPLE_SCENARIO_DETAILS = {
                     
                 }
             },
+            "executable_ensemble_summary": {},
             "models": {
                 "Aggregate_crop_supply_response_model_v2_simple": {
                     id: "Aggregate_crop_supply_response_model_v2_simple",
@@ -213,20 +214,20 @@ export const EXAMPLE_SCENARIO_DETAILS = {
                 },  
             },
             "datasets": {}
-        },
+        } as Pathway,
         "pathway2": {
             "id": "pathway1",
             "driving_variables": [],
             "response_variables": [],
             "models": {},
             "datasets": {}
-        },
+        } as Pathway,
         "pathway3": {
             "id": "pathway1",
             "driving_variables": [],
             "response_variables": [],
             "models": {},
             "datasets": {}
-        },
+        } as Pathway,
     } as IdMap<Pathway>
 }

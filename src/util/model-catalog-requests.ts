@@ -1,4 +1,4 @@
-const API_URI = "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries/";
+const API_URI = "https://query.mint.isi.edu/api/dgarijo/MINT-ModelCatalogQueries/";
 export const RESOURCE_PREFIX = "https://w3id.org/okn/i/mint/";
 
 export const MODELS                          = "MODELS";
@@ -38,6 +38,7 @@ export const SEARCH_IO                       = "SEARCH_IO";
 export const SEARCH_MODEL                    = "SEARCH_MODEL";
 export const SEARCH_VAR                      = "SEARCH_VAR";
 export const SEARCH_MODEL_BY_VAR_SN          = "SEARCH_MODEL_BY_VAR_SN";
+export const DESCRIPTION_FOR_VAR             = "DESCRIPTION_FOR_VAR";
 
 interface ApiRule {
     newKey?: string; //maybe should be a function
@@ -72,6 +73,7 @@ interface GridForModelConfig            extends VParams<'GRID_FOR_MODEL_CONFIG'>
 interface ScreenshotsForModelConfig     extends VParams<'SCREENSHOTS_FOR_MODEL_CONFIG'> {};
 interface DiagramsForModelConfig        extends VParams<'DIAGRAMS_FOR_MODEL_CONFIG'> {};
 interface SampleVisForModelConfig       extends VParams<'SAMPLE_VIS_FOR_MODEL_CONFIG'> {};
+interface DescriptionForVar             extends VParams<'DESCRIPTION_FOR_VAR'> {};
 interface MetadataForModelConfig        extends ModelConfigParams<'METADATA_FOR_MODEL_CONFIG'> {};
 interface MetadataNoioForModelConfig    extends ModelConfigParams<'METADATA_NOIO_FOR_MODEL_CONFIG'> {};
 interface ParametersForConfig           extends ConfigParams<'PARAMETERS_FOR_CONFIG'> {};
@@ -101,7 +103,7 @@ type ApiParams = Models | VersionsAndConfigs | Categories | Configs | ConfigsAnd
         IOForConfig | IOAndVarsSNForConfig | VarsSNAndUnitsForIO | ConfigsForVar | ConfigsForVarSN |
         CalibrationsForVarSN | IOForVarSN | MetadataForVarSN | ProcessForCag | SearchModelByName | 
         SearchModelByCategory | SearchAny | SearchIO | SearchModel | SearchVar | SearchModelByVarSN |
-        SampleVisForModelConfig;
+        SampleVisForModelConfig | DescriptionForVar;
 
 const path = {
     MODELS:                         'getModels',
@@ -131,6 +133,7 @@ const path = {
     CONFIGS_FOR_VAR:                'getModelConfigurationsForVariablePresentation',
     CONFIGS_FOR_VAR_SN:             'getModelConfigurationsForVariable',
     CALIBRATIONS_FOR_VAR_SN:        'getCalibratedModelConfigurationsForVariable',
+    DESCRIPTION_FOR_VAR:            'getDescriptionForStandardVariable',
     IO_FOR_VAR_SN:                  'getI_OForStandardVariable',
     METADATA_FOR_VAR_SN:            'getStandardVariableMetadata',
     PROCESS_FOR_CAG:                'getProcessForCAG',

@@ -87,4 +87,35 @@ th > span.tooltip {
 th > span.tooltip > wl-icon {
     --icon-size: 14px;
     vertical-align: bottom;
-}`
+}
+
+span.author {
+    border: 2px solid cadetblue;
+}
+
+span.process {
+    border: 2px solid purple;
+}
+
+span.time-interval {
+    border: 2px solid burlywood;
+}
+
+span.grid {
+    border: 2px solid teal;
+}
+
+span.software-image {
+    border: 2px solid darkgray;;
+    font: 12px Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace;
+}
+
+.monospaced {
+    font: 12px Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace;
+}
+
+.number {
+    font-family: helvetica;
+}
+
+`

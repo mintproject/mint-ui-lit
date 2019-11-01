@@ -8,13 +8,22 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
 import { queryRegions } from './actions';
 import { RegionsEditor } from './regions-editor';
-import { RegionList } from './reducers';
+import { RegionList, Region } from './reducers';
 
+import { db } from 'config/firebase';
+import { fromTimeStampToDateString } from "util/date-utils";
+import { getVariableLongName } from "offline_data/variable_list";
+
+import 'weightless/divider';
 import './regions-editor';
 import '../../components/image-gallery'
+import { Dataset, DatasetsWithStatus } from 'screens/datasets/reducers';
+import { queryDatasetsByRegion } from 'screens/datasets/actions';
+import { IdMap } from 'app/reducers';
 
 @customElement('regions-hydrology')
-export class RegionsHydrology extends PageViewElement {
+export class RegionsHydrology extends connect(store)(PageViewElement)  {
+
     static get styles() {
         return [
             SharedStyles,
@@ -40,13 +49,18 @@ export class RegionsHydrology extends PageViewElement {
     }
 
     protected render() {
-        let items = [
+        let items : Array<any>;
+        if (this._regionid === 'south_sudan') {
+            items = [
             {   label: "South Sudan River Basins (PIHM)",
                 src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/PIHMRiverBasin/2017.png",
                 desc: "The three river basins that were our focus in 2018."},
             {   label: "South Sudan River Basins - POI",
                 src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/PIHMRiverBasin/POI.png",
-                desc: "The three river basins that were our focus in 2018 (overlayed with points of interest)."},
+                desc: "The three river basins that were our focus in 2018 (overlayed with points of interest)."}
+            ]
+        } else if (this._regionid === 'ethiopia') {
+            items = [
             {   label: "Ethiopia relief boundary",
                 src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Ethiopia_relief_boundary.png"},
             {   label: "Ethiopia relief subbasins (94MB)",
@@ -65,9 +79,12 @@ export class RegionsHydrology extends PageViewElement {
                 src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Muger_relief_rivers_boundary.png"},
             {   label: "Dashilo relief river boundary",
                 src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Dashilo_relief_river_boundary.png"},
-        ]
-        return html`
+            ]
+        } else {
+            items = [];
+        }
 
+        return html`
         <div class="content">
             <regions-editor active
                 style="--map-height: 450px;"
@@ -75,14 +92,21 @@ export class RegionsHydrology extends PageViewElement {
             ></regions-editor>
 
             <br/>
+
+            ${items.length > 0 ? html`
+            <wl-divider style="margin: 20px 0px;"></wl-divider>
             <p>
-                <!--This page is in progress, it will allow you to run tools to identify hydrological regions of interest.-->
-                Below are some example hydrological regions identified for South Sudan:
+                The following are areas of interest for hydrology modeling in this region
             </p>
             <div style="width: 90%; margin: 0px auto;">
                 <image-gallery style="--width: 300px; --height: 160px;" .items="${items}"></image-gallery>
             </div>
+            ` : ''}
         </div>
         `;
+    }
+
+    stateChanged(state: RootState) {
+        super.setRegionId(state);
     }
 }

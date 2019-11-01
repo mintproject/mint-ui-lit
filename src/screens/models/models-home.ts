@@ -19,6 +19,13 @@ store.addReducers({
     models
 });
 
+import modelCatalog from 'model-catalog/reducers'
+import { modelsGet, versionsGet, modelConfigurationsGet } from '../../model-catalog/actions';
+
+store.addReducers({
+    modelCatalog
+});
+
 @customElement('models-home')
 export class ModelsHome extends connect(store)(PageViewElement) {
     @property({type: String})
@@ -91,7 +98,8 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <wl-icon>search</wl-icon>
                     <div>Browse Models</div>
                 </a>
-                <a href="${this._regionid}/models/register">
+                <!--a href="{this._regionid}/models/register"-->
+                <a disabled>
                     <wl-icon>library_add</wl-icon>
                     <div>Add Models</div>
                 </a>
@@ -99,7 +107,8 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <wl-icon>perm_data_settings</wl-icon>
                     <div>Configure Models</div>
                 </a>
-                <a href="${this._regionid}/models/calibrate">
+                <!--a href="{this._regionid}/models/calibrate"-->
+                <a disabled>
                     <wl-icon>settings_input_composite</wl-icon>
                     <div>Calibrate Models</div>
                 </a>
@@ -115,6 +124,10 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     firstUpdated() {
         store.dispatch(fetchModels());
         store.dispatch(fetchVersionsAndConfigs());
+
+        store.dispatch(modelsGet());
+        store.dispatch(versionsGet());
+        store.dispatch(modelConfigurationsGet());
     }
 
     stateChanged(state: RootState) {

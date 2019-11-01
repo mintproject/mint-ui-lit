@@ -7,7 +7,7 @@ import models, { VariableModels, Model } from "../../models/reducers";
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { updatePathway } from "../actions";
-import { removeDatasetFromPathway, matchVariables } from "../../../util/state_functions";
+import { removeDatasetFromPathway, matchVariables, getUISelectedSubgoalRegion } from "../../../util/state_functions";
 
 import "weightless/tooltip";
 import "weightless/popover-card";
@@ -17,6 +17,7 @@ import { selectPathwaySection } from "../../../app/ui-actions";
 import { queryModelsByVariables } from "../../models/actions";
 import { getVariableLongName } from "../../../offline_data/variable_list";
 import { MintPathwayPage } from "./mint-pathway-page";
+import { Region } from "screens/regions/reducers";
 
 store.addReducers({
     models
@@ -34,9 +35,16 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     @property({type: Array})
     private _modelsToCompare: Model[] = [];
 
+    @property({type: Object})
+    private _subregion: Region;
+    
+    @property({type:Boolean})
+    private _showAllModels: boolean = false;
+
     private _dispatched: Boolean = false;
 
     private _responseVariables: string[] = [];
+    private _drivingVariables: string[] = [];
 
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
@@ -121,9 +129,21 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         let modelids = Object.keys((this.pathway.models || {})) || [];
         let done = (this.pathway.models && modelids.length > 0);
         let availableModels = this._queriedModels[this._responseVariables.join(",")] || [];
+        let regionModels = availableModels.filter((model: Model) => {
+            let model_region_name = model.calibrated_region.toLowerCase();
+            let top_region_name = this._region.name.toLowerCase();
+            let task_region_name = this._subregion ? this._subregion.name.toLowerCase() : null;
+            if(model_region_name.indexOf(top_region_name) >=0) return true;
+            if(top_region_name.indexOf(model_region_name) >=0) return true;
+            if(task_region_name) {
+                if(model_region_name.indexOf(task_region_name) >=0) return true;
+                if(task_region_name.indexOf(model_region_name) >=0) return true;
+            }
+            return false;
+        })
         return html`
         <p>
-            This step is for selecting models that are appropriate for the response variables that you selected earlier.
+            The models below are appropriate for the indicators of interest. You can select multiple calibrated models and compare them.  
         </p>
         ${done && !this._editMode ? html`<p>Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes.</p>`: html``}
         ${(done && !this._editMode) ?
@@ -180,10 +200,10 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                     Models
                 </wl-title>
                 <p>
-                    The models below generate data that includes the response variables that you selected earlier: 
+                    The models below generate data that includes the indicator that you selected earlier: 
                     "${this.pathway.response_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
                     Other models that are available in the system do not generate that kind of result.
-                    The column “Relevant Output File” shows the output file that contains the response variable.
+                    The column "Relevant Output File" shows the output file that contains the response variable.
                 </p>
                 <ul>
                     <li>
@@ -204,22 +224,26 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                             <tbody>
                                 ${availableModels.length>0 ?
                                     availableModels.map((model: Model) => {
-                                        return html`
-                                        <tr>
-                                            <td><input class="checkbox" type="checkbox" data-modelid="${model.id}"
-                                                ?checked="${modelids.indexOf(model.id!) >= 0}"></input></td>
-                                            <td><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></td> 
-                                            <td>${model.category}</td>
-                                            <td>${model.calibrated_region}</td>
-                                            <td>
-                                            ${Object.keys(model.output_files).filter((ioid) => {
-                                                return matchVariables(this.pathway.response_variables, model.output_files[ioid].variables, false); // Partial match
-                                            })
-                                            .map((ioid) => { return model.output_files[ioid].name })
-                                            .join(", ")}
-                                            </td>
-                                        </tr>
-                                        `;
+                                        if(!model)
+                                            return;
+                                        if(this._showAllModels || regionModels.indexOf(model) >=0) {
+                                            return html`
+                                            <tr>
+                                                <td><input class="checkbox" type="checkbox" data-modelid="${model.id}"
+                                                    ?checked="${modelids.indexOf(model.id!) >= 0}"></input></td>
+                                                <td><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></td> 
+                                                <td>${model.category}</td>
+                                                <td>${model.calibrated_region}</td>
+                                                <td>
+                                                ${Object.keys(model.output_files).filter((ioid) => {
+                                                    return matchVariables(this.pathway.response_variables, model.output_files[ioid].variables, false); // Partial match
+                                                })
+                                                .map((ioid) => { return model.output_files[ioid].name })
+                                                .join(", ")}
+                                                </td>
+                                            </tr>
+                                            `;
+                                        }
                                     })
                                 :
                                     html`
@@ -229,6 +253,20 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                                         </td>
                                     </tr>
                                     `
+                                }
+                                ${(availableModels.length - regionModels.length) > 0 ? 
+                                    html`
+                                    <tr>
+                                        <td colspan="5" style="text-align:left; color: rgb(153, 153, 153);">
+                                            <a style="cursor:pointer" @click="${() => {this._showAllModels = !this._showAllModels}}">
+                                                ${!this._showAllModels ? "Show" : "Hide"} 
+                                                ${availableModels.length - regionModels.length} models
+                                                for other regions
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    `
+                                    : ""
                                 }
                             </tbody>
                         </table>
@@ -265,10 +303,10 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         <wl-dialog class="comparison" fixed backdrop blockscrolling id="comparisonDialog">
             <table class="pure-table pure-table-striped">
                 <thead>
-                    <th></th>
+                    <th style="border-right:1px solid #EEE"></th>
                     ${this._modelsToCompare.map((model) => {
                         return html`
-                        <th><b>${model.name}</b></th>
+                        <th .style="width:${100/(this._modelsToCompare.length)}%"><b>${model.name}</b></th>
                         `
                     })}
                 </thead>
@@ -276,7 +314,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                     ${this._comparisonFeatures.map((feature) => {
                         return html`
                         <tr>
-                            <td><b>${feature.name}</b></td>
+                            <td style="border-right:1px solid #EEE"><b>${feature.name}</b></td>
                             ${this._modelsToCompare.map((model) => {
                                 return html`
                                     <td>${feature.fn(model)}</td>
@@ -432,7 +470,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             if(this._responseVariables && this._responseVariables.length > 0) {
                 //console.log("Querying model catalog for " + this._responseVariables);
                 this._dispatched = true;
-                store.dispatch(queryModelsByVariables(this._responseVariables));
+                store.dispatch(queryModelsByVariables(this._responseVariables, this._drivingVariables));
             }
         }       
     }
@@ -442,9 +480,15 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         super.setRegionId(state);
         //let pathwayid = this.pathway ? this.pathway.id : null;
         super.setPathway(state);
+        
+        this._subregion = getUISelectedSubgoalRegion(state);
 
-        if(this.pathway && this.pathway.response_variables != this._responseVariables && !this._dispatched) {
+        if(this.pathway && 
+                this.pathway.response_variables != this._responseVariables && 
+                this.pathway.driving_variables != this._drivingVariables && 
+                !this._dispatched) {
             this._responseVariables = this.pathway.response_variables;
+            this._drivingVariables = this.pathway.driving_variables;
             this._queryModelCatalog();
             this._setEditMode(false);
         }

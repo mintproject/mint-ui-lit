@@ -4,7 +4,7 @@ import { store, RootState } from "../../../app/store";
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { BASE_HREF } from "../../../app/actions";
-import { getPathwayRunsStatus, TASK_DONE, matchVariables } from "../../../util/state_functions";
+import { getPathwayRunsStatus, TASK_DONE, matchVariables, sendDataForIngestion, getUISelectedSubgoal } from "../../../util/state_functions";
 import { ExecutableEnsemble, StepUpdateInformation, ModelEnsembles } from "../reducers";
 import { updatePathway, getAllPathwayEnsembleIds, fetchPathwayEnsembles } from "../actions";
 import { showNotification, hideDialog, showDialog } from "../../../util/ui_functions";
@@ -39,6 +39,9 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     private currentPage = 1;
     @property({type: Number})
     private pageSize = 100;
+
+    @property({type: String})
+    private subgoalid: string;
 
     private pathwayModelEnsembleIds: IdMap<string[]> = {};
     
@@ -119,7 +122,6 @@ export class MintResults extends connect(store)(MintPathwayPage) {
        return html`
        <p>
             This step is for browsing the results of the models that you ran earlier. 
-            You can select the results that you would like to keep, and they will be recorded.
        </p>
        <wl-title level="3">Results</wl-title>
        <div class="clt">
@@ -130,6 +132,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                let grouped_ensemble = grouped_ensembles[modelid];
                this.totalPages = Math.ceil(summary.total_runs/this.pageSize);
                let finished_runs = summary.successful_runs + summary.failed_runs;
+               let submitted = this.pathway.executable_ensemble_summary[modelid].submitted_for_ingestion;
                let finished = (finished_runs == summary.total_runs);
                let running = summary.submitted_runs - finished_runs;
                let pending = summary.total_runs - summary.submitted_runs;
@@ -142,19 +145,28 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                <li>
                     <wl-title level="4"><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></wl-title>
                     <p>
+                        Below are the results of all the model executions that run successfully and were completed. 
+                        The results are shown on the left. The file can be downloaded/viewed by clicking on the link. 
+                        Click on the RELOAD button if you are waiting for more runs to complete
+                    </p>
+                    <p>
                     The model setup created ${summary.total_runs} configurations. 
                     ${!finished ? "So far, " : ""} ${summary.submitted_runs} model runs
                     ${!finished ? "have been" : "were"} submitted, out of which 
                     ${summary.successful_runs} succeeded and produced results, while ${summary.failed_runs} failed.
                     ${running > 0 ? html `${running} are currently running` : ""}
                     ${pending > 0 ? html `, and ${pending} are waiting to be run` : ""}
+                    </p>
 
-                    ${finished ? 
+                    ${finished && !submitted ? 
                         html` <wl-button class="submit"
-                        @click="${() => this._publishAllResults(model.id)}">Publish all results</wl-button>`
+                        @click="${() => this._publishAllResults(model.id)}">Save all results</wl-button>`
                         : ""
                     }
-                    </p>
+                    ${finished && submitted ? 
+                        "Results have been saved" : ''
+                    }
+                    <br /><br />
 
                     <div style="width:100%; border:1px solid #EEE;border-bottom:0px;">
                         ${grouped_ensemble && !grouped_ensemble.loading ? 
@@ -221,6 +233,8 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                 ${Object.keys(grouped_ensemble.ensembles).map((index) => {
                                     let ensemble: ExecutableEnsemble = grouped_ensemble.ensembles[index];
                                     let model = this.pathway.models![ensemble.modelid];
+                                    let param_defaults = {};
+                                    model.input_parameters.map((param) => param_defaults[param.id] = param.default);
                                     return html`
                                         <tr>
                                             ${!readmode ? 
@@ -256,7 +270,13 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                                     `;
                                                 }
                                             })}
-                                            ${grouped_ensemble.params.map((param) => html`<td>${ensemble.bindings[param.id]}</td>` )}
+                                            ${grouped_ensemble.params.map((param) => html`<td>
+                                                    ${ensemble.bindings[param.id] ? 
+                                                        ensemble.bindings[param.id] : 
+                                                        param_defaults[param.id]
+                                                    }
+                                                </td>` 
+                                            )}
                                         </tr>
                                     `;
                                 })}
@@ -271,7 +291,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             })}
             </ul>
             <div class="footer">
-                <wl-button type="button" class="submit" @click="${() => store.dispatch(selectPathwaySection("results"))}">Continue</wl-button>
+                <wl-button type="button" class="submit" @click="${() => store.dispatch(selectPathwaySection("visualize"))}">Continue</wl-button>
             </div>
         </div>
 
@@ -324,9 +344,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                 <p>
                     Publishing results for ${this._progress_item ? this._progress_item.name : ""}
                 </p>
-                ${this._progress_number} out of ${this._progress_total}
-                <wl-progress-bar style="width:100%" mode="determinate"
-                    value="${this._progress_number/this._progress_total}"></wl-progress-bar>
+                <wl-progress-bar style="width:100%" mode="indeterminate"></wl-progress-bar>
             </div>
             <div slot="footer">
                 ${this._progress_number == this._progress_total ? 
@@ -368,22 +386,12 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     }
 
     _getDatasetURL (resname: string) {
-        let config = this.prefs;
+        let config = this.prefs.mint;
         let suffix = "/users/" + config.wings.username + "/" + config.wings.domain;
         var purl = config.wings.server + suffix
         var expurl = config.wings.export_url + "/export" + suffix;
         let dsid = expurl + "/data/library.owl#" + resname;
         return purl + "/data/fetch?data_id=" + escape(dsid);
-    }
-
-    stateChanged(state: RootState) {
-        super.setUser(state);
-        super.setRegionId(state);
-        super.setPathway(state);
-
-        if(state.modeling.ensembles) {
-            this._ensembles = state.modeling.ensembles;
-        }
     }
 
     _publishAllResults(modelid) {
@@ -398,35 +406,42 @@ export class MintResults extends connect(store)(MintPathwayPage) {
         let executionBatchSize = 4;
 
         /*
-        For each run
+        -> Ingest thread to visualization database
+        -> Register outputs to the data catalog        
         -> Publish run to provenance catalog
-            - Get output public url
-        -> Register output to the data catalog
-        -> Create aggregated CSV for each model
-        -> model-[uuid].csv
-            -> [ensembleid] [runid] [input1] ... [inputn] [param1] ... [paramn] [out1] ... [outn]
         */
+        sendDataForIngestion(this.scenario.id, this.subgoalid, this.pathway.id, this.prefs).then(() => {
+            this.pathway.executable_ensemble_summary[modelid].submitted_for_ingestion = true;
+            this._progress_number = this._progress_total;
+            /*
+            let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
+            this.pathway.notes = {
+                ...this.pathway.notes!,
+                results: notes
+            };
+            this.pathway.last_update = {
+                ...this.pathway.last_update!,
+                results: {
+                    time: Date.now(),
+                    user: this.user!.email
+                } as StepUpdateInformation
+            };
+            */      
+           this._onDialogDone();    
+        })
+    }
 
-        /*
-        // Update notes
-        let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        this.pathway.notes = {
-            ...this.pathway.notes!,
-            results: notes
-        };
-        this.pathway.last_update = {
-            ...this.pathway.last_update!,
-            results: {
-                time: Date.now(),
-                user: this.user!.email
-            } as StepUpdateInformation
-        };
+    stateChanged(state: RootState) {
+        super.setUser(state);
+        super.setRegionId(state);
+        super.setPathway(state);
 
-        // Update pathway itself
-        updatePathway(this.scenario, this.pathway);
-        
-        this._editMode = false;
-        showNotification("saveNotification", this.shadowRoot!);
-        */
+        if(state.ui) {
+            this.subgoalid = state.ui.selected_subgoalid
+        }
+
+        if(state.modeling.ensembles) {
+            this._ensembles = state.modeling.ensembles;
+        }
     }
 }

@@ -70,6 +70,7 @@ export interface Notes {
     models: string,
     datasets: string,
     parameters: string,
+    visualization: string,
     results: string
 }
 
@@ -101,6 +102,8 @@ export interface Goal extends IdNameObject {
 
 export interface SubGoal extends IdNameObject {
     dates?: DateRange,
+    response_variables: string[],
+    driving_variables: string[],
     subregionid?: string
     pathways?: IdMap<PathwayInfo>
 }
@@ -117,11 +120,24 @@ export interface DataEnsembleMap {
 
 export interface ExecutableEnsembleSummary {
     workflow_name: string
-    submission_time: number
+
+    submitted_for_execution: boolean
+    submission_time: number    
     total_runs: number
     submitted_runs: number
     successful_runs: number
     failed_runs: number
+
+
+    submitted_for_ingestion: boolean
+    fetched_run_outputs: number // Run data fetched for ingestion
+    ingested_runs: number // Run data ingested in the Visualization database
+
+    submitted_for_registration: boolean
+    registered_runs: number // Registered in the data catalog
+
+    submitted_for_publishing: boolean
+    published_runs: number // Published in the provenance catalog
 }
 
 export interface ExecutableEnsemble {

@@ -11,13 +11,10 @@ import { Region } from "screens/regions/reducers";
 
 export const DATASETS_VARIABLES_QUERY = 'DATASETS_VARIABLES_QUERY';
 export const DATASETS_GENERAL_QUERY = 'DATASETS_GENERAL_QUERY';
+export const DATASETS_REGION_QUERY = 'DATASETS_REGION_QUERY';
+export const DATASETS_RESOURCE_QUERY = 'DATASETS_RESOURCE_QUERY';
 export const DATASETS_LIST = 'DATASETS_LIST';
-export const DATASETS_DETAIL = 'DATASETS_DETAIL';
 
-export interface DatasetsActionList extends Action<'DATASETS_LIST'> { 
-    datasets: Dataset[] | null,
-    loading: boolean
-};
 export interface DatasetsActionVariablesQuery extends Action<'DATASETS_VARIABLES_QUERY'> { 
     modelid: string, 
     inputid: string, 
@@ -29,56 +26,35 @@ export interface DatasetsActionGeneralQuery extends Action<'DATASETS_GENERAL_QUE
     datasets: Dataset[] | null,
     loading: boolean
 };
+export interface DatasetsActionRegionQuery extends Action<'DATASETS_REGION_QUERY'> { 
+    region: Region,
+    datasets: Dataset[] | null,
+    loading: boolean
+};
+export interface DatasetsActionDatasetResourceQuery extends Action<'DATASETS_RESOURCE_QUERY'> {
+    dsid: string,
+    dataset: Dataset,
+    loading: boolean
+};
 export interface DatasetsActionDetail extends Action<'DATASETS_DETAIL'> { dataset: DatasetDetail };
 
-export type DatasetsAction = DatasetsActionVariablesQuery | DatasetsActionGeneralQuery | DatasetsActionDetail | DatasetsActionList;
+export type DatasetsAction = DatasetsActionVariablesQuery | DatasetsActionGeneralQuery | DatasetsActionRegionQuery | DatasetsActionDatasetResourceQuery ;
 
 const DATA_CATALOG_URI = "https://api.mint-data-catalog.org";
 
-// List all Datasets
-type ListDatasetsThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionList>;
-export const listAllDatasets: ActionCreator<ListDatasetsThunkResult> = () => (dispatch) => {
-
-    // Offline mode example query
-    if(OFFLINE_DEMO_MODE) {
-        dispatch({
-            type: DATASETS_LIST,
-            loading: false,
-            datasets: EXAMPLE_DATASETS_QUERY as Dataset[]
-        });
-        return;
-    }
-    /*
-    fetch(DATA_CATALOG_URI + "/datasets/find").then((response) => {
-        response.json().then((obj) => {
-            let models = [] as Model[];
-            let bindings = obj["results"]["bindings"];
-            bindings.map((binding: Object) => {
-                models.push({
-                    name: binding["label"]["value"],
-                    description: binding["desc"]["value"],
-                    original_model: binding["model"]["value"]
-                } as Model);
-            });
-            dispatch({
-                type: MODELS_LIST,
-                models
-            });            
-        })
-    });
-    */
-};
-
-const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQueryParameters) => {
+const getResourceObjectsFromDCResponse = (obj: any, queryParameters: DatasetQueryParameters) => {
     let dsmap: IdMap<Dataset> = {};
     let datasets: Dataset[] = [];
+    let dsresourcemap = {};
+
     obj.resources.map((row: any) => {
         let dmeta = row["dataset_metadata"];
         let rmeta = row["resource_metadata"];
         let tcover = rmeta["temporal_coverage"];
-        //let scover = rmeta["spatial_coverage"];
+        let scover = rmeta["spatial_coverage"];
         let dsid = row["dataset_id"];
         let ds : Dataset = dsmap[dsid];
+        let resourcemap = dsresourcemap[dsid];
         if(ds == null) {
             ds = {
                 id: dsid,
@@ -89,22 +65,32 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
                     start_date: null, //tcover["start_time"].replace(/T.+$/, ''),
                     end_date: null
                 } as DateRange,
-                description: row["description"] || "",
+                description: row["dataset_description"] || "",
                 version: dmeta["version"] || "",
-                limitations: dmeta["limitataions"] || "",
+                limitations: dmeta["limitations"] || "",
                 source: {
                     name: dmeta["source"] || "",
                     url: dmeta["source_url"] || "",
                     type: dmeta["source_type"] || ""
                 },
+                datatype: dmeta["datatype"] || "",
                 categories: dmeta["category_tags"] || [],
                 resources: []
             };
             datasets.push(ds);
             dsmap[ds.id] = ds;
         }
-        let tcoverstart = toTimeStamp(tcover["start_time"]);
-        let tcoverend = toTimeStamp(tcover["end_time"]);
+        if (resourcemap == null) {
+            resourcemap = {};
+            dsresourcemap[dsid] = resourcemap;
+        }
+        let dataurl = row["resource_data_url"];
+        if (resourcemap[dataurl]) // If this is a duplicate resource, ignore it
+            return;
+        resourcemap[dataurl] = true;
+        
+        let tcoverstart = tcover ? toTimeStamp(tcover["start_time"]) : null;
+        let tcoverend = tcover ? toTimeStamp(tcover["end_time"]) : null;
         if(!ds.time_period.start_date || ds.time_period.start_date > tcoverstart) {
             ds.time_period.start_date = tcoverstart;
         }
@@ -119,8 +105,42 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
             time_period: {
                 start_date: tcoverstart,
                 end_date: tcoverend
-            }
+            },
+            spatial_coverage: scover,
+            selected: true
         });
+    });
+    return datasets;
+}
+
+const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQueryParameters) => {
+    let datasets: Dataset[] = [];
+
+    obj.datasets.map((row: any) => {
+        let dmeta = row["dataset_metadata"];
+        let dsid = row["dataset_id"];
+        let ds : Dataset = {
+            id: dsid,
+            name: row["dataset_name"],
+            region: "",
+            variables: queryParameters.variables,
+            time_period: {
+                start_date: null, //tcover["start_time"].replace(/T.+$/, ''),
+                end_date: null
+            } as DateRange,
+            description: row["dataset_description"] || "",
+            version: dmeta["version"] || "",
+            limitations: dmeta["limitations"] || "",
+            source: {
+                name: dmeta["source"] || "",
+                url: dmeta["source_url"] || "",
+                type: dmeta["source_type"] || ""
+            },
+            datatype: dmeta["datatype"] || "",
+            categories: dmeta["category_tags"] || [],
+            resources: []
+        };
+        datasets.push(ds);
     });
     return datasets;
 }
@@ -178,7 +198,7 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
             })
         }).then((response) => {
             response.json().then((obj) => {
-                let datasets: Dataset[] = getDatasetObjectsFromDCResponse(obj, 
+                let datasets: Dataset[] = getResourceObjectsFromDCResponse(obj, 
                     {variables: driving_variables} as DatasetQueryParameters)
                 dispatch({
                     type: DATASETS_VARIABLES_QUERY,
@@ -193,8 +213,20 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
 
 };
 
+const _createDatasetQueryData = (queryConfig: DatasetQueryParameters) => {
+    var data = {};
+    if(queryConfig.name) {
+      data["dataset_names__in"] = [ queryConfig.name ];
+    }
+    if(queryConfig.variables) {
+      data["standard_variable_names__in"] = queryConfig.variables;
+    }
+    data["limit"] = 5000;
+    return data;
+}
 
-const _createQueryData = (queryConfig: DatasetQueryParameters) => {
+
+const _createResourceQueryData = (queryConfig: DatasetQueryParameters) => {
     var data = {};
     if(queryConfig.spatialCoverage) {
       data["spatial_coverage__intersects"] = [
@@ -215,12 +247,12 @@ const _createQueryData = (queryConfig: DatasetQueryParameters) => {
     if(queryConfig.variables) {
       data["standard_variable_names__in"] = queryConfig.variables;
     }
-    data["limit"] = 1000;
+    data["limit"] = 5000;
     return data;
 }
 
 
-// Query Data Catalog Query
+// Query Data Catalog Query for datasets
 type QueryDatasetsGeneralThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionGeneralQuery>;
 export const queryGeneralDatasets: ActionCreator<QueryDatasetsGeneralThunkResult> = 
         (queryParameters: DatasetQueryParameters ) => (dispatch) => {
@@ -230,12 +262,12 @@ export const queryGeneralDatasets: ActionCreator<QueryDatasetsGeneralThunkResult
         datasets: null,
         loading: true
     });
-    let queryBody = _createQueryData(queryParameters);
+    let queryBody = _createDatasetQueryData(queryParameters);
 
-    fetch(DATA_CATALOG_URI + "/datasets/find", {
+    fetch(DATA_CATALOG_URI + "/find_datasets", {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        mode: "no-cors",
+        //mode: "no-cors",
         body: JSON.stringify(queryBody)
     }).then((response) => {
         response.json().then((obj) => {
@@ -250,17 +282,69 @@ export const queryGeneralDatasets: ActionCreator<QueryDatasetsGeneralThunkResult
     });
 };
 
-// Query Dataset Details
-type QueryDataDetailThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionDetail>;
-export const queryDatasetDetail: ActionCreator<QueryDataDetailThunkResult> = (datasetid: string) => (dispatch) => {
-    if(datasetid) {
-        let dataset = {
-            id: datasetid,
-            name: datasetid
-        } as DatasetDetail;
-        dispatch({
-            type: DATASETS_DETAIL,
-            dataset: dataset
-        });        
-    }
+// Query Data Catalog for resources of a particular dataset
+type QueryDatasetResourcesThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionDatasetResourceQuery>;
+export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResult> = 
+        (dsid: string) => (dispatch) => {
+    dispatch({
+        type: DATASETS_RESOURCE_QUERY,
+        dsid: dsid,
+        dataset: null,
+        loading: true
+    });
+    let queryBody = {
+        "dataset_ids__in": [dsid],
+        "limit": 2000
+    };
+
+    fetch(DATA_CATALOG_URI + "/datasets/find", {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        //mode: "no-cors",
+        body: JSON.stringify(queryBody)
+    }).then((response) => {
+        response.json().then((obj) => {
+            let datasets: Dataset[] = getResourceObjectsFromDCResponse(obj, {})
+            let dataset = datasets.length > 0 ? datasets[0] : null
+            dispatch({
+                type: DATASETS_RESOURCE_QUERY,
+                dsid: dsid,
+                dataset: dataset,
+                loading: false
+            });
+        })
+    });
+};
+
+// Query Data Catalog by Region
+type QueryDatasetsByRegionThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionRegionQuery>;
+export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResult> = (region: Region) => (dispatch) => {
+    dispatch({
+        type: DATASETS_REGION_QUERY,
+        region: region,
+        datasets: null,
+        loading: true
+    });
+
+    fetch(DATA_CATALOG_URI + "/datasets/find", {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            spatial_coverage__within: [
+                region.bounding_box.xmin, region.bounding_box.ymin, 
+                region.bounding_box.xmax, region.bounding_box.ymax 
+            ],
+            limit: 5000
+        })
+    }).then((response) => {
+        response.json().then((obj) => {
+            let datasets: Dataset[] = getResourceObjectsFromDCResponse(obj, {} as DatasetQueryParameters)
+            dispatch({
+                type: DATASETS_REGION_QUERY,
+                region: region,
+                datasets: datasets,
+                loading: false
+            });
+        })
+    });
 };

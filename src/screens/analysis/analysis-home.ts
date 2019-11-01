@@ -1,4 +1,4 @@
-import { html, customElement, css } from 'lit-element';
+import { html, customElement, css, property } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
 import { SharedStyles } from '../../styles/shared-styles';
@@ -18,6 +18,8 @@ store.addReducers({
 
 @customElement('analysis-home')
 export class AnalysisHome extends connect(store)(PageViewElement) {
+    @property({type: String})
+    private _selectedPathwayId : string = '';
 
     static get styles() {
         return [
@@ -40,15 +42,25 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
                 nav.push({label: 'Compose Visualizations', url: 'analysis/aggregate'});
                 break;
             case 'report':
-                nav.push({label: 'Prepare Reports', url: 'analysis/report'});
+                nav.push({label: 'Available Reports', url: 'analysis/report'});
+                if (this._selectedPathwayId) {
+                    nav.push({label: 'Available Reports', url: 'analysis/report'})
+                }
                 break;
             default:
                 break;
         }
 
+        return html`<analysis-report class="page" ?active="${this._subpage == 'report'}"></analysis-report>`;
+
+        /*
         return html`
-            <nav-title .nav="${nav}"></nav-title>
+            <nav-title .nav="${nav}" max="2"></nav-title>
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
+                <a href="${this._regionid}/analysis/report">
+                    <wl-icon>search</wl-icon>
+                    <div>Browse reports</div>
+                </a>
                 <a href="${this._regionid}/analysis/compare">
                     <wl-icon style="--icon-size: 81px;">compare</wl-icon>
                     <div>Sensitivity analysis</div>
@@ -61,10 +73,6 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
                     <wl-icon style="--icon-size: 81px;">insert_chart</wl-icon>
                     <div>Compose visualizations</div>
                 </a>
-                <a href="${this._regionid}/analysis/report">
-                    <wl-icon>attachment</wl-icon>
-                    <div>Prepare reports</div>
-                </a>
             </div>
 
             <!--TODO: Change the name of the files too -->
@@ -73,11 +81,15 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
             <analysis-aggregate class="page" ?active="${this._subpage == 'aggregate'}"></analysis-aggregate>
             <analysis-report class="page" ?active="${this._subpage == 'report'}"></analysis-report>
         `
+        */
     }
 
     stateChanged(state: RootState) {
         super.setRegionId(state);
         super.setSubPage(state);
+        if (state.ui) {
+            this._selectedPathwayId = state.ui.selected_pathwayid;
+        }
     }
 }
 
