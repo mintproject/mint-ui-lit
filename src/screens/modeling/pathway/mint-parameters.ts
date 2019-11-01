@@ -279,45 +279,54 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         hideDialog("progressDialog", this.shadowRoot!);
     }
 
+    getModelInputEnsembles(model: Model) {
+        let dataEnsemble = Object.assign({}, this.pathway.model_ensembles[model.id]);
+        let inputIds = [];
+
+        model.input_files.map((io) => {
+            inputIds.push(io.id);
+            if(!io.value) {
+                // Expand a dataset to it's constituent resources
+                // FIXME: Create a collection if the model input has dimensionality of 1
+                if(dataEnsemble[io.id]) {
+                    let nensemble = [];
+                    dataEnsemble[io.id].map((dsid) => {
+                        let ds = this.pathway.datasets[dsid];
+                        let selected_resources = ds.resources.filter((res) => res.selected);
+                        // Fix for older saved resources
+                        if(selected_resources.length == 0) 
+                            selected_resources = ds.resources;
+                        nensemble = nensemble.concat(nensemble, selected_resources);
+                    });
+                    dataEnsemble[io.id] = nensemble;
+                }
+            }
+            else {
+                dataEnsemble[io.id] = io.value.resources as any[];
+            }
+        })
+        
+        // Add adjustable parameters to the input ids
+        model.input_parameters.map((io) => {
+            if(!io.value) inputIds.push(io.id);
+        })
+        // Get cartesian product of inputs to get all model configurations
+        this._progress_abort = false;
+
+        return [dataEnsemble, inputIds];
+    }
+
     async _saveAndRunExecutableEnsembles() {
         if(!this.pathway.executable_ensemble_summary)
             this.pathway.executable_ensemble_summary = {};
-
-        await loginToWings(this.prefs);
         
         Object.keys(this.pathway.model_ensembles).map( async(modelid) => {
-            let dataEnsemble = Object.assign({}, this.pathway.model_ensembles[modelid]);
-
             let model = this.pathway.models[modelid];
-            // Get input ids
-            let inputIds = [];
-            model.input_files.map((io) => {
-                if(!io.value) {
-                    inputIds.push(io.id);
-
-                    // Expand a dataset to it's constituent resources
-                    // FIXME: Create a collection if the model input has dimensionality of 1
-                    if(dataEnsemble[io.id]) {
-                        let nensemble = [];
-                        dataEnsemble[io.id].map((dsid) => {
-                            let ds = this.pathway.datasets[dsid];
-                            let selected_resources = ds.resources.filter((res) => res.selected);
-                            // Fix for older saved resources
-                            if(selected_resources.length == 0) 
-                                selected_resources = ds.resources;
-                            nensemble = nensemble.concat(nensemble, selected_resources);
-                        });
-                        dataEnsemble[io.id] = nensemble;
-                    }
-                }
-            })
-            model.input_parameters.map((io) => {
-                if(!io.value) inputIds.push(io.id);
-            })
-            // Get cartesian product of inputs to get all model configurations
-            this._progress_abort = false;
-    
+            let ensemble_details = this.getModelInputEnsembles(model);
+            let dataEnsemble = ensemble_details[0] as DataEnsembleMap;
+            let inputIds = ensemble_details[1] as string[];
             let configs = getModelInputConfigurations(dataEnsemble, inputIds);
+            
             // FIXME: Hack for restricting the number of runs for analysts
             if(this.user.email.match(/^analyst/i) && configs.length > 100) {
                 alert("Error: Too many Input combinations: " + configs.length +". Max allowed : " + 100);
@@ -335,6 +344,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                 deleteAllPathwayEnsembleIds(this.scenario.id, this.pathway.id, modelid);
 
                 // Setup Model for execution on Wings
+                await loginToWings(this.prefs);
                 let workflowid = await setupModelWorkflow(model, this.pathway, this.prefs);
                 let tpl_package = await fetchWingsTemplate(workflowid, this.prefs);
 

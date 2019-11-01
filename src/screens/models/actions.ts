@@ -166,11 +166,13 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                                 variables: []
                             };
                             if(value.fixedValueURL) {
+                                let dcids = value.fixedValueDCId.split(/\s*,\s*/);
+                                let urls = value.fixedValueURL.split(/\s*,\s*/);
                                 io.value = {
-                                    id: value.fixedValueDCId,
-                                    resources: [{
-                                        url: value.fixedValueURL
-                                    }]
+                                    id: dcids[0],
+                                    resources: urls.map((url) => { return {
+                                        url: url
+                                    }})
                                 } as Dataset;
                             }
                             fileio[value.io] = io;
