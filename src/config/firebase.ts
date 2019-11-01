@@ -4,11 +4,11 @@ import "firebase/firestore";
 import { FIREBASE_GOOGLE_API_KEY } from "./google-api-key";
 
 const firebaseConfig = {
-    apiKey: FIREBASE_GOOGLE_API_KEY, 
+    apiKey: FIREBASE_GOOGLE_API_KEY,
     authDomain: "mint-full.firebaseapp.com",
     databaseURL: "https://mint-full.firebaseio.com",
     projectId: "mint-full",
-    storageBucket: "",
+    storageBucket: "mint-full.appspot.com",
     messagingSenderId: "128464392367",
     appId: "1:128464392367:web:97eaa44bc1fcb5296c445a"
 };

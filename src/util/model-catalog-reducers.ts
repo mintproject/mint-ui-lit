@@ -193,7 +193,7 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
             }
         case FETCH_METADATA_NOIO_FOR_MODEL_CONFIG:
             let newMetadataNoIO = {...state.metadata};
-            if (action.data.length>0) newMetadataNoIO[action.uri] = action.data;
+            if (action.data.length>0 && !newMetadataNoIO[action.uri]) newMetadataNoIO[action.uri] = action.data;
             return {
                 ...state,
                 metadata: newMetadataNoIO

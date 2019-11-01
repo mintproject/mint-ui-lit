@@ -3,7 +3,7 @@ import { RootState } from "../../app/store";
 import { ActionCreator, Action } from "redux";
 import { EXAMPLE_REGION_DATA } from "../../offline_data/sample_scenarios";
 import { db } from "../../config/firebase";
-import { RegionList, Region } from "./reducers";
+import { RegionList, Region, BoundingBox } from "./reducers";
 import { OFFLINE_DEMO_MODE } from "../../app/actions";
 
 export const REGIONS_LIST = 'REGIONS_LIST';
@@ -38,6 +38,7 @@ export const listTopRegions: ActionCreator<ListRegionsThunkResult> = () => (disp
             var data = doc.data();
             data.id = doc.id;
             regions[doc.id] = data as Region;
+            regions[doc.id].bounding_box = _calculateBoundingBox(regions[doc.id].geojson_blob);
         });
         dispatch({
             type: REGIONS_LIST,
@@ -45,6 +46,34 @@ export const listTopRegions: ActionCreator<ListRegionsThunkResult> = () => (disp
         });
     });
 };
+
+
+const _calculateBoundingBox = (geojsonBlob) => {
+    let regionGeoJson = JSON.parse(geojsonBlob);
+    var xmin=99999, ymin=99999, xmax=-99999, ymax=-99999;
+    var coords = regionGeoJson.features ? 
+      regionGeoJson.features[0].geometry.coordinates[0] :
+      regionGeoJson.geometry.coordinates[0];
+
+    for(var i=0; i<coords.length; i++) {
+      var c = coords[i];
+      if(c[0] < xmin)
+        xmin = c[0];
+      if(c[1] < ymin)
+        ymin = c[1];
+      if(c[0] > xmax)
+        xmax = c[0];
+      if(c[1] > ymax)
+        ymax = c[1];
+    }
+
+    return {
+      xmin: xmin-0.01, 
+      ymin: ymin-0.01, 
+      xmax: xmax+0.01, 
+      ymax: ymax+0.01
+    } as BoundingBox;
+  }
 
 // Query Regions
 type QueryRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionQuery>;
@@ -78,6 +107,7 @@ export const queryRegions: ActionCreator<QueryRegionsThunkResult> = (parentid: s
             var data = doc.data();
             data.id = doc.id;
             regions[doc.id] = data as Region;
+            regions[doc.id].bounding_box = _calculateBoundingBox(regions[doc.id].geojson_blob);
         });
         dispatch({
             type: REGIONS_QUERY,

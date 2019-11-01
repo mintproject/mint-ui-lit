@@ -251,12 +251,26 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         await loginToWings(this.prefs);
         
         Object.keys(this.pathway.model_ensembles).map( async(modelid) => {
-            let dataEnsemble = this.pathway.model_ensembles[modelid];
+            let dataEnsemble = Object.assign({}, this.pathway.model_ensembles[modelid]);
+
             let model = this.pathway.models[modelid];
             // Get input ids
             let inputIds = [];
             model.input_files.map((io) => {
-                if(!io.value) inputIds.push(io.id);
+                if(!io.value) {
+                    inputIds.push(io.id);
+
+                    // Expand a dataset to it's constituent resources
+                    // FIXME: Create a collection if the model input has dimensionality of 1
+                    if(dataEnsemble[io.id]) {
+                        let nensemble = [];
+                        dataEnsemble[io.id].map((dsid) => {
+                            let ds = this.pathway.datasets[dsid];
+                            nensemble = nensemble.concat(nensemble, ds.resources);
+                        });
+                        dataEnsemble[io.id] = nensemble;
+                    }
+                }
             })
             model.input_parameters.map((io) => {
                 if(!io.value) inputIds.push(io.id);

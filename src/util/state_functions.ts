@@ -9,6 +9,7 @@ import { hideNotification } from "./ui_functions";
 import {Md5} from 'ts-md5/dist/md5'
 import { db } from "config/firebase";
 import { Model } from "screens/models/reducers";
+import { isObject } from "util";
 
 export const removeDatasetFromPathway = (pathway: Pathway,
         datasetid: string, modelid: string, inputid: string) => {
@@ -244,9 +245,7 @@ export const runModelEnsembles = async(pathway: Pathway,
             }
             else if(bindings[io.id]) {
                 // We have a dataset binding from the user for it
-                let ds = pathway.datasets[bindings[io.id]];
-                dsid = ds.id;
-                resources = io.value.resources;
+                resources = [ bindings[io.id] as DataResource ];
             }
             if(resources.length > 0) {
                 let type = io.type.replace(/^.*#/, '');
@@ -372,6 +371,11 @@ export const getPathwayDatasetsStatus = (pathway:Pathway) => {
 }
 
 export const getPathwayParametersStatus = (pathway:Pathway) => {
+    let sum = pathway.executable_ensemble_summary;
+    if(!sum || Object.keys(sum).length == 0) {
+        return TASK_NOT_STARTED;
+    }
+    
     //console.log(pathway.model_ensembles);
     if(getPathwayDatasetsStatus(pathway) != TASK_DONE)
         return TASK_NOT_STARTED;
@@ -395,11 +399,12 @@ export const getPathwayParametersStatus = (pathway:Pathway) => {
 
 export const getPathwayRunsStatus = (pathway:Pathway) => {
     let sum = pathway.executable_ensemble_summary;
-    if (sum) {
+    if (sum && Object.keys(sum).length > 0) {
         let ok = true;
         Object.keys(sum).map((modelid) => {
             let summary = sum[modelid];
-            if(summary.successful_runs + summary.failed_runs != summary.total_runs)
+            if(summary.total_runs == 0 || 
+                    (summary.successful_runs + summary.failed_runs != summary.total_runs))
                 ok = false;
         });
         if(ok)
@@ -532,7 +537,9 @@ export const getEnsembleHash = (ensemble: ExecutableEnsemble) : string => {
     let str = ensemble.modelid;
     let varids = Object.keys(ensemble.bindings).sort();
     varids.map((varid) => {
-        str += varid + "=" + ensemble.bindings[varid] + "&";
+        let binding = ensemble.bindings[varid];
+        let bindingid = isObject(binding) ? (binding as DataResource).id : binding;
+        str += varid + "=" + bindingid + "&";
     })
     return Md5.hashStr(str).toString();
 }

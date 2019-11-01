@@ -321,8 +321,6 @@ export const deleteAllPathwayEnsembleIds = async (scenarioid: string, pathwayid:
 
 export const getAllPathwayEnsembleIds = async (scenarioid: string, pathwayid: string,
         modelid: string) : Promise<string[]> => {
-    let batchid = 0;
-    let ensembleids : string[] = [];
     let pathwayEnsembleIdsRef = db.collection("scenarios").doc(scenarioid).collection("pathways").doc(pathwayid).collection("ensembleids")
         .where("modelid", "==", modelid);
 
@@ -451,7 +449,7 @@ export const updatePathway = (scenario: Scenario, pathway: Pathway) =>  {
     delete npathway.unsubscribe;
     let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc(pathway.id);
     console.log(scenario.id + " ---- update pathway: " + pathway.id);
-    console.log(pathway);
+    //console.log(pathway);
     return pathwayRef.set(npathway); //.then(() => updateScenario(scenario));
 };
 

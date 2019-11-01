@@ -279,8 +279,6 @@ export class MintApp extends connect(store)(LitElement) {
   protected firstUpdated() {
     installRouter((location) => store.dispatch(navigate(decodeURIComponent(location.pathname))));
     store.dispatch(fetchUser());
-    store.dispatch(fetchUserPreferences());
-    store.dispatch(listTopRegions());
   }
 
   protected updated(changedProps: PropertyValues) {
@@ -298,19 +296,17 @@ export class MintApp extends connect(store)(LitElement) {
   stateChanged(state: RootState) {
     this._page = state.app!.page;
     this.user = state.app!.user!;
-    /*
-    if(state.app!.prefs && !this._once) {
-      this._once = true;
-      console.log(state.app!.prefs);
-      runPathwayExecutableEnsembles(null, null, state.app!.prefs, null);
-    }*/
+    
+    if(this.user) {
+      if(!state.app.prefs)
+        store.dispatch(fetchUserPreferences());
+      if(!state.regions || !state.regions.regions)
+        store.dispatch(listTopRegions());
+    }
 
     let regionid = state.ui.selected_top_regionid;
     if (state && state.regions && state.regions.regions && state.regions.regions[regionid]) {
         this._selectedRegion = state.regions.regions[regionid].name;
     }
-    /*if(regionid) {
-      this._selectedRegion = regionid.replace(/_/g, ' ').toUpperCase();
-    }*/
   }
 }

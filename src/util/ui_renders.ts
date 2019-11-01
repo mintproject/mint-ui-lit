@@ -48,6 +48,10 @@ export const renderNotifications = () => {
         <wl-icon slot="icon">error</wl-icon>
         <span>Please select at least two models.</span>
     </wl-snackbar>
+    <wl-snackbar id="cantSave" fixed backdrop>
+        <wl-icon slot="icon">error</wl-icon>
+        <span>Cannot save in this moment. Sorry!</span>
+    </wl-snackbar>
     `;
 }
 

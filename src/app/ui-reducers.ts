@@ -9,6 +9,7 @@ export interface UIState {
     selected_subgoalid?:string
     selected_pathwayid?:string
     selected_pathway_section?:string
+    selected_threadid?:string
 }
 
 const INITIAL_STATE: UIState = {};
@@ -23,7 +24,7 @@ const ui: Reducer<UIState, RootAction> = (state = INITIAL_STATE, action) => {
         case UI_SELECT_THREAD:
             return {
                 ...state,
-                selected_top_regionid: action.threadid,
+                selected_threadid: action.threadid,
             }
         case UI_SELECT_SCENARIO:
             return {

@@ -54,7 +54,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
             this.pathway.visualizations = [
                 {
                     type: 'web',
-                    url: 'https://viz.mint.isi.edu/economic'
+                    url: 'https://dev.viz.mint.isi.edu/economic'
                 }
             ]
         }
@@ -62,7 +62,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
             this.pathway.visualizations = [
                 {
                     type: 'web',
-                    url: 'https://viz.mint.isi.edu/bokeh/cycles_viz'
+                    url: 'https://dev.viz.mint.isi.edu/cycles'
                 }
             ]
         }
