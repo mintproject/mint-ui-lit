@@ -241,13 +241,14 @@ export const runModelEnsembles = async(pathway: Pathway,
         model.input_files.map((io) => {
             let resources : DataResource[] = [];
             let dsid = null;
-            if(io.value) {
-                dsid = io.value.id;
-                resources = io.value.resources;
-            }
-            else if(bindings[io.id]) {
+            if(bindings[io.id]) {
                 // We have a dataset binding from the user for it
                 resources = [ bindings[io.id] as DataResource ];
+            }
+            else if(io.value) {
+                // There is a hardcoded value in the model itself
+                dsid = io.value.id;
+                resources = io.value.resources;
             }
             if(resources.length > 0) {
                 let type = io.type.replace(/^.*#/, '');
