@@ -1412,6 +1412,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (this._sampleVis) {
             this._sampleVis.forEach((sv, i) => {
                 let newItem = {label: 'Sample visualization ' + (i>0? i+1 : ''), src: sv.url, desc: sv.desc};
+                if (sv.source) newItem['source'] = {label: sv.source.split('/').pop(), url: sv.source};
                 items.push(newItem);
             });
         }
