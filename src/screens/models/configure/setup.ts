@@ -277,9 +277,17 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 }
             })
         }
-        let keywords = ''
+        let keywords = '';
         if (this._setup.keywords) {
             keywords = this._setup.keywords[0].split(/ *; */).join(', ');
+        }
+
+        let regions = '';
+        if (this._setup.hasRegion) {
+            regions = this._setup.hasRegion
+                .map(r => typeof r === 'object' ? r.id : r)
+                .map(r => r.split('/').pop().replace(/_|-/g, ' '))
+                .join(', ');
         }
 
         return html`
@@ -306,6 +314,15 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     ${this._editing ? html`
                     <input id="edit-config-keywords" type="text" value="${keywords}"/>
                     ` : keywords}
+                </td>
+            </tr>
+
+            <tr>
+                <td>Region:</td>
+                <td>
+                    ${this._editing ? html`
+                    <input id="edit-config-regions" type="text" value="${regions}"/>
+                    ` : regions}
                 </td>
             </tr>
 
@@ -512,9 +529,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             </tbody>
         </table>
 
-        ${console.log(this._parameters)}
-        ${console.log(this._inputs)}
-
         ${this._editing? html`
         <div style="float:right; margin-top: 1em;">
             <wl-button @click="${this._cancel}" style="margin-right: 1em;" flat inverted>
@@ -638,6 +652,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
 
             if (state.modelCatalog) {
                 let db = state.modelCatalog;
+                this.setRegion(state);
 
                 // Set selected resources
                 if (!this._model && db.models && this._selectedModel && db.models[this._selectedModel]) {

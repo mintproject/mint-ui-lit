@@ -2,6 +2,7 @@ import { Reducer } from "redux";
 import { RootAction } from "../app/store";
 import { START_LOADING, END_LOADING, START_POST, END_POST,
          PERSON_GET, PERSONS_GET, ALL_PERSONS, PERSON_DELETE, 
+         REGION_GET, REGIONS_GET, ALL_REGIONS, REGION_DELETE, 
          PROCESS_GET, PROCESSES_GET, ALL_PROCESSES,  PROCESS_DELETE,
          PARAMETER_GET, PARAMETERS_GET, ALL_PARAMETERS, PARAMETER_DELETE,
          MODEL_CONFIGURATION_GET, MODEL_CONFIGURATIONS_GET, ALL_MODEL_CONFIGURATIONS, MODEL_CONFIGURATION_DELETE,
@@ -14,9 +15,7 @@ export interface ModelCatalogState {
     loadedAll: {[key:string]: boolean},
     created: {[key:string]: string}, //Here we assign some identifier to a POST request, when complete stores the URI
     models: any;
-    version: any;
     versions: any;
-    configuration: any;
     configurations: any;
     parameters: any;
     datasetSpecifications: any;
@@ -25,6 +24,7 @@ export interface ModelCatalogState {
     processes: any;
     timeIntervals: any;
     softwareImages: any;
+    regions: any;
 }
 
 const INITIAL_STATE: ModelCatalogState = { 
@@ -89,7 +89,7 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             return {
                 ...state,
                 loadedAll: tmp,
-                versions: {...state.version, ...action.payload}
+                versions: {...state.versions, ...action.payload}
             }
 
         case MODEL_CONFIGURATION_DELETE:
@@ -110,7 +110,7 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             return {
                 ...state,
                 loadedAll: tmp,
-                configurations: {...state.configuration, ...action.payload}
+                configurations: {...state.configurations, ...action.payload}
             }
 
         case PARAMETER_DELETE:
@@ -138,6 +138,27 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             return {
                 ...state,
                 datasetSpecifications: {...state.datasetSpecifications, ...action.payload}
+            }
+
+        case REGION_DELETE:
+            tmp = { ...state.regions };
+            delete tmp[action.uri];
+            return {
+                ...state,
+                regions: tmp
+            }
+        case REGION_GET:
+            return {
+                ...state,
+                regions: {...state.regions, ...action.payload}
+            }
+        case REGIONS_GET:
+            tmp = { ...state.loadedAll };
+            tmp[ALL_REGIONS] = true;
+            return {
+                ...state,
+                loadedAll: tmp,
+                regions: {...state.regions, ...action.payload}
             }
 
         case PERSON_DELETE:
