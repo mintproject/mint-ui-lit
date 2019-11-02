@@ -4,7 +4,7 @@ import { RootState } from "../../app/store";
 import { Dataset, DatasetDetail, DatasetQueryParameters } from "./reducers";
 import { EXAMPLE_DATASETS_QUERY } from "../../offline_data/sample_datasets";
 import { OFFLINE_DEMO_MODE } from "../../app/actions";
-import { IdMap } from "app/reducers";
+import { IdMap, MintPreferences } from "app/reducers";
 import { DateRange } from "screens/modeling/reducers";
 import { toTimeStamp, fromTimeStampToString, fromTimeStampToString2 } from "util/date-utils";
 import { Region } from "screens/regions/reducers";
@@ -39,8 +39,6 @@ export interface DatasetsActionDatasetResourceQuery extends Action<'DATASETS_RES
 export interface DatasetsActionDetail extends Action<'DATASETS_DETAIL'> { dataset: DatasetDetail };
 
 export type DatasetsAction = DatasetsActionVariablesQuery | DatasetsActionGeneralQuery | DatasetsActionRegionQuery | DatasetsActionDatasetResourceQuery ;
-
-const DATA_CATALOG_URI = "https://api.mint-data-catalog.org";
 
 const getResourceObjectsFromDCResponse = (obj: any, queryParameters: DatasetQueryParameters) => {
     let dsmap: IdMap<Dataset> = {};
@@ -148,7 +146,8 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
 // Query Data Catalog by Variables
 type QueryDatasetsThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionVariablesQuery>;
 export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> = 
-        (modelid: string, inputid: string, driving_variables: string[], dates: DateRange, region: Region ) => (dispatch) => {
+        (modelid: string, inputid: string, driving_variables: string[], dates: DateRange, region: Region, 
+            prefs:MintPreferences ) => (dispatch) => {
     
     if(OFFLINE_DEMO_MODE) {
         let datasets = [] as Dataset[];
@@ -183,7 +182,7 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
             loading: true
         });
 
-        fetch(DATA_CATALOG_URI + "/datasets/find", {
+        fetch(prefs.data_catalog_api + "/datasets/find", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
@@ -255,7 +254,7 @@ const _createResourceQueryData = (queryConfig: DatasetQueryParameters) => {
 // Query Data Catalog Query for datasets
 type QueryDatasetsGeneralThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionGeneralQuery>;
 export const queryGeneralDatasets: ActionCreator<QueryDatasetsGeneralThunkResult> = 
-        (queryParameters: DatasetQueryParameters ) => (dispatch) => {
+        (queryParameters: DatasetQueryParameters, prefs: MintPreferences ) => (dispatch) => {
     dispatch({
         type: DATASETS_GENERAL_QUERY,
         query: queryParameters,
@@ -264,7 +263,7 @@ export const queryGeneralDatasets: ActionCreator<QueryDatasetsGeneralThunkResult
     });
     let queryBody = _createDatasetQueryData(queryParameters);
 
-    fetch(DATA_CATALOG_URI + "/find_datasets", {
+    fetch(prefs.data_catalog_api + "/find_datasets", {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         //mode: "no-cors",
@@ -285,7 +284,7 @@ export const queryGeneralDatasets: ActionCreator<QueryDatasetsGeneralThunkResult
 // Query Data Catalog for resources of a particular dataset
 type QueryDatasetResourcesThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionDatasetResourceQuery>;
 export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResult> = 
-        (dsid: string) => (dispatch) => {
+        (dsid: string, prefs: MintPreferences) => (dispatch) => {
     dispatch({
         type: DATASETS_RESOURCE_QUERY,
         dsid: dsid,
@@ -297,7 +296,7 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
         "limit": 2000
     };
 
-    fetch(DATA_CATALOG_URI + "/datasets/find", {
+    fetch(prefs.data_catalog_api + "/datasets/find", {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         //mode: "no-cors",
@@ -318,7 +317,8 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
 
 // Query Data Catalog by Region
 type QueryDatasetsByRegionThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionRegionQuery>;
-export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResult> = (region: Region) => (dispatch) => {
+export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResult> = 
+        (region: Region, prefs: MintPreferences) => (dispatch) => {
     dispatch({
         type: DATASETS_REGION_QUERY,
         region: region,
@@ -326,7 +326,7 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
         loading: true
     });
 
-    fetch(DATA_CATALOG_URI + "/datasets/find", {
+    fetch(prefs.data_catalog_api + "/datasets/find", {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({

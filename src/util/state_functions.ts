@@ -607,7 +607,7 @@ export const sendDataForIngestion = (scenarioid: string, subgoalid: string, thre
     });    
 }
 
-export const getVisualizationURL = (pathway: Pathway) => {
+export const getVisualizationURL = (pathway: Pathway, prefs: UserPreferences) => {
     if(getPathwayResultsStatus(pathway) == "TASK_DONE") {
         let responseV = pathway.response_variables.length > 0?
             getVariableLongName(pathway.response_variables[0]) : '';
@@ -616,9 +616,9 @@ export const getVisualizationURL = (pathway: Pathway) => {
 
         // FIXME: Hack
         if(responseV == "Potential Crop Production")
-            return "https://dev.viz.mint.isi.edu/cycles?thread_id=" + pathway.id;
+            return prefs.mint.visualization_url + "/cycles?thread_id=" + pathway.id;
         else
-            return "https://dev.viz.mint.isi.edu/scatter_plot?thread_id=" + pathway.id;
+            return prefs.mint.visualization_url + "/scatter_plot?thread_id=" + pathway.id;
     }
     return null;
 }
