@@ -172,13 +172,13 @@ export class MintApp extends connect(store)(LitElement) {
                 html`
                 <a href='${this._selectedRegion.id}/regions'
                     class=${(this._page == 'regions'? 'active': '')}
-                  >Select Areas</a>                
+                  >Explore Areas</a>                
                 <a href='${this._selectedRegion.id}/models'
                     class=${(this._page == 'models'? 'active': '')}
                   >Prepare Models</a>
                 <a href='${this._selectedRegion.id}/datasets'
                     class=${(this._page == 'datasets'? 'active': '')}
-                  >Explore Data</a>                  
+                  >Browse Datasets</a>                  
                 <a href='${this._selectedRegion.id}/modeling'
                     class=${(this._page == 'modeling') ? 'active': ''}
                   class="active">Use Models</a>

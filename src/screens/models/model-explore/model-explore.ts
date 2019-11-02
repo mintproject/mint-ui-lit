@@ -87,7 +87,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             #model-search-results {
                 margin: 0 auto;
                 overflow: scroll;
-                height: calc(100% - 100px);
+                height: calc(100% - 115px);
                 width: 100%;
             }
 

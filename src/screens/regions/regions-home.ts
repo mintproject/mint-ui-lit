@@ -42,7 +42,7 @@ export class RegionsHome extends connect(store)(PageViewElement) {
     }
 
     protected render() {
-        let nav = [{label:'Select Areas', url:'regions'}] 
+        let nav = [{label:'Explore Areas', url:'regions'}] 
         switch (this._subpage) {
             case 'manual':
                 nav.push({label: 'Manual Outline', url: 'regions/manual'});
