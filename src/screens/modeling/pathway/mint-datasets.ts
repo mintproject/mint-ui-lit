@@ -171,7 +171,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                         ${resources.length > 1 ?
                                             html`
                                                 <br />
-                                                ( ${selected_resources.length} / ${resources.length} resources - 
+                                                ( ${selected_resources.length} / ${resources.length} files - 
                                                 <a style="cursor:pointer"
                                                     @click="${() => this._selectDatasetResources(dataset, true)}">Change</a> )
                                             `

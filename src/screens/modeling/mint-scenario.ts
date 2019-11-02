@@ -155,7 +155,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                 class="actionIcon addIcon">note_add</wl-icon>
                         </div>
                         <div style="font-size:12.5px; color: #888; padding:5px; padding-left: 10px; padding-top:0px;">
-                            Tasks are used to model indicators relevant to the problem. 
+                            Several modeling tasks can be created for a given problem statement. 
                             <a style="cursor:pointer" 
                                 @click="${() => showDialog('tasksHelpDialog', this.shadowRoot)}">Read more</a>
                         </div>
@@ -330,10 +330,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
             <h3 slot="header">Tasks</h3>
             <div slot="content">
                 <p>
-                    Tasks are used to model indicators relevant to the problem. 
-                    For instance, “Flooding effect on crop production during the growing season.” 
-                    Note that the timeframe for the task need not be the same as the problem statement. 
-                    For instance, flooding may be relevant during the growing season leading to the lean season.
+                    Several modeling tasks can be created for a given problem statement. Each modeling task is associated with an indicator relevant to the decision that want to inform or support, or a different time period, or a different driving variable. There are two types of indicators: indices and modeling variables. For example, the problem statement of food security in South Sudan described above, one modeling task can be framed as “Flooding effect on crop production during the growing season”, and a separate modeling task could be “Potential crop production without flooding”. Note that the time frame of the tasks does not necessarily reflect that of the problem statement. In the first example, flooding is relevant to both the planting time and growing season of an agriculture model which would place the start of the simulation earlier than the problem’s time frame. 
                 </p>        
             </div>
             <div slot="footer">

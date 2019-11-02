@@ -87,7 +87,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             #model-search-results {
                 margin: 0 auto;
                 overflow: scroll;
-                height: calc(100% - 100px);
+                height: calc(100% - 115px);
                 width: 100%;
             }
 
@@ -174,13 +174,16 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             ` :html``}
             ${this._comparing<2? html`
             <wl-text class="explanation">
-                The model catalog browser lets you explore the characteristics of different models
-                included in MINT. Models include different configurations that expose a unique way
-                of running that model; and configuration setups that provide default files and
-                parameters to facilitate their execution in MINT.
+                The MINT model browser allows you to learn about the different models included in MINT.
+                Each model can have separate configurations, each representing a unique set up of that
+                model (particular choices of processes, regions, etc).
+                Each configuration can have separate setups that provide different default values for 
+                files and parameters.
                 <br/>
-                In the search bar below you can search a model by its name, keywords or variables.
-                For example try searching <i>'fertilizer'</i> or <i>'flow'</i>.
+                In the search bar below you can search models in two ways, which you can choose on the right.
+                One is to search their descriptions using a model name, type (e.g., agriculture),
+                keyword (fertilizer), and areas (e.g. Pongo).
+                Another is to search their variables (e.g., rainfall).
             </wl-text>
             <div id="model-search-form">
                 <!-- https://github.com/andreasbm/weightless/issues/58 -->

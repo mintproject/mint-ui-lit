@@ -64,6 +64,9 @@ export class AppHome extends connect(store)(PageViewElement) {
             height: calc(100% - 240px);
           }
           
+		  .middle > p {
+			margin-bottom: 5px;
+		  }
         `
       ];
     }
@@ -88,8 +91,11 @@ export class AppHome extends connect(store)(PageViewElement) {
             Different analysts may have different expertise and run different types of models.  Each analyst is given a separate account in MINT, and their activities noted with their user name.  All analysts can see the same information in their interface, so when one completes a task all the results are accessible to all the analysts.  Analysts can communicate through the Messages Board on the top right.
             </p>
             <p>
-            You can move through the steps above in order to: 1) select regions of interest and areas for modeling (river basins, administrative areas, etc), 2) browse the data available for those areas, 3) browse the models that have been customized for those areas, 4) use the models by setting up initial conditions (including interventions) and running them, and 5) preparing reports that summarize the analyses.
+            As soon as you get started by selecting a region, a set of steps will appear at the top of the screen that will guide you to: 1) select areas of interest for modeling (river basins, administrative areas, etc), 2) browse the data available for those areas, 3) browse the models that have been customized for those areas, 4) use the models by setting up initial conditions (including interventions) and running them, and 5) preparing reports that summarize the analyses.
             </p>
+			<p>
+			<a target="_blank" href="http://bit.ly/MINT-intro">An introduction to MINT, training materials, a walkthrough video of the user interface, a glossary, and an FAQ are available here.</a>
+			</p>
             <wl-title level="4">Select a region by hovering over it and clicking.</wl-title>
         </div>
         

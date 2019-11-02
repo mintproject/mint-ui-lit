@@ -61,23 +61,38 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 height: var(--map-height, calc(100% - 45px));
                 width: 100%;
             }
+
+            .desc-grid {
+                display: grid;
+                grid-template-columns: auto 22px;
+            }
             `
         ];
     }
 
+	// TODO: maybe move the description text outside and move the button to other place.
     protected render() {
         return html`
-        ${this.regionType ? 
-            html`
-            <p>
+        <div class="desc-grid">
+            <div style="grid-column: 1 / 2;">
+            ${this.regionType ?
+                ( this.regionType === 'Administrative' ? html`
+                The following map shows the administrative regions in 
+                ${this._parentRegionName || this._regionid}.`
+                : ( this.regionType === 'Agriculture' && this._regionid === 'ethiopia' ? html`
+                The following map shows areas of interest for agriculture modeling in Ethiopia.  These are small river catchments (Level 6 Catchments) which nest smaller sub-catchment suitable for granular analysis of agricultural production.  Colors reflect the fraction of cropland per watershed with darker green reflecting no crops and red representing 80% or more crops.
+                ` : html`
                 The following map shows the current areas of interest for ${this.regionType ?
                 this.regionType.toLowerCase() : ''} modeling in ${this._parentRegionName || this._regionid}
+				`)
+                )
+            : ''}
+            </div>
+            <div style="grid-column: 2 / 3;">
                 <wl-icon @click="${this._showAddRegionsDialog}" style="float:right;"
                     class="actionIcon bigActionIcon">note_add</wl-icon>
-            </p>
-            `
-            : ""
-        }
+            </div>
+        </div>
 
         ${!this._mapReady ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
         <google-map-custom class="map" api-key="${GOOGLE_API_KEY}" 

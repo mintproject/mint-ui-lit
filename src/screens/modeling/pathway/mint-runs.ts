@@ -143,7 +143,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                         completed runs by going to the Results tab even when other runs are still not completed.
                     </p>                    
                     <p>
-                    The model setup created ${summary.total_runs} configurations. 
+                    The parameter settings you selected require ${summary.total_runs} configurations. 
                     ${!finished ? "So far, " : ""} ${submitted_runs} model runs
                     ${!finished ? "have been" : "were"} submitted, out of which 
                     ${successful_runs} succeeded, while ${failed_runs} failed.
