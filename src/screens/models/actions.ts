@@ -14,7 +14,7 @@ import { apiFetch,  CALIBRATIONS_FOR_VAR_SN, METADATA_NOIO_FOR_MODEL_CONFIG, PAR
 IO_AND_VARS_SN_FOR_CONFIG } from '../../util/model-catalog-requests';
 import { Dataset } from "../datasets/reducers";
 import { getVariableProperty } from "offline_data/variable_list";
-import { UserPreferences } from "app/reducers";
+import { MintPreferences } from "app/reducers";
 
 export interface ModelsActionList extends Action<'MODELS_LIST'> { models: Model[] };
 export interface ModelsActionVariablesQuery extends Action<'MODELS_VARIABLES_QUERY'> { 
@@ -28,7 +28,7 @@ export type ModelsAction = ModelsActionList | ModelsActionVariablesQuery |  Mode
 
 // List all Model Configurations
 type ListModelsThunkResult = ThunkAction<void, RootState, undefined, ModelsActionList>;
-export const listAllModels: ActionCreator<ListModelsThunkResult> = (prefs: UserPreferences) => (dispatch) => {
+export const listAllModels: ActionCreator<ListModelsThunkResult> = (prefs: MintPreferences) => (dispatch) => {
     
     // Offline mode example query
     if(OFFLINE_DEMO_MODE) {
@@ -39,7 +39,7 @@ export const listAllModels: ActionCreator<ListModelsThunkResult> = (prefs: UserP
         return;
     }
 
-    fetch(prefs.mint.model_catalog_api + "/getModelConfigurations").then((response) => {
+    fetch(prefs.model_catalog_api + "/getModelConfigurations").then((response) => {
         response.json().then((obj) => {
             let models = [] as Model[];
             let bindings = obj["results"]["bindings"];

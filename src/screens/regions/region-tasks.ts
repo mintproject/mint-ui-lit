@@ -6,8 +6,6 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import 'components/google-map-custom';
 import 'weightless/progress-spinner';
 import { RegionQueryPage } from './region-query-page';
-import { DatasetsWithStatus } from 'screens/datasets/reducers';
-import { queryDatasetsByRegion } from 'screens/datasets/actions';
 import { SharedStyles } from 'styles/shared-styles';
 import { getVariableLongName } from 'offline_data/variable_list';
 import { fromTimeStampToDateString } from 'util/date-utils';

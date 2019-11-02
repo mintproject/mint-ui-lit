@@ -54,7 +54,7 @@ export class RegionDatasets extends connect(store)(RegionQueryPage)  {
         if(this._selectedRegion) {
             if(curregion != this._selectedRegion) {
                 // New region. Requery
-                store.dispatch(queryDatasetsByRegion(this._selectedRegion, this.prefs));
+                store.dispatch(queryDatasetsByRegion(this._selectedRegion, this.prefs.mint));
             }
 
             if(state.datasets && state.datasets.region_datasets) {

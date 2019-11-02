@@ -1,7 +1,7 @@
 import { Pathway, DatasetMap, ModelEnsembleMap, DataEnsembleMap, InputBindings, ExecutableEnsemble, Scenario, SubGoal, ExecutableEnsembleSummary } from "../screens/modeling/reducers";
 import { RootState } from "../app/store";
 import { updatePathway, addPathwayEnsembles } from "../screens/modeling/actions";
-import { UserPreferences } from "app/reducers";
+import { UserPreferences, MintPreferences } from "app/reducers";
 import { loginToWings, fetchWingsTemplate, fetchWingsTemplatesList, fetchWingsComponent, createSingleComponentTemplate, saveWingsTemplate, layoutWingsTemplate, WingsParameterBindings, WingsDataBindings, WingsParameterTypes, registerWingsComponent, registerWingsDataset, fetchWingsRunStatus, WingsTemplateSeed, expandAndRunWingsWorkflow, WingsTemplatePackage, WingsTemplate } from "./wings_functions";
 import { DataResource } from "screens/datasets/reducers";
 import { hideNotification } from "./ui_functions";
@@ -607,7 +607,7 @@ export const sendDataForIngestion = (scenarioid: string, subgoalid: string, thre
     });    
 }
 
-export const getVisualizationURL = (pathway: Pathway, prefs: UserPreferences) => {
+export const getVisualizationURL = (pathway: Pathway, prefs: MintPreferences) => {
     if(getPathwayResultsStatus(pathway) == "TASK_DONE") {
         let responseV = pathway.response_variables.length > 0?
             getVariableLongName(pathway.response_variables[0]) : '';
@@ -616,9 +616,9 @@ export const getVisualizationURL = (pathway: Pathway, prefs: UserPreferences) =>
 
         // FIXME: Hack
         if(responseV == "Potential Crop Production")
-            return prefs.mint.visualization_url + "/cycles?thread_id=" + pathway.id;
+            return prefs.visualization_url + "/cycles?thread_id=" + pathway.id;
         else
-            return prefs.mint.visualization_url + "/scatter_plot?thread_id=" + pathway.id;
+            return prefs.visualization_url + "/scatter_plot?thread_id=" + pathway.id;
     }
     return null;
 }

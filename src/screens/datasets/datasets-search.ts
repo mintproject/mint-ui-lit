@@ -157,7 +157,7 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
 
     _findDatasets() {
         let queryParams = this._createQueryParameters();
-        store.dispatch(queryGeneralDatasets(queryParams, this.prefs));
+        store.dispatch(queryGeneralDatasets(queryParams, this.prefs.mint));
     }
 
     _onSearchInput () {
@@ -178,7 +178,7 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
         }
         this._params = params;
         this._params.spatialCoverage = this._region.bounding_box;
-        store.dispatch(queryGeneralDatasets(this._params, this.prefs))
+        store.dispatch(queryGeneralDatasets(this._params, this.prefs.mint))
     }
 
     _clearSearchInput () {

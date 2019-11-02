@@ -16,8 +16,6 @@ import { ComparisonFeature } from 'screens/modeling/reducers';
 import { fromTimeStampToDateString } from 'util/date-utils';
 import { GOOGLE_API_KEY } from 'config/google-api-key';
 import { BoundingBox, Point } from 'screens/regions/reducers';
-import { showDialog, hideDialog } from 'util/ui_functions';
-import { calculateMapDetails } from 'screens/regions/actions';
 import { queryDatasetResources } from './actions';
 import { GoogleMapCustom } from 'components/google-map-custom';
 import { UserPreferences } from 'app/reducers';
@@ -218,7 +216,7 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                 this._dataset = null;
                 this._mapReady = false;
                 if(this._dsid)
-                    store.dispatch(queryDatasetResources(this._dsid, this.prefs));
+                    store.dispatch(queryDatasetResources(this._dsid, this.prefs.mint));
             }
         }
         if(state.datasets && state.datasets.dataset) {

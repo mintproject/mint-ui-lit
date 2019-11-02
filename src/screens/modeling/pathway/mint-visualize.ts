@@ -46,7 +46,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
         if(!this.pathway) {
             return html ``;
         }
-        let vizurl = getVisualizationURL(this.pathway, this.prefs)
+        let vizurl = getVisualizationURL(this.pathway, this.prefs.mint)
         let responseV = this.pathway.response_variables.length > 0?
             getVariableLongName(this.pathway.response_variables[0]) : '';
 
