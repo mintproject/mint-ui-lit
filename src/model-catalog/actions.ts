@@ -6,11 +6,13 @@ import { Configuration, DefaultApi, ModelApi, SoftwareVersionApi, ModelConfigura
          DatasetSpecificationApi, TimeIntervalApi, SoftwareImageApi } from '@mintproject/modelcatalog_client';
 
 export * from './person-actions';
+export * from './region-actions';
 export * from './process-actions';
 export * from './parameter-actions';
 export * from './model-configuration-actions';
 
 import { ModelCatalogPersonAction } from './person-actions';
+import { ModelCatalogRegionAction } from './region-actions';
 import { ModelCatalogParameterAction } from "./parameter-actions";
 import { ModelCatalogProcessAction } from "./process-actions";
 import { ModelCatalogModelConfigurationAction } from "./model-configuration-actions";
@@ -191,7 +193,7 @@ export const softwareImageGet: ActionCreator<ModelCatalogThunkResult> = (uri) =>
 }
 
 export type ModelCatalogAction = MCACommon | ModelCatalogPersonAction | ModelCatalogParameterAction | ModelCatalogProcessAction |
-                                 ModelCatalogModelConfigurationAction |
+                                 ModelCatalogModelConfigurationAction | ModelCatalogRegionAction |
                                  MCAModelsGet | MCAVersionsGet |
                                  MCADatasetSpecificationGet | MCAGridGet | MCATimeIntervalGet | MCASoftwareImageGet;
 
