@@ -369,7 +369,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                         </tr>
                     </thead>
                     <tbody>
-                        ${((this._selectResourcesDataset || {}).resources || []).map((resource) => {
+                        ${((this._selectResourcesDataset || {} as Dataset).resources || []).map((resource) => {
                             return html`
                                 <tr>
                                     <td>
@@ -579,7 +579,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                             this._editMode) {
                         //console.log("Querying datasets for model: " + modelid+", input: " + input.id);
                         store.dispatch(queryDatasetsByVariables(
-                            modelid, input.id, input.variables, dates, this._subgoal_region));
+                            modelid, input.id, input.variables, dates, this._subgoal_region, this.prefs.mint));
                     } else {
                         this._queriedDatasets[modelid][input.id!] = {
                             loading: false,

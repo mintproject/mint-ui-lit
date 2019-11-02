@@ -11,6 +11,7 @@ import { toTimeStamp } from 'util/date-utils';
 import "weightless/card";
 import "weightless/title";
 import { ComparisonFeature } from 'screens/modeling/reducers';
+import { UserPreferences } from 'app/reducers';
 
 @customElement('datasets-search')
 export class DatasetsSearch extends connect(store)(PageViewElement) {
@@ -22,6 +23,9 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
 
     @property({type: String})
     private _searchType : string = 'dataset_names';
+
+    @property({type: Object})
+    private prefs : UserPreferences;
 
     private _datasetFeatures: Array<ComparisonFeature> = [
         {
@@ -153,7 +157,7 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
 
     _findDatasets() {
         let queryParams = this._createQueryParameters();
-        store.dispatch(queryGeneralDatasets(queryParams));
+        store.dispatch(queryGeneralDatasets(queryParams, this.prefs.mint));
     }
 
     _onSearchInput () {
@@ -174,7 +178,7 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
         }
         this._params = params;
         this._params.spatialCoverage = this._region.bounding_box;
-        store.dispatch(queryGeneralDatasets(this._params))
+        store.dispatch(queryGeneralDatasets(this._params, this.prefs.mint))
     }
 
     _clearSearchInput () {
@@ -191,6 +195,7 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
 
     stateChanged(state: RootState) {
         super.setRegion(state);
+        this.prefs = state.app.prefs!;
         if(state.datasets) {
             // If there are details about a particular dataset
             if(state.datasets.query_datasets) {

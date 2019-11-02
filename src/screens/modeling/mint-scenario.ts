@@ -406,9 +406,11 @@ export class MintScenario extends connect(store)(PageViewElement) {
                         <option value="">None</option>
                         ${Object.keys(this._subRegions || {}).map((subRegionid) => {
                             let subRegion = this._subRegions![subRegionid];
-                            return html`
-                            <option value="${subRegion.id}">${subRegion.name}</option>
-                            `;
+                            if(subRegion.name.match(/[a-zA-Z]/)) {
+                                return html`
+                                <option value="${subRegion.id}">${subRegion.name}</option>
+                                `;
+                            }
                         })}
                     </select>
                 </div>            

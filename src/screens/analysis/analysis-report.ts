@@ -6,7 +6,7 @@ import { store, RootState } from 'app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from 'app/actions';
 
-import { IdMap } from 'app/reducers';
+import { IdMap, UserPreferences } from 'app/reducers';
 import { Scenario, ScenarioList, Pathway } from 'screens/modeling/reducers';
 
 import { fromTimeStampToDateString } from "util/date-utils";
@@ -49,6 +49,9 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
 
   @property({type: String})
   private _selectedPathwayId : string = '';
+
+  @property({type: Object})
+  private prefs: UserPreferences;
 
   static get styles() {
     return [SharedStyles, css`
@@ -130,7 +133,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
       let drivingV = pathway.driving_variables && pathway.driving_variables.length > 0?
           getVariableLongName(pathway.driving_variables[0]) : '';
 
-      let vizurl = getVisualizationURL(pathway)
+      let vizurl = getVisualizationURL(pathway, this.prefs.mint)
 
       return html`
         ${task ? html `
@@ -353,6 +356,8 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
       //console.log("Region id changed to " + this._regionid);
       this.fetchReports();
     }
+
+    this.prefs = state.app.prefs;
 
     if (state.ui) {
       this._selectedScenarioId = state.ui.selected_scenarioid;

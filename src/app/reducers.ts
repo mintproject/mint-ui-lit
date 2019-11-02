@@ -39,7 +39,9 @@ export interface UserPreferences {
 export interface MintPreferences {
   wings: WingsPreferences,
   ingestion_api: string,
-  visualization_url: string
+  visualization_url: string,
+  data_catalog_api: string,
+  model_catalog_api: string
 }
 
 export interface WingsPreferences {

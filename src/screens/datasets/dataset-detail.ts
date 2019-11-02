@@ -16,10 +16,9 @@ import { ComparisonFeature } from 'screens/modeling/reducers';
 import { fromTimeStampToDateString } from 'util/date-utils';
 import { GOOGLE_API_KEY } from 'config/google-api-key';
 import { BoundingBox, Point } from 'screens/regions/reducers';
-import { showDialog, hideDialog } from 'util/ui_functions';
-import { calculateMapDetails } from 'screens/regions/actions';
 import { queryDatasetResources } from './actions';
 import { GoogleMapCustom } from 'components/google-map-custom';
+import { UserPreferences } from 'app/reducers';
 
 
 @customElement('dataset-detail')
@@ -32,6 +31,9 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
     @property({type: Boolean})
     private _mapReady: boolean = false;
 
+    @property({type: Object})
+    private prefs : UserPreferences;
+    
     private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
 
     private _datasetFeatures: Array<ComparisonFeature> = [
@@ -205,6 +207,8 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
 
     stateChanged(state: RootState) {
         super.setRegion(state);
+        this.prefs = state.app.prefs!;
+
         if(state.dataExplorerUI) {
             let newdsid = state.dataExplorerUI.selected_datasetid;
             if(newdsid != this._dsid) {
@@ -212,7 +216,7 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                 this._dataset = null;
                 this._mapReady = false;
                 if(this._dsid)
-                    store.dispatch(queryDatasetResources(this._dsid));
+                    store.dispatch(queryDatasetResources(this._dsid, this.prefs.mint));
             }
         }
         if(state.datasets && state.datasets.dataset) {

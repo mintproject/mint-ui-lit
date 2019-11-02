@@ -1,4 +1,4 @@
-import { ModelCatalogPreferences } from "app/reducers";
+import { ModelCatalogPreferences, MintPreferences } from "app/reducers";
 
 export const SAMPLE_USER = {
     uid: "234234234234", 
@@ -17,8 +17,11 @@ export const SAMPLE_MINT_PREFERENCES = {
         "onturl": "http://www.wings-workflows.org/ontology",
         "api": "https://api.wings.mint.isi.edu/v1.0.0",
     },
-    "ingestion_api": "https://ingestion.mint.isi.edu/v1.0.0"
-};
+    "ingestion_api": "https://ingestion.mint.isi.edu/v1.0.0",
+    "model_catalog_api": "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries",
+    "data_catalog_api": "https://api.mint-data-catalog.org",
+    "visualization_url": "https://viz.mint.isi.edu",
+} as MintPreferences;
 
 export const SAMPLE_MINT_PREFERENCES_LOCAL = {
     "wings": {
@@ -32,5 +35,8 @@ export const SAMPLE_MINT_PREFERENCES_LOCAL = {
         "onturl": "http://www.wings-workflows.org/ontology",
         "api": "http://localhost:8080/v1.0.0"
     },
-    "ingestion_api": "https://ingestion.mint.isi.edu/v1.0.0"
-};
+    "ingestion_api": "https://ingestion.mint.isi.edu/v1.0.0",
+    "model_catalog_api": "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries",
+    "data_catalog_api": "https://api.mint-data-catalog.org",
+    "visualization_url": "https://viz.mint.isi.edu",
+} as MintPreferences;
