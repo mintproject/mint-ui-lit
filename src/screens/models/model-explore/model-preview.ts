@@ -178,12 +178,11 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                     white-space: nowrap;
                 }
 
-                .setup-text {
+                .ver-conf-text {
                     float: right;
-                    font-weight: bold;
                     font-size: 13px;
                     padding-right: 3px;
-                    line-height: 1.6em;
+                    line-height: 1.2em;
                 }
 
                 .details-button {
@@ -204,8 +203,11 @@ export class ModelPreview extends connect(store)(PageViewElement) {
               <tr>
                 <td class="left"> 
                   <div class="text-centered one-line">
-                    ${this._vers > 0 ? this._vers.toString() + ' version' + (this._vers > 1? 's' :'') : 'No versions'},
-                    ${this._configs > 0 ? this._configs.toString() + ' config' + (this._configs > 1? 's' :'') : 'No configs'}
+                    ${this._ready ? html`
+                        <b>Executable in MINT</b>
+                    `: html`
+                        <b>Not executable in MINT</b>
+                    `} 
                   </div>
                   <div>
                     <span class="helper"></span>${this._model.logo ? 
@@ -227,9 +229,10 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                         ${this._model.doc ? html`<a target="_blank" href="${this._model.doc}"><wl-icon>open_in_new</wl-icon></a>`: html``}
                     </span>
                     <span class="icon"><wl-icon @click="${()=>{this._compare(this._model.uri)}}">compare_arrows</wl-icon></span>
-                    ${this._ready ? html`
-                        <span class="setup-text">Executable in MINT</span>
-                    `: ''} 
+                    <span class="ver-conf-text">
+                    ${this._vers > 0 ? this._vers.toString() + ' version' + (this._vers > 1? 's' :'') : 'No versions'},
+                    ${this._configs > 0 ? this._configs.toString() + ' config' + (this._configs > 1? 's' :'') : 'No configs'}
+                    </span>
                   </div>
                   <div class="content" style="${this.altDesc? '' : 'text-align: justify;'}">
                     ${this.altDesc ? 
