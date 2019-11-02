@@ -34,6 +34,7 @@ import { SharedStyles } from '../styles/shared-styles';
 import { showDialog, hideDialog, formElementsComplete } from '../util/ui_functions';
 import { User } from 'firebase';
 import { Region } from 'screens/regions/reducers';
+import { loginToWings } from 'util/wings_functions';
 
 @customElement('mint-app')
 export class MintApp extends connect(store)(LitElement) {
@@ -52,6 +53,8 @@ export class MintApp extends connect(store)(LitElement) {
   @property({type: Object})
   private _selectedRegion? : Region;
 
+  private _loggedIntoWings = false;
+  
   _once = false;
 
   static get styles() {
@@ -320,6 +323,11 @@ export class MintApp extends connect(store)(LitElement) {
         store.dispatch(fetchUserPreferences());
       if(!state.regions || !state.regions.regions)
         store.dispatch(listTopRegions());
+    }
+  
+    if(state.app.prefs && !this._loggedIntoWings) {
+      loginToWings(state.app.prefs);
+      this._loggedIntoWings = true;
     }
 
     let regionid = state.ui.selected_top_regionid;
