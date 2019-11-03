@@ -19,6 +19,10 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
                 padding: 2px;
             }
 
+            ul {
+                margin-top: 5px;
+                margin-bottom: 5px;
+            }
             li {
                 margin-bottom: 10px;
             }
@@ -112,8 +116,10 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
             <p>
             This page is in progress, it will allow you to run tools that create datasets from raw remote sensing data, that can be then used 
             in hydrological or other models.
+            </p>
             ${(this._regionid === 'ethiopia') ? html`
-            Below are some example results of a tool that simulates river guage data by processing remote sensing data for Ethiopia.
+            <p>
+            Below are some example results for Ethiopia, using a tool that generates river width and depth for model calibration in ungauged hydrological basins using satellite imagery and machine learning.  These “virtual gauges” are generated with a method that uses Sentinel-2 satellite imagery and deep learning.  A detailed description of the method is shown at the bottom of this page.
             </p>
             <a target="_blank" href="http://umnlcc.cs.umn.edu/carto-test/"><wl-title level="4">
                 Ethiopia River Width Visualization
@@ -133,10 +139,93 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
             <p>
                 This represents river width/depth variation for a single cross section. The background in this animation is SRTM based elevation.
             </p>
-
             <div style="width: 90%; margin: 0px auto;">
                 <image-gallery .items="${items}"></image-gallery>
-            <div>
+            </div>
+
+            <div style="clear:both"></div>
+            <wl-divider style="margin: 20px 0px;"></wl-divider>
+
+            <wl-title level="4">Method for Generating River Width and Depth for Model Calibration in 
+            Ungauged Hydrological Basins using Satellite Imagery and Machine Learning:</wl-title>
+            <ul>
+                <li>Global dataset from Sentinel-2 satellite imagery at 10m resolution from 2016
+                    <ul>
+                        <li>8434 predefined boxes around the globe
+                            <ul><li>1805 in Ethiopia</li></ul>
+                        </li>
+                        <li>351888 Sentinel-2 image patches
+                            <ul><li>~60k cloud free</li></ul>
+                        </li>
+                        <li>2976 labeled image patches taken from different parts of the world
+                            <ul><li>created using visual inspection</li></ul>
+                        </li>
+                    </ul>
+                </li>
+                <li>Key steps:
+                    <ol>
+                        <li>Satellite data download and preprocessing
+                            <ul><li>Predefined boxes across the globe to avoid asking for regions of interest from the user</li></ul>
+                        </li>
+                        <li>Classification of satellite imagery to land/water masks
+                            <ul>
+                                <li>Autoencoder based unsupervised feature learning using large unlabeled data
+                                    <ul>
+                                        <li>Uses 9,000 unlabeled image patches to learn features that could 
+                                        reconstruct a wide variety of image patches</li>
+                                        <li>Clustering of 2-D compression of auto-encoder features show 
+                                        effectiveness in grouping similar image patches</li>
+                                        <li>Land/Water mask creation using semantic segmentation
+                                            <ul>
+                                                <li>Uses features learned from previous steps to create masks</li>
+                                                <li>Effective use of the structure/shape in image patches. </li>
+                                                <li>Does not suffer from salt and pepper noise and shows better 
+                                                performance even in the presence of haze and other atmospheric 
+                                                disturbances</li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li>Semantic segmentation-based classification to incorporate structural/shape constraints</li>
+                            </ul>
+                        </li>
+                        <li>Identification of cross sections along the river segment by automatically identifying the 
+                        center line and cross sections at regular intervals on the center line 
+                            <ul>
+                                <li>Create multi-temporal maps to create a fraction map
+                                    <ul><li>Used to identify the core region of the river segment</li></ul>
+                                </li>
+                                <li>Extract the center line using morphological operations on the core region</li>
+                                <li>Perpendicular cross-sections are calculated automatically at regular intervals 
+                                along the center line</li>
+                                <li>Cross sections along with elevation data are used to create river 
+                                depth hydrographs (next slide)</li>
+                            </ul>
+                        </li>
+                        <li>Estimating river width/depth hydrograph along the cross-section, merging with 
+                            <ul>
+                                <li>SRTM 30m elevation data to convert river width hydrograph to river depth hydrograph
+                                    <ul><li>Elevation profile along the cross section is smoothed and approximated to a 
+                                    triangular river bed.</li></ul>
+                                </li>
+                                <li>Constrained by surface extent to exclude irrelevant minimas in the elevation profile</li>
+                                <li>For a given cross section, river width at any date can be calculated using the 
+                                land/water mask on that date</li>
+                                <li>Width variations are then converted to depth variations using the triangular river bed</li>
+                            </ul>
+                        </li>
+                    </ol>
+                </li>
+                <li>Geospatial visualizations show river width, depth shown at select locations</li>
+                <li>Quality of the results is still being evaluated:
+                    <ul>
+                        <li>The spatial resolution of the width is 10 meters</li>
+                        <li>The quality of the depth is limited by the resolution (in meters) and 
+                        quality (not very good on a global scale) of the Digital Elevation Model (DEM)</li>
+                    </ul>
+                </li>
+            </ul>
+
             ` : ''}
         </div>`
     }
