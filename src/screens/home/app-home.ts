@@ -93,9 +93,19 @@ export class AppHome extends connect(store)(PageViewElement) {
             <p>
             As soon as you get started by selecting a region, a set of steps will appear at the top of the screen that will guide you to: 1) select areas of interest for modeling (river basins, administrative areas, etc), 2) browse the data available for those areas, 3) browse the models that have been customized for those areas, 4) use the models by setting up initial conditions (including interventions) and running them, and 5) preparing reports that summarize the analyses.
             </p>
-			<p>
-			<a target="_blank" href="http://bit.ly/MINT-intro">An introduction to MINT, training materials, a walkthrough video of the user interface, a glossary, and an FAQ are available here.</a>
-			</p>
+            <ul>
+              <li>
+                <a target="_blank" href="http://bit.ly/MINT-intro">
+                  <b>An introduction to MINT, training materials, a walkthrough video of the user interface, a glossary, and an FAQ are available here.</b>
+                </a>
+              </li>
+              <li>
+                <a target="_blank" href="http://bit.ly/MINT-status">
+                  <b>An overview of the modeling capabilities in MINT is available here.</b>
+                </a>
+              </li>
+            </ul>
+            <br />
             <wl-title level="4">Select a region by hovering over it and clicking.</wl-title>
         </div>
         
