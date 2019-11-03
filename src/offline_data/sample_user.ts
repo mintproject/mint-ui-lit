@@ -20,7 +20,7 @@ export const SAMPLE_MINT_PREFERENCES = {
     "ingestion_api": "https://ingestion.mint.isi.edu/v1.0.0",
     "model_catalog_api": "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries",
     "data_catalog_api": "https://api.mint-data-catalog.org",
-    "visualization_url": "https://viz.mint.isi.edu",
+    "visualization_url": "https://dev.viz.mint.isi.edu",
 } as MintPreferences;
 
 export const SAMPLE_MINT_PREFERENCES_LOCAL = {
@@ -38,5 +38,5 @@ export const SAMPLE_MINT_PREFERENCES_LOCAL = {
     "ingestion_api": "https://ingestion.mint.isi.edu/v1.0.0",
     "model_catalog_api": "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries",
     "data_catalog_api": "https://api.mint-data-catalog.org",
-    "visualization_url": "https://viz.mint.isi.edu",
+    "visualization_url": "https://dev.viz.mint.isi.edu",
 } as MintPreferences;
