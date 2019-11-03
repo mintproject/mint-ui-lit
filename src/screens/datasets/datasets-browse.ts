@@ -34,10 +34,6 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
             .content {
                 margin: 0 auto;
             }
-            .explanation {
-                color: rgb(102, 102, 102);
-                font-size: 13px;
-            }
             `,
             SharedStyles
         ];
@@ -49,14 +45,6 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
         <iframe src="https://data-catalog.mint.isi.edu"></iframe>
         -->
         <div class="content">
-            <wl-text class="explanation">
-            The MINT dataset browser allows you to learn about the different datasets available in MINT.  A single dataset can consist of many files (each file is called a resource).
-            <br/>
-In the search bar below you can search datasets in two ways, which you can choose on the right.  One is to search their descriptions using a data source name (eg, GLDAS), keyword (eg crops), and regions (e.g. Pongo, Ethiopia). Another is to search their variables (e.g., precipitation).
-
-            <br/>
-You can then view more detailed information about a dataset by clicking on its name. You can also download any of the files (resources) in the dataset by clicking on the download link.
-            </wl-text>
             <datasets-search class="page" ?active="${!this._dsid}"></datasets-search>
             <dataset-detail class="page" ?active="${this._dsid}"></dataset-detail>
         </div>
