@@ -344,7 +344,8 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                 deleteAllPathwayEnsembleIds(this.scenario.id, this.pathway.id, modelid);
 
                 // Setup Model for execution on Wings
-                await loginToWings(this.prefs);
+                // await loginToWings(this.prefs); // Login to Wings now Happens at the top app level
+                
                 let workflowid = await setupModelWorkflow(model, this.pathway, this.prefs);
                 let tpl_package = await fetchWingsTemplate(workflowid, this.prefs);
 
