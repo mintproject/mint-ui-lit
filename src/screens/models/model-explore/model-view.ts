@@ -852,6 +852,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                             : html`<loading-dots style="--height: 8px"></loading-dots>`}
                     </wl-text>
                     `: '' }
+                    ${this._configMetadata[0].usageNotes ? html`
+                    <br/>
+                    <wl-text>
+                        <b>Usage notes:</b>
+                        ${this._configMetadata[0].usageNotes}
+                    </wl-text>
+                    ` : ''}
                     <ul>
                     ${this._configMetadata[0].fundS ? 
                         html`<wl-text><b>Funding Source:</b> ${this._configMetadata[0].fundS} </wl-text>` : ''}
@@ -937,6 +944,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 : html`<loading-dots style="--height: 8px"></loading-dots>`}
                         </wl-text>
                         `: '' }
+                        ${this._calibrationMetadata[0].usageNotes ? html`
+                        <br/>
+                        <wl-text>
+                            <b>Usage notes:</b>
+                            ${this._calibrationMetadata[0].usageNotes}
+                        </wl-text>
+                        ` : ''}
                         <ul>
                         ${this._calibrationMetadata[0].paramAssignMethod ?
                             html`<li><b>Parameter assignment method:</b> ${this._calibrationMetadata[0].paramAssignMethod}</li>`: ''}
