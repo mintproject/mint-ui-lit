@@ -18,7 +18,7 @@ import { queryRegions } from 'screens/regions/actions';
 import { db } from '../../config/firebase';
 
 import '../../components/nav-title'
-import { getVisualizationURL } from 'util/state_functions';
+import { getVisualizationURLs } from 'util/state_functions';
 
 function log (...args: any) {console.log('REPORT:', ...args)}
 
@@ -133,7 +133,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
       let drivingV = pathway.driving_variables && pathway.driving_variables.length > 0?
           getVariableLongName(pathway.driving_variables[0]) : '';
 
-      let vizurl = getVisualizationURL(pathway, this.prefs.mint)
+      let vizurls = getVisualizationURLs(pathway, this.prefs.mint)
 
       return html`
         ${task ? html `
@@ -233,9 +233,11 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
               <span>${pathway.notes && pathway.notes.visualization ? pathway.notes.visualization : 'No notes'}</span>
             </div>
 
-          ${!vizurl || !pathway.executable_ensemble_summary || Object.keys(pathway.executable_ensemble_summary).length == 0 ? 
+          ${!vizurls || !pathway.executable_ensemble_summary || Object.keys(pathway.executable_ensemble_summary).length == 0 ? 
             'No visualizations for this run' : 
-            html `<iframe src="${vizurl}"></iframe>`
+            vizurls.map((vizurl) => {
+                return html`<iframe src="${vizurl}"></iframe>`;
+            })
           }
           </div>
           
