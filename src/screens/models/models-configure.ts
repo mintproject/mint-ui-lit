@@ -17,7 +17,7 @@ import './configure/parameter';
 import { fetchIOAndVarsSNForConfig, fetchAuthorsForModelConfig, fetchParametersForConfig,
          fetchMetadataNoioForModelConfig, addParameters, addCalibration, addMetadata,
          addInputs, addAuthor } from '../../util/model-catalog-actions';
-import { parameterGet, processesGet } from 'model-catalog/actions';
+import { parameterGet, processesGet, regionsGet } from 'model-catalog/actions';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
 
@@ -262,6 +262,14 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     _renderVersionTree () {
         if (!this._models) 
             return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
+
+        /* FIXME: this needs a new version of the API */
+        let parentRegion = {
+            'https://w3id.org/okn/i/mint/Gambella': 'https://w3id.org/okn/i/mint/Ethiopia',
+            'https://w3id.org/okn/i/mint/Pongo_Basin_SS': 'https://w3id.org/okn/i/mint/South_Sudan',
+            'https://w3id.org/okn/i/mint/Barton_Springs': 'https://w3id.org/okn/i/mint/Texas',
+            'https://w3id.org/okn/i/mint/Baro': 'https://w3id.org/okn/i/mint/Ethiopia',
+        }
         return html`
         <ul>
             ${Object.values(this._models).filter((model: any) => !!model.hasVersion).map((model: any) => html`
@@ -280,7 +288,11 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                                     ${config ? config.label : 'ERR: no-config-label'}
                                 </a>
                                 <ul>
-                                    ${((config ? config.hasSetup : []) || []).map((s) => this._configs[s.id]).map(setup => html`
+                                    ${((config ? config.hasSetup : []) || []).map((s) => this._configs[s.id])
+                                        .filter(setup => 
+                                            setup && (!setup.hasRegion || setup.hasRegion[0].id === this._region['model_catalog_uri']
+                                            || parentRegion[setup.hasRegion[0].id] === this._region['model_catalog_uri']))
+                                        .map(setup => html`
                                     <li>
                                         <a @click="${()=>{this._select(model, version, config, setup)}}">
                                             ${setup ? setup.label : 'ERR: no-setup-label'}
@@ -385,8 +397,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
 
     firstUpdated () {
         store.dispatch(processesGet());
+        //store.dispatch(regionsGet());
     }
-    
+
     stateChanged(state: RootState) {
         if (state.explorerUI) {
             let ui = state.explorerUI;
@@ -397,6 +410,8 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             let calibrationChanged : boolean = (configChanged || ui.selectedCalibration !== this._selectedSetup);
             this._editing = (ui.mode === 'edit');
             this._creating = (ui.mode === 'new');
+
+            super.setRegionId(state);
 
             if (modelChanged) {
                 this._selectedModel = ui.selectedModel;
@@ -429,6 +444,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 this._models = db.models;
                 this._versions = db.versions;
                 this._configs = db.configurations;
+                //this._regions = db.regions;
 
                 // Set selected resource
                 if (!this._model && db.models && this._selectedModel && db.models[this._selectedModel]) {
