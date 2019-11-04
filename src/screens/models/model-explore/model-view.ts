@@ -788,8 +788,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <loading-dots style="--width: 20px"></loading-dots>
                 </li>
                 `)}
-
-
             </ul>`
             :''}
             ${this._config ? this._renderMetadataResume() : ''}
@@ -908,7 +906,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <loading-dots style="--width: 20px"></loading-dots>`
                                 : html`
                                 <span class="tooltip nm" style="text-align: center;"
-                                    tip="${this._parameters.length - this._parameters.filter(x => !!x.fixedValue).length} parameters can be selected in this setup">
+                                    tip="${this._parameters.filter(x => !!x.fixedValue).length} parameters have been pre-selected in this setup">
                                 ${ (this._parameters.length - this._parameters.filter(x => !!x.fixedValue).length) +
                                    '/' + this._parameters.length }
                                 </span>`
@@ -921,7 +919,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <loading-dots style="--width: 20px"></loading-dots>`
                                 : html `
                                 <span class="tooltip nm" style="text-align: center;"
-                                    tip="${this._inputs.length - this._inputs.filter(x => !!x.fixedValueURL).length} inputs can be selected in this setup">
+                                    tip="${this._inputs.filter(x => !!x.fixedValueURL).length} inputs have been pre-selected in this setup">
                                 ${ (this._inputs.length - this._inputs.filter(x => !!x.fixedValueURL).length) +
                                    '/' + this._inputs.length }
                                 </span>`}
