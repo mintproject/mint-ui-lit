@@ -20,7 +20,7 @@ import { renderVariables, renderNotifications } from "../../util/ui_renders";
 import { resetForm, showDialog, formElementsComplete, showNotification, hideDialog, hideNotification } from "../../util/ui_functions";
 import { firestore } from "firebase";
 import { toTimeStamp, fromTimeStampToDateString } from "util/date-utils";
-import { RegionList } from "screens/regions/reducers";
+import { RegionList, Region } from "screens/regions/reducers";
 import { getVariableLongName } from "offline_data/variable_list";
 
 
@@ -29,6 +29,9 @@ export class MintScenario extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _subRegions: RegionList;
+
+    @property({type: Object})
+    private _categorizedRegions: any; 
 
     @property({type: Object})
     private _scenario_details!: ScenarioDetails | null;
@@ -401,13 +404,19 @@ export class MintScenario extends connect(store)(PageViewElement) {
                     <label>Region</label>
                     <select name="subgoal_subregion">
                         <option value="">None</option>
-                        ${Object.keys(this._subRegions || {}).map((subRegionid) => {
-                            let subRegion = this._subRegions![subRegionid];
-                            if(subRegion.name.match(/[a-zA-Z]/)) {
+                        ${Object.keys(this._categorizedRegions || {}).map((categoryname) => {
+                            let subRegions = this._categorizedRegions[categoryname];
+                            return html`
+                            <optgroup label="${categoryname}">
+                            ${subRegions.map((subRegion) => {
+                            //if(subRegion.name.match(/[a-zA-Z]/)) {
                                 return html`
                                 <option value="${subRegion.id}">${subRegion.name}</option>
                                 `;
-                            }
+                            //}
+                            })}
+                            </optgroup>
+                            `
                         })}
                     </select>
                 </div>            
@@ -921,8 +930,28 @@ export class MintScenario extends connect(store)(PageViewElement) {
         if(state.ui && state.ui.selected_pathwayid) 
             this._selectedPathwayId = state.ui.selected_pathwayid;
 
-        if(state.regions!.query_result && this._regionid && state.regions!.query_result[this._regionid]) 
-            this._subRegions = state.regions!.query_result[this._regionid]["*"];
+        if(state.regions!.query_result && this._regionid && state.regions!.query_result[this._regionid]) {
+            let all_subregions = state.regions!.query_result[this._regionid]["*"];
+            if(all_subregions != this._subRegions) {
+                let categorized_regions = {
+                    "Hydrology": [],
+                    "Administrative": [],
+                    "Agriculture": []
+                };
+                Object.values(all_subregions).map((region) => {
+                    if(!categorized_regions[region.region_type]) {
+                        categorized_regions[region.region_type] = [];
+                    }
+                    categorized_regions[region.region_type].push(region);
+                })
+                Object.keys(categorized_regions).map((regionid) => {
+                    let regions = categorized_regions[regionid];
+                    regions.sort((a, b) => a.name.localeCompare(b.name));
+                })
+                this._categorizedRegions = categorized_regions;
+                this._subRegions = all_subregions;
+            }
+        }
 
         // If a scenario has been selected, fetch scenario details
         let scenarioid = state.ui!.selected_scenarioid;
