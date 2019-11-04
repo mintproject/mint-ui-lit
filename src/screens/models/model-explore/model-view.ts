@@ -775,20 +775,21 @@ export class ModelView extends connect(store)(PageViewElement) {
             ${this._model.indices ? html`
             <wl-title level="2" style="font-size: 16px;">Relevant for calculating index:</wl-title>
             <ul style="margin-top: 5px">
+                ${this._model.indices.split(/ *, */).map(iuri => this._indices[iuri] ? html`
                 <li>
-                ${this._indices ? (this._indices.length === 0 ? html`
-                    <a target="_blank" href="${this._model.indices}">
-                        ${this._model.indices.split('/').pop().split('#').pop()}
+                    <a target="_blank" href="${iuri}">
+                        ${this._indices[iuri][0].label}
                     </a>
-                ` : html`
-                    <a target="_blank" href="${this._model.indices}">
-                        ${this._indices[0].label}
-                    </a>
-                `)
-                : html`
-                    ${this._model.indices.split('/').pop()} 
-                    <loading-dots style="--width: 20px"></loading-dots> `}
                 </li>
+                ` : 
+                html`
+                <li>
+                    ${iuri.split('/').pop()} 
+                    <loading-dots style="--width: 20px"></loading-dots>
+                </li>
+                `)}
+
+
             </ul>`
             :''}
             ${this._config ? this._renderMetadataResume() : ''}
@@ -1596,11 +1597,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                 this._allVersions = db.versions;
                 this._allModels = db.models;
                 this._uriToUrl= db.urls;
+                this._indices = db.vars;
 
                 if (db.models && !this._model) {
                     this._model = db.models[this._selectedModel];
                     if (this._model && this._model.indices) {
-                        store.dispatch(fetchDescriptionForVar(this._model.indices));
+                        this._model.indices.split(/ *, */).forEach(uri => store.dispatch(fetchDescriptionForVar(uri)));
+                        //store.dispatch(fetchDescriptionForVar(this._model.indices));
                     }
                 }
                 if (db.versions && !this._versions) {
@@ -1638,9 +1641,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                         })
                     })
                 }
-                if (!this._indices && db.vars && this._model && this._model.indices) {
+                /*if (!this._indices && db.vars && this._model && this._model.indices) {
                     this._indices = db.vars[this._model.indices];
-                }
+                }*/
                 if (!this._explDiagrams && db.explDiagrams) {
                     this._explDiagrams = db.explDiagrams[this._selectedModel];
                 }
