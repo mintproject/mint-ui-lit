@@ -75,6 +75,10 @@ export const VARIABLES = {
                 "long_name": "Streamflow Duration Index",
                 "SVO_name": "channel~stream_water__flow_duration_index"
             },
+            "var6": {
+                "long_name": "Recharge Volume Flux",
+                "SVO_name": "recharge_volume_flux"
+            },
             "var1": {
                 "long_name": "Water table level",
                 "SVO_name": "water_table__level_height"
