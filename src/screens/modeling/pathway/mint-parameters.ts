@@ -100,7 +100,10 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                     ${input_parameters.length > 0 ? 
                         html `
                         <p>
-                            Setup the model by specifying values below. You can enter more than one value (comma separated) if you want several runs
+                            Setup the model by specifying values below. You can enter more than one value (comma separated) if you want several runs.
+                        </p>
+                        <p>
+                            ${model.usage_notes}
                         </p>
                         <form id="form_${this._valid(model.localname || model.id)}">
                         <table class="pure-table pure-table-striped">

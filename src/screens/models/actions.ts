@@ -253,7 +253,8 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                             dimensionality: meta['gridDim'] || "",
                             spatial_grid_type: (meta['gridType'] || "").replace(/.*#/, ''),
                             spatial_grid_resolution: meta['gridSpatial'] || "",
-                            minimum_output_time_interval: ""
+                            minimum_output_time_interval: "",
+                            usage_notes: meta['usageNotes'] || ""
                         };
                         //console.log(model);
                         return model;
