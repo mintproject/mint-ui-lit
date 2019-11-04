@@ -167,7 +167,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                             @click="${() => this._setEditMode(false)}">CANCEL</wl-button>`
                         : html``}
                     <wl-button type="button" class="submit" 
-                        @click="${() => this._setPathwayParametersAndRun()}">Select &amp; continue</wl-button>
+                        @click="${() => this._setPathwayParametersAndRun()}">Select &amp; run</wl-button>
                 </div>  
                 <fieldset class="notes">
                     <legend>Notes</legend>
