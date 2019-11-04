@@ -484,13 +484,15 @@ export class MintScenario extends connect(store)(PageViewElement) {
 
     _getSubgoalSummaryText(subgoal) {
         let response = subgoal.response_variables ? getVariableLongName(subgoal.response_variables[0]) : "";
+        let driving = (subgoal.driving_variables && subgoal.driving_variables.length > 0) ? 
+            getVariableLongName(subgoal.driving_variables[0]) : "";
         let subregionid = (subgoal.subregionid && subgoal.subregionid != "Select") ? subgoal.subregionid : null;
         let regionname = (subregionid && this._subRegions && this._subRegions[subregionid]) ? 
                 this._subRegions[subregionid].name : this._region.name;
         let dates = subgoal.dates ? subgoal.dates : this._scenario.dates;
         let startdate = fromTimeStampToDateString(dates!.start_date);
         let enddate = fromTimeStampToDateString(dates!.end_date);
-        return (response ? response + ": " : "") + regionname + ": " + startdate + " - " + enddate;
+        return (driving ? driving + " -> " : "") + (response ? response + ": " : "") + regionname + ": " + startdate + " - " + enddate;
     }
 
     _addGoalDialog() {

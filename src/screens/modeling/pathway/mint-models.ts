@@ -203,6 +203,13 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                     The models below generate data that includes the indicator that you selected earlier: 
                     "${this.pathway.response_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
                     Other models that are available in the system do not generate that kind of result.
+                    ${this.pathway.driving_variables.length ? 
+                        html`
+                        These models also allow adjusting the adjustable variable you selected earlier:
+                        "${this.pathway.driving_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
+                        `
+                        : ""
+                    }
                     The column "Relevant Output File" shows the output file that contains the response variable.
                 </p>
                 <ul>
