@@ -479,7 +479,8 @@ export const getUISelectedPathway = (state: RootState) => {
 
 export const getUISelectedSubgoalRegion = (state: RootState) => {
     let subgoal = getUISelectedSubgoal(state);
-    if(subgoal && subgoal.subregionid && state.regions && state.regions.query_result) {
+    if(subgoal && subgoal.subregionid && state.regions && state.regions.query_result 
+            && state.regions.query_result[state.ui.selected_top_regionid]) {
         let res = state.regions.query_result[state.ui.selected_top_regionid]["*"]
         if(res && res[subgoal.subregionid]) {
             return res[subgoal.subregionid];
