@@ -72,7 +72,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         <p>
             This step is for specifying values for the adjustable parameters of the models that you selected earlier.
         </p>
-        ${done && !this._editMode ? html`<p>Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes.</p>`: html``}
+        ${done && !this._editMode ? html`<p>Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes and run the model.</p>`: html``}
         <div class="clt">
             <wl-title level="3">
                 Setup Models
