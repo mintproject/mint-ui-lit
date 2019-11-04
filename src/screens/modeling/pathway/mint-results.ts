@@ -150,12 +150,13 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                         Click on the RELOAD button if you are waiting for more runs to complete
                     </p>
                     <p>
-                    The model setup created ${summary.total_runs} configurations. 
+                    The parameter settings you selected required ${summary.total_runs} runs. 
                     ${!finished ? "So far, " : ""} ${summary.submitted_runs} model runs
                     ${!finished ? "have been" : "were"} submitted, out of which 
                     ${summary.successful_runs} succeeded and produced results, while ${summary.failed_runs} failed.
                     ${running > 0 ? html `${running} are currently running` : ""}
-                    ${pending > 0 ? html `, and ${pending} are waiting to be run` : ""}
+                    ${running > 0 && pending > 0 ? ', and ' : ''}
+                    ${pending > 0 ? html `${pending} are waiting to be run` : ""}
                     </p>
 
                     ${finished && !submitted ? 
