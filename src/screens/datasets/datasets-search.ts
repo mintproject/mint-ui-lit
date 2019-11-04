@@ -10,6 +10,7 @@ import { toTimeStamp } from 'util/date-utils';
 
 import "weightless/card";
 import "weightless/title";
+
 import { ComparisonFeature } from 'screens/modeling/reducers';
 import { UserPreferences } from 'app/reducers';
 
@@ -73,6 +74,10 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
                 width: calc(30% - 10px);
                 padding-left: 10px;
             }
+            .explanation {
+                color: rgb(102, 102, 102);
+                font-size: 13px;
+            }
             `,
             SharedStyles
         ];
@@ -80,6 +85,21 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
+        <div class="explanation">
+            <p>
+            The MINT dataset browser allows you to learn about the different datasets available in MINT.  
+            A single dataset can consist of many files (each file is called a resource).
+            </p>
+            <p>
+            In the search bar below you can search datasets in two ways, which you can choose on the right.  
+            One is to search their descriptions using a data source name (eg, GLDAS), keyword (eg crops), and regions 
+            (e.g. Pongo, Ethiopia). Another is to search their variables (e.g., precipitation).
+            </p>
+            <p>
+            You can then view more detailed information about a dataset by clicking on its name. You can also download 
+            any of the files (resources) in the dataset by clicking on the download link.
+            </p>
+        </div>
         <div class="searchForm">
             <wl-textfield id="search-input" label="Search datasets" @change=${this._onSearchInput}>
                 <div slot="before"> <wl-icon>search</wl-icon> </div>

@@ -175,10 +175,10 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
 
     _setDatasetLocations(ds: Dataset) {
         let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
-        let covers = ds.resources.map((res) => res.spatial_coverage);
+        let covers = ds.resources.map((res) => res.spatial_coverage).filter((cover) => cover);
         if(covers.length > 0) {
+            map.style.display = "";
             let covertype = covers[0].type;
-            let covervalues = covers.map((cover) => cover.value);
             if(covertype.toLowerCase() == "point") {
                 let covervalues = covers.map((cover) => {
                     return {
@@ -201,7 +201,10 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                 map.setBoundingBoxes(covervalues as BoundingBox[]);
                 return true;
             }
-        }            
+        }
+        else {
+            map.style.display = "none";
+        }
         return false;
     }
 

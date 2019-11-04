@@ -214,7 +214,7 @@ export const loginToWings = async(config: UserPreferences) : Promise<void> => {
                 if(match) {
                   let userid = match[1];
                   resolve();
-                  //console.log("Already Logged in as " + userid + " !");
+                  console.log("Already Logged in as " + userid + " !");
                 }
               }
             },

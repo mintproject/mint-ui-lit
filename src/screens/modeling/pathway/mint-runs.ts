@@ -150,12 +150,9 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                     ${running > 0 ? html `${running} are currently running` : ""}
                     ${pending > 0 ? html `, and ${pending} are waiting to be run` : ""}
                     </p>
-
-                    ${!finished ? 
-                        html`<wl-button class="submit"
-                            @click="${() => this._checkStatusAllEnsembles(model.id)}">Recheck status</wl-button> <br /><br />`
-                        : ""
-                    }
+                    
+                    <wl-button class="submit"
+                            @click="${() => this._checkStatusAllEnsembles(model.id)}">Recheck status</wl-button> <br /><br />
 
                     <div style="width: 100%; border:1px solid #EEE;border-bottom:0px;">
                         ${grouped_ensemble && !grouped_ensemble.loading ? 
@@ -354,7 +351,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         showDialog("progressDialog", this.shadowRoot!);
 
         let start = 0;        
-        await loginToWings(this.prefs);
+        // await loginToWings(this.prefs); // Login to Wings handled at the top now
         
         let workflowid = await setupModelWorkflow(model, this.pathway, this.prefs);
         let tpl_package = await fetchWingsTemplate(workflowid, this.prefs);
@@ -411,7 +408,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
 
         showDialog("progressDialog", this.shadowRoot!);
         
-        await loginToWings(this.prefs);
+        // await loginToWings(this.prefs); // Login to Wings handled at the top now
         
         // FIXME: Some problem with the submission times
         let runtimeInfos = await fetchWingsRunsStatuses(summary.workflow_name, 

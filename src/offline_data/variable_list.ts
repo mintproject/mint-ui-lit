@@ -67,6 +67,14 @@ export const VARIABLES = {
             },
         },
         "Hydrology": {
+            "var4": {
+                "long_name": "River Discharge",
+                "SVO_name": "downstream_volume_flow_rate"
+            },
+            "var5": {
+                "long_name": "Streamflow Duration Index",
+                "SVO_name": "channel~stream_water__flow_duration_index"
+            },
             "var1": {
                 "long_name": "Water table level",
                 "SVO_name": "water_table__level_height"
@@ -78,7 +86,7 @@ export const VARIABLES = {
             "var3": {
                 "long_name": "Total Water Storage",
                 "SVO_name": "total_water_storage"
-            }
+            }            
         }
     }
 };

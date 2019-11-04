@@ -12,15 +12,32 @@ export class RegionsAdministrative extends PageViewElement {
     static get styles() {
         return [
             SharedStyles,
-            css ``
+            css `
+            @media (min-width: 1025px) { 
+                .content {
+                    width: 75%;
+                }
+            }
+            @media (max-width: 1024) { 
+                .content {
+                    width: 100%;
+                }
+            }
+            .content {
+                margin: 0 auto;
+            }
+            `
         ];
     }
 
     protected render() {
         return html`
-        <regions-editor active
-            regionType="Administrative"
-        ></regions-editor>
+        <div class="content">
+            <regions-editor active
+                style="--map-height: 450px;"
+                regionType="Administrative"
+            ></regions-editor>
+        </div>
         `;
     }
 }

@@ -83,7 +83,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
     protected render() {
         let models = this._models[this.regionType];
         return html`
-            ${this._selectedRegion ? 
+            ${this._selectedRegion && models ? 
                 html`
                     <wl-title level="4" style="font-size: 17px; margin-top: 20px;">Models for ${this._selectedRegion.name}</wl-title>
                     ${!models[this._selectedRegion.name] || models[this._selectedRegion.name].length == 0 ? 'No models for this region' :

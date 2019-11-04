@@ -139,8 +139,8 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
         ${task ? html `
         <div class="main-content">
           <wl-title level="2" class="two-column-grid" style="padding: 0px;">
-            <span>Task:</span>
-            <span>${task.name}</span>
+            <span>Thread: </span>
+            <span>${task.name ? (task.name + " - ") : ""} ${pathway.name ? pathway.name : "Default thread"}</span>
           </wl-title>
 
           <wl-title level="3">Variables:</wl-title>
@@ -251,13 +251,13 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
         <span id="start"></span>
         ${Object.values(this._scenarios).map((scenario:any) => html`
         <wl-title level="3" style="margin: 12px 0px 0px 12px">${scenario.name}</wl-title>
-          ${scenario.tasks.map((taskid) => this._tasks[taskid]).map((task) => html`
+          ${scenario.tasks.map((taskid) => this._tasks[taskid]).map((task) => task.pathways.map((pathway) => html`
             <wl-list-item class="active" @click="${() => {
               this._scrollUp();
-              goToPage(PREFIX_REPORT + scenario.id + '/' + task.id + '/' + Object.keys(task.pathways)[0]);
+              goToPage(PREFIX_REPORT + scenario.id + '/' + task.id + '/' + pathway.id);
             }}">
                 <wl-title level="4" style="margin: 0">
-                  ${task.name}
+                ${task.name ? (task.name + " - ") : ""} ${pathway.name ? pathway.name : "Default thread"}
                 </wl-title>
                 ${this._getSubgoalSummaryText(task)}
                 <div slot="after" style="display:flex">
@@ -265,7 +265,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
                 </div>
             </wl-list-item>
 
-          `)}
+          `))}
         `)}
         ${this._loading ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : '' }`
     } else {
@@ -328,9 +328,13 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
                   this._scenarios[sid] = scenario.data();
                   this._scenarios[sid].tasks = [];
                 }
-                this._scenarios[sid].tasks.push(task.ref.id);
-                this._tasks[task.ref.id] = task.data();
-                this._tasks[task.ref.id].id = task.ref.id;
+                if(!this._tasks[task.ref.id]) {
+                  this._scenarios[sid].tasks.push(task.ref.id);
+                  this._tasks[task.ref.id] = task.data();
+                  this._tasks[task.ref.id].id = task.ref.id;
+                  this._tasks[task.ref.id].pathways = [];
+                }
+                this._tasks[task.ref.id].pathways.push(this._pathways[pathway]);
               }
             });
           });

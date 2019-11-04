@@ -618,7 +618,7 @@ export const getVisualizationURL = (pathway: Pathway, prefs: MintPreferences) =>
         if(responseV == "Potential Crop Production")
             return prefs.visualization_url + "/cycles?thread_id=" + pathway.id;
         else
-            return prefs.visualization_url + "/scatter_plot?thread_id=" + pathway.id;
+            return prefs.visualization_url + "/upload?thread_id=" + pathway.id;
     }
     return null;
 }
