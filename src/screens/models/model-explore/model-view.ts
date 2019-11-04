@@ -1074,9 +1074,14 @@ export class ModelView extends connect(store)(PageViewElement) {
                         </span></td>
                         <td>${io.desc}</td>
                         ${this._calibration? html`
-                        <td style="text-align: right;">${io.fixedValueURL ? html`
-                            <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
-                        ` : html`<span style="color:#999999;">-</span>`}</td>
+                        <td style="text-align: right;">${io.fixedValueURL ? 
+                            io.fixedValueURL.split(/ *, */).map((url, i) => (i != 0) ? html`
+                            <br/>
+                            <a target="_blank" href="${url}">${url.split('/').pop()}</a>
+                            ` : html`
+                            <a target="_blank" href="${url}">${url.split('/').pop()}</a>
+                            `)
+                            : html`<span style="color:#999999;">-</span>`}</td>
                         ` : html``}
                         <td style="text-align: right;" class="number">${io.format}</td>
                     </tr>`)}
