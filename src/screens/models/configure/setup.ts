@@ -290,6 +290,23 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 .join(', ');
         }
 
+        // FIXME this should work with the new API
+        let selectRegions = [];
+        if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/Ethiopia') {
+            selectRegions = [
+                {label: 'Baro basin', id: 'https://w3id.org/okn/i/mint/Baro'},
+                {label: 'Gambella region', id: 'https://w3id.org/okn/i/mint/Gambella'},
+            ]
+        } else if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/South_Sudan') {
+            selectRegions = [
+                {label: 'Pongo basin', id: 'https://w3id.org/okn/i/mint/Pongo_Basin_SS'},
+            ]
+        } else if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/Texas') {
+            selectRegions = [
+                {label: 'Barton Springs', id: ''},
+            ]
+        }
+
         return html`
         <span id="start"/>
         ${this._editing ? html`
@@ -321,7 +338,9 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 <td>Region:</td>
                 <td>
                     ${this._editing ? html`
-                    <input id="edit-config-regions" type="text" value="${regions}"/>
+                    <select id="edit-config-regions">
+                        ${selectRegions.map(r => html`<option value="${r.id}">${r.label}</option>`)}
+                    </select>
                     ` : regions}
                 </td>
             </tr>
@@ -616,6 +635,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             let configChanged : boolean = (versionChanged || ui.selectedConfig !== this._selectedConfig);
             let setupChanged : boolean = (configChanged || ui.selectedCalibration !== this._selectedSetup);
             this._editing = (ui.mode === 'edit');
+
+            super.setRegionId(state);
 
             if (modelChanged) {
                 this._selectedModel = ui.selectedModel;

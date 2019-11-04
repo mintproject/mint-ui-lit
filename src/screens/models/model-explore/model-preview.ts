@@ -204,7 +204,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                 <td class="left"> 
                   <div class="text-centered one-line">
                     ${this._ready ? html`
-                        <b>Executable in MINT</b>
+                        <b style="color: darkgreen;">Executable in MINT</b>
                     `: html`
                         <b>Not executable in MINT</b>
                     `} 
