@@ -329,7 +329,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
             
             if(configs != null) {
                 // FIXME: Hack for restricting the number of runs for analysts
-                if(this.user.email.match(/^analyst/i) && configs.length > 100) {
+                if(this.user.email.match(/^analyst/i) && configs.length > 300) {
                     alert("Error: Too many Input combinations: " + configs.length +". Max allowed : " + 100);
                     return;
                 }
