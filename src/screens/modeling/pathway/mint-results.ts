@@ -129,6 +129,9 @@ export class MintResults extends connect(store)(MintPathwayPage) {
            ${Object.keys(this.pathway.executable_ensemble_summary).map((modelid) => {
                let summary = this.pathway.executable_ensemble_summary[modelid];
                let model = this.pathway.models![modelid];
+               if(!model) {
+                   return;
+               }
                let grouped_ensemble = grouped_ensembles[modelid];
                this.totalPages = Math.ceil(summary.total_runs/this.pageSize);
                let finished_runs = summary.successful_runs + summary.failed_runs;
