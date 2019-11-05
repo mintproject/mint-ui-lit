@@ -71,6 +71,10 @@ export const VARIABLES = {
                 "long_name": "River Discharge",
                 "SVO_name": "downstream_volume_flow_rate"
             },
+            "var7": {
+                "long_name": "Overbank Flood Depth",
+                "SVO_name": "land_surface_water__flood_inundation_depth"
+            },
             "var5": {
                 "long_name": "Streamflow Duration Index",
                 "SVO_name": "channel~stream_water__flow_duration_index"
