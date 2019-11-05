@@ -101,6 +101,9 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
                         this._setupConfigs[sname] = cname;
                     })
                 }
+                if(this._selectedRegion) {
+                    this._getMatchingModels();
+                }
             });
         })
         .catch((err) => {console.log('Error on GET modelConfigurations', err)})        

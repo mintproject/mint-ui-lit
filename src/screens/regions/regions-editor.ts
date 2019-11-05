@@ -309,20 +309,22 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         super.setRegion(state);
         
         if(this._regionid && this._region) {
+            let qr = state.regions.query_result;
             if(this._regionid != cur_regionid || !this._regions) {
-                let qr = state.regions.query_result;
+                //console.log("Region changed to " + this._regionid);
                 if(!qr || !qr[this._regionid] || !qr[this._regionid][this.regionType]) {
                     if(!this._dispatched) {
                         this._dispatched = true;
                         store.dispatch(queryRegions(this._regionid, this.regionType));
                     }
                 }
-                else {
-                    this._dispatched = false;
-                    this._regions = qr[this._regionid][this.regionType];                
-                    this.addRegionsToMap();
-                    //console.log(this._regions);
-                }
+            }
+            if(qr && qr[this._regionid] && qr[this._regionid][this.regionType]
+                    && this._regions != qr[this._regionid][this.regionType]) {
+                this._dispatched = false;
+                this._regions = qr[this._regionid][this.regionType];                
+                this.addRegionsToMap();
+                //console.log(this._regions);
             }
 
             // Set parent region

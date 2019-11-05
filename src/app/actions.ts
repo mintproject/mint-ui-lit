@@ -139,7 +139,14 @@ const modelCatalogLogin = (username: string, password: string) => {
 export const goToPage = (page:string) => {
   let state: any = store.getState();
   let regionid = state.ui ? state.ui.selected_top_regionid : "";
-  let url = BASE_HREF + (regionid ? regionid + "/" : "") + page;
+  let url = BASE_HREF + (regionid ? regionid + "/" : "") + (page ? page : "");
+  window.history.pushState({}, page, url);
+  store.dispatch(navigate(decodeURIComponent(location.pathname)));    
+}
+
+export const goToRegionPage = (regionid: string, page:string) => {
+  let state: any = store.getState();
+  let url = BASE_HREF + (regionid ? regionid + "/" : "") + (page ? page : "");
   window.history.pushState({}, page, url);
   store.dispatch(navigate(decodeURIComponent(location.pathname)));    
 }
