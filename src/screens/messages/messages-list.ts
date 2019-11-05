@@ -154,6 +154,9 @@ export class MessagesList extends connect(store)(PageViewElement) {
     if(state.messages) {
       if(state.messages.threads) {
         this._list = state.messages.threads;
+        this._list.threadids.sort((id1,id2) => {
+          return this._list.threads[id2].timestamp.seconds - this._list.threads[id1].timestamp.seconds;
+        });
       }
     }
     if(state.app.user) {
