@@ -516,9 +516,9 @@ export const updatePathwayEnsembles = (ensembles: ExecutableEnsemble[]) => {
 // Delete Scenario
 export const deleteScenario = (scenario:Scenario) =>  {
     let scenarioRef = db.collection("scenarios").doc(scenario.id);
-    _deleteCollection(scenarioRef.collection("goals"));
-    _deleteCollection(scenarioRef.collection("subgoals"));
-    _deleteCollection(scenarioRef.collection("pathways"));
+    _deleteCollection(scenarioRef.collection("goals"), null);
+    _deleteCollection(scenarioRef.collection("subgoals"), null);
+    _deleteCollection(scenarioRef.collection("pathways"), "ensembleids");
     return scenarioRef.delete();
 };
 
@@ -552,10 +552,16 @@ export const deletePathway = (scenario:Scenario, subgoalid: string, pathway:Path
 
 /* Helper Function */
 
-const _deleteCollection = (collRef: firebase.firestore.CollectionReference) => {
+const _deleteCollection = (collRef: firebase.firestore.CollectionReference, subCollectionName: string) => {
     collRef.get().then((querySnapshot) => {
         querySnapshot.forEach((doc) => {
+            // Do a recursive delete if doc has a subcollection
+            if(subCollectionName) {
+                let subCollRef = doc.ref.collection(subCollectionName);
+                _deleteCollection(subCollRef, null);
+            }
+            // Delete document inside the collection
             doc.ref.delete();
         });
-    });    
+    });
 }
