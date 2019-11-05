@@ -7,14 +7,17 @@ import { ExplorerStyles } from '../model-explore/explorer-styles'
 import { store, RootState } from 'app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from 'app/actions';
+import { IdMap } from 'app/reducers';
 
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
 import { personGet, personPost, modelConfigurationPut,
          parameterGet, datasetSpecificationGet, gridGet,
-         timeIntervalGet, processGet, softwareImageGet, } from 'model-catalog/actions';
+         timeIntervalGet, processGet, softwareImageGet, sampleResourceGet } from 'model-catalog/actions';
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
+
+import { SampleResource } from '@mintproject/modelcatalog_client';
 
 import "weightless/slider";
 import "weightless/progress-spinner";
@@ -51,6 +54,9 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     private _inputs : any = {};
 
     @property({type: Object})
+    private _sampleResources : IdMap<SampleResource> = {} as IdMap<SampleResource>;
+
+    @property({type: Object})
     private _authors : any = {};
 
     @property({type: Object})
@@ -77,6 +83,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
 
     private _parametersLoading : Set<string> = new Set();
     private _inputsLoading : Set<string> = new Set();
+    private _sampleResourcesLoading : Set<string> = new Set();
     private _authorsLoading : Set<string> = new Set();
     private _processesLoading : Set<string> = new Set();
     private _softwareImageLoading : boolean = false;
@@ -248,6 +255,9 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     }
 
     protected render() {
+        if (!this._setup) {
+            return html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
+        }
         // Sort parameters by order
         let paramOrder = []
         if (this._setup && this._setup.hasParameter) {
@@ -277,6 +287,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 }
             })
         }
+
         let keywords = '';
         if (this._setup.keywords) {
             keywords = this._setup.keywords[0].split(/ *; */).join(', ');
@@ -532,14 +543,19 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     <b>${this._inputs[uri].description}</b>
                 </td>
                 <td>
-                    ${this._editing ? html`
-                    <input style="width: 100%;" id="edit-config-input-${i}" type="text" value="${
-                        this._inputs[uri].hasFixedResource && this._inputs[uri].hasFixedResource.length > 0 ? 
-                        this._inputs[uri].hasFixedResource[0].id : ''
-                    }"/>
-                    ` : this._inputs[uri].hasFixedResource && this._inputs[uri].hasFixedResource.length > 0 ? 
-                        this._inputs[uri].hasFixedResource[0].id : '-'
-                    }
+                    ${this._inputs[uri].hasFixedResource && this._inputs[uri].hasFixedResource.length > 0 ? 
+                    this._inputs[uri].hasFixedResource.map((fixed) => this._sampleResources[fixed.id] ? 
+                        html`
+                        <span>
+                            <b>${this._sampleResources[fixed.id].label}</b> <br/>
+                            <a target="_blank" href="${this._sampleResources[fixed.id].value}">
+                                ${this._sampleResources[fixed.id].value}
+                            </a><br/>
+                            <span class="monospaced" style="white-space: nowrap;">${this._sampleResources[fixed.id].dataCatalogIdentifier}</span>
+                        </span>`
+                        :
+                        html`${fixed.id.split('/').pop()} <loading-dots style="--width: 20px"></loading-dots>`)
+                    : html`<div class="info-center">- Not set -</div>`}
                 </td>
                 <td class="ta-right monospaced">${this._inputs[uri].hasFormat}</td>`
                 : html`<td colspan="4" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
@@ -665,6 +681,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 this._parametersLoading = new Set();
                 this._inputs = {};
                 this._inputsLoading = new Set();
+                this._sampleResources = {} as IdMap<SampleResource>;
+                this._sampleResourcesLoading = new Set();
                 this._authors = {};
                 this._authorsLoading = new Set();
                 this._processes = {};
@@ -787,8 +805,27 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                                     tmp[uri] = db.datasetSpecifications[uri];
                                     this._inputs = tmp;
                                     this._inputsLoading.delete(uri);
+                                    if (tmp[uri].hasFixedResource && tmp[uri].hasFixedResource.length > 0) {
+                                        tmp[uri].hasFixedResource.forEach(fixed => {
+                                            store.dispatch(sampleResourceGet(fixed.id))
+                                            this._sampleResourcesLoading.add(fixed.id);
+                                        });
+                                    }
                                 }
                             })
+                        }
+                    }
+
+                    if (db.sampleResources) {
+                        if (this._sampleResourcesLoading.size > 0) {
+                            this._sampleResourcesLoading.forEach((uri:string) => {
+                                if (db.sampleResources[uri]) {
+                                    let tmp : IdMap<SampleResource> = { ...this._sampleResources };
+                                    tmp[uri] = db.sampleResources[uri];
+                                    this._sampleResources = tmp;
+                                    this._sampleResourcesLoading.delete(uri);
+                                }
+                            });
                         }
                     }
 

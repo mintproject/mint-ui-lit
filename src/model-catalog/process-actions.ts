@@ -6,7 +6,7 @@ import { Configuration, Process, ProcessApi } from '@mintproject/modelcatalog_cl
 import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, 
          DEFAULT_GRAPH, START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
 
-function debug (...args: any[]) { console.log('OBA:', ...args); }
+function debug (...args: any[]) { }// console.log('OBA:', ...args); }
 
 export const ALL_PROCESSES = 'ALL_PROCESSES'
 
@@ -23,16 +23,15 @@ export const processesGet: ActionCreator<ModelCatalogProcessThunkResult> = () =>
     dispatch({type: START_LOADING, id: ALL_PROCESSES});
 
     let api : ProcessApi = new ProcessApi();
-    api.processsGet({username: DEFAULT_GRAPH})
-        .then((data) => {
-            console.log('DATA', data);
+    let req = api.processsGet({username: DEFAULT_GRAPH});
+    req.then((data) => {
             dispatch({
                 type: PROCESSES_GET,
                 payload: data.reduce(idReducer, {})
             });
             dispatch({type: END_LOADING, id: ALL_PROCESSES});
-        })
-        .catch((err) => {console.log('Error on GET processes', err)})
+    });
+    req.catch((err) => {console.log('Error on GET processes', err)});
 }
 
 export const PROCESS_GET = "PROCESS_GET";
@@ -41,16 +40,16 @@ export const processGet: ActionCreator<ModelCatalogProcessThunkResult> = ( uri:s
     debug('Fetching process', uri);
     let id : string = uri.split('/').pop();
     let api : ProcessApi = new ProcessApi();
-    api.processsIdGet({username: DEFAULT_GRAPH, id: id})
-        .then((resp) => {
+    let req = api.processsIdGet({username: DEFAULT_GRAPH, id: id});
+    req.then((resp) => {
             let data = {};
             data[uri] = resp;
             dispatch({
                 type: PROCESS_GET,
                 payload: data
             });
-        })
-        .catch((err) => {console.log('Error on getProcess', err)})
+    });
+    req.catch((err) => {console.log('Error on getProcess', err)});
 }
 
 export const PROCESS_POST = "PROCESS_POST";
@@ -64,8 +63,8 @@ export const processPost: ActionCreator<ModelCatalogProcessThunkResult> = (proce
         dispatch({type: START_POST, id: identifier});
         process.id = undefined;
         let api : ProcessApi = new ProcessApi(cfg);
-        api.processsPost({user: DEFAULT_GRAPH, process: process}) // This should be my username on prod.
-            .then((resp) => {
+        let req = api.processsPost({user: DEFAULT_GRAPH, process: process}); // This should be my username on prod.
+        req.then((resp) => {
                 console.log('Response for POST process:', resp);
                 //Its returning the ID without the prefix
                 let uri = PREFIX_URI + resp.id;
@@ -77,8 +76,8 @@ export const processPost: ActionCreator<ModelCatalogProcessThunkResult> = (proce
                     payload: data
                 });
                 dispatch({type: END_POST, id: identifier, uri: uri});
-            })
-            .catch((err) => {console.log('Error on POST process', err)})
+        }); 
+        req.catch((err) => {console.log('Error on POST process', err)})
     } else if (status === 'LOADING') {
         repeatAction(processPost, process);
     }
@@ -95,8 +94,8 @@ export const processPut: ActionCreator<ModelCatalogProcessThunkResult> = ( proce
         dispatch({type: START_LOADING, id: process.id});
         let api : ProcessApi = new ProcessApi(cfg);
         let id : string = process.id.split('/').pop();
-        api.processsIdPut({id: id, user: DEFAULT_GRAPH, process: process}) // This should be my username on prod.
-            .then((resp) => {
+        let req = api.processsIdPut({id: id, user: DEFAULT_GRAPH, process: process}); // This should be my username on prod.
+        req.then((resp) => {
                 console.log('Response for PUT process:', resp);
                 let data = {};
                 data[process.id] = resp;
@@ -105,8 +104,8 @@ export const processPut: ActionCreator<ModelCatalogProcessThunkResult> = ( proce
                     payload: data
                 });
                 dispatch({type: END_LOADING, id: process.id});
-            })
-            .catch((err) => {console.log('Error on PUT process', err)})
+        });
+        req.catch((err) => {console.log('Error on PUT process', err)})
     } else if (status === 'LOADING') {
         repeatAction(processPut, process);
     }
@@ -122,15 +121,15 @@ export const processDelete: ActionCreator<ModelCatalogProcessThunkResult> = ( ur
     if (status === 'DONE') {
         let api : ProcessApi = new ProcessApi(cfg);
         let id : string = uri.split('/').pop();
-        api.processsIdDelete({id: id, user: DEFAULT_GRAPH}) // This should be my username on prod.
-            .then((resp) => {
+        let req = api.processsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        req.then((resp) => {
                 console.log('Response for DELETE process:', resp);
                 dispatch({
                     type: PROCESS_DELETE,
                     uri: uri
                 });
-            })
-            .catch((err) => {console.log('Error on DELETE process', err)})
+        });
+        req.catch((err) => {console.log('Error on DELETE process', err)});
     } else if (status === 'LOADING') {
         repeatAction(processDelete, uri);
     }

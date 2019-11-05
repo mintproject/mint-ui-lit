@@ -309,6 +309,9 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
     }
 
     protected render() {
+        if (!this._config) {
+            return html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
+        }
         // Sort parameters by order
         let paramOrder = []
         if (this._config.hasParameter) {

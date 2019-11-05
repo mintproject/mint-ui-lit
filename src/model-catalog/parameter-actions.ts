@@ -6,7 +6,7 @@ import { Configuration, Parameter, ParameterApi } from '@mintproject/modelcatalo
 import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, DEFAULT_GRAPH,
          START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
 
-function debug (...args: any[]) { console.log('OBA:', ...args); }
+function debug (...args: any[]) {}// console.log('OBA:', ...args); }
 
 export const ALL_PARAMETERS = 'ALL_PARAMETERS'
 
@@ -23,15 +23,15 @@ export const parametersGet: ActionCreator<ModelCatalogParameterThunkResult> = ()
     dispatch({type: START_LOADING, id: ALL_PARAMETERS});
 
     let api : ParameterApi = new ParameterApi();
-    api.parametersGet({username: DEFAULT_GRAPH})
-        .then((data) => {
+    let req = api.parametersGet({username: DEFAULT_GRAPH});
+    req.then((data) => {
             dispatch({
                 type: PARAMETERS_GET,
                 payload: data.reduce(idReducer, {})
             });
             dispatch({type: END_LOADING, id: ALL_PARAMETERS});
-        })
-        .catch((err) => {console.log('Error on GET parameters', err)})
+    });
+    req.catch((err) => {console.log('Error on GET parameters', err)});
 }
 
 export const PARAMETER_GET = "PARAMETER_GET";
@@ -40,16 +40,16 @@ export const parameterGet: ActionCreator<ModelCatalogParameterThunkResult> = ( u
     debug('Fetching parameter', uri);
     let id : string = uri.split('/').pop();
     let api : ParameterApi = new ParameterApi();
-    api.parametersIdGet({username: DEFAULT_GRAPH, id: id})
-        .then((resp) => {
+    let req = api.parametersIdGet({username: DEFAULT_GRAPH, id: id});
+    req.then((resp) => {
             let data = {};
             data[uri] = resp;
             dispatch({
                 type: PARAMETER_GET,
                 payload: data
             });
-        })
-        .catch((err) => {console.log('Error on getParameter', err)})
+    });
+    req.catch((err) => {console.log('Error on getParameter', err)});
 }
 
 export const PARAMETER_POST = "PARAMETER_POST";
@@ -63,8 +63,8 @@ export const parameterPost: ActionCreator<ModelCatalogParameterThunkResult> = (p
         dispatch({type: START_POST, id: identifier});
         parameter.id = undefined;
         let api : ParameterApi = new ParameterApi(cfg);
-        api.parametersPost({user: DEFAULT_GRAPH, parameter: parameter}) // This should be my username on prod.
-            .then((resp) => {
+        let req = api.parametersPost({user: DEFAULT_GRAPH, parameter: parameter}) // This should be my username on prod.
+        req.then((resp) => {
                 console.log('Response for POST parameter:', resp);
                 //Its returning the ID without the prefix
                 let uri = PREFIX_URI + resp.id;
@@ -76,8 +76,8 @@ export const parameterPost: ActionCreator<ModelCatalogParameterThunkResult> = (p
                     payload: data
                 });
                 dispatch({type: END_POST, id: identifier, uri: uri});
-            })
-            .catch((err) => {console.log('Error on POST parameter', err)})
+        });
+        req.catch((err) => {console.log('Error on POST parameter', err)});
     } else if (status === 'LOADING') {
         repeatAction(parameterPost, parameter);
     }
@@ -94,8 +94,8 @@ export const parameterPut: ActionCreator<ModelCatalogParameterThunkResult> = ( p
         dispatch({type: START_LOADING, id: parameter.id});
         let api : ParameterApi = new ParameterApi(cfg);
         let id : string = parameter.id.split('/').pop();
-        api.parametersIdPut({id: id, user: DEFAULT_GRAPH, parameter: parameter}) // This should be my username on prod.
-            .then((resp) => {
+        let req = api.parametersIdPut({id: id, user: DEFAULT_GRAPH, parameter: parameter}); // This should be my username on prod.
+        req.then((resp) => {
                 console.log('Response for PUT parameter:', resp);
                 let data = {};
                 data[parameter.id] = resp;
@@ -104,8 +104,8 @@ export const parameterPut: ActionCreator<ModelCatalogParameterThunkResult> = ( p
                     payload: data
                 });
                 dispatch({type: END_LOADING, id: parameter.id});
-            })
-            .catch((err) => {console.log('Error on PUT parameter', err)})
+        });
+        req.catch((err) => {console.log('Error on PUT parameter', err)});
     } else if (status === 'LOADING') {
         repeatAction(parameterPut, parameter);
     }
@@ -121,15 +121,15 @@ export const parameterDelete: ActionCreator<ModelCatalogParameterThunkResult> = 
     if (status === 'DONE') {
         let api : ParameterApi = new ParameterApi(cfg);
         let id : string = uri.split('/').pop();
-        api.parametersIdDelete({id: id, user: DEFAULT_GRAPH}) // This should be my username on prod.
-            .then((resp) => {
+        let req = api.parametersIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        req.then((resp) => {
                 console.log('Response for DELETE parameter:', resp);
                 dispatch({
                     type: PARAMETER_DELETE,
                     uri: uri
                 });
-            })
-            .catch((err) => {console.log('Error on DELETE parameter', err)})
+        });
+        req.catch((err) => {console.log('Error on DELETE parameter', err)});
     } else if (status === 'LOADING') {
         repeatAction(parameterDelete, uri);
     }

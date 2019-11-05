@@ -382,9 +382,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                         </p>
                     </div>` : ''}
                     <div style="padding: 0px 20px;">
-                        <models-configure-configuration class="page" ?active="${this._config && !this._setup && !this._creating}"></models-configure-configuration>
-                        <models-configure-setup class="page" ?active="${this._setup && !this._creating}"></models-configure-setup>
-                        <models-new-setup class="page" ?active="${this._config && this._creating}"></models-new-setup>
+                        <models-configure-configuration class="page" ?active="${this._selectedConfig && !this._selectedSetup && !this._creating}"></models-configure-configuration>
+                        <models-configure-setup class="page" ?active="${this._selectedSetup && !this._creating}"></models-configure-setup>
+                        <models-new-setup class="page" ?active="${this._selectedConfig && this._creating}"></models-new-setup>
                     </div>
                 </div>
             </div>
