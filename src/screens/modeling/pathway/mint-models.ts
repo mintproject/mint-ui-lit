@@ -2,11 +2,11 @@ import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 
-import { ModelMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation } from "../reducers";
+import { ModelMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, ExecutableEnsembleSummary } from "../reducers";
 import models, { VariableModels, Model } from "../../models/reducers";
 
 import { SharedStyles } from "../../../styles/shared-styles";
-import { updatePathway } from "../actions";
+import { updatePathway, deleteAllPathwayEnsembleIds } from "../actions";
 import { removeDatasetFromPathway, matchVariables, getUISelectedSubgoalRegion } from "../../../util/state_functions";
 
 import "weightless/tooltip";
@@ -18,6 +18,7 @@ import { queryModelsByVariables } from "../../models/actions";
 import { getVariableLongName } from "../../../offline_data/variable_list";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { Region } from "screens/regions/reducers";
+import { IdMap } from "app/reducers";
 
 store.addReducers({
     models
@@ -387,6 +388,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     _selectPathwayModels() {
         let models = this._getSelectedModels();
         let model_ensembles:ModelEnsembleMap = this.pathway.model_ensembles || {};
+        let executable_ensemble_summary:IdMap<ExecutableEnsembleSummary> = this.pathway.executable_ensemble_summary || {};
 
         if (Object.keys(models).length < 1) {
             showNotification("selectOneModelNotification", this.shadowRoot!);
@@ -406,6 +408,12 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                         })
                     })
                     delete model_ensembles[modelid];
+                }
+                if(executable_ensemble_summary[modelid]) {
+                    // Delete ensemble ids
+                    deleteAllPathwayEnsembleIds(this.scenario.id, this.pathway.id, modelid);
+                    // Remove executable summary
+                    delete executable_ensemble_summary[modelid];
                 }
             }
         });
