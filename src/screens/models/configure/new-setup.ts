@@ -584,8 +584,9 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
 
     _showAuthorDialog () {
         this._dialog = 'person';
-        console.log(this._config.author);
-        let selectedAuthors = this._config.author.filter(x => x.type === "Person").reduce((acc, author) => {
+        let selectedAuthors = this._config.author
+                .map(x => typeof x === 'object' ? x : {id: x})
+                .reduce((acc, author) => {
             if (!acc[author.id]) acc[author.id] = true;
             return acc;
         }, {})
