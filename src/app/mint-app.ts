@@ -207,19 +207,18 @@ export class MintApp extends connect(store)(LitElement) {
             `
             :
             html `
-            <wl-button flat inverted class="message-button ${this._page == 'messages' ? 'selected' : ''}" @click="${() => goToPage('messages')}">
-              Messages <wl-icon style="margin-left: 4px;">message</wl-icon>
-            </wl-button>
-
             ${this._selectedRegion ? 
               html`
+              <wl-button flat inverted class="message-button ${this._page == 'messages' ? 'selected' : ''}" @click="${() => goToPage('messages')}">
+                Messages <wl-icon style="margin-left: 4px;">message</wl-icon>
+              </wl-button>              
               &nbsp;
               <wl-button flat inverted class="message-button ${this._page == 'emulators' ? 'selected' : ''}" @click="${() => goToPage('emulators')}">
                 Emulators <wl-icon style="margin-left: 4px;">settings</wl-icon>
               </wl-button>
               ` : ""
             }
-            
+
             <wl-button flat inverted @click="${signOut}">
               LOGOUT ${this.user.email}
             </wl-button>
