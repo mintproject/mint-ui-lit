@@ -21,7 +21,7 @@ import { resetForm, showDialog, formElementsComplete, showNotification, hideDial
 import { firestore } from "firebase";
 import { toTimeStamp, fromTimeStampToDateString } from "util/date-utils";
 import { RegionList, Region } from "screens/regions/reducers";
-import { getVariableLongName } from "offline_data/variable_list";
+import { getVariableLongName, getVariableIntervention } from "offline_data/variable_list";
 
 
 @customElement('mint-scenario')
@@ -50,6 +50,9 @@ export class MintScenario extends connect(store)(PageViewElement) {
     
     @property({type: Boolean})
     private _subgoalEditMode: boolean = false;
+
+    @property({type: Object})
+    private _selectedIntervention!: any;
 
     private _dispatched: boolean = false;
 
@@ -395,9 +398,21 @@ export class MintScenario extends connect(store)(PageViewElement) {
             <input type="hidden" name="subgoalid"></input>
 
             <!-- Variables --> 
-            ${renderVariables(this._subgoalEditMode)}
+            ${renderVariables(this._subgoalEditMode, this._handleResponseVariableChange, this._handleDrivingVariableChange)}
             <br />
-            
+
+            <!-- Intervention Details (if any) -->
+            ${this._selectedIntervention ? 
+                html`
+                    <b>Intervention: ${this._selectedIntervention.name}</b>
+                    <div style="font-size:12px;color:#999">
+                    ${this._selectedIntervention.description}
+                    </div>
+                    <div style="height:10px;">&nbsp;</div>
+                `
+                : ""
+            }
+
             <!-- Sub Region -->
             <div class="formRow">
                 <div class="input_half">
@@ -420,7 +435,8 @@ export class MintScenario extends connect(store)(PageViewElement) {
                         })}
                     </select>
                 </div>            
-            </div>            
+            </div>
+
             <div style="height:10px;">&nbsp;</div>
 
             <!-- Time Period -->
@@ -429,11 +445,11 @@ export class MintScenario extends connect(store)(PageViewElement) {
             </div>
             <div class="formRow">
                 <div class="input_half">
-                    <input name="subgoal_from" type="date" value="${this._scenario!.dates.start_date}">
+                    <input name="subgoal_from" type="date" value="${fromTimeStampToDateString(this._scenario!.dates.start_date)}">
                 </div>
                 to
                 <div class="input_half">
-                    <input name="subgoal_to" type="date" value="${this._scenario!.dates.end_date}">
+                    <input name="subgoal_to" type="date" value="${fromTimeStampToDateString(this._scenario!.dates.end_date)}">
                 </div>
             </div>
             <br />
@@ -446,6 +462,13 @@ export class MintScenario extends connect(store)(PageViewElement) {
             </div>
             <br />
         `;        
+    }
+
+    _handleResponseVariableChange() {}
+    
+    _handleDrivingVariableChange(e: any) {
+        let varid = e.target.value;
+        this._selectedIntervention = getVariableIntervention(varid);
     }
     
     _renderThreadDialog() {
@@ -558,12 +581,16 @@ export class MintScenario extends connect(store)(PageViewElement) {
         let goalid = null; //(e.currentTarget as HTMLButtonElement).dataset['goalid']; 
         let form = this.shadowRoot!.querySelector<HTMLFormElement>("#subObjectiveForm")!;
         resetForm(form, null);
+
         this._subgoalEditMode = false;
         let dates = this._scenario.dates;
         (form.elements["goalid"] as HTMLInputElement).value = goalid!;
         (form.elements["subgoal_subregion"] as HTMLSelectElement).value = this._scenario.subregionid!;
         (form.elements["subgoal_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
         (form.elements["subgoal_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
+
+        this._selectedIntervention = null;
+
         showDialog("subObjectiveDialog", this.shadowRoot!);
     }
 
@@ -651,17 +678,24 @@ export class MintScenario extends connect(store)(PageViewElement) {
             if(subgoal) {
                 let form = this.shadowRoot!.querySelector<HTMLFormElement>("#subObjectiveForm")!;
                 resetForm(form, null);
+                
                 this._subgoalEditMode = false; // FIXME: This should be true
                 let dates = subgoal.dates ? subgoal.dates : this._scenario.dates;
+                let response_variable = (subgoal.response_variables && subgoal.response_variables.length > 0) ? 
+                    subgoal.response_variables[0] : "";
+                let driving_variable = (subgoal.driving_variables && subgoal.driving_variables.length > 0) ? 
+                    subgoal.driving_variables[0] : "";
+
                 (form.elements["subgoalid"] as HTMLInputElement).value = subgoal.id;
                 (form.elements["subgoal_name"] as HTMLInputElement).value = subgoal.name;
                 (form.elements["subgoal_subregion"] as HTMLInputElement).value = subgoal.subregionid;
                 (form.elements["subgoal_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
                 (form.elements["subgoal_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
-                (form.elements["response_variable"] as HTMLInputElement).value = 
-                    (subgoal.response_variables && subgoal.response_variables.length > 0) ? subgoal.response_variables[0] : "";
-                (form.elements["driving_variable"] as HTMLInputElement).value = 
-                    (subgoal.driving_variables && subgoal.driving_variables.length > 0) ? subgoal.driving_variables[0] : "";
+                (form.elements["response_variable"] as HTMLInputElement).value = response_variable;
+                (form.elements["driving_variable"] as HTMLInputElement).value = driving_variable;
+
+                this._selectedIntervention = getVariableIntervention(driving_variable);
+
                 showDialog("subObjectiveDialog", this.shadowRoot!);
             }
         }

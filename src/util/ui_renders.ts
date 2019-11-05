@@ -2,7 +2,7 @@ import { html } from "lit-element";
 import { StepUpdateInformation } from "../screens/modeling/reducers";
 import { VARIABLES } from "../offline_data/variable_list";
 
-export const renderVariables = (readonly: boolean) => {
+export const renderVariables = (readonly: boolean, response_callback: Function, driving_callback: Function) => {
     return html`
         <p>
         Indicators are the variables or index that indicates the state of the system being modeled.
@@ -11,11 +11,11 @@ export const renderVariables = (readonly: boolean) => {
         <div class="formRow">
             <div class="input_half">
                 <label>Indicators/Response of interest</label>
-                ${renderResponseVariables("", readonly)}
+                ${renderResponseVariables("", readonly, response_callback)}
             </div>  
             <div class="input_half">
                 <label>Adjustable Variables</label>
-                ${renderDrivingVariables("", readonly)}
+                ${renderDrivingVariables("", readonly, driving_callback)}
             </div>                            
         </div>     
     `;
@@ -55,9 +55,9 @@ export const renderNotifications = () => {
     `;
 }
 
-export const renderResponseVariables = (variableid: string, readonly: boolean) => {
+export const renderResponseVariables = (variableid: string, readonly: boolean, callback: Function) => {
     return html`
-        <select name="response_variable" ?disabled="${readonly}">
+        <select name="response_variable" ?disabled="${readonly}" @change=${callback}>
             ${Object.keys(VARIABLES['indicators']).map((categoryname) => {
                 let category = VARIABLES['indicators'][categoryname];
                 return html`
@@ -78,9 +78,9 @@ export const renderResponseVariables = (variableid: string, readonly: boolean) =
     `;
 }
 
-export const renderDrivingVariables = (variableid: string, readonly: boolean) => {
+export const renderDrivingVariables = (variableid: string, readonly: boolean, callback: Function) => {
     return html`
-        <select name="driving_variable" ?disabled="${readonly}">
+        <select name="driving_variable" ?disabled="${readonly}" @change=${callback}>
             <option value="">None</option>
             ${Object.keys(VARIABLES['adjustment_variables']).map((categoryname) => {
                 let category = VARIABLES['adjustment_variables'][categoryname];
@@ -89,6 +89,10 @@ export const renderDrivingVariables = (variableid: string, readonly: boolean) =>
                 ${Object.keys(category).map((varid) => {
                     let stdname = category[varid]["SVO_name"];
                     let name = category[varid]["long_name"];
+                    let intervention = category[varid]["intervention"];
+                    if(intervention) {
+                        name += " (Intervention: " + intervention.name + ")";
+                    }
                     return html`
                         <option value="${stdname}" ?selected="${stdname==variableid}">
                             ${name}
