@@ -14,6 +14,7 @@ import "../../thirdparty/google-map/src/google-map";
 import "../../components/google-map-custom";
 import { selectTopRegion } from '../../app/ui-actions';
 import { GoogleMapCustom } from 'components/google-map-custom';
+import { BASE_HREF } from 'app/actions';
 
 @customElement('app-home')
 export class AppHome extends connect(store)(PageViewElement) {
@@ -125,7 +126,13 @@ export class AppHome extends connect(store)(PageViewElement) {
     }
 
     protected regionSelected(regionid: string) {
-      store.dispatch(selectTopRegion(regionid));
+      if(regionid) {
+        store.dispatch(selectTopRegion(regionid));
+        
+        let url = BASE_HREF + regionid;
+        console.log(regionid);
+        window.history.pushState({}, "Home", url);
+      }
     }
 
     private _addRegions() {

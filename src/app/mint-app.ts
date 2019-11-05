@@ -29,6 +29,7 @@ import '../screens/models/models-home';
 import '../screens/analysis/analysis-home';
 import '../screens/variables/variables-home';
 import '../screens/messages/messages-home';
+import '../screens/emulators/emulators-home';
 
 import { SharedStyles } from '../styles/shared-styles';
 import { showDialog, hideDialog, formElementsComplete } from '../util/ui_functions';
@@ -209,6 +210,16 @@ export class MintApp extends connect(store)(LitElement) {
             <wl-button flat inverted class="message-button ${this._page == 'messages' ? 'selected' : ''}" @click="${() => goToPage('messages')}">
               Messages <wl-icon style="margin-left: 4px;">message</wl-icon>
             </wl-button>
+
+            ${this._selectedRegion ? 
+              html`
+              &nbsp;
+              <wl-button flat inverted class="message-button ${this._page == 'emulators' ? 'selected' : ''}" @click="${() => goToPage('emulators')}">
+                Emulators <wl-icon style="margin-left: 4px;">settings</wl-icon>
+              </wl-button>
+              ` : ""
+            }
+            
             <wl-button flat inverted @click="${signOut}">
               LOGOUT ${this.user.email}
             </wl-button>
@@ -231,6 +242,7 @@ export class MintApp extends connect(store)(LitElement) {
               <modeling-home class="page fullpage" ?active="${this._page == 'modeling'}"></modeling-home>
               <analysis-home class="page fullpage" ?active="${this._page == 'analysis'}"></analysis-home>
               <messages-home class="page fullpage" ?active="${this._page == 'messages'}"></messages-home>
+              <emulators-home class="page fullpage" ?active="${this._page == 'emulators'}"></emulators-home>
             </div>
           </div>
         </div>

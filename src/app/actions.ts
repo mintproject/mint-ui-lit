@@ -262,6 +262,13 @@ const loadPage: ActionCreator<ThunkResult> =
           }
         });
         break;
+    case 'emulators':
+      import('../screens/emulators/emulators-home').then((_module) => {
+        if(params.length > 0) {
+          //store.dispatch(queryRegionDetail(params[0]));
+        }
+      });
+      break;
     case 'analysis':
         if (subpage == 'home') {
             import('../screens/analysis/analysis-home').then((_module) => {
