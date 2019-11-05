@@ -23,7 +23,10 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     
     @property({type: Boolean})
     private _editMode: Boolean = false;
-    
+   
+    @property({type: Boolean})
+    private _showAllResults: Boolean = false;
+
     @property({type: Object})
     private _progress_item: Model;
     @property({type: Number})
@@ -92,7 +95,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                     grouped_ensembles[model.id].inputs.push(inf);
             })
             model.output_files.map((outf) => {
-                if(matchVariables(this.pathway.response_variables, outf.variables, false))
+                if(this._showAllResults || matchVariables(this.pathway.response_variables, outf.variables, false))
                     grouped_ensembles[model.id].outputs.push(outf);
             })
 
@@ -211,7 +214,13 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                         ${!readmode ? 
                                             html `<th></th>`: ""} <!-- Checkbox -->
                                         ${grouped_ensemble.outputs.length > 0 ? 
-                                            html `<th colspan="${grouped_ensemble.outputs.length}">Outputs</th>` : ""} <!-- Outputs -->
+                                            html `<th colspan="${grouped_ensemble.outputs.length}">
+                                            Outputs
+                                            &nbsp;
+                                            <a style="cursor:pointer" @click="${()=>{this._showAllResults = !this._showAllResults}}">
+                                            [${this._showAllResults ? "Hide extra outputs" : "Show all outputs"}]
+                                            </a>
+                                            </th>` : ""} <!-- Outputs -->
                                         ${grouped_ensemble.inputs.length > 0 ? 
                                             html `<th colspan="${grouped_ensemble.inputs.length}">Inputs</th>` : ""} <!-- Inputs -->
                                         ${grouped_ensemble.params.length > 0 ? 
