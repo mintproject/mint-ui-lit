@@ -129,8 +129,7 @@ export class AppHome extends connect(store)(PageViewElement) {
       if(regionid) {
         store.dispatch(selectTopRegion(regionid));
         
-        let url = BASE_HREF + regionid;
-        console.log(regionid);
+        let url = BASE_HREF + regionid + "/home";
         window.history.pushState({}, "Home", url);
       }
     }
