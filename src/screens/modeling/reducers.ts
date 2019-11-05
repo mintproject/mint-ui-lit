@@ -29,6 +29,7 @@ export interface Scenario extends IdNameObject {
     subregionid?: string
     dates: DateRange
     last_update?: string
+    last_update_user?: string
 }
 
 export interface DateRange {

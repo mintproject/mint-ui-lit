@@ -26,7 +26,7 @@ import { renderNotifications } from '../../util/ui_renders';
 import { formElementsComplete, showDialog, hideDialog, showNotification, resetForm, hideNotification } from '../../util/ui_functions';
 import { listTopRegions, queryRegions } from '../regions/actions';
 import { RegionList, Region } from '../regions/reducers';
-import { toTimeStamp, fromTimeStampToDateString } from 'util/date-utils';
+import { toTimeStamp, fromTimeStampToDateString, fromTimestampIntegerToString, fromTimestampIntegerToReadableString } from 'util/date-utils';
 
 @customElement('scenarios-list')
 export class ScenariosList extends connect(store)(PageViewElement) {
@@ -79,14 +79,23 @@ export class ScenariosList extends connect(store)(PageViewElement) {
           <wl-list-item class="active"
               @click="${this._onSelectScenario}"
               data-scenarioid="${scenario.id}">
-              <wl-title level="4" style="margin: 0">${scenario.name}</wl-title>
-              <span>${fromTimeStampToDateString(scenario.dates.start_date)} to 
-                ${fromTimeStampToDateString(scenario.dates.end_date)}</span>
+              <wl-icon slot="before">label_important</wl-icon>
               <div slot="after" style="display:flex">
-                <wl-icon @click="${this._editScenarioDialog}" data-scenarioid="${scenario.id}"
-                    id="editScenarioIcon" class="actionIcon editIcon">edit</wl-icon>
-                <wl-icon @click="${this._onDeleteScenario}" data-scenarioid="${scenario.id}"
-                    id="delScenarioIcon" class="actionIcon deleteIcon">delete</wl-icon>
+                <div>
+                  ${scenario.last_update_user}<br/>
+                  ${fromTimestampIntegerToReadableString(parseInt(scenario.last_update))}
+                </div>
+                <div style="height: 24px; padding-left: 10px; display:flex">
+                  <wl-icon @click="${this._editScenarioDialog}" data-scenarioid="${scenario.id}"
+                      id="editScenarioIcon" class="actionIcon editIcon">edit</wl-icon>
+                  <wl-icon @click="${this._onDeleteScenario}" data-scenarioid="${scenario.id}"
+                      id="delScenarioIcon" class="actionIcon deleteIcon">delete</wl-icon>
+                </div>
+              </div>
+              <wl-title level="4" style="margin: 0">${scenario.name}</wl-title>
+              <div>
+                Time Period: ${fromTimeStampToDateString(scenario.dates.start_date)} to 
+                ${fromTimeStampToDateString(scenario.dates.end_date)}
               </div>
           </wl-list-item>
           `
@@ -293,6 +302,9 @@ export class ScenariosList extends connect(store)(PageViewElement) {
     if(state.modeling) {
       if(state.modeling.scenarios) {
         this._list = state.modeling.scenarios;
+        this._list.scenarioids.sort((id1,id2) => {
+          return parseInt(this._list.scenarios[id2].last_update) - parseInt(this._list.scenarios[id1].last_update);
+        });
       }
     }
     if(state.ui && state.ui.selected_top_regionid && state.regions!.regions) {

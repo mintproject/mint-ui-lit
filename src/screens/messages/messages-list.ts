@@ -47,7 +47,7 @@ export class MessagesList extends connect(store)(PageViewElement) {
         <wl-list-item class="active"
             @click="${this._onSelectThread}"
             data-index="${thread.id}">
-            <wl-icon slot="before">note</wl-icon>
+            <wl-icon slot="before">question_answer</wl-icon>
             <span slot="after">
                 ${thread.username}<br/>
                 ${fromTimeStampToReadableString(thread.timestamp)}
