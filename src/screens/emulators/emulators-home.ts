@@ -58,6 +58,26 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                         </li>
                     </ul>
                 </li>
+                <li>
+                    The TopoFlow model was run on the Baro River Basin to generate overbank flood depth time series or the month of April in 2014 
+                    (There was a fairly big rainfall event in the beginning of that month). 
+                    <ul>
+                        <li>
+                            <p>The following image shows the flood depths as a color image with hillshading, 
+                            which helps to see how the grid aligns with the topography. The reddest grid cells are "hot spots" or 
+                            flood-prone areas, and this is how grid cells were selected for monitoring (i.e. "virtual gauges" were 
+                            placed at those locations for the model run to create a time series for each location).</p>
+                            <img src="https://data.mint.isi.edu/files/topoflow/Baro_Gam_1min_2014-04_flood-prone_grid_cells.png"></img>
+                        </li>
+                        <li>
+                            <p>The following image is just the shaded relief for the same area, 
+                            the Baro River basin, as it drains toward the west and flows past the town of Gambella.  
+                            These are low-resolution images that match the fairly low spatial resolution we used for this 
+                            TopoFlow model setup (to make it run faster).</p>
+                            <img src="https://data.mint.isi.edu/files/topoflow/Baro_Gam_1min_shaded_relief.png"></img>
+                        </li>
+                    </ul>
+                </li>                
             </ul>
             `;
         }
