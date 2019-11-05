@@ -41,12 +41,13 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
             <nav-title .nav="${nav}"></nav-title>
             <ul>
                 <li>
-                    An example output product of the PIHM Model for the Baro basin in Ethiopia can be browsed by viewing 
+                    The PIHM hydrologic model was run for the Baro basin in Ethiopia with weather data from GLDAS for a year. 
+                    An example output product of the PIHM Model can be browsed by viewing 
                     <a href="https://data.mint.isi.edu/files/uploads/PIHM_Baro-Gambella.pdf">this PDF</a>.
-                </li>
-                <li>
-                    The PIHM model was run with weather data from GLDAS for a year and used the following raw input data
-                    and produced the following raw output data:
+                    More details can be seen by viewing the original notebook, 
+                    (<a href="https://data.mint.isi.edu/files/uploads/PIHM_Model_1.cdf">Download here</a>), using 
+                    the <a href="https://www.wolfram.com/player/">free Mathematica notebook reader</a>.  
+                    The simulation used the following raw input data and produced the following raw output data:
                     <ul>
                         <li>PIHM Input: 
                             <a href="https://data.mint.isi.edu/files/wings-dev/mint/mint-test/data/pihm-input-ethiopia-1b5bd7a4b4c6b8ac8f4617661e775ef7.tgz">
