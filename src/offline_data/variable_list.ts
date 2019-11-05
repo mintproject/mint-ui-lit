@@ -73,12 +73,7 @@ export const VARIABLES = {
             "var1": {
                 "long_name": "Potential Crop Production",
                 "SVO_name": "grain~dry__mass-per-area_yield"
-            },
-            "var2": {
-                "long_name": "Seasonal Crop Production Index",
-                "SVO_name": "crop_production__seasonal_production_index",
-                "created_from": [ "grain~dry__mass-per-area_yield" ]
-            },
+            }
         },
         "Economic": {
             "var1": {
