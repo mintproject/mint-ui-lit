@@ -101,10 +101,14 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             @click="${this._handleMapClick}"
             mapTypeId="terrain" styles="${this._mapStyles}">
         </google-map-custom>
+        <br />
 
         <region-models class="page" ?active="${this._mapReady}" regionType="${this.regionType}"></region-models>
         <region-datasets class="page" ?active="${this._mapReady}" regionType="${this.regionType}"></region-datasets>
         <region-tasks class="page" ?active="${this._mapReady}" regionType="${this.regionType}"></region-tasks>
+
+        <br />
+        <br />
 
         ${this._renderAddRegionsDialog()}
         `

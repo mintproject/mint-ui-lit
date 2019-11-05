@@ -10,7 +10,7 @@ import { SharedStyles } from 'styles/shared-styles';
 import { goToPage } from 'app/actions';
 import { UserPreferences } from 'app/reducers';
 import { listAllModels } from 'screens/models/actions';
-import { ModelConfigurationApi } from '@mintproject/modelcatalog_client';
+import { ModelConfigurationApi, ModelApi, SoftwareVersionApi } from '@mintproject/modelcatalog_client';
 import { DEFAULT_GRAPH } from 'model-catalog/actions';
 import { BoundingBox } from './reducers';
 
@@ -21,10 +21,19 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
     private prefs : UserPreferences;
     
     @property({type: Array})
-    private _matchingModels : any = [];
+    private _matchingModelSetups : any = [];
 
     @property({type: Object})
     private _models : any = {};
+
+    @property({type: Object})
+    private _configVersions : any = {};
+
+    @property({type: Object})
+    private _versionModels : any = {};
+
+    @property({type: Object})
+    private _setupConfigs : any = {};
 
     @property({type: Object})
     private _modelRegionBoundingBoxes: any = {
@@ -71,6 +80,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
         api.modelconfigurationsGet({username: DEFAULT_GRAPH})
         .then((configs) => {
             configs.map((config) => {
+                let cname = config.id.replace(/.*\//, '');
                 if(config.hasRegion && config.hasRegion.length > 0) {
                     let region = config.hasRegion[0];
                     let regionname = region.id.replace(/.*\//, '');
@@ -81,14 +91,66 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
                     if(!this._models[region_key])
                         this._models[region_key] = [];
                     this._models[region_key].push({
-                        id: config.id.replace(/.*\//, ''),
+                        id: cname,
                         name: config.label[0]
                     });
                 }
+                if(config.hasSetup) {
+                    config.hasSetup.map((setup: any) => {
+                        let sname = setup.id.replace(/.*\//, '');
+                        this._setupConfigs[sname] = cname;
+                    })
+                }
             });
-            console.log(this._models);
         })
         .catch((err) => {console.log('Error on GET modelConfigurations', err)})        
+
+        let api2 : ModelApi = new ModelApi();
+        api2.modelsGet({username: DEFAULT_GRAPH})
+        .then((models) => {
+            this._versionModels = {};
+            models.map((model) => {
+                let mname = model.id.replace(/.*\//, '');
+                model.hasVersion.map((version: any) => {
+                    let vname = version.id.replace(/.*\//, '');
+                    this._versionModels[vname] = mname;
+                })
+            });
+        });
+
+        let api3 : SoftwareVersionApi = new SoftwareVersionApi();
+        api3.softwareversionsGet({username: DEFAULT_GRAPH})
+        .then((versions) => {
+            this._configVersions = {};
+            versions.map((version) => {
+                let vname = version.id.replace(/.*\//, '');
+                if(!version.hasVersionId)
+                    return;
+                let versionId = version.hasVersionId[0];
+                version.hasConfiguration.map((config) => {
+                    let cname = config.id.replace(/.*\//, '');
+                    this._configVersions[cname] = {
+                        id: vname,
+                        versionId: versionId
+                    }
+                })
+            });
+        });
+    }
+
+    _getModelURL (setupid: string) {
+        let sname = setupid.replace(/.*\//, '');
+        let cname = this._setupConfigs[sname];
+        if(cname) {
+            let vobj = this._configVersions[cname];
+            if(vobj) {
+                let vname = vobj.id;
+                let vid = vobj.versionId;
+                let mname = this._versionModels[vname];
+                if(mname) 
+                    return this._regionid + '/models/explore/' + mname + "/" + vid + "/" + cname + "/" + sname;
+            }
+        }
     }
 
     private _doBoxesIntersect(box1: BoundingBox, box2: BoundingBox) {
@@ -97,7 +159,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
     }
 
     private _getMatchingModels() {
-        this._matchingModels = [];
+        this._matchingModelSetups = [];
         Object.keys(this._modelRegionBoundingBoxes).map((region_key) => {
             let bbox = this._modelRegionBoundingBoxes[region_key];
             let selbox = this._selectedRegion.bounding_box;
@@ -107,19 +169,19 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
             if(this._doBoxesIntersect(bbox, selbox)) {
                 let models = this._models[region_key];
                 if(models)
-                    this._matchingModels = this._matchingModels.concat(models);
+                    this._matchingModelSetups = this._matchingModelSetups.concat(models);
             }
         });
     }
 
     protected render() {
         return html`
-            ${this._selectedRegion && this._matchingModels ? 
+            ${this._selectedRegion && this._matchingModelSetups ? 
                 html`
                     <wl-title level="4" style="font-size: 17px; margin-top: 20px;">Models for ${this._selectedRegion.name}</wl-title>
-                    ${!this._matchingModels || this._matchingModels.length == 0 ? 'No models for this region' :
-                    html`<ul>${this._matchingModels.map((model) => html`
-                        <li><a @click="${() => goToPage(model.id)}">${model.name}</a></li>`)
+                    ${!this._matchingModelSetups || this._matchingModelSetups.length == 0 ? 'No models for this region' :
+                    html`<ul>${this._matchingModelSetups.map((model) => html`
+                        <li><a href="${this._getModelURL(model.id)}">${model.name}</a></li>`)
                     }</ul>`
                     }
                 `
