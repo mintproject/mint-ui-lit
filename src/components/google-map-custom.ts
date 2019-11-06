@@ -83,11 +83,11 @@ export class GoogleMapCustom extends GoogleMap {
           icon: {
             path: google.maps.SymbolPath.CIRCLE,
             fillColor: '#1990d5',
-            fillOpacity: 0.6,
+            fillOpacity: 0.8,
             strokeColor: '#1990d5',
             strokeOpacity: 0.9,
             strokeWeight: 1,
-            scale: 2
+            scale: 2.5
           }
         }
       });

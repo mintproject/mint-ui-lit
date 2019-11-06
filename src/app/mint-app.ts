@@ -20,7 +20,7 @@ import { store, RootState } from './store';
 import {
   navigate, fetchUser, signOut, signIn, goToPage, fetchUserPreferences,
 } from './actions';
-import { listTopRegions } from '../screens/regions/actions';
+import { listTopRegions, listSubRegions } from '../screens/regions/actions';
 
 import '../screens/modeling/modeling-home';
 import '../screens/datasets/datasets-home';
@@ -53,6 +53,8 @@ export class MintApp extends connect(store)(LitElement) {
 
   @property({type: Object})
   private _selectedRegion? : Region;
+
+  private _dispatchedSubRegionsQuery : boolean = false;
 
   private _loggedIntoWings = false;
   
@@ -332,18 +334,29 @@ export class MintApp extends connect(store)(LitElement) {
     if(this.user) {
       if(!state.app.prefs)
         store.dispatch(fetchUserPreferences());
-      if(!state.regions || !state.regions.regions)
+
+      if(!state.regions || !state.regions.top_region_ids) {
+        // Fetch top regions
         store.dispatch(listTopRegions());
+      }
+      else if (state.regions && state.regions.regions) {
+        let regionid = state.ui.selected_top_regionid;
+        // If a region is selected, then fetch it's subregions
+        this._selectedRegion = state.regions.regions[regionid];
+        if(regionid && !this._dispatchedSubRegionsQuery
+            && (!state.regions.sub_region_ids || !state.regions.sub_region_ids[regionid])) {
+          this._dispatchedSubRegionsQuery = true;
+          store.dispatch(listSubRegions(regionid));
+        }
+        else if(state.regions.sub_region_ids && state.regions.sub_region_ids[regionid]) {
+          this._dispatchedSubRegionsQuery = false;
+        }
+      }
     }
   
     if(state.app.prefs && !this._loggedIntoWings) {
       loginToWings(state.app.prefs);
       this._loggedIntoWings = true;
-    }
-
-    let regionid = state.ui.selected_top_regionid;
-    if (state && state.regions && state.regions.regions && state.regions.regions[regionid]) {
-        this._selectedRegion = state.regions.regions[regionid];
     }
   }
 }

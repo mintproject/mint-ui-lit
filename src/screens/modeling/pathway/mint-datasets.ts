@@ -167,7 +167,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                         }
                                         return html`
                                         <li>
-                                        <a target="_blank" href="${this._regionid}/datasets/browse/${dataset.id}">${dataset.name}</a>
+                                        <a target="_blank" href="${this._regionid}/datasets/browse/${dataset.id}/${this.getSubregionId()}">${dataset.name}</a>
                                         ${resources.length > 1 ?
                                             html`
                                                 <br />
@@ -225,7 +225,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                                             type="checkbox" data-datasetid="${dataset.id}"
                                                             ?checked="${(bindings || []).indexOf(dataset.id!) >= 0}"></input></td>
                                                         <td class="${matched ? 'matched': ''}">
-                                                            <a target="_blank" href="${this._regionid}/datasets/browse/${dataset.id}">${dataset.name}</a>
+                                                            <a target="_blank" href="${this._regionid}/datasets/browse/${dataset.id}/${this.getSubregionId()}">${dataset.name}</a>
                                                             ${resources.length > 1 ?
                                                             html`
                                                                 <br />
@@ -596,18 +596,17 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         }
     }
 
+    getSubregionId() {
+        return this.subgoal.subregionid || this.scenario.subregionid || this.scenario.regionid;
+    }
+
     stateChanged(state: RootState) {
         super.setUser(state);
-
         super.setRegion(state);
-        if(state.regions && state.regions.query_result) {
-            let subregionid = this.subgoal.subregionid || this.scenario.subregionid || this.scenario.regionid;
-            if(subregionid == this._regionid) {
-                this._subgoal_region = this._region;
-            }
-            else if (state.regions.query_result[this._regionid] && state.regions.query_result[this._regionid]["*"]){
-                this._subgoal_region = state.regions.query_result[this._regionid]["*"][subregionid];
-            }
+        
+        if(state.regions && state.regions.regions && state.regions.sub_region_ids) {
+            let subregionid = this.getSubregionId();
+            this._subgoal_region = state.regions.regions[subregionid];
         }
 
         let pathwayid = this.pathway ? this.pathway.id : null;

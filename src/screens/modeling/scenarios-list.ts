@@ -20,12 +20,11 @@ import "weightless/snackbar";
 
 import "./mint-scenario";
 
-import { navigate, BASE_HREF, goToPage } from '../../app/actions';
+import { goToPage } from '../../app/actions';
 import { PageViewElement } from '../../components/page-view-element';
 import { renderNotifications } from '../../util/ui_renders';
 import { formElementsComplete, showDialog, hideDialog, showNotification, resetForm, hideNotification } from '../../util/ui_functions';
-import { listTopRegions, queryRegions } from '../regions/actions';
-import { RegionList, Region } from '../regions/reducers';
+import { Region, RegionMap } from '../regions/reducers';
 import { toTimeStamp, fromTimeStampToDateString, fromTimestampIntegerToString, fromTimestampIntegerToReadableString } from 'util/date-utils';
 
 @customElement('scenarios-list')
@@ -34,10 +33,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
   private _top_region: Region;
 
   @property({type: Object})
-  private _regions!: RegionList;
-
-  @property({type: Object})
-  private _subRegions!: RegionList;
+  private _regions!: RegionMap;
 
   @property({type: Object})
   private _list!: ScenarioList;
@@ -311,13 +307,6 @@ export class ScenariosList extends connect(store)(PageViewElement) {
       this._top_regionid = state.ui.selected_top_regionid;
       this._regions = state.regions!.regions;
       this._top_region = this._regions[this._top_regionid];
-
-      if(!state.regions!.query_result || !state.regions!.query_result[this._top_regionid]) {
-        store.dispatch(queryRegions(this._top_regionid));
-      }
-      else {
-        this._subRegions = state.regions!.query_result[this._top_regionid]["*"];
-      }
     }
     super.setRegionId(state);
   }

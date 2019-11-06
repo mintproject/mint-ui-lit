@@ -5,9 +5,9 @@ import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
-import { queryRegions, addRegions, listTopRegions, calculateMapDetails } from './actions';
+import { addRegions } from './actions';
 import { GOOGLE_API_KEY } from 'config/google-api-key';
-import { RegionList, Region } from './reducers';
+import { Region } from './reducers';
 
 import 'components/google-map-custom';
 import 'weightless/progress-spinner';
@@ -26,11 +26,11 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     @property({type: String})
     public regionType: string;
 
-    @property({type: String})
-    private _parentRegionName: string;
-
     @property({type: Object})
-    private _regions: RegionList;
+    private _regions: Region[];
+
+    @property({type: String})
+    private _cur_topregionid: string;
 
     @property({type: Array})
     private _newregions: Array<any> = [];
@@ -42,8 +42,6 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     private _mapReady: boolean = false;
 
     private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
-    
-    private _dispatched = false;
 
     static get styles() {
         return [
@@ -75,15 +73,15 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         return html`
         <div class="desc-grid">
             <div style="grid-column: 1 / 2;">
-            ${this.regionType ?
+            ${this.regionType && this._region ?
                 ( this.regionType === 'Administrative' ? html`
                 The following map shows the administrative regions in 
-                ${this._parentRegionName || this._regionid}.`
+                ${this._region.name || this._regionid}.`
                 : ( this.regionType === 'Agriculture' && this._regionid === 'ethiopia' ? html`
                 The following map shows areas of interest for agriculture modeling in Ethiopia.  These are small river catchments (Level 6 Catchments) which nest smaller sub-catchment suitable for granular analysis of agricultural production.  Colors reflect the fraction of cropland per watershed with darker green reflecting no crops and red representing 80% or more crops.
                 ` : html`
                 The following map shows the current areas of interest for ${this.regionType ?
-                this.regionType.toLowerCase() : ''} modeling in ${this._parentRegionName || this._regionid}
+                this.regionType.toLowerCase() : ''} modeling in ${this._region.name || this._regionid}
 				`)
                 )
             : ''}
@@ -117,18 +115,15 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     public addRegionsToMap() {   
         let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
         if(map && this._regions) {
-            let regions = Object.values(this._regions);
-            if(regions.length == 0)
-                regions = [this._region];
             try {
-                map.setRegions(regions, null);
-                this._mapReady = true;
+              map.setRegions(this._regions, this._regionid);
+              this._mapReady = true;
             }
             catch {
-                map.addEventListener("google-map-ready", (e) => {
-                    map.setRegions(regions, this._regionid);
-                    this._mapReady = true;
-                })
+              map.addEventListener("google-map-ready", (e) => {
+                map.setRegions(this._regions, this._regionid);
+                this._mapReady = true;
+              })
             }
         }
     }
@@ -304,31 +299,22 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         }
     }
 
-    stateChanged(state: RootState) {
-        let cur_regionid = this._regionid;
-        super.setRegion(state);
-        
-        if(this._regionid && this._region) {
-            let qr = state.regions.query_result;
-            if(this._regionid != cur_regionid || !this._regions) {
-                //console.log("Region changed to " + this._regionid);
-                if(!qr || !qr[this._regionid] || !qr[this._regionid][this.regionType]) {
-                    if(!this._dispatched) {
-                        this._dispatched = true;
-                        store.dispatch(queryRegions(this._regionid, this.regionType));
-                    }
-                }
-            }
-            if(qr && qr[this._regionid] && qr[this._regionid][this.regionType]
-                    && this._regions != qr[this._regionid][this.regionType]) {
-                this._dispatched = false;
-                this._regions = qr[this._regionid][this.regionType];                
-                this.addRegionsToMap();
-                //console.log(this._regions);
-            }
+    firstUpdated() {
+        this.addRegionsToMap();
+    }
 
-            // Set parent region
-            this._parentRegionName = this._region.name;
+    stateChanged(state: RootState) {
+        super.setRegion(state);
+
+        if(this._regionid && this._region) {
+            let sr = state.regions.sub_region_ids;
+            if(sr && sr[this._regionid] && this._cur_topregionid != this._regionid) {
+                this._cur_topregionid = this._regionid;
+                console.log("Adding regions to map");
+                let all_regions = sr[this._regionid].map((regionid) => state.regions.regions[regionid]);
+                this._regions = all_regions.filter((region) => region.region_type == this.regionType);
+                this.addRegionsToMap();
+            }
         }
     }
 }

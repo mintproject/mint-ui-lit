@@ -15,12 +15,12 @@ import './pathway/mint-pathway';
 
 //mport { selectSubgoal, selectPathway } from "../actions/ui";
 import { getUISelectedSubgoal } from "../../util/state_functions";
-import { navigate, BASE_HREF, goToPage } from "../../app/actions";
+import { goToPage } from "../../app/actions";
 import { renderVariables, renderNotifications } from "../../util/ui_renders";
 import { resetForm, showDialog, formElementsComplete, showNotification, hideDialog, hideNotification } from "../../util/ui_functions";
 import { firestore } from "firebase";
 import { toTimeStamp, fromTimeStampToDateString } from "util/date-utils";
-import { RegionList, Region } from "screens/regions/reducers";
+import { RegionMap, Region } from "screens/regions/reducers";
 import { getVariableLongName, getVariableIntervention } from "offline_data/variable_list";
 
 
@@ -28,7 +28,10 @@ import { getVariableLongName, getVariableIntervention } from "offline_data/varia
 export class MintScenario extends connect(store)(PageViewElement) {
 
     @property({type: Object})
-    private _subRegions: RegionList;
+    private _regions: RegionMap;
+
+    @property({type: Array})
+    private _subRegionIds: string[];
 
     @property({type: Object})
     private _categorizedRegions: any; 
@@ -526,8 +529,8 @@ export class MintScenario extends connect(store)(PageViewElement) {
 
     _getSubgoalRegionTimeText(subgoal) {
         let subregionid = (subgoal.subregionid && subgoal.subregionid != "Select") ? subgoal.subregionid : null;
-        let regionname = (subregionid && this._subRegions && this._subRegions[subregionid]) ? 
-                this._subRegions[subregionid].name : this._region.name;
+        let regionname = (subregionid && this._regions && this._regions[subregionid]) ? 
+                this._regions[subregionid].name : this._region.name;
         let dates = subgoal.dates ? subgoal.dates : this._scenario.dates;
         let startdate = fromTimeStampToDateString(dates!.start_date);
         let enddate = fromTimeStampToDateString(dates!.end_date);
@@ -971,15 +974,17 @@ export class MintScenario extends connect(store)(PageViewElement) {
         if(state.ui && state.ui.selected_pathwayid) 
             this._selectedPathwayId = state.ui.selected_pathwayid;
 
-        if(state.regions!.query_result && this._regionid && state.regions!.query_result[this._regionid]) {
-            let all_subregions = state.regions!.query_result[this._regionid]["*"];
-            if(all_subregions != this._subRegions) {
+        if(state.regions.sub_region_ids && this._regionid && state.regions.sub_region_ids[this._regionid]) {
+            let all_subregionids = state.regions.sub_region_ids[this._regionid];
+            this._regions = state.regions.regions;
+            if(all_subregionids != this._subRegionIds) {
                 let categorized_regions = {
                     "Hydrology": [],
                     "Administrative": [],
                     "Agriculture": []
                 };
-                Object.values(all_subregions).map((region) => {
+                all_subregionids.map((regionid) => {
+                    let region = this._regions[regionid];
                     if(!categorized_regions[region.region_type]) {
                         categorized_regions[region.region_type] = [];
                     }
@@ -990,7 +995,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                     regions.sort((a, b) => a.name.localeCompare(b.name));
                 })
                 this._categorizedRegions = categorized_regions;
-                this._subRegions = all_subregions;
+                this._subRegionIds = all_subregionids;
             }
         }
 

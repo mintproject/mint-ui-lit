@@ -6,7 +6,7 @@ import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { listTopRegions, calculateMapDetails } from '../regions/actions';
-import { RegionList, Region } from '../regions/reducers';
+import { Region, RegionMap } from '../regions/reducers';
 import { GOOGLE_API_KEY } from '../../config/google-api-key';
 
 import "../../components/stats-blurb";
@@ -18,9 +18,11 @@ import { BASE_HREF, goToPage, goToRegionPage } from 'app/actions';
 
 @customElement('app-home')
 export class AppHome extends connect(store)(PageViewElement) {
-  
+    @property({type: Array})
+    private _regionids!: string[];
+
     @property({type: Object})
-    private _regions!: RegionList;
+    private _regions!: Region[];
 
     @property({type: Boolean})
     private _mapReady: boolean = false;
@@ -140,14 +142,13 @@ export class AppHome extends connect(store)(PageViewElement) {
     private _addRegions() {
       let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
       if(map && this._regions) {
-        let regions = Object.values(this._regions);
         try {
-          map.setRegions(regions, this._regionid);
+          map.setRegions(this._regions, this._regionid);
           this._mapReady = true;
         }
         catch {
           map.addEventListener("google-map-ready", (e) => {
-            map.setRegions(regions, this._regionid);
+            map.setRegions(this._regions, this._regionid);
             this._mapReady = true;
           })
         }
@@ -161,8 +162,9 @@ export class AppHome extends connect(store)(PageViewElement) {
     // This is called every time something is updated in the store.
     stateChanged(state: RootState) {
         if(state.regions && state.regions.regions) {
-            if(this._regions != state.regions.regions) {
-              this._regions = state.regions.regions;
+            if(this._regionids != state.regions.top_region_ids) {
+              this._regionids = state.regions.top_region_ids;
+              this._regions = this._regionids.map((regionid) => state.regions.regions[regionid]);
               this._addRegions();
             }
         }
