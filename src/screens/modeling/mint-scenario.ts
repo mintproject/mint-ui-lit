@@ -176,12 +176,12 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                             data-subgoalid="${subgoal.id}">
                                         <div class="cltmain">
                                             ${this._getSubgoalVariablesText(subgoal)}
+                                            ${subgoal.name ? 
+                                                html `<div class='description'>${subgoal.name}</div>` : ""
+                                            }
                                             <div class='description'>
                                                 ${this._getSubgoalRegionTimeText(subgoal)}
                                             </div>
-                                            ${subgoal.name ? 
-                                                html`<div class='description'>${subgoal.name}</div>` : ""
-                                            }
                                         </div>
                                         <wl-icon @click="${this._editSubGoalDialog}" 
                                             data-subgoalid="${subgoal.id}"
@@ -521,7 +521,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
         let response = subgoal.response_variables ? getVariableLongName(subgoal.response_variables[0]) : "";
         let driving = (subgoal.driving_variables && subgoal.driving_variables.length > 0) ? 
             getVariableLongName(subgoal.driving_variables[0]) : "";
-        return (driving ? driving + " -> " : "") + (response ? response + ": " : "");
+        return (driving ? driving + " -> " : "") + response;
     }
 
     _getSubgoalRegionTimeText(subgoal) {
@@ -531,7 +531,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
         let dates = subgoal.dates ? subgoal.dates : this._scenario.dates;
         let startdate = fromTimeStampToDateString(dates!.start_date);
         let enddate = fromTimeStampToDateString(dates!.end_date);
-        return regionname + ": " + startdate + " - " + enddate;
+        return regionname + " : " + startdate + " to " + enddate;
     }
 
     _addGoalDialog() {
