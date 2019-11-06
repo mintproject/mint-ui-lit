@@ -175,7 +175,10 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                             @click="${this._onSelectSubgoal}"
                                             data-subgoalid="${subgoal.id}">
                                         <div class="cltmain">
-                                            ${this._getSubgoalSummaryText(subgoal)}
+                                            ${this._getSubgoalVariablesText(subgoal)}
+                                            <div class='description'>
+                                                ${this._getSubgoalRegionTimeText(subgoal)}
+                                            </div>
                                             ${subgoal.name ? 
                                                 html`<div class='description'>${subgoal.name}</div>` : ""
                                             }
@@ -514,17 +517,21 @@ export class MintScenario extends connect(store)(PageViewElement) {
         `;
     }
 
-    _getSubgoalSummaryText(subgoal) {
+    _getSubgoalVariablesText(subgoal) {
         let response = subgoal.response_variables ? getVariableLongName(subgoal.response_variables[0]) : "";
         let driving = (subgoal.driving_variables && subgoal.driving_variables.length > 0) ? 
             getVariableLongName(subgoal.driving_variables[0]) : "";
+        return (driving ? driving + " -> " : "") + (response ? response + ": " : "");
+    }
+
+    _getSubgoalRegionTimeText(subgoal) {
         let subregionid = (subgoal.subregionid && subgoal.subregionid != "Select") ? subgoal.subregionid : null;
         let regionname = (subregionid && this._subRegions && this._subRegions[subregionid]) ? 
                 this._subRegions[subregionid].name : this._region.name;
         let dates = subgoal.dates ? subgoal.dates : this._scenario.dates;
         let startdate = fromTimeStampToDateString(dates!.start_date);
         let enddate = fromTimeStampToDateString(dates!.end_date);
-        return (driving ? driving + " -> " : "") + (response ? response + ": " : "") + regionname + ": " + startdate + " - " + enddate;
+        return regionname + ": " + startdate + " - " + enddate;
     }
 
     _addGoalDialog() {
