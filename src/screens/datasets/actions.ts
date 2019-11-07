@@ -7,9 +7,7 @@ import { OFFLINE_DEMO_MODE } from "../../app/actions";
 import { IdMap, MintPreferences } from "app/reducers";
 import { DateRange } from "screens/modeling/reducers";
 import { toTimeStamp, fromTimeStampToString, fromTimeStampToString2 } from "util/date-utils";
-import { Region, BoundingBox } from "screens/regions/reducers";
-
-import * as GeoJsonGeometriesLookup from "geojson-geometries-lookup";
+import { Region } from "screens/regions/reducers";
 
 export const DATASETS_VARIABLES_QUERY = 'DATASETS_VARIABLES_QUERY';
 export const DATASETS_GENERAL_QUERY = 'DATASETS_GENERAL_QUERY';
@@ -145,30 +143,6 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
     return datasets;
 }
 
-const filterResourcesWithinRegion = (resources: any[], region:Region) => {
-    if(!region) {
-        return resources;
-    }
-    
-    let regionGeoJson = JSON.parse(region.geojson_blob);
-    let glookup = new GeoJsonGeometriesLookup(regionGeoJson);
-    
-    return resources.filter((resource) => {
-        if(resource.resource_metadata && resource.resource_metadata.spatial_coverage) {
-            let scover = resource.resource_metadata.spatial_coverage;
-            if(scover.type == "Point") {
-                let pointGeometry = {
-                    type: 'Point',
-                    coordinates: [scover.value.x, scover.value.y]
-                };
-                return glookup.countContainers(pointGeometry) > 0;
-                // Check if the point is within the region
-            }
-        }
-        return true;
-    })
-}
-
 // Query Data Catalog by Variables
 type QueryDatasetsThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionVariablesQuery>;
 export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> = 
@@ -198,8 +172,6 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
         }
     }
     else {
-        //console.log(driving_variables);
-        
         dispatch({
             type: DATASETS_VARIABLES_QUERY,
             modelid: modelid,
@@ -208,22 +180,19 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
             loading: true
         });
 
+        let geojson = JSON.parse(region.geojson_blob);
         fetch(prefs.data_catalog_api + "/datasets/find", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 standard_variable_names__in: driving_variables,
-                spatial_coverage__intersects: [
-                    region.bounding_box.xmin, region.bounding_box.ymin, 
-                    region.bounding_box.xmax, region.bounding_box.ymax 
-                ],
+                spatial_coverage__intersects: geojson.geometry,
                 end_time__gte: fromTimeStampToString(dates.start_date).replace(/\.\d{3}Z$/,''),
                 start_time__lte: fromTimeStampToString(dates.end_date).replace(/\.\d{3}Z$/,''),
                 limit: 5000
             })
         }).then((response) => {
             response.json().then((obj) => {
-                obj.resources = filterResourcesWithinRegion(obj.resources, region);
                 let datasets: Dataset[] = getResourceObjectsFromDCResponse(obj, 
                     {variables: driving_variables} as DatasetQueryParameters)
                 dispatch({
@@ -323,8 +292,8 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
         "limit": 2000
     };
     if(region) {
-        let bbox = region.bounding_box;
-        queryBody["spatial_coverage__within"] = [bbox.xmin, bbox.ymin, bbox.xmax, bbox.ymax];
+        let geojson = JSON.parse(region.geojson_blob);
+        queryBody["spatial_coverage__intersects"] = geojson.geometry;
     }
 
     fetch(prefs.data_catalog_api + "/datasets/find", {
@@ -334,7 +303,6 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
         body: JSON.stringify(queryBody)
     }).then((response) => {
         response.json().then((obj) => {
-            obj.resources = filterResourcesWithinRegion(obj.resources, region);
             let datasets: Dataset[] = getResourceObjectsFromDCResponse(obj, {})
             let dataset = datasets.length > 0 ? datasets[0] : null
             dispatch({
@@ -358,19 +326,16 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
         loading: true
     });
 
+    let geojson = JSON.parse(region.geojson_blob);
     fetch(prefs.data_catalog_api + "/datasets/find", {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
-            spatial_coverage__within: [
-                region.bounding_box.xmin, region.bounding_box.ymin, 
-                region.bounding_box.xmax, region.bounding_box.ymax 
-            ],
+            spatial_coverage__intersects: geojson.geometry,
             limit: 5000
         })
     }).then((response) => {
         response.json().then((obj) => {
-            obj.resources = filterResourcesWithinRegion(obj.resources, region);
             let datasets: Dataset[] = getResourceObjectsFromDCResponse(obj, {} as DatasetQueryParameters)
             dispatch({
                 type: DATASETS_REGION_QUERY,
