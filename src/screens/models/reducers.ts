@@ -17,6 +17,7 @@ export interface Model extends IdNameObject {
     model_type?: string,
     original_model?: string,
     model_version?: string,
+    model_versionid?: string,
     model_configuration?:string,
     parameter_assignment?: string,
     parameter_assignment_details?: string,

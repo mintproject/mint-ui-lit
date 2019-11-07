@@ -17,7 +17,7 @@ export const SAMPLE_MINT_PREFERENCES = {
         "onturl": "http://www.wings-workflows.org/ontology",
         "api": "https://api.wings.mint.isi.edu/v1.0.0",
     },
-    "ingestion_api": "https://demo.ingestion.mint.isi.edu/v1.0.0"
+    "ingestion_api": "https://demo.ingestion.mint.isi.edu/v1.0.0",
     "model_catalog_api": "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries",
     "data_catalog_api": "https://api.mint-data-catalog.org",
     "visualization_url": "https://dev.viz.mint.isi.edu",
