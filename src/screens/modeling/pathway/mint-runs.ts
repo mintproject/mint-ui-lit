@@ -15,7 +15,7 @@ import { Model } from "screens/models/reducers";
 import { ExecutableEnsemble, ModelEnsembles } from "../reducers";
 import { IdMap } from "app/reducers";
 import { fetchPathwayEnsembles, updatePathwayEnsembles, updatePathway, getAllPathwayEnsembleIds } from "../actions";
-import { fetchWingsTemplate, loginToWings, fetchWingsRunResults, fetchWingsRunsStatuses} from "util/wings_functions";
+import { fetchWingsTemplate, loginToWings, fetchWingsRunResults, fetchWingsRunsStatuses, fetchWingsRunLog} from "util/wings_functions";
 import { DataResource } from "screens/datasets/reducers";
 
 @customElement('mint-runs')
@@ -44,6 +44,9 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
 
     @property({type: Number})
     private executionBatchSize = 4;
+
+    @property({type: String})
+    private _log: string;
 
     private pathwayModelEnsembleIds: IdMap<string[]> = {};
 
@@ -140,12 +143,13 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                         completed runs by going to the Results tab even when other runs are still not completed.
                     </p>                    
                     <p>
-                    The model setup created ${summary.total_runs} configurations. 
+                    The parameter settings you selected require ${summary.total_runs} runs. 
                     ${!finished ? "So far, " : ""} ${submitted_runs} model runs
                     ${!finished ? "have been" : "were"} submitted, out of which 
                     ${successful_runs} succeeded, while ${failed_runs} failed.
                     ${running > 0 ? html `${running} are currently running` : ""}
-                    ${pending > 0 ? html `, and ${pending} are waiting to be run` : ""}
+                    ${running > 0 && pending > 0 ? ', and ' : ''}
+                    ${pending > 0 ? html `${pending} are waiting to be run` : ""}
                     </p>
 
                     ${!finished ? 
@@ -178,14 +182,14 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                 html`
                                 <table class="pure-table pure-table-bordered run_table">
                                     <!-- Heading -->
-                                    <colgroup span="1"></colgroup> <!-- Run Status -->
+                                    <colgroup span="2"></colgroup> <!-- Run Status -->
                                     ${grouped_ensemble.inputs.length > 0 ? 
                                         html `<colgroup span="${grouped_ensemble.inputs.length}"></colgroup>` : ""} <!-- Inputs -->
                                     ${grouped_ensemble.params.length > 0 ? 
                                         html `<colgroup span="${grouped_ensemble.params.length}"></colgroup>` : ""} <!-- Parameters -->
                                     <thead>
                                         <tr>
-                                            <th></th> <!-- Run Status -->
+                                            <th colspan="2">Run</th> <!-- Run Status -->
                                             ${grouped_ensemble.inputs.length > 0 ? 
                                                 html `<th colspan="${grouped_ensemble.inputs.length}">Inputs</th>` : ""} <!-- Inputs -->
                                             ${grouped_ensemble.params.length > 0 ? 
@@ -193,6 +197,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                         </tr>
                                         <tr>
                                             <th>Run Status</th>
+                                            <th>Run Log</th>                                            
                                             ${grouped_ensemble.inputs.length + grouped_ensemble.params.length == 0 ?     
                                                 html`<th></th>` : ""
                                             }
@@ -213,6 +218,11 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                                     <wl-progress-bar mode="determinate" class="${ensemble.status}"
                                                         value="${ensemble.status == "FAILURE" ? 100 : (ensemble.run_progress || 0)}"></wl-progress-bar>
                                                 </td>
+                                                <td>
+                                                    <wl-button style="--button-padding: 2px; --button-border-radius: 2px" 
+                                                        @click="${() => this._viewRunLog(ensemble.runid)}" inverted flat>
+                                                        View Log</wl-button>
+                                                </td>                                                
                                                 ${grouped_ensemble.inputs.length + grouped_ensemble.params.length == 0 ? 
                                                     html`<td>No inputs or parameters</td>` : ""
                                                 }
@@ -260,6 +270,18 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         this._fetchRuns(modelid, this.currentPage + offset, this.pageSize)
     }
 
+    _viewRunLog(runid: string) {
+        this._log = null;
+        showDialog("logDialog", this.shadowRoot!);
+        fetchWingsRunLog(runid, this.prefs).then((log) => {
+            this._log = log;
+        });
+    }
+
+    _closeRunLogDialog(runid: string) {
+        hideDialog("logDialog", this.shadowRoot!);
+    }
+
     _renderProgressDialog() {
         return html`
         <wl-dialog id="progressDialog" fixed persistent backdrop blockscrolling>
@@ -279,6 +301,22 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 }
             </div>            
         </wl-dialog>
+
+        <wl-dialog id="logDialog" fixed persistent backdrop blockscrolling style="--dialog-width:800px;">
+            <h3 slot="header">Run log</h3>
+            <div slot="content" style="height:500px;overflow:auto">
+                ${this._log ? 
+                html`
+                <pre style='font-size:11px'>${this._log}
+                `
+                : 
+                html`<wl-progress-spinner class="loading"></wl-progress-spinner>`
+                }
+            </div>   
+            <div slot="footer">
+                <wl-button @click="${this._closeRunLogDialog}" class="submit">Close</wl-button>
+            </div>        
+        </wl-dialog>        
         `;
     }
 
@@ -317,7 +355,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         showDialog("progressDialog", this.shadowRoot!);
 
         let start = 0;        
-        await loginToWings(this.prefs);
+        // await loginToWings(this.prefs); // Login to Wings handled at the top now
         
         let workflowid = await setupModelWorkflow(model, this.pathway, this.prefs);
         let tpl_package = await fetchWingsTemplate(workflowid, this.prefs);
@@ -374,7 +412,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
 
         showDialog("progressDialog", this.shadowRoot!);
         
-        await loginToWings(this.prefs);
+        // await loginToWings(this.prefs); // Login to Wings handled at the top now
         
         // FIXME: Some problem with the submission times
         let runtimeInfos = await fetchWingsRunsStatuses(summary.workflow_name, 

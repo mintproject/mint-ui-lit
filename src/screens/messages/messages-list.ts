@@ -47,7 +47,7 @@ export class MessagesList extends connect(store)(PageViewElement) {
         <wl-list-item class="active"
             @click="${this._onSelectThread}"
             data-index="${thread.id}">
-            <wl-icon slot="before">note</wl-icon>
+            <wl-icon slot="before">question_answer</wl-icon>
             <span slot="after">
                 ${thread.username}<br/>
                 ${fromTimeStampToReadableString(thread.timestamp)}
@@ -154,6 +154,9 @@ export class MessagesList extends connect(store)(PageViewElement) {
     if(state.messages) {
       if(state.messages.threads) {
         this._list = state.messages.threads;
+        this._list.threadids.sort((id1,id2) => {
+          return this._list.threads[id2].timestamp.seconds - this._list.threads[id1].timestamp.seconds;
+        });
       }
     }
     if(state.app.user) {

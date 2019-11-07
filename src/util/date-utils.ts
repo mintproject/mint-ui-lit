@@ -9,6 +9,18 @@ export const toTimeStampFromDate = (date: Date) : firebase.firestore.Timestamp =
     return firebase.firestore.Timestamp.fromDate(date);
 }
 
+export const fromTimestampIntegerToString = (timestamp: number) : string => {
+    return new Date(timestamp).toISOString().replace(/\.000Z$/, '');
+}
+
+export const fromTimestampIntegerToReadableString = (timestamp: number) : string => {
+    return fromTimestampIntegerToString(timestamp).replace(/T/,' at ').replace(/\..+$/,'');
+}
+
+export const fromTimestampIntegerToDateString = (timestamp: number) : string => {
+    return fromTimestampIntegerToString(timestamp).replace(/T.*$/,'');
+}
+
 export const fromTimeStamp = (timestamp: firebase.firestore.Timestamp) : Date => {
     return timestamp.toDate();
 }

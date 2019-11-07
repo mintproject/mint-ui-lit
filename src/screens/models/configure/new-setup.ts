@@ -343,6 +343,23 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             keywords = this._config.keywords[0].split(/ *; */).join(', ');
         }
 
+        // FIXME this should work with the new API
+        let selectRegions = [];
+        if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/Ethiopia') {
+            selectRegions = [
+                {label: 'Baro basin', id: 'https://w3id.org/okn/i/mint/Baro'},
+                {label: 'Gambella region', id: 'https://w3id.org/okn/i/mint/Gambella'},
+            ]
+        } else if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/South_Sudan') {
+            selectRegions = [
+                {label: 'Pongo basin', id: 'https://w3id.org/okn/i/mint/Pongo_Basin_SS'},
+            ]
+        } else if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/Texas') {
+            selectRegions = [
+                {label: 'Barton Springs', id: ''},
+            ]
+        }
+
         return html`
         <span id="start"/>
         <wl-textfield id="new-setup-name" label="New setup name" value="" required></wl-textfield>
@@ -360,6 +377,15 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 <td>Keywords:</td>
                 <td>
                     <input id="new-setup-keywords" type="text" value="${keywords}"/>
+                </td>
+            </tr>
+
+            <tr>
+                <td>Region:</td>
+                <td>
+                    <select id="edit-config-regions">
+                        ${selectRegions.map(r => html`<option value="${r.id}">${r.label}</option>`)}
+                    </select>
                 </td>
             </tr>
 
@@ -635,6 +661,8 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             let versionChanged : boolean = (modelChanged || ui.selectedVersion !== this._selectedVersion)
             let configChanged : boolean = (versionChanged || ui.selectedConfig !== this._selectedConfig);
             this._editing = (ui.mode === 'edit');
+
+            super.setRegionId(state);
 
             if (modelChanged) {
                 this._selectedModel = ui.selectedModel;

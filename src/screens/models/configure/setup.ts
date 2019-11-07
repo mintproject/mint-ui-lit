@@ -277,9 +277,34 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 }
             })
         }
-        let keywords = ''
+        let keywords = '';
         if (this._setup.keywords) {
             keywords = this._setup.keywords[0].split(/ *; */).join(', ');
+        }
+
+        let regions = '';
+        if (this._setup.hasRegion) {
+            regions = this._setup.hasRegion
+                .map(r => typeof r === 'object' ? r.id : r)
+                .map(r => r.split('/').pop().replace(/_|-/g, ' '))
+                .join(', ');
+        }
+
+        // FIXME this should work with the new API
+        let selectRegions = [];
+        if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/Ethiopia') {
+            selectRegions = [
+                {label: 'Baro basin', id: 'https://w3id.org/okn/i/mint/Baro'},
+                {label: 'Gambella region', id: 'https://w3id.org/okn/i/mint/Gambella'},
+            ]
+        } else if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/South_Sudan') {
+            selectRegions = [
+                {label: 'Pongo basin', id: 'https://w3id.org/okn/i/mint/Pongo_Basin_SS'},
+            ]
+        } else if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/Texas') {
+            selectRegions = [
+                {label: 'Barton Springs', id: ''},
+            ]
         }
 
         return html`
@@ -306,6 +331,17 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     ${this._editing ? html`
                     <input id="edit-config-keywords" type="text" value="${keywords}"/>
                     ` : keywords}
+                </td>
+            </tr>
+
+            <tr>
+                <td>Region:</td>
+                <td>
+                    ${this._editing ? html`
+                    <select id="edit-config-regions">
+                        ${selectRegions.map(r => html`<option value="${r.id}">${r.label}</option>`)}
+                    </select>
+                    ` : regions}
                 </td>
             </tr>
 
@@ -512,9 +548,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             </tbody>
         </table>
 
-        ${console.log(this._parameters)}
-        ${console.log(this._inputs)}
-
         ${this._editing? html`
         <div style="float:right; margin-top: 1em;">
             <wl-button @click="${this._cancel}" style="margin-right: 1em;" flat inverted>
@@ -603,6 +636,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             let setupChanged : boolean = (configChanged || ui.selectedCalibration !== this._selectedSetup);
             this._editing = (ui.mode === 'edit');
 
+            super.setRegionId(state);
+
             if (modelChanged) {
                 this._selectedModel = ui.selectedModel;
                 this._model = null;
@@ -638,6 +673,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
 
             if (state.modelCatalog) {
                 let db = state.modelCatalog;
+                this.setRegion(state);
 
                 // Set selected resources
                 if (!this._model && db.models && this._selectedModel && db.models[this._selectedModel]) {

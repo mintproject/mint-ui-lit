@@ -20,7 +20,7 @@ import { store, RootState } from './store';
 import {
   navigate, fetchUser, signOut, signIn, goToPage, fetchUserPreferences,
 } from './actions';
-import { listTopRegions } from '../screens/regions/actions';
+import { listTopRegions, listSubRegions } from '../screens/regions/actions';
 
 import '../screens/modeling/modeling-home';
 import '../screens/datasets/datasets-home';
@@ -29,10 +29,13 @@ import '../screens/models/models-home';
 import '../screens/analysis/analysis-home';
 import '../screens/variables/variables-home';
 import '../screens/messages/messages-home';
+import '../screens/emulators/emulators-home';
 
 import { SharedStyles } from '../styles/shared-styles';
 import { showDialog, hideDialog, formElementsComplete } from '../util/ui_functions';
 import { User } from 'firebase';
+import { Region } from 'screens/regions/reducers';
+import { loginToWings } from 'util/wings_functions';
 
 @customElement('mint-app')
 export class MintApp extends connect(store)(LitElement) {
@@ -49,8 +52,12 @@ export class MintApp extends connect(store)(LitElement) {
   private user!: User;
 
   @property({type: Object})
-  private _selectedRegion? : string;
+  private _selectedRegion? : Region;
 
+  private _dispatchedSubRegionsQuery : boolean = false;
+
+  private _loggedIntoWings = false;
+  
   _once = false;
 
   static get styles() {
@@ -105,27 +112,27 @@ export class MintApp extends connect(store)(LitElement) {
         margin-left: 0px;
       }
 
-      .breadcrumbs li.active {
+      .breadcrumbs a.active {
         background-color: #629b30;
         color: white;
       }
-      .breadcrumbs li.active:before {
+      .breadcrumbs a.active:before {
         border-color: #629b30;
         border-left-color: transparent;
       }
-      .breadcrumbs li.active:after {
+      .breadcrumbs a.active:after {
         border-left-color: #629b30;
       }
 
-      .breadcrumbs li:first {
+      .breadcrumbs a:first {
         background-color: #629b30;
         color: white;
       }
-      .breadcrumbs li:first:before {
+      .breadcrumbs a:first:before {
         border-color: #629b30;
         border-left-color: transparent;
       }
-      .breadcrumbs li:first:after {
+      .breadcrumbs a:first:after {
         border-left-color: #629b30;
       }
       .message-button {
@@ -158,31 +165,32 @@ export class MintApp extends connect(store)(LitElement) {
           ${this.user ? 
             html `
             <ul class="breadcrumbs">
-              <li @click="${()=>goToPage('home')}"
+              <a href="${this._selectedRegion ? this._selectedRegion.id : ""}/home"
                   class=${(this._page == 'home' ? 'active' : '')}>
                   <div style="vertical-align:middle">
                     ▶
-                    ${this._selectedRegion ?  this._selectedRegion.toUpperCase() : "Select Country"}
+                    ${this._selectedRegion ? 
+                      this._selectedRegion.name.toUpperCase() : "Select Region"}
                   </div>
-              </li>
+              </a>
               ${!this._selectedRegion ? 
                 "" : 
                 html`
-                <li @click="${()=>goToPage('datasets')}"
-                    class=${(this._page == 'datasets'? 'active': '')}
-                  >Explore Data</li>
-                <li @click="${()=>goToPage('regions')}"
+                <a href='${this._selectedRegion.id}/regions'
                     class=${(this._page == 'regions'? 'active': '')}
-                  >Select Areas</li>
-                <li @click="${()=>goToPage('models')}"
+                  >Explore Areas</a>                
+                <a href='${this._selectedRegion.id}/models'
                     class=${(this._page == 'models'? 'active': '')}
-                  >Prepare Models</li>
-                <li @click="${()=>goToPage('modeling')}"
+                  >Prepare Models</a>
+                <a href='${this._selectedRegion.id}/datasets'
+                    class=${(this._page == 'datasets'? 'active': '')}
+                  >Browse Datasets</a>                  
+                <a href='${this._selectedRegion.id}/modeling'
                     class=${(this._page == 'modeling') ? 'active': ''}
-                  class="active">Use Models</li>
-                <li @click="${()=>goToPage('analysis/report')}"
+                  class="active">Use Models</a>
+                <a href='${this._selectedRegion.id}/analysis/report'
                     class=${(this._page == 'analysis'? 'active': '')}
-                  >Prepare Reports</li>
+                  >Prepare Reports</a>
                 `
               }
             </ul>
@@ -201,9 +209,18 @@ export class MintApp extends connect(store)(LitElement) {
             `
             :
             html `
-            <wl-button flat inverted class="message-button ${this._page == 'messages' ? 'selected' : ''}" @click="${() => goToPage('messages')}">
-              Messages <wl-icon style="margin-left: 4px;">message</wl-icon>
-            </wl-button>
+            ${this._selectedRegion ? 
+              html`
+              <wl-button flat inverted class="message-button ${this._page == 'messages' ? 'selected' : ''}" @click="${() => goToPage('messages')}">
+                Messages <wl-icon style="margin-left: 4px;">message</wl-icon>
+              </wl-button>              
+              &nbsp;
+              <wl-button flat inverted class="message-button ${this._page == 'emulators' ? 'selected' : ''}" @click="${() => goToPage('emulators')}">
+                Emulators <wl-icon style="margin-left: 4px;">settings</wl-icon>
+              </wl-button>
+              ` : ""
+            }
+
             <wl-button flat inverted @click="${signOut}">
               LOGOUT ${this.user.email}
             </wl-button>
@@ -226,6 +243,7 @@ export class MintApp extends connect(store)(LitElement) {
               <modeling-home class="page fullpage" ?active="${this._page == 'modeling'}"></modeling-home>
               <analysis-home class="page fullpage" ?active="${this._page == 'analysis'}"></analysis-home>
               <messages-home class="page fullpage" ?active="${this._page == 'messages'}"></messages-home>
+              <emulators-home class="page fullpage" ?active="${this._page == 'emulators'}"></emulators-home>
             </div>
           </div>
         </div>
@@ -316,13 +334,29 @@ export class MintApp extends connect(store)(LitElement) {
     if(this.user) {
       if(!state.app.prefs)
         store.dispatch(fetchUserPreferences());
-      if(!state.regions || !state.regions.regions)
-        store.dispatch(listTopRegions());
-    }
 
-    let regionid = state.ui.selected_top_regionid;
-    if (state && state.regions && state.regions.regions && state.regions.regions[regionid]) {
-        this._selectedRegion = state.regions.regions[regionid].name;
+      if(!state.regions || !state.regions.top_region_ids) {
+        // Fetch top regions
+        store.dispatch(listTopRegions());
+      }
+      else if (state.regions && state.regions.regions) {
+        let regionid = state.ui.selected_top_regionid;
+        // If a region is selected, then fetch it's subregions
+        this._selectedRegion = state.regions.regions[regionid];
+        if(regionid && !this._dispatchedSubRegionsQuery
+            && (!state.regions.sub_region_ids || !state.regions.sub_region_ids[regionid])) {
+          this._dispatchedSubRegionsQuery = true;
+          store.dispatch(listSubRegions(regionid));
+        }
+        else if(state.regions.sub_region_ids && state.regions.sub_region_ids[regionid]) {
+          this._dispatchedSubRegionsQuery = false;
+        }
+      }
+    }
+  
+    if(state.app.prefs && !this._loggedIntoWings) {
+      loginToWings(state.app.prefs);
+      this._loggedIntoWings = true;
     }
   }
 }

@@ -1,7 +1,7 @@
 import { Pathway, DatasetMap, ModelEnsembleMap, DataEnsembleMap, InputBindings, ExecutableEnsemble, Scenario, SubGoal, ExecutableEnsembleSummary } from "../screens/modeling/reducers";
 import { RootState } from "../app/store";
 import { updatePathway, addPathwayEnsembles } from "../screens/modeling/actions";
-import { UserPreferences } from "app/reducers";
+import { UserPreferences, MintPreferences } from "app/reducers";
 import { loginToWings, fetchWingsTemplate, fetchWingsTemplatesList, fetchWingsComponent, createSingleComponentTemplate, saveWingsTemplate, layoutWingsTemplate, WingsParameterBindings, WingsDataBindings, WingsParameterTypes, registerWingsComponent, registerWingsDataset, fetchWingsRunStatus, WingsTemplateSeed, expandAndRunWingsWorkflow, WingsTemplatePackage, WingsTemplate } from "./wings_functions";
 import { DataResource } from "screens/datasets/reducers";
 import { hideNotification } from "./ui_functions";
@@ -241,19 +241,21 @@ export const runModelEnsembles = async(pathway: Pathway,
         model.input_files.map((io) => {
             let resources : DataResource[] = [];
             let dsid = null;
-            if(io.value) {
-                dsid = io.value.id;
-                resources = io.value.resources;
-            }
-            else if(bindings[io.id]) {
+            if(bindings[io.id]) {
                 // We have a dataset binding from the user for it
                 resources = [ bindings[io.id] as DataResource ];
+            }
+            else if(io.value) {
+                // There is a hardcoded value in the model itself
+                dsid = io.value.id;
+                resources = io.value.resources;
             }
             if(resources.length > 0) {
                 let type = io.type.replace(/^.*#/, '');
                 resources.map((res) => {
                     if(res.url) {
                         res.name =  res.url.replace(/^.*(#|\/)/, '');
+                        res.name = res.name.replace(/^([0-9])/, '_$1');
                         if(!res.id)
                             res.id = res.name;
                     }
@@ -474,6 +476,18 @@ export const getUISelectedPathway = (state: RootState) => {
     }
     return null;
 }
+
+export const getUISelectedSubgoalRegion = (state: RootState) => {
+    let subgoal = getUISelectedSubgoal(state);
+    if(subgoal && subgoal.subregionid && state.regions && state.regions.query_result 
+            && state.regions.query_result[state.ui.selected_top_regionid]) {
+        let res = state.regions.query_result[state.ui.selected_top_regionid]["*"]
+        if(res && res[subgoal.subregionid]) {
+            return res[subgoal.subregionid];
+        }
+    }
+    return null;
+}
 /* End of UI Functions */
 
 /* Helper Functions */
@@ -594,18 +608,19 @@ export const sendDataForIngestion = (scenarioid: string, subgoalid: string, thre
     });    
 }
 
-export const getVisualizationURL = (pathway: Pathway) => {
+export const getVisualizationURLs = (pathway: Pathway, prefs: MintPreferences) => {
     if(getPathwayResultsStatus(pathway) == "TASK_DONE") {
         let responseV = pathway.response_variables.length > 0?
             getVariableLongName(pathway.response_variables[0]) : '';
         let drivingV = pathway.driving_variables.length > 0?
             getVariableLongName(pathway.driving_variables[0]) : '';
 
+        let visualizations = [];
         // FIXME: Hack
         if(responseV == "Potential Crop Production")
-            return "https://dev.viz.mint.isi.edu/cycles?thread_id=" + pathway.id;
-        else
-            return "https://dev.viz.mint.isi.edu/scatter_plot?thread_id=" + pathway.id;
+            visualizations.push(prefs.visualization_url + "/cycles?thread_id=" + pathway.id);
+        visualizations.push(prefs.visualization_url + "/upload?thread_id=" + pathway.id);
+        return visualizations;
     }
     return null;
 }

@@ -10,7 +10,7 @@ import { queryDatasetsByVariables } from "../../datasets/actions";
 import { updatePathway } from "../actions";
 import { removeDatasetFromPathway, matchVariables, getPathwayDatasetsStatus, TASK_DONE, getUISelectedSubgoal } from "../../../util/state_functions";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
-import { showNotification, showDialog } from "../../../util/ui_functions";
+import { showNotification, showDialog, hideDialog } from "../../../util/ui_functions";
 import { selectPathwaySection } from "../../../app/ui-actions";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { IdMap } from "../../../app/reducers";
@@ -40,14 +40,26 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     @property({type: Array})
     private _datasetsToCompare: Dataset[] = [];
 
+    @property({type:Boolean})
+    private _showAllDatasets: boolean = false;
+
     @property({type: Object})
     subgoal: SubGoal;
+
+    @property({type: Object})
+    private _selectResourcesDataset: Dataset;
+
+    @property({type: Boolean})
+    private _selectionUpdate: boolean;
+
+    @property({type: Boolean})
+    private _selectResourcesImmediateUpdate: boolean;
 
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
             name: "More information",
-            fn: () => html `
-                <a target="_blank" href="#">Dataset Profile</a>
+            fn: (ds: Dataset) => html `
+                <a target="_blank" href="${this._regionid}/datasets/browse/${ds.id}">Dataset Profile</a>
                 `
         },
         {
@@ -146,9 +158,24 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                 <ul>
                                     ${bindings.map((binding) => {
                                         let dataset = this.pathway.datasets![binding];
+                                        let resources = dataset.resources || [];
+                                        let selected_resources = dataset.resources.filter((res) => res.selected);
+                                        // Fix for older saved resources
+                                        if(selected_resources.length == 0) {
+                                            resources.map((res) => { res.selected = true;});
+                                            selected_resources = dataset.resources.filter((res) => res.selected);
+                                        }
                                         return html`
                                         <li>
-                                        <a href="datasets/browse/${dataset.id}">${dataset.name}</a> (${(dataset.resources || []).length} resources)
+                                        <a target="_blank" href="${this._regionid}/datasets/browse/${dataset.id}/${this.getSubregionId()}">${dataset.name}</a>
+                                        ${resources.length > 1 ?
+                                            html`
+                                                <br />
+                                                ( ${selected_resources.length} / ${resources.length} files - 
+                                                <a style="cursor:pointer"
+                                                    @click="${() => this._selectDatasetResources(dataset, true)}">Change</a> )
+                                            `
+                                            : ""}
                                         </li>
                                         `;
                                     })}
@@ -161,6 +188,10 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                             if(queriedInputDatasetStatuses) {
                                 let loading = queriedInputDatasetStatuses.loading;
                                 let queriedInputDatasets = queriedInputDatasetStatuses.datasets;
+                                let inputtype = input.type.replace(/.*#/, '');
+                                let dtypeMatchingInputDatasets = queriedInputDatasets; /*(queriedInputDatasets || []).filter((dataset: Dataset) => {
+                                    return (dataset.datatype == inputtype); // FIXME: Hiding this for now
+                                })*/
                                 return html `
                                 <li>
                                     Select an input dataset for <b>${input.name}</b>. (You can select more than one dataset if you want several runs). 
@@ -185,25 +216,50 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                         <tbody>
                                             ${(queriedInputDatasets || []).map((dataset:Dataset) => {
                                                 let matched = matchVariables(this.pathway.driving_variables, dataset.variables, false); // Partial match
-                                                return html`
-                                                <tr>
-                                                    <td><input class="${this._valid(modelid)}_${this._valid(input.id!)}_checkbox" 
-                                                        type="checkbox" data-datasetid="${dataset.id}"
-                                                        ?checked="${(bindings || []).indexOf(dataset.id!) >= 0}"></input></td>
-                                                    <td class="${matched ? 'matched': ''}">
-                                                        <a href="datasets/browse/${dataset.id}">${dataset.name}</a>
-                                                        (${dataset.resources.length} resources)
-                                                    </td>
-                                                    <td>${(dataset.categories || []).join(", ")}</td>
-                                                    <td>${dataset.region}</td>
-                                                    <td>
-                                                        ${fromTimeStampToDateString(dataset.time_period.start_date)} to 
-                                                        ${fromTimeStampToDateString(dataset.time_period.end_date)}
-                                                    </td>
-                                                    <td><a href="${dataset.source.url}">${dataset.source.name}</a></td>
-                                                </tr>
-                                                `;
+                                                let resources = dataset.resources;
+                                                let selected_resources = dataset.resources.filter((res) => res.selected);
+                                                if(this._showAllDatasets || this._selectionUpdate || dtypeMatchingInputDatasets.indexOf(dataset) >=0) {
+                                                    return html`
+                                                    <tr>
+                                                        <td><input class="${this._valid(modelid)}_${this._valid(input.id!)}_checkbox" 
+                                                            type="checkbox" data-datasetid="${dataset.id}"
+                                                            ?checked="${(bindings || []).indexOf(dataset.id!) >= 0}"></input></td>
+                                                        <td class="${matched ? 'matched': ''}">
+                                                            <a target="_blank" href="${this._regionid}/datasets/browse/${dataset.id}/${this.getSubregionId()}">${dataset.name}</a>
+                                                            ${resources.length > 1 ?
+                                                            html`
+                                                                <br />
+                                                                ( ${selected_resources.length} / ${resources.length} resources -  
+                                                                <a style="cursor:pointer"
+                                                                    @click="${() => this._selectDatasetResources(dataset, false)}">Change</a> )
+                                                            `
+                                                            : ""}
+                                                        </td>
+                                                        <td>${(dataset.categories || []).join(", ")}</td>
+                                                        <td>${dataset.region}</td>
+                                                        <td>
+                                                            ${fromTimeStampToDateString(dataset.time_period.start_date)} to 
+                                                            ${fromTimeStampToDateString(dataset.time_period.end_date)}
+                                                        </td>
+                                                        <td><a href="${dataset.source.url}">${dataset.source.name}</a></td>
+                                                    </tr>
+                                                    `
+                                                }
                                             })}
+                                            ${(queriedInputDatasets.length - dtypeMatchingInputDatasets.length) > 0 ? 
+                                                html`
+                                                <tr>
+                                                    <td colspan="6" style="text-align:left; color: rgb(153, 153, 153);">
+                                                        <a style="cursor:pointer" @click="${() => {this._showAllDatasets = !this._showAllDatasets}}">
+                                                            ${!this._showAllDatasets ? "Show" : "Hide"} 
+                                                            ${queriedInputDatasets.length - dtypeMatchingInputDatasets.length} datasets
+                                                            that matched the input variables but not input datatype. They might need some data transformation
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                `
+                                                : ""
+                                            }
                                         </tbody>
                                     </table>
                                     <div class="footer">
@@ -272,21 +328,23 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         <wl-dialog class="comparison" fixed backdrop blockscrolling id="comparisonDialog">
             <table class="pure-table pure-table-striped">
                 <thead>
-                    <th style="border-right:1px solid #EEE"></th>
-                    ${this._datasetsToCompare.map((model) => {
-                        return html`
-                        <th .style="width:${100/(this._datasetsToCompare.length)}%"><b>${model.name}</b></th>
-                        `
-                    })}
+                    <tr>
+                        <th style="border-right:1px solid #EEE"></th>
+                        ${this._datasetsToCompare.map((model) => {
+                            return html`
+                            <th .style="width:${100/(this._datasetsToCompare.length)}%"><b>${model.name}</b></th>
+                            `
+                        })}
+                    </tr>
                 </thead>
                 <tbody>
                     ${this._comparisonFeatures.map((feature) => {
                         return html`
                         <tr>
                             <td style="border-right:1px solid #EEE"><b>${feature.name}</b></td>
-                            ${this._datasetsToCompare.map((model) => {
+                            ${this._datasetsToCompare.map((ds) => {
                                 return html`
-                                    <td>${feature.fn(model)}</td>
+                                    <td>${feature.fn(ds)}</td>
                                 `
                             })}
                         </tr>
@@ -294,6 +352,45 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                     })}
                 </tbody>
             </table>
+        </wl-dialog>
+
+        <wl-dialog class="comparison" fixed backdrop blockscrolling id="resourceSelectionDialog">
+            <h3 slot="header">Select resources</h3>
+            <div slot="content" style="height:500px;overflow:auto">
+                <table class="pure-table pure-table-striped">
+                    <thead>
+                        <tr>
+                            <th style="border-right:1px solid #EEE">
+                                <input class="checkbox" type="checkbox" id="all" checked
+                                    @click="${this._selectAllResources}"></input>
+                            </th>
+                            <th>Resource</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${((this._selectResourcesDataset || {} as Dataset).resources || []).map((resource) => {
+                            return html`
+                                <tr>
+                                    <td>
+                                        <input class="checkbox" type="checkbox" data-resourceid="${resource.id}"
+                                            ?checked="${resource.selected}"></input>
+                                    </td>
+                                    <td><a target="_blank" href="${resource.url}">${resource.name}</a></td> 
+                                    <td>
+                                        ${fromTimeStampToDateString(resource.time_period.start_date)} to 
+                                        ${fromTimeStampToDateString(resource.time_period.end_date)}
+                                    </td>
+                                </tr>
+                            `;
+                        })}
+                    </tbody>
+                </table>            
+            </div>   
+            <div slot="footer">
+                <wl-button @click="${this._closeResourceSelectionDialog}" inverted flat>Close</wl-button>
+                <wl-button @click="${this._submitDatasetResources}" class="submit">Submit</wl-button>
+            </div>
         </wl-dialog>
         `;
     }
@@ -328,8 +425,48 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                             }
                         });
                     }
-        });   
+        });
         return selected_datasets;     
+    }
+
+    _selectDatasetResources(dataset: Dataset, immediate_update: boolean) {
+        this._selectResourcesDataset = dataset;
+        this._selectionUpdate = false;
+        this._selectResourcesImmediateUpdate = immediate_update;
+        showDialog("resourceSelectionDialog", this.shadowRoot!);
+    }
+
+    _submitDatasetResources() {
+        let dialog = this.shadowRoot.getElementById("resourceSelectionDialog");
+        let resource_selected = {};
+        dialog.querySelectorAll("input.checkbox").forEach((cbox) => {
+            let cboxinput = (cbox as HTMLInputElement);
+            let resid = cboxinput.dataset["resourceid"];
+            if(resid)
+                resource_selected[resid] = cboxinput.checked;
+        });
+        this._selectResourcesDataset.resources.map((res) => {
+            res.selected = resource_selected[res.id];
+        })
+        this._selectionUpdate = true;
+        if(this._selectResourcesImmediateUpdate) {
+            updatePathway(this.scenario, this.pathway);
+            showNotification("saveNotification", this.shadowRoot!);
+        }
+        hideDialog("resourceSelectionDialog", this.shadowRoot);
+    }
+
+    _selectAllResources() {
+        let dialog = this.shadowRoot.getElementById("resourceSelectionDialog");
+        let allcbox = (dialog.querySelector("#all") as HTMLInputElement);
+        dialog.querySelectorAll("input.checkbox").forEach((cbox) => {
+            let cboxinput = (cbox as HTMLInputElement);
+            cboxinput.checked = allcbox.checked;
+        });
+    }
+
+    _closeResourceSelectionDialog() {
+        hideDialog("resourceSelectionDialog", this.shadowRoot);
     }
 
     _compareDatasets(modelid: string, inputid: string) {
@@ -442,7 +579,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                             this._editMode) {
                         //console.log("Querying datasets for model: " + modelid+", input: " + input.id);
                         store.dispatch(queryDatasetsByVariables(
-                            modelid, input.id, input.variables, dates, this._subgoal_region));
+                            modelid, input.id, input.variables, dates, this._subgoal_region, this.prefs.mint));
                     } else {
                         this._queriedDatasets[modelid][input.id!] = {
                             loading: false,
@@ -459,18 +596,17 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         }
     }
 
+    getSubregionId() {
+        return this.subgoal.subregionid || this.scenario.subregionid || this.scenario.regionid;
+    }
+
     stateChanged(state: RootState) {
         super.setUser(state);
-
         super.setRegion(state);
-        if(state.regions && state.regions.query_result) {
-            let subregionid = this.subgoal.subregionid || this.scenario.subregionid || this.scenario.regionid;
-            if(subregionid == this._regionid) {
-                this._subgoal_region = this._region;
-            }
-            else if (state.regions.query_result[this._regionid] && state.regions.query_result[this._regionid]["*"]){
-                this._subgoal_region = state.regions.query_result[this._regionid]["*"][subregionid];
-            }
+        
+        if(state.regions && state.regions.regions && state.regions.sub_region_ids) {
+            let subregionid = this.getSubregionId();
+            this._subgoal_region = state.regions.regions[subregionid];
         }
 
         let pathwayid = this.pathway ? this.pathway.id : null;
@@ -482,9 +618,9 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                 this._resetEditMode();
         }
 
-        if(state.datasets) {
+        if(state.datasets && state.datasets.model_datasets) {
             //console.log(state.datasets.datasets);
-            this._queriedDatasets = state.datasets.datasets;
+            this._queriedDatasets = state.datasets.model_datasets;
         }
     }    
 }

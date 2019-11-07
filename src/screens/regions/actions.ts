@@ -3,37 +3,29 @@ import { RootState } from "../../app/store";
 import { ActionCreator, Action } from "redux";
 import { EXAMPLE_REGION_DATA } from "../../offline_data/sample_scenarios";
 import { db } from "../../config/firebase";
-import { RegionList, Region, BoundingBox } from "./reducers";
+import { Region, BoundingBox, Point, RegionMap } from "./reducers";
 import { OFFLINE_DEMO_MODE } from "../../app/actions";
 
-export const REGIONS_LIST = 'REGIONS_LIST';
-export const REGIONS_QUERY = 'REGIONS_QUERY';
+export const REGIONS_LIST_TOP_REGIONS = 'REGIONS_LIST_TOP_REGIONS';
+export const REGIONS_LIST_SUB_REGIONS = 'REGIONS_LIST_SUB_REGIONS';
 //export const REGIONS_ADD = 'REGIONS_ADD';
 
-export interface RegionsActionList extends Action<'REGIONS_LIST'> { list: RegionList };
-export interface RegionsActionQuery extends Action<'REGIONS_QUERY'> { 
-    parent_id: string, region_type: string, list: RegionList 
+export interface RegionsActionListTopRegions extends Action<'REGIONS_LIST_TOP_REGIONS'> { 
+    regions: RegionMap
+};
+export interface RegionsActionListSubRegions extends Action<'REGIONS_LIST_SUB_REGIONS'> { 
+    parentid: string, 
+    regions: RegionMap
 };
 //export interface RegionsActionAdd extends Action<'REGIONS_ADD'> { loading: boolean };
 
-export type RegionsAction =  RegionsActionList | RegionsActionQuery;
+export type RegionsAction =  RegionsActionListTopRegions | RegionsActionListSubRegions;
 
 // List Regions
-type ListRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionList>;
+type ListRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListTopRegions>;
 export const listTopRegions: ActionCreator<ListRegionsThunkResult> = () => (dispatch) => {
-    // Here you would normally get the data from the server. We're simulating
-    // that by dispatching an async action (that you would dispatch when you
-    // succesfully got the data back)
-    if(OFFLINE_DEMO_MODE) {
-        dispatch({
-            type: REGIONS_LIST,
-            list: EXAMPLE_REGION_DATA
-        });
-        return;
-    }
-
     db.collection("regions").get().then((querySnapshot) => {
-        let regions:RegionList = {};
+        let regions:RegionMap = {};
         querySnapshot.forEach((doc) => {
             var data = doc.data();
             data.id = doc.id;
@@ -41,8 +33,8 @@ export const listTopRegions: ActionCreator<ListRegionsThunkResult> = () => (disp
             regions[doc.id].bounding_box = _calculateBoundingBox(regions[doc.id].geojson_blob);
         });
         dispatch({
-            type: REGIONS_LIST,
-            list: regions
+            type: REGIONS_LIST_TOP_REGIONS,
+            regions
         });
     });
 };
@@ -80,6 +72,32 @@ const _calculateBoundingBox = (geojsonBlob: any) => {
     } as BoundingBox;
 }
 
+export const calculateMapDetailsForPoints = (points: Point[], mapWidth: number, mapHeight: number) => {
+    let extent = {
+      xmin: 99999, xmax: -99999,
+      ymin: 99999, ymax: -99999
+    }
+    points.map((point) => {
+      if(point.x < extent.xmin)
+          extent.xmin = point.x - 0.00001;
+      if(point.y < extent.ymin)
+          extent.ymin = point.y - 0.00001;            
+      if(point.x > extent.xmax)
+          extent.xmax = point.x + 0.00001;
+      if(point.y > extent.ymax)
+          extent.ymax = point.y + 0.00001;
+    })
+
+    let zoom = _calculateZoom(extent, mapWidth, mapHeight)
+    if (zoom < 2)
+        zoom = 2;
+    return {
+      latitude: (extent.ymin + extent.ymax)/2,
+      longitude: (extent.xmin + extent.xmax)/2,
+      zoom: zoom
+    }
+}
+
 export const calculateMapDetails = (regions: Region[], mapWidth: number, mapHeight: number) => {
     let extent = {
       xmin: 99999, xmax: -99999,
@@ -109,7 +127,7 @@ export const calculateMapDetails = (regions: Region[], mapWidth: number, mapHeig
 
 const _calculateZoom = (extent : any, mapWidth: number, mapHeight: number) => {
     var WORLD_DIM = { height: 256, width: 256 };
-    var ZOOM_MAX = 21;
+    var ZOOM_MAX = 15;
 
     function zoom(mapPx: number, worldPx: number, fraction: number) {
         return Math.floor(Math.log(mapPx / worldPx / fraction) / Math.LN2);
@@ -123,34 +141,18 @@ const _calculateZoom = (extent : any, mapWidth: number, mapHeight: number) => {
     return Math.min(latZoom, lngZoom, ZOOM_MAX);
 }
 
-// Query Regions
-type QueryRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionQuery>;
-export const queryRegions: ActionCreator<QueryRegionsThunkResult> = (parentid: string, type: string) => (dispatch) => {
-    // Here you would normally get the data from the server. We're simulating
-    // that by dispatching an async action (that you would dispatch when you
-    // succesfully got the data back)
-    if(OFFLINE_DEMO_MODE) {
-        dispatch({
-            type: REGIONS_QUERY,
-            parent_id: parentid,
-            region_type: type,
-            list: EXAMPLE_REGION_DATA
-        });
-        return;
-    }
-    console.log("Querying " + type +" regions for " + parentid);
-    // FIXME: Make this a listener like scenario 
-    // - Think of ramifications ? (could this be called multiple times ?)
-
+// Query for Sub Regions
+type SubRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListSubRegions>;
+export const listSubRegions: ActionCreator<SubRegionsThunkResult> = (regionid: string) => (dispatch) => {
     let collRef : firebase.firestore.CollectionReference | firebase.firestore.Query
-    = db.collection("regions/"+parentid+"/subregions");
-    
-    if(type) {
+        = db.collection("regions/"+regionid+"/subregions");
+    /*if(type) {
         collRef = collRef.where("region_type", "==", type);
-    }
+    }*/
     
+    console.log("Fetching subregions for " + regionid);
     collRef.onSnapshot((querySnapshot) => {
-        let regions:RegionList = {};
+        let regions:RegionMap = {};
         querySnapshot.forEach((doc) => {
             var data = doc.data();
             data.id = doc.id;
@@ -158,11 +160,27 @@ export const queryRegions: ActionCreator<QueryRegionsThunkResult> = (parentid: s
             regions[doc.id].bounding_box = _calculateBoundingBox(regions[doc.id].geojson_blob);
         });
         dispatch({
-            type: REGIONS_QUERY,
-            parent_id: parentid,
-            region_type: type,
-            list: regions
+            type: REGIONS_LIST_SUB_REGIONS,
+            parentid: regionid,
+            regions
         });
+    });
+};
+
+export const filterRegionsOfType = (regionids: string[], regions: RegionMap, type: string) => {
+    return regionids.filter((regionid) => {
+        return regions[regionid].region_type == type;
+    })
+}
+
+// Get details about a particular region/subregion
+export const getRegionDetails = (regionid: string, subregionid: string) => {
+    let docpath = "regions/"+regionid + (subregionid ? ("/subregions/" + subregionid) : "");
+    let docRef : firebase.firestore.DocumentReference = db.doc(docpath);
+    return new Promise<Region>((resolve, reject) => {
+        docRef.get().then((doc) => {
+            resolve(doc.data() as Region);
+        })
     });
 };
 

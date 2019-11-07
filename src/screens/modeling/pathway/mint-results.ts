@@ -23,7 +23,10 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     
     @property({type: Boolean})
     private _editMode: Boolean = false;
-    
+   
+    @property({type: Boolean})
+    private _showAllResults: Boolean = false;
+
     @property({type: Object})
     private _progress_item: Model;
     @property({type: Number})
@@ -92,7 +95,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                     grouped_ensembles[model.id].inputs.push(inf);
             })
             model.output_files.map((outf) => {
-                if(matchVariables(this.pathway.response_variables, outf.variables, false))
+                if(this._showAllResults || matchVariables(this.pathway.response_variables, outf.variables, false))
                     grouped_ensembles[model.id].outputs.push(outf);
             })
 
@@ -129,6 +132,9 @@ export class MintResults extends connect(store)(MintPathwayPage) {
            ${Object.keys(this.pathway.executable_ensemble_summary).map((modelid) => {
                let summary = this.pathway.executable_ensemble_summary[modelid];
                let model = this.pathway.models![modelid];
+               if(!model) {
+                   return;
+               }
                let grouped_ensemble = grouped_ensembles[modelid];
                this.totalPages = Math.ceil(summary.total_runs/this.pageSize);
                let finished_runs = summary.successful_runs + summary.failed_runs;
@@ -150,12 +156,13 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                         Click on the RELOAD button if you are waiting for more runs to complete
                     </p>
                     <p>
-                    The model setup created ${summary.total_runs} configurations. 
+                    The parameter settings you selected required ${summary.total_runs} runs. 
                     ${!finished ? "So far, " : ""} ${summary.submitted_runs} model runs
                     ${!finished ? "have been" : "were"} submitted, out of which 
                     ${summary.successful_runs} succeeded and produced results, while ${summary.failed_runs} failed.
                     ${running > 0 ? html `${running} are currently running` : ""}
-                    ${pending > 0 ? html `, and ${pending} are waiting to be run` : ""}
+                    ${running > 0 && pending > 0 ? ', and ' : ''}
+                    ${pending > 0 ? html `${pending} are waiting to be run` : ""}
                     </p>
 
                     ${finished && !submitted ? 
@@ -207,7 +214,13 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                         ${!readmode ? 
                                             html `<th></th>`: ""} <!-- Checkbox -->
                                         ${grouped_ensemble.outputs.length > 0 ? 
-                                            html `<th colspan="${grouped_ensemble.outputs.length}">Outputs</th>` : ""} <!-- Outputs -->
+                                            html `<th colspan="${grouped_ensemble.outputs.length}">
+                                            Outputs
+                                            &nbsp;
+                                            <a style="cursor:pointer" @click="${()=>{this._showAllResults = !this._showAllResults}}">
+                                            [${this._showAllResults ? "Hide extra outputs" : "Show all outputs"}]
+                                            </a>
+                                            </th>` : ""} <!-- Outputs -->
                                         ${grouped_ensemble.inputs.length > 0 ? 
                                             html `<th colspan="${grouped_ensemble.inputs.length}">Inputs</th>` : ""} <!-- Inputs -->
                                         ${grouped_ensemble.params.length > 0 ? 
@@ -291,7 +304,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             })}
             </ul>
             <div class="footer">
-                <wl-button type="button" class="submit" @click="${() => store.dispatch(selectPathwaySection("results"))}">Continue</wl-button>
+                <wl-button type="button" class="submit" @click="${() => store.dispatch(selectPathwaySection("visualize"))}">Continue</wl-button>
             </div>
         </div>
 

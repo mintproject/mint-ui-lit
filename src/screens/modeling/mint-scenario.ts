@@ -15,20 +15,26 @@ import './pathway/mint-pathway';
 
 //mport { selectSubgoal, selectPathway } from "../actions/ui";
 import { getUISelectedSubgoal } from "../../util/state_functions";
-import { navigate, BASE_HREF, goToPage } from "../../app/actions";
+import { goToPage } from "../../app/actions";
 import { renderVariables, renderNotifications } from "../../util/ui_renders";
 import { resetForm, showDialog, formElementsComplete, showNotification, hideDialog, hideNotification } from "../../util/ui_functions";
 import { firestore } from "firebase";
 import { toTimeStamp, fromTimeStampToDateString } from "util/date-utils";
-import { RegionList } from "screens/regions/reducers";
-import { getVariableLongName } from "offline_data/variable_list";
+import { RegionMap, Region } from "screens/regions/reducers";
+import { getVariableLongName, getVariableIntervention } from "offline_data/variable_list";
 
 
 @customElement('mint-scenario')
 export class MintScenario extends connect(store)(PageViewElement) {
 
     @property({type: Object})
-    private _subRegions: RegionList;
+    private _regions: RegionMap;
+
+    @property({type: Array})
+    private _subRegionIds: string[];
+
+    @property({type: Object})
+    private _categorizedRegions: any; 
 
     @property({type: Object})
     private _scenario_details!: ScenarioDetails | null;
@@ -47,6 +53,9 @@ export class MintScenario extends connect(store)(PageViewElement) {
     
     @property({type: Boolean})
     private _subgoalEditMode: boolean = false;
+
+    @property({type: Object})
+    private _selectedIntervention!: any;
 
     private _dispatched: boolean = false;
 
@@ -147,22 +156,18 @@ export class MintScenario extends connect(store)(PageViewElement) {
                     <div class="clt">
                         <div class="cltrow_padded scenariorow">
                             <div class="cltmain">
-                                <wl-title level="4" style="margin: 0px">TASKS</wl-title>
+                                <wl-title level="4" style="margin: 0px">
+                                    TASKS
+                                </wl-title>
                             </div>
                             <wl-icon @click="${this._addSubGoalDialog}" 
                                 class="actionIcon addIcon">note_add</wl-icon>
                         </div>
-                        <div class="header_description" style="padding-left: 10px">
-                            Tasks are used to model indicators relevant to the problem. 
-                            For instance, “Flooding effect on crop production during the growing season.” 
-                            Note that the timeframe for the task need not be the same as the problem statement. 
-                            For instance, flooding may be relevant during the growing season leading to the lean season.
-                            <br />
-                            Tasks can be organized in modeling threads in order to investigate the impacts of 
-                            various interventions or obtain modeling products relevant to the task at hand. 
-                            For instance, a flooding map may be relevant to model possible planting time for a region.
+                        <div style="font-size:12.5px; color: #888; padding:5px; padding-left: 10px; padding-top:0px;">
+                            Several modeling tasks can be created for a given problem statement. 
+                            <a style="cursor:pointer" 
+                                @click="${() => showDialog('tasksHelpDialog', this.shadowRoot)}">Read more</a>
                         </div>
-
                         <ul>
                         ${Object.keys(this._scenario_details.subgoals).map((subgoalid) => {
                             const subgoal = this._scenario_details!.subgoals[subgoalid];
@@ -173,10 +178,13 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                             @click="${this._onSelectSubgoal}"
                                             data-subgoalid="${subgoal.id}">
                                         <div class="cltmain">
-                                            ${this._getSubgoalSummaryText(subgoal)}
+                                            ${this._getSubgoalVariablesText(subgoal)}
                                             ${subgoal.name ? 
-                                                html`<div class='description'>${subgoal.name}</div>` : ""
+                                                html `<div class='description'>${subgoal.name}</div>` : ""
                                             }
+                                            <div class='description'>
+                                                ${this._getSubgoalRegionTimeText(subgoal)}
+                                            </div>
                                         </div>
                                         <wl-icon @click="${this._editSubGoalDialog}" 
                                             data-subgoalid="${subgoal.id}"
@@ -215,11 +223,12 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                 <wl-icon @click="${this._editPathwayDialog}" 
                                     class="actionIcon addIcon">note_add</wl-icon>
                             </div>
-                            <div class="header_description">
-                                Each task on the left can be explored with several modeling threads, each pursuing a different analysis. 
-                                For example, the same task can be explored with a thread that uses model M1 and another that uses model M2, 
-                                and additional threads that use different parameter settings or assumptions for M1 and for M2
-                            </div>                            
+                            <div style="font-size:12.5px; color: #888; padding: 5px; padding-top: 0px">
+                                For a given task, you can investigate different initial conditions or different models.  
+                                Each of them can be explored by creating a new modeling thread for that task.
+                                <a style="cursor:pointer" 
+                                    @click="${() => showDialog('threadsHelpDialog', this.shadowRoot)}">Read more</a>
+                            </div>
                             <ul>
                             ${Object.values(((this._selectedSubgoal || {}) as SubGoal).pathways || {}).map((pathway: PathwayInfo) => {
                                 let pname = pathway.name ? pathway.name : this._selectedSubgoal.name;
@@ -267,6 +276,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
         ${this._renderObjectiveDialog()}
         ${this._renderSubObjectiveDialog()}
         ${this._renderThreadDialog()}
+        ${this._renderHelpDialogs()}
         `;
     }
 
@@ -295,6 +305,51 @@ export class MintScenario extends connect(store)(PageViewElement) {
             `
         })}        
         `        
+    }
+
+    _renderHelpDialogs() {
+        return html`
+        <wl-dialog class="larger" id="threadsHelpDialog" fixed backdrop blockscrolling>
+            <h3 slot="header">Modeling Threads</h3>
+            <div slot="content">
+                <p>
+                    For a given task, you can investigate different initial conditions or different models.  
+                    Each of them can be explored by creating a new modeling thread for that task.  
+                    For example, a task can have a thread that sets a parameter to a low value and 
+                    another thread that sets a parameter to a high value.  Or a thread could use 
+                    model M1 and another thread that uses model M2.
+                </p>
+                <p>
+                    You can also use threads to investigate possible interventions.  For example, 
+                    changing planting windows to an earlier time might increase crop production, 
+                    which can be analyzed using an agriculture model. Another possible intervention to 
+                    increase crop yield is the use of fertilizer subsidies, which can be studied 
+                    by using an economic model.
+                </p>   
+                <p>
+                    Create a new thread, then click on the first of the steps shown.  
+                    You can move from one step to the next, and you can always go back and change any of the steps.  
+                    At the bottom of the step, there is a notepad where you can document your decisions, 
+                    and your notes will be added to the final report so others can undertand your modeling decisions.
+                </p>       
+            </div>
+            <div slot="footer">
+                <wl-button @click="${() => hideDialog('threadsHelpDialog', this.shadowRoot)}" inverted flat>Close</wl-button>
+            </div>
+        </wl-dialog>
+
+        <wl-dialog class="larger" id="tasksHelpDialog" fixed backdrop blockscrolling>
+            <h3 slot="header">Tasks</h3>
+            <div slot="content">
+                <p>
+                    Several modeling tasks can be created for a given problem statement. Each modeling task is associated with an indicator relevant to the decision that want to inform or support, or a different time period, or a different driving variable. There are two types of indicators: indices and modeling variables. For example, the problem statement of food security in South Sudan described above, one modeling task can be framed as “Flooding effect on crop production during the growing season”, and a separate modeling task could be “Potential crop production without flooding”. Note that the time frame of the tasks does not necessarily reflect that of the problem statement. In the first example, flooding is relevant to both the planting time and growing season of an agriculture model which would place the start of the simulation earlier than the problem’s time frame. 
+                </p>        
+            </div>
+            <div slot="footer">
+                <wl-button @click="${() => hideDialog('tasksHelpDialog', this.shadowRoot)}" inverted flat>Close</wl-button>
+            </div>
+        </wl-dialog>        
+        `;
     }
 
     _renderObjectiveDialog() {
@@ -349,24 +404,45 @@ export class MintScenario extends connect(store)(PageViewElement) {
             <input type="hidden" name="subgoalid"></input>
 
             <!-- Variables --> 
-            ${renderVariables(this._subgoalEditMode)}
+            ${renderVariables(this._subgoalEditMode, this._handleResponseVariableChange, this._handleDrivingVariableChange)}
             <br />
-            
+
+            <!-- Intervention Details (if any) -->
+            ${this._selectedIntervention ? 
+                html`
+                    <b>Intervention: ${this._selectedIntervention.name}</b>
+                    <div style="font-size:12px;color:#999">
+                    ${this._selectedIntervention.description}
+                    </div>
+                    <div style="height:10px;">&nbsp;</div>
+                `
+                : ""
+            }
+
             <!-- Sub Region -->
             <div class="formRow">
                 <div class="input_half">
                     <label>Region</label>
                     <select name="subgoal_subregion">
                         <option value="">None</option>
-                        ${Object.keys(this._subRegions || {}).map((subRegionid) => {
-                            let subRegion = this._subRegions![subRegionid];
+                        ${Object.keys(this._categorizedRegions || {}).map((categoryname) => {
+                            let subRegions = this._categorizedRegions[categoryname];
                             return html`
-                            <option value="${subRegion.id}">${subRegion.name}</option>
-                            `;
+                            <optgroup label="${categoryname}">
+                            ${subRegions.map((subRegion) => {
+                            //if(subRegion.name.match(/[a-zA-Z]/)) {
+                                return html`
+                                <option value="${subRegion.id}">${subRegion.name}</option>
+                                `;
+                            //}
+                            })}
+                            </optgroup>
+                            `
                         })}
                     </select>
                 </div>            
-            </div>            
+            </div>
+
             <div style="height:10px;">&nbsp;</div>
 
             <!-- Time Period -->
@@ -375,11 +451,11 @@ export class MintScenario extends connect(store)(PageViewElement) {
             </div>
             <div class="formRow">
                 <div class="input_half">
-                    <input name="subgoal_from" type="date" value="${this._scenario!.dates.start_date}">
+                    <input name="subgoal_from" type="date" value="${fromTimeStampToDateString(this._scenario!.dates.start_date)}">
                 </div>
                 to
                 <div class="input_half">
-                    <input name="subgoal_to" type="date" value="${this._scenario!.dates.end_date}">
+                    <input name="subgoal_to" type="date" value="${fromTimeStampToDateString(this._scenario!.dates.end_date)}">
                 </div>
             </div>
             <br />
@@ -392,6 +468,13 @@ export class MintScenario extends connect(store)(PageViewElement) {
             </div>
             <br />
         `;        
+    }
+
+    _handleResponseVariableChange() {}
+    
+    _handleDrivingVariableChange(e: any) {
+        let varid = e.target.value;
+        this._selectedIntervention = getVariableIntervention(varid);
     }
     
     _renderThreadDialog() {
@@ -437,15 +520,21 @@ export class MintScenario extends connect(store)(PageViewElement) {
         `;
     }
 
-    _getSubgoalSummaryText(subgoal) {
+    _getSubgoalVariablesText(subgoal) {
         let response = subgoal.response_variables ? getVariableLongName(subgoal.response_variables[0]) : "";
+        let driving = (subgoal.driving_variables && subgoal.driving_variables.length > 0) ? 
+            getVariableLongName(subgoal.driving_variables[0]) : "";
+        return (driving ? driving + " -> " : "") + response;
+    }
+
+    _getSubgoalRegionTimeText(subgoal) {
         let subregionid = (subgoal.subregionid && subgoal.subregionid != "Select") ? subgoal.subregionid : null;
-        let regionname = (subregionid && this._subRegions && this._subRegions[subregionid]) ? 
-                this._subRegions[subregionid].name : this._region.name;
+        let regionname = (subregionid && this._regions && this._regions[subregionid]) ? 
+                this._regions[subregionid].name : this._region.name;
         let dates = subgoal.dates ? subgoal.dates : this._scenario.dates;
         let startdate = fromTimeStampToDateString(dates!.start_date);
         let enddate = fromTimeStampToDateString(dates!.end_date);
-        return (response ? response + ": " : "") + regionname + ": " + startdate + " - " + enddate;
+        return regionname + " : " + startdate + " to " + enddate;
     }
 
     _addGoalDialog() {
@@ -502,12 +591,16 @@ export class MintScenario extends connect(store)(PageViewElement) {
         let goalid = null; //(e.currentTarget as HTMLButtonElement).dataset['goalid']; 
         let form = this.shadowRoot!.querySelector<HTMLFormElement>("#subObjectiveForm")!;
         resetForm(form, null);
+
         this._subgoalEditMode = false;
         let dates = this._scenario.dates;
         (form.elements["goalid"] as HTMLInputElement).value = goalid!;
         (form.elements["subgoal_subregion"] as HTMLSelectElement).value = this._scenario.subregionid!;
         (form.elements["subgoal_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
         (form.elements["subgoal_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
+
+        this._selectedIntervention = null;
+
         showDialog("subObjectiveDialog", this.shadowRoot!);
     }
 
@@ -595,17 +688,24 @@ export class MintScenario extends connect(store)(PageViewElement) {
             if(subgoal) {
                 let form = this.shadowRoot!.querySelector<HTMLFormElement>("#subObjectiveForm")!;
                 resetForm(form, null);
+                
                 this._subgoalEditMode = false; // FIXME: This should be true
                 let dates = subgoal.dates ? subgoal.dates : this._scenario.dates;
+                let response_variable = (subgoal.response_variables && subgoal.response_variables.length > 0) ? 
+                    subgoal.response_variables[0] : "";
+                let driving_variable = (subgoal.driving_variables && subgoal.driving_variables.length > 0) ? 
+                    subgoal.driving_variables[0] : "";
+
                 (form.elements["subgoalid"] as HTMLInputElement).value = subgoal.id;
                 (form.elements["subgoal_name"] as HTMLInputElement).value = subgoal.name;
                 (form.elements["subgoal_subregion"] as HTMLInputElement).value = subgoal.subregionid;
                 (form.elements["subgoal_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
                 (form.elements["subgoal_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
-                (form.elements["response_variable"] as HTMLInputElement).value = 
-                    (subgoal.response_variables && subgoal.response_variables.length > 0) ? subgoal.response_variables[0] : "";
-                (form.elements["driving_variable"] as HTMLInputElement).value = 
-                    (subgoal.driving_variables && subgoal.driving_variables.length > 0) ? subgoal.driving_variables[0] : "";
+                (form.elements["response_variable"] as HTMLInputElement).value = response_variable;
+                (form.elements["driving_variable"] as HTMLInputElement).value = driving_variable;
+
+                this._selectedIntervention = getVariableIntervention(driving_variable);
+
                 showDialog("subObjectiveDialog", this.shadowRoot!);
             }
         }
@@ -874,8 +974,30 @@ export class MintScenario extends connect(store)(PageViewElement) {
         if(state.ui && state.ui.selected_pathwayid) 
             this._selectedPathwayId = state.ui.selected_pathwayid;
 
-        if(state.regions!.query_result && this._regionid && state.regions!.query_result[this._regionid]) 
-            this._subRegions = state.regions!.query_result[this._regionid]["*"];
+        if(state.regions.sub_region_ids && this._regionid && state.regions.sub_region_ids[this._regionid]) {
+            let all_subregionids = state.regions.sub_region_ids[this._regionid];
+            this._regions = state.regions.regions;
+            if(all_subregionids != this._subRegionIds) {
+                let categorized_regions = {
+                    "Hydrology": [],
+                    "Administrative": [],
+                    "Agriculture": []
+                };
+                all_subregionids.map((regionid) => {
+                    let region = this._regions[regionid];
+                    if(!categorized_regions[region.region_type]) {
+                        categorized_regions[region.region_type] = [];
+                    }
+                    categorized_regions[region.region_type].push(region);
+                })
+                Object.keys(categorized_regions).map((regionid) => {
+                    let regions = categorized_regions[regionid];
+                    regions.sort((a, b) => a.name.localeCompare(b.name));
+                })
+                this._categorizedRegions = categorized_regions;
+                this._subRegionIds = all_subregionids;
+            }
+        }
 
         // If a scenario has been selected, fetch scenario details
         let scenarioid = state.ui!.selected_scenarioid;

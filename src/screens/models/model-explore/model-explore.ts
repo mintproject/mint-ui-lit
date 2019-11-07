@@ -87,7 +87,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             #model-search-results {
                 margin: 0 auto;
                 overflow: scroll;
-                height: calc(100% - 64px);
+                height: calc(100% - 115px);
                 width: 100%;
             }
 
@@ -134,6 +134,14 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             #model-search-form > wl-textfield > div[slot="after"] > wl-icon {
                 cursor: pointer;
             }
+
+            .explanation {
+                display: block;
+                margin: 0 auto;
+                width: 75%;
+                color: rgb(102, 102, 102);
+                font-size: 13px;
+            }
             `
         ];
     }
@@ -165,6 +173,18 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             <div id="model-comparison" style="padding-bottom: 1em;"> <model-compare></model-compare> </div>
             ` :html``}
             ${this._comparing<2? html`
+            <wl-text class="explanation">
+                The MINT model browser allows you to learn about the different models included in MINT.
+                Each model can have separate configurations, each representing a unique set up of that
+                model (particular choices of processes, regions, etc).
+                Each configuration can have separate setups that provide different default values for 
+                files and parameters.
+                <br/>
+                In the search bar below you can search models in two ways, which you can choose on the right.
+                One is to search their descriptions using a model name, type (e.g., agriculture),
+                keyword (fertilizer), and areas (e.g. Pongo).
+                Another is to search their variables (e.g., rainfall).
+            </wl-text>
             <div id="model-search-form">
                 <!-- https://github.com/andreasbm/weightless/issues/58 -->
                 <wl-textfield id="search-input" label="Search models" @input=${this._onSearchInput} value="${this._filter}">
@@ -285,7 +305,9 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     this._fullText[key] = (model.label
                                            + (model.desc? model.desc : '')
                                            + (model.keywords? model.keywords : '') 
-                                           + (model.type? model.type : '')).toLowerCase();
+                                           + (model.type? model.type : ''))
+                                           + (model.regions ? model.regions : '');
+                    this._fullText[key] = this._fullText[key].toLowerCase();
                     this._filter = '';
                     this._activeModels[key] = true;
                     count += 1;

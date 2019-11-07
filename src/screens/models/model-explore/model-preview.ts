@@ -34,6 +34,9 @@ export class ModelPreview extends connect(store)(PageViewElement) {
     @property({type: Number})
     private _configs : number = -1;
 
+    @property({type: Boolean})
+    private _ready : boolean = false;
+
     constructor () {
         super();
         this.active = true;
@@ -125,7 +128,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                 .title {
                     display: inline-block;
                     padding: 0px 10px 3px 10px;
-                    width: calc(100% - 2.6em - 20px);
+                    //width: calc(100% - 2.6em - 20px);
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
@@ -175,6 +178,13 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                     white-space: nowrap;
                 }
 
+                .ver-conf-text {
+                    float: right;
+                    font-size: 13px;
+                    padding-right: 3px;
+                    line-height: 1.2em;
+                }
+
                 .details-button {
                     display: inline-block;
                     float: right;
@@ -193,8 +203,11 @@ export class ModelPreview extends connect(store)(PageViewElement) {
               <tr>
                 <td class="left"> 
                   <div class="text-centered one-line">
-                    ${this._vers > 0 ? this._vers.toString() + ' version' + (this._vers > 1? 's' :'') : 'No versions'},
-                    ${this._configs > 0 ? this._configs.toString() + ' config' + (this._configs > 1? 's' :'') : 'No configs'}
+                    ${this._ready ? html`
+                        <b style="color: darkgreen;">Executable in MINT</b>
+                    `: html`
+                        <b>Not executable in MINT</b>
+                    `} 
                   </div>
                   <div>
                     <span class="helper"></span>${this._model.logo ? 
@@ -216,6 +229,10 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                         ${this._model.doc ? html`<a target="_blank" href="${this._model.doc}"><wl-icon>open_in_new</wl-icon></a>`: html``}
                     </span>
                     <span class="icon"><wl-icon @click="${()=>{this._compare(this._model.uri)}}">compare_arrows</wl-icon></span>
+                    <span class="ver-conf-text">
+                    ${this._vers > 0 ? this._vers.toString() + ' version' + (this._vers > 1? 's' :'') : 'No versions'},
+                    ${this._configs > 0 ? this._configs.toString() + ' config' + (this._configs > 1? 's' :'') : 'No configs'}
+                    </span>
                   </div>
                   <div class="content" style="${this.altDesc? '' : 'text-align: justify;'}">
                     ${this.altDesc ? 
@@ -225,7 +242,14 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                         })}`: 
                         this._model.desc}
                   </div>
-                  <div class="footer one-line">
+                  ${this._model.regions ? html `
+                  <div class="footer one-line" style="height: auto;">
+                    <span class="keywords"> 
+                        <b>Regions:</b> 
+                        ${this._model.regions}
+                    </span>
+                  </div>` : ''}
+                  <div class="footer one-line" style="padding-top: 0px;">
                     <span class="keywords"> 
                         <b>Keywords:</b> 
                         ${this._model.keywords?  html`${this._model.keywords.join(', ')}` : html`No keywords`}
@@ -267,6 +291,13 @@ export class ModelPreview extends connect(store)(PageViewElement) {
 
             if (db.versions && db.versions[this.uri]) {
                 this._configs = db.versions[this.uri].reduce((acc, ver) => acc + (ver.configs ? ver.configs.length : 0), 0)
+                db.versions[this.uri].forEach((v) => {
+                    (v.configs || []).forEach((c) => {
+                        if (c.calibrations && c.calibrations.length > 0 && this._model.regions) {
+                            this._ready = true;
+                        }
+                    });
+                });
             } else {
                 this._configs = 0;
             }

@@ -39,27 +39,27 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
           SharedStyles,
           css`
 
-          .breadcrumbs li.active, .breadcrumbs li.done.active {
+          .breadcrumbs a.active, .breadcrumbs a.done.active {
             background-color: #0f7acf;
             color: white;
           }
-          .breadcrumbs li.active:before, .breadcrumbs li.done.active:before {
+          .breadcrumbs a.active:before, .breadcrumbs a.done.active:before {
             border-color: #0f7acf;
             border-left-color: transparent;
           }
-          .breadcrumbs li.active:after, .breadcrumbs li.done.active:after {
+          .breadcrumbs a.active:after, .breadcrumbs a.done.active:after {
             border-left-color: #0f7acf;
           }
 
-          .breadcrumbs li.done {
+          .breadcrumbs a.done {
             background-color: #06436c;
             color: white;
           }
-          .breadcrumbs li.done:before {
+          .breadcrumbs a.done:before {
             border-color: #06436c;
             border-left-color: transparent;
           }
-          .breadcrumbs li.done:after {
+          .breadcrumbs a.done:after {
             border-left-color: #06436c;
           }
 
@@ -82,24 +82,24 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
     private _renderProgressBar() {
         return html`
             <ul class="breadcrumbs">
-                <li id="models_breadcrumb" 
+                <a id="models_breadcrumb" 
                     class="${this._getBreadcrumbClass('models')}" 
-                    @click="${() => { this._selectMode('models') }}">Models</li>
-                <li id="datasets_breadcrumb" 
+                    href="${this._getModeURL('models')}">Models</li>
+                <a id="datasets_breadcrumb" 
                     class="${this._getBreadcrumbClass('datasets')}" 
-                    @click="${() => { this._selectMode('datasets') }}">Datasets</li>
-                <li id="parameters_breadcrumb" 
+                    href="${this._getModeURL('datasets')}">Datasets</li>
+                <a id="parameters_breadcrumb" 
                     class="${this._getBreadcrumbClass('parameters')}" 
-                    @click="${() => { this._selectMode('parameters') }}">Setup</li>
-                <li id="runs_breadcrumb" 
+                    href="${this._getModeURL('parameters')}">Setup</li>
+                <a id="runs_breadcrumb" 
                     class="${this._getBreadcrumbClass('runs')}" 
-                    @click="${() => { this._selectMode('runs') }}">Runs</li>
-                <li id="results_breadcrumb" 
+                    href="${this._getModeURL('runs')}">Runs</li>
+                <a id="results_breadcrumb" 
                     class="${this._getBreadcrumbClass('results')}" 
-                    @click="${() => { this._selectMode('results') }}">Results</li>
-                <li id="visualize_breadcrumb" 
+                    href="${this._getModeURL('results')}">Results</li>
+                <a id="visualize_breadcrumb" 
                     class="${this._getBreadcrumbClass('visualize')}" 
-                    @click="${() => { this._selectMode('visualize') }}">Visualize</li>
+                    href="${this._getModeURL('visualize')}">Visualize</li>
             </ul>
         `;
     }
@@ -194,6 +194,11 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
         }
     }
 
+    private _getModeURL(mode: string) {
+        return this._regionid + "/modeling/scenario/" + 
+                this.scenario.id + "/" + this.subgoal!.id + "/" + this.pathway.id + "/" + mode;
+    }    
+
     protected render() {
         if(this._dispatched)
             return html`<wl-progress-spinner class="loading"></wl-progress-spinner>`;
@@ -256,7 +261,8 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
         // If there is no pathway, then stop monitoring
         if(!pathwayid) {
             if(this.pathway) {
-                this.pathway.unsubscribe();
+                //console.log("No pathway passed in ? Unsubscribing to pathway " + this.pathway.id);
+                //this.pathway.unsubscribe();
             }
             this.pathway = null;
         }

@@ -10,7 +10,7 @@ import { FETCH_MODELS, FETCH_VERSIONS_AND_CONFIGS, FETCH_CATEGORIES, FETCH_CONFI
          FETCH_IO_FOR_VAR_SN, FETCH_METADATA_FOR_VAR_SN, FETCH_PROCESS_FOR_CAG, FETCH_SEARCH_MODEL_BY_NAME,
          FETCH_SEARCH_MODEL_BY_CATEGORY, FETCH_SEARCH_ANY, FETCH_SEARCH_IO, FETCH_SEARCH_MODEL, FETCH_SEARCH_VAR,
          FETCH_SAMPLE_VIS_FOR_MODEL_CONFIG, FETCH_SEARCH_MODEL_BY_VAR_SN, ADD_URLS, ADD_PARAMETERS, ADD_CALIBRATION,
-         ADD_INPUTS, ADD_METADATA } from './model-catalog-actions'
+         ADD_INPUTS, ADD_METADATA, FETCH_DESCRIPTION_FOR_VAR } from './model-catalog-actions'
 
 // For the moment storing on explorer
 import { FetchedModel, IODetail, VersionDetail, VariableDetail, CompIODetail,
@@ -39,6 +39,7 @@ export interface ExplorerState {
     authors:            any;
     explDiagrams:       UriExplDiag;
     search:             SearchResult;
+    vars:               any;
     urls:               any;
 }
 
@@ -57,6 +58,7 @@ const INITIAL_STATE: ExplorerState = {
     authors:            {},
     explDiagrams:       {} as UriExplDiag,
     search:             {} as SearchResult,
+    vars:               {},
     urls:               {}
 }
 
@@ -129,6 +131,14 @@ const explorer: Reducer<ExplorerState, RootAction> = (state = INITIAL_STATE, act
                 ...state, 
                 versions: allVersions
             }
+        case FETCH_DESCRIPTION_FOR_VAR:
+            let newVars =  { ...state.vars };
+            newVars[action.uri] = action.data;
+            return { 
+                ...state, 
+                vars: newVars
+            }
+
         case FETCH_CATEGORIES:
             console.log(action); return { ...state };
         case FETCH_CONFIGS:

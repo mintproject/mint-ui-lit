@@ -1,9 +1,9 @@
 import { IdMap, IdNameObject } from "../../app/reducers";
 import { RootAction } from "../../app/store";
 import { Reducer } from "redux";
-import { REGIONS_LIST, REGIONS_QUERY } from "./actions";
+import { REGIONS_LIST_TOP_REGIONS, REGIONS_LIST_SUB_REGIONS } from "./actions";
 
-export type RegionList = IdMap<Region>;
+export type RegionMap = IdMap<Region>;
 
 export interface Region extends IdNameObject {
     geojson_blob?: string, // This contains the whole geojson itself
@@ -12,8 +12,9 @@ export interface Region extends IdNameObject {
 }
 
 export interface RegionsState {
-    regions?: RegionList,
-    query_result?: AllRegionsQueryResults
+    regions?: RegionMap,
+    top_region_ids?: string[],
+    sub_region_ids?: IdMap<string[]>
 }
 
 export interface BoundingBox {
@@ -23,22 +24,33 @@ export interface BoundingBox {
     ymax: number
 }
 
-export type AllRegionsQueryResults = IdMap<RegionQueryResult>;
-export type RegionQueryResult = IdMap<RegionList>;
+export interface Point {
+    x: number,
+    y: number
+}
 
 const INITIAL_STATE: RegionsState = {};
 
 const regions: Reducer<RegionsState, RootAction> = (state = INITIAL_STATE, action) => {
     switch (action.type) {
-        case REGIONS_LIST:
+        case REGIONS_LIST_TOP_REGIONS:
+            state.regions = {
+                ...state.regions,
+                ...action.regions
+            };
+            state.top_region_ids = Object.keys(action.regions)
             return {
-                ...state,
-                regions: action.list
+                ...state
             }
-        case REGIONS_QUERY:
-            state.query_result = { ...state.query_result };
-            state.query_result[action.parent_id] = state.query_result[action.parent_id] || {};
-            state.query_result[action.parent_id][action.region_type || "*"] = action.list;
+        case REGIONS_LIST_SUB_REGIONS:
+            state.regions = {
+                ...state.regions,
+                ...action.regions
+            };
+            if(!state.sub_region_ids) {
+                state.sub_region_ids = {}
+            }
+            state.sub_region_ids[action.parentid] = Object.keys(action.regions)
             return {
                 ...state
             };

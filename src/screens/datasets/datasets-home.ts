@@ -1,10 +1,11 @@
 
-import { html, customElement, css } from 'lit-element';
+import { html, customElement, css, property } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
 import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import datasets from './reducers';
+import dataExplorerUI from './ui-reducers';
 import { connect } from 'pwa-helpers/connect-mixin';
 
 import './datasets-browse';
@@ -14,12 +15,15 @@ import './datasets-rs-workflows';
 import '../../components/nav-title';
 
 store.addReducers({
-    datasets
+    datasets,
+    dataExplorerUI
 });
 
 @customElement('datasets-home')
 export class DatasetsHome extends connect(store)(PageViewElement) {
-
+    @property({type: String})
+    private _dsid!: string;
+    
     static get styles() {
         return [
             css `
@@ -36,6 +40,9 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
         switch (this._subpage) {
             case 'browse':
                 nav.push({label: 'Browse Datasets', url: 'datasets/browse'});
+                if(this._dsid) {
+                    nav.push({label: this._dsid, url: 'datasets/browse/'+this._dsid});
+                }
                 break;
             case 'register':
                 nav.push({label: 'Add Datasets', url: 'datasets/register'});
@@ -58,7 +65,8 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
                     <wl-icon>search</wl-icon>
                     <div>Browse Datasets</div>
                 </a>
-                <a href="${this._regionid}/datasets/register">
+                <!--a href="this._regionid/datasets/register"-->
+                <a disabled>
                     <wl-icon>library_add</wl-icon>
                     <div>Add Datasets</div>
                 </a>
@@ -82,5 +90,8 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         super.setSubPage(state);
         super.setRegionId(state);
+        if(state.dataExplorerUI) {
+            this._dsid = state.dataExplorerUI.selected_datasetid;
+        }
     }
 }

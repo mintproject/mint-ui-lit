@@ -7,7 +7,7 @@ import { updatePathway } from "../actions";
 import { renderNotifications } from "../../../util/ui_renders";
 import { showNotification } from "../../../util/ui_functions";
 import { ExecutableEnsemble, Goal, SubGoal, DataEnsembleMap, Visualization } from "../reducers";
-import { getUISelectedSubgoal, getUISelectedGoal, getVisualizationURL } from "../../../util/state_functions";
+import { getUISelectedSubgoal, getUISelectedGoal, getVisualizationURLs } from "../../../util/state_functions";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { getVariableLongName } from "../../../offline_data/variable_list";
 
@@ -46,7 +46,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
         if(!this.pathway) {
             return html ``;
         }
-        let vizurl = getVisualizationURL(this.pathway)
+        let vizurls = getVisualizationURLs(this.pathway, this.prefs.mint)
         let responseV = this.pathway.response_variables.length > 0?
             getVariableLongName(this.pathway.response_variables[0]) : '';
 
@@ -58,12 +58,13 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
             color: #999;
         }
         </style>
-        ${(vizurl)? html`
+        ${(vizurls)? html`
             <h2>Visualization
                 ${responseV? 'of indicator ' + responseV : ''}
             </h2>
-            <iframe src="${vizurl}"></iframe>
-
+            ${vizurls.map((vizurl) => {
+                return html`<iframe src="${vizurl}"></iframe>`;
+            })}
             <fieldset class="notes">
                 <legend>Notes</legend>
                 <textarea id="notes">${this.pathway.notes ? this.pathway.notes.visualization : ""}</textarea>
@@ -94,6 +95,10 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
     }
 
     _renderSummary () {
+        if(!this._subgoal) {
+            return "";
+        }
+        
         return html`
         <h2>${this.scenario.name}</h2>
         <div class="clt">

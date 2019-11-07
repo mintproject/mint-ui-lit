@@ -14,6 +14,7 @@ import { apiFetch,  CALIBRATIONS_FOR_VAR_SN, METADATA_NOIO_FOR_MODEL_CONFIG, PAR
 IO_AND_VARS_SN_FOR_CONFIG } from '../../util/model-catalog-requests';
 import { Dataset } from "../datasets/reducers";
 import { getVariableProperty } from "offline_data/variable_list";
+import { MintPreferences } from "app/reducers";
 
 export interface ModelsActionList extends Action<'MODELS_LIST'> { models: Model[] };
 export interface ModelsActionVariablesQuery extends Action<'MODELS_VARIABLES_QUERY'> { 
@@ -25,11 +26,9 @@ export interface ModelsActionDetail extends Action<'MODELS_DETAIL'> { model: Mod
 
 export type ModelsAction = ModelsActionList | ModelsActionVariablesQuery |  ModelsActionDetail ;
 
-const MODEL_CATALOG_URI = "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries";
-
 // List all Model Configurations
 type ListModelsThunkResult = ThunkAction<void, RootState, undefined, ModelsActionList>;
-export const listAllModels: ActionCreator<ListModelsThunkResult> = () => (dispatch) => {
+export const listAllModels: ActionCreator<ListModelsThunkResult> = (prefs: MintPreferences) => (dispatch) => {
     
     // Offline mode example query
     if(OFFLINE_DEMO_MODE) {
@@ -40,7 +39,7 @@ export const listAllModels: ActionCreator<ListModelsThunkResult> = () => (dispat
         return;
     }
 
-    fetch(MODEL_CATALOG_URI + "/getModelConfigurations").then((response) => {
+    fetch(prefs.model_catalog_api + "/getModelConfigurations").then((response) => {
         response.json().then((obj) => {
             let models = [] as Model[];
             let bindings = obj["results"]["bindings"];
@@ -156,7 +155,6 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                     let fileio: any = {};
                     let inputs:ModelIO[] = [];
                     let outputs:ModelIO[] = [];
-                    let vpstmap: any = {};
                     values[1].map((value: any) => {
                         let io: ModelIO = fileio[value.io];
                         if(!io) {
@@ -167,11 +165,20 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                                 variables: []
                             };
                             if(value.fixedValueURL) {
+                                let dcids = value.fixedValueDCId.split(/\s*,\s*/);
+                                let urls = value.fixedValueURL.split(/\s*,\s*/);
+                                let resources = urls.map((url) => {
+                                    let fname = url.replace(/.*[#\/]/, '');
+                                    return { 
+                                        url: url,
+                                        id: fname,
+                                        name: fname,
+                                        selected: true
+                                    };
+                                });
                                 io.value = {
-                                    id: value.fixedValueDCId,
-                                    resources: [{
-                                        url: value.fixedValueURL
-                                    }]
+                                    id: dcids[0],
+                                    resources: resources
                                 } as Dataset;
                             }
                             fileio[value.io] = io;
@@ -183,7 +190,6 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                         }
                         if(value.st) {
                             io.variables.push(value.st);
-                            vpstmap[value.vp] = value.st;
                         }
                     });
                     
@@ -196,7 +202,8 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                             // Do not add duplicate parameters
                             return;
                         }
-                        let adjustment_variable = vpstmap[value.var] || "";
+                        let adjustment_variable = value.standardV || "";
+                        let accepted_values = value.acceptedValues ? value.acceptedValues.split(/\s*;\s*/) : null
                         let param: ModelParameter =  {
                             id: value.p,
                             name: value.paramlabel,
@@ -206,7 +213,9 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                             unit: value.unit || "",
                             default: value.defaultvalue || "",
                             description: value.description || "",
-                            adjustment_variable: adjustment_variable
+                            adjustment_variable: adjustment_variable,
+                            position: value.position ? parseInt(value.position) : 0,
+                            accepted_values: accepted_values
                         };
                         if(value.fixedValue)
                             param.value = value.fixedValue;
@@ -217,13 +226,12 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                         parameters.push(param);
 
                         // If some driving/adjustment variables are passed, make sure they are matched
-                        if (!driving_variables || !driving_variables.length || 
-                            (!param.value && driving_variables.indexOf(adjustment_variable) >= 0)) {
-                                matched_driving_variable = true;
+                        if (!param.value && driving_variables && driving_variables.indexOf(adjustment_variable) >= 0) {
+                            matched_driving_variable = true;
                         }
                     });
 
-                    if(matched_driving_variable) {
+                    if(!driving_variables || !driving_variables.length || matched_driving_variable) {
                         // If this model matches the adjustment/driving variable
 
                         let input_parameters = parameters
@@ -253,7 +261,8 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                             dimensionality: meta['gridDim'] || "",
                             spatial_grid_type: (meta['gridType'] || "").replace(/.*#/, ''),
                             spatial_grid_resolution: meta['gridSpatial'] || "",
-                            minimum_output_time_interval: ""
+                            minimum_output_time_interval: "",
+                            usage_notes: meta['usageNotes'] || ""
                         };
                         //console.log(model);
                         return model;
