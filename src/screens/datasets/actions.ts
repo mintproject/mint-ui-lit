@@ -331,7 +331,8 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
-            spatial_coverage__intersects: geojson.geometry,
+            // FIXME: Querying the region for only datasets *within* the area
+            spatial_coverage__within: geojson.geometry,
             limit: 5000
         })
     }).then((response) => {
