@@ -223,16 +223,18 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     }
 
     _saveConfig () {
-        let labelEl     = this.shadowRoot.getElementById('edit-config-name') as HTMLInputElement;
-        let descEl      = this.shadowRoot.getElementById('edit-config-desc') as HTMLInputElement;
-        let keywordsEl  = this.shadowRoot.getElementById('edit-config-keywords') as HTMLInputElement;
-        let complocEl   = this.shadowRoot.getElementById('edit-config-comp-loc') as HTMLInputElement;
+        let labelEl     = this.shadowRoot.getElementById('edit-setup-name') as HTMLInputElement;
+        let descEl      = this.shadowRoot.getElementById('edit-setup-desc') as HTMLInputElement;
+        let keywordsEl  = this.shadowRoot.getElementById('edit-setup-keywords') as HTMLInputElement;
+        let complocEl   = this.shadowRoot.getElementById('edit-setup-comp-loc') as HTMLInputElement;
+        let regionEl    = this.shadowRoot.getElementById('edit-setup-region') as HTMLInputElement;
 
-        if (labelEl && descEl && keywordsEl && complocEl) {
+        if (labelEl && descEl && keywordsEl && complocEl && regionEl) {
             let label    = labelEl.value;
             let desc     = descEl.value;
             let keywords = keywordsEl.value;
             let compLoc  = complocEl.value;
+            let region   = regionEl.value;
 
             if (!label) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
@@ -241,14 +243,17 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 return;
             }
 
-            let editedConfig = {...this._setup};
+            let editedSetup = {...this._setup};
 
-            editedConfig.label = [label];
-            editedConfig.description = [desc];
-            editedConfig.keywords = [keywords.split(/ *, */).join('; ')];
-            editedConfig.hasComponentLocation = [compLoc];
+            editedSetup.label = [label];
+            editedSetup.description = [desc];
+            editedSetup.keywords = [keywords.split(/ *, */).join('; ')];
+            editedSetup.hasComponentLocation = [compLoc];
 
-            store.dispatch(modelConfigurationPut(editedConfig));
+            //maybe this does not work
+            editedSetup.hasRegion = [region];
+
+            store.dispatch(modelConfigurationPut(editedSetup));
             showNotification("saveNotification", this.shadowRoot!);
             goToPage(createUrl(this._model, this._version, this._setup));
         }
@@ -321,7 +326,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         return html`
         <span id="start"/>
         ${this._editing ? html`
-        <wl-textfield id="edit-config-name" label="Setup name" value="${this._setup.label}" required></wl-textfield>
+        <wl-textfield id="edit-setup-name" label="Setup name" value="${this._setup.label}" required></wl-textfield>
         `:''}
 
 
@@ -331,7 +336,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 <td>Description:</td>
                 <td>
                     ${this._editing ? html`
-                    <textarea id="edit-config-desc" name="description" rows="5">${this._setup.description}</textarea>
+                    <textarea id="edit-setup-desc" name="description" rows="5">${this._setup.description}</textarea>
                     ` : this._setup.description}
                 </td>
             </tr>
@@ -340,7 +345,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 <td>Keywords:</td>
                 <td>
                     ${this._editing ? html`
-                    <input id="edit-config-keywords" type="text" value="${keywords}"/>
+                    <input id="edit-setup-keywords" type="text" value="${keywords}"/>
                     ` : keywords}
                 </td>
             </tr>
@@ -349,7 +354,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 <td>Region:</td>
                 <td>
                     ${this._editing ? html`
-                    <select id="edit-config-regions">
+                    <select id="edit-setup-region">
                         ${selectRegions.map(r => html`<option value="${r.id}">${r.label}</option>`)}
                     </select>
                     ` : regions}
@@ -380,10 +385,10 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 <td>Parameter assignment method:</td>
                 <td>
                     ${this._editing ? html`
-                    <wl-select id="new-setup-assign-method" label="Parameter assignment method" placeholder="Select a parameter assignament method" required>
+                    <wl-select id="edit-setup-assign-method" label="Parameter assignment method" placeholder="Select a parameter assignament method" required>
                         <option value="" disabled selected>Please select a parameter assignment method</option>
                         <option value="Calibration">Calibration</option>
-                        <option value="Expert-tuned">Expert tuned</option>
+                        <option value="Expert-configured">Expert tuned</option>
                     </wl-select>`
                     : this._setup.parameterAssignmentMethod }
                 </td>
@@ -406,7 +411,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 <td>Component Location:</td>
                 <td>
                     ${this._editing ? html`
-                    <textarea id="edit-config-comp-loc">${this._setup.hasComponentLocation}</textarea>
+                    <textarea id="edit-setup-comp-loc">${this._setup.hasComponentLocation}</textarea>
                     ` : renderExternalLink(this._setup.hasComponentLocation)}
                 </td>
             </tr>
@@ -484,9 +489,10 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             <thead>
                 <th><b>Label</b></th>
                 <th><b>Type</b></th>
-                <th class="ta-right">
+                <th class="ta-right" style="white-space:nowrap;">
                     <b>Value in this setup</b>
-                    <span class="tooltip" tip="If a value is set up in this field, you will not be able to change it in run time. For example, a price adjustment is set up to be 10%, it won't be editable when running the the model">
+                    <span class="tooltip" style="white-space:normal;"
+                     tip="If a value is set up in this field, you will not be able to change it in run time. For example, a price adjustment is set up to be 10%, it won't be editable when running the the model">
                         <wl-icon>help</wl-icon>
                     </span>
                 </th>
@@ -638,6 +644,19 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             this._processes[process.id] = process;
         });
         this.requestUpdate();
+    }
+
+    updated () {
+        if (this._editing && this._setup) {
+            if (this._setup.parameterAssignmentMethod && this._setup.parameterAssignmentMethod.length === 1) {
+                let el = this.shadowRoot.getElementById('edit-setup-assign-method') as HTMLInputElement;
+                el.value = this._setup.parameterAssignmentMethod[0];
+            }
+            if (this._setup.hasRegion && this._setup.hasRegion.length === 1) {
+                let el = this.shadowRoot.getElementById('edit-setup-region') as HTMLInputElement;
+                el.value = this._setup.hasRegion[0].id;
+            }
+        }
     }
 
     firstUpdated () {
