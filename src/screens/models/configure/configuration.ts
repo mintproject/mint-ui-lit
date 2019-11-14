@@ -24,8 +24,10 @@ import 'components/loading-dots'
 
 import './person';
 import './process';
+import './parameter';
 import { ModelsConfigurePerson } from './person';
 import { ModelsConfigureProcess } from './process';
+import { ModelsConfigureParameter } from './parameter';
 
 @customElement('models-configure-configuration')
 export class ModelsConfigureConfiguration extends connect(store)(PageViewElement) {
@@ -420,7 +422,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             <thead>
                 <th><b>Label</b></th>
                 <th><b>Type</b></th>
-                <th class="ta-right">
+                <th class="ta-right" style="white-space:nowrap;">
                     <b>Default Value</b>
                 </th>
                 <th class="ta-right"><b>Unit</b></th>
@@ -443,7 +445,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
                 ${this._editing? html `
                 <td style="text-align: right;">
-                    <wl-button class="small"><wl-icon>edit</wl-icon></wl-button>
+                    <wl-button @click="${() => this._showParameterDialog(uri)}" class="small"><wl-icon>edit</wl-icon></wl-button>
                 </td>
                 ` : ''}
                 `
@@ -495,7 +497,14 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         
         <models-configure-person id="person-configurator" ?active=${this._dialog == 'person'} class="page"></models-configure-person>
         <models-configure-process id="process-configurator" ?active=${this._dialog == 'process'} class="page"></models-configure-process>
+        <models-configure-parameter id="parameter-configurator" ?active=${this._dialog == 'parameter'} class="page"></models-configure-parameter>
         ${renderNotifications()}`
+    }
+
+    _showParameterDialog (parameterID: string) {
+        this._dialog = 'parameter';
+        let parameterConfigurator = this.shadowRoot.getElementById('parameter-configurator') as ModelsConfigureParameter;
+        parameterConfigurator.edit(parameterID, false);
     }
 
     _showAuthorDialog () {
@@ -552,10 +561,17 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         this.requestUpdate();
     }
 
+    _onParameterEdited (ev) {
+        let editedParameter = ev.detail;
+        this._parameters[editedParameter.id] = editedParameter;
+        this.requestUpdate();
+    }
+
     firstUpdated () {
         this.addEventListener('dialogClosed', this._onClosedDialog);
         this.addEventListener('authorsSelected', this._onAuthorsSelected);
         this.addEventListener('processesSelected', this._onProcessesSelected);
+        this.addEventListener('parameterEdited', this._onParameterEdited);
     }
 
     stateChanged(state: RootState) {

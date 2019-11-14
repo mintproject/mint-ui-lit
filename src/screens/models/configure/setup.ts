@@ -27,8 +27,10 @@ import 'components/loading-dots'
 
 import './person';
 import './process';
+import './parameter';
 import { ModelsConfigurePerson } from './person';
 import { ModelsConfigureProcess } from './process';
+import { ModelsConfigureParameter } from './parameter';
 
 @customElement('models-configure-setup')
 export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
@@ -483,13 +485,13 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 <col span="1">
                 <col span="1">
                 <col span="1">
-                <col span="1">
                 ${this._editing? html`<col span="1">` : ''}
+                <col span="1">
             </colgroup>
             <thead>
                 <th><b>Label</b></th>
                 <th><b>Type</b></th>
-                <th class="ta-right" style="white-space:nowrap;">
+                <th class="ta-right" style="white-space:nowrap;" colspan="${this._editing ?  '2' : '1'}">
                     <b>Value in this setup</b>
                     <span class="tooltip" style="white-space:normal;"
                      tip="If a value is set up in this field, you will not be able to change it in run time. For example, a price adjustment is set up to be 10%, it won't be editable when running the the model">
@@ -497,7 +499,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     </span>
                 </th>
                 <th class="ta-right"><b>Unit</b></th>
-                ${this._editing? html`<th class="ta-right"></th>` : ''}
             </thead>
             <tbody>
             ${this._setup.hasParameter ? paramOrder.map((uri:string) => html`
@@ -516,12 +517,12 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         this._parameters[uri].hasDefaultValue ? this._parameters[uri].hasDefaultValue + ' (default)' : '-'
                     )}
                 </td>
-                <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
-                ${this._editing? html `
-                <td style="text-align: right;">
-                    <wl-button class="small"><wl-icon>edit</wl-icon></wl-button>
+                ${this._editing ? html`
+                <td>
+                    <wl-button @click="${() => this._showParameterDialog(uri)}"class="small"><wl-icon>edit</wl-icon></wl-button>
                 </td>
-                ` : ''}
+                `: ''}
+                <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
                 `
                 : html`<td colspan="5" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
             </tr>`)
@@ -554,8 +555,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         html`
                         <span>
                             <b>${this._sampleResources[fixed.id].label}</b> <br/>
-                            <a target="_blank" href="${this._sampleResources[fixed.id].value}">
-                                ${this._sampleResources[fixed.id].value}
+                            <a target="_blank" href="${(this._sampleResources[fixed.id] as any).value}">
+                                ${(this._sampleResources[fixed.id] as any).value}
                             </a><br/>
                             <span class="monospaced" style="white-space: nowrap;">${this._sampleResources[fixed.id].dataCatalogIdentifier}</span>
                         </span>`
@@ -588,7 +589,14 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         
         <models-configure-person id="person-configurator" ?active=${this._dialog == 'person'} class="page"></models-configure-person>
         <models-configure-process id="process-configurator" ?active=${this._dialog == 'process'} class="page"></models-configure-process>
+        <models-configure-parameter id="parameter-configurator" ?active=${this._dialog == 'parameter'} class="page"></models-configure-parameter>
         ${renderNotifications()}`
+    }
+
+    _showParameterDialog (parameterID: string) {
+        this._dialog = 'parameter';
+        let parameterConfigurator = this.shadowRoot.getElementById('parameter-configurator') as ModelsConfigureParameter;
+        parameterConfigurator.edit(parameterID);
     }
 
     _showAuthorDialog () {
@@ -646,6 +654,12 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         this.requestUpdate();
     }
 
+    _onParameterEdited (ev) {
+        let editedParameter = ev.detail;
+        this._parameters[editedParameter.id] = editedParameter;
+        this.requestUpdate();
+    }
+
     updated () {
         if (this._editing && this._setup) {
             if (this._setup.parameterAssignmentMethod && this._setup.parameterAssignmentMethod.length === 1) {
@@ -663,6 +677,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         this.addEventListener('dialogClosed', this._onClosedDialog);
         this.addEventListener('authorsSelected', this._onAuthorsSelected);
         this.addEventListener('processesSelected', this._onProcessesSelected);
+        this.addEventListener('parameterEdited', this._onParameterEdited);
     }
 
     stateChanged(state: RootState) {

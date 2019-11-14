@@ -24,6 +24,7 @@ import 'components/loading-dots'
 
 import './person';
 import './process';
+import './parameter';
 import { ModelsConfigurePerson } from './person';
 import { ModelsConfigureProcess } from './process';
 import { ModelsConfigureParameter } from './parameter';

@@ -42,13 +42,52 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
     private _parameter : Parameter | null = null;
 
     @property({type: Boolean})
+    private _useRanges : boolean = false;
+
+    @property({type: Boolean})
     private _loading : boolean = false;
 
     @property({type: Boolean})
     private _waiting : boolean = false;
 
     static get styles() {
-        return [ExplorerStyles, SharedStyles, css``];
+        return [ExplorerStyles, SharedStyles, css`
+        .checkbox {
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .checkbox > wl-icon {
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .checkbox > wl-icon:after {
+            content: 'check_box_outline_blank';
+        }
+
+        .checkbox > span {
+            vertical-align: middle;
+        }
+
+        .checkbox[active] {
+            font-weight: bold;
+        }
+
+        .checkbox[active] > wl-icon:after {
+            content: 'check_box';
+        }
+
+        .min-max-input {
+            display: grid;
+            grid-template-columns: 25% 50% 25%;
+        }
+
+        .min-max-input.no-ranges {
+            display: grid;
+            grid-template-columns: 0% 100% 0%;
+        }
+        `];
     }
 
     protected render() {
@@ -93,7 +132,8 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
             ${renderParameterType(this._parameter)}
             <form>
                 ${inputType === 'boolean' ? html`
-                <wl-select id="edit-parameter-fixed-value" label="${this._parameter.label}">
+                <wl-select id="edit-parameter-fixed-value" label="${this._parameter.label}" 
+                 value="${this._parameter.hasFixedValue? this._parameter.hasFixedValue : ''}">
                     <option value disabled selected>Select something</option>
                     <option value="TRUE">TRUE</option>
                     <option value="FALSE">FALSE</option>
@@ -114,11 +154,80 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
     }
 
     _renderEditParameter () {
-        return html`TODO _renderEditParameter`;
+        if (!this._parameter) {
+            return html `<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
+        } else {
+            let inputType : string, min, max;
+            if (this._parameter.hasDataType && this._parameter.hasDataType.length > 0) {
+                switch (this._parameter.hasDataType[0]) {
+                    case 'float':
+                    case 'int':
+                        inputType = 'number';
+                        min = this._parameter.hasMinimumAcceptedValue ? this._parameter.hasMinimumAcceptedValue[0] : null;
+                        max = this._parameter.hasMaximumAcceptedValue ? this._parameter.hasMaximumAcceptedValue[0] : null;
+                        break;
+                    case 'boolean':
+                        inputType = 'boolean';
+                        break;
+                    default:
+                        inputType = 'text';
+                }
+            }
+
+            return html`
+            <wl-title level="4">${this._parameter.description}</wl-title>
+            <div style="margin-bottom: 5px;">
+                <span class="monospaced">${this._parameter.label}</span>
+                ${this._parameter.usesUnit ? ' (' + (this._parameter.usesUnit[0] as any).label + ')': ''}
+            </div>
+            <form>
+                ${inputType === 'boolean' ? html`
+                <wl-select id="edit-parameter-fixed-value" label="Default value" 
+                 value="${this._parameter.hasDefaultValue}">
+                    <option value disabled selected>Select something</option>
+                    <option value="TRUE">TRUE</option>
+                    <option value="FALSE">FALSE</option>
+                </wl-select>
+                ` : (inputType === 'number' ? 
+                html`
+                <div class="checkbox" ?active="${this._useRanges}" @click="${this._toggleUseRanges}">
+                    <wl-icon></wl-icon>
+                    <span>Use ranges</span>
+                </div>
+
+                <div class="min-max-input ${this._useRanges ? '' : 'no-ranges'}">
+                    <wl-textfield
+                        type="number"
+                        id="edit-parameter-min-value" label="Minumum"
+                        value="${min}" ?required="${this._useRanges}">
+                    </wl-textfield>
+                    <wl-textfield 
+                        type="number" min="${min}" max="${max}"
+                        id="edit-parameter-default-value" label="Default value"
+                        value="${this._parameter.hasDefaultValue}" required>
+                    </wl-textfield>
+                    <wl-textfield 
+                        type="number"
+                        id="edit-parameter-max-value" label="Maximum"
+                        value="${max}" ?required="${this._useRanges}">
+                    </wl-textfield>
+                </div>`
+                : html`
+                <wl-textfield 
+                    type="text"
+                    id="edit-parameter-fixed-value" label="Default value"
+                    value="${this._parameter.hasDefaultValue}" required>
+                </wl-textfield>`)}
+            </form>`
+        }
     }
 
     _renderNewParameter () {
         return html`TODO _renderNewParameter`;
+    }
+
+    _toggleUseRanges () {
+        this._useRanges = !this._useRanges;
     }
 
     /* parameterID is the URI of the parameter to edit,
@@ -132,6 +241,10 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
             let state: any = store.getState();
             if (state && state.modelCatalog && state.modelCatalog.parameters && state.modelCatalog.parameters[parameterID]) {
                 this._parameter = { ...state.modelCatalog.parameters[parameterID] };
+                this._useRanges = ((this._parameter.hasMinimumAcceptedValue &&
+                                    this._parameter.hasMinimumAcceptedValue.length === 1) || (
+                                    this._parameter.hasMaximumAcceptedValue &&
+                                    this._parameter.hasMaximumAcceptedValue.length === 1));
                 this._loading = false;
             } else {
                 store.dispatch(parameterGet(parameterID));
@@ -195,15 +308,43 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
     }
 
     _onEditParameter () {
-        console.log('trying to edit non fixed parameter: not implemented yet.')
-        showNotification("formValuesIncompleteNotification", this.shadowRoot!);
+        let defaultEl = this.shadowRoot.getElementById('edit-parameter-default-value') as Textfield;
+        let minEl = this.shadowRoot.getElementById('edit-parameter-min-value') as Textfield;
+        let maxEl = this.shadowRoot.getElementById('edit-parameter-max-value') as Textfield;
+
+        if (defaultEl) {
+            let def = defaultEl.value;
+            let editedParameter : Parameter = Object.assign({}, this._parameter);
+            editedParameter.hasDefaultValue = [def as any];
+            if (this._useRanges) {
+                let min = minEl.value;
+                let max = maxEl.value;
+                if (!def || !min || !max || min > def || max < def) {
+                    showNotification("formValuesIncompleteNotification", this.shadowRoot!);
+                    if (!def || min > def || max < def) (<any>defaultEl).refreshAttributes();
+                    if (!min) (<any>minEl).refreshAttributes();
+                    if (!max) (<any>maxEl).refreshAttributes();
+                    return;
+                }
+                editedParameter.hasMinimumAcceptedValue = [min as any]
+                editedParameter.hasMaximumAcceptedValue = [max as any]
+            } else {
+                if (!def) {
+                    showNotification("formValuesIncompleteNotification", this.shadowRoot!);
+                    (<any>defaultEl).refreshAttributes();
+                    return;
+                }
+            }
+            this.dispatchEvent(new CustomEvent('parameterEdited', {composed: true, detail: editedParameter }));
+            this._cancel();
+        }
     }
 
     stateChanged(state: RootState) {
         if (state.modelCatalog) {
             let db = state.modelCatalog;
-            if (!this._parameters && db.parameters && db.parameters[this._selectedParameterUri]) {
-                this._parameters = { ...db.parameters[this._selectedParameterUri] };
+            if (!this._parameter && db.parameters && db.parameters[this._selectedParameterUri]) {
+                this._parameter = { ...db.parameters[this._selectedParameterUri] };
                 this._loading = false;
             }
         }
