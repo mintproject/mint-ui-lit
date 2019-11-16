@@ -18,15 +18,16 @@ import { sortByPosition, createUrl, renderExternalLink, renderParameterType } fr
 
 import "weightless/slider";
 import "weightless/progress-spinner";
-//import "weightless/tab";
-//import "weightless/tab-group";
 import 'components/loading-dots'
 
 import './person';
 import './process';
+import './parameter';
+import './input';
 import { ModelsConfigurePerson } from './person';
 import { ModelsConfigureProcess } from './process';
 import { ModelsConfigureParameter } from './parameter';
+import { ModelsConfigureInput } from './input';
 
 @customElement('models-new-setup')
 export class ModelsNewSetup extends connect(store)(PageViewElement) {
@@ -70,7 +71,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
     private _softwareImage : any = null;
 
     @property({type: String})
-    private _dialog : 'person' | 'process' | 'parameter' | undefined;
+    private _dialog : ''|'person'|'process'|'parameter'|'input' = '';
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
@@ -151,8 +152,12 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
 
             .details-table tr td:first-child {
                 font-weight: bold;
-                text-align: right;
                 padding-right: 6px;
+                padding-left: 13px;
+            }
+
+            .details-table tr td:first-child {
+                padding-right: 13px;
             }
 
             .details-table tr:nth-child(odd) {
@@ -309,6 +314,9 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
     }
 
     protected render() {
+        if (!this._config) {
+            return html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
+        }
         // Sort parameters by order
         let paramOrder = []
         if (this._config.hasParameter) {
@@ -362,10 +370,16 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
 
         return html`
         <span id="start"/>
-        <wl-textfield id="new-setup-name" label="New setup name" value="" required></wl-textfield>
 
         <table class="details-table">
             <colgroup width="150px">
+
+            <tr>
+                <td colspan="2" style="padding: 5px 20px;">
+                    <wl-textfield id="new-setup-name" label="New setup name" value="" required></wl-textfield>
+                </td>
+            </tr>
+
             <tr>
                 <td>Description:</td>
                 <td>
@@ -390,7 +404,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             </tr>
 
             <tr>
-                <td>Authors:</td>
+                <td>Setup creator:</td>
                 <td>
                     ${this._config.author && this._config.author.length > 0? 
                     html`${this._config.author.map(a => typeof a === 'object' ? a.id : a).map((authorUri:string) => 
@@ -413,7 +427,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                     <wl-select id="new-setup-assign-method" label="Parameter assignment method" placeholder="Select a parameter assignament method" required>
                         <option value="" disabled selected>Please select a parameter assignment method</option>
                         <option value="Calibration">Calibration</option>
-                        <option value="Expert-tuned">Expert tuned</option>
+                        <option value="Expert-configured">Expert tuned</option>
                     </wl-select>
                 </td>
             </tr>
@@ -421,14 +435,14 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Software Image:</td>
                 <td>
-                    <input id="new-setup-software-image" type="text" value="${this._softwareImage ? this._softwareImage.label : ''}"/>
+                    <span class="software-image">${this._softwareImage ? this._softwareImage.label : 'No software image'}</span>
                 </td>
             </tr>
 
             <tr>
                 <td>Component Location:</td>
                 <td>
-                    <textarea id="new-setup-comp-loc"></textarea>
+                    <textarea id="edit-setup-comp-loc" disabled>${this._config.hasComponentLocation}</textarea>
                 </td>
             </tr>
 
@@ -498,19 +512,18 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 <col span="1">
                 <col span="1">
                 <col span="1">
-                <col span="1">
             </colgroup>
             <thead>
                 <th><b>Label</b></th>
                 <th><b>Type</b></th>
-                <th class="ta-right">
+                <th class="ta-right" style="white-space:nowrap;" colspan="2">
                     <b>Value in this setup</b>
-                    <span class="tooltip" tip="If a value is set up in this field, you will not be able to change it in run time. For example, a price adjustment is set up to be 10%, it won't be editable when running the the model">
+                    <span class="tooltip" style="white-space:normal;"
+                     tip="If a value is set up in this field, you will not be able to change it in run time. For example, a price adjustment is set up to be 10%, it won't be editable when running the the model">
                         <wl-icon>help</wl-icon>
                     </span>
                 </th>
                 <th class="ta-right"><b>Unit</b></th>
-                <th class="ta-right"></th>
             </thead>
             <tbody>
             ${this._config.hasParameter ? paramOrder.map((uri:string) => html`
@@ -529,10 +542,10 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         this._parameters[uri].hasDefaultValue ? this._parameters[uri].hasDefaultValue + ' (default)' : '-'
                     )}
                 </td>
-                <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
-                <td style="text-align: right;">
-                    <wl-button @click="${() => this._showParameterDialog(uri)}"class="small"><wl-icon>edit</wl-icon></wl-button>
+                <td>
+                    <wl-button flat inverted @click="${() => this._showParameterDialog(uri)}"class="small"><wl-icon>edit</wl-icon></wl-button>
                 </td>
+                <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
                 `
                 : html`<td colspan="5" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
             </tr>`)
@@ -548,16 +561,27 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 <col span="1">
             </colgroup>
             <thead>
-                <th><b>Name</b></th>
-                <th><b>Description</b></th>
-                <th class="ta-right"><b>Format</b></th>
+                <th><b>Input file</b></th>
+                <th style="white-space:nowrap;" colspan="2">
+                    <b>Value in this setup</b>
+                    <span class="tooltip" style="white-space:normal;" tip="If a value is set up in this field, you will not be able to change it in run time.">
+                        <wl-icon>help</wl-icon>
+                    </span>
+                </th>
             </thead>
             <tbody>
             ${this._config.hasInput ? inputOrder.map((uri:string) => html `
             <tr>${this._inputs[uri] ? html`
-                <td><code>${this._inputs[uri].label}</code></td>
-                <td>${this._inputs[uri].description}</td>
-                <td class="ta-right monospaced">${this._inputs[uri].hasFormat}</td>`
+                <td>
+                    <code style="font-size: 13px">${this._inputs[uri].label}</code>
+                    ${this._inputs[uri].hasFormat && this._inputs[uri].hasFormat.length === 1 ?  
+                        html`<span class="monospaced" style="color: gray;">(.${this._inputs[uri].hasFormat})<span>` : ''}
+                    <br/>
+                    ${this._inputs[uri].description}
+                </td>
+                <td class="ta-right">
+                    <wl-button @click="${this._showNewInputDialog}" class="small" flat inverted><wl-icon>add</wl-icon></wl-button>
+                </td>`
                 : html`<td colspan="4" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
             </tr>`)
             : html`<tr><td colspan="4" class="info-center">- This configuration has no input files -</td></tr>`}
@@ -576,13 +600,21 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         <models-configure-person id="person-configurator" ?active=${this._dialog == 'person'} class="page"></models-configure-person>
         <models-configure-process id="process-configurator" ?active=${this._dialog == 'process'} class="page"></models-configure-process>
         <models-configure-parameter id="parameter-configurator" ?active=${this._dialog == 'parameter'} class="page"></models-configure-parameter>
+        <models-configure-input id="input-configurator" ?active=${this._dialog == 'input'} class="page"></models-configure-input>
         ${renderNotifications()}`
+    }
+
+    _showNewInputDialog () {
+        this._dialog = 'input';
+        let inputConfigurator = this.shadowRoot.getElementById('input-configurator') as ModelsConfigureInput;
+        inputConfigurator.newInput();
     }
 
     _showAuthorDialog () {
         this._dialog = 'person';
-        console.log(this._config.author);
-        let selectedAuthors = this._config.author.filter(x => x.type === "Person").reduce((acc, author) => {
+        let selectedAuthors = this._config.author
+                .map(x => typeof x === 'object' ? x : {id: x})
+                .reduce((acc, author) => {
             if (!acc[author.id]) acc[author.id] = true;
             return acc;
         }, {})
@@ -631,19 +663,15 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
     }
 
     _showParameterDialog (parameterID: string) {
-        //FIXME
         this._dialog = 'parameter';
         let parameterConfigurator = this.shadowRoot.getElementById('parameter-configurator') as ModelsConfigureParameter;
         parameterConfigurator.edit(parameterID);
     }
 
     _onParameterEdited (ev) {
-        //console.log(ev);
         let editedParameter = ev.detail;
         this._parameters[editedParameter.id] = editedParameter;
         this.requestUpdate();
-        //let parameterConfigurator = this.shadowRoot.getElementById('parameter-configurator');
-        //FIXME
     }
 
     firstUpdated () {

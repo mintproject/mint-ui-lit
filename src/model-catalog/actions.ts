@@ -10,15 +10,21 @@ export * from './region-actions';
 export * from './process-actions';
 export * from './parameter-actions';
 export * from './model-configuration-actions';
+export * from './dataset-specification-actions';
+export * from './sample-resource-actions';
+export * from './sample-collection-actions';
 
 import { ModelCatalogPersonAction } from './person-actions';
 import { ModelCatalogRegionAction } from './region-actions';
-import { ModelCatalogParameterAction } from "./parameter-actions";
-import { ModelCatalogProcessAction } from "./process-actions";
-import { ModelCatalogModelConfigurationAction } from "./model-configuration-actions";
+import { ModelCatalogParameterAction } from './parameter-actions';
+import { ModelCatalogProcessAction } from './process-actions';
+import { ModelCatalogModelConfigurationAction } from './model-configuration-actions';
+import { ModelCatalogDatasetSpecificationAction } from './dataset-specification-actions';
+import { ModelCatalogSampleResourceAction } from './sample-resource-actions';
+import { ModelCatalogSampleCollectionAction } from './sample-collection-actions';
 
 function debug (...args: any[]) {
-    console.log('OBA:', ...args);
+    //console.log('OBA:', ...args);
 }
 
 export const idReducer = (dic:any, elem:any) => {
@@ -102,42 +108,6 @@ export const versionsGet: ActionCreator<ModelCatalogThunkResult> = () => (dispat
         .catch((err) => {console.log('Error on getVersions', err)})
 }
 
-export const PARAMETER_GET = "PARAMETER_GET";
-interface MCAParameterGet extends Action<'PARAMETER_GET'> { payload: any };
-export const parameterGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (dispatch) => {
-    debug('Fetching parameter', uri);
-    let id = uri.split('/').pop();
-    let api = new ParameterApi();
-    api.parametersIdGet({username: DEFAULT_GRAPH, id: id})
-        .then((resp) => {
-            let data = {};
-            data[uri] = fixPosition(resp);
-            dispatch({
-                type: PARAMETER_GET,
-                payload: data
-            });
-        })
-        .catch((err) => {console.log('Error on getParameter', err)})
-}
-
-export const DATASET_SPECIFICATION_GET = "DATASET_SPECIFICATION_GET";
-interface MCADatasetSpecificationGet extends Action<'DATASET_SPECIFICATION_GET'> { payload: any };
-export const datasetSpecificationGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (dispatch) => {
-    debug('Fetching dataset specification', uri);
-    let id = uri.split('/').pop();
-    let api = new DatasetSpecificationApi();
-    api.datasetspecificationsIdGet({username: DEFAULT_GRAPH, id: id})
-        .then((resp) => {
-            let data = {};
-            data[uri] = fixPosition(resp);
-            dispatch({
-                type: DATASET_SPECIFICATION_GET,
-                payload: data
-            });
-        })
-        .catch((err) => {console.log('Error on getDatasetSpecification', err)})
-}
-
 export const GRID_GET = "GRID_GET";
 interface MCAGridGet extends Action<'GRID_GET'> { payload: any };
 export const gridGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (dispatch) => {
@@ -193,8 +163,9 @@ export const softwareImageGet: ActionCreator<ModelCatalogThunkResult> = (uri) =>
 }
 
 export type ModelCatalogAction = MCACommon | ModelCatalogPersonAction | ModelCatalogParameterAction | ModelCatalogProcessAction |
-                                 ModelCatalogModelConfigurationAction | ModelCatalogRegionAction |
+                                 ModelCatalogModelConfigurationAction | ModelCatalogRegionAction | ModelCatalogSampleCollectionAction |
+                                 ModelCatalogSampleResourceAction | ModelCatalogDatasetSpecificationAction |
                                  MCAModelsGet | MCAVersionsGet |
-                                 MCADatasetSpecificationGet | MCAGridGet | MCATimeIntervalGet | MCASoftwareImageGet;
+                                 MCAGridGet | MCATimeIntervalGet | MCASoftwareImageGet;
 
 type ModelCatalogThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogAction>;
