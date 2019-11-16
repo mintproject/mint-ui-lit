@@ -128,13 +128,13 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
                 }
             }
             return html`
-            <wl-title level="4">${this._parameter.description}</wl-title>
             ${renderParameterType(this._parameter)}
             <form>
+                <wl-textfield label="Description" value="${this._parameter.description}"></wl-textfield>
                 ${inputType === 'boolean' ? html`
                 <wl-select id="edit-parameter-fixed-value" label="${this._parameter.label}" 
                  value="${this._parameter.hasFixedValue? this._parameter.hasFixedValue : ''}">
-                    <option value disabled selected>Select something</option>
+                    <option disabled selected>Select something</option>
                     <option value="TRUE">TRUE</option>
                     <option value="FALSE">FALSE</option>
                 </wl-select>

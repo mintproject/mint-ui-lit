@@ -368,7 +368,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                         </div>
                     </div>
 
-                    ${this._config || this._setup ? html`<div style="font-size: 13px">
+                    ${this._config || this._setup ? html`<div style="font-size: 13px; padding: 0px 10px;">
                         <p>
                             Model configurations are customizations of the model that use a subset of all the processes
                             and functions that are possible with the general model software.
@@ -381,7 +381,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                             by providing a URL to them, and edit the descriptions of the model configuration to reflect the changes.
                         </p>
                     </div>` : ''}
-                    <div style="padding: 0px 20px;">
+                    <div style="padding: 0px 10px;">
                         <models-configure-configuration class="page" ?active="${this._selectedConfig && !this._selectedSetup && !this._creating}"></models-configure-configuration>
                         <models-configure-setup class="page" ?active="${this._selectedSetup && !this._creating}"></models-configure-setup>
                         <models-new-setup class="page" ?active="${this._selectedConfig && this._creating}"></models-new-setup>

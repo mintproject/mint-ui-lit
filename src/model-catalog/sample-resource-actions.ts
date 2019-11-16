@@ -6,7 +6,7 @@ import { Configuration, SampleResource, SampleResourceApi } from '@mintproject/m
 import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, DEFAULT_GRAPH,
          START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
 
-function debug (...args: any[]) { } //console.log('OBA:', ...args); }
+function debug (...args: any[]) { console.log('OBA:', ...args); }
 
 export const ALL_SAMPLE_RESOURCES = 'ALL_SAMPLE_RESOURCES'
 

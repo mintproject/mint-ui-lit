@@ -12,6 +12,7 @@ export * from './parameter-actions';
 export * from './model-configuration-actions';
 export * from './dataset-specification-actions';
 export * from './sample-resource-actions';
+export * from './sample-collection-actions';
 
 import { ModelCatalogPersonAction } from './person-actions';
 import { ModelCatalogRegionAction } from './region-actions';
@@ -20,9 +21,10 @@ import { ModelCatalogProcessAction } from './process-actions';
 import { ModelCatalogModelConfigurationAction } from './model-configuration-actions';
 import { ModelCatalogDatasetSpecificationAction } from './dataset-specification-actions';
 import { ModelCatalogSampleResourceAction } from './sample-resource-actions';
+import { ModelCatalogSampleCollectionAction } from './sample-collection-actions';
 
 function debug (...args: any[]) {
-    console.log('OBA:', ...args);
+    //console.log('OBA:', ...args);
 }
 
 export const idReducer = (dic:any, elem:any) => {
@@ -161,7 +163,7 @@ export const softwareImageGet: ActionCreator<ModelCatalogThunkResult> = (uri) =>
 }
 
 export type ModelCatalogAction = MCACommon | ModelCatalogPersonAction | ModelCatalogParameterAction | ModelCatalogProcessAction |
-                                 ModelCatalogModelConfigurationAction | ModelCatalogRegionAction | 
+                                 ModelCatalogModelConfigurationAction | ModelCatalogRegionAction | ModelCatalogSampleCollectionAction |
                                  ModelCatalogSampleResourceAction | ModelCatalogDatasetSpecificationAction |
                                  MCAModelsGet | MCAVersionsGet |
                                  MCAGridGet | MCATimeIntervalGet | MCASoftwareImageGet;

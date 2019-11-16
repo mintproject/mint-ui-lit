@@ -14,23 +14,24 @@ import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
 import { personGet, personPost, modelConfigurationPut,
          parameterGet, datasetSpecificationGet, gridGet,
-         timeIntervalGet, processGet, softwareImageGet, sampleResourceGet } from 'model-catalog/actions';
+         timeIntervalGet, processGet, softwareImageGet,
+         sampleResourceGet, sampleCollectionGet } from 'model-catalog/actions';
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
-import { SampleResource } from '@mintproject/modelcatalog_client';
+import { SampleResource, SampleCollection, SampleCollectionApi } from '@mintproject/modelcatalog_client';
 
 import "weightless/slider";
 import "weightless/progress-spinner";
-//import "weightless/tab";
-//import "weightless/tab-group";
 import 'components/loading-dots'
 
 import './person';
 import './process';
 import './parameter';
+import './input';
 import { ModelsConfigurePerson } from './person';
 import { ModelsConfigureProcess } from './process';
 import { ModelsConfigureParameter } from './parameter';
+import { ModelsConfigureInput } from './input';
 
 @customElement('models-configure-setup')
 export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
@@ -59,6 +60,9 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     private _sampleResources : IdMap<SampleResource> = {} as IdMap<SampleResource>;
 
     @property({type: Object})
+    private _sampleCollections : IdMap<SampleCollection> = {} as IdMap<SampleCollection>;
+
+    @property({type: Object})
     private _authors : any = {};
 
     @property({type: Object})
@@ -74,7 +78,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     private _softwareImage : any = null;
 
     @property({type: String})
-    private _dialog : string = '';
+    private _dialog : ''|'person'|'process'|'parameter'|'input' = '';
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
@@ -86,6 +90,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     private _parametersLoading : Set<string> = new Set();
     private _inputsLoading : Set<string> = new Set();
     private _sampleResourcesLoading : Set<string> = new Set();
+    private _sampleCollectionsLoading : Set<string> = new Set();
     private _authorsLoading : Set<string> = new Set();
     private _processesLoading : Set<string> = new Set();
     private _softwareImageLoading : boolean = false;
@@ -158,8 +163,12 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
 
             .details-table tr td:first-child {
                 font-weight: bold;
-                text-align: right;
                 padding-right: 6px;
+                padding-left: 13px;
+            }
+
+            .details-table tr td:last-child {
+                padding-right: 13px;
             }
 
             .details-table tr:nth-child(odd) {
@@ -327,13 +336,17 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
 
         return html`
         <span id="start"/>
-        ${this._editing ? html`
-        <wl-textfield id="edit-setup-name" label="Setup name" value="${this._setup.label}" required></wl-textfield>
-        `:''}
-
 
         <table class="details-table">
             <colgroup width="150px">
+
+            <tr>
+                ${this._editing ? html`
+                <td colspan="2" style="padding: 5px 20px;">
+                    <wl-textfield id="edit-setup-name" label="Setup name" value="${this._setup.label}" required></wl-textfield>
+                </td>` : ''}
+            </tr>
+
             <tr>
                 <td>Description:</td>
                 <td>
@@ -364,7 +377,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             </tr>
 
             <tr>
-                <td>Authors:</td>
+                <td>Setup creator:</td>
                 <td>
                     ${this._setup.author && this._setup.author.length > 0? 
                     html`${this._setup.author.map(a => typeof a === 'object' ? a.id : a).map((authorUri:string) => 
@@ -396,7 +409,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 </td>
             </tr>
 
-
             <tr>
                 <td>Software Image:</td>
                 <td>
@@ -413,7 +425,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 <td>Component Location:</td>
                 <td>
                     ${this._editing ? html`
-                    <textarea id="edit-setup-comp-loc">${this._setup.hasComponentLocation}</textarea>
+                    <textarea id="edit-setup-comp-loc" disabled>${this._setup.hasComponentLocation}</textarea>
                     ` : renderExternalLink(this._setup.hasComponentLocation)}
                 </td>
             </tr>
@@ -519,7 +531,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 </td>
                 ${this._editing ? html`
                 <td>
-                    <wl-button @click="${() => this._showParameterDialog(uri)}"class="small"><wl-icon>edit</wl-icon></wl-button>
+                    <wl-button flat inverted @click="${() => this._showParameterDialog(uri)}"class="small"><wl-icon>edit</wl-icon></wl-button>
                 </td>
                 `: ''}
                 <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
@@ -538,33 +550,60 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 <col span="1">
             </colgroup>
             <thead>
-                <th><b>Name</b></th>
-                <th><b>File URL in this setup</b></th>
-                <th class="ta-right"><b>Format</b></th>
+                <th><b>Input file</b></th>
+                <th colspan="2"><b>File URL in this setup</b></th>
             </thead>
             <tbody>
             ${this._setup.hasInput ? inputOrder.map((uri:string, i:number) => html `
             <tr>${this._inputs[uri] ? html`
                 <td>
-                    <code>${this._inputs[uri].label}</code><br/>
-                    <b>${this._inputs[uri].description}</b>
+                    <code style="font-size: 13px">${this._inputs[uri].label}</code>
+                    ${this._inputs[uri].hasFormat && this._inputs[uri].hasFormat.length === 1 ?  
+                        html`<span class="monospaced" style="color: gray;">(.${this._inputs[uri].hasFormat})<span>` : ''}
+                    <br/>
+                    ${this._inputs[uri].description}
                 </td>
-                <td>
+                <td colspan="${this._editing ? 1 : 2}">
                     ${this._inputs[uri].hasFixedResource && this._inputs[uri].hasFixedResource.length > 0 ? 
                     this._inputs[uri].hasFixedResource.map((fixed) => this._sampleResources[fixed.id] ? 
                         html`
                         <span>
                             <b>${this._sampleResources[fixed.id].label}</b> <br/>
-                            <a target="_blank" href="${(this._sampleResources[fixed.id] as any).value}">
-                                ${(this._sampleResources[fixed.id] as any).value}
+                            <a target="_blank" href="${this._sampleResources[fixed.id].value}">
+                                ${this._sampleResources[fixed.id].value}
                             </a><br/>
                             <span class="monospaced" style="white-space: nowrap;">${this._sampleResources[fixed.id].dataCatalogIdentifier}</span>
+                        </span>` : ( this._sampleCollections[fixed.id] ? html`
+                        <span>
+                            <b>${this._sampleCollections[fixed.id].label}</b> <br/>
+                            ${this._sampleCollections[fixed.id].description}
+                            ${this._sampleCollections[fixed.id].hasPart.map(sample => html`
+                            <details>
+                                <summary style="cursor: pointer;" @click="${() => {this._loadSample(sample.id)}}">${sample.label}</summary>
+                                <div style="padding-left: 14px;">
+                                    ${this._sampleResources[sample.id] ? html`
+                                    <a target="_blank" href="${this._sampleResources[sample.id].value}">
+                                        ${this._sampleResources[sample.id].value}
+                                    </a><br/>
+                                    <span class="monospaced" style="white-space: nowrap;">${this._sampleResources[sample.id].dataCatalogIdentifier}</span>
+                                </div>
+                                ` : html`${sample.id.split('/').pop()} <loading-dots style="--width: 20px"></loading-dots>`}
+                            `)}
                         </span>`
-                        :
-                        html`${fixed.id.split('/').pop()} <loading-dots style="--width: 20px"></loading-dots>`)
-                    : html`<div class="info-center">- Not set -</div>`}
+                        : html`${fixed.id.split('/').pop()} <loading-dots style="--width: 20px"></loading-dots>`))
+                    : html`
+                    <div class="info-center">- Not set -</div>`}
                 </td>
-                <td class="ta-right monospaced">${this._inputs[uri].hasFormat}</td>`
+                ${this._editing ? html`
+                <td>
+                    ${this._inputs[uri].hasFixedResource && this._inputs[uri].hasFixedResource.length > 0 ? html`
+                    <wl-button style="float:right;" class="small" flat inverted
+                        @click="${() => {this._showEditInputDialog(this._inputs[uri].hasFixedResource[0].id)}}"><wl-icon>edit</wl-icon></wl-button>`
+                    : html`
+                    <wl-button style="float:right;" class="small" flat inverted
+                        @click="${this._showNewInputDialog}"><wl-icon>add</wl-icon></wl-button>`}
+                </td>` : ''}
+                `
                 : html`<td colspan="4" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
             </tr>`)
             : html`<tr><td colspan="4" class="info-center">- This setup has no input files -</td></tr>`}
@@ -590,7 +629,31 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         <models-configure-person id="person-configurator" ?active=${this._dialog == 'person'} class="page"></models-configure-person>
         <models-configure-process id="process-configurator" ?active=${this._dialog == 'process'} class="page"></models-configure-process>
         <models-configure-parameter id="parameter-configurator" ?active=${this._dialog == 'parameter'} class="page"></models-configure-parameter>
+        <models-configure-input id="input-configurator" ?active=${this._dialog == 'input'} class="page"></models-configure-input>
         ${renderNotifications()}`
+    } 
+
+    _loadSample (sampleID : string) {
+        if (!this._sampleResources[sampleID] && !this._sampleResourcesLoading.has(sampleID)) {
+            store.dispatch(sampleResourceGet(sampleID));
+            this._sampleResourcesLoading.add(sampleID);
+        }
+    }
+
+    _showNewInputDialog () {
+        this._dialog = 'input';
+        let inputConfigurator = this.shadowRoot.getElementById('input-configurator') as ModelsConfigureInput;
+        inputConfigurator.newInput();
+    }
+
+    _showEditInputDialog (inputID: string) {
+        this._dialog = 'input';
+        let inputConfigurator = this.shadowRoot.getElementById('input-configurator') as ModelsConfigureInput;
+        if (this._sampleCollections[inputID]) {
+            inputConfigurator.editCollection(inputID);
+        } else {
+            inputConfigurator.edit(inputID);
+        }
     }
 
     _showParameterDialog (parameterID: string) {
@@ -721,6 +784,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 this._inputsLoading = new Set();
                 this._sampleResources = {} as IdMap<SampleResource>;
                 this._sampleResourcesLoading = new Set();
+                this._sampleCollections = {} as IdMap<SampleCollection>;
+                this._sampleCollectionsLoading = new Set();
                 this._authors = {};
                 this._authorsLoading = new Set();
                 this._processes = {};
@@ -845,8 +910,13 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                                     this._inputsLoading.delete(uri);
                                     if (tmp[uri].hasFixedResource && tmp[uri].hasFixedResource.length > 0) {
                                         tmp[uri].hasFixedResource.forEach(fixed => {
-                                            store.dispatch(sampleResourceGet(fixed.id))
-                                            this._sampleResourcesLoading.add(fixed.id);
+                                            if (fixed.type.indexOf('SampleCollection') >= 0) {
+                                                store.dispatch(sampleCollectionGet(fixed.id))
+                                                this._sampleCollectionsLoading.add(fixed.id);
+                                            } else {
+                                                store.dispatch(sampleResourceGet(fixed.id))
+                                                this._sampleResourcesLoading.add(fixed.id);
+                                            }
                                         });
                                     }
                                 }
@@ -862,6 +932,19 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                                     tmp[uri] = db.sampleResources[uri];
                                     this._sampleResources = tmp;
                                     this._sampleResourcesLoading.delete(uri);
+                                }
+                            });
+                        }
+                    }
+
+                    if (db.sampleCollections) {
+                        if (this._sampleCollectionsLoading.size > 0) {
+                            this._sampleCollectionsLoading.forEach((uri:string) => {
+                                if (db.sampleCollections[uri]) {
+                                    let tmp : IdMap<SampleCollection> = { ...this._sampleCollections };
+                                    tmp[uri] = db.sampleCollections[uri];
+                                    this._sampleCollections = tmp;
+                                    this._sampleCollectionsLoading.delete(uri);
                                 }
                             });
                         }

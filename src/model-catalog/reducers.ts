@@ -7,11 +7,12 @@ import { START_LOADING, END_LOADING, START_POST, END_POST,
          PARAMETER_GET, PARAMETERS_GET, ALL_PARAMETERS, PARAMETER_DELETE,
          DATASET_SPECIFICATION_GET, DATASET_SPECIFICATIONS_GET, ALL_DATASET_SPECIFICATIONS, DATASET_SPECIFICATION_DELETE, 
          SAMPLE_RESOURCE_GET, SAMPLE_RESOURCES_GET, ALL_SAMPLE_RESOURCES, SAMPLE_RESOURCE_DELETE, 
+         SAMPLE_COLLECTION_GET, SAMPLE_COLLECTIONS_GET, ALL_SAMPLE_COLLECTIONS, SAMPLE_COLLECTION_DELETE, 
          MODEL_CONFIGURATION_GET, MODEL_CONFIGURATIONS_GET, ALL_MODEL_CONFIGURATIONS, MODEL_CONFIGURATION_DELETE,
          MODELS_GET, VERSIONS_GET,
          GRID_GET, TIME_INTERVAL_GET, SOFTWARE_IMAGE_GET } from './actions'
 
-import { SampleResource, DatasetSpecification } from '@mintproject/modelcatalog_client';
+import { SampleResource, SampleCollection, DatasetSpecification } from '@mintproject/modelcatalog_client';
 import { IdMap } from 'app/reducers'
 
 export interface ModelCatalogState {
@@ -31,6 +32,7 @@ export interface ModelCatalogState {
     regions: any;
     datasetSpecifications: {[key:string]: DatasetSpecification};
     sampleResources: IdMap<SampleResource>;
+    sampleCollections: IdMap<SampleCollection>;
 }
 
 const INITIAL_STATE: ModelCatalogState = { 
@@ -49,6 +51,7 @@ const INITIAL_STATE: ModelCatalogState = {
     softwareImages: null,
     datasetSpecifications: {} as DatasetSpecification,
     sampleResources: {} as IdMap<SampleResource>,
+    sampleCollections: {} as IdMap<SampleCollection>,
 } as ModelCatalogState;
 
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -245,6 +248,27 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 ...state,
                 loadedAll: tmp,
                 sampleResources: {...state.sampleResources, ...action.payload}
+            }
+
+        case SAMPLE_COLLECTION_DELETE:
+            tmp = { ...state.sampleCollections };
+            delete tmp[action.uri];
+            return {
+                ...state,
+                sampleCollections: tmp
+            }
+        case SAMPLE_COLLECTION_GET:
+            return {
+                ...state,
+                sampleCollections: {...state.sampleCollections, ...action.payload}
+            }
+        case SAMPLE_COLLECTIONS_GET:
+            tmp = { ...state.loadedAll };
+            tmp[ALL_SAMPLE_COLLECTIONS] = true;
+            return {
+                ...state,
+                loadedAll: tmp,
+                sampleCollections: {...state.sampleCollections, ...action.payload}
             }
 
         case GRID_GET:

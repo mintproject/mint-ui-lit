@@ -145,8 +145,12 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
 
             .details-table tr td:first-child {
                 font-weight: bold;
-                text-align: right;
                 padding-right: 6px;
+                padding-left: 13px;
+            }
+
+            .details-table tr td:last-child {
+                padding-right: 13px;
             }
 
             .details-table tr:nth-child(odd) {
@@ -313,7 +317,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             </tr>
 
             <tr>
-                <td>Authors:</td>
+                <td>Configuration creator:</td>
                 <td>
                     ${this._config.author && this._config.author.length > 0? 
                     html`${this._config.author.map(a => typeof a === 'object' ? a.id : a).map((authorUri:string) => 
@@ -449,7 +453,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
                 ${this._editing? html `
                 <td style="text-align: right;">
-                    <wl-button @click="${() => this._showParameterDialog(uri)}" class="small"><wl-icon>edit</wl-icon></wl-button>
+                    <wl-button flat inverted @click="${() => this._showParameterDialog(uri)}" class="small"><wl-icon>edit</wl-icon></wl-button>
                 </td>
                 ` : ''}
                 `
@@ -480,7 +484,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 </td>
                 ${this._editing ? html`
                 <td>
-                    <wl-button @click="${() => this._showInputDialog(uri)}" class="small"><wl-icon>edit</wl-icon></wl-button>
+                    <wl-button flat inverted @click="${() => this._showInputDialog(uri)}" class="small"><wl-icon>edit</wl-icon></wl-button>
                 </td>
                 ` : ''}
                 `
