@@ -130,7 +130,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
             return html`
             ${renderParameterType(this._parameter)}
             <form>
-                <wl-textfield label="Description" value="${this._parameter.description}"></wl-textfield>
+                <wl-textfield label="Description" id="edit-parameter-description" value="${this._parameter.description}"></wl-textfield>
                 ${inputType === 'boolean' ? html`
                 <wl-select id="edit-parameter-fixed-value" label="${this._parameter.label}" 
                  value="${this._parameter.hasFixedValue? this._parameter.hasFixedValue : ''}">
@@ -283,8 +283,10 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
 
     _onEditFixedParameter () {
         let fixedValEl = this.shadowRoot.getElementById('edit-parameter-fixed-value') as Textfield;
+        let descriptionEl = this.shadowRoot.getElementById('edit-parameter-description') as Textfield;
         if (fixedValEl) {
             let fixedVal = fixedValEl.value;
+            let description = descriptionEl.value;
             let min : number, max : number;
             if (this._parameter.hasMinimumAcceptedValue && this._parameter.hasMinimumAcceptedValue.length > 0) {
                 min = Number(this._parameter.hasMinimumAcceptedValue[0]);
@@ -301,7 +303,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
 
             let editedParameter : Parameter = Object.assign({}, this._parameter);
             editedParameter.hasFixedValue = [fixedVal as any];
-            //console.log(editedParameter)
+            editedParameter.description = [description];
             this.dispatchEvent(new CustomEvent('parameterEdited', {composed: true, detail: editedParameter }));
             this._cancel();
         }

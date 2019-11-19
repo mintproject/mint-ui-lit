@@ -31,6 +31,9 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
     @property({type: String})
     private _selectedInputUri: string = '';
 
+    @property({type: String})
+    private _selectedDatasetSpecificationUri: string = '';
+
     @property({type: Object})
     private _input : SampleResource | SampleCollection | null = null;
 
@@ -155,7 +158,6 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
                           style="${this._collection ? 'display: none;' : ''}"></wl-textfield>
         </form>
 
-
             </div>
             <div slot="footer">
                 <wl-button type="button" @click="${this._cancel}" style="margin-right: 5px;" inverted flat ?disabled="${this._waiting}">Cancel</wl-button>
@@ -167,7 +169,7 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
         ${renderNotifications()}`;
     }
 
-    newInput () {
+    newInput (datasetSpecificationUri: string) {
         if (this.active) {
             this._collection = false;
             this._input = {
@@ -178,15 +180,17 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
                 hasPart: []
             } as SampleResource;
             this._selectedInputUri = '';
+            this._selectedDatasetSpecificationUri = datasetSpecificationUri;
             showDialog("inputDialog", this.shadowRoot);
         } else {
             setTimeout(() => {this.newInput()}, 300);
         }
     }
 
-    edit (inputID) {
+    edit (inputID: string, datasetSpecificationUri: string) {
         if (this.active) {
             this._selectedInputUri = inputID;
+            this._selectedDatasetSpecificationUri = datasetSpecificationUri;
             this._collection = false;
 
             let state: any = store.getState();
@@ -198,16 +202,16 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
                 this._input = null;
                 this._loading = true;
             }
-
             showDialog("inputDialog", this.shadowRoot);
         } else {
             setTimeout(() => {this.edit(inputID)}, 300);
         }
     }
 
-    editCollection (inputID) {
+    editCollection (inputID: string, datasetSpecificationUri: string) {
         if (this.active) {
             this._selectedInputUri = inputID;
+            this._selectedDatasetSpecificationUri = datasetSpecificationUri;
             this._collection = true;
 
             let state: any = store.getState();
@@ -315,10 +319,50 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
     }
 
     _save () {
-        if (this._selectedInputUri) {
-            this._onEditInput();
-        } else {
-            this._onCreateInput();
+        let labelEl = this.shadowRoot.getElementById('input-label') as Textfield;
+        let descriptionEl = this.shadowRoot.getElementById('input-description') as Textfield;
+
+        if (labelEl && descriptionEl) {
+            let label = labelEl.value;
+            let description = descriptionEl.value;
+            if (!label || !description || (this._collection && (this._input as SampleCollection).hasPart.length == 0)) {
+                showNotification("formValuesIncompleteNotification", this.shadowRoot!);
+                (<any>labelEl).refreshAttributes();
+                (<any>descriptionEl).refreshAttributes();
+                return;
+            }
+
+            let editedInput = Object.assign({}, this._input);
+            editedInput.label = [label];
+            editedInput.description = [description];
+            editedInput.type = ["SampleResource"];
+            if (this._collection) {
+                (editedInput as SampleCollection).hasPart = (this._input as SampleCollection).hasPart.map((sample) => this._sampleResources[sample.id]);
+                editedInput.type.push("SampleCollection");
+            } else {
+                let dataCatalogIdEl = this.shadowRoot.getElementById('input-data-catalog-id') as Textfield;
+                let urlEl = this.shadowRoot.getElementById('input-url') as Textfield;
+                if (!urlEl.value) {
+                    showNotification("formValuesIncompleteNotification", this.shadowRoot!);
+                    (<any>urlEl).refreshAttributes();
+                    return;
+                }
+                editedInput.value = [urlEl.value];
+                editedInput.dataCatalogIdentifier = [dataCatalogIdEl.value];
+            }
+
+            if (this._selectedInputUri) {
+                this.dispatchEvent(new CustomEvent('inputEdited', {
+                    composed: true,
+                    detail: {input: editedInput, datasetSpecificationUri: this._selectedDatasetSpecificationUri}
+                }));
+            } else {
+                this.dispatchEvent(new CustomEvent('inputCreated', {
+                    composed: true,
+                    detail: {input: editedInput, datasetSpecificationUri: this._selectedDatasetSpecificationUri}
+                }));
+            }
+            this._cancel();
         }
     }
 
