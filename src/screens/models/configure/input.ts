@@ -90,6 +90,7 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
                     <wl-tab ?checked="${this._collection}" @click="${() => {this._collection = true}}" ?disabled="${this._selectedInputUri}">Collection</wl-tab>
                 </wl-tab-group>
 
+        ${this._input ? html`
         <form>
             <wl-textfield id="input-label" type="text" label="Label" value="${this._input.label}"></wl-textfield>
             <wl-textarea id="input-description" style="font-size: 15px;" label="Description" value="${this._input.description}"></wl-textarea>
@@ -156,7 +157,9 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
                           style="${this._collection ? 'display: none;' : ''}"></wl-textfield>
             <wl-textfield id="input-url" type="url" label="URL" value="${this._input.value}"
                           style="${this._collection ? 'display: none;' : ''}"></wl-textfield>
-        </form>
+        </form>`
+        : html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
+        }
 
             </div>
             <div slot="footer">
@@ -183,7 +186,7 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
             this._selectedDatasetSpecificationUri = datasetSpecificationUri;
             showDialog("inputDialog", this.shadowRoot);
         } else {
-            setTimeout(() => {this.newInput()}, 300);
+            setTimeout(() => {this.newInput(datasetSpecificationUri)}, 300);
         }
     }
 
@@ -204,7 +207,7 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
             }
             showDialog("inputDialog", this.shadowRoot);
         } else {
-            setTimeout(() => {this.edit(inputID)}, 300);
+            setTimeout(() => {this.edit(inputID, datasetSpecificationUri)}, 300);
         }
     }
 
@@ -240,7 +243,7 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
 
             showDialog("inputDialog", this.shadowRoot);
         } else {
-            setTimeout(() => {this.editCollection(inputID)}, 300);
+            setTimeout(() => {this.editCollection(inputID, datasetSpecificationUri)}, 300);
         }
     }
 
@@ -302,6 +305,10 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
             this._sampleResources[newSample.id] = newSample;
             this._collectionEdit[newSample.id] = false;
             this.requestUpdate();
+            labelEl.value = '';
+            descriptionEl.value = '';
+            dataCatalogIdEl.value = '';
+            urlEl.value = '';
         }
     }
 
@@ -312,6 +319,8 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
 
     _cancel () {
         this.dispatchEvent(new CustomEvent('dialogClosed', {composed: true}));
+        this.shadowRoot.querySelectorAll('wl-textfield').forEach(x => x.value = '');
+        this.shadowRoot.querySelectorAll('wl-textarea').forEach(x => x.value = '');
         hideDialog("inputDialog", this.shadowRoot);
         if (this._selectedInputUri) {
             this._selectedInputUri = '';

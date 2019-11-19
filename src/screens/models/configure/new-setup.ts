@@ -16,6 +16,9 @@ import { personGet, personPost, modelConfigurationPost, parameterPost, modelConf
          timeIntervalGet,  processGet, softwareImageGet, } from 'model-catalog/actions';
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
+import { IdMap } from 'app/reducers';
+import { SampleResource, SampleCollection } from '@mintproject/modelcatalog_client';
+
 import "weightless/slider";
 import "weightless/progress-spinner";
 import 'components/loading-dots'
@@ -268,11 +271,15 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             setupCreated.parameterAssignmentMethod = [assignMe];
             setupCreated.hasRegion = [region];
 
-            console.log("To create", setupCreated);
             setupCreated.hasInput = setupCreated.hasInput.map((input) => {
                 let newInput = this._inputs[input.id];
                 newInput.id = '';
                 return newInput;
+            });
+            setupCreated.hasParameter = setupCreated.hasParameter.map((param) => {
+                let newParam = this._parameters[param.id];
+                newParam.id = '';
+                return newParam;
             });
 
             /* FIXME: Parameters are returning 400, numbers are not objects!!
@@ -382,7 +389,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         }
 
         return html`
-        <span id="start"/>
+        <span id="start"></span>
 
         <table class="details-table">
             <colgroup width="150px">
