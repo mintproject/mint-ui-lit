@@ -3,7 +3,7 @@ import { ScenarioList, Scenario, ScenarioDetails,
     Goal, Pathway, SubGoal, ExecutableEnsemble, PathwayInfo } from './reducers';
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from '../../app/store';
-import { db, fieldValue } from '../../config/firebase';
+import { db, fieldValue, auth } from '../../config/firebase';
 import { Dataset } from '../datasets/reducers';
 import { Model } from '../models/reducers';
 import { EXAMPLE_SCENARIOS_LIST_DATA, EXAMPLE_SCENARIO_DETAILS } from '../../offline_data/sample_scenarios';
@@ -192,18 +192,10 @@ export const getScenarioDetail: ActionCreator<DetailsThunkResult> = (scenarioid:
             if(!details)
                 return;
             details.id = doc.id;
-            Promise.all([
-                db.collection("scenarios/"+scenarioid+"/goals").get(),
-                db.collection("scenarios/"+scenarioid+"/subgoals").get(),
-            ]).then( (values) => {
+            db.collection("scenarios/"+scenarioid+"/subgoals").get().then((subgoals) => {
                 details.goals = {};
                 details.subgoals = {};
-                values[0].forEach((doc) => {
-                    var data = Object.assign({}, doc.data());
-                    data.id = doc.id;
-                    details.goals[doc.id] = data as Goal;
-                });
-                values[1].forEach((doc) => {
+                subgoals.forEach((doc) => {
                     var data = Object.assign({}, doc.data());
                     data.id = doc.id;
                     details.subgoals[doc.id] = data as SubGoal;
@@ -336,6 +328,8 @@ export const getAllPathwayEnsembleIds = async (scenarioid: string, pathwayid: st
 // Add Scenario
 export const addScenario = (scenario:Scenario) =>  {
     let scenarioRef = db.collection("scenarios").doc();
+    scenario.last_update = Date.now().toString();
+    scenario.last_update_user = auth.currentUser.email;    
     scenarioRef.set(scenario);
     return scenarioRef.id;
 };
@@ -428,10 +422,13 @@ export const addSubGoalFull = (scenario:Scenario, goalid: string, subgoal: SubGo
 // Update Scenario
 export const updateScenario = (scenario: Scenario) =>  {
     let scenarioRef = db.collection("scenarios").doc(scenario.id);
-    scenario.last_update = Date.now().toString();
-    if(!scenario.subregionid)
-        scenario.subregionid = null;
-    scenarioRef.set(scenario);
+    if(auth.currentUser) {
+        scenario.last_update = Date.now().toString();
+        scenario.last_update_user = auth.currentUser.email;
+        if(!scenario.subregionid)
+            scenario.subregionid = null;
+        scenarioRef.set(scenario);
+    }
 };
 
 // Update Goal
@@ -516,9 +513,9 @@ export const updatePathwayEnsembles = (ensembles: ExecutableEnsemble[]) => {
 // Delete Scenario
 export const deleteScenario = (scenario:Scenario) =>  {
     let scenarioRef = db.collection("scenarios").doc(scenario.id);
-    _deleteCollection(scenarioRef.collection("goals"));
-    _deleteCollection(scenarioRef.collection("subgoals"));
-    _deleteCollection(scenarioRef.collection("pathways"));
+    _deleteCollection(scenarioRef.collection("goals"), null);
+    _deleteCollection(scenarioRef.collection("subgoals"), null);
+    _deleteCollection(scenarioRef.collection("pathways"), "ensembleids");
     return scenarioRef.delete();
 };
 
@@ -552,10 +549,16 @@ export const deletePathway = (scenario:Scenario, subgoalid: string, pathway:Path
 
 /* Helper Function */
 
-const _deleteCollection = (collRef: firebase.firestore.CollectionReference) => {
+const _deleteCollection = (collRef: firebase.firestore.CollectionReference, subCollectionName: string) => {
     collRef.get().then((querySnapshot) => {
         querySnapshot.forEach((doc) => {
+            // Do a recursive delete if doc has a subcollection
+            if(subCollectionName) {
+                let subCollRef = doc.ref.collection(subCollectionName);
+                _deleteCollection(subCollRef, null);
+            }
+            // Delete document inside the collection
             doc.ref.delete();
         });
-    });    
+    });
 }

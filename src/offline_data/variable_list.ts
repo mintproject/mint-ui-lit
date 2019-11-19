@@ -7,7 +7,12 @@ export const VARIABLES = {
             },
             "var7": {
                 "long_name": "Amount of weed",
-                "SVO_name": "crop__planting_count-per-area_density_fraction"
+                "SVO_name": "crop__planting_count-per-area_density_fraction",
+                "intervention": {
+                    "id": "weed_control",
+                    "name": "Weed control",
+                    "description": "Interventions concerning weed control and weed management practices can be reflected in the model by indicating the fraction of weeds that will remain after the weed treatments applied by farmers"
+                }
             },
             "var1": {
                 "long_name": "Start year for the simulation",
@@ -19,11 +24,21 @@ export const VARIABLES = {
             },
             "var4": {
                 "long_name": "Day of the year when planting starts",
-                "SVO_name": "crop__planting_start_time"
+                "SVO_name": "crop__planting_start_time",
+                "intervention": {
+                    "id": "planting_windows",
+                    "name": "Planting windows",
+                    "description": "Interventions that force specific target planting windows can be expressed in this model as start and end planting dates"
+                }
             },
             "var5": {
                 "long_name": "Day of the year when planting ends",
-                "SVO_name": "crop__planting_end_time"
+                "SVO_name": "crop__planting_end_time",
+                "intervention": {
+                    "id": "planting_windows",
+                    "name": "Planting windows",
+                    "description": "Interventions that force specific target planting windows can be expressed in this model as start and end planting dates"
+                }
             },
             "var3": {
                 "long_name": "Crop Name",
@@ -33,7 +48,12 @@ export const VARIABLES = {
         "Economic": {
             "var1": {
                 "long_name": "Fertilizer cost",
-                "SVO_name": "fertilizer~nitrogen__usage-cost-per-applied-mass"
+                "SVO_name": "fertilizer~nitrogen__usage-cost-per-applied-mass",
+                "intervention": {
+                    "id": "fertilizer_subsidies",
+                    "name": "Fertilizer Subsidies",
+                    "description": "Interventions concerning fertilizer subsidies can be expressed in this model as a percentage of fertilizer prices"
+                }                
             },
             "var2": {
                 "long_name": "Crop Prices",
@@ -53,12 +73,7 @@ export const VARIABLES = {
             "var1": {
                 "long_name": "Potential Crop Production",
                 "SVO_name": "grain~dry__mass-per-area_yield"
-            },
-            "var2": {
-                "long_name": "Seasonal Crop Production Index",
-                "SVO_name": "crop_production__seasonal_production_index",
-                "created_from": [ "grain~dry__mass-per-area_yield" ]
-            },
+            }
         },
         "Economic": {
             "var1": {
@@ -71,9 +86,17 @@ export const VARIABLES = {
                 "long_name": "River Discharge",
                 "SVO_name": "downstream_volume_flow_rate"
             },
+            "var7": {
+                "long_name": "Overbank Flood Depth",
+                "SVO_name": "land_surface_water__flood_inundation_depth"
+            },
             "var5": {
                 "long_name": "Streamflow Duration Index",
                 "SVO_name": "channel~stream_water__flow_duration_index"
+            },
+            "var6": {
+                "long_name": "Recharge Volume Flux",
+                "SVO_name": "recharge_volume_flux"
             },
             "var1": {
                 "long_name": "Water table level",
@@ -111,6 +134,11 @@ _addToVariableMap(VARIABLES['indicators']);
 
 export const getVariableLongName = (stdname: string) => {
     return getVariableProperty(stdname, "long_name");
+}
+
+export const getVariableIntervention = (stdname: string) => {
+    if(stdname)
+        return getVariableProperty(stdname, "intervention");
 }
 
 export const getVariableProperty = (stdname: string, property: string) => {

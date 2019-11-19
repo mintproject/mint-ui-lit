@@ -28,6 +28,10 @@ export class RegionDatasets extends connect(store)(RegionQueryPage)  {
     }
 
     protected render() {
+        let data_link_suffix = "";
+        if(this._selectedRegion) {
+            data_link_suffix = "/" + this._selectedRegion.id;
+        }
         return html`
             ${this._selectedRegion ? 
                 html`
@@ -36,7 +40,12 @@ export class RegionDatasets extends connect(store)(RegionQueryPage)  {
                     html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` :
                     (!this._datasets.datasets || this._datasets.datasets.length === 0) ? 'No datasets for this region' : 
                         html`<ul>${this._datasets.datasets.map((ds) => {
-                            return html`<li><a href="${this._regionid}/datasets/browse/${ds.id}">${ds.name}</a></li>`
+                            return html`
+                                <li>
+                                    <a href="${this._regionid}/datasets/browse/${ds.id}${data_link_suffix}"
+                                    >${ds.name} (${ds.resources.length} files)</a>
+                                </li>
+                            `
                         })}</ul>`
                 }
                 `

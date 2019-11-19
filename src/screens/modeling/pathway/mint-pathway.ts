@@ -261,7 +261,8 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
         // If there is no pathway, then stop monitoring
         if(!pathwayid) {
             if(this.pathway) {
-                this.pathway.unsubscribe();
+                //console.log("No pathway passed in ? Unsubscribing to pathway " + this.pathway.id);
+                //this.pathway.unsubscribe();
             }
             this.pathway = null;
         }

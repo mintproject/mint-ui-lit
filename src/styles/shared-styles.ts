@@ -258,7 +258,7 @@ export const SharedStyles = css`
       background-color: #F0F0F0;
   }
   .clt ul li.active:hover .cltmain {
-    text-decoration: underline;
+    /*text-decoration: underline;*/
   }
   .clt ul li.highlighted .cltmain {
       font-weight: bold;

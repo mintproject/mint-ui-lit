@@ -172,8 +172,6 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
         }
     }
     else {
-        //console.log(driving_variables);
-        
         dispatch({
             type: DATASETS_VARIABLES_QUERY,
             modelid: modelid,
@@ -182,15 +180,13 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
             loading: true
         });
 
+        let geojson = JSON.parse(region.geojson_blob);
         fetch(prefs.data_catalog_api + "/datasets/find", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 standard_variable_names__in: driving_variables,
-                spatial_coverage__intersects: [
-                    region.bounding_box.xmin, region.bounding_box.ymin, 
-                    region.bounding_box.xmax, region.bounding_box.ymax 
-                ],
+                spatial_coverage__intersects: geojson.geometry,
                 end_time__gte: fromTimeStampToString(dates.start_date).replace(/\.\d{3}Z$/,''),
                 start_time__lte: fromTimeStampToString(dates.end_date).replace(/\.\d{3}Z$/,''),
                 limit: 5000
@@ -284,7 +280,7 @@ export const queryGeneralDatasets: ActionCreator<QueryDatasetsGeneralThunkResult
 // Query Data Catalog for resources of a particular dataset
 type QueryDatasetResourcesThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionDatasetResourceQuery>;
 export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResult> = 
-        (dsid: string, prefs: MintPreferences) => (dispatch) => {
+        (dsid: string, region: Region, prefs: MintPreferences) => (dispatch) => {
     dispatch({
         type: DATASETS_RESOURCE_QUERY,
         dsid: dsid,
@@ -295,6 +291,10 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
         "dataset_ids__in": [dsid],
         "limit": 2000
     };
+    if(region) {
+        let geojson = JSON.parse(region.geojson_blob);
+        queryBody["spatial_coverage__intersects"] = geojson.geometry;
+    }
 
     fetch(prefs.data_catalog_api + "/datasets/find", {
         method: 'POST',
@@ -326,14 +326,13 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
         loading: true
     });
 
+    let geojson = JSON.parse(region.geojson_blob);
     fetch(prefs.data_catalog_api + "/datasets/find", {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
-            spatial_coverage__within: [
-                region.bounding_box.xmin, region.bounding_box.ymin, 
-                region.bounding_box.xmax, region.bounding_box.ymax 
-            ],
+            // FIXME: Querying the region for only datasets *within* the area
+            spatial_coverage__within: geojson.geometry,
             limit: 5000
         })
     }).then((response) => {

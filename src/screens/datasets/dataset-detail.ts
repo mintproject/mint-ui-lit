@@ -15,15 +15,20 @@ import "components/google-map-custom";
 import { ComparisonFeature } from 'screens/modeling/reducers';
 import { fromTimeStampToDateString } from 'util/date-utils';
 import { GOOGLE_API_KEY } from 'config/google-api-key';
-import { BoundingBox, Point } from 'screens/regions/reducers';
+import { BoundingBox, Point, Region } from 'screens/regions/reducers';
 import { queryDatasetResources } from './actions';
 import { GoogleMapCustom } from 'components/google-map-custom';
 import { UserPreferences } from 'app/reducers';
+import { getRegionDetails } from 'screens/regions/actions';
 
 
 @customElement('dataset-detail')
 export class DatasetDetail extends connect(store)(PageViewElement) {
     private _dsid: string;
+    private _filterby_regionid: string;
+
+    @property({type: Object})
+    private _filterby_region: Region;
 
     @property({type: Array})
     private _dataset: DatasetWithStatus;
@@ -83,7 +88,7 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
 
     protected render() {
         let _ds = (this._dataset && !this._dataset.loading) ? this._dataset.dataset : null;
-        if(!_ds && !this._dataset.loading) {
+        if(!_ds && this._dataset && !this._dataset.loading) {
             return html `<center>No resources found for this dataset</center>`;
         }
         return html`
@@ -114,6 +119,10 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                     </tbody>
                 </table>
                 <br />
+                ${this._filterby_region ? 
+                    html`<wl-title level="4">Region: ${this._filterby_region.name}</wl-title><br />`
+                    : ""
+                }
                 `
             }
             
@@ -212,19 +221,24 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
         super.setRegion(state);
         this.prefs = state.app.prefs!;
 
-        if(state.dataExplorerUI) {
+        if(state.dataExplorerUI && this._regionid && 
+                state.regions.sub_region_ids && state.regions.sub_region_ids[this._regionid]) {
             let newdsid = state.dataExplorerUI.selected_datasetid;
-            if(newdsid != this._dsid) {
+            let newregionid = state.dataExplorerUI.selected_regionid;
+            if(newdsid != this._dsid || newregionid != this._filterby_regionid) {
                 this._dsid = newdsid;
+                this._filterby_regionid = newregionid;
                 this._dataset = null;
                 this._mapReady = false;
-                if(this._dsid)
-                    store.dispatch(queryDatasetResources(this._dsid, this.prefs.mint));
+                if(this._dsid) {
+                    this._filterby_region = newregionid ? state.regions.regions[newregionid] : null;
+                    store.dispatch(queryDatasetResources(this._dsid, this._filterby_region, this.prefs.mint))
+                }
             }
         }
-        if(state.datasets && state.datasets.dataset) {
+        if(state.datasets && this._dataset != state.datasets.dataset) {
             this._dataset = state.datasets.dataset;
-            if(!this._dataset.loading)
+            if(this._dataset && !this._dataset.loading)
                 this._showDatasetLocations();
         }
     }

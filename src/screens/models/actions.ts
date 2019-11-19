@@ -167,11 +167,18 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                             if(value.fixedValueURL) {
                                 let dcids = value.fixedValueDCId.split(/\s*,\s*/);
                                 let urls = value.fixedValueURL.split(/\s*,\s*/);
+                                let resources = urls.map((url) => {
+                                    let fname = url.replace(/.*[#\/]/, '');
+                                    return { 
+                                        url: url,
+                                        id: fname,
+                                        name: fname,
+                                        selected: true
+                                    };
+                                });
                                 io.value = {
                                     id: dcids[0],
-                                    resources: urls.map((url) => { return {
-                                        url: url
-                                    }})
+                                    resources: resources
                                 } as Dataset;
                             }
                             fileio[value.io] = io;
@@ -207,6 +214,7 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                             default: value.defaultvalue || "",
                             description: value.description || "",
                             adjustment_variable: adjustment_variable,
+                            position: value.position ? parseInt(value.position) : 0,
                             accepted_values: accepted_values
                         };
                         if(value.fixedValue)
@@ -253,7 +261,8 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                             dimensionality: meta['gridDim'] || "",
                             spatial_grid_type: (meta['gridType'] || "").replace(/.*#/, ''),
                             spatial_grid_resolution: meta['gridSpatial'] || "",
-                            minimum_output_time_interval: ""
+                            minimum_output_time_interval: "",
+                            usage_notes: meta['usageNotes'] || ""
                         };
                         //console.log(model);
                         return model;

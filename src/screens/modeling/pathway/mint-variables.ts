@@ -146,10 +146,10 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
                             <li>
                                 <div class="input_half">
                                 ${responseids.length == 0 ?
-                                    renderResponseVariables("", false)
+                                    renderResponseVariables("", false, ()=>{})
                                 :
                                     responseids.map((responseid) => {
-                                        return renderResponseVariables(responseid, false);
+                                        return renderResponseVariables(responseid, false, ()=>{});
                                     })
                                 }
                                 </div>
@@ -165,10 +165,10 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
                             <li>
                                 <div class="input_half">
                                 ${driverids.length == 0 ?
-                                    renderDrivingVariables("", false)
+                                    renderDrivingVariables("", false, ()=>{})
                                     :
                                     driverids.map((driverid) => {
-                                        return renderDrivingVariables(driverid, false);
+                                        return renderDrivingVariables(driverid, false, ()=>{});
                                     })
                                 }
                                 </div>

@@ -20,13 +20,12 @@ import "weightless/snackbar";
 
 import "./mint-scenario";
 
-import { navigate, BASE_HREF, goToPage } from '../../app/actions';
+import { goToPage } from '../../app/actions';
 import { PageViewElement } from '../../components/page-view-element';
 import { renderNotifications } from '../../util/ui_renders';
 import { formElementsComplete, showDialog, hideDialog, showNotification, resetForm, hideNotification } from '../../util/ui_functions';
-import { listTopRegions, queryRegions } from '../regions/actions';
-import { RegionList, Region } from '../regions/reducers';
-import { toTimeStamp, fromTimeStampToDateString } from 'util/date-utils';
+import { Region, RegionMap } from '../regions/reducers';
+import { toTimeStamp, fromTimeStampToDateString, fromTimestampIntegerToString, fromTimestampIntegerToReadableString } from 'util/date-utils';
 
 @customElement('scenarios-list')
 export class ScenariosList extends connect(store)(PageViewElement) {
@@ -34,10 +33,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
   private _top_region: Region;
 
   @property({type: Object})
-  private _regions!: RegionList;
-
-  @property({type: Object})
-  private _subRegions!: RegionList;
+  private _regions!: RegionMap;
 
   @property({type: Object})
   private _list!: ScenarioList;
@@ -79,14 +75,23 @@ export class ScenariosList extends connect(store)(PageViewElement) {
           <wl-list-item class="active"
               @click="${this._onSelectScenario}"
               data-scenarioid="${scenario.id}">
-              <wl-title level="4" style="margin: 0">${scenario.name}</wl-title>
-              <span>${fromTimeStampToDateString(scenario.dates.start_date)} to 
-                ${fromTimeStampToDateString(scenario.dates.end_date)}</span>
+              <wl-icon slot="before">label_important</wl-icon>
               <div slot="after" style="display:flex">
-                <wl-icon @click="${this._editScenarioDialog}" data-scenarioid="${scenario.id}"
-                    id="editScenarioIcon" class="actionIcon editIcon">edit</wl-icon>
-                <wl-icon @click="${this._onDeleteScenario}" data-scenarioid="${scenario.id}"
-                    id="delScenarioIcon" class="actionIcon deleteIcon">delete</wl-icon>
+                <div>
+                  ${scenario.last_update_user}<br/>
+                  ${fromTimestampIntegerToReadableString(parseInt(scenario.last_update))}
+                </div>
+                <div style="height: 24px; padding-left: 10px; display:flex">
+                  <wl-icon @click="${this._editScenarioDialog}" data-scenarioid="${scenario.id}"
+                      id="editScenarioIcon" class="actionIcon editIcon">edit</wl-icon>
+                  <wl-icon @click="${this._onDeleteScenario}" data-scenarioid="${scenario.id}"
+                      id="delScenarioIcon" class="actionIcon deleteIcon">delete</wl-icon>
+                </div>
+              </div>
+              <wl-title level="4" style="margin: 0">${scenario.name}</wl-title>
+              <div>
+                Time Period: ${fromTimeStampToDateString(scenario.dates.start_date)} to 
+                ${fromTimeStampToDateString(scenario.dates.end_date)}
               </div>
           </wl-list-item>
           `
@@ -293,19 +298,15 @@ export class ScenariosList extends connect(store)(PageViewElement) {
     if(state.modeling) {
       if(state.modeling.scenarios) {
         this._list = state.modeling.scenarios;
+        this._list.scenarioids.sort((id1,id2) => {
+          return parseInt(this._list.scenarios[id2].last_update) - parseInt(this._list.scenarios[id1].last_update);
+        });
       }
     }
     if(state.ui && state.ui.selected_top_regionid && state.regions!.regions) {
       this._top_regionid = state.ui.selected_top_regionid;
       this._regions = state.regions!.regions;
       this._top_region = this._regions[this._top_regionid];
-
-      if(!state.regions!.query_result || !state.regions!.query_result[this._top_regionid]) {
-        store.dispatch(queryRegions(this._top_regionid));
-      }
-      else {
-        this._subRegions = state.regions!.query_result[this._top_regionid]["*"];
-      }
     }
     super.setRegionId(state);
   }

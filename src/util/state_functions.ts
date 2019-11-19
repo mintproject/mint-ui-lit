@@ -479,7 +479,8 @@ export const getUISelectedPathway = (state: RootState) => {
 
 export const getUISelectedSubgoalRegion = (state: RootState) => {
     let subgoal = getUISelectedSubgoal(state);
-    if(subgoal && subgoal.subregionid && state.regions && state.regions.query_result) {
+    if(subgoal && subgoal.subregionid && state.regions && state.regions.query_result 
+            && state.regions.query_result[state.ui.selected_top_regionid]) {
         let res = state.regions.query_result[state.ui.selected_top_regionid]["*"]
         if(res && res[subgoal.subregionid]) {
             return res[subgoal.subregionid];
@@ -607,18 +608,19 @@ export const sendDataForIngestion = (scenarioid: string, subgoalid: string, thre
     });    
 }
 
-export const getVisualizationURL = (pathway: Pathway, prefs: MintPreferences) => {
+export const getVisualizationURLs = (pathway: Pathway, prefs: MintPreferences) => {
     if(getPathwayResultsStatus(pathway) == "TASK_DONE") {
         let responseV = pathway.response_variables.length > 0?
             getVariableLongName(pathway.response_variables[0]) : '';
         let drivingV = pathway.driving_variables.length > 0?
             getVariableLongName(pathway.driving_variables[0]) : '';
 
+        let visualizations = [];
         // FIXME: Hack
         if(responseV == "Potential Crop Production")
-            return prefs.visualization_url + "/cycles?thread_id=" + pathway.id;
-        else
-            return prefs.visualization_url + "/upload?thread_id=" + pathway.id;
+            visualizations.push(prefs.visualization_url + "/cycles?thread_id=" + pathway.id);
+        visualizations.push(prefs.visualization_url + "/upload?thread_id=" + pathway.id);
+        return visualizations;
     }
     return null;
 }

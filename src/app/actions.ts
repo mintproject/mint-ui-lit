@@ -21,7 +21,7 @@ import { User } from 'firebase';
 import { UserPreferences } from './reducers';
 import { SAMPLE_USER, SAMPLE_MINT_PREFERENCES_LOCAL, SAMPLE_MINT_PREFERENCES } from 'offline_data/sample_user';
 import { DefaultApi } from '@mintproject/modelcatalog_client';
-import { dexplorerSelectDataset } from 'screens/datasets/ui-actions';
+import { dexplorerSelectDataset, dexplorerSelectDatasetArea } from 'screens/datasets/ui-actions';
 
 export const BASE_HREF = document.getElementsByTagName("base")[0].href.replace(/^http(s)?:\/\/.*?\//, "/");
 
@@ -139,19 +139,25 @@ const modelCatalogLogin = (username: string, password: string) => {
 export const goToPage = (page:string) => {
   let state: any = store.getState();
   let regionid = state.ui ? state.ui.selected_top_regionid : "";
-  let url = BASE_HREF + (regionid ? regionid + "/" : "") + page;
+  let url = BASE_HREF + (regionid ? regionid + "/" : "") + (page ? page : "");
+  window.history.pushState({}, page, url);
+  store.dispatch(navigate(decodeURIComponent(location.pathname)));    
+}
+
+export const goToRegionPage = (regionid: string, page:string) => {
+  let state: any = store.getState();
+  let url = BASE_HREF + (regionid ? regionid + "/" : "") + (page ? page : "");
   window.history.pushState({}, page, url);
   store.dispatch(navigate(decodeURIComponent(location.pathname)));    
 }
 
 export const navigate: ActionCreator<ThunkResult> = (path: string) => (dispatch) => {
-  console.log(path);
+  //console.log(path);
   // Extract the page name from path.
   let cpath = path === BASE_HREF ? '/home' : path.slice(BASE_HREF.length);
   let regionIndex = cpath.indexOf("/");
 
   let regionid = cpath.substr(0, regionIndex);
-  store.dispatch(selectTopRegion(regionid));
 
   let page = cpath.substr(regionIndex + 1);
   let subpage = 'home';
@@ -166,7 +172,8 @@ export const navigate: ActionCreator<ThunkResult> = (path: string) => (dispatch)
     params.splice(0, 1);
   }
 
-  dispatch(loadPage(page, subpage, params));
+  store.dispatch(loadPage(page, subpage, params));
+  store.dispatch(selectTopRegion(regionid));
 };
 
 const loadPage: ActionCreator<ThunkResult> = 
@@ -262,6 +269,13 @@ const loadPage: ActionCreator<ThunkResult> =
           }
         });
         break;
+    case 'emulators':
+      import('../screens/emulators/emulators-home').then((_module) => {
+        if(params.length > 0) {
+          //store.dispatch(queryRegionDetail(params[0]));
+        }
+      });
+      break;
     case 'analysis':
         if (subpage == 'home') {
             import('../screens/analysis/analysis-home').then((_module) => {
@@ -287,8 +301,11 @@ const loadPage: ActionCreator<ThunkResult> =
     case 'datasets':
         import('../screens/datasets/datasets-home').then((_module) => {
           if(subpage == "browse") {
-              if(params.length > 0) {
+              if(params.length == 1) {
                 store.dispatch(dexplorerSelectDataset(params[0]));
+              }
+              else if(params.length == 2) {
+                store.dispatch(dexplorerSelectDatasetArea(params[0], params[1]));
               }
               else {
                 store.dispatch(dexplorerSelectDataset(null));
