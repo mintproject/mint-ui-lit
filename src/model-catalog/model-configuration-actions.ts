@@ -2,9 +2,10 @@ import { Action, ActionCreator } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
-import { Configuration, ModelConfiguration, ModelConfigurationApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, DEFAULT_GRAPH,
+import { Configuration, ModelConfiguration, ModelConfigurationApi, ParameterApi, DatasetSpecificationApi } from '@mintproject/modelcatalog_client';
+import { idReducer, isValidId, getStatusConfigAndUser, repeatAction, PREFIX_URI, DEFAULT_GRAPH,
          START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
+import { PARAMETER_GET, MCAParameterGet } from './parameter-actions'
 
 function debug (...args: any[]) { console.log('OBA:', ...args); }
 
@@ -54,12 +55,43 @@ export const modelConfigurationGet: ActionCreator<ModelCatalogModelConfiguration
 
 export const MODEL_CONFIGURATION_POST = "MODEL_CONFIGURATION_POST";
 interface MCAModelConfigurationPost extends Action<'MODEL_CONFIGURATION_POST'> { payload: any };
-export const modelConfigurationPost: ActionCreator<ModelCatalogModelConfigurationThunkResult> = (modelConfiguration:ModelConfiguration, identifier:string) => (dispatch) => {
+export const modelConfigurationPost: ActionCreator<PostConfigThunk> = (modelConfiguration:ModelConfiguration, identifier:string) => (dispatch) => {
     debug('creating new modelConfiguration', modelConfiguration);
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
+    if (isValidId(modelConfiguration.id)) {
+        console.error('Cannot create', modelConfiguration)
+        return;
+    } else {
+        console.log('STOPED', modelConfiguration);
+        return
+        let configApi = new ModelConfigurationApi(cfg);
+        let parameterApi = new ParameterApi(cfg);
+        let parameterPromises = [];
+        let newParameters = [];
+        modelConfiguration.hasParameter.forEach((parameter) => {
+            let req = parameterApi.parametersPost({user: DEFAULT_GRAPH, parameter: parameter}) // This should be my username on prod.
+            parameterPromises.push(req);
+            req.then((resp) => {
+                    console.log('Response for POST parameter:', resp);
+                    //Its returning the ID without the prefix
+                    let uri = PREFIX_URI + resp.id;
+                    let data = {};
+                    resp.id = uri;
+                    data[uri] = resp;
+                    newParameters.push(resp);
+                    dispatch({
+                        type: PARAMETER_GET,
+                        payload: data
+                    });
+            });
+            req.catch((err) => {
+                console.error('Error on POST parameter', err)
+            });
+        });
+    }
 
-    if (status === 'DONE') {
+    /*if (status === 'DONE') {
         dispatch({type: START_POST, id: identifier});
         modelConfiguration.id = undefined;
         let api : ModelConfigurationApi = new ModelConfigurationApi(cfg);
@@ -80,7 +112,7 @@ export const modelConfigurationPost: ActionCreator<ModelCatalogModelConfiguratio
             .catch((err) => {console.log('Error on POST modelConfiguration', err)})
     } else if (status === 'LOADING') {
         repeatAction(modelConfigurationPost, modelConfiguration);
-    }
+    }*/
 }
 
 export const MODEL_CONFIGURATION_PUT = "MODEL_CONFIGURATION_PUT";
@@ -138,3 +170,4 @@ export const modelConfigurationDelete: ActionCreator<ModelCatalogModelConfigurat
 export type ModelCatalogModelConfigurationAction =  MCACommon | MCAModelConfigurationsGet | MCAModelConfigurationGet | 
                                                     MCAModelConfigurationPost | MCAModelConfigurationPut | MCAModelConfigurationDelete;
 type ModelCatalogModelConfigurationThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogModelConfigurationAction>;
+type PostConfigThunk = ThunkAction<void, RootState, undefined, ModelCatalogModelConfigurationAction | MCAParameterGet>;
