@@ -102,7 +102,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
             <div slot="footer">
                 <wl-button @click="${this._cancel}" style="margin-right: 5px;" inverted flat ?disabled="${this._waiting}">Cancel</wl-button>
                 <wl-button @click="${this._save}" ?disabled="${this._waiting}">
-                    Save ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
+                    Set ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
                 </wl-button>
             </div>
         </wl-dialog>

@@ -723,6 +723,19 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         this.requestUpdate();
     }
 
+    _onInputEdited (ev) {
+        let editedInput = ev.detail;
+        if (editedInput.type.indexOf('SampleCollection') >= 0) {
+            this._sampleCollections[editedInput.id] = editedInput;
+            editedInput.hasPart.forEach((sample) => {
+                this._sampleResources[sample.id] = sample;
+            });
+        } else {
+            this._sampleResources[editedInput.id] = editedInput;
+        }
+        this.requestUpdate();
+    }
+
     updated () {
         if (this._editing && this._setup) {
             if (this._setup.parameterAssignmentMethod && this._setup.parameterAssignmentMethod.length === 1) {
@@ -741,6 +754,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         this.addEventListener('authorsSelected', this._onAuthorsSelected);
         this.addEventListener('processesSelected', this._onProcessesSelected);
         this.addEventListener('parameterEdited', this._onParameterEdited);
+        this.addEventListener('inputEdited', this._onInputEdited);
     }
 
     stateChanged(state: RootState) {
