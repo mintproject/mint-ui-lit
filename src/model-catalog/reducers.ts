@@ -1,14 +1,19 @@
 import { Reducer } from "redux";
-import { RootAction } from "../app/store";
+import { RootAction } from "app/store";
 import { START_LOADING, END_LOADING, START_POST, END_POST,
          PERSON_GET, PERSONS_GET, ALL_PERSONS, PERSON_DELETE, 
          REGION_GET, REGIONS_GET, ALL_REGIONS, REGION_DELETE, 
          PROCESS_GET, PROCESSES_GET, ALL_PROCESSES,  PROCESS_DELETE,
          PARAMETER_GET, PARAMETERS_GET, ALL_PARAMETERS, PARAMETER_DELETE,
+         DATASET_SPECIFICATION_GET, DATASET_SPECIFICATIONS_GET, ALL_DATASET_SPECIFICATIONS, DATASET_SPECIFICATION_DELETE, 
+         SAMPLE_RESOURCE_GET, SAMPLE_RESOURCES_GET, ALL_SAMPLE_RESOURCES, SAMPLE_RESOURCE_DELETE, 
+         SAMPLE_COLLECTION_GET, SAMPLE_COLLECTIONS_GET, ALL_SAMPLE_COLLECTIONS, SAMPLE_COLLECTION_DELETE, 
          MODEL_CONFIGURATION_GET, MODEL_CONFIGURATIONS_GET, ALL_MODEL_CONFIGURATIONS, MODEL_CONFIGURATION_DELETE,
          MODELS_GET, VERSIONS_GET,
-         DATASET_SPECIFICATION_GET,
          GRID_GET, TIME_INTERVAL_GET, SOFTWARE_IMAGE_GET } from './actions'
+
+import { SampleResource, SampleCollection, DatasetSpecification } from '@mintproject/modelcatalog_client';
+import { IdMap } from 'app/reducers'
 
 export interface ModelCatalogState {
     loading: {[key:string]: boolean},
@@ -18,13 +23,16 @@ export interface ModelCatalogState {
     versions: any;
     configurations: any;
     parameters: any;
-    datasetSpecifications: any;
+    //datasetSpecifications: any;
     persons: any;
     grids: any;
     processes: any;
     timeIntervals: any;
     softwareImages: any;
     regions: any;
+    datasetSpecifications: {[key:string]: DatasetSpecification};
+    sampleResources: IdMap<SampleResource>;
+    sampleCollections: IdMap<SampleCollection>;
 }
 
 const INITIAL_STATE: ModelCatalogState = { 
@@ -35,12 +43,15 @@ const INITIAL_STATE: ModelCatalogState = {
     versions: null,
     configurations: null,
     parameters: null,
-    datasetSpecifications: null,
+    //datasetSpecifications: null,
     persons: null,
     grids: null,
     processes: null,
     timeIntervals: null,
-    softwareImages: null
+    softwareImages: null,
+    datasetSpecifications: {} as DatasetSpecification,
+    sampleResources: {} as IdMap<SampleResource>,
+    sampleCollections: {} as IdMap<SampleCollection>,
 } as ModelCatalogState;
 
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -134,12 +145,6 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 parameters: {...state.parameters, ...action.payload}
             }
 
-        case DATASET_SPECIFICATION_GET:
-            return {
-                ...state,
-                datasetSpecifications: {...state.datasetSpecifications, ...action.payload}
-            }
-
         case REGION_DELETE:
             tmp = { ...state.regions };
             delete tmp[action.uri];
@@ -201,6 +206,69 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 ...state,
                 loadedAll: tmp,
                 processes: {...state.processes, ...action.payload}
+            }
+
+        case DATASET_SPECIFICATION_DELETE:
+            tmp = { ...state.datasetSpecifications };
+            delete tmp[action.uri];
+            return {
+                ...state,
+                datasetSpecifications: tmp
+            }
+        case DATASET_SPECIFICATION_GET:
+            return {
+                ...state,
+                datasetSpecifications: {...state.datasetSpecifications, ...action.payload}
+            }
+        case DATASET_SPECIFICATIONS_GET:
+            tmp = { ...state.loadedAll };
+            tmp[ALL_DATASET_SPECIFICATIONS] = true;
+            return {
+                ...state,
+                loadedAll: tmp,
+                datasetSpecifications: {...state.datasetSpecifications, ...action.payload}
+            }
+
+        case SAMPLE_RESOURCE_DELETE:
+            tmp = { ...state.sampleResources };
+            delete tmp[action.uri];
+            return {
+                ...state,
+                sampleResources: tmp
+            }
+        case SAMPLE_RESOURCE_GET:
+            return {
+                ...state,
+                sampleResources: {...state.sampleResources, ...action.payload}
+            }
+        case SAMPLE_RESOURCES_GET:
+            tmp = { ...state.loadedAll };
+            tmp[ALL_SAMPLE_RESOURCES] = true;
+            return {
+                ...state,
+                loadedAll: tmp,
+                sampleResources: {...state.sampleResources, ...action.payload}
+            }
+
+        case SAMPLE_COLLECTION_DELETE:
+            tmp = { ...state.sampleCollections };
+            delete tmp[action.uri];
+            return {
+                ...state,
+                sampleCollections: tmp
+            }
+        case SAMPLE_COLLECTION_GET:
+            return {
+                ...state,
+                sampleCollections: {...state.sampleCollections, ...action.payload}
+            }
+        case SAMPLE_COLLECTIONS_GET:
+            tmp = { ...state.loadedAll };
+            tmp[ALL_SAMPLE_COLLECTIONS] = true;
+            return {
+                ...state,
+                loadedAll: tmp,
+                sampleCollections: {...state.sampleCollections, ...action.payload}
             }
 
         case GRID_GET:

@@ -50,7 +50,6 @@ b.clickable, span.clickable {
     cursor: help;
     display: inline-block;
     position: relative;
-    float: right;
     margin: 5px 5px 0px 5px;
 }
 
