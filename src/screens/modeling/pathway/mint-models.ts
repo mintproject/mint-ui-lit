@@ -425,7 +425,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         });
 
 
-        this.pathway = {
+        let newpathway = {
             ...this.pathway,
             models: models,
             model_ensembles: model_ensembles
@@ -433,47 +433,48 @@ export class MintModels extends connect(store)(MintPathwayPage) {
 
         // Update notes
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        this.pathway.notes = {
-            ...this.pathway.notes!,
+        newpathway.notes = {
+            ...newpathway.notes!,
             models: notes
         };
-        this.pathway.last_update = {
-            ...this.pathway.last_update!,
+        newpathway.last_update = {
+            ...newpathway.last_update!,
             models: {
                 time: Date.now(),
                 user: this.user!.email
             } as StepUpdateInformation
         };        
 
-        updatePathway(this.scenario, this.pathway); 
+        updatePathway(this.scenario, newpathway); 
         
         this._editMode = false;
         showNotification("saveNotification", this.shadowRoot!);
     }
 
     _removePathwayModel(modelid:string) {
-        let model = this.pathway.models![modelid];
+        let newpathway = { ...this.pathway };
+        let model = newpathway.models![modelid];
         if(model) {
             if(confirm("Are you sure you want to remove this model ?")) {
-                let models:ModelMap = this.pathway.models || {};
-                let model_ensembles:ModelEnsembleMap = this.pathway.model_ensembles || {};
+                let models:ModelMap = newpathway.models || {};
+                let model_ensembles:ModelEnsembleMap = newpathway.model_ensembles || {};
                 delete models[modelid];
                 if(model_ensembles[modelid]) {
                     let data_ensembles = { ...model_ensembles[modelid] };
                     Object.keys(data_ensembles).map((inputid) => {
                         let datasets = data_ensembles[inputid].slice();
                         datasets.map((dsid) => {
-                            this.pathway = removeDatasetFromPathway(this.pathway, dsid, modelid, inputid);
+                            newpathway = removeDatasetFromPathway(newpathway, dsid, modelid, inputid);
                         })
                     })
                     delete model_ensembles[modelid];
                 }
-                this.pathway = {
-                    ...this.pathway,
+                newpathway = {
+                    ...newpathway,
                     models: models,
                     model_ensembles: model_ensembles
                 }
-                updatePathway(this.scenario, this.pathway);                   
+                updatePathway(this.scenario, newpathway);                   
             }
         }
     }

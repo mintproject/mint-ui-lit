@@ -6,17 +6,17 @@ import { SharedStyles } from "../../../styles/shared-styles";
 import { BASE_HREF } from "../../../app/actions";
 
 import "weightless/progress-bar";
-import { listEnsembles, setupModelWorkflow, runModelEnsembles } from "../../../util/state_functions";
 import { selectPathwaySection } from "../../../app/ui-actions";
 import { MintPathwayPage } from "./mint-pathway-page";
-import { showNotification, hideDialog, showDialog } from "util/ui_functions";
+import { showNotification, hideDialog, showDialog, hideNotification } from "util/ui_functions";
 import { renderNotifications } from "util/ui_renders";
 import { Model } from "screens/models/reducers";
-import { ExecutableEnsemble, ModelEnsembles } from "../reducers";
+import { ExecutableEnsemble, ModelEnsembles, Pathway } from "../reducers";
 import { IdMap } from "app/reducers";
-import { fetchPathwayEnsembles, updatePathwayEnsembles, updatePathway, getAllPathwayEnsembleIds } from "../actions";
-import { fetchWingsTemplate, loginToWings, fetchWingsRunResults, fetchWingsRunsStatuses, fetchWingsRunLog} from "util/wings_functions";
+import { fetchPathwayEnsembles, getAllPathwayEnsembleIds } from "../actions";
 import { DataResource } from "screens/datasets/reducers";
+import { isObject } from "util";
+import { postJSONResource, getResource } from "util/mint-requests";
 
 @customElement('mint-runs')
 export class MintRuns extends connect(store)(MintPathwayPage) {
@@ -24,26 +24,15 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
     @property({type: Object})
     private _ensembles: ModelEnsembles;
 
-    @property({type: Object})
-    private _progress_item: Model;
-    @property({type: Number})
-    private _progress_total : number;
-    @property({type: Number})
-    private _progress_number : number;
-    @property({type: Boolean})
-    private _progress_abort: boolean;
-    @property({type:String})
-    private _progress_description: string;
+    @property({type: String})
+    private _subgoalid: string;
 
-    @property({type: Number})
-    private totalPages = 0;
-    @property({type: Number})
-    private currentPage = 1;
+    @property({type: Object})
+    private totalPages : Map<string, number> = {} as Map<string, number>;
+    @property({type: Object})
+    private currentPage : Map<string, number> = {} as Map<string, number>;
     @property({type: Number})
     private pageSize = 100;
-
-    @property({type: Number})
-    private executionBatchSize = 4;
 
     @property({type: String})
     private _log: string;
@@ -78,6 +67,9 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         Object.keys(this._ensembles || {}).map((modelid) => {
             let model = this.pathway.models![modelid];
             let loading = this._ensembles[modelid].loading;
+            if(!model) {
+                return;
+            }
             grouped_ensembles[model.id] = {
                 ensembles: {},
                 params: [],
@@ -100,7 +92,8 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             let ensembles: ExecutableEnsemble [] = this._ensembles[modelid].ensembles;
             if(ensembles)
                 ensembles.map((ensemble) => {
-                    grouped_ensembles[model.id].ensembles[ensemble.id] = ensemble;
+                    if(ensemble)
+                        grouped_ensembles[model.id].ensembles[ensemble.id] = ensemble;
                 });
         });
 
@@ -116,7 +109,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 let summary = this.pathway.executable_ensemble_summary[modelid];
                 let model = this.pathway.models![modelid];
                 let grouped_ensemble = grouped_ensembles[modelid];
-                this.totalPages = Math.ceil(summary.total_runs/this.pageSize);
+                this.totalPages[modelid] = Math.ceil(summary.total_runs/this.pageSize);
                 let submitted_runs = summary.submitted_runs ? summary.submitted_runs : 0;
                 let failed_runs = summary.failed_runs ? summary.failed_runs : 0;
                 let successful_runs = summary.successful_runs ? summary.successful_runs : 0;
@@ -125,12 +118,26 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 let finished = (finished_runs == summary.total_runs);
                 let running = submitted_runs - finished_runs;
                 let pending = summary.total_runs - submitted_runs;
+                if(!this.currentPage[modelid])
+                    this.currentPage[modelid] = 1;
 
                 if(!grouped_ensemble && model) {
                     this._fetchRuns(model.id, 1, this.pageSize)
                 }
                 if(!model) {
                     return "";
+                }
+
+                if(!summary.submission_time) {
+                    return html`
+                    <li>
+                        <wl-title level="4"><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></wl-title>
+                        <p>
+                            The parameter settings you selected require ${summary.total_runs} runs. 
+                        </p>
+                        <wl-button class="submit"
+                            @click="${() => this._submitRuns(model.id)}">Send Runs</wl-button>
+                    `;
                 }
 
                 return html`
@@ -152,21 +159,15 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                     ${pending > 0 ? html `${pending} are waiting to be run` : ""}
                     </p>
 
-                    ${!finished ? 
-                        html`<wl-button class="submit"
-                            @click="${() => this._checkStatusAllEnsembles(model.id)}">Recheck status</wl-button> <br /><br />`
-                        : ""
-                    }
-
                     <div style="width: 100%; border:1px solid #EEE;border-bottom:0px;">
                         ${grouped_ensemble && !grouped_ensemble.loading ? 
                         html`
-                        ${this.currentPage > 1 ? 
+                        ${this.currentPage[model.id] > 1 ? 
                             html `<wl-button flat inverted @click=${() => this._nextPage(model.id, -1)}>Back</wl-button>` :
                             html `<wl-button flat inverted disabled>Back</wl-button>`
                         }
-                        Page ${this.currentPage} of ${this.totalPages}
-                        ${this.currentPage < this.totalPages ? 
+                        Page ${this.currentPage[model.id]} of ${this.totalPages[model.id]}
+                        ${this.currentPage[model.id] < this.totalPages[model.id] ? 
                             html `<wl-button flat inverted @click=${() => this._nextPage(model.id, 1)}>Next</wl-button>` :
                             html `<wl-button flat inverted disabled>Next</wl-button>`
                         }
@@ -220,7 +221,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                                 </td>
                                                 <td>
                                                     <wl-button style="--button-padding: 2px; --button-border-radius: 2px" 
-                                                        @click="${() => this._viewRunLog(ensemble.runid)}" inverted flat>
+                                                        @click="${() => this._viewRunLog(ensemble.id)}" inverted flat>
                                                         View Log</wl-button>
                                                 </td>                                                
                                                 ${grouped_ensemble.inputs.length + grouped_ensemble.params.length == 0 ? 
@@ -261,53 +262,67 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         </div>
 
         ${renderNotifications()}
-        ${this._renderProgressDialog()}
+        ${this._renderLogDialog()}
 
         `;
     }
 
-    _nextPage(modelid: string, offset:  number) {
-        this._fetchRuns(modelid, this.currentPage + offset, this.pageSize)
+    _submitRuns(modelid: string) {
+        let mint = this.prefs.mint;
+        let data = {
+            scenario_id: this.scenario.id,
+            subgoal_id: this._subgoalid,
+            thread_id: this.pathway.id,
+            model_id: modelid
+        };
+        showNotification("runNotification", this.shadowRoot);
+        postJSONResource({
+            url: mint.ensemble_manager_api + "/executions" + (mint.execution_engine == "localex" ? "Local" : ""),
+            onLoad: function(e: any) {
+                hideNotification("runNotification", this.shadowRoot);
+            },
+            onError: function() {
+                console.log("Could not send");
+            }
+        }, data, false);
     }
 
-    _viewRunLog(runid: string) {
+    _nextPage(modelid: string, offset:  number) {
+        this._fetchRuns(modelid, this.currentPage[modelid] + offset, this.pageSize)
+    }
+
+    _viewRunLog(ensembleid: string) {
         this._log = null;
+        let me = this;
         showDialog("logDialog", this.shadowRoot!);
-        fetchWingsRunLog(runid, this.prefs).then((log) => {
-            this._log = log;
-        });
+        // Call out to the ensemble manager to get the log
+        getResource({
+            url: this.prefs.mint.ensemble_manager_api + "/logs?ensemble_id=" + ensembleid,
+            onLoad: function(e: any) {
+                let log = e.target.responseText;
+                log = log.replace(/\\n/g, "\n");
+                me._log = log;
+                console.log(me._log);
+            },
+            onError: function() {
+
+            }
+        }, false);
     }
 
     _closeRunLogDialog(runid: string) {
         hideDialog("logDialog", this.shadowRoot!);
     }
 
-    _renderProgressDialog() {
+    _renderLogDialog() {
         return html`
-        <wl-dialog id="progressDialog" fixed persistent backdrop blockscrolling>
-            <h3 slot="header">Checking status of model runs</h3>
-            <div slot="content">
-                <p>
-                    ${this._progress_description} for ${this._progress_item ? this._progress_item.name : ""}
-                </p>
-                ${this._progress_number} out of ${this._progress_total}
-                <wl-progress-bar style="width:100%" mode="determinate"
-                    value="${this._progress_number/this._progress_total}"></wl-progress-bar>
-            </div>
-            <div slot="footer">
-                ${this._progress_number == this._progress_total ? 
-                    html`<wl-button @click="${this._onDialogDone}" class="submit">Done</wl-button>` :
-                    html`<wl-button @click="${this._onStopProgress}" inverted flat>Stop</wl-button>`
-                }
-            </div>            
-        </wl-dialog>
 
         <wl-dialog id="logDialog" fixed persistent backdrop blockscrolling style="--dialog-width:800px;">
             <h3 slot="header">Run log</h3>
             <div slot="content" style="height:500px;overflow:auto">
                 ${this._log ? 
                 html`
-                <pre style='font-size:11px'>${this._log}
+                <pre style='font-size:11px'>${this._log}</pre>
                 `
                 : 
                 html`<wl-progress-spinner class="loading"></wl-progress-spinner>`
@@ -320,175 +335,30 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         `;
     }
 
-    _onDialogDone() {
-        updatePathway(this.scenario, this.pathway);
-        
-        Object.keys(this.pathway.models).map((modelid) => {
-            this._fetchRuns(modelid, 1, this.pageSize);
-        });
-        hideDialog("progressDialog", this.shadowRoot!);
-    }
-
-    _onStopProgress() {
-        this._progress_abort = true;
-        updatePathway(this.scenario, this.pathway);
-        hideDialog("progressDialog", this.shadowRoot!);
-    }
-
     async _fetchRuns (modelid: string, currentPage: number, pageSize: number) {
-        this.currentPage = currentPage;
+        this.currentPage[modelid] = currentPage;
         
-        if(!this.pathwayModelEnsembleIds[modelid])
+        if(!this.pathwayModelEnsembleIds[modelid]) {
             this.pathwayModelEnsembleIds[modelid] =  await getAllPathwayEnsembleIds(this.scenario.id, this.pathway.id, modelid);
+        }
         
-        let ensembleids = this.pathwayModelEnsembleIds[modelid].slice((this.currentPage - 1)*pageSize, this.currentPage*pageSize);
+        let ensembleids = this.pathwayModelEnsembleIds[modelid].slice((currentPage - 1)*pageSize, currentPage*pageSize);
         store.dispatch(fetchPathwayEnsembles(this.pathway.id, modelid, ensembleids));
     }
 
-    async _runAllEnsembles(modelid: string) {
-        let model = this.pathway.models[modelid];
-        this._progress_item = model;
-        this._progress_description = "Running model configurations";
-        this._progress_total = this.pathway.executable_ensemble_summary[modelid].total_runs;
-        this._progress_number = 0;
-
-        showDialog("progressDialog", this.shadowRoot!);
-
-        let start = 0;        
-        // await loginToWings(this.prefs); // Login to Wings handled at the top now
-        
-        let workflowid = await setupModelWorkflow(model, this.pathway, this.prefs);
-        let tpl_package = await fetchWingsTemplate(workflowid, this.prefs);
-
-        // Setup some book-keeping to help in searching for results
-        this.pathway.executable_ensemble_summary[model.id].workflow_name = workflowid.replace(/.+#/, '');
-        this.pathway.executable_ensemble_summary[model.id].submission_time = Date.now();
-
-        if(!this.pathwayModelEnsembleIds[modelid])
-            this.pathwayModelEnsembleIds[modelid] =  await getAllPathwayEnsembleIds(this.scenario.id, this.pathway.id, modelid);
-
-        let datasets = {};
-        while(true) {
-            let ensembleids = this.pathwayModelEnsembleIds[modelid].slice(start, start+this.pageSize);
-            let ensembles = await listEnsembles(ensembleids);
-            start += this.pageSize;
-
-            if(!ensembles || ensembles.length == 0)
-                break;
-            
-            if(this._progress_abort) 
-                break;
-
-            for(let i=0; i<ensembles.length; i+= this.executionBatchSize) {
-                let eslice = ensembles.slice(i, i+this.executionBatchSize);
-                // Get ensembles that arent already run
-                let eslice_nr = eslice.filter((ensemble) => !ensemble.runid);
-                if(eslice_nr.length > 0) {
-                    let runids = await runModelEnsembles(this.pathway, eslice_nr, datasets, tpl_package, this.prefs);
-                    for(let j=0; j<eslice_nr.length; j++) {
-                        eslice_nr[j].runid = runids[j];
-                        eslice_nr[j].status = "WAITING";
-                        eslice_nr[j].run_progress = 0;
-                    }
-                    updatePathwayEnsembles(eslice_nr);
-                }
-                this._progress_number += eslice.length;
-            }
-        }
+    async _reloadAllRuns() {
+        let promises: any[] = [];
+        Object.keys(this.pathway.models).map((modelid) => {
+            if(!this.currentPage[modelid])
+                this.currentPage[modelid] = 1;
+            console.log("Fetch runs for model " + modelid);
+            promises.push(this._fetchRuns(modelid, this.currentPage[modelid] , this.pageSize));
+        })
+        await Promise.all(promises);
     }
 
     _isEnsembleRunFinished(ensemble: ExecutableEnsemble) {
         return (ensemble.status == "SUCCESS" || ensemble.status == "FAILURE");
-    }
-
-    async _checkStatusAllEnsembles(modelid: string) {
-        let model = this.pathway.models[modelid];
-        let summary = this.pathway.executable_ensemble_summary[modelid];
-
-        this._progress_item = model;
-        this._progress_total = summary.total_runs;
-        this._progress_description = "Checking model runs status";
-        this._progress_number = 0;
-
-        showDialog("progressDialog", this.shadowRoot!);
-        
-        // await loginToWings(this.prefs); // Login to Wings handled at the top now
-        
-        // FIXME: Some problem with the submission times
-        let runtimeInfos = await fetchWingsRunsStatuses(summary.workflow_name, 
-            Math.floor(summary.submission_time/1000), summary.total_runs, this.prefs);
-
-        let start = 0;
-        let pageSize = 100;
-        let numSuccessful = 0;
-        let numFailed = 0;
-        let numRunning = 0;
-
-        if(!this.pathwayModelEnsembleIds[modelid])
-            this.pathwayModelEnsembleIds[modelid] =  await getAllPathwayEnsembleIds(this.scenario.id, this.pathway.id, modelid);
-
-        while(true) {
-            let ensembleids = this.pathwayModelEnsembleIds[modelid].slice(start, start+pageSize);
-            let ensembles = await listEnsembles(ensembleids);
-            start += pageSize;
-
-            if(!ensembles || ensembles.length == 0)
-                break;
-            
-            if(this._progress_abort) 
-                break;
-
-            let changed_ensembles : ExecutableEnsemble[] = [];
-
-            ensembles.map((ensemble) => {
-                // Check if the ensemble is not already finished (probably from another run)
-                if(ensemble.status == "WAITING" || ensemble.status == "RUNNING") {
-                    let runtimeInfo = runtimeInfos[ensemble.runid];
-                    if(runtimeInfo) {
-                        if(runtimeInfo.status != ensemble.status) {
-                            if(runtimeInfo.status == "SUCCESS" || runtimeInfo.status == "FAILURE") {
-                                ensemble.run_progress = 1;
-                            }
-                            ensemble.status = runtimeInfo.status;
-                            changed_ensembles.push(ensemble);
-                        }
-                    }
-                    else {
-                        // Ensemble not yet submitted
-                        //console.log(ensemble);
-                    }
-                }
-                switch(ensemble.status) {
-                    case "RUNNING":
-                        numRunning++;
-                        break;
-                    case "SUCCESS":
-                        numSuccessful++;
-                        break;
-                    case "FAILURE":
-                        numFailed++;
-                        break;
-                }
-                this._progress_number ++;  
-            });
-
-            let finished_ensembles = changed_ensembles.filter((ensemble) => ensemble.status == "SUCCESS");
-
-            // Fetch Results of ensembles that have finished
-            let results = await Promise.all(finished_ensembles.map((ensemble) => {
-                return fetchWingsRunResults(ensemble, this.prefs);
-            }));
-            for(let i=0; i<finished_ensembles.length; i++) {
-                if(results[i])
-                    finished_ensembles[i].results = results[i];
-            }
-
-            // Update all ensembles
-            updatePathwayEnsembles(changed_ensembles);
-        }
-        summary.successful_runs = numSuccessful;
-        summary.failed_runs = numFailed;
-        summary.submitted_runs = numRunning + numSuccessful + numFailed;
     }
 
     _getModelURL (model:Model) {
@@ -517,14 +387,71 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         return purl + "/data/fetch?data_id=" + escape(dsid);
     }
 
+    _stringify (obj: Object) {
+        if(!obj) {
+            return "";
+        }
+        let keys = Object.keys(obj);
+        let str = "";
+        keys.map((key) => {
+            let binding = isObject(obj[key]) ? this._stringify(obj[key]) : obj[key];
+            str += key + "=" + binding + "&";
+        })
+        return str;
+    }
+    _pathwayTotalRunsChanged (oldpathway: Pathway, newpathway: Pathway) {
+        if((oldpathway == null || newpathway == null) && oldpathway != newpathway)
+            return true;
+
+        let oldtotal = 0;
+        Object.keys(oldpathway.executable_ensemble_summary).map((modelid) => {
+            oldtotal += oldpathway.executable_ensemble_summary[modelid].total_runs;
+        })
+        let newtotal = 0;
+        Object.keys(newpathway.executable_ensemble_summary).map((modelid) => {
+            newtotal += newpathway.executable_ensemble_summary[modelid].total_runs;
+        })
+        return oldtotal != newtotal;
+    }
+
+    _pathwaySummaryChanged (oldpathway: Pathway, newpathway: Pathway) {
+        if((oldpathway == null || newpathway == null) && oldpathway != newpathway)
+            return true;
+        let oldsummary = this._stringify(oldpathway.executable_ensemble_summary);
+        let newsummary = this._stringify(newpathway.executable_ensemble_summary);
+        return oldsummary != newsummary;
+    }
+
     stateChanged(state: RootState) {
         super.setUser(state);
         super.setRegionId(state);
-        if(super.setPathway(state)) {
-            state.modeling.ensembles = null;
+
+        // Before resetting pathway, check if the pathway run status has changed
+        let runs_changed = this._pathwaySummaryChanged(this.pathway, state.modeling.pathway);
+        let runs_total_changed = this._pathwayTotalRunsChanged(this.pathway, state.modeling.pathway);
+
+        super.setPathway(state);
+
+        if(state.ui && state.ui.selected_subgoalid) {
+            this._subgoalid = state.ui.selected_subgoalid;
         }
+
+        // If run status has changed, then reload all runs
+        if(runs_changed) {
+            if(runs_total_changed) {
+                console.log("Total runs changed !");
+                this.pathwayModelEnsembleIds = {};
+            }
+            state.modeling.ensembles = null;
+            this._ensembles = null;            
+            console.log("Reloading runs");
+            this._reloadAllRuns().then(() => {
+                console.log("Reload finished");
+            });
+        }
+        
         if(state.modeling.ensembles) {
-            this._ensembles = state.modeling.ensembles;
+            this._ensembles = state.modeling.ensembles; 
         }
     }
 }

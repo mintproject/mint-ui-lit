@@ -1,10 +1,7 @@
-import { Pathway, DatasetMap, ModelEnsembleMap, DataEnsembleMap, InputBindings, ExecutableEnsemble, Scenario, SubGoal, ExecutableEnsembleSummary } from "../screens/modeling/reducers";
+import { Pathway, DatasetMap, ModelEnsembleMap, DataEnsembleMap, InputBindings, ExecutableEnsemble, SubGoal } from "../screens/modeling/reducers";
 import { RootState } from "../app/store";
-import { updatePathway, addPathwayEnsembles } from "../screens/modeling/actions";
 import { UserPreferences, MintPreferences } from "app/reducers";
-import { loginToWings, fetchWingsTemplate, fetchWingsTemplatesList, fetchWingsComponent, createSingleComponentTemplate, saveWingsTemplate, layoutWingsTemplate, WingsParameterBindings, WingsDataBindings, WingsParameterTypes, registerWingsComponent, registerWingsDataset, fetchWingsRunStatus, WingsTemplateSeed, expandAndRunWingsWorkflow, WingsTemplatePackage, WingsTemplate } from "./wings_functions";
 import { DataResource } from "screens/datasets/reducers";
-import { hideNotification } from "./ui_functions";
 
 import {Md5} from 'ts-md5/dist/md5'
 import { db } from "config/firebase";
@@ -37,269 +34,6 @@ export const removeDatasetFromPathway = (pathway: Pathway,
         datasets: datasets,
         model_ensembles: model_ensembles
     };
-}
-
-/*
-export const createPathwayExecutableEnsembles = (pathway: Pathway) => {
-    // Create executable ensembles and add summary to pathway
-    if(!pathway.executable_ensemble_summary) 
-        pathway.executable_ensemble_summary = {};
-
-    (Object.keys(pathway.model_ensembles!) || []).map((modelid) => {
-        let dataEnsemble: DataEnsembleMap = pathway.model_ensembles![modelid] || {};
-        let totalruns = _createExecutableEnsembles(pathway.id, modelid, dataEnsemble);
-        if(totalruns) {
-            pathway.executable_ensemble_summary[modelid] = {
-                total_runs: totalruns
-            } as ExecutableEnsembleSummary
-        }
-    });
-    return pathway
-}
-*/
-
-const MAX_CONFIGURATIONS = 10000;
-export const getModelInputConfigurations = (
-        dataEnsemble: DataEnsembleMap,
-        inputIds: string[]) => {
-    let inputBindings = [];
-    let totalproducts = 1;
-    inputIds.map((inputid) => {
-        inputBindings.push(dataEnsemble[inputid]);
-        totalproducts *= dataEnsemble[inputid].length;
-    });
-    if(totalproducts < MAX_CONFIGURATIONS) {
-        return cartProd(inputBindings);
-    }
-    else {
-        alert("Error: Too many Input combinations: " + totalproducts +". Max allowed : " + MAX_CONFIGURATIONS);
-        return null;
-    }
-}
-
-const cartProd = lists => {
-    let ps = [],
-        acc = [
-            []
-        ],
-        i = lists.length;
-    while (i--) {
-        let subList = lists[i],
-            j = subList.length;
-        while (j--) {
-            let x = subList[j],
-                k = acc.length;
-            while (k--) ps.push([x].concat(acc[k]))
-        };
-        acc = ps;
-        ps = [];
-    };
-    return acc.reverse();
-};
-
-/*
-const _createExecutableEnsembles = (pathwayid: string, 
-        modelid: string, dataEnsemble: DataEnsembleMap) => {
-    let inputBindings = [];
-    let inputIds = [];
-    let totalproducts = 1;
-    Object.keys(dataEnsemble).map((inputid) => {
-        inputBindings.push(dataEnsemble[inputid]);
-        totalproducts *= dataEnsemble[inputid].length;
-        inputIds.push(inputid);
-    });
-    if(totalproducts < 5000) {
-        let prodBindings = cartProd(inputBindings);
-        for(let i=0; i<totalproducts; i+=100) {
-            let bindings = prodBindings.slice(i, i+100);
-            let ensembles = [];
-            let index = i;
-            bindings.map((binding) => {
-                let inputBindings = {};
-                for(let j=0; j<inputIds.length; j++) {
-                    inputBindings[inputIds[j]] = binding[j];
-                }
-                let ensemble = {
-                    modelid: modelid,
-                    bindings: inputBindings,
-                    runid: null,
-                    status: null,
-                    results: [],
-                    selected: false
-                } as ExecutableEnsemble;
-                ensemble.id = getEnsembleHash(ensemble);
-                ensembles.push(ensemble);
-            })
-            // TODO: Give feedback => Keep resolving promises ? (Stream ?)
-            addPathwayEnsembles(ensembles);
-        }
-    }
-    else {
-        alert("Error: Cannot handle more than 5000 workflows. Current workflows generated: " + totalproducts);
-        return null;
-    }
-    return totalproducts;
-}
-*/
-
-const _createModelTemplate = (
-        cname: string,
-        prefs: UserPreferences) : Promise<string> => {
-
-    return new Promise((resolve, reject) => {
-        loginToWings(prefs).then(() => {
-            let config = prefs.mint.wings;
-            let expfx = config.export_url + "/export/users/" + config.username + "/" + config.domain;
-
-            
-            let tname = "workflow_" + cname;
-            let tns = expfx + "/workflows/" + tname + ".owl#";
-            let tid = tns + tname;
-
-            fetchWingsTemplatesList(prefs).then((list) => {
-                if(list.indexOf(tid) >= 0) {
-                    console.log(tid + " template already exists");
-                    resolve(tid);
-                }
-                else {
-                    // Create template
-                    fetchWingsComponent(cname, prefs).then((comp) => {
-                        let tpl = createSingleComponentTemplate(comp, prefs);
-                        layoutWingsTemplate(tpl, prefs).then((tpl_package) => {
-                            saveWingsTemplate(tpl_package, prefs).then(() => {
-                                console.log("Template saved as " + tpl.id);
-                                resolve(tpl.id);
-                            })
-                        });
-                    });
-                }
-            });
-        }).catch((reason) => {
-            console.log("Could not login: " + reason);
-        });
-    });
-}
-
-const _runModelTemplates = (
-        seeds: WingsTemplateSeed[],
-        tpl_package: WingsTemplatePackage,
-        prefs: UserPreferences) : Promise<string[]> => {
-            
-    let config = prefs.mint.wings;
-    let expfx = config.export_url + "/export/users/" + config.username + "/" + config.domain;
-    return Promise.all(
-        seeds.map((seed) => {
-            let tns = seed.tid.replace(/#.*$/, "#");
-
-            let dataBindings = {} as WingsDataBindings;
-            let parameterBindings = {} as WingsParameterBindings;
-            let parameterTypes = {} as WingsParameterTypes;
-            for(let varname in seed.datasets) {
-                let varid = tns + varname;
-                dataBindings[varid] = seed.datasets[varname].map((ds: string)=> expfx + "/data/library.owl#" + ds);
-            }
-            for(let varname in seed.parameters) {
-                let varid = tns + varname;
-                parameterBindings[varid] = seed.parameters[varname];
-                parameterTypes[varid] = "http://www.w3.org/2001/XMLSchema#" + seed.paramtypes[varname];
-            }
-
-            return expandAndRunWingsWorkflow(tpl_package, 
-                dataBindings, 
-                parameterBindings, 
-                parameterTypes, prefs);
-        })
-    );
-}
-
-export const setupModelWorkflow = async(model: Model, pathway: Pathway, prefs: UserPreferences) => {
-    let cname = model.model_configuration;
-    let compid = await registerWingsComponent(cname, model.wcm_uri, prefs);
-    let compname = compid.replace(/^.*#/, '');
-    let templateid = await _createModelTemplate(compname, prefs);
-    return templateid;
-}
-
-export const runModelEnsembles = async(pathway: Pathway, 
-        ensembles: ExecutableEnsemble[], 
-        existing_registered_resources: Object,
-        tpl_package: WingsTemplatePackage,
-        prefs: UserPreferences) => {
-    let registerDatasetPromises = [];
-    let seeds : WingsTemplateSeed[] = [];
-    let registered_resources = {};
-
-    // Get all input dataset bindings and parameter bindings
-    ensembles.map((ensemble) => {
-        let model = pathway.models[ensemble.modelid];
-        let bindings = ensemble.bindings;
-        let datasets = {};
-        let parameters = {};
-        let paramtypes = {};
-
-        // Get input datasets
-        model.input_files.map((io) => {
-            let resources : DataResource[] = [];
-            let dsid = null;
-            if(bindings[io.id]) {
-                // We have a dataset binding from the user for it
-                resources = [ bindings[io.id] as DataResource ];
-            }
-            else if(io.value) {
-                // There is a hardcoded value in the model itself
-                dsid = io.value.id;
-                resources = io.value.resources;
-            }
-            if(resources.length > 0) {
-                let type = io.type.replace(/^.*#/, '');
-                resources.map((res) => {
-                    if(res.url) {
-                        res.name =  res.url.replace(/^.*(#|\/)/, '');
-                        res.name = res.name.replace(/^([0-9])/, '_$1');
-                        if(!res.id)
-                            res.id = res.name;
-                    }
-                    if(!existing_registered_resources[res.id]) {
-                        registered_resources[res.id] = [res.name, type, res.url];
-                    }
-                })
-                datasets[io.name] = resources.map((res) => res.name);
-            }
-        });
-
-        // Get Input parameters
-        model.input_parameters.map((ip) => {
-            if(ip.value) {
-                parameters[ip.name] = ip.value;
-            }
-            else if(bindings[ip.id]) {
-                let value = bindings[ip.id];
-                parameters[ip.name] = value;
-            }
-            paramtypes[ip.name] = ip.type;
-        });
-
-        seeds.push({
-            tid: tpl_package.template.id,
-            datasets: datasets,
-            parameters: parameters,
-            paramtypes: paramtypes
-        } as WingsTemplateSeed);
-    })
-
-    // Register any datasets that need to be registered
-    for(let resid in registered_resources) {
-        let args = registered_resources[resid];
-        existing_registered_resources[resid] = args;
-        registerDatasetPromises.push(registerWingsDataset(resid, args[0], args[1], args[2], prefs));
-    }
-
-    // Register all datasets
-    if(registerDatasetPromises.length > 0)
-        await Promise.all(registerDatasetPromises);
-
-    let runids = await _runModelTemplates(seeds, tpl_package, prefs);
-    return runids;
 }
 
 export const matchVariables = (variables1: string[], variables2: string[], fullmatch: boolean) => {
@@ -375,11 +109,6 @@ export const getPathwayDatasetsStatus = (pathway:Pathway) => {
 }
 
 export const getPathwayParametersStatus = (pathway:Pathway) => {
-    let sum = pathway.executable_ensemble_summary;
-    if(!sum || Object.keys(sum).length == 0) {
-        return TASK_NOT_STARTED;
-    }
-    
     //console.log(pathway.model_ensembles);
     if(getPathwayDatasetsStatus(pathway) != TASK_DONE)
         return TASK_NOT_STARTED;
@@ -479,12 +208,8 @@ export const getUISelectedPathway = (state: RootState) => {
 
 export const getUISelectedSubgoalRegion = (state: RootState) => {
     let subgoal = getUISelectedSubgoal(state);
-    if(subgoal && subgoal.subregionid && state.regions && state.regions.query_result 
-            && state.regions.query_result[state.ui.selected_top_regionid]) {
-        let res = state.regions.query_result[state.ui.selected_top_regionid]["*"]
-        if(res && res[subgoal.subregionid]) {
-            return res[subgoal.subregionid];
-        }
+    if(subgoal && subgoal.subregionid && state.regions && state.regions.regions) {
+        return state.regions.regions[subgoal.subregionid];
     }
     return null;
 }
@@ -519,9 +244,11 @@ export const listEnsembles = (ensembleids: string[]) : Promise<ExecutableEnsembl
     let ensemblesRef = db.collection("ensembles");
     return Promise.all(ensembleids.map((ensembleid) => {
         return ensemblesRef.doc(ensembleid).get().then((sdoc) => {
-            let ensemble = sdoc.data() as ExecutableEnsemble;
-            ensemble.id = sdoc.id;
-            return ensemble;
+            if(sdoc && sdoc.exists && sdoc.data()) {
+                let ensemble = sdoc.data() as ExecutableEnsemble;
+                ensemble.id = sdoc.id;
+                return ensemble;
+            }
         })
     }));
 };

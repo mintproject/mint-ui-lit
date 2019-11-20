@@ -85,12 +85,13 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
     }
 
     _saveNotes () {
+        let newpathway = { ...this.pathway };
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        this.pathway.notes = {
-            ...this.pathway.notes!,
+        newpathway.notes = {
+            ...newpathway.notes!,
             visualization: notes
         };
-        updatePathway(this.scenario, this.pathway); 
+        updatePathway(this.scenario, newpathway); 
         showNotification("saveNotification", this.shadowRoot!);
     }
 

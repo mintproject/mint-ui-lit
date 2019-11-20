@@ -5,7 +5,7 @@ import { store, RootState } from "../../../app/store";
 import { SharedStyles } from "../../../styles/shared-styles";
 import { BASE_HREF } from "../../../app/actions";
 import { getPathwayRunsStatus, TASK_DONE, matchVariables, sendDataForIngestion, getUISelectedSubgoal } from "../../../util/state_functions";
-import { ExecutableEnsemble, StepUpdateInformation, ModelEnsembles } from "../reducers";
+import { ExecutableEnsemble, StepUpdateInformation, ModelEnsembles, Pathway } from "../reducers";
 import { updatePathway, getAllPathwayEnsembleIds, fetchPathwayEnsembles } from "../actions";
 import { showNotification, hideDialog, showDialog } from "../../../util/ui_functions";
 import { selectPathwaySection } from "../../../app/ui-actions";
@@ -14,6 +14,7 @@ import { MintPathwayPage } from "./mint-pathway-page";
 import { Model } from "screens/models/reducers";
 import { IdMap } from "app/reducers";
 import { DataResource } from "screens/datasets/reducers";
+import { isObject } from "util";
 
 @customElement('mint-results')
 export class MintResults extends connect(store)(MintPathwayPage) {
@@ -36,10 +37,10 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     @property({type: Boolean})
     private _progress_abort: boolean;
 
-    @property({type: Number})
-    private totalPages = 0;
-    @property({type: Number})
-    private currentPage = 1;
+    @property({type: Object})
+    private totalPages : Map<string, number> = {} as Map<string, number>;
+    @property({type: Object})
+    private currentPage : Map<string, number> = {} as Map<string, number>;
     @property({type: Number})
     private pageSize = 100;
 
@@ -136,12 +137,14 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                    return;
                }
                let grouped_ensemble = grouped_ensembles[modelid];
-               this.totalPages = Math.ceil(summary.total_runs/this.pageSize);
+               this.totalPages[modelid] = Math.ceil(summary.total_runs/this.pageSize);
                let finished_runs = summary.successful_runs + summary.failed_runs;
                let submitted = this.pathway.executable_ensemble_summary[modelid].submitted_for_ingestion;
                let finished = (finished_runs == summary.total_runs);
                let running = summary.submitted_runs - finished_runs;
                let pending = summary.total_runs - summary.submitted_runs;
+               if(!this.currentPage[modelid])
+                    this.currentPage[modelid] = 1;
 
                 if(!grouped_ensemble) {
                     this._fetchRuns(model.id, 1, this.pageSize)
@@ -178,12 +181,12 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                     <div style="width:100%; border:1px solid #EEE;border-bottom:0px;">
                         ${grouped_ensemble && !grouped_ensemble.loading ? 
                         html`
-                        ${this.currentPage > 1 ? 
+                        ${this.currentPage[model.id] > 1 ? 
                             html `<wl-button flat inverted @click=${() => this._nextPage(model.id, -1)}>Back</wl-button>` :
                             html `<wl-button flat inverted disabled>Back</wl-button>`
                         }
-                        Page ${this.currentPage} of ${this.totalPages}
-                        ${this.currentPage < this.totalPages ? 
+                        Page ${this.currentPage[model.id]} of ${this.totalPages[model.id]}
+                        ${this.currentPage[model.id] < this.totalPages[model.id] ? 
                             html `<wl-button flat inverted @click=${() => this._nextPage(model.id, 1)}>Next</wl-button>` :
                             html `<wl-button flat inverted disabled>Next</wl-button>`
                         }
@@ -265,10 +268,19 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                                 return Object.values(ensemble.results).map((result: any) => {
                                                     let oname = result.id.replace(/.+#/, '');
                                                     if(output.name == oname) {
-                                                        let furl = this._getResultDatasetURL(result);
-                                                        let filename = result.location.replace(/.+\//, '');
+                                                        let furl = result.url;
+                                                        let fname = result.name;
+                                                        if(!furl) {
+                                                            let location = result.location;
+                                                            let prefs = this.prefs.mint;
+                                                            furl = ensemble.execution_engine == "localex" ? 
+                                                                location.replace(prefs.localex.datadir, prefs.localex.dataurl) :
+                                                                location.replace(prefs.wings.datadir, prefs.wings.dataurl);
+                                                        }
+                                                        if(!fname)
+                                                            fname = result.location.replace(/.+\//, '');
                                                         return html`
-                                                            <td><a href="${furl}">${filename}</a></td>
+                                                            <td><a href="${furl}">${fname}</a></td>
                                                         `
                                                     }
                                                 });
@@ -277,9 +289,8 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                                 let res = ensemble.bindings[input.id] as DataResource;
                                                 if(res) {
                                                     // FIXME: This could be resolved to a collection of resources
-                                                    let furl = this._getDatasetURL(res.name); 
                                                     return html`
-                                                        <td><a href="${furl}">${res.name}</a></td>
+                                                        <td><a href="${res.url}">${res.name}</a></td>
                                                     `;
                                                 }
                                             })}
@@ -336,16 +347,16 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     }
 
     _nextPage(modelid: string, offset:  number) {
-        this._fetchRuns(modelid, this.currentPage + offset, this.pageSize)
+        this._fetchRuns(modelid, this.currentPage[modelid] + offset, this.pageSize)
     }
 
     async _fetchRuns (modelid: string, currentPage: number, pageSize: number) {
-        this.currentPage = currentPage;
+        this.currentPage[modelid] = currentPage;
         
         if(!this.pathwayModelEnsembleIds[modelid])
             this.pathwayModelEnsembleIds[modelid] =  await getAllPathwayEnsembleIds(this.scenario.id, this.pathway.id, modelid);
         
-        let ensembleids = this.pathwayModelEnsembleIds[modelid].slice((this.currentPage - 1)*pageSize, this.currentPage*pageSize);
+        let ensembleids = this.pathwayModelEnsembleIds[modelid].slice((currentPage - 1)*pageSize, currentPage*pageSize);
         store.dispatch(fetchPathwayEnsembles(this.pathway.id, modelid, ensembleids));
     }
     
@@ -444,17 +455,70 @@ export class MintResults extends connect(store)(MintPathwayPage) {
         })
     }
 
+    _reloadAllRuns() {
+        Object.keys(this.pathway.model_ensembles).map((modelid) => {
+            this._fetchRuns(modelid, this.currentPage[modelid], this.pageSize);
+        })
+    }
+
+    _stringify (obj: Object) {
+        if(!obj) {
+            return "";
+        }
+        let keys = Object.keys(obj);
+        let str = "";
+        keys.map((key) => {
+            let binding = isObject(obj[key]) ? this._stringify(obj[key]) : obj[key];
+            str += key + "=" + binding + "&";
+        })
+        return str;
+    }
+
+    _pathwayTotalRunsChanged (oldpathway: Pathway, newpathway: Pathway) {
+        if((oldpathway == null || newpathway == null) && oldpathway != newpathway)
+            return true;
+            
+        let oldtotal = 0;
+        Object.keys(oldpathway.executable_ensemble_summary).map((modelid) => {
+            oldtotal += oldpathway.executable_ensemble_summary[modelid].total_runs;
+        })
+        let newtotal = 0;
+        Object.keys(newpathway.executable_ensemble_summary).map((modelid) => {
+            newtotal += newpathway.executable_ensemble_summary[modelid].total_runs;
+        })        
+        return oldtotal != newtotal;
+    }
+
+    _pathwaySummaryChanged (oldpathway: Pathway, newpathway: Pathway) {
+        if((oldpathway == null || newpathway == null) && oldpathway != newpathway)
+            return true;
+        let oldsummary = this._stringify(oldpathway.executable_ensemble_summary);
+        let newsummary = this._stringify(newpathway.executable_ensemble_summary);
+        return oldsummary != newsummary;
+    }
+    
     stateChanged(state: RootState) {
         super.setUser(state);
         super.setRegionId(state);
+
+        // Before resetting pathway, check if the pathway run status has changed
+        let runs_status_changed = this._pathwaySummaryChanged(this.pathway, state.modeling.pathway);
+        let runs_total_changed = this._pathwayTotalRunsChanged(this.pathway, state.modeling.pathway);
+
         super.setPathway(state);
 
         if(state.ui) {
             this.subgoalid = state.ui.selected_subgoalid
         }
-
         if(state.modeling.ensembles) {
             this._ensembles = state.modeling.ensembles;
+        }
+
+        if(runs_status_changed) {
+            if(runs_total_changed) {
+                this.pathwayModelEnsembleIds = {};
+            }
+            this._reloadAllRuns();
         }
     }
 }

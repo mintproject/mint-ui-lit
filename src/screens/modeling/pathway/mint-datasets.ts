@@ -450,7 +450,8 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         })
         this._selectionUpdate = true;
         if(this._selectResourcesImmediateUpdate) {
-            updatePathway(this.scenario, this.pathway);
+            let newpathway = {...this.pathway};
+            updatePathway(this.scenario, newpathway);
             showNotification("saveNotification", this.shadowRoot!);
         }
         hideDialog("resourceSelectionDialog", this.shadowRoot);
@@ -529,14 +530,18 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         // Turn off edit mode
         this._editMode = false;
 
+        let newpathway = {
+            ...this.pathway
+        };
+
         // Update notes
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        this.pathway.notes = {
-            ...this.pathway.notes!,
+        newpathway.notes = {
+            ...newpathway.notes!,
             datasets: notes
         };
-        this.pathway.last_update = {
-            ...this.pathway.last_update!,
+        newpathway.last_update = {
+            ...newpathway.last_update!,
             datasets: {
                 time: Date.now(),
                 user: this.user!.email
@@ -545,14 +550,15 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
 
         // Update pathway itself
         //console.log(this.pathway);
-        updatePathway(this.scenario, this.pathway);
+        updatePathway(this.scenario, newpathway);
         showNotification("saveNotification", this.shadowRoot!);
     }
 
     _removePathwayDataset(modelid: string, inputid: string, datasetid:string) {
         if(confirm("Are you sure you want to remove this dataset ?")) {
-            this.pathway = removeDatasetFromPathway(this.pathway, datasetid, modelid, inputid);
-            updatePathway(this.scenario, this.pathway);
+            let newpathway = {...this.pathway};
+            newpathway = removeDatasetFromPathway(newpathway, datasetid, modelid, inputid);
+            updatePathway(this.scenario, newpathway);
         }
     }
 

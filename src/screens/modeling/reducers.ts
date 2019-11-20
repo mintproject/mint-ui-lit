@@ -147,6 +147,7 @@ export interface ExecutableEnsemble {
     bindings: InputBindings
     runid?: string
     submission_time: number
+    execution_engine?: "wings" | "localex"
     status: "FAILURE" | "SUCCESS" | "RUNNING" | "WAITING",
     run_progress?: number // 0 to 100 (percentage done)
     results: any[] // Chosen results after completed run
