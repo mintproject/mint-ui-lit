@@ -598,10 +598,10 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 <td>
                     ${this._inputs[uri].hasFixedResource && this._inputs[uri].hasFixedResource.length > 0 ? html`
                     <wl-button style="float:right;" class="small" flat inverted
-                        @click="${() => {this._showEditInputDialog(this._inputs[uri].hasFixedResource[0].id)}}"><wl-icon>edit</wl-icon></wl-button>`
+                        @click="${() => {this._showEditInputDialog(this._inputs[uri].hasFixedResource[0].id, uri)}}"><wl-icon>edit</wl-icon></wl-button>`
                     : html`
                     <wl-button style="float:right;" class="small" flat inverted
-                        @click="${this._showNewInputDialog}"><wl-icon>add</wl-icon></wl-button>`}
+                        @click="${() => {this._showNewInputDialog(uri)}}"><wl-icon>add</wl-icon></wl-button>`}
                 </td>` : ''}
                 `
                 : html`<td colspan="4" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
@@ -640,19 +640,19 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         }
     }
 
-    _showNewInputDialog () {
+    _showNewInputDialog (datasetSpecUri: string) {
         this._dialog = 'input';
         let inputConfigurator = this.shadowRoot.getElementById('input-configurator') as ModelsConfigureInput;
-        inputConfigurator.newInput();
+        inputConfigurator.newInput(datasetSpecUri);
     }
 
-    _showEditInputDialog (inputID: string) {
+    _showEditInputDialog (inputID: string, datasetSpecUri: string) {
         this._dialog = 'input';
         let inputConfigurator = this.shadowRoot.getElementById('input-configurator') as ModelsConfigureInput;
         if (this._sampleCollections[inputID]) {
-            inputConfigurator.editCollection(inputID);
+            inputConfigurator.editCollection(inputID, datasetSpecUri);
         } else {
-            inputConfigurator.edit(inputID);
+            inputConfigurator.edit(inputID, datasetSpecUri);
         }
     }
 
@@ -723,6 +723,20 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         this.requestUpdate();
     }
 
+    _onInputEdited (ev) {
+        let editedInput = ev.detail.input;
+        let datasetSpecId = ev.detail.datasetSpecificationUri;
+        if (editedInput.type.indexOf('SampleCollection') >= 0) {
+            this._sampleCollections[editedInput.id] = editedInput;
+            editedInput.hasPart.forEach((sample) => {
+                this._sampleResources[sample.id] = sample;
+            });
+        } else {
+            this._sampleResources[editedInput.id] = editedInput;
+        }
+        this.requestUpdate();
+    }
+
     updated () {
         if (this._editing && this._setup) {
             if (this._setup.parameterAssignmentMethod && this._setup.parameterAssignmentMethod.length === 1) {
@@ -741,6 +755,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         this.addEventListener('authorsSelected', this._onAuthorsSelected);
         this.addEventListener('processesSelected', this._onProcessesSelected);
         this.addEventListener('parameterEdited', this._onParameterEdited);
+        this.addEventListener('inputEdited', this._onInputEdited);
     }
 
     stateChanged(state: RootState) {

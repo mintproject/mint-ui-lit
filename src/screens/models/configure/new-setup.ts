@@ -16,6 +16,9 @@ import { personGet, personPost, modelConfigurationPost, parameterPost, modelConf
          timeIntervalGet,  processGet, softwareImageGet, } from 'model-catalog/actions';
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
+import { IdMap } from 'app/reducers';
+import { SampleResource, SampleCollection } from '@mintproject/modelcatalog_client';
+
 import "weightless/slider";
 import "weightless/progress-spinner";
 import 'components/loading-dots'
@@ -51,6 +54,12 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _inputs : any = {};
+
+    @property({type: Object})
+    private _sampleResources : IdMap<SampleResource> = {} as IdMap<SampleResource>;
+
+    @property({type: Object})
+    private _sampleCollections : IdMap<SampleCollection> = {} as IdMap<SampleCollection>;
 
     @property({type: Object})
     private _authors : any = {};
@@ -235,15 +244,15 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         let nameEl      = this.shadowRoot.getElementById('new-setup-name') as HTMLInputElement;
         let descEl      = this.shadowRoot.getElementById('new-setup-desc') as HTMLInputElement;
         let keywordsEl  = this.shadowRoot.getElementById('new-setup-keywords') as HTMLInputElement;
+        let regionEl    = this.shadowRoot.getElementById('edit-config-regions') as HTMLInputElement;
         let assignMeEl  = this.shadowRoot.getElementById('new-setup-assign-method') as HTMLInputElement;
-        let complocEl   = this.shadowRoot.getElementById('new-setup-comp-loc') as HTMLInputElement;
 
-        if (nameEl && descEl && keywordsEl && assignMeEl && complocEl) {
+        if (nameEl && descEl && keywordsEl && assignMeEl && regionEl) {
             let name        = nameEl.value;
             let desc        = descEl.value;
             let keywords    = keywordsEl.value;
+            let region     = regionEl.value;
             let assignMe    = assignMeEl.value;
-            let comploc     = complocEl.value;
 
             if (!name || !assignMe) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
@@ -259,8 +268,19 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             setupCreated.label = [name];
             setupCreated.description = [desc];
             setupCreated.keywords = [keywords.split(/ *, */).join('; ')];
-            setupCreated.hasComponentLocation = [comploc];
             setupCreated.parameterAssignmentMethod = [assignMe];
+            setupCreated.hasRegion = [region];
+
+            setupCreated.hasInput = setupCreated.hasInput.map((input) => {
+                let newInput = this._inputs[input.id];
+                newInput.id = '';
+                return newInput;
+            });
+            setupCreated.hasParameter = setupCreated.hasParameter.map((param) => {
+                let newParam = this._parameters[param.id];
+                newParam.id = '';
+                return newParam;
+            });
 
             /* FIXME: Parameters are returning 400, numbers are not objects!!
             setupCreated.hasParameter = this._newParametersUris.map((uri) => {
@@ -369,7 +389,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         }
 
         return html`
-        <span id="start"/>
+        <span id="start"></span>
 
         <table class="details-table">
             <colgroup width="150px">
@@ -579,8 +599,39 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                     <br/>
                     ${this._inputs[uri].description}
                 </td>
+                <td>
+                    ${this._inputs[uri].hasFixedResource && this._inputs[uri].hasFixedResource.length > 0 ? 
+                    this._inputs[uri].hasFixedResource.map((fixed) => this._sampleResources[fixed.id] ? 
+                        html`
+                        <span>
+                            <b>${this._sampleResources[fixed.id].label}</b> <br/>
+                            <a target="_blank" href="${this._sampleResources[fixed.id].value}">
+                                ${this._sampleResources[fixed.id].value}
+                            </a><br/>
+                            <span class="monospaced" style="white-space: nowrap;">${this._sampleResources[fixed.id].dataCatalogIdentifier}</span>
+                        </span>` : ( this._sampleCollections[fixed.id] ? html`
+                        <span>
+                            <b>${this._sampleCollections[fixed.id].label}</b> <br/>
+                            ${this._sampleCollections[fixed.id].description}
+                            ${this._sampleCollections[fixed.id].hasPart.map(sample => html`
+                            <details>
+                                <summary style="cursor: pointer;">${sample.label}</summary>
+                                <div style="padding-left: 14px;">
+                                    ${this._sampleResources[sample.id] ? html`
+                                    <a target="_blank" href="${this._sampleResources[sample.id].value}">
+                                        ${this._sampleResources[sample.id].value}
+                                    </a><br/>
+                                    <span class="monospaced" style="white-space: nowrap;">${this._sampleResources[sample.id].dataCatalogIdentifier}</span>
+                                </div>
+                                ` : html`${sample.id.split('/').pop()} <loading-dots style="--width: 20px"></loading-dots>`}
+                            `)}
+                        </span>`
+                        : html`${fixed.id.split('/').pop()} <loading-dots style="--width: 20px"></loading-dots>`))
+                    : html`
+                    <div class="info-center" style="white-space:nowrap;">- Not set -</div>`}
+                </td>
                 <td class="ta-right">
-                    <wl-button @click="${this._showNewInputDialog}" class="small" flat inverted><wl-icon>add</wl-icon></wl-button>
+                    <wl-button @click="${() => {this._showNewInputDialog(uri)}}" class="small" flat inverted><wl-icon>add</wl-icon></wl-button>
                 </td>`
                 : html`<td colspan="4" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
             </tr>`)
@@ -604,10 +655,10 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         ${renderNotifications()}`
     }
 
-    _showNewInputDialog () {
+    _showNewInputDialog ( datasetSpecUri : string ) {
         this._dialog = 'input';
         let inputConfigurator = this.shadowRoot.getElementById('input-configurator') as ModelsConfigureInput;
-        inputConfigurator.newInput();
+        inputConfigurator.newInput(datasetSpecUri);
     }
 
     _showAuthorDialog () {
@@ -674,11 +725,29 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         this.requestUpdate();
     }
 
+    _onInputCreated (ev) {
+        let createdInput = ev.detail.input;
+        let datasetSpecId = ev.detail.datasetSpecificationUri;
+        createdInput.id = datasetSpecId.split('/').pop() + createdInput.id;
+
+        if (createdInput.type.indexOf('SampleCollection') >= 0) {
+            this._sampleCollections[createdInput.id] = createdInput;
+            createdInput.hasPart.forEach((sample) => {
+                this._sampleResources[sample.id] = sample;
+            });
+        } else {
+            this._sampleResources[createdInput.id] = createdInput;
+        }
+        this._inputs[datasetSpecId].hasFixedResource = [createdInput];
+        this.requestUpdate();
+    }
+
     firstUpdated () {
         this.addEventListener('dialogClosed', this._onClosedDialog);
         this.addEventListener('authorsSelected', this._onAuthorsSelected);
         this.addEventListener('processesSelected', this._onProcessesSelected);
         this.addEventListener('parameterEdited', this._onParameterEdited);
+        this.addEventListener('inputCreated', this._onInputCreated);
     }
 
     stateChanged(state: RootState) {

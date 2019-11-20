@@ -35,7 +35,7 @@ export const parametersGet: ActionCreator<ModelCatalogParameterThunkResult> = ()
 }
 
 export const PARAMETER_GET = "PARAMETER_GET";
-interface MCAParameterGet extends Action<'PARAMETER_GET'> { payload: any };
+export interface MCAParameterGet extends Action<'PARAMETER_GET'> { payload: any };
 export const parameterGet: ActionCreator<ModelCatalogParameterThunkResult> = ( uri:string ) => (dispatch) => {
     debug('Fetching parameter', uri);
     let id : string = uri.split('/').pop();

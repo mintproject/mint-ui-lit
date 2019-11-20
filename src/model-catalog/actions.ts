@@ -39,6 +39,8 @@ export const fixPosition = (resource:any) => {
     return resource;
 }
 
+export const isValidId = (id:string) => typeof id === 'string' && id.includes(PREFIX_URI);
+
 export const getStatusConfigAndUser = () => {
     let state: any = store.getState();
     let status = state.app.prefs.modelCatalog.status;

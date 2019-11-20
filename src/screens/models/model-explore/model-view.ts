@@ -845,7 +845,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${(!this._configAuthors || this._configAuthors.length > 0) ? html`
                     <br/>
                     <wl-text>
-                        <b>Authors:</b>
+                        <b>Configuration creator:</b>
                         ${this._configAuthors ? 
                             (this._configAuthors || []).map(x => x.name).join(', ') 
                             : html`<loading-dots style="--height: 8px"></loading-dots>`}
@@ -937,7 +937,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         ${(!this._calibrationAuthors || this._calibrationAuthors.length > 0) ? html`
                         <br/>
                         <wl-text>
-                            <b>Authors:</b>
+                            <b>Setup creator:</b>
                             ${this._calibrationAuthors ? 
                                 (this._calibrationAuthors || []).map(x => x.name).join(', ') 
                                 : html`<loading-dots style="--height: 8px"></loading-dots>`}
