@@ -189,9 +189,9 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                 let loading = queriedInputDatasetStatuses.loading;
                                 let queriedInputDatasets = queriedInputDatasetStatuses.datasets;
                                 let inputtype = input.type.replace(/.*#/, '');
-                                let dtypeMatchingInputDatasets = queriedInputDatasets; /*(queriedInputDatasets || []).filter((dataset: Dataset) => {
-                                    return (dataset.datatype == inputtype); // FIXME: Hiding this for now
-                                })*/
+                                let dtypeMatchingInputDatasets = (queriedInputDatasets || []).filter((dataset: Dataset) => {
+                                    return (dataset.datatype == inputtype);
+                                })
                                 return html `
                                 <li>
                                     Select an input dataset for <b>${input.name}</b>. (You can select more than one dataset if you want several runs). 
@@ -253,7 +253,8 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                                         <a style="cursor:pointer" @click="${() => {this._showAllDatasets = !this._showAllDatasets}}">
                                                             ${!this._showAllDatasets ? "Show" : "Hide"} 
                                                             ${queriedInputDatasets.length - dtypeMatchingInputDatasets.length} datasets
-                                                            that matched the input variables but not input datatype. They might need some data transformation
+                                                            that matched the input variables, but not input datatype (${inputtype}). 
+                                                            They might need some data transformation.
                                                         </a>
                                                     </td>
                                                 </tr>
