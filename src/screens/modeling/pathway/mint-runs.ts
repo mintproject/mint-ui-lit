@@ -17,6 +17,7 @@ import { fetchPathwayEnsembles, getAllPathwayEnsembleIds } from "../actions";
 import { DataResource } from "screens/datasets/reducers";
 import { isObject } from "util";
 import { postJSONResource, getResource } from "util/mint-requests";
+import { getPathwayRunsStatus, TASK_DONE } from "util/state_functions";
 
 @customElement('mint-runs')
 export class MintRuns extends connect(store)(MintPathwayPage) {
@@ -61,6 +62,8 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             Please setup and run some models first
             `
         }
+
+        let done = (getPathwayRunsStatus(this.pathway) == TASK_DONE);
         
         // Group running ensembles
         let grouped_ensembles = {};
@@ -256,9 +259,13 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 </li>`;
             })}
             </ul>
-            <div class="footer">
-                <wl-button type="button" class="submit" @click="${() => store.dispatch(selectPathwaySection("results"))}">Continue</wl-button>
-            </div>
+            ${done ? 
+            html`
+                <div class="footer">
+                    <wl-button type="button" class="submit" @click="${() => store.dispatch(selectPathwaySection("results"))}">Continue</wl-button>
+                </div>
+            ` : ""
+            }
         </div>
 
         ${renderNotifications()}

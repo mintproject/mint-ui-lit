@@ -66,68 +66,24 @@ export const getPathwayVariablesStatus = (pathway:Pathway) => {
 }
 
 export const getPathwayModelsStatus = (pathway:Pathway) => {
-    if (pathway.models) {
-        if (Object.keys(pathway.models).length > 0) {
-            return TASK_DONE;
-        }
-    }   
+    if(pathway.last_update.models) {
+        return TASK_DONE;
+    }
     return TASK_NOT_STARTED;
 }
 
 export const getPathwayDatasetsStatus = (pathway:Pathway) => {
-    if (pathway.datasets) {
-        if (Object.keys(pathway.datasets).length > 0) {
-            for(let modelid in pathway.models) {
-                let model_ensemble = pathway.model_ensembles![modelid];
-                if(!model_ensemble) {
-                    return TASK_PARTLY_DONE;
-                }
-                let model = pathway.models![modelid];
-                for(let i=0; i<model.input_files.length; i++) {
-                    let input = model.input_files[i];
-                    if(input.value)
-                        continue;
-                    if(!model_ensemble[input.id!] || !model_ensemble[input.id!].length) {
-                        return TASK_PARTLY_DONE;
-                    }
-                }
-            }
-            return TASK_DONE;
-        }
-    }
-    let number_of_inputs_needed = 0;
-    if(pathway.models) {
-        for(let modelid in pathway.models) {
-            let model = pathway.models![modelid];
-            number_of_inputs_needed += model.input_files.filter((input) => !input.value).length;
-        }
-    }
-
-    if(number_of_inputs_needed == 0 && getPathwayModelsStatus(pathway) == TASK_DONE)
+    if(pathway.last_update.datasets) {
         return TASK_DONE;
+    }
     return TASK_NOT_STARTED;
 }
 
 export const getPathwayParametersStatus = (pathway:Pathway) => {
-    //console.log(pathway.model_ensembles);
-    if(getPathwayDatasetsStatus(pathway) != TASK_DONE)
-        return TASK_NOT_STARTED;
-
-    for(let modelid in pathway.models) {
-        let model = pathway.models![modelid];
-        let model_ensemble = pathway.model_ensembles![modelid];
-        if(!model_ensemble) {
-            return TASK_PARTLY_DONE;
-        }
-        let input_parameters = model.input_parameters.filter((input) => !input.value);
-        for(let i=0; i<input_parameters.length; i++) {
-            let input = input_parameters[i];
-            if(!model_ensemble[input.id!] || !model_ensemble[input.id!].length) {
-                return TASK_PARTLY_DONE;
-            }
-        }
+    if(pathway.last_update.parameters) {
+        return TASK_DONE;
     }
-    return TASK_DONE;
+    return TASK_NOT_STARTED;
 }
 
 export const getPathwayRunsStatus = (pathway:Pathway) => {

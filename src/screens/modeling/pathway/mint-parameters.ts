@@ -65,6 +65,9 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         }
 
         let done = (getPathwayParametersStatus(this.pathway) == TASK_DONE);
+        if(!done) {
+            this._editMode = true;
+        }
         
         // If models have been selected, go over each model
         return html `
