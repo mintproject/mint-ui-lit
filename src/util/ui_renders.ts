@@ -36,7 +36,7 @@ export const renderNotifications = () => {
         <wl-icon slot="icon">delete</wl-icon>
         <span>Deleting...</span>
     </wl-snackbar>   
-    <wl-snackbar id="runNotification" persistent fixed backdrop>
+    <wl-snackbar id="runNotification" hideDelay="2000" fixed backdrop>
         <wl-icon slot="icon">settings</wl-icon>
         <span>Sending runs...Please wait</span>
     </wl-snackbar>       

@@ -148,7 +148,7 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
             }
         }
         return "visualize";
-    }    
+    }
 
     private _getBreadcrumbClass(section: string) {
         let status = this._getSectionStatus(section);
@@ -213,38 +213,31 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
             <div class="card2">
                 <mint-variables class="page" 
                     .scenario="${this.scenario}"
-                    .pathway="${this.pathway}"
                     ?active="${this._currentMode == 'variables'}">
                 </mint-variables>
                 <mint-models class="page" 
                     .scenario="${this.scenario}"
-                    .pathway="${this.pathway}"
                     ?active="${this._currentMode == 'models'}">
                 </mint-models>
                 <mint-datasets class="page" 
                     .scenario="${this.scenario}"
-                    .pathway="${this.pathway}"
                     .subgoal="${this.subgoal}"
                     ?active="${this._currentMode == 'datasets'}">
                 </mint-datasets>
                 <mint-parameters class="page" 
                     .scenario="${this.scenario}"
-                    .pathway="${this.pathway}"
                     ?active="${this._currentMode == 'parameters'}">
                 </mint-parameters>
                 <mint-runs class="page" 
                     .scenario="${this.scenario}"
-                    .pathway="${this.pathway}"
                     ?active="${this._currentMode == 'runs'}">
                 </mint-runs>
                 <mint-results class="page" 
                     .scenario="${this.scenario}"
-                    .pathway="${this.pathway}"
                     ?active="${this._currentMode == 'results'}">
                 </mint-results>
                 <mint-visualize class="page" 
                     .scenario="${this.scenario}"
-                    .pathway="${this.pathway}"
                     ?active="${this._currentMode == 'visualize'}">
                 </mint-visualize>
             </div>
@@ -330,8 +323,10 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
                 this.timeChanged(oldup.models, newup.models) ||
                 this.timeChanged(oldup.parameters, newup.parameters) ||
                 this.timeChanged(oldup.results, newup.results)
-            )
+            ) {
+                console.log("Pathway changed !");
                 return true;
+            }
         }
         return false;
     }
