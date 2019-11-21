@@ -50,8 +50,8 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
             name: "More information",
-            fn: () => html `
-                <a target="_blank" href="#">Model Profile</a>
+            fn: (model:Model) => html `
+                <a target="_blank" href="${this._getModelSetupURL(model)}">Model Profile</a>
                 `
         },        
         {
@@ -339,6 +339,20 @@ export class MintModels extends connect(store)(MintPathwayPage) {
 
     _getModelURL (model:Model) {
         let url = this._regionid + '/models/explore/' + model.original_model;
+        if (model.model_version) {
+            url += '/' + model.model_version;
+            if (model.model_configuration) {
+                url += '/' + model.model_configuration;
+                if (model.localname) {
+                    url += '/' + model.localname;
+                }
+            }
+        }
+        return url;
+    }
+
+    _getModelSetupURL (model:Model) {
+        let url = this._regionid + '/models/configure/' + model.original_model;
         if (model.model_version) {
             url += '/' + model.model_version;
             if (model.model_configuration) {

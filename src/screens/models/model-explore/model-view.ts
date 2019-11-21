@@ -1235,7 +1235,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </table>`
                     : html`
                     <div class="text-centered"><h4>
-                    This information has not been specified yet.
+                        There is no description available for the variables in this file.
                     </h4></div>
                     `
                 }`
@@ -1276,7 +1276,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </table>`
                     : html`
                     <div class="text-centered"><h4>
-                        This information has not been specified yet.
+                        There is no description available for the variables in this file.
                     </h4></div>
                     `
                 }`

@@ -35,7 +35,7 @@ export const sampleResourcesGet: ActionCreator<ModelCatalogSampleResourceThunkRe
 }
 
 export const SAMPLE_RESOURCE_GET = "SAMPLE_RESOURCE_GET";
-interface MCASampleResourceGet extends Action<'SAMPLE_RESOURCE_GET'> { payload: any };
+export interface MCASampleResourceGet extends Action<'SAMPLE_RESOURCE_GET'> { payload: any };
 export const sampleResourceGet: ActionCreator<ModelCatalogSampleResourceThunkResult> = ( uri:string ) => (dispatch) => {
     debug('Fetching sampleResource', uri);
     let id : string = uri.split('/').pop();
