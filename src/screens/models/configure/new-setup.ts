@@ -284,12 +284,14 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 return newParam;
             });
 
+            console.log('Creating...', setupCreated);
+
             this._waitingFor = 'PostSetup' + this._setupIdentifier;
             this._setupIdentifier += 1;
 
-            store.dispatch(modelConfigurationPost(setupCreated, configUri, this._waitingFor));
+            //store.dispatch(modelConfigurationPost(setupCreated, configUri, this._waitingFor));
 
-            showNotification("saveNotification", this.shadowRoot!);
+            //showNotification("saveNotification", this.shadowRoot!);
             //goToPage(createUrl(this._model, this._version, this._config));
         }
     }

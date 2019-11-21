@@ -2,7 +2,7 @@ import { Action, ActionCreator } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
-import { Configuration, ModelConfiguration, ModelConfigurationApi, ParameterApi, DatasetSpecificationApi, 
+import { Configuration, ModelConfiguration, ModelConfigurationApi, Parameter, ParameterApi, DatasetSpecificationApi, 
          SampleResourceApi, SampleCollectionApi, DatasetSpecification } from '@mintproject/modelcatalog_client';
 import { idReducer, isValidId, fixObjects, getStatusConfigAndUser, repeatAction, PREFIX_URI, DEFAULT_GRAPH,
          START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
@@ -77,7 +77,7 @@ export const modelConfigurationPost: ActionCreator<PostConfigThunk> = (modelConf
         let parameterPromises = [];
         let newParameters = [];
         let adjustableParameters = [];
-        modelConfiguration.hasParameter.forEach((parameter) => {
+        modelConfiguration.hasParameter.forEach((parameter: Parameter) => {
             let req = parameterApi.parametersPost({user: DEFAULT_GRAPH, parameter: parameter}) // This should be my username on prod.
             let isFixed = parameter.hasFixedValue && parameter.hasFixedValue.length > 0 && parameter.hasFixedValue[0];
             parameterPromises.push(req);
@@ -169,7 +169,8 @@ export const modelConfigurationPost: ActionCreator<PostConfigThunk> = (modelConf
         let waiting = Promise.all(allPromises);
         waiting.then((values) => {
             console.log('AP', allPromises);
-            modelConfiguration.adjustableParameter = adjustableParameters;
+            //FIXME: this is not working, maybe we should use other class to create ModelConfigurationSetup or ConfigurationSetup
+            //modelConfiguration.adjustableParameter = adjustableParameters;
             modelConfiguration.hasParameter = newParameters;
             modelConfiguration.hasInput = newDS;
             console.log('SS', modelConfiguration)
