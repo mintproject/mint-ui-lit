@@ -26,7 +26,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     private _editMode: Boolean = false;
    
     @property({type: Boolean})
-    private _showAllResults: Boolean = false;
+    private _showAllResults: Boolean = true;
 
     @property({type: Object})
     private _progress_item: Model;
