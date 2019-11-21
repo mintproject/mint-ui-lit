@@ -780,7 +780,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     }
 
                     if (db.datasetSpecifications) {
-                        if (this._inputsLoading.size > 0 && this._setup.hasParameter) {
+                        if (this._inputsLoading.size > 0 && this._setup.hasInput) {
                             this._inputsLoading.forEach((uri:string) => {
                                 if (db.datasetSpecifications[uri]) {
                                     let tmp = { ...this._inputs };
