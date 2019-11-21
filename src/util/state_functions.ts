@@ -66,21 +66,21 @@ export const getPathwayVariablesStatus = (pathway:Pathway) => {
 }
 
 export const getPathwayModelsStatus = (pathway:Pathway) => {
-    if(pathway.last_update.models) {
+    if(pathway.last_update && pathway.last_update.models) {
         return TASK_DONE;
     }
     return TASK_NOT_STARTED;
 }
 
 export const getPathwayDatasetsStatus = (pathway:Pathway) => {
-    if(pathway.last_update.datasets) {
+    if(pathway.last_update && pathway.last_update.datasets) {
         return TASK_DONE;
     }
     return TASK_NOT_STARTED;
 }
 
 export const getPathwayParametersStatus = (pathway:Pathway) => {
-    if(pathway.last_update.parameters) {
+    if(pathway.last_update && pathway.last_update.parameters) {
         return TASK_DONE;
     }
     return TASK_NOT_STARTED;
