@@ -233,10 +233,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                 .tooltip-text {
                     display: inline;
                     border-bottom: 1px dotted;
+                    margin: 0;
                 }
 
                 .tooltip.nm {
-                    float: unset;
                     margin: 0;
                 }
 
@@ -490,7 +490,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         let hasCalibrations = !!(this._config && this._config.calibrations);
         return html`
             <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" 
-                class="tooltip ${hasVersions? '' : 'hidden'}">
+                style="float: right;" class="tooltip ${hasVersions? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
             <a target="_blank" href="${this._config ? this._config.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
@@ -500,7 +500,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             </wl-select>
 
             <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region"
-                class="tooltip ${hasCalibrations? '' : 'hidden'}">
+                style="float: right;" class="tooltip ${hasCalibrations? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
             <a target="_blank" href="${this._calibration ? this._calibration.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
@@ -845,7 +845,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${(!this._configAuthors || this._configAuthors.length > 0) ? html`
                     <br/>
                     <wl-text>
-                        <b>Authors:</b>
+                        <b>Configuration creator:</b>
                         ${this._configAuthors ? 
                             (this._configAuthors || []).map(x => x.name).join(', ') 
                             : html`<loading-dots style="--height: 8px"></loading-dots>`}
@@ -937,7 +937,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         ${(!this._calibrationAuthors || this._calibrationAuthors.length > 0) ? html`
                         <br/>
                         <wl-text>
-                            <b>Authors:</b>
+                            <b>Setup creator:</b>
                             ${this._calibrationAuthors ? 
                                 (this._calibrationAuthors || []).map(x => x.name).join(', ') 
                                 : html`<loading-dots style="--height: 8px"></loading-dots>`}
@@ -1235,7 +1235,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </table>`
                     : html`
                     <div class="text-centered"><h4>
-                    This information has not been specified yet.
+                        There is no description available for the variables in this file.
                     </h4></div>
                     `
                 }`
@@ -1276,7 +1276,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </table>`
                     : html`
                     <div class="text-centered"><h4>
-                        This information has not been specified yet.
+                        There is no description available for the variables in this file.
                     </h4></div>
                     `
                 }`

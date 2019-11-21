@@ -16,17 +16,21 @@ import { personGet, personPost, modelConfigurationPost, parameterPost, modelConf
          timeIntervalGet,  processGet, softwareImageGet, } from 'model-catalog/actions';
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
+import { IdMap } from 'app/reducers';
+import { SampleResource, SampleCollection } from '@mintproject/modelcatalog_client';
+
 import "weightless/slider";
 import "weightless/progress-spinner";
-//import "weightless/tab";
-//import "weightless/tab-group";
 import 'components/loading-dots'
 
 import './person';
 import './process';
+import './parameter';
+import './input';
 import { ModelsConfigurePerson } from './person';
 import { ModelsConfigureProcess } from './process';
 import { ModelsConfigureParameter } from './parameter';
+import { ModelsConfigureInput } from './input';
 
 @customElement('models-new-setup')
 export class ModelsNewSetup extends connect(store)(PageViewElement) {
@@ -52,6 +56,12 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
     private _inputs : any = {};
 
     @property({type: Object})
+    private _sampleResources : IdMap<SampleResource> = {} as IdMap<SampleResource>;
+
+    @property({type: Object})
+    private _sampleCollections : IdMap<SampleCollection> = {} as IdMap<SampleCollection>;
+
+    @property({type: Object})
     private _authors : any = {};
 
     @property({type: Object})
@@ -70,7 +80,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
     private _softwareImage : any = null;
 
     @property({type: String})
-    private _dialog : 'person' | 'process' | 'parameter' | undefined;
+    private _dialog : ''|'person'|'process'|'parameter'|'input' = '';
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
@@ -151,8 +161,12 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
 
             .details-table tr td:first-child {
                 font-weight: bold;
-                text-align: right;
                 padding-right: 6px;
+                padding-left: 13px;
+            }
+
+            .details-table tr td:first-child {
+                padding-right: 13px;
             }
 
             .details-table tr:nth-child(odd) {
@@ -230,15 +244,15 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         let nameEl      = this.shadowRoot.getElementById('new-setup-name') as HTMLInputElement;
         let descEl      = this.shadowRoot.getElementById('new-setup-desc') as HTMLInputElement;
         let keywordsEl  = this.shadowRoot.getElementById('new-setup-keywords') as HTMLInputElement;
+        let regionEl    = this.shadowRoot.getElementById('edit-config-regions') as HTMLInputElement;
         let assignMeEl  = this.shadowRoot.getElementById('new-setup-assign-method') as HTMLInputElement;
-        let complocEl   = this.shadowRoot.getElementById('new-setup-comp-loc') as HTMLInputElement;
 
-        if (nameEl && descEl && keywordsEl && assignMeEl && complocEl) {
+        if (nameEl && descEl && keywordsEl && assignMeEl && regionEl) {
             let name        = nameEl.value;
             let desc        = descEl.value;
             let keywords    = keywordsEl.value;
+            let region     = regionEl.value;
             let assignMe    = assignMeEl.value;
-            let comploc     = complocEl.value;
 
             if (!name || !assignMe) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
@@ -249,26 +263,33 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             }
 
             let setupCreated = {...this._config};
+            let configUri = setupCreated.id;
 
+            delete setupCreated.hasSetup;
             setupCreated.id = undefined;
             setupCreated.label = [name];
             setupCreated.description = [desc];
             setupCreated.keywords = [keywords.split(/ *, */).join('; ')];
-            setupCreated.hasComponentLocation = [comploc];
             setupCreated.parameterAssignmentMethod = [assignMe];
+            setupCreated.hasRegion = [{id: region}];
 
-            /* FIXME: Parameters are returning 400, numbers are not objects!!
-            setupCreated.hasParameter = this._newParametersUris.map((uri) => {
-                return {'id': uri}
+            setupCreated.hasInput = setupCreated.hasInput.map((input) => {
+                let newInput = this._inputs[input.id];
+                newInput.id = '';
+                return newInput;
             });
-            */
+            setupCreated.hasParameter = setupCreated.hasParameter.map((param) => {
+                let newParam = this._parameters[param.id];
+                newParam.id = '';
+                return newParam;
+            });
+
+            console.log('Creating...', setupCreated);
 
             this._waitingFor = 'PostSetup' + this._setupIdentifier;
             this._setupIdentifier += 1;
 
-            store.dispatch(modelConfigurationPost(setupCreated, this._waitingFor));
-            console.log(setupCreated);
-            
+            //store.dispatch(modelConfigurationPost(setupCreated, configUri, this._waitingFor));
 
             //showNotification("saveNotification", this.shadowRoot!);
             //goToPage(createUrl(this._model, this._version, this._config));
@@ -309,6 +330,9 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
     }
 
     protected render() {
+        if (!this._config) {
+            return html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
+        }
         // Sort parameters by order
         let paramOrder = []
         if (this._config.hasParameter) {
@@ -361,11 +385,17 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         }
 
         return html`
-        <span id="start"/>
-        <wl-textfield id="new-setup-name" label="New setup name" value="" required></wl-textfield>
+        <span id="start"></span>
 
         <table class="details-table">
             <colgroup width="150px">
+
+            <tr>
+                <td colspan="2" style="padding: 5px 20px;">
+                    <wl-textfield id="new-setup-name" label="New setup name" value="" required></wl-textfield>
+                </td>
+            </tr>
+
             <tr>
                 <td>Description:</td>
                 <td>
@@ -390,7 +420,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             </tr>
 
             <tr>
-                <td>Authors:</td>
+                <td>Setup creator:</td>
                 <td>
                     ${this._config.author && this._config.author.length > 0? 
                     html`${this._config.author.map(a => typeof a === 'object' ? a.id : a).map((authorUri:string) => 
@@ -413,7 +443,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                     <wl-select id="new-setup-assign-method" label="Parameter assignment method" placeholder="Select a parameter assignament method" required>
                         <option value="" disabled selected>Please select a parameter assignment method</option>
                         <option value="Calibration">Calibration</option>
-                        <option value="Expert-tuned">Expert tuned</option>
+                        <option value="Expert-configured">Expert tuned</option>
                     </wl-select>
                 </td>
             </tr>
@@ -421,14 +451,14 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Software Image:</td>
                 <td>
-                    <input id="new-setup-software-image" type="text" value="${this._softwareImage ? this._softwareImage.label : ''}"/>
+                    <span class="software-image">${this._softwareImage ? this._softwareImage.label : 'No software image'}</span>
                 </td>
             </tr>
 
             <tr>
                 <td>Component Location:</td>
                 <td>
-                    <textarea id="new-setup-comp-loc"></textarea>
+                    <textarea id="edit-setup-comp-loc" disabled>${this._config.hasComponentLocation}</textarea>
                 </td>
             </tr>
 
@@ -498,19 +528,18 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 <col span="1">
                 <col span="1">
                 <col span="1">
-                <col span="1">
             </colgroup>
             <thead>
                 <th><b>Label</b></th>
                 <th><b>Type</b></th>
-                <th class="ta-right">
+                <th class="ta-right" style="white-space:nowrap;" colspan="2">
                     <b>Value in this setup</b>
-                    <span class="tooltip" tip="If a value is set up in this field, you will not be able to change it in run time. For example, a price adjustment is set up to be 10%, it won't be editable when running the the model">
+                    <span class="tooltip" style="white-space:normal;"
+                     tip="If a value is set up in this field, you will not be able to change it in run time. For example, a price adjustment is set up to be 10%, it won't be editable when running the the model">
                         <wl-icon>help</wl-icon>
                     </span>
                 </th>
                 <th class="ta-right"><b>Unit</b></th>
-                <th class="ta-right"></th>
             </thead>
             <tbody>
             ${this._config.hasParameter ? paramOrder.map((uri:string) => html`
@@ -529,10 +558,10 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         this._parameters[uri].hasDefaultValue ? this._parameters[uri].hasDefaultValue + ' (default)' : '-'
                     )}
                 </td>
-                <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
-                <td style="text-align: right;">
-                    <wl-button @click="${() => this._showParameterDialog(uri)}"class="small"><wl-icon>edit</wl-icon></wl-button>
+                <td>
+                    <wl-button flat inverted @click="${() => this._showParameterDialog(uri)}"class="small"><wl-icon>edit</wl-icon></wl-button>
                 </td>
+                <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
                 `
                 : html`<td colspan="5" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
             </tr>`)
@@ -548,16 +577,58 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 <col span="1">
             </colgroup>
             <thead>
-                <th><b>Name</b></th>
-                <th><b>Description</b></th>
-                <th class="ta-right"><b>Format</b></th>
+                <th><b>Input file</b></th>
+                <th style="white-space:nowrap;" colspan="2">
+                    <b>Value in this setup</b>
+                    <span class="tooltip" style="white-space:normal;" tip="If a value is set up in this field, you will not be able to change it in run time.">
+                        <wl-icon>help</wl-icon>
+                    </span>
+                </th>
             </thead>
             <tbody>
             ${this._config.hasInput ? inputOrder.map((uri:string) => html `
             <tr>${this._inputs[uri] ? html`
-                <td><code>${this._inputs[uri].label}</code></td>
-                <td>${this._inputs[uri].description}</td>
-                <td class="ta-right monospaced">${this._inputs[uri].hasFormat}</td>`
+                <td>
+                    <code style="font-size: 13px">${this._inputs[uri].label}</code>
+                    ${this._inputs[uri].hasFormat && this._inputs[uri].hasFormat.length === 1 ?  
+                        html`<span class="monospaced" style="color: gray;">(.${this._inputs[uri].hasFormat})<span>` : ''}
+                    <br/>
+                    ${this._inputs[uri].description}
+                </td>
+                <td>
+                    ${this._inputs[uri].hasFixedResource && this._inputs[uri].hasFixedResource.length > 0 ? 
+                    this._inputs[uri].hasFixedResource.map((fixed) => this._sampleResources[fixed.id] ? 
+                        html`
+                        <span>
+                            <b>${this._sampleResources[fixed.id].label}</b> <br/>
+                            <a target="_blank" href="${this._sampleResources[fixed.id].value}">
+                                ${this._sampleResources[fixed.id].value}
+                            </a><br/>
+                            <span class="monospaced" style="white-space: nowrap;">${this._sampleResources[fixed.id].dataCatalogIdentifier}</span>
+                        </span>` : ( this._sampleCollections[fixed.id] ? html`
+                        <span>
+                            <b>${this._sampleCollections[fixed.id].label}</b> <br/>
+                            ${this._sampleCollections[fixed.id].description}
+                            ${this._sampleCollections[fixed.id].hasPart.map(sample => html`
+                            <details>
+                                <summary style="cursor: pointer;">${sample.label}</summary>
+                                <div style="padding-left: 14px;">
+                                    ${this._sampleResources[sample.id] ? html`
+                                    <a target="_blank" href="${this._sampleResources[sample.id].value}">
+                                        ${this._sampleResources[sample.id].value}
+                                    </a><br/>
+                                    <span class="monospaced" style="white-space: nowrap;">${this._sampleResources[sample.id].dataCatalogIdentifier}</span>
+                                </div>
+                                ` : html`${sample.id.split('/').pop()} <loading-dots style="--width: 20px"></loading-dots>`}
+                            `)}
+                        </span>`
+                        : html`${fixed.id.split('/').pop()} <loading-dots style="--width: 20px"></loading-dots>`))
+                    : html`
+                    <div class="info-center" style="white-space:nowrap;">- Not set -</div>`}
+                </td>
+                <td class="ta-right">
+                    <wl-button @click="${() => {this._showNewInputDialog(uri)}}" class="small" flat inverted><wl-icon>add</wl-icon></wl-button>
+                </td>`
                 : html`<td colspan="4" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
             </tr>`)
             : html`<tr><td colspan="4" class="info-center">- This configuration has no input files -</td></tr>`}
@@ -576,13 +647,21 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         <models-configure-person id="person-configurator" ?active=${this._dialog == 'person'} class="page"></models-configure-person>
         <models-configure-process id="process-configurator" ?active=${this._dialog == 'process'} class="page"></models-configure-process>
         <models-configure-parameter id="parameter-configurator" ?active=${this._dialog == 'parameter'} class="page"></models-configure-parameter>
+        <models-configure-input id="input-configurator" ?active=${this._dialog == 'input'} class="page"></models-configure-input>
         ${renderNotifications()}`
+    }
+
+    _showNewInputDialog ( datasetSpecUri : string ) {
+        this._dialog = 'input';
+        let inputConfigurator = this.shadowRoot.getElementById('input-configurator') as ModelsConfigureInput;
+        inputConfigurator.newInput(datasetSpecUri);
     }
 
     _showAuthorDialog () {
         this._dialog = 'person';
-        console.log(this._config.author);
-        let selectedAuthors = this._config.author.filter(x => x.type === "Person").reduce((acc, author) => {
+        let selectedAuthors = this._config.author
+                .map(x => typeof x === 'object' ? x : {id: x})
+                .reduce((acc, author) => {
             if (!acc[author.id]) acc[author.id] = true;
             return acc;
         }, {})
@@ -595,9 +674,8 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         let personConfigurator = this.shadowRoot.getElementById('person-configurator') as ModelsConfigurePerson;
         let selectedPersons = personConfigurator.getSelected();
         console.log('SELECTED AUTHORS:',selectedPersons);
-        this._config.author = [];
+        this._config.author = selectedPersons;
         selectedPersons.forEach((person) => {
-            this._config.author.push( {id: person.id, type: 'Person'} );
             this._authors[person.id] = person;
         });
         this.requestUpdate();
@@ -622,28 +700,40 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         let processConfigurator = this.shadowRoot.getElementById('process-configurator') as ModelsConfigureProcess;
         let selectedProcesses = processConfigurator.getSelected();
         console.log('SELECTED PROCESS:',selectedProcesses);
-        this._config.hasProcess = [];
+        this._config.hasProcess = selectedProcesses;
         selectedProcesses.forEach((process) => {
-            this._config.hasProcess.push( {id: process.id, type: 'Process'} );
             this._processes[process.id] = process;
         });
         this.requestUpdate();
     }
 
     _showParameterDialog (parameterID: string) {
-        //FIXME
         this._dialog = 'parameter';
         let parameterConfigurator = this.shadowRoot.getElementById('parameter-configurator') as ModelsConfigureParameter;
         parameterConfigurator.edit(parameterID);
     }
 
     _onParameterEdited (ev) {
-        //console.log(ev);
         let editedParameter = ev.detail;
         this._parameters[editedParameter.id] = editedParameter;
         this.requestUpdate();
-        //let parameterConfigurator = this.shadowRoot.getElementById('parameter-configurator');
-        //FIXME
+    }
+
+    _onInputCreated (ev) {
+        let createdInput = ev.detail.input;
+        let datasetSpecId = ev.detail.datasetSpecificationUri;
+        createdInput.id = datasetSpecId.split('/').pop() + createdInput.id;
+
+        if (createdInput.type.indexOf('SampleCollection') >= 0) {
+            this._sampleCollections[createdInput.id] = createdInput;
+            createdInput.hasPart.forEach((sample) => {
+                this._sampleResources[sample.id] = sample;
+            });
+        } else {
+            this._sampleResources[createdInput.id] = createdInput;
+        }
+        this._inputs[datasetSpecId].hasFixedResource = [createdInput];
+        this.requestUpdate();
     }
 
     firstUpdated () {
@@ -651,6 +741,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         this.addEventListener('authorsSelected', this._onAuthorsSelected);
         this.addEventListener('processesSelected', this._onProcessesSelected);
         this.addEventListener('parameterEdited', this._onParameterEdited);
+        this.addEventListener('inputCreated', this._onInputCreated);
     }
 
     stateChanged(state: RootState) {
