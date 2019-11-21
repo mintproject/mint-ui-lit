@@ -39,6 +39,10 @@ export const fixPosition = (resource:any) => {
     return resource;
 }
 
+export const fixObjects = (collection:any[]) => {
+    return collection.map(s => typeof s === "string" ? {id: s} : s);
+}
+
 export const isValidId = (id:string) => typeof id === 'string' && id.includes(PREFIX_URI);
 
 export const getStatusConfigAndUser = () => {

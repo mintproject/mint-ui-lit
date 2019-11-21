@@ -263,13 +263,15 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             }
 
             let setupCreated = {...this._config};
+            let configUri = setupCreated.id;
 
+            delete setupCreated.hasSetup;
             setupCreated.id = undefined;
             setupCreated.label = [name];
             setupCreated.description = [desc];
             setupCreated.keywords = [keywords.split(/ *, */).join('; ')];
             setupCreated.parameterAssignmentMethod = [assignMe];
-            setupCreated.hasRegion = [region];
+            setupCreated.hasRegion = [{id: region}];
 
             setupCreated.hasInput = setupCreated.hasInput.map((input) => {
                 let newInput = this._inputs[input.id];
@@ -282,20 +284,12 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 return newParam;
             });
 
-            /* FIXME: Parameters are returning 400, numbers are not objects!!
-            setupCreated.hasParameter = this._newParametersUris.map((uri) => {
-                return {'id': uri}
-            });
-            */
-
             this._waitingFor = 'PostSetup' + this._setupIdentifier;
             this._setupIdentifier += 1;
 
-            store.dispatch(modelConfigurationPost(setupCreated, this._waitingFor));
-            console.log(setupCreated);
-            
+            store.dispatch(modelConfigurationPost(setupCreated, configUri, this._waitingFor));
 
-            //showNotification("saveNotification", this.shadowRoot!);
+            showNotification("saveNotification", this.shadowRoot!);
             //goToPage(createUrl(this._model, this._version, this._config));
         }
     }
@@ -678,9 +672,8 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         let personConfigurator = this.shadowRoot.getElementById('person-configurator') as ModelsConfigurePerson;
         let selectedPersons = personConfigurator.getSelected();
         console.log('SELECTED AUTHORS:',selectedPersons);
-        this._config.author = [];
+        this._config.author = selectedPersons;
         selectedPersons.forEach((person) => {
-            this._config.author.push( {id: person.id, type: 'Person'} );
             this._authors[person.id] = person;
         });
         this.requestUpdate();
@@ -705,9 +698,8 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         let processConfigurator = this.shadowRoot.getElementById('process-configurator') as ModelsConfigureProcess;
         let selectedProcesses = processConfigurator.getSelected();
         console.log('SELECTED PROCESS:',selectedProcesses);
-        this._config.hasProcess = [];
+        this._config.hasProcess = selectedProcesses;
         selectedProcesses.forEach((process) => {
-            this._config.hasProcess.push( {id: process.id, type: 'Process'} );
             this._processes[process.id] = process;
         });
         this.requestUpdate();

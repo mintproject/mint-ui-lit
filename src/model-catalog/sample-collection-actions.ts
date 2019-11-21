@@ -35,7 +35,7 @@ export const sampleCollectionsGet: ActionCreator<ModelCatalogSampleCollectionThu
 }
 
 export const SAMPLE_COLLECTION_GET = "SAMPLE_COLLECTION_GET";
-interface MCASampleCollectionGet extends Action<'SAMPLE_COLLECTION_GET'> { payload: any };
+export interface MCASampleCollectionGet extends Action<'SAMPLE_COLLECTION_GET'> { payload: any };
 export const sampleCollectionGet: ActionCreator<ModelCatalogSampleCollectionThunkResult> = ( uri:string ) => (dispatch) => {
     debug('Fetching sampleCollection', uri);
 
