@@ -283,10 +283,11 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             model_id: modelid
         };
         showNotification("runNotification", this.shadowRoot);
+        let me = this;
         postJSONResource({
             url: mint.ensemble_manager_api + "/executions" + (mint.execution_engine == "localex" ? "Local" : ""),
             onLoad: function(e: any) {
-                hideNotification("runNotification", this.shadowRoot);
+                hideNotification("runNotification", me.shadowRoot);
             },
             onError: function() {
                 console.log("Could not send");
@@ -309,7 +310,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 let log = e.target.responseText;
                 log = log.replace(/\\n/g, "\n");
                 me._log = log;
-                console.log(me._log);
+                //console.log(me._log);
             },
             onError: function() {
 
