@@ -695,7 +695,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     }
 
                     if (db.datasetSpecifications) {
-                        if (this._inputsLoading.size > 0 && this._config.hasParameter) {
+                        if (this._inputsLoading.size > 0 && this._config.hasInput) {
                             this._inputsLoading.forEach((uri:string) => {
                                 if (db.datasetSpecifications[uri]) {
                                     let tmp = { ...this._inputs };
