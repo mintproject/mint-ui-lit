@@ -18,7 +18,7 @@ import { store, RootState } from './store';
 
 // These are the actions needed by this element.
 import {
-  navigate, fetchUser, signOut, signIn, goToPage, fetchUserPreferences,
+  navigate, fetchUser, signOut, signIn, goToPage, fetchMintConfig,
 } from './actions';
 import { listTopRegions, listSubRegions } from '../screens/regions/actions';
 
@@ -35,7 +35,6 @@ import { SharedStyles } from '../styles/shared-styles';
 import { showDialog, hideDialog, formElementsComplete } from '../util/ui_functions';
 import { User } from 'firebase';
 import { Region } from 'screens/regions/reducers';
-import { loginToWings } from 'util/wings_functions';
 
 @customElement('mint-app')
 export class MintApp extends connect(store)(LitElement) {
@@ -57,6 +56,8 @@ export class MintApp extends connect(store)(LitElement) {
   private _dispatchedSubRegionsQuery : boolean = false;
 
   private _loggedIntoWings = false;
+
+  private _dispatchedConfigQuery = false;
   
   _once = false;
 
@@ -330,11 +331,16 @@ export class MintApp extends connect(store)(LitElement) {
   stateChanged(state: RootState) {
     this._page = state.app!.page;
     this.user = state.app!.user!;
+
+    if(!state.app.prefs || !state.app.prefs.mint) {
+      if(!this._dispatchedConfigQuery) {
+        console.log("Fetching config");
+        this._dispatchedConfigQuery = true;
+        store.dispatch(fetchMintConfig());
+      }
+    }
     
     if(this.user) {
-      if(!state.app.prefs)
-        store.dispatch(fetchUserPreferences());
-
       if(!state.regions || !state.regions.top_region_ids) {
         // Fetch top regions
         store.dispatch(listTopRegions());
@@ -352,11 +358,6 @@ export class MintApp extends connect(store)(LitElement) {
           this._dispatchedSubRegionsQuery = false;
         }
       }
-    }
-  
-    if(state.app.prefs && !this._loggedIntoWings) {
-      loginToWings(state.app.prefs);
-      this._loggedIntoWings = true;
     }
   }
 }

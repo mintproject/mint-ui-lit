@@ -56,10 +56,16 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
             ymin: 6.682771856532459
         },
         "barton_springs": {
-
+            ymin: 30.3075, 
+            xmin: -97.730278,
+            ymax: 30.3175,
+            xmax: -97.63
         },
         "texas": {
-
+            xmin: -106.65038428499993, 
+            ymin: 25.829765046000137, 
+            xmax: -93.51181051299993, 
+            ymax: 36.51056885500015
         }
     };
     

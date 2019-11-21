@@ -16,10 +16,9 @@ import { queryModelDetail } from '../screens/models/actions';
 import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetConfig,
          explorerSetCalibration, explorerSetMode } from '../screens/models/model-explore/ui-actions';
 import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread } from './ui-actions';
-import { auth } from '../config/firebase';
+import { auth, db } from '../config/firebase';
 import { User } from 'firebase';
-import { UserPreferences } from './reducers';
-import { SAMPLE_USER, SAMPLE_MINT_PREFERENCES_LOCAL, SAMPLE_MINT_PREFERENCES } from 'offline_data/sample_user';
+import { UserPreferences, MintPreferences } from './reducers';
 import { DefaultApi } from '@mintproject/modelcatalog_client';
 import { dexplorerSelectDataset, dexplorerSelectDatasetArea } from 'screens/datasets/ui-actions';
 
@@ -29,14 +28,14 @@ export const UPDATE_PAGE = 'UPDATE_PAGE';
 export const LOGIN = 'LOGIN';
 export const LOGOUT = 'LOGOUT';
 export const FETCH_USER = 'FETCH_USER';
-export const FETCH_USER_PREFERENCES = 'FETCH_USER_PREFERENCES';
+export const FETCH_MINT_CONFIG = 'FETCH_MINT_CONFIG';
 export const FETCH_MODEL_CATALOG_ACCESS_TOKEN = 'FETCH_MODEL_CATALOG_ACCESS_TOKEN';
 export const STATUS_MODEL_CATALOG_ACCESS_TOKEN = 'STATUS_MODEL_CATALOG_ACCESS_TOKEN';
 
 export interface AppActionUpdatePage extends Action<'UPDATE_PAGE'> { regionid?: string, page?: string, subpage?:string };
 export interface AppActionFetchUser extends Action<'FETCH_USER'> { user?: User | null };
-export interface AppActionFetchUserPreferences extends Action<'FETCH_USER_PREFERENCES'> { 
-  prefs?: UserPreferences | null 
+export interface AppActionFetchMintConfig extends Action<'FETCH_MINT_CONFIG'> { 
+  prefs?: MintPreferences | null 
 };
 export interface AppActionFetchModelCatalogAccessToken extends Action<'FETCH_MODEL_CATALOG_ACCESS_TOKEN'> {
     accessToken: string
@@ -45,7 +44,7 @@ export interface AppActionStatusModelCatalogAccessToken extends Action<'STATUS_M
     status: string
 };
 
-export type AppAction = AppActionUpdatePage | AppActionFetchUser | AppActionFetchUserPreferences |
+export type AppAction = AppActionUpdatePage | AppActionFetchUser | AppActionFetchMintConfig |
                         AppActionFetchModelCatalogAccessToken | AppActionStatusModelCatalogAccessToken;
 
 type ThunkResult = ThunkAction<void, RootState, undefined, AppAction>;
@@ -54,14 +53,6 @@ export const OFFLINE_DEMO_MODE = false;
 
 type UserThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchUser>;
 export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
-  if(OFFLINE_DEMO_MODE) {
-    dispatch({
-      type: FETCH_USER,
-      user: SAMPLE_USER as User
-    });
-    return;
-  }
-  
   //console.log("Subscribing to user authentication updates");
   auth.onAuthStateChanged(user => {
     if (user) {
@@ -94,15 +85,32 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
   });
 };
 
-type UserPrefsThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchUserPreferences>;
-export const fetchUserPreferences: ActionCreator<UserPrefsThunkResult> = () => (dispatch) => {
-  //if(OFFLINE_DEMO_MODE) {
-    dispatch({
-      type: FETCH_USER_PREFERENCES,
-      prefs: { mint: SAMPLE_MINT_PREFERENCES, modelCatalog: {} } as UserPreferences
-    });
-    return;
-  //}
+type UserPrefsThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchMintConfig>;
+export const fetchMintConfig: ActionCreator<UserPrefsThunkResult> = () => (dispatch) => {
+  db.doc("configs/main").get().then((doc) => {
+    let prefs = doc.data() as MintPreferences;
+    if(prefs.execution_engine == "wings") {
+      fetch(prefs.wings.server + "/config").then((res) => {
+        res.json().then((wdata) => {
+          prefs.wings.export_url = wdata["internal_server"]
+          prefs.wings.storage = wdata["storage"];
+          prefs.wings.dotpath = wdata["dotpath"];
+          prefs.wings.onturl = wdata["ontology"];
+          dispatch({
+            type: FETCH_MINT_CONFIG,
+            prefs: prefs
+          });
+        })
+      })
+    }
+    else {
+      dispatch({
+        type: FETCH_MINT_CONFIG,
+        prefs: prefs
+      });
+    }
+  })
+  return;
 };
 
 export const signIn = (email: string, password: string) => {
