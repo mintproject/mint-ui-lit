@@ -35,7 +35,7 @@ export const datasetSpecificationsGet: ActionCreator<ModelCatalogDatasetSpecific
 }
 
 export const DATASET_SPECIFICATION_GET = "DATASET_SPECIFICATION_GET";
-interface MCADatasetSpecificationGet extends Action<'DATASET_SPECIFICATION_GET'> { payload: any };
+export interface MCADatasetSpecificationGet extends Action<'DATASET_SPECIFICATION_GET'> { payload: any };
 export const datasetSpecificationGet: ActionCreator<ModelCatalogDatasetSpecificationThunkResult> = ( uri:string ) => (dispatch) => {
     debug('Fetching datasetSpecification', uri);
     let id : string = uri.split('/').pop();
