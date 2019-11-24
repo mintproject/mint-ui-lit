@@ -8,7 +8,8 @@ export type RegionMap = IdMap<Region>;
 export interface Region extends IdNameObject {
     geojson_blob?: string, // This contains the whole geojson itself
     region_type?: string,
-    bounding_box?: BoundingBox
+    bounding_box?: BoundingBox,
+    model_catalog_uri?: string,
 }
 
 export interface RegionsState {
