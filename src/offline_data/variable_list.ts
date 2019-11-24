@@ -82,6 +82,14 @@ export const VARIABLES = {
             },
         },
         "Hydrology": {
+            "var8": {
+                "long_name": "Flooding Contour",
+                "SVO_name": "flooding_contour"
+            },
+            "var9": {
+                "long_name": "Flood Severity Index",
+                "SVO_name": "channel_water_flow__flood_volume-flux_severity_index"
+            },
             "var4": {
                 "long_name": "River Discharge",
                 "SVO_name": "downstream_volume_flow_rate"

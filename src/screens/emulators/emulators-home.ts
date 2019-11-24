@@ -6,6 +6,7 @@ import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 
 import '../../components/nav-title'
+import { db } from 'config/firebase';
 
 @customElement("emulators-home")
 export class EmulatorsHome extends connect(store)(PageViewElement) {
@@ -98,6 +99,19 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
             </ul>
             `;
         }
+    }
+
+    protected firstUpdated() {
+        /*
+        console.log("Checking size of ensembles collection");
+        db.collection("/ensembles")
+            .where("modelid", "==", "https://w3id.org/okn/i/mint/cycles-0.9.4-alpha-advanced-pongo-weather")
+            .where("status", "==", "SUCCESS")
+            .limit(10000)
+            .get().then((snapshot) => {
+                console.log(snapshot.size);
+        })
+        */
     }
 
     stateChanged(state: RootState) {

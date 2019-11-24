@@ -71,7 +71,7 @@ const getResourceObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuer
                     url: dmeta["source_url"] || "",
                     type: dmeta["source_type"] || ""
                 },
-                datatype: dmeta["datatype"] || "",
+                datatype: dmeta["datatype"] || dmeta["data_type"] || "",
                 categories: dmeta["category_tags"] || [],
                 resources: []
             };
