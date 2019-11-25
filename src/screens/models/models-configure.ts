@@ -45,6 +45,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     private _creating : boolean = false;
 
     @property({type: Object})
+    private _regions : any = null;
+
+    @property({type: Object})
     private _models : any = null;
 
     @property({type: Object})
@@ -260,16 +263,20 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     }
 
     _renderVersionTree () {
-        if (!this._models) 
+        if (!this._models || !this._region || !this._regions) 
             return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
 
-        /* FIXME: this needs a new version of the API */
-        let parentRegion = {
-            'https://w3id.org/okn/i/mint/Gambella': 'https://w3id.org/okn/i/mint/Ethiopia',
-            'https://w3id.org/okn/i/mint/Pongo_Basin_SS': 'https://w3id.org/okn/i/mint/South_Sudan',
-            'https://w3id.org/okn/i/mint/Barton_Springs': 'https://w3id.org/okn/i/mint/Texas',
-            'https://w3id.org/okn/i/mint/Baro': 'https://w3id.org/okn/i/mint/Ethiopia',
-        }
+        if (this._region && this._region.model_catalog_uri === 'https://w3id.org/okn/i/mint/Texas')
+            this._region.model_catalog_uri = 'https://w3id.org/okn/i/mint/United_States';
+
+        const visibleSetup = (setup) => setup && (
+            !setup.hasRegion || setup.hasRegion.length === 0 ||
+            (this._region && !this._region.model_catalog_uri) ||
+            (this._regions[setup.hasRegion[0].id] && this._regions[setup.hasRegion[0].id].country &&
+             this._regions[setup.hasRegion[0].id].country && this._regions[setup.hasRegion[0].id].country.length > 0 &&
+             this._regions[setup.hasRegion[0].id].country[0].id === this._region.model_catalog_uri)
+        );
+
         return html`
         <ul>
             ${Object.values(this._models).filter((model: any) => !!model.hasVersion).map((model: any) => html`
@@ -289,9 +296,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                                 </a>
                                 <ul>
                                     ${((config ? config.hasSetup : []) || []).map((s) => this._configs[s.id])
-                                        .filter(setup => 
-                                            setup && (!setup.hasRegion || setup.hasRegion[0].id === this._region['model_catalog_uri']
-                                            || parentRegion[setup.hasRegion[0].id] === this._region['model_catalog_uri']))
+                                        .filter(visibleSetup)
                                         .map(setup => html`
                                     <li>
                                         <a @click="${()=>{this._select(model, version, config, setup)}}">
@@ -397,7 +402,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
 
     firstUpdated () {
         store.dispatch(processesGet());
-        //store.dispatch(regionsGet());
+        store.dispatch(regionsGet());
     }
 
     stateChanged(state: RootState) {
@@ -444,7 +449,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 this._models = db.models;
                 this._versions = db.versions;
                 this._configs = db.configurations;
-                //this._regions = db.regions;
+                this._regions = db.regions;
 
                 // Set selected resource
                 if (!this._model && db.models && this._selectedModel && db.models[this._selectedModel]) {
