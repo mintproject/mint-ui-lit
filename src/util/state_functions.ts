@@ -93,7 +93,7 @@ export const getPathwayRunsStatus = (pathway:Pathway) => {
         Object.keys(sum).map((modelid) => {
             let summary = sum[modelid];
             if(summary.total_runs == 0 || 
-                    (summary.successful_runs + summary.failed_runs != summary.total_runs))
+                    (summary.successful_runs != summary.total_runs))
                 ok = false;
         });
         if(ok)
@@ -234,23 +234,6 @@ export const listAlreadyRunEnsembleIds = (ensembleids: string[]) : Promise<strin
         })
     }));
 };
-
-const _crossProductInputs = (ensembles: DataEnsembleMap) => {
-    let inputBindingsList: InputBindings[] = [{}];
-    Object.keys(ensembles).map((inputid) => {
-        let datasets = ensembles[inputid];
-        let currentInputBindingsList = inputBindingsList.slice();
-        inputBindingsList = [];
-        datasets.map((dataset) => {
-            currentInputBindingsList.map((inputBindings) => {
-                let newInputBindings = _getInputBindingsCopy(inputBindings);
-                newInputBindings[inputid] = dataset;
-                inputBindingsList.push(newInputBindings);
-            });
-        })
-    });
-    return inputBindingsList;
-}
 
 export const getMatchingEnsemble = (ensembles: ExecutableEnsemble[], execution: ExecutableEnsemble, hashes: string[]) => {
     let hash = getEnsembleHash(execution);
