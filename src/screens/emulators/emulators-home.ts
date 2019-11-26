@@ -7,6 +7,7 @@ import { connect } from 'pwa-helpers/connect-mixin';
 
 import '../../components/nav-title'
 import { db } from 'config/firebase';
+import { Pathway, ExecutableEnsembleSummary } from 'screens/modeling/reducers';
 
 @customElement("emulators-home")
 export class EmulatorsHome extends connect(store)(PageViewElement) {
@@ -42,26 +43,61 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
             <nav-title .nav="${nav}"></nav-title>
             <ul>
                 <li>
-                    The PIHM hydrologic model was run for the Baro basin in Ethiopia with weather data from GLDAS for a year. 
-                    An example output product of the PIHM Model can be browsed by viewing 
-                    <a href="https://data.mint.isi.edu/files/uploads/PIHM_Baro-Gambella.pdf">this PDF</a>.
-                    More details can be seen by viewing the original notebook, 
-                    (<a href="https://data.mint.isi.edu/files/uploads/PIHM_Model_1.cdf">Download here</a>), using 
-                    the <a href="https://www.wolfram.com/player/">free Mathematica notebook reader</a>.  
-                    The simulation used the following raw input data and produced the following raw output data:
+                    The PIHM hydrologic model was run for the following basins in Ethiopia with weather data from GLDAS for a year. 
                     <ul>
-                        <li>PIHM Input: 
-                            <a href="https://data.mint.isi.edu/files/wings-dev/mint/mint-test/data/pihm-input-ethiopia-1b5bd7a4b4c6b8ac8f4617661e775ef7.tgz">
-                                https://data.mint.isi.edu/files/wings-dev/mint/mint-test/data/pihm-input-ethiopia-1b5bd7a4b4c6b8ac8f4617661e775ef7.tgz</a>
+                        <li>
+                            <a href="/ethiopia/modeling/scenario/hcbtnXF5gRSnUIszeEcI/VFVlWwqUOOpG3PYFko0h/1L4JMmK1MTmJJFquGFXB/results">Muger (9 runs)</a>
                         </li>
-                        <li>PIHM Output: 
-                            <a href="https://data.mint.isi.edu/files/wings-dev/mint/mint-test/data/pihm-output-ethiopia-8884b6867b19b9e9079c5af01ef47dca.tgz">
-                                https://data.mint.isi.edu/files/wings-dev/mint/mint-test/data/pihm-output-ethiopia-8884b6867b19b9e9079c5af01ef47dca.tgz</a>
+                        <li>
+                            <a href="/ethiopia/modeling/scenario/hcbtnXF5gRSnUIszeEcI/VFVlWwqUOOpG3PYFko0h/PvjIvVMa4ELIQQcDYgIM/results">Beko-Tippi (9 runs)</a>
                         </li>
+                        <li>
+                            <a href="/ethiopia/modeling/scenario/hcbtnXF5gRSnUIszeEcI/VFVlWwqUOOpG3PYFko0h/VggqferoeUnXQB93yeBM/results">Jamma (9 runs)</a>
+                        </li>
+                        <li>
+                            <a href="/ethiopia/modeling/scenario/hcbtnXF5gRSnUIszeEcI/VFVlWwqUOOpG3PYFko0h/WX6w5WG9syCkp6JhXyAL/results">Baro (9 runs)</a>
+                        </li>
+                        <li>
+                            <a href="/ethiopia/modeling/scenario/hcbtnXF5gRSnUIszeEcI/VFVlWwqUOOpG3PYFko0h/etZK2mpavnnjJRyfe5mm/results">Guder (9 runs)</a>
+                        </li>
+                        <li>
+                            <a href="/ethiopia/modeling/scenario/hcbtnXF5gRSnUIszeEcI/VFVlWwqUOOpG3PYFko0h/l3EAhLLCUv2NtFbYVLkp/results">Bashilo (9 runs)</a>
+                        </li>                                                                                                                                                                    
                     </ul>
                 </li>
                 <li>
-                    The TopoFlow model was run on the Baro River Basin to generate overbank flood depth time series or the month of April in 2014 
+                    The HAND hydrologic model was run for the following basins in Ethiopia. 
+                    <ul>
+                        <li>
+                            <a href="/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/b6zPCLiBjfpUTAe9sJUY/results">Muger</a>
+                        </li>
+                        <li>
+                            <a href="/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/Xpq55sPcGaAi87uwcCVD/results">Beko-Tippi</a>
+                        </li>
+                        <li>
+                            <a href="/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/kfwzGsPzx6jCNrWGQzTs/results">Awash</a>
+                        </li>
+                        <li>
+                            <a href="/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/KusL4gRuGp17Ejsy3unO/results">Baro</a>
+                        </li>
+                        <li>
+                            <a href="/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/p3H7OUjfmGw9OPXRxFLn/results">Guder</a>
+                        </li>
+                        <li>
+                            <a href="/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/1SbM5SJQaYMN7oVm80SV/results">Ganale</a>
+                        </li>                                                                                                                                                                    
+                    </ul>
+                </li>
+                <li>
+                    The Flood Severity Index hydrologic model was run for the whole of Ethiopia and South Sudan for 2017
+                    <ul>
+                        <li>
+                            <a href="/ethiopia/modeling/scenario/cFut6KW7huKmLMqTLGEw/rzkcVNqnSGWKMttVWjCM/MXmvP11v8renb5ONqYPz/visualize">Ethiopia & South Sudan</a>
+                        </li>                                                                                                                                                                 
+                    </ul>
+                </li>
+                <li>
+                    The TopoFlow hydrologic model was run on the following basins to generate overbank flood depth time series or the month of April in 2014 
                     (There was a fairly big rainfall event in the beginning of that month). 
                     <ul>
                         <li>
@@ -79,7 +115,15 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                             <img src="https://data.mint.isi.edu/files/topoflow/Baro_Gam_1min_shaded_relief.png"></img>
                         </li>
                     </ul>
-                </li>                
+                </li>     
+                <li>
+                    The Cycles agricultural model was run for Oromia for 2000 to 2017
+                    <ul>
+                        <li>
+                            <a href="/ethiopia/modeling/scenario/vCwen8MUT3jgza4A8vq4/ywYH9PGRKJZoQLpqp3RH/ZoluO9Idrkile3f6SZ31/results">Cycles for Oromia (90720 runs)</a>
+                        </li>                                                                                                                                                                 
+                    </ul>
+                </li>                           
             </ul>
             `;
         }
@@ -101,18 +145,22 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
         }
     }
 
+    /*
     protected firstUpdated() {
-        /*
-        console.log("Checking size of ensembles collection");
-        db.collection("/ensembles")
-            .where("modelid", "==", "https://w3id.org/okn/i/mint/cycles-0.9.4-alpha-advanced-pongo-weather")
-            .where("status", "==", "SUCCESS")
-            .limit(10000)
+        db.collectionGroup('pathways')
+            .where('last_update.parameters.time', '>', 0)
             .get().then((snapshot) => {
-                console.log(snapshot.size);
-        })
-        */
+                snapshot.docs.map((doc) => {
+                    let pathway = doc.data() as Pathway;
+                    Object.values(pathway.executable_ensemble_summary).map((summary: ExecutableEnsembleSummary) => {
+                        if(summary.total_runs == summary.successful_runs && summary.total_runs > 400) {
+                            console.log(pathway.id);
+                        }
+                    })
+                })
+            })
     }
+    */
 
     stateChanged(state: RootState) {
         super.setRegionId(state);
