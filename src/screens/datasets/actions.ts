@@ -13,6 +13,7 @@ export const DATASETS_VARIABLES_QUERY = 'DATASETS_VARIABLES_QUERY';
 export const DATASETS_GENERAL_QUERY = 'DATASETS_GENERAL_QUERY';
 export const DATASETS_REGION_QUERY = 'DATASETS_REGION_QUERY';
 export const DATASETS_RESOURCE_QUERY = 'DATASETS_RESOURCE_QUERY';
+export const DATASET_ADD = 'DATASET_ADD';
 export const DATASETS_LIST = 'DATASETS_LIST';
 
 export interface DatasetsActionVariablesQuery extends Action<'DATASETS_VARIABLES_QUERY'> { 
@@ -36,9 +37,14 @@ export interface DatasetsActionDatasetResourceQuery extends Action<'DATASETS_RES
     dataset: Dataset,
     loading: boolean
 };
+export interface DatasetsActionDatasetAdd extends Action<'DATASET_ADD'> {
+    dsid: string,
+    dataset: Dataset,
+};
 export interface DatasetsActionDetail extends Action<'DATASETS_DETAIL'> { dataset: DatasetDetail };
 
-export type DatasetsAction = DatasetsActionVariablesQuery | DatasetsActionGeneralQuery | DatasetsActionRegionQuery | DatasetsActionDatasetResourceQuery ;
+export type DatasetsAction = DatasetsActionVariablesQuery | DatasetsActionGeneralQuery | DatasetsActionRegionQuery |
+                             DatasetsActionDatasetResourceQuery | DatasetsActionDatasetAdd;
 
 const getResourceObjectsFromDCResponse = (obj: any, queryParameters: DatasetQueryParameters) => {
     let dsmap: IdMap<Dataset> = {};
@@ -66,6 +72,7 @@ const getResourceObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuer
                 description: row["dataset_description"] || "",
                 version: dmeta["version"] || "",
                 limitations: dmeta["limitations"] || "",
+                is_cached: dmeta["is_cached"] || false,
                 source: {
                     name: dmeta["source"] || "",
                     url: dmeta["source_url"] || "",
@@ -129,6 +136,7 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
             description: row["dataset_description"] || "",
             version: dmeta["version"] || "",
             limitations: dmeta["limitations"] || "",
+            is_cached: dmeta["is_cached"] || false,
             source: {
                 name: dmeta["source"] || "",
                 url: dmeta["source_url"] || "",
@@ -278,7 +286,7 @@ export const queryGeneralDatasets: ActionCreator<QueryDatasetsGeneralThunkResult
 };
 
 // Query Data Catalog for resources of a particular dataset
-type QueryDatasetResourcesThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionDatasetResourceQuery>;
+type QueryDatasetResourcesThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionDatasetResourceQuery|DatasetsActionDatasetAdd>;
 export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResult> = 
         (dsid: string, region: Region, prefs: MintPreferences) => (dispatch) => {
     dispatch({
@@ -310,6 +318,11 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
                 dsid: dsid,
                 dataset: dataset,
                 loading: false
+            });
+            dispatch({
+                type: DATASET_ADD,
+                dsid: dsid,
+                dataset: dataset,
             });
         })
     });

@@ -13,9 +13,11 @@ export * from './model-configuration-actions';
 export * from './dataset-specification-actions';
 export * from './sample-resource-actions';
 export * from './sample-collection-actions';
+export * from './geo-shape-actions';
 
 import { ModelCatalogPersonAction } from './person-actions';
 import { ModelCatalogRegionAction } from './region-actions';
+import { ModelCatalogGeoShapeAction } from './geo-shape-actions';
 import { ModelCatalogParameterAction } from './parameter-actions';
 import { ModelCatalogProcessAction } from './process-actions';
 import { ModelCatalogModelConfigurationAction } from './model-configuration-actions';
@@ -82,6 +84,9 @@ export const END_POST = 'END_POST';
 export interface MCAEndPost extends Action<'END_POST'> { id: string, uri: string };
 
 export type MCACommon = MCAStartLoading | MCAEndLoading | MCAStartPost | MCAEndPost ;
+
+export const ALL_MODELS = 'ALL_MODELS';
+export const ALL_VERSIONS = 'ALL_VERSIONS';
 
 export const MODELS_GET = "MODELS_GET";
 interface MCAModelsGet extends Action<'MODELS_GET'> { payload: any };
@@ -171,7 +176,7 @@ export const softwareImageGet: ActionCreator<ModelCatalogThunkResult> = (uri) =>
 export type ModelCatalogAction = MCACommon | ModelCatalogPersonAction | ModelCatalogParameterAction | ModelCatalogProcessAction |
                                  ModelCatalogModelConfigurationAction | ModelCatalogRegionAction | ModelCatalogSampleCollectionAction |
                                  ModelCatalogSampleResourceAction | ModelCatalogDatasetSpecificationAction |
-                                 MCAModelsGet | MCAVersionsGet |
+                                 MCAModelsGet | MCAVersionsGet | ModelCatalogGeoShapeAction |
                                  MCAGridGet | MCATimeIntervalGet | MCASoftwareImageGet;
 
 type ModelCatalogThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogAction>;
