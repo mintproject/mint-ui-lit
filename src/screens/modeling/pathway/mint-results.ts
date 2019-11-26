@@ -9,7 +9,7 @@ import { ExecutableEnsemble, StepUpdateInformation, ModelEnsembles, Pathway } fr
 import { updatePathway, getAllPathwayEnsembleIds, fetchPathwayEnsembles } from "../actions";
 import { showNotification, hideDialog, showDialog } from "../../../util/ui_functions";
 import { selectPathwaySection } from "../../../app/ui-actions";
-import { renderLastUpdateText } from "../../../util/ui_renders";
+import { renderLastUpdateText, renderNotifications } from "../../../util/ui_renders";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { Model } from "screens/models/reducers";
 import { IdMap } from "app/reducers";
@@ -61,16 +61,6 @@ export class MintResults extends connect(store)(MintPathwayPage) {
         if(!this.pathway) {
             return html ``;
         }
-        
-        // If no models selected
-        /*
-        if(getPathwayRunsStatus(this.pathway) != TASK_DONE) {
-            return html `
-            <p>This step is for browsing the results of the models that you ran earlier.</p>
-            Please run some models first
-            `
-        }
-        */
 
        // Group running ensembles
        let grouped_ensembles = {};
@@ -330,6 +320,8 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             </div>
         </div>
 
+        ${renderNotifications()}
+
         ${this._editMode ? 
             html`
             <fieldset class="notes">
@@ -353,7 +345,6 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             }             
             `
         }
-        ${this._renderProgressDialog()}
         `;
     }
 
@@ -369,37 +360,6 @@ export class MintResults extends connect(store)(MintPathwayPage) {
         
         let ensembleids = this.pathwayModelEnsembleIds[modelid].slice((currentPage - 1)*pageSize, currentPage*pageSize);
         store.dispatch(fetchPathwayEnsembles(this.pathway.id, modelid, ensembleids));
-    }
-    
-    _renderProgressDialog() {
-        return html`
-        <wl-dialog id="progressDialog" fixed persistent backdrop blockscrolling>
-            <h3 slot="header">Publish results</h3>
-            <div slot="content">
-                <p>
-                    Publishing results for ${this._progress_item ? this._progress_item.name : ""}
-                </p>
-                <wl-progress-bar style="width:100%" mode="indeterminate"></wl-progress-bar>
-            </div>
-            <div slot="footer">
-                ${this._progress_number == this._progress_total ? 
-                    html`<wl-button @click="${this._onDialogDone}" class="submit">Done</wl-button>` :
-                    html`<wl-button @click="${this._onStopProgress}" inverted flat>Stop</wl-button>`
-                }
-            </div>            
-        </wl-dialog>
-        `;
-    }
-
-    _onDialogDone() {
-        updatePathway(this.scenario, this.pathway);
-        hideDialog("progressDialog", this.shadowRoot!);
-    }
-
-    _onStopProgress() {
-        this._progress_abort = true;
-        updatePathway(this.scenario, this.pathway);
-        hideDialog("progressDialog", this.shadowRoot!);
     }
     
     _getModelURL (model:Model) {
@@ -436,9 +396,11 @@ export class MintResults extends connect(store)(MintPathwayPage) {
         -> Register outputs to the data catalog        
         -> Publish run to provenance catalog
         */
+        showNotification("saveNotification", this.shadowRoot);       
+        
         sendDataForIngestion(this.scenario.id, this.subgoalid, this.pathway.id, this.prefs);
+        
         this.pathway.executable_ensemble_summary[modelid].submitted_for_ingestion = true;
-        updatePathway(this.scenario, this.pathway);
     }
 
     _reloadAllRuns() {
