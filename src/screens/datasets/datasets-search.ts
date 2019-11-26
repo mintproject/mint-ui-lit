@@ -22,6 +22,9 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _params : DatasetQueryParameters;
 
+    @property({type: Boolean})
+    private _firstSearch : boolean = true;
+
     @property({type: String})
     private _searchType : string = 'dataset_names';
 
@@ -123,7 +126,12 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
                                 <wl-title level="4">${ds.name}</wl-title>
                                 <a href="${this._region.id}/datasets/browse/${ds.id}">More Details</a>
                             </div>
-                            <wl-title level="5" style="color:#aaa">id:${ds.id}</wl-title>
+                            <div style="display:flex; justify-content:space-between">
+                                <wl-title level="5" style="color:#aaa">id:${ds.id}</wl-title>
+                                <span style="color: ${ds.is_cached ? 'green' : 'lightsalmon'}">
+                                    ${ds.is_cached ? 'Available on MINT servers' : 'Not available on MINT servers'}
+                                </span>
+                            </div>
                             <br />
                             <table class="pure-table pure-table-striped">
                                 <thead>
@@ -216,6 +224,12 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         super.setRegion(state);
         this.prefs = state.app.prefs!;
+
+        if (this._firstSearch && this.prefs.mint) {
+            this._firstSearch = false;
+            store.dispatch(queryGeneralDatasets({name: '*'}, this.prefs.mint))
+        }
+
         if(state.datasets) {
             // If there are details about a particular dataset
             if(state.datasets.query_datasets) {

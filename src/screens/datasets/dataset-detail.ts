@@ -98,7 +98,12 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                 html`
                 <br />
                 <wl-title level="4">${_ds.name}</wl-title>
-                <wl-title level="5" style="color:#aaa">id:${_ds.id}</wl-title>
+                <div style="display:flex; justify-content:space-between">
+                    <wl-title level="5" style="color:#aaa">id:${_ds.id}</wl-title>
+                    <span style="color: ${_ds.is_cached ? 'green' : 'lightsalmon'}">
+                        ${_ds.is_cached ? 'Available on MINT servers' : 'Not available on MINT servers'}
+                    </span>
+                </div>
                 <br />
                 <table class="pure-table pure-table-striped">
                     <thead>
