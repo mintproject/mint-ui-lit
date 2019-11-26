@@ -13,6 +13,7 @@ export const DATASETS_VARIABLES_QUERY = 'DATASETS_VARIABLES_QUERY';
 export const DATASETS_GENERAL_QUERY = 'DATASETS_GENERAL_QUERY';
 export const DATASETS_REGION_QUERY = 'DATASETS_REGION_QUERY';
 export const DATASETS_RESOURCE_QUERY = 'DATASETS_RESOURCE_QUERY';
+export const DATASET_ADD = 'DATASET_ADD';
 export const DATASETS_LIST = 'DATASETS_LIST';
 
 export interface DatasetsActionVariablesQuery extends Action<'DATASETS_VARIABLES_QUERY'> { 
@@ -36,9 +37,14 @@ export interface DatasetsActionDatasetResourceQuery extends Action<'DATASETS_RES
     dataset: Dataset,
     loading: boolean
 };
+export interface DatasetsActionDatasetAdd extends Action<'DATASET_ADD'> {
+    dsid: string,
+    dataset: Dataset,
+};
 export interface DatasetsActionDetail extends Action<'DATASETS_DETAIL'> { dataset: DatasetDetail };
 
-export type DatasetsAction = DatasetsActionVariablesQuery | DatasetsActionGeneralQuery | DatasetsActionRegionQuery | DatasetsActionDatasetResourceQuery ;
+export type DatasetsAction = DatasetsActionVariablesQuery | DatasetsActionGeneralQuery | DatasetsActionRegionQuery |
+                             DatasetsActionDatasetResourceQuery | DatasetsActionDatasetAdd;
 
 const getResourceObjectsFromDCResponse = (obj: any, queryParameters: DatasetQueryParameters) => {
     let dsmap: IdMap<Dataset> = {};
@@ -66,6 +72,7 @@ const getResourceObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuer
                 description: row["dataset_description"] || "",
                 version: dmeta["version"] || "",
                 limitations: dmeta["limitations"] || "",
+                is_cached: dmeta["is_cached"] || false,
                 source: {
                     name: dmeta["source"] || "",
                     url: dmeta["source_url"] || "",
@@ -129,6 +136,7 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
             description: row["dataset_description"] || "",
             version: dmeta["version"] || "",
             limitations: dmeta["limitations"] || "",
+            is_cached: dmeta["is_cached"] || false,
             source: {
                 name: dmeta["source"] || "",
                 url: dmeta["source_url"] || "",
@@ -315,6 +323,36 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
     });
 };
 
+// Query Data Catalog for resources of a particular dataset and save the results
+type QueryDatasetResourcesAndSaveThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionDatasetAdd>;
+export const queryDatasetResourcesAndSave: ActionCreator<QueryDatasetResourcesAndSaveThunkResult> = 
+        (dsid: string, region: Region, prefs: MintPreferences) => (dispatch) => {
+    let queryBody = {
+        "dataset_ids__in": [dsid],
+        "limit": 2000
+    };
+    if(region) {
+        let geojson = JSON.parse(region.geojson_blob);
+        queryBody["spatial_coverage__intersects"] = geojson.geometry;
+    }
+
+    fetch(prefs.data_catalog_api + "/datasets/find", {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(queryBody)
+    }).then((response) => {
+        response.json().then((obj) => {
+            let datasets: Dataset[] = getResourceObjectsFromDCResponse(obj, {})
+            let dataset = datasets.length > 0 ? datasets[0] : null
+            dispatch({
+                type: DATASET_ADD,
+                dsid: dsid,
+                dataset: dataset,
+            });
+        })
+    });
+};
+
 // Query Data Catalog by Region
 type QueryDatasetsByRegionThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionRegionQuery>;
 export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResult> = 
@@ -325,19 +363,34 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
         datasets: null,
         loading: true
     });
-
+    
     let geojson = JSON.parse(region.geojson_blob);
-    fetch(prefs.data_catalog_api + "/datasets/find", {
+    let req1 = fetch(prefs.data_catalog_api + "/datasets/find", {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
             // FIXME: Querying the region for only datasets *within* the area
             spatial_coverage__within: geojson.geometry,
+            //spatial_coverage__intersects: geojson.geometry, FIXME: this takes long to load.
             limit: 5000
         })
-    }).then((response) => {
-        response.json().then((obj) => {
-            let datasets: Dataset[] = getResourceObjectsFromDCResponse(obj, {} as DatasetQueryParameters)
+    })
+
+    let req2 = fetch(prefs.data_catalog_api + "/datasets/find", {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            dataset_ids__in: ["adfca6fb-ad82-4be3-87d8-8f60f9193e43"],
+            limit: 5000
+        })
+    })
+
+    Promise.all([req1, req2]).then((values:any) => {
+        Promise.all(values.map(res => res.json())).then((objs:any) => {
+            let datasets: Dataset[] = [];
+            objs.forEach(obj => {
+                datasets = datasets.concat( getResourceObjectsFromDCResponse(obj, {} as DatasetQueryParameters) )
+            });
             dispatch({
                 type: DATASETS_REGION_QUERY,
                 region: region,

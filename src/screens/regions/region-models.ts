@@ -8,158 +8,99 @@ import 'weightless/progress-spinner';
 import { RegionQueryPage } from './region-query-page';
 import { SharedStyles } from 'styles/shared-styles';
 import { goToPage } from 'app/actions';
-import { UserPreferences } from 'app/reducers';
-import { listAllModels } from 'screens/models/actions';
-import { ModelConfigurationApi, ModelApi, SoftwareVersionApi } from '@mintproject/modelcatalog_client';
-import { DEFAULT_GRAPH } from 'model-catalog/actions';
+import { UserPreferences, IdMap } from 'app/reducers';
 import { BoundingBox } from './reducers';
+import { modelsGet, versionsGet, modelConfigurationsGet, regionsGet, geoShapesGet,
+         datasetSpecificationGet, sampleResourceGet, sampleCollectionGet,
+         ALL_MODELS, ALL_VERSIONS, ALL_MODEL_CONFIGURATIONS, ALL_REGIONS, ALL_GEO_SHAPES } from 'model-catalog/actions';
+import { GeoShape } from '@mintproject/modelcatalog_client';
+
+import { queryDatasetResourcesAndSave } from 'screens/datasets/actions';
+
+interface GeoShapeBBox extends GeoShape {
+    bbox?: BoundingBox
+}
 
 @customElement('region-models')
 export class RegionModels extends connect(store)(RegionQueryPage)  {
-    
+    @property({type: Object})
+    private _datasetSpecsLoading : Set<string> = new Set();
+    @property({type: Object})
+    private _sampleCollectionsLoading : Set<string> = new Set();
+    @property({type: Object})
+    private _sampleResourcesLoading : Set<string> = new Set();
+
     @property({type: Object})
     private prefs : UserPreferences;
-    
+
+    @property({type: Boolean})
+    private _fullyLoaded : boolean = false;
+
+    @property({type: Object})
+    private _geoShapes : IdMap<GeoShapeBBox> = {} as IdMap<GeoShapeBBox>;
+
+    @property({type: Object})
+    private _mregions : any = {}
+
+    @property({type: Object})
+    private _models : any = {}
+
+    @property({type: Object})
+    private _versions : any = {}
+
+    @property({type: Object})
+    private _configs : any = {}
+
+    @property({type: Object})
+    private _datasets : any = {}
+
     @property({type: Array})
     private _matchingModelSetups : any = [];
 
-    @property({type: Object})
-    private _models : any = {};
+    @property({type: Array})
+    private _matchingModelDatasets : any = [];
 
-    @property({type: Object})
-    private _configVersions : any = {};
-
-    @property({type: Object})
-    private _versionModels : any = {};
-
-    @property({type: Object})
-    private _setupConfigs : any = {};
-
-    @property({type: Object})
-    private _modelRegionBoundingBoxes: any = {
-        "baro": {
-            xmax: 36.31541666666567,
-            xmin: 34.518749999999,
-            ymax: 9.417083333332332,
-            ymin: 7.431249999999
-        },
-        "gambella": {
-            xmax: 35.402297999999995,
-            xmin: 32.991536,
-            ymax: 8.718837,
-            ymin: 6.27026
-        },
-        "pongo_basin_ss": {
-            xmax: 27.741570450529053,
-            xmin: 24.14233611868619,
-            ymax: 9.345303077456506,
-            ymin: 6.682771856532459
-        },
-        "barton_springs": {
-            ymin: 30.3075, 
-            xmin: -97.730278,
-            ymax: 30.3175,
-            xmax: -97.63
-        },
-        "texas": {
-            xmin: -106.65038428499993, 
-            ymin: 25.829765046000137, 
-            xmax: -93.51181051299993, 
-            ymax: 36.51056885500015
-        }
-    };
-    
     static get styles() {
-        return [
-            SharedStyles,
-            css `
-            `
-        ];
+        return [SharedStyles, css``];
     }
 
     protected firstUpdated() {
-        this._fetchAllConfigurations();
+        store.dispatch(regionsGet());
+        store.dispatch(geoShapesGet());
+        store.dispatch(modelsGet());
+        store.dispatch(versionsGet());
+        store.dispatch(modelConfigurationsGet());
     }
 
-    private _fetchAllConfigurations() {
-        let api : ModelConfigurationApi = new ModelConfigurationApi();
-        api.modelconfigurationsGet({username: DEFAULT_GRAPH})
-        .then((configs) => {
-            configs.map((config) => {
-                let cname = config.id.replace(/.*\//, '');
-                if(config.hasRegion && config.hasRegion.length > 0) {
-                    let region = config.hasRegion[0];
-                    let regionname = region.id.replace(/.*\//, '');
-                    if(region.label) {
-                        regionname = region.label[0];
-                    }
-                    let region_key = regionname.toLowerCase();
-                    if(!this._models[region_key])
-                        this._models[region_key] = [];
-                    this._models[region_key].push({
-                        id: cname,
-                        name: config.label[0]
-                    });
-                }
-                if(config.hasSetup) {
-                    config.hasSetup.map((setup: any) => {
-                        let sname = setup.id.replace(/.*\//, '');
-                        this._setupConfigs[sname] = cname;
-                    })
-                }
-                if(this._selectedRegion) {
-                    this._getMatchingModels();
-                }
-            });
-        })
-        .catch((err) => {console.log('Error on GET modelConfigurations', err)})        
+    _getModelURL (setupURI: string) {
+        let config : any, version : any, model : any;
+        let configs = Object.values(this._configs)
+                .filter((c:any) => c.hasSetup && c.hasSetup.filter((s:any) => s.id===setupURI).length > 0);
 
-        let api2 : ModelApi = new ModelApi();
-        api2.modelsGet({username: DEFAULT_GRAPH})
-        .then((models) => {
-            this._versionModels = {};
-            models.map((model) => {
-                let mname = model.id.replace(/.*\//, '');
-                model.hasVersion.map((version: any) => {
-                    let vname = version.id.replace(/.*\//, '');
-                    this._versionModels[vname] = mname;
-                })
-            });
-        });
-
-        let api3 : SoftwareVersionApi = new SoftwareVersionApi();
-        api3.softwareversionsGet({username: DEFAULT_GRAPH})
-        .then((versions) => {
-            this._configVersions = {};
-            versions.map((version) => {
-                let vname = version.id.replace(/.*\//, '');
-                if(!version.hasVersionId)
-                    return;
-                let versionId = version.hasVersionId[0];
-                version.hasConfiguration.map((config) => {
-                    let cname = config.id.replace(/.*\//, '');
-                    this._configVersions[cname] = {
-                        id: vname,
-                        versionId: versionId
-                    }
-                })
-            });
-        });
-    }
-
-    _getModelURL (setupid: string) {
-        let sname = setupid.replace(/.*\//, '');
-        let cname = this._setupConfigs[sname];
-        if(cname) {
-            let vobj = this._configVersions[cname];
-            if(vobj) {
-                let vname = vobj.id;
-                let vid = vobj.versionId;
-                let mname = this._versionModels[vname];
-                if(mname) 
-                    return this._regionid + '/models/explore/' + mname + "/" + vid + "/" + cname + "/" + sname;
-            }
+        if (configs.length > 0) config = configs[0];
+        else {
+            console.error('No config for this setup', setupURI);
+            return;
         }
+
+        let versions = Object.values(this._versions)
+                .filter((v:any) => v.hasConfiguration && v.hasConfiguration.filter((c:any) => c.id===config.id).length > 0);
+        if (versions.length > 0) version = versions[0];
+        else {
+            console.error('No version for this config', config.id);
+            return;
+        }
+
+        let models = Object.values(this._models)
+                .filter((m:any) => m.hasVersion && m.hasVersion.filter((v:any) => v.id===version.id).length >0);
+        if (models.length > 0) model = models[0];
+        else {
+            console.error('No model for this version', version.id);
+            return;
+        }
+
+        return this._regionid + '/models/explore/' + model.id.split('/').pop() + '/' + version.hasVersionId[0] +
+               '/' + config.id.split('/').pop() + '/' + setupURI.split('/').pop();
     }
 
     private _doBoxesIntersect(box1: BoundingBox, box2: BoundingBox) {
@@ -169,16 +110,37 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
 
     private _getMatchingModels() {
         this._matchingModelSetups = [];
-        Object.keys(this._modelRegionBoundingBoxes).map((region_key) => {
-            let bbox = this._modelRegionBoundingBoxes[region_key];
+        this._matchingModelDatasets = [];
+        Object.keys(this._geoShapes).map((geoId:string) => {
+            let bbox = this._geoShapes[geoId].bbox as BoundingBox;
             let selbox = this._selectedRegion.bounding_box;
-            if(!bbox.xmin) {
+            if (!bbox.xmin) {
                 return;
             }
-            if(this._doBoxesIntersect(bbox, selbox)) {
-                let models = this._models[region_key];
-                if(models)
-                    this._matchingModelSetups = this._matchingModelSetups.concat(models);
+            if (this._doBoxesIntersect(bbox, selbox)) {
+                let region : any = Object.values(this._mregions).filter((r:any) => r.geo && r.geo.length > 0 && r.geo[0].id === geoId)[0];
+                let regionType = this.regionType === 'Administrative' ? 'Economy' : this.regionType;
+                let modelsInside = Object.values(this._configs)
+                    .filter((c:any) => c.hasModelCategory && c.hasModelCategory.indexOf(regionType) >= 0 &&
+                                       c.type && c.type.indexOf('ModelConfigurationSetup') >= 0 &&
+                                       c.hasRegion && c.hasRegion.length > 0 &&
+                                       c.hasRegion.filter((r:any) => r.id === region.id).length > 0);
+                if (modelsInside) {
+                    this._matchingModelSetups = this._matchingModelSetups.concat(modelsInside);
+                }
+            }
+        });
+        let dspecs : Set<string> = new Set();
+        this._matchingModelSetups.forEach((model:any) => (model.hasInput||[]).forEach(input => dspecs.add(input.id)));
+        this._datasetSpecsLoading = dspecs;
+
+        let state : any = store.getState();
+        dspecs.forEach(dspecUri => {
+            if (state && state.modelCatalog && state.modelCatalog.datasetSpecifications &&
+                state.modelCatalog.datasetSpecifications[dspecUri]) {
+                console.log(dspecUri, 'already loaded');
+            } else {
+                store.dispatch(datasetSpecificationGet(dspecUri))
             }
         });
     }
@@ -188,13 +150,38 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
             ${this._selectedRegion && this._matchingModelSetups ? 
                 html`
                     <wl-title level="4" style="font-size: 17px; margin-top: 20px;">Models for ${this._selectedRegion.name}</wl-title>
+                    ${this._fullyLoaded ? html`
                     ${!this._matchingModelSetups || this._matchingModelSetups.length == 0 ? 'No models for this region' :
                     html`<ul>${this._matchingModelSetups.map((model) => html`
-                        <li><a href="${this._getModelURL(model.id)}">${model.name}</a></li>`)
-                    }</ul>`
+                        <li><a href="${this._getModelURL(model.id)}">${model.label}</a></li>`)
+                    }</ul>`}
+                    ` : html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
                     }
                 `
                 : ""
+            }
+            ${this._selectedRegion && this._matchingModelDatasets && this._matchingModelSetups.length > 0?
+            html`
+                <wl-title level="4" style="font-size: 17px; margin-top: 20px;">Datasets used by models in ${this._selectedRegion.name}</wl-title>
+
+                ${!this._fullyLoaded || this._datasetSpecsLoading.size > 0 || this._sampleCollectionsLoading.size > 0 || this._sampleResourcesLoading.size > 0 ?
+                html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`: ''}
+
+                ${this._matchingModelDatasets.length === 0 ? 'No datasets for models in ' + this._selectedRegion.name : ''}
+
+                ${this._matchingModelDatasets.map(dsId => this._datasets && this._datasets[dsId] ? html`
+                    <wl-list-item class="active" @click="${() => goToPage('datasets/browse/'+dsId)}">
+                        <wl-icon slot="before">folder</wl-icon>
+                        <wl-title level="4" style="margin: 0">${this._datasets[dsId].name}</wl-title>
+                        <div>
+                            ${this._datasets[dsId].is_cached ? 
+                                html`<span style="color: green">Available on MINT servers</span>` :
+                                html`<span style="color: lightsalmon">Not available on MINT servers</span>`}
+                            <span style="color: gray">-</span> ${this._datasets[dsId].resources.length} files
+                        </div>
+                    </wl-list-item>
+                `: '')}
+            `: ''
             }
         `;
     }
@@ -208,6 +195,87 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
             if(curregion != this._selectedRegion) {
                 this._getMatchingModels();
             }
+        }
+
+        this._datasets = state.datasets ? state.datasets.datasets : state.datasets;
+
+        if (state && state.modelCatalog) {
+            let db = state.modelCatalog;
+            if (!this._fullyLoaded) {
+                let loaded = db.loadedAll;
+                if (loaded[ALL_REGIONS] && loaded[ALL_MODELS] && loaded[ALL_GEO_SHAPES] && loaded[ALL_VERSIONS] &&
+                    loaded[ALL_MODEL_CONFIGURATIONS]) {
+                    this._geoShapes = db.geoShapes;
+                    this._mregions = db.regions;
+                    this._models = db.models;
+                    this._versions = db.versions;
+                    this._configs = db.configurations;
+                    this._fullyLoaded = true;
+                    if (this._selectedRegion) {
+                        this._getMatchingModels();
+                    }
+                }
+            }
+
+            if (this._datasetSpecsLoading.size > 0) {
+                this._datasetSpecsLoading.forEach((uri:string) => {
+                    if (db.datasetSpecifications[uri]) {
+                        let dss = db.datasetSpecifications[uri];
+                        this._datasetSpecsLoading.delete(uri);
+                        this.requestUpdate();
+                        if (dss.hasFixedResource && dss.hasFixedResource.length > 0) {
+                            dss.hasFixedResource.forEach(fixed => {
+                                if (fixed.type.indexOf('SampleCollection') >= 0) {
+                                    if (!db.sampleCollections || !db.sampleCollections[fixed.id])
+                                        store.dispatch(sampleCollectionGet(fixed.id))
+                                    this._sampleCollectionsLoading.add(fixed.id);
+                                } else {
+                                    if (!db.sampleResources || !db.sampleResources[fixed.id])
+                                        store.dispatch(sampleResourceGet(fixed.id))
+                                    this._sampleResourcesLoading.add(fixed.id);
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+
+            if (this._sampleResourcesLoading.size > 0) {
+                this._sampleResourcesLoading.forEach((uri:string) => {
+                    if (db.sampleResources[uri]) {
+                        let sample = db.sampleResources[uri];
+                        this._sampleResourcesLoading.delete(uri);
+                        this.requestUpdate();
+                        if (sample.dataCatalogIdentifier) {
+                            sample.dataCatalogIdentifier.forEach(id => {
+                                if (id[0] != 'F' && id[1] != 'F' && id[2] != 'F') {
+                                    this._matchingModelDatasets.push(id)
+                                    store.dispatch(queryDatasetResourcesAndSave(id, this._selectedRegion, this.prefs.mint));
+                                    this.requestUpdate();
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+
+            if (this._sampleCollectionsLoading.size > 0) {
+                this._sampleCollectionsLoading.forEach((uri:string) => {
+                    if (db.sampleCollections[uri]) {
+                        let collection = db.sampleCollections[uri];
+                        this._sampleCollectionsLoading.delete(uri);
+                        this.requestUpdate();
+                        if (collection.hasPart) {
+                            collection.hasPart.forEach((sample:any) => {
+                                if (!db.sampleResources || !db.sampleResources[sample.id])
+                                    store.dispatch(sampleResourceGet(sample.id))
+                                this._sampleResourcesLoading.add(sample.id);
+                            });
+                        }
+                    }
+                });
+            }
+
         }
     }
 }

@@ -3,16 +3,17 @@ import { RootAction } from "app/store";
 import { START_LOADING, END_LOADING, START_POST, END_POST,
          PERSON_GET, PERSONS_GET, ALL_PERSONS, PERSON_DELETE, 
          REGION_GET, REGIONS_GET, ALL_REGIONS, REGION_DELETE, 
+         GEO_SHAPE_GET, GEO_SHAPES_GET, ALL_GEO_SHAPES, GEO_SHAPE_DELETE, 
          PROCESS_GET, PROCESSES_GET, ALL_PROCESSES,  PROCESS_DELETE,
          PARAMETER_GET, PARAMETERS_GET, ALL_PARAMETERS, PARAMETER_DELETE,
          DATASET_SPECIFICATION_GET, DATASET_SPECIFICATIONS_GET, ALL_DATASET_SPECIFICATIONS, DATASET_SPECIFICATION_DELETE, 
          SAMPLE_RESOURCE_GET, SAMPLE_RESOURCES_GET, ALL_SAMPLE_RESOURCES, SAMPLE_RESOURCE_DELETE, 
          SAMPLE_COLLECTION_GET, SAMPLE_COLLECTIONS_GET, ALL_SAMPLE_COLLECTIONS, SAMPLE_COLLECTION_DELETE, 
          MODEL_CONFIGURATION_GET, MODEL_CONFIGURATIONS_GET, ALL_MODEL_CONFIGURATIONS, MODEL_CONFIGURATION_DELETE,
-         MODELS_GET, VERSIONS_GET,
+         MODELS_GET, VERSIONS_GET, ALL_MODELS, ALL_VERSIONS, 
          GRID_GET, TIME_INTERVAL_GET, SOFTWARE_IMAGE_GET } from './actions'
 
-import { SampleResource, SampleCollection, DatasetSpecification } from '@mintproject/modelcatalog_client';
+import { SampleResource, SampleCollection, DatasetSpecification, GeoShape } from '@mintproject/modelcatalog_client';
 import { IdMap } from 'app/reducers'
 
 export interface ModelCatalogState {
@@ -33,6 +34,7 @@ export interface ModelCatalogState {
     datasetSpecifications: {[key:string]: DatasetSpecification};
     sampleResources: IdMap<SampleResource>;
     sampleCollections: IdMap<SampleCollection>;
+    geoShapes: IdMap<GeoShape>;
 }
 
 const INITIAL_STATE: ModelCatalogState = { 
@@ -52,6 +54,7 @@ const INITIAL_STATE: ModelCatalogState = {
     datasetSpecifications: {} as DatasetSpecification,
     sampleResources: {} as IdMap<SampleResource>,
     sampleCollections: {} as IdMap<SampleCollection>,
+    geoShapes: {} as IdMap<GeoShape>,
 } as ModelCatalogState;
 
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -88,7 +91,7 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
 
         case MODELS_GET:
             tmp = { ...state.loadedAll };
-            tmp['models'] = true;
+            tmp[ALL_MODELS] = true;
             return {
                 ...state,
                 loadedAll: tmp,
@@ -96,7 +99,7 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             }
         case VERSIONS_GET:
             tmp = { ...state.loadedAll };
-            tmp['versions'] = true;
+            tmp[ALL_VERSIONS] = true;
             return {
                 ...state,
                 loadedAll: tmp,
@@ -117,7 +120,7 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             }
         case MODEL_CONFIGURATIONS_GET:
             tmp = { ...state.loadedAll };
-            tmp['configurations'] = true;
+            tmp[ALL_MODEL_CONFIGURATIONS] = true;
             return {
                 ...state,
                 loadedAll: tmp,
@@ -164,6 +167,27 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 ...state,
                 loadedAll: tmp,
                 regions: {...state.regions, ...action.payload}
+            }
+
+        case GEO_SHAPE_DELETE:
+            tmp = { ...state.geoShapes };
+            delete tmp[action.uri];
+            return {
+                ...state,
+                geoShapes: tmp
+            }
+        case GEO_SHAPE_GET:
+            return {
+                ...state,
+                geoShapes: {...state.geoShapes, ...action.payload}
+            }
+        case GEO_SHAPES_GET:
+            tmp = { ...state.loadedAll };
+            tmp[ALL_GEO_SHAPES] = true;
+            return {
+                ...state,
+                loadedAll: tmp,
+                geoShapes: {...state.geoShapes, ...action.payload}
             }
 
         case PERSON_DELETE:
