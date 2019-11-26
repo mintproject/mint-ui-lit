@@ -84,13 +84,20 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                             >https://data.mint.isi.edu/files/simulation-runs/pihm/</li>
                         <li># The atmospheric data uses GLDAS, 2017 daily data, 
                             all other spatial data is specified located in MINT data catalog.</li>
-                        <li>All test model runs are available: 
-                            <a href="https://data.mint.isi.edu/files/wings-dev/mint/mint-test/data/"
-                            >https://data.mint.isi.edu/files/wings-dev/mint/mint-test/data/</a> (see *-output-* files)</li>
                         <li>Visualization of Surface Flooding Index spatial map  (monthly 2017) and a Streamflow duration Index 
                             are the basic outputs. However streamflow simulations for all points in each watershed are also available.</li>
                         <li><a href="https://dev.mint.isi.edu/ethiopia/modeling/scenario/hcbtnXF5gRSnUIszeEcI/VFVlWwqUOOpG3PYFko0h"
                             >UI link to outputs for configuration of each model run in Ethiopia</a></li>
+                        <li>All PIHM test model runs are available here: <a href="https://data.mint.isi.edu/files/simulation-runs/pihm/test-runs/"
+                            >https://data.mint.isi.edu/files/simulation-runs/pihm/test-runs/</a>
+                            <ul>
+                                File Descriptions:
+                                <li>GLDAS 2017 Baseline - pihm-output-ethiopia-8884b6867b19b9e9079c5af01ef47dca.tgz</li>
+                                <li>GLDAS 2017 TS_PRCP 1.1 - pihm-output-ethiopia-793616808ff9e6de7a1339b82766b72e.tgz</li>
+                                <li>GLDAS 2017 TS_PRCP 0.9 - pihm-output-ethiopia-b6995862016115dc8f3e55692adb6b7b.tgz</li>
+                                <li>FLDAS 2017 Baseline - pihm-output-ethiopia-25db3224876e0dfbaf11eaa6f5a01efb.tgz</li>
+                            </ul>
+                        </li>
                     </ul>
                 </li>
             </ul>                        
