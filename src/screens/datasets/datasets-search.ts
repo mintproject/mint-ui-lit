@@ -225,7 +225,7 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
         super.setRegion(state);
         this.prefs = state.app.prefs!;
 
-        if (this._firstSearch && this.prefs.mint) {
+        if (this.active && this._firstSearch && this.prefs.mint) {
             this._firstSearch = false;
             store.dispatch(queryGeneralDatasets({name: '*'}, this.prefs.mint))
         }
