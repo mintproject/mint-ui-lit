@@ -43,18 +43,18 @@ export class RegionDatasets extends connect(store)(RegionQueryPage)  {
     _transform (ds: Dataset) {
         let url : URL = new URL(this._data_trans_url);
         url.searchParams.append('slct_adp', '10 topoflow4_climate_write_func%2FDcatReadTopoflow4ClimateUploadFunc');
-        url.searchParams.append('add_adp', '');
-        url.searchParams.append('update_pipe', '');
-        url.searchParams.append('update_pipe', '');
+        //url.searchParams.append('add_adp', '');
+        //url.searchParams.append('update_pipe', '');
+        url.searchParams.append('clear_add_pipe', '');
         // dataset + region
         url.searchParams.append('0.inputs.dataset_id', ds.id);
         url.searchParams.append('0.inputs.DEM_bounds', boundingBoxToQueryString(this._selectedRegion.bounding_box));
         // resolution TODO
         url.searchParams.append('0.inputs.DEM_xres_arcsecs', '267');
         url.searchParams.append('0.inputs.DEM_yres_arcsecs', '257');
-        url.searchParams.append('0.inputs.DEM_ncols', '30');
-        url.searchParams.append('0.inputs.DEM_nrows', '30');
-
+        url.searchParams.append('0.inputs.var_name', 'HQprecipitation');
+        //url.searchParams.append('0.inputs.DEM_ncols', '30');
+        //url.searchParams.append('0.inputs.DEM_nrows', '30');
         return String(url);
     }
 
