@@ -272,9 +272,13 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         const visibleSetup = (setup) => setup && (
             !setup.hasRegion || setup.hasRegion.length === 0 ||
             (this._region && !this._region.model_catalog_uri) ||
-            (this._regions[setup.hasRegion[0].id] && this._regions[setup.hasRegion[0].id].country &&
-             this._regions[setup.hasRegion[0].id].country && this._regions[setup.hasRegion[0].id].country.length > 0 &&
-             this._regions[setup.hasRegion[0].id].country[0].id === this._region.model_catalog_uri)
+            setup.hasRegion.filter((r:any) => r.id === this._region.model_catalog_uri).length > 0 ||
+            setup.hasRegion.filter((r:any) => 
+                this._regions[r.id] &&
+                this._regions[r.id].country &&
+                this._regions[r.id].country.length > 0 &&
+                this._regions[r.id].country[0].id === this._region.model_catalog_uri
+            ).length > 0
         );
 
         return html`
@@ -300,7 +304,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                                         .map(setup => html`
                                     <li>
                                         <a @click="${()=>{this._select(model, version, config, setup)}}">
-                                            ${setup ? setup.label : 'ERR: no-setup-label'}
+                                            ${setup ? setup.label : html`ERR: no-setup-label
+                                        ${console.log(setup)}
+                                            `}
                                         </a>
                                     </li>
                                     `)}
