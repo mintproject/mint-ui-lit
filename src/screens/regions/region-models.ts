@@ -15,7 +15,7 @@ import { modelsGet, versionsGet, modelConfigurationsGet, regionsGet, geoShapesGe
          ALL_MODELS, ALL_VERSIONS, ALL_MODEL_CONFIGURATIONS, ALL_REGIONS, ALL_GEO_SHAPES } from 'model-catalog/actions';
 import { GeoShape } from '@mintproject/modelcatalog_client';
 
-import { queryDatasetResources } from 'screens/datasets/actions';
+import { queryDatasetResourcesAndSave } from 'screens/datasets/actions';
 
 interface GeoShapeBBox extends GeoShape {
     bbox?: BoundingBox
@@ -250,7 +250,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
                             sample.dataCatalogIdentifier.forEach(id => {
                                 if (id[0] != 'F' && id[1] != 'F' && id[2] != 'F') {
                                     this._matchingModelDatasets.push(id)
-                                    store.dispatch(queryDatasetResources(id, this._selectedRegion, this.prefs.mint));
+                                    store.dispatch(queryDatasetResourcesAndSave(id, this._selectedRegion, this.prefs.mint));
                                     this.requestUpdate();
                                 }
                             });
