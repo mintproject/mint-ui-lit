@@ -111,7 +111,8 @@ export const getPathwayResultsStatus = (pathway:Pathway) => {
         let ok = true;
         Object.keys(sum).map((modelid) => {
             let summary = sum[modelid];
-            if(!summary.submitted_for_ingestion)
+            if(summary.total_runs == 0 || 
+                (summary.ingested_runs != summary.total_runs))
                 ok = false;
         });
         if(ok)
@@ -290,4 +291,48 @@ export const getVisualizationURLs = (pathway: Pathway, prefs: MintPreferences) =
     }
     return null;
 }
+
+export const pathwayTotalRunsChanged = (oldpathway: Pathway, newpathway: Pathway) => {
+    if((oldpathway == null || newpathway == null) && oldpathway != newpathway)
+        return true;
+
+    let oldtotal = 0;
+    Object.keys(oldpathway.executable_ensemble_summary).map((modelid) => {
+        oldtotal += oldpathway.executable_ensemble_summary[modelid].total_runs;
+    })
+    let newtotal = 0;
+    Object.keys(newpathway.executable_ensemble_summary).map((modelid) => {
+        newtotal += newpathway.executable_ensemble_summary[modelid].total_runs;
+    })
+    return oldtotal != newtotal;
+}
+
+
+export const pathwaySummaryChanged = (oldpathway: Pathway, newpathway: Pathway) => {
+    if((oldpathway == null || newpathway == null) && oldpathway != newpathway)
+        return true;
+    let oldsummary = _stringify_ensemble_summary(oldpathway.executable_ensemble_summary);
+    let newsummary = _stringify_ensemble_summary(newpathway.executable_ensemble_summary);
+    return oldsummary != newsummary;
+}
+
+const _stringify_ensemble_summary = (obj: Object) => {
+    if(!obj) {
+        return "";
+    }
+    let keys = Object.keys(obj);
+    keys = keys.sort();
+    let str = "";
+    keys.map((key) => {
+        if(key.match(/ingested_runs/) 
+            || key.match(/fetched_run_outputs/) 
+            || key.match(/submitted_for_ingestion/)) {
+            return;
+        }
+        let binding = isObject(obj[key]) ? _stringify_ensemble_summary(obj[key]) : obj[key];
+        str += key + "=" + binding + "&";
+    })
+    return str;
+}
+
 /* End of Helper Functions */

@@ -17,7 +17,7 @@ import { fetchPathwayEnsembles, getAllPathwayEnsembleIds } from "../actions";
 import { DataResource } from "screens/datasets/reducers";
 import { isObject } from "util";
 import { postJSONResource, getResource } from "util/mint-requests";
-import { getPathwayRunsStatus, TASK_DONE } from "util/state_functions";
+import { getPathwayRunsStatus, TASK_DONE, pathwayTotalRunsChanged, pathwaySummaryChanged } from "util/state_functions";
 
 @customElement('mint-runs')
 export class MintRuns extends connect(store)(MintPathwayPage) {
@@ -395,48 +395,13 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         return purl + "/data/fetch?data_id=" + escape(dsid);
     }
 
-    _stringify (obj: Object) {
-        if(!obj) {
-            return "";
-        }
-        let keys = Object.keys(obj);
-        let str = "";
-        keys.map((key) => {
-            let binding = isObject(obj[key]) ? this._stringify(obj[key]) : obj[key];
-            str += key + "=" + binding + "&";
-        })
-        return str;
-    }
-    _pathwayTotalRunsChanged (oldpathway: Pathway, newpathway: Pathway) {
-        if((oldpathway == null || newpathway == null) && oldpathway != newpathway)
-            return true;
-
-        let oldtotal = 0;
-        Object.keys(oldpathway.executable_ensemble_summary).map((modelid) => {
-            oldtotal += oldpathway.executable_ensemble_summary[modelid].total_runs;
-        })
-        let newtotal = 0;
-        Object.keys(newpathway.executable_ensemble_summary).map((modelid) => {
-            newtotal += newpathway.executable_ensemble_summary[modelid].total_runs;
-        })
-        return oldtotal != newtotal;
-    }
-
-    _pathwaySummaryChanged (oldpathway: Pathway, newpathway: Pathway) {
-        if((oldpathway == null || newpathway == null) && oldpathway != newpathway)
-            return true;
-        let oldsummary = this._stringify(oldpathway.executable_ensemble_summary);
-        let newsummary = this._stringify(newpathway.executable_ensemble_summary);
-        return oldsummary != newsummary;
-    }
-
     stateChanged(state: RootState) {
         super.setUser(state);
         super.setRegionId(state);
 
         // Before resetting pathway, check if the pathway run status has changed
-        let runs_changed = this._pathwaySummaryChanged(this.pathway, state.modeling.pathway);
-        let runs_total_changed = this._pathwayTotalRunsChanged(this.pathway, state.modeling.pathway);
+        let runs_changed = pathwaySummaryChanged(this.pathway, state.modeling.pathway);
+        let runs_total_changed = pathwayTotalRunsChanged(this.pathway, state.modeling.pathway);
 
         super.setPathway(state);
 
