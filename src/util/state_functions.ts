@@ -284,9 +284,14 @@ export const getVisualizationURLs = (pathway: Pathway, prefs: MintPreferences) =
 
         let visualizations = [];
         // FIXME: Hack
-        if(responseV == "Potential Crop Production")
-            visualizations.push(prefs.visualization_url + "/cycles?thread_id=" + pathway.id);
-        visualizations.push(prefs.visualization_url + "/upload?thread_id=" + pathway.id);
+        if(responseV == "Streamflow Duration Index" || responseV == "Flood Severity Index" || responseV == "Flooding Contour") {
+            visualizations.push(prefs.visualization_url + "/images?thread_id=" + pathway.id);
+        }
+        else {
+            if(responseV == "Potential Crop Production")
+                visualizations.push(prefs.visualization_url + "/cycles?thread_id=" + pathway.id);
+            visualizations.push(prefs.visualization_url + "/upload?thread_id=" + pathway.id);
+        }
         return visualizations;
     }
     return null;
