@@ -284,7 +284,10 @@ export const getVisualizationURLs = (pathway: Pathway, prefs: MintPreferences) =
 
         let visualizations = [];
         // FIXME: Hack
-        if(responseV == "Streamflow Duration Index" || responseV == "Flood Severity Index" || responseV == "Flooding Contour") {
+        if(responseV == "Streamflow Duration Index" || 
+            responseV == "Flood Severity Index" || 
+            responseV == "River Discharge" || 
+            responseV == "Flooding Contour") {
             visualizations.push(prefs.visualization_url + "/images?thread_id=" + pathway.id);
         }
         else {
