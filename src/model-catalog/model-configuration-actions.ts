@@ -3,7 +3,7 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
 import { Configuration, ModelConfiguration, ModelConfigurationApi, Parameter, ParameterApi, DatasetSpecificationApi, 
-         SampleResourceApi, SampleCollectionApi, DatasetSpecification } from '@mintproject/modelcatalog_client';
+         SampleResourceApi, SampleCollectionApi, DatasetSpecification, SampleResource, SampleCollection } from '@mintproject/modelcatalog_client';
 import { idReducer, isValidId, fixObjects, getStatusConfigAndUser, repeatAction, PREFIX_URI, DEFAULT_GRAPH,
          START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
 import { PARAMETER_GET, MCAParameterGet } from './parameter-actions'
@@ -109,27 +109,65 @@ export const modelConfigurationPost: ActionCreator<PostConfigThunk> = (modelConf
             let newSample = [];
             if (input.hasFixedResource) {
                 input.hasFixedResource.forEach(sample => {
-                    let isCollection = sample.type.indexOf('SampleCollection') >= 0;
-                    let req = isCollection ?
-                                sampleCollectionApi.samplecollectionsPost({user: DEFAULT_GRAPH, sampleCollection: sample}) 
-                                : sampleResourceApi.sampleresourcesPost({user: DEFAULT_GRAPH, sampleResource: sample});
-                    samplePromises.push(req);
-                    req.then((resp) => {
-                            console.log('Response for POST sample:', resp);
-                            let uri = PREFIX_URI + resp.id;
-                            let data = {};
-                            data[uri] = resp;
-                            resp.id = uri;
-                            newSample.push(resp);
-                            if (isCollection) {
-                                dispatch({ type: SAMPLE_COLLECTION_GET, payload: data });
-                            } else {
+
+                    if (sample.type.indexOf('SampleCollection') >= 0) {
+                        samplePromises.push(new Promise ((resolve, reject) => {
+                            let resourcesForCollection = [];
+                            let resourcesForCollectionPromises = [];
+                            (<SampleCollection>sample).hasPart.map(s => {
+                                let req = sampleResourceApi.sampleresourcesPost({user: DEFAULT_GRAPH, sampleResource: s});
+                                resourcesForCollectionPromises.push(req);
+                                req.then((resp) => {
+                                    console.log('Response for POST sampleResource:', resp);
+                                    let uri = PREFIX_URI + resp.id;
+                                    let data = {};
+                                    data[uri] = resp;
+                                    resp.id = uri;
+                                    resourcesForCollection.push(resp);
+                                    dispatch({ type: SAMPLE_RESOURCE_GET, payload: data });
+                                });
+                                req.catch((err) => {
+                                    console.log('Error on POST sampleResource', err)
+                                });
+                            })
+                            let partPromises = Promise.all(resourcesForCollectionPromises);
+                            partPromises.then((values) => {
+                                (<SampleCollection>sample).hasPart = resourcesForCollection;
+                                let req = sampleCollectionApi.samplecollectionsPost({user: DEFAULT_GRAPH, sampleCollection: sample});
+                                samplePromises.push(req);
+                                req.then((resp) => {
+                                        console.log('Response for POST sampleCollection:', resp);
+                                        let uri = PREFIX_URI + resp.id;
+                                        let data = {};
+                                        data[uri] = resp;
+                                        resp.id = uri;
+                                        newSample.push(resp);
+                                        dispatch({ type: SAMPLE_COLLECTION_GET, payload: data });
+                                        resolve(resp);
+                                });
+                                req.catch((err) => {
+                                    console.log('Error on POST sampleCollection', err)
+                                    reject(err);
+                                });
+                            });
+
+                        }));
+                    } else {
+                        let req = sampleResourceApi.sampleresourcesPost({user: DEFAULT_GRAPH, sampleResource: sample});
+                        samplePromises.push(req);
+                        req.then((resp) => {
+                                console.log('Response for POST sampleResource:', resp);
+                                let uri = PREFIX_URI + resp.id;
+                                let data = {};
+                                data[uri] = resp;
+                                resp.id = uri;
+                                newSample.push(resp);
                                 dispatch({ type: SAMPLE_RESOURCE_GET, payload: data });
-                            }
-                    });
-                    req.catch((err) => {
-                        console.log('Error on POST sample', err)
-                    });
+                        });
+                        req.catch((err) => {
+                            console.log('Error on POST sampleResource', err)
+                        });
+                    }
                 });
             }
 
@@ -188,13 +226,13 @@ export const modelConfigurationPost: ActionCreator<PostConfigThunk> = (modelConf
                 });
                 dispatch({type: END_POST, id: identifier, uri: uri});
 
-                console.log('PUT to', config)
+                /*console.log('PUT to', config) FIXME: this is done in the UI right now....
                 if (config.hasSetup) {
                     config.hasSetup.push(resp)
                 } else {
                     config.hasSetup = [resp]
                 }
-                /*modelConfigurationPut(config);*/
+                modelConfigurationPut(config);*/
 
             })
             req.catch((err) => {
@@ -242,6 +280,7 @@ export const modelConfigurationPut: ActionCreator<ModelCatalogModelConfiguration
         let api : ModelConfigurationApi = new ModelConfigurationApi(cfg);
         let id : string = modelConfiguration.id.split('/').pop();
         modelConfiguration.author = fixObjects(modelConfiguration.author);
+        modelConfiguration.hasOutput = fixObjects(modelConfiguration.hasOutput);
         api.modelconfigurationsIdPut({id: id, user: DEFAULT_GRAPH, modelConfiguration: modelConfiguration}) // This should be my username on prod.
             .then((resp) => {
                 console.log('Response for PUT modelConfiguration:', resp);
