@@ -587,12 +587,12 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                                     </a><br/>
                                     <span class="monospaced" style="white-space: nowrap;">${this._sampleResources[sample.id].dataCatalogIdentifier}</span>
                                 </div>
-                                ` : html`${sample.id.split('/').pop()} <loading-dots style="--width: 20px"></loading-dots>`}
+                                ` : html`${sample.id ? sample.id.split('/').pop() : console.log(fixed, sample)} <loading-dots style="--width: 20px"></loading-dots>`}
                             `)}
                         </span>`
                         : html`${fixed.id.split('/').pop()} <loading-dots style="--width: 20px"></loading-dots>`))
                     : html`
-                    <div class="info-center">- Not set -</div>`}
+                    <div class="info-center" style="white-space:nowrap;">- Not set -</div>`}
                 </td>
                 ${this._editing ? html`
                 <td>
