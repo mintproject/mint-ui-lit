@@ -10,6 +10,7 @@ export * from './region-actions';
 export * from './process-actions';
 export * from './parameter-actions';
 export * from './model-configuration-actions';
+export * from './model-configuration-setup-actions';
 export * from './dataset-specification-actions';
 export * from './sample-resource-actions';
 export * from './sample-collection-actions';
@@ -21,6 +22,7 @@ import { ModelCatalogGeoShapeAction } from './geo-shape-actions';
 import { ModelCatalogParameterAction } from './parameter-actions';
 import { ModelCatalogProcessAction } from './process-actions';
 import { ModelCatalogModelConfigurationAction } from './model-configuration-actions';
+import { ModelCatalogModelConfigurationSetupAction } from './model-configuration-setup-actions';
 import { ModelCatalogDatasetSpecificationAction } from './dataset-specification-actions';
 import { ModelCatalogSampleResourceAction } from './sample-resource-actions';
 import { ModelCatalogSampleCollectionAction } from './sample-collection-actions';
@@ -42,7 +44,7 @@ export const fixPosition = (resource:any) => {
 }
 
 export const fixObjects = (collection:any[]) => {
-    return collection.map(s => typeof s === "string" ? {id: s} : s);
+    return (collection||[]).map(s => typeof s === "string" ? {id: s} : s);
 }
 
 export const isValidId = (id:string) => typeof id === 'string' && id.includes(PREFIX_URI);
@@ -176,7 +178,8 @@ export const softwareImageGet: ActionCreator<ModelCatalogThunkResult> = (uri) =>
 export type ModelCatalogAction = MCACommon | ModelCatalogPersonAction | ModelCatalogParameterAction | ModelCatalogProcessAction |
                                  ModelCatalogModelConfigurationAction | ModelCatalogRegionAction | ModelCatalogSampleCollectionAction |
                                  ModelCatalogSampleResourceAction | ModelCatalogDatasetSpecificationAction |
-                                 MCAModelsGet | MCAVersionsGet | ModelCatalogGeoShapeAction |
+                                 MCAModelsGet | MCAVersionsGet | ModelCatalogGeoShapeAction
+                                 |ModelCatalogModelConfigurationSetupAction |
                                  MCAGridGet | MCATimeIntervalGet | MCASoftwareImageGet;
 
 type ModelCatalogThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogAction>;
