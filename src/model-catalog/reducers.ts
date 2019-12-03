@@ -10,6 +10,7 @@ import { START_LOADING, END_LOADING, START_POST, END_POST,
          SAMPLE_RESOURCE_GET, SAMPLE_RESOURCES_GET, ALL_SAMPLE_RESOURCES, SAMPLE_RESOURCE_DELETE, 
          SAMPLE_COLLECTION_GET, SAMPLE_COLLECTIONS_GET, ALL_SAMPLE_COLLECTIONS, SAMPLE_COLLECTION_DELETE, 
          MODEL_CONFIGURATION_GET, MODEL_CONFIGURATIONS_GET, ALL_MODEL_CONFIGURATIONS, MODEL_CONFIGURATION_DELETE,
+         MODEL_CONFIGURATION_SETUP_GET,
          MODELS_GET, VERSIONS_GET, ALL_MODELS, ALL_VERSIONS, 
          GRID_GET, TIME_INTERVAL_GET, SOFTWARE_IMAGE_GET } from './actions'
 
@@ -124,6 +125,12 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             return {
                 ...state,
                 loadedAll: tmp,
+                configurations: {...state.configurations, ...action.payload}
+            }
+
+        case MODEL_CONFIGURATION_SETUP_GET:
+            return {
+                ...state,
                 configurations: {...state.configurations, ...action.payload}
             }
 
