@@ -17,7 +17,7 @@ import { personGet, personPost, modelConfigurationPost, parameterPost, modelConf
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
 import { IdMap } from 'app/reducers';
-import { SampleResource, SampleCollection } from '@mintproject/modelcatalog_client';
+import { SampleResource, SampleCollection, Region } from '@mintproject/modelcatalog_client';
 
 import "weightless/slider";
 import "weightless/progress-spinner";
@@ -39,6 +39,9 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _model: any = null;
+
+    @property({type: Object})
+    private _regions : any = null;
 
     @property({type: Object})
     private _version: any = null;
@@ -232,6 +235,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         }
         this._originalConfig.hasSetup.push({id: setupId})
         store.dispatch(modelConfigurationPut(this._originalConfig));
+        goToPage(createUrl(this._model, this._version, this._config, {id: setupId}));
     }
 
     private _parameterIdentifier = 0;
@@ -246,13 +250,15 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         let keywordsEl  = this.shadowRoot.getElementById('new-setup-keywords') as HTMLInputElement;
         let regionEl    = this.shadowRoot.getElementById('edit-config-regions') as HTMLInputElement;
         let assignMeEl  = this.shadowRoot.getElementById('new-setup-assign-method') as HTMLInputElement;
+        let usageEl     = this.shadowRoot.getElementById('new-setup-usage-notes') as HTMLInputElement;
 
         if (nameEl && descEl && keywordsEl && assignMeEl && regionEl) {
             let name        = nameEl.value;
             let desc        = descEl.value;
             let keywords    = keywordsEl.value;
-            let region     = regionEl.value;
+            let region      = regionEl.value;
             let assignMe    = assignMeEl.value;
+            let notes       = usageEl.value;
 
             if (!name || !assignMe) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
@@ -267,8 +273,10 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
 
             delete setupCreated.hasSetup;
             setupCreated.id = undefined;
+            setupCreated.hasOutput = undefined;
             setupCreated.label = [name];
             setupCreated.description = [desc];
+            setupCreated.hasUsageNotes = [notes];
             setupCreated.keywords = [keywords.split(/ *, */).join('; ')];
             setupCreated.parameterAssignmentMethod = [assignMe];
             setupCreated.hasRegion = [{id: region}];
@@ -289,9 +297,9 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             this._waitingFor = 'PostSetup' + this._setupIdentifier;
             this._setupIdentifier += 1;
 
-            //store.dispatch(modelConfigurationPost(setupCreated, configUri, this._waitingFor));
+            store.dispatch(modelConfigurationPost(setupCreated, configUri, this._waitingFor));
 
-            //showNotification("saveNotification", this.shadowRoot!);
+            showNotification("saveNotification", this.shadowRoot!);
             //goToPage(createUrl(this._model, this._version, this._config));
         }
     }
@@ -367,22 +375,12 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             keywords = this._config.keywords[0].split(/ *; */).join(', ');
         }
 
-        // FIXME this should work with the new API
-        let selectRegions = [];
-        if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/Ethiopia') {
-            selectRegions = [
-                {label: 'Baro basin', id: 'https://w3id.org/okn/i/mint/Baro'},
-                {label: 'Gambella region', id: 'https://w3id.org/okn/i/mint/Gambella'},
-            ]
-        } else if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/South_Sudan') {
-            selectRegions = [
-                {label: 'Pongo basin', id: 'https://w3id.org/okn/i/mint/Pongo_Basin_SS'},
-            ]
-        } else if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/Texas') {
-            selectRegions = [
-                {label: 'Barton Springs', id: ''},
-            ]
-        }
+        //Regions, FIX Texas
+        if (this._region && this._region.model_catalog_uri === 'https://w3id.org/okn/i/mint/Texas')
+            this._region.model_catalog_uri = 'https://w3id.org/okn/i/mint/United_States';
+
+        let visibleRegions = Object.values(this._regions)
+                .filter((r:Region) => r.country && r.country.filter(c => c.id === this._region.model_catalog_uri).length > 0);
 
         return html`
         <span id="start"></span>
@@ -414,7 +412,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 <td>Region:</td>
                 <td>
                     <select id="edit-config-regions">
-                        ${selectRegions.map(r => html`<option value="${r.id}">${r.label}</option>`)}
+                        ${visibleRegions.map((r:Region) => html`<option value="${r.id}">${r.label}</option>`)}
                     </select>
                 </td>
             </tr>
@@ -458,7 +456,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Component Location:</td>
                 <td>
-                    <textarea id="edit-setup-comp-loc" disabled>${this._config.hasComponentLocation}</textarea>
+                    <textarea id="new-setup-comp-loc" disabled>${this._config.hasComponentLocation}</textarea>
                 </td>
             </tr>
 
@@ -519,6 +517,14 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         @click="${this._showProcessDialog}"><wl-icon>edit</wl-icon></wl-button>
                 </td>
             </tr>
+
+            <tr>
+                <td>Usage notes:</td>
+                <td>
+                    <textarea id="new-setup-usage-notes">${this._config.hasUsageNotes}</textarea>
+                </td>
+            </tr>
+
         </table>
 
         <wl-title level="4" style="margin-top:1em;">Parameters:</wl-title>
@@ -786,6 +792,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
 
             if (state.modelCatalog) {
                 let db = state.modelCatalog;
+                this._regions = db.regions;
 
                 //TO SAVE
                 if (this._waitingFor) {
