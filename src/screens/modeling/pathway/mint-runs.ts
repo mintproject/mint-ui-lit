@@ -82,7 +82,12 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             };
             let input_parameters = model.input_parameters
                 .filter((input) => !input.value)
-                .sort((a, b) => a.name.localeCompare(b.name));
+                .sort((a, b) => {
+                    if(a.position && b.position)
+                        return a.position - b.position;
+                    else 
+                        return a.name.localeCompare(b.name)
+                });
             input_parameters.map((ip) => {
                 if(!ip.value)
                     grouped_ensembles[model.id].params.push(ip);
