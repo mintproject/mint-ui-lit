@@ -49,19 +49,21 @@ export class RegionsAgriculture extends connect(store)(PageViewElement)  {
 
         return html`
         <div class="content">
+            ${this._regionid === 'south_sudan' ? html`
             <wl-tab-group align="center" style="margin-bottom: 1em;">
                 <wl-tab @click="${() => this._tab = 'base'}" checked="${this._tab === 'base'}">Base regions</wl-tab>
                 <wl-tab @click="${() => this._tab = 'woredas'}" checked="${this._tab === 'woredas'}">Woredas</wl-tab>
             </wl-tab-group>
+            ` : ''}
 
-            ${this._tab == 'base' ? html`
+            ${this._tab == 'base' || this._regionid !== 'south_sudan' ? html`
             <regions-editor active
                 style="--map-height: 450px;"
                 regionType="Agriculture"
             ></regions-editor>
             ` : ''}
 
-            ${this._tab == 'woredas' ? html`
+            ${this._tab == 'woredas' && this._regionid === 'south_sudan' ? html`
             <regions-editor active
                 style="--map-height: 450px;"
                 regionType="Woredas"
