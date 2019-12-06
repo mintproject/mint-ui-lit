@@ -4,7 +4,7 @@ import { RootState, store } from 'app/store';
 
 import { Configuration, ModelConfiguration, ModelConfigurationSetup, ModelConfigurationSetupApi, Parameter, ParameterApi, DatasetSpecificationApi, 
          SampleResourceApi, SampleCollectionApi, DatasetSpecification, SampleResource, SampleCollection } from '@mintproject/modelcatalog_client';
-import { idReducer, isValidId, fixObjects, getStatusConfigAndUser, repeatAction, PREFIX_URI, DEFAULT_GRAPH,
+import { idReducer, isValidId, fixObjects, getStatusConfigAndUser, PREFIX_URI, DEFAULT_GRAPH,
          START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
 import { PARAMETER_GET, MCAParameterGet } from './parameter-actions'
 import { DATASET_SPECIFICATION_GET, MCADatasetSpecificationGet } from './dataset-specification-actions'
@@ -236,7 +236,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
             })
             req.catch((err) => {
                 console.log('Error on POST modelConfigurationSetup', err)
-            })
+            });
         });
         waiting.catch((err) => {
             console.error('POST setup failed!', err);

@@ -3,7 +3,7 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
 import { Configuration, DatasetSpecification, DatasetSpecificationApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, DEFAULT_GRAPH,
+import { idReducer, getStatusConfigAndUser, PREFIX_URI, DEFAULT_GRAPH,
          START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
 
 function debug (...args: any[]) {}// console.log('OBA:', ...args); }
@@ -78,8 +78,8 @@ export const datasetSpecificationPost: ActionCreator<ModelCatalogDatasetSpecific
                 dispatch({type: END_POST, id: identifier, uri: uri});
         });
         req.catch((err) => {console.log('Error on POST datasetSpecification', err)});
-    } else if (status === 'LOADING') {
-        repeatAction(datasetSpecificationPost, datasetSpecification);
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 
@@ -106,8 +106,8 @@ export const datasetSpecificationPut: ActionCreator<ModelCatalogDatasetSpecifica
                 dispatch({type: END_LOADING, id: datasetSpecification.id});
         });
         req.catch((err) => {console.log('Error on PUT datasetSpecification', err)});
-    } else if (status === 'LOADING') {
-        repeatAction(datasetSpecificationPut, datasetSpecification);
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 
@@ -129,8 +129,8 @@ export const datasetSpecificationDelete: ActionCreator<ModelCatalogDatasetSpecif
                 });
         });
         req.catch((err) => {console.log('Error on DELETE datasetSpecification', err)});
-    } else if (status === 'LOADING') {
-        repeatAction(datasetSpecificationDelete, uri);
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 
