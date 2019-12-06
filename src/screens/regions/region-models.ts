@@ -99,7 +99,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
             return;
         }
 
-        return this._regionid + '/models/explore/' + model.id.split('/').pop() + '/' + version.hasVersionId[0] +
+        return this._regionid + '/models/explore/' + model.id.split('/').pop() + '/' + version.id.split('/').pop() +
                '/' + config.id.split('/').pop() + '/' + setupURI.split('/').pop();
     }
 

@@ -3,7 +3,7 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
 import { Configuration, Parameter, ParameterApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, DEFAULT_GRAPH,
+import { idReducer, getStatusConfigAndUser, PREFIX_URI, DEFAULT_GRAPH,
          START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
 
 function debug (...args: any[]) {}// console.log('OBA:', ...args); }
@@ -78,8 +78,8 @@ export const parameterPost: ActionCreator<ModelCatalogParameterThunkResult> = (p
                 dispatch({type: END_POST, id: identifier, uri: uri});
         });
         req.catch((err) => {console.log('Error on POST parameter', err)});
-    } else if (status === 'LOADING') {
-        repeatAction(parameterPost, parameter);
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 
@@ -106,8 +106,8 @@ export const parameterPut: ActionCreator<ModelCatalogParameterThunkResult> = ( p
                 dispatch({type: END_LOADING, id: parameter.id});
         });
         req.catch((err) => {console.log('Error on PUT parameter', err)});
-    } else if (status === 'LOADING') {
-        repeatAction(parameterPut, parameter);
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 
@@ -130,8 +130,8 @@ export const parameterDelete: ActionCreator<ModelCatalogParameterThunkResult> = 
                 });
         });
         req.catch((err) => {console.log('Error on DELETE parameter', err)});
-    } else if (status === 'LOADING') {
-        repeatAction(parameterDelete, uri);
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 
