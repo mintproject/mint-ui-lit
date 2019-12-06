@@ -369,7 +369,7 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _addConfig () {
         if (this._model && this._version && this._config) {
-            let url = 'models/configure/' + this._model.uri.split('/').pop() + '/' + this._version.id + '/'
+            let url = 'models/configure/' + this._model.uri.split('/').pop() + '/' + this._version.uri.split('/').pop() + '/'
                     + this._config.uri.split('/').pop() + '/new';
             goToPage(url)
         }
@@ -408,9 +408,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             (<any>configSelectorWl).refreshAttributes();
         } else if (configSelectorWl) {
             /* FIXME: Sometimes, when versions data load faster than the wl-selector renders, we could end here.
-             * The selectors will appear empty, but any update fixes it.
-             * Something like a configSelectorWl.addEventListener('DOMContentLoaded', update..) should fix it but i
-             * cannot make it works :-( */
+             * The selectors will appear empty, but any update fixes it. */
             setTimeout(() => {
                 this._updateConfigSelector();
             }, 400);
@@ -1608,10 +1606,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                     this._versions = db.versions[this._selectedModel];
                 }
                 if (this._versions && !this._version) {
-                    let versionId : string = this._selectedVersion.split('/').pop();
+                    //let versionId : string = this._selectedVersion.split('/').pop();
                     this._version = this._versions.reduce((V, ver) => {
                         if (V) return V;
-                        else return (ver.id === versionId) ? ver : null;
+                        else return (ver.uri === this._selectedVersion) ? ver : null;
                     }, null)
                 }
                 if (this._version && !this._config) {

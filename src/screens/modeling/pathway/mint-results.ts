@@ -398,8 +398,6 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             });
         });
 
-        console.log(csv);
-
         //TODO: move this to other file
         //https://stackoverflow.com/questions/14964035/how-to-export-javascript-array-info-to-csv-on-client-side
         var download = function(content, fileName, mimeType) {

@@ -333,7 +333,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         if (this._region && this._region.model_catalog_uri === 'https://w3id.org/okn/i/mint/Texas')
             this._region.model_catalog_uri = 'https://w3id.org/okn/i/mint/United_States';
 
-        let visibleRegions = Object.values(this._regions)
+        let visibleRegions = Object.values(this._regions || {})
                 .filter((r:Region) => r.country && r.country.filter(c => c.id === this._region.model_catalog_uri).length > 0);
 
         return html`
