@@ -269,12 +269,12 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             setupCreated.parameterAssignmentMethod = [assignMe];
             setupCreated.hasRegion = [{id: region}];
 
-            setupCreated.hasInput = setupCreated.hasInput.map((input) => {
+            setupCreated.hasInput = (setupCreated.hasInput || []).map((input) => {
                 let newInput = this._inputs[input.id];
                 newInput.id = '';
                 return newInput;
             });
-            setupCreated.hasParameter = setupCreated.hasParameter.map((param) => {
+            setupCreated.hasParameter = (setupCreated.hasParameter || []).map((param) => {
                 let newParam = this._parameters[param.id];
                 newParam.id = '';
                 return newParam;
