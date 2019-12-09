@@ -134,7 +134,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         return html`
         <div style="display: flex; margin-bottom: 10px;">
             <wl-tab-group align="center" style="width: 100%;">
-                <wl-tab @click="${() => this._selectSubcategory('')}" checked="${this._tab === 'base'}">Base regions</wl-tab>
+                <wl-tab @click="${() => this._selectSubcategory('')}" checked>Base regions</wl-tab>
                 ${this._subcategories.map((cat => html`
                 <wl-tab @click="${() => this._selectSubcategory(cat)}">${cat}</wl-tab>
                 `))}
@@ -279,7 +279,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#regionsForm")!;
         let checkboxes = form.getElementsByClassName("regionindex");
         let names = form.getElementsByClassName("regionname");
-        let subcategory = this.shadowRoot!.getElementById("subcategory-selector");
+        let subcategory = this.shadowRoot!.getElementById("subcategory-selector") as HTMLInputElement;
         let regionType = subcategory.value === 'base' ? this.regionType : subcategory.value;
         let newregions = [];
         for(let i=0; i<checkboxes.length; i++) {
@@ -321,7 +321,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     }
 
     _onAddSubcategorySubmit() {
-        let nameEl = this.shadowRoot!.getElementById('subcategory-name');
+        let nameEl = this.shadowRoot!.getElementById('subcategory-name') as HTMLInputElement;
         let name = nameEl.value;
         if (!name) {
             showNotification("formValuesIncompleteNotification", this.shadowRoot!);
@@ -336,9 +336,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 this.requestUpdate();
             })
         } else {
-            showNotification("formValuesIncompleteNotification", this.shadowRoot!);
+            /*showNotification("formValuesIncompleteNotification", this.shadowRoot!);
             return;
-            /* This remove the region:
+            /* This remove the region:*/
             removeSubcategory(this._regionid, this.regionType, name).then((value) => {
                 hideDialog("addSubcategoryDialog", this.shadowRoot);
                 this._subcategories.splice(index, 1);
@@ -347,7 +347,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 });
                 if (this._selectedSubcategory == name) this._selectSubcategory('');
                 else this.requestUpdate();
-            })*/
+            })
         }
     }
 

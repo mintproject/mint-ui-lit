@@ -208,7 +208,7 @@ export const addRegions = (parent_regionid: string, regions: Region[]) : Promise
     );
 };
 
-export const addSubcategory = (parent_regionid: string, category: string, subcategory: string) : Promise<void[]> => {
+export const addSubcategory = (parent_regionid: string, category: string, subcategory: string) : Promise<any> => {
     let regionRef = db.collection('regions').doc(parent_regionid);
     let subcategory_name = category.toLowerCase() + '_subcategories';
     let edit = {};
@@ -224,7 +224,7 @@ export const addSubcategory = (parent_regionid: string, category: string, subcat
     });
 };
 
-export const removeSubcategory = (parent_regionid: string, category: string, subcategory: string) : Promise<void[]> => {
+export const removeSubcategory = (parent_regionid: string, category: string, subcategory: string) : Promise<any> => {
     let regionRef = db.collection('regions').doc(parent_regionid);
     let subcategory_name = category.toLowerCase() + '_subcategories';
     let edit = {};
