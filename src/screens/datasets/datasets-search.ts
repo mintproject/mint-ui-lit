@@ -129,7 +129,7 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
                             <div style="display:flex; justify-content:space-between">
                                 <wl-title level="5" style="color:#aaa">id:${ds.id}</wl-title>
                                 <span style="color: ${ds.is_cached ? 'green' : 'lightsalmon'}">
-                                    ${ds.is_cached ? 'Available on MINT servers' : 'Not available on MINT servers'}
+                                    ${ds.is_cached ? 'Available on MINT servers' : 'Available for download'}
                                 </span>
                             </div>
                             <br />

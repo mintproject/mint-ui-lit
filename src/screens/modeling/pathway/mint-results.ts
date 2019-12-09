@@ -15,6 +15,7 @@ import { Model } from "screens/models/reducers";
 import { IdMap } from "app/reducers";
 import { DataResource } from "screens/datasets/reducers";
 import { isObject } from "util";
+import { downloadFile } from "util/ui_functions";
 
 @customElement('mint-results')
 export class MintResults extends connect(store)(MintPathwayPage) {
@@ -405,30 +406,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             });
         });
 
-        //TODO: move this to other file
-        //https://stackoverflow.com/questions/14964035/how-to-export-javascript-array-info-to-csv-on-client-side
-        var download = function(content, fileName, mimeType) {
-          var a = document.createElement('a');
-          mimeType = mimeType || 'application/octet-stream';
-
-          if (navigator.msSaveBlob) { // IE10
-            navigator.msSaveBlob(new Blob([content], {
-              type: mimeType
-            }), fileName);
-          } else if (URL && 'download' in a) { //html5 A[download]
-            a.href = URL.createObjectURL(new Blob([content], {
-              type: mimeType
-            }));
-            a.setAttribute('download', fileName);
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-          } else {
-            location.href = 'data:application/octet-stream,' + encodeURIComponent(content); // only this mime type is supported
-          }
-        }
-
-        download(csv, 'results.csv', 'text/csv;encoding:utf-8');
+        downloadFile(csv, 'results.csv', 'text/csv;encoding:utf-8');
     }
 
     _nextPage(modelid: string, offset:  number) {
