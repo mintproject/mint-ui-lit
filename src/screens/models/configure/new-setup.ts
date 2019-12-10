@@ -625,6 +625,23 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         ${renderNotifications()}`
     }
 
+    _clearForm () {
+        let nameEl      = this.shadowRoot.getElementById('new-setup-name') as HTMLInputElement;
+        let descEl      = this.shadowRoot.getElementById('new-setup-desc') as HTMLInputElement;
+        let keywordsEl  = this.shadowRoot.getElementById('new-setup-keywords') as HTMLInputElement;
+        let regionEl    = this.shadowRoot.getElementById('edit-config-regions') as HTMLInputElement;
+        let assignMeEl  = this.shadowRoot.getElementById('new-setup-assign-method') as HTMLInputElement;
+        let usageEl     = this.shadowRoot.getElementById('new-setup-usage-notes') as HTMLInputElement;
+        if (nameEl && descEl && keywordsEl && assignMeEl && regionEl) {
+            nameEl      .value = '';
+            descEl      .value = '';
+            keywordsEl  .value = '';
+            regionEl    .value = '';
+            assignMeEl  .value = '';
+            usageEl     .value = '';
+        }
+    }
+
     _showNewInputDialog ( datasetSpecUri : string ) {
         this._dialog = 'input';
         let inputConfigurator = this.shadowRoot.getElementById('input-configurator') as ModelsConfigureInput;
@@ -756,6 +773,8 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 this._authorsLoading = new Set();
                 this._processes = {};
                 this._processesLoading = new Set();
+
+                this._clearForm();
             }
 
             if (state.modelCatalog) {
