@@ -351,7 +351,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Description:</td>
                 <td>
-                    <textarea id="new-setup-desc" name="description" rows="5"></textarea>
+                    <textarea id="new-setup-desc" name="description" rows="4"></textarea>
                 </td>
             </tr>
 
@@ -475,7 +475,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Usage notes:</td>
                 <td>
-                    <textarea id="new-setup-usage-notes">${this._config.hasUsageNotes}</textarea>
+                    <textarea id="new-setup-usage-notes" rows="6">${this._config.hasUsageNotes}</textarea>
                 </td>
             </tr>
 
