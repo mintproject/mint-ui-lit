@@ -251,10 +251,10 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             let notes       = usageEl.value;
 
             if (!name || !assignMe) {
-                showNotification("formValuesIncompleteNotification", this.shadowRoot!);
-                (<any>nameEl).refreshAttributes();
-                (<any>assignMeEl).refreshAttributes();
+                if (!name) nameEl.setAttribute('invalid', true);
+                if (!assignMe) assignMeEl.setAttribute('invalid', true);
                 this._scrollUp();
+                showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 return;
             }
 
@@ -337,9 +337,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 .filter((r:Region) => r.country && r.country.filter(c => c.id === this._region.model_catalog_uri).length > 0);
 
         return html`
-        <span id="start"></span>
-
-        <table class="details-table">
+        <table class="details-table" id="start">
             <colgroup width="150px">
 
             <tr>
