@@ -251,10 +251,10 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             let notes       = usageEl.value;
 
             if (!name || !assignMe) {
-                showNotification("formValuesIncompleteNotification", this.shadowRoot!);
-                (<any>nameEl).refreshAttributes();
-                (<any>assignMeEl).refreshAttributes();
+                if (!name) nameEl.setAttribute('invalid', 'true');
+                if (!assignMe) assignMeEl.setAttribute('invalid', 'true');
                 this._scrollUp();
+                showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 return;
             }
 
@@ -337,9 +337,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 .filter((r:Region) => r.country && r.country.filter(c => c.id === this._region.model_catalog_uri).length > 0);
 
         return html`
-        <span id="start"></span>
-
-        <table class="details-table">
+        <table class="details-table" id="start">
             <colgroup width="150px">
 
             <tr>
@@ -351,7 +349,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Description:</td>
                 <td>
-                    <textarea id="new-setup-desc" name="description" rows="5"></textarea>
+                    <textarea id="new-setup-desc" name="description" rows="4"></textarea>
                 </td>
             </tr>
 
@@ -475,7 +473,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Usage notes:</td>
                 <td>
-                    <textarea id="new-setup-usage-notes">${this._config.hasUsageNotes}</textarea>
+                    <textarea id="new-setup-usage-notes" rows="6">${this._config.hasUsageNotes}</textarea>
                 </td>
             </tr>
 
@@ -627,6 +625,23 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         ${renderNotifications()}`
     }
 
+    _clearForm () {
+        let nameEl      = this.shadowRoot.getElementById('new-setup-name') as HTMLInputElement;
+        let descEl      = this.shadowRoot.getElementById('new-setup-desc') as HTMLInputElement;
+        let keywordsEl  = this.shadowRoot.getElementById('new-setup-keywords') as HTMLInputElement;
+        let regionEl    = this.shadowRoot.getElementById('edit-config-regions') as HTMLInputElement;
+        let assignMeEl  = this.shadowRoot.getElementById('new-setup-assign-method') as HTMLInputElement;
+        let usageEl     = this.shadowRoot.getElementById('new-setup-usage-notes') as HTMLInputElement;
+        if (nameEl && descEl && keywordsEl && assignMeEl && regionEl) {
+            nameEl      .value = '';
+            descEl      .value = '';
+            keywordsEl  .value = '';
+            regionEl    .value = '';
+            assignMeEl  .value = '';
+            usageEl     .value = '';
+        }
+    }
+
     _showNewInputDialog ( datasetSpecUri : string ) {
         this._dialog = 'input';
         let inputConfigurator = this.shadowRoot.getElementById('input-configurator') as ModelsConfigureInput;
@@ -758,6 +773,8 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 this._authorsLoading = new Set();
                 this._processes = {};
                 this._processesLoading = new Set();
+
+                this._clearForm();
             }
 
             if (state.modelCatalog) {
