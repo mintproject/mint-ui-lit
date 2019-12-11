@@ -13,6 +13,7 @@ import './configure/configuration';
 import './configure/setup';
 import './configure/new-setup';
 import './configure/parameter';
+import './models-tree'
 
 import { fetchIOAndVarsSNForConfig, fetchAuthorsForModelConfig, fetchParametersForConfig,
          fetchMetadataNoioForModelConfig, addParameters, addCalibration, addMetadata,
@@ -236,116 +237,13 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         ];
     }
 
-    _getId (resource) {
-        return resource.id.split('/').pop();
-    }
-
-    _createUrl (model, version?, config?, setup?) {
-        let url = 'models/configure/' + this._getId(model);
-        if (version) {
-            url += '/' + this._getId(version);
-            if (config) {
-                url += '/' + this._getId(config);
-                if (setup) {
-                    url += '/' + this._getId(setup);
-                }
-            }
-        }
-        return url;
-    }
-
-    _select (model, version, config, setup?) {
-        goToPage(this._createUrl(model, version, config, setup));
-    }
-
-    _selectNew (model, version, config?) {
-        goToPage(this._createUrl(model, version, config) + '/new');
-    }
-
-    _renderVersionTree () {
-        if (!this._models || !this._region || !this._regions) 
-            return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
-
-        if (this._region && this._region.model_catalog_uri === 'https://w3id.org/okn/i/mint/Texas')
-            this._region.model_catalog_uri = 'https://w3id.org/okn/i/mint/United_States';
-
-        const visibleSetup = (setup) => setup && (
-            !setup.hasRegion || setup.hasRegion.length === 0 ||
-            (this._region && !this._region.model_catalog_uri) ||
-            setup.hasRegion.filter((r:any) => r.id === this._region.model_catalog_uri).length > 0 ||
-            setup.hasRegion.filter((r:any) => 
-                this._regions[r.id] &&
-                this._regions[r.id].country &&
-                this._regions[r.id].country.length > 0 &&
-                this._regions[r.id].country[0].id === this._region.model_catalog_uri
-            ).length > 0
-        );
-
-        return html`
-        <ul>
-            ${Object.values(this._models).filter((model: any) => !!model.hasVersion).map((model: any) => html`
-            <li>
-                ${model.label}
-                ${!this._versions ? html`<loading-dots style="--width: 20px"></loading-dots>` : html`
-                <ul>
-                    ${model.hasVersion.filter(v => !!this._versions[v.id]).map((v) => this._versions[v.id]).map((version) => html`
-                    <li>
-                        ${version.label ? version.label : version.id.split('/').pop()}
-                        ${!this._configs ? html`<loading-dots style="--width: 20px"></loading-dots>` : html`
-                        <ul>
-                            ${(version.hasConfiguration || []).filter(c => !!c.id).map((c) => this._configs[c.id]).map((config) => html`
-                            <li>
-                                <a @click="${()=>{this._select(model, version, config)}}">
-                                    ${config ? config.label : 'ERR: no-config-label'}
-                                </a>
-                                <ul>
-                                    ${((config ? config.hasSetup : []) || []).map((s) => this._configs[s.id])
-                                        .filter(visibleSetup)
-                                        .map(setup => html`
-                                    <li>
-                                        <a @click="${()=>{this._select(model, version, config, setup)}}">
-                                            ${setup ? setup.label : html`ERR: no-setup-label
-                                        ${console.log(setup)}
-                                            `}
-                                        </a>
-                                    </li>
-                                    `)}
-                                    <li>
-                                        <a class="inline-new-button" @click="${()=>{this._selectNew(model, version, config)}}">
-                                            <wl-icon>add_circle_outline</wl-icon>
-                                            Add new setup
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                            `)}
-                            <!--li>
-                                <a class="inline-new-button" @click="">
-                                    <wl-icon>add_circle_outline</wl-icon>
-                                    Add new configuration
-                                </a>
-                            </li-->
-                        </ul>`}
-                    </li>`)}
-                </ul>
-                `}
-            </li>
-        `)}
-        </ul>`;
-    }
-    //${()=>{this._selectNew(model, version)}}
-
     protected render() {
         return html`
         <div class="twocolumns">
             <div class="${this._hideModels ? 'left_closed' : 'left'}">
                 <div class="clt">
-                    <div class="cltrow_padded">
-                        <div class="cltmain">
-                            <wl-title level="4" style="margin: 0px">Models:</wl-title>
-                        </div>
-                    </div>                    
-                    ${this._renderVersionTree()}
+                    <wl-title level="4" style="margin: 4px; padding: 10px;">Models:</wl-title>
+                    <models-tree active></models-tree>
                 </div>
             </div>
 

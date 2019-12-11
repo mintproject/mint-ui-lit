@@ -251,8 +251,8 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             let notes       = usageEl.value;
 
             if (!name || !assignMe) {
-                if (!name) nameEl.setAttribute('invalid', true);
-                if (!assignMe) assignMeEl.setAttribute('invalid', true);
+                if (!name) nameEl.setAttribute('invalid', 'true');
+                if (!assignMe) assignMeEl.setAttribute('invalid', 'true');
                 this._scrollUp();
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 return;
