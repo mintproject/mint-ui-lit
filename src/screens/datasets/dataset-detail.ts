@@ -20,6 +20,7 @@ import { queryDatasetResources } from './actions';
 import { GoogleMapCustom } from 'components/google-map-custom';
 import { UserPreferences } from 'app/reducers';
 import { getRegionDetails } from 'screens/regions/actions';
+import { showDialog, hideDialog } from 'util/ui_functions';
 
 
 @customElement('dataset-detail')
@@ -91,11 +92,13 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
         if(!_ds && this._dataset && !this._dataset.loading) {
             return html `<center>No resources found for this dataset</center>`;
         }
+        console.log(_ds);
         return html`
             ${!_ds ?
                 html`<wl-progress-spinner class="loading"></wl-progress-spinner>`
                 :
                 html`
+                ${this._renderJsonDialog(_ds)}
                 <br />
                 <wl-title level="4">${_ds.name}</wl-title>
                 <div style="display:flex; justify-content:space-between">
@@ -104,6 +107,12 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                         <span style="color: ${_ds.is_cached ? 'green' : 'lightsalmon'}">
                             ${_ds.is_cached ? 'Available on MINT servers' : 'Available for download'}
                         </span>
+                        ${_ds.resource_repr || _ds.dataset_repr ? html`
+                        |
+                        <span style="cursor: pointer; color: 'green'" @click="${() => {showDialog('jsonDialog', this.shadowRoot)}}">
+                            MINT Understandable Format
+                        </span>
+                        ` : ''}
                         ${_ds.is_cached ? '' : html`
                         <br />
                         <span style="cursor: not-allowed;">
@@ -181,6 +190,21 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                 ` : ""
             }
         `;
+    }
+
+    _renderJsonDialog (ds) {
+        return html`
+        <wl-dialog class="larger" id="jsonDialog" fixed backdrop blockscrolling>
+            <h3 slot="header">
+                ${ds.resource_repr ? 'resource_repr' : 'dataset_repr'} details
+            </h3>
+            <div slot="content">
+                <pre>${JSON.stringify(ds.resource_repr || ds.dataset_repr, null, 2)}</pre>
+            </div>
+            <div slot="footer">
+                <wl-button @click="${() => { hideDialog("jsonDialog", this.shadowRoot); }}" style="margin-right: 5px;" inverted flat>Close</wl-button>
+            </div>
+        </wl-dialog>`
     }
 
     _showDatasetLocations() {

@@ -128,8 +128,12 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
                             </div>
                             <div style="display:flex; justify-content:space-between">
                                 <wl-title level="5" style="color:#aaa">id:${ds.id}</wl-title>
-                                <span style="color: ${ds.is_cached ? 'green' : 'lightsalmon'}">
-                                    ${ds.is_cached ? 'Available on MINT servers' : 'Available for download'}
+                                <span>
+                                    <span style="color: ${ds.is_cached ? 'green' : 'lightsalmon'}">
+                                        ${ds.is_cached ? 'Available on MINT servers' : 'Available for download'}
+                                    </span>
+                                    ${ds.resource_repr || ds.dataset_repr ? html` |
+                                    <span style="color: 'green'"> MINT Understandable Format </span>` : ''}
                                 </span>
                             </div>
                             <br />

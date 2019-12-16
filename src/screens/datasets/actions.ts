@@ -73,6 +73,8 @@ const getResourceObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuer
                 version: dmeta["version"] || "",
                 limitations: dmeta["limitations"] || "",
                 is_cached: dmeta["is_cached"] || false,
+                resource_repr: dmeta["resource_repr"] || undefined,
+                dataset_repr: dmeta["dataset_repr"] || undefined,
                 source: {
                     name: dmeta["source"] || "",
                     url: dmeta["source_url"] || "",
@@ -137,6 +139,8 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
             version: dmeta["version"] || "",
             limitations: dmeta["limitations"] || "",
             is_cached: dmeta["is_cached"] || false,
+            resource_repr: dmeta["resource_repr"] || undefined,
+            dataset_repr: dmeta["dataset_repr"] || undefined,
             source: {
                 name: dmeta["source"] || "",
                 url: dmeta["source_url"] || "",
