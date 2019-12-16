@@ -23,16 +23,15 @@ export const renderVariables = (readonly: boolean, response_callback: Function, 
 
 export const renderNotifications = () => {
     return html`
-    <wl-snackbar id="formValuesIncompleteNotification" fixed backdrop>
+    <wl-snackbar id="formValuesIncompleteNotification" fixed backdrop disableFocusTrap>
         <wl-icon slot="icon">error</wl-icon>
         <span>Please fill in all the required values.</span>
     </wl-snackbar>
-
-    <wl-snackbar id="saveNotification" hideDelay="2000" fixed backdrop>
+    <wl-snackbar id="saveNotification" hideDelay="2000" fixed backdrop disableFocusTrap>
         <wl-icon slot="icon">save</wl-icon>
         <span>Saving...</span>
     </wl-snackbar>
-    <wl-snackbar id="deleteNotification" hideDelay="2000" fixed backdrop>
+    <wl-snackbar id="deleteNotification" hideDelay="2000" fixed backdrop disableFocusTrap>
         <wl-icon slot="icon">delete</wl-icon>
         <span>Deleting...</span>
     </wl-snackbar>   
@@ -47,10 +46,6 @@ export const renderNotifications = () => {
     <wl-snackbar id="selectTwoModelsNotification" fixed backdrop>
         <wl-icon slot="icon">error</wl-icon>
         <span>Please select at least two models.</span>
-    </wl-snackbar>
-    <wl-snackbar id="cantSave" fixed backdrop>
-        <wl-icon slot="icon">error</wl-icon>
-        <span>Cannot save in this moment. Sorry!</span>
     </wl-snackbar>
     `;
 }

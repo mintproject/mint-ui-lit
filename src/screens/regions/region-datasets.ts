@@ -87,7 +87,7 @@ export class RegionDatasets extends connect(store)(RegionQueryPage)  {
                         <div>
                             ${ds.is_cached ? 
                                 html`<span style="color: green">Available on MINT servers</span>` :
-                                html`<span style="color: lightsalmon">Not available on MINT servers</span>`}
+                                html`<span style="color: lightsalmon">Available for download</span>`}
                             <span style="color: gray">-</span> ${ds.resources.length} files
                         </div>
                     </wl-list-item>

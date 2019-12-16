@@ -99,7 +99,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
             return;
         }
 
-        return this._regionid + '/models/explore/' + model.id.split('/').pop() + '/' + version.hasVersionId[0] +
+        return this._regionid + '/models/explore/' + model.id.split('/').pop() + '/' + version.id.split('/').pop() +
                '/' + config.id.split('/').pop() + '/' + setupURI.split('/').pop();
     }
 
@@ -176,7 +176,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
                         <div>
                             ${this._datasets[dsId].is_cached ? 
                                 html`<span style="color: green">Available on MINT servers</span>` :
-                                html`<span style="color: lightsalmon">Not available on MINT servers</span>`}
+                                html`<span style="color: lightsalmon">Available for download</span>`}
                             <span style="color: gray">-</span> ${this._datasets[dsId].resources.length} files
                         </div>
                     </wl-list-item>

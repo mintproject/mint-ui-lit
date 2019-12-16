@@ -15,6 +15,7 @@ import { Model } from "screens/models/reducers";
 import { IdMap } from "app/reducers";
 import { DataResource } from "screens/datasets/reducers";
 import { isObject } from "util";
+import { downloadFile } from "util/ui_functions";
 
 @customElement('mint-results')
 export class MintResults extends connect(store)(MintPathwayPage) {
@@ -199,6 +200,13 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                         ` : ""
                         }
                         ${!grouped_ensemble || !grouped_ensemble.loading ?
+                        html`<wl-button type="button" flat inverted  style="float:right; --button-padding:7px" 
+                            ?disabled="${Object.keys(grouped_ensemble.ensembles).length == 0}"
+                            @click="${() => this._download(grouped_ensembles[model.id])}">
+                                <wl-icon>cloud_download</wl-icon>
+                            </wl-button>`: ""
+                        }
+                        ${!grouped_ensemble || !grouped_ensemble.loading ?
                         html`<wl-button type="button" flat inverted  style="float:right"
                             @click="${() => this._fetchRuns(model.id, 1, this.pageSize)}">Reload</wl-button>`: ""
                         }
@@ -351,6 +359,54 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             `
         }
         `;
+    }
+
+    _download (grouped_ensemble) {
+        console.log(grouped_ensemble)
+        let csv : string = (grouped_ensemble.outputs && grouped_ensemble.outputs.length > 0 ? 
+                            grouped_ensemble.outputs.map((outf) => outf.name.replace(/(-|_)/g, ' ')).join(';') + ';' : '')
+                         + (grouped_ensemble.inputs && grouped_ensemble.inputs.length > 0 ?
+                            grouped_ensemble.inputs.map((inf) => inf.name.replace(/(-|_)/g, ' ')).join(';') + ';' : '')
+                         + (grouped_ensemble.params && grouped_ensemble.params.length > 0 ? 
+                            grouped_ensemble.params.map((param) => param.name.replace(/(-|_)/g, ' ')).join(';') + ';' : '')
+        Object.values(grouped_ensemble.ensembles).forEach((ensemble:any) => {
+            csv += '\n';
+            let param_defaults = {};
+            this.pathway.models![ensemble.modelid].input_parameters.map((param) => param_defaults[param.id] = param.default);
+            grouped_ensemble.outputs.forEach((output:any) => {
+                if (Object.keys(ensemble.results).length == 0) {
+                    csv += ';'
+                } else {
+                    Object.values(ensemble.results).forEach((result:any) => {
+                        let oname = result.id.replace(/.+#/, '');
+                        if(output.name == oname) {
+                            let furl = result.url;
+                            let fname = result.name;
+                            if (!furl) {
+                                let location = result.location;
+                                let prefs = this.prefs.mint;
+                                furl = ensemble.execution_engine == "localex" ? 
+                                    location.replace(prefs.localex.datadir, prefs.localex.dataurl) :
+                                    location.replace(prefs.wings.datadir, prefs.wings.dataurl);
+                            }
+                            if (!fname)
+                                fname = result.location.replace(/.+\//, '');
+                            csv += furl + ';'
+                        }
+                    })
+                }
+            });
+            grouped_ensemble.inputs.forEach((input:any) => { 
+                let res = ensemble.bindings[input.id] as DataResource;
+                if (res) csv += res.url + ';';
+                else csv += ';';
+            });
+            grouped_ensemble.params.forEach((param:any) => { 
+                csv += (ensemble.bindings[param.id] ?  ensemble.bindings[param.id] : param_defaults[param.id]) + ';';
+            });
+        });
+
+        downloadFile(csv, 'results.csv', 'text/csv;encoding:utf-8');
     }
 
     _nextPage(modelid: string, offset:  number) {

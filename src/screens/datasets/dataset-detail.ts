@@ -100,9 +100,19 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                 <wl-title level="4">${_ds.name}</wl-title>
                 <div style="display:flex; justify-content:space-between">
                     <wl-title level="5" style="color:#aaa">id:${_ds.id}</wl-title>
-                    <span style="color: ${_ds.is_cached ? 'green' : 'lightsalmon'}">
-                        ${_ds.is_cached ? 'Available on MINT servers' : 'Not available on MINT servers'}
-                    </span>
+                    <div style="text-align: right;">
+                        <span style="color: ${_ds.is_cached ? 'green' : 'lightsalmon'}">
+                            ${_ds.is_cached ? 'Available on MINT servers' : 'Available for download'}
+                        </span>
+                        ${_ds.is_cached ? '' : html`
+                        <br />
+                        <span style="cursor: not-allowed;">
+                            <wl-button flat inverted outlined disabled style="margin-top: 5px; --button-padding: 4px 8px;">
+                                Download to MINT servers
+                            </wl-button>
+                        </span>
+                        `}
+                    </div>
                 </div>
                 <br />
                 <table class="pure-table pure-table-striped">

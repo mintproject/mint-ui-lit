@@ -3,7 +3,7 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
 import { Configuration, SampleCollection, SampleCollectionApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, DEFAULT_GRAPH,
+import { idReducer, getStatusConfigAndUser, PREFIX_URI, DEFAULT_GRAPH,
          START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
 
 function debug (...args: any[]) { console.log('OBA:', ...args); }
@@ -79,8 +79,8 @@ export const sampleCollectionPost: ActionCreator<ModelCatalogSampleCollectionThu
                 dispatch({type: END_POST, id: identifier, uri: uri});
             });
         req.catch((err) => {console.log('Error on POST sampleCollection', err)});
-    } else if (status === 'LOADING') {
-        repeatAction(sampleCollectionPost, sampleCollection);
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 
@@ -107,8 +107,8 @@ export const sampleCollectionPut: ActionCreator<ModelCatalogSampleCollectionThun
                 dispatch({type: END_LOADING, id: sampleCollection.id});
         });
         req.catch((err) => {console.log('Error on PUT sampleCollection', err)});
-    } else if (status === 'LOADING') {
-        repeatAction(sampleCollectionPut, sampleCollection);
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 
@@ -130,8 +130,8 @@ export const sampleCollectionDelete: ActionCreator<ModelCatalogSampleCollectionT
                 });
         });
         req.catch((err) => {console.log('Error on DELETE sampleCollection', err)});
-    } else if (status === 'LOADING') {
-        repeatAction(sampleCollectionDelete, uri);
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 

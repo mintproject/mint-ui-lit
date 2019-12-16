@@ -3,7 +3,7 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
 import { Configuration, Process, ProcessApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, 
+import { idReducer, getStatusConfigAndUser, PREFIX_URI, 
          DEFAULT_GRAPH, START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
 
 function debug (...args: any[]) { }// console.log('OBA:', ...args); }
@@ -78,8 +78,8 @@ export const processPost: ActionCreator<ModelCatalogProcessThunkResult> = (proce
                 dispatch({type: END_POST, id: identifier, uri: uri});
         }); 
         req.catch((err) => {console.log('Error on POST process', err)})
-    } else if (status === 'LOADING') {
-        repeatAction(processPost, process);
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 
@@ -106,8 +106,8 @@ export const processPut: ActionCreator<ModelCatalogProcessThunkResult> = ( proce
                 dispatch({type: END_LOADING, id: process.id});
         });
         req.catch((err) => {console.log('Error on PUT process', err)})
-    } else if (status === 'LOADING') {
-        repeatAction(processPut, process);
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 
@@ -130,8 +130,8 @@ export const processDelete: ActionCreator<ModelCatalogProcessThunkResult> = ( ur
                 });
         });
         req.catch((err) => {console.log('Error on DELETE process', err)});
-    } else if (status === 'LOADING') {
-        repeatAction(processDelete, uri);
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 

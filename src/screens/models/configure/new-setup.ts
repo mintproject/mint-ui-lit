@@ -11,8 +11,7 @@ import { goToPage } from 'app/actions';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { personGet, personPost, modelConfigurationPost, parameterPost, modelConfigurationPut,
-         parameterGet, datasetSpecificationGet, gridGet,
+import { personGet, modelConfigurationSetupPost, parameterGet, datasetSpecificationGet, gridGet,
          timeIntervalGet,  processGet, softwareImageGet, } from 'model-catalog/actions';
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
@@ -229,15 +228,6 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         goToPage(createUrl(this._model, this._version, this._config));
     }
 
-    _addSetupToConfig (setupId) {
-        if (!this._originalConfig.hasSetup) {
-            this._originalConfig.hasSetup = []
-        }
-        this._originalConfig.hasSetup.push({id: setupId})
-        store.dispatch(modelConfigurationPut(this._originalConfig));
-        goToPage(createUrl(this._model, this._version, this._config, {id: setupId}));
-    }
-
     private _parameterIdentifier = 0;
     private _waitingParameters : Set<string> = new Set();
     private _newParametersUris : string[] = [];
@@ -261,19 +251,17 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             let notes       = usageEl.value;
 
             if (!name || !assignMe) {
-                showNotification("formValuesIncompleteNotification", this.shadowRoot!);
-                (<any>nameEl).refreshAttributes();
-                (<any>assignMeEl).refreshAttributes();
+                if (!name) nameEl.setAttribute('invalid', 'true');
+                if (!assignMe) assignMeEl.setAttribute('invalid', 'true');
                 this._scrollUp();
+                showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 return;
             }
 
             let setupCreated = {...this._config};
-            let configUri = setupCreated.id;
 
             delete setupCreated.hasSetup;
             setupCreated.id = undefined;
-            setupCreated.hasOutput = undefined;
             setupCreated.label = [name];
             setupCreated.description = [desc];
             setupCreated.hasUsageNotes = [notes];
@@ -281,12 +269,12 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             setupCreated.parameterAssignmentMethod = [assignMe];
             setupCreated.hasRegion = [{id: region}];
 
-            setupCreated.hasInput = setupCreated.hasInput.map((input) => {
+            setupCreated.hasInput = (setupCreated.hasInput || []).map((input) => {
                 let newInput = this._inputs[input.id];
                 newInput.id = '';
                 return newInput;
             });
-            setupCreated.hasParameter = setupCreated.hasParameter.map((param) => {
+            setupCreated.hasParameter = (setupCreated.hasParameter || []).map((param) => {
                 let newParam = this._parameters[param.id];
                 newParam.id = '';
                 return newParam;
@@ -297,41 +285,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             this._waitingFor = 'PostSetup' + this._setupIdentifier;
             this._setupIdentifier += 1;
 
-            store.dispatch(modelConfigurationPost(setupCreated, configUri, this._waitingFor));
-
-            showNotification("saveNotification", this.shadowRoot!);
-            //goToPage(createUrl(this._model, this._version, this._config));
-        }
-    }
-
-    _newSetup () {
-        let nameEl      = this.shadowRoot.getElementById('new-setup-name') as HTMLInputElement;
-        let assignMeEl  = this.shadowRoot.getElementById('new-setup-assign-method') as HTMLInputElement;
-
-        if (nameEl && assignMeEl) {
-            let name        = nameEl.value;
-            let assignMe    = assignMeEl.value;
-
-            if (!name || !assignMe) {
-                showNotification("formValuesIncompleteNotification", this.shadowRoot!);
-                (<any>nameEl).refreshAttributes();
-                (<any>assignMeEl).refreshAttributes();
-                this._scrollUp();
-                return;
-            }
-
-            let parametersToCreate = this._config.hasParameter.map(e => typeof e === 'object' ? e.id :e);
-
-            parametersToCreate.forEach(id => {
-                let newParam = { ... this._parameters[id] };
-                newParam.id = undefined
-                newParam.position = [newParam.position];
-                let identifier = 'PParameter' + this._parameterIdentifier;
-                store.dispatch(parameterPost(newParam, identifier));
-                this._waitingParameters.add(identifier);
-                this._parameterIdentifier += 1;
-            });
-            this._waiting = true;
+            store.dispatch(modelConfigurationSetupPost(setupCreated, this._originalConfig, this._waitingFor));
 
             showNotification("saveNotification", this.shadowRoot!);
         }
@@ -379,13 +333,11 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         if (this._region && this._region.model_catalog_uri === 'https://w3id.org/okn/i/mint/Texas')
             this._region.model_catalog_uri = 'https://w3id.org/okn/i/mint/United_States';
 
-        let visibleRegions = Object.values(this._regions)
+        let visibleRegions = Object.values(this._regions || {})
                 .filter((r:Region) => r.country && r.country.filter(c => c.id === this._region.model_catalog_uri).length > 0);
 
         return html`
-        <span id="start"></span>
-
-        <table class="details-table">
+        <table class="details-table" id="start">
             <colgroup width="150px">
 
             <tr>
@@ -397,7 +349,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Description:</td>
                 <td>
-                    <textarea id="new-setup-desc" name="description" rows="5"></textarea>
+                    <textarea id="new-setup-desc" name="description" rows="4"></textarea>
                 </td>
             </tr>
 
@@ -521,7 +473,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Usage notes:</td>
                 <td>
-                    <textarea id="new-setup-usage-notes">${this._config.hasUsageNotes}</textarea>
+                    <textarea id="new-setup-usage-notes" rows="6">${this._config.hasUsageNotes}</textarea>
                 </td>
             </tr>
 
@@ -534,18 +486,26 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 <col span="1">
                 <col span="1">
                 <col span="1">
+                <col span="1">
             </colgroup>
             <thead>
                 <th><b>Label</b></th>
                 <th><b>Type</b></th>
-                <th class="ta-right" style="white-space:nowrap;" colspan="2">
+                <th class="ta-right" style="white-space:nowrap;">
                     <b>Value in this setup</b>
                     <span class="tooltip" style="white-space:normal;"
                      tip="If a value is set up in this field, you will not be able to change it in run time. For example, a price adjustment is set up to be 10%, it won't be editable when running the the model">
                         <wl-icon>help</wl-icon>
                     </span>
                 </th>
-                <th class="ta-right"><b>Unit</b></th>
+                <th class="ta-right" style="white-space:nowrap;" colspan="1">
+                    <b>Adjustable</b>
+                    <span class="tooltip" style="white-space:normal;"
+                     tip="An adjustable parameter is a knob that a user will be able to fill with a value when executing the model">
+                        <wl-icon>help</wl-icon>
+                    </span>
+                </th>
+                <th> </th>
             </thead>
             <tbody>
             ${this._config.hasParameter ? paramOrder.map((uri:string) => html`
@@ -563,11 +523,19 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         this._parameters[uri].hasFixedValue : (
                         this._parameters[uri].hasDefaultValue ? this._parameters[uri].hasDefaultValue + ' (default)' : '-'
                     )}
+                    ${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}
+                </td>
+                <td style="text-align: center;">
+                    <wl-button flat inverted @click="${() => {
+                            this._parameters[uri]['isAdjustable'] = !this._parameters[uri]['isAdjustable'];
+                            this.requestUpdate();
+                        }}">
+                        <wl-icon>${this._parameters[uri]['isAdjustable'] ? 'check_box' : 'check_box_outline_blank'}</wl-icon>
+                    </wl-button>
                 </td>
                 <td>
-                    <wl-button flat inverted @click="${() => this._showParameterDialog(uri)}"class="small"><wl-icon>edit</wl-icon></wl-button>
+                    <wl-button flat inverted @click="${() => this._showParameterDialog(uri)}" class="small"><wl-icon>edit</wl-icon></wl-button>
                 </td>
-                <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
                 `
                 : html`<td colspan="5" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
             </tr>`)
@@ -657,6 +625,23 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         ${renderNotifications()}`
     }
 
+    _clearForm () {
+        let nameEl      = this.shadowRoot.getElementById('new-setup-name') as HTMLInputElement;
+        let descEl      = this.shadowRoot.getElementById('new-setup-desc') as HTMLInputElement;
+        let keywordsEl  = this.shadowRoot.getElementById('new-setup-keywords') as HTMLInputElement;
+        let regionEl    = this.shadowRoot.getElementById('edit-config-regions') as HTMLInputElement;
+        let assignMeEl  = this.shadowRoot.getElementById('new-setup-assign-method') as HTMLInputElement;
+        let usageEl     = this.shadowRoot.getElementById('new-setup-usage-notes') as HTMLInputElement;
+        if (nameEl && descEl && keywordsEl && assignMeEl && regionEl) {
+            nameEl      .value = '';
+            descEl      .value = '';
+            keywordsEl  .value = '';
+            regionEl    .value = '';
+            assignMeEl  .value = '';
+            usageEl     .value = '';
+        }
+    }
+
     _showNewInputDialog ( datasetSpecUri : string ) {
         this._dialog = 'input';
         let inputConfigurator = this.shadowRoot.getElementById('input-configurator') as ModelsConfigureInput;
@@ -693,7 +678,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
 
     _showProcessDialog () {
         this._dialog = 'process';
-        let selectedProcesses = this._config.hasProcess.reduce((acc: any, process: any) => {
+        let selectedProcesses = (this._config.hasProcess||[]).reduce((acc: any, process: any) => {
             if (!acc[process.id]) acc[process.id] = true;
             return acc;
         }, {})
@@ -788,6 +773,8 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 this._authorsLoading = new Set();
                 this._processes = {};
                 this._processesLoading = new Set();
+
+                this._clearForm();
             }
 
             if (state.modelCatalog) {
@@ -797,28 +784,11 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 //TO SAVE
                 if (this._waitingFor) {
                     if (db.created[this._waitingFor]) {
-                        let newid = this._waitingFor;
+                        let newid = db.created[this._waitingFor];
                         this._waitingFor = '';
-                        this._addSetupToConfig(db.created[newid]);
+                        goToPage(createUrl(this._model, this._version, this._config, {id: newid}));
                     }
                 }
-                /*if (this._waiting) {
-                    if (this._waitingFor && db.created[this._waitingFor]) {
-                        console.log(db.created[this._waitingFor]);
-                    } else {
-                        if (this._waitingParameters.size > 0) {
-                            this._waitingParameters.forEach((id) => {
-                                if (db.created[id]) {
-                                    this._newParametersUris.push(db.created[id]);
-                                    this._waitingParameters.delete(id);
-                                }
-                            });
-                        } else {
-                            console.log('NEW PARAMS URIS:', this._newParametersUris)
-                            this._saveNewSetup();
-                        }
-                    }
-                }*/
 
                 // Set selected resources
                 if (!this._model && db.models && this._selectedModel && db.models[this._selectedModel]) {

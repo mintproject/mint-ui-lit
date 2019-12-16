@@ -3,7 +3,7 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
 import { Configuration, SampleResource, SampleResourceApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, DEFAULT_GRAPH,
+import { idReducer, getStatusConfigAndUser, PREFIX_URI, DEFAULT_GRAPH,
          START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
 
 function debug (...args: any[]) { console.log('OBA:', ...args); }
@@ -78,8 +78,8 @@ export const sampleResourcePost: ActionCreator<ModelCatalogSampleResourceThunkRe
                 dispatch({type: END_POST, id: identifier, uri: uri});
             });
         req.catch((err) => {console.log('Error on POST sampleResource', err)});
-    } else if (status === 'LOADING') {
-        repeatAction(sampleResourcePost, sampleResource);
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 
@@ -106,8 +106,8 @@ export const sampleResourcePut: ActionCreator<ModelCatalogSampleResourceThunkRes
                 dispatch({type: END_LOADING, id: sampleResource.id});
         });
         req.catch((err) => {console.log('Error on PUT sampleResource', err)});
-    } else if (status === 'LOADING') {
-        repeatAction(sampleResourcePut, sampleResource);
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 
@@ -129,8 +129,8 @@ export const sampleResourceDelete: ActionCreator<ModelCatalogSampleResourceThunk
                 });
         });
         req.catch((err) => {console.log('Error on DELETE sampleResource', err)});
-    } else if (status === 'LOADING') {
-        repeatAction(sampleResourceDelete, uri);
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 

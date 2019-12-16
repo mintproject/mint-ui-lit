@@ -98,7 +98,7 @@ export class AppHome extends connect(store)(PageViewElement) {
             </p>
             <ul>
               <li>
-                <a target="_blank" href="http://bit.ly/MINT-intro">
+                <a target="_blank" href="https://drive.google.com/open?id=18cTLMwAzWh0BsWFho8411Utpg3YGm557">
                   <b>An introduction to MINT, training materials, a walkthrough video of the user interface, a glossary, and an FAQ are available here.</b>
                 </a>
               </li>
