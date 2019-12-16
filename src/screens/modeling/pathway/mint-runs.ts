@@ -17,7 +17,7 @@ import { fetchPathwayEnsembles, getAllPathwayEnsembleIds } from "../actions";
 import { DataResource } from "screens/datasets/reducers";
 import { isObject } from "util";
 import { postJSONResource, getResource } from "util/mint-requests";
-import { getPathwayRunsStatus, TASK_DONE } from "util/state_functions";
+import { getPathwayRunsStatus, TASK_DONE, pathwayTotalRunsChanged, pathwaySummaryChanged } from "util/state_functions";
 
 @customElement('mint-runs')
 export class MintRuns extends connect(store)(MintPathwayPage) {
@@ -82,7 +82,12 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             };
             let input_parameters = model.input_parameters
                 .filter((input) => !input.value)
-                .sort((a, b) => a.name.localeCompare(b.name));
+                .sort((a, b) => {
+                    if(a.position && b.position)
+                        return a.position - b.position;
+                    else 
+                        return a.name.localeCompare(b.name)
+                });
             input_parameters.map((ip) => {
                 if(!ip.value)
                     grouped_ensembles[model.id].params.push(ip);
@@ -118,6 +123,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 let successful_runs = summary.successful_runs ? summary.successful_runs : 0;
                 let finished_runs = successful_runs + failed_runs;
                 
+                let submitted = (summary.submitted_for_execution || summary.submission_time);
                 let finished = (finished_runs == summary.total_runs);
                 let running = submitted_runs - finished_runs;
                 let pending = summary.total_runs - submitted_runs;
@@ -131,7 +137,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                     return "";
                 }
 
-                if(!summary.submission_time) {
+                if(!submitted) {
                     return html`
                     <li>
                         <wl-title level="4"><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></wl-title>
@@ -395,48 +401,13 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         return purl + "/data/fetch?data_id=" + escape(dsid);
     }
 
-    _stringify (obj: Object) {
-        if(!obj) {
-            return "";
-        }
-        let keys = Object.keys(obj);
-        let str = "";
-        keys.map((key) => {
-            let binding = isObject(obj[key]) ? this._stringify(obj[key]) : obj[key];
-            str += key + "=" + binding + "&";
-        })
-        return str;
-    }
-    _pathwayTotalRunsChanged (oldpathway: Pathway, newpathway: Pathway) {
-        if((oldpathway == null || newpathway == null) && oldpathway != newpathway)
-            return true;
-
-        let oldtotal = 0;
-        Object.keys(oldpathway.executable_ensemble_summary).map((modelid) => {
-            oldtotal += oldpathway.executable_ensemble_summary[modelid].total_runs;
-        })
-        let newtotal = 0;
-        Object.keys(newpathway.executable_ensemble_summary).map((modelid) => {
-            newtotal += newpathway.executable_ensemble_summary[modelid].total_runs;
-        })
-        return oldtotal != newtotal;
-    }
-
-    _pathwaySummaryChanged (oldpathway: Pathway, newpathway: Pathway) {
-        if((oldpathway == null || newpathway == null) && oldpathway != newpathway)
-            return true;
-        let oldsummary = this._stringify(oldpathway.executable_ensemble_summary);
-        let newsummary = this._stringify(newpathway.executable_ensemble_summary);
-        return oldsummary != newsummary;
-    }
-
     stateChanged(state: RootState) {
         super.setUser(state);
         super.setRegionId(state);
 
         // Before resetting pathway, check if the pathway run status has changed
-        let runs_changed = this._pathwaySummaryChanged(this.pathway, state.modeling.pathway);
-        let runs_total_changed = this._pathwayTotalRunsChanged(this.pathway, state.modeling.pathway);
+        let runs_changed = pathwaySummaryChanged(this.pathway, state.modeling.pathway);
+        let runs_total_changed = pathwayTotalRunsChanged(this.pathway, state.modeling.pathway);
 
         super.setPathway(state);
 

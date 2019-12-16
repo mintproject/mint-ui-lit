@@ -4,12 +4,12 @@ import { store, RootState } from "../../../app/store";
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { BASE_HREF } from "../../../app/actions";
-import { getPathwayRunsStatus, TASK_DONE, matchVariables, sendDataForIngestion, getUISelectedSubgoal } from "../../../util/state_functions";
+import { pathwaySummaryChanged, pathwayTotalRunsChanged, matchVariables, sendDataForIngestion } from "../../../util/state_functions";
 import { ExecutableEnsemble, StepUpdateInformation, ModelEnsembles, Pathway } from "../reducers";
 import { updatePathway, getAllPathwayEnsembleIds, fetchPathwayEnsembles } from "../actions";
 import { showNotification, hideDialog, showDialog } from "../../../util/ui_functions";
 import { selectPathwaySection } from "../../../app/ui-actions";
-import { renderLastUpdateText } from "../../../util/ui_renders";
+import { renderLastUpdateText, renderNotifications } from "../../../util/ui_renders";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { Model } from "screens/models/reducers";
 import { IdMap } from "app/reducers";
@@ -62,16 +62,6 @@ export class MintResults extends connect(store)(MintPathwayPage) {
         if(!this.pathway) {
             return html ``;
         }
-        
-        // If no models selected
-        /*
-        if(getPathwayRunsStatus(this.pathway) != TASK_DONE) {
-            return html `
-            <p>This step is for browsing the results of the models that you ran earlier.</p>
-            Please run some models first
-            `
-        }
-        */
 
        // Group running ensembles
        let grouped_ensembles = {};
@@ -87,7 +77,12 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             };
             let input_parameters = model.input_parameters
                 .filter((input) => !input.value)
-                .sort((a, b) => a.name.localeCompare(b.name));
+                .sort((a, b) => {
+                    if(a.position && b.position)
+                        return a.position - b.position;
+                    else 
+                        return a.name.localeCompare(b.name)
+                });
             input_parameters.map((ip) => {
                 if(!ip.value)
                     grouped_ensembles[model.id].params.push(ip);
@@ -140,7 +135,8 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                let grouped_ensemble = grouped_ensembles[modelid];
                this.totalPages[modelid] = Math.ceil(summary.total_runs/this.pageSize);
                let finished_runs = summary.successful_runs + summary.failed_runs;
-               let submitted = this.pathway.executable_ensemble_summary[modelid].submitted_for_ingestion;
+               let submitted = summary.submitted_for_ingestion;
+               let finished_ingestion = (summary.ingested_runs == summary.total_runs);
                let finished = (finished_runs == summary.total_runs);
                let running = summary.submitted_runs - finished_runs;
                let pending = summary.total_runs - summary.submitted_runs;
@@ -172,9 +168,19 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                     ${finished && !submitted ? 
                         html` <wl-button class="submit"
                         @click="${() => this._publishAllResults(model.id)}">Save all results</wl-button>`
-                        : ""
+                        : 
+                        (submitted && !finished_ingestion ? 
+                            html`
+                                <p>
+                                Please wait while saving and ingesting data... <br />
+                                Downloaded outputs from ${summary.fetched_run_outputs || 0} out of ${summary.total_runs} model runs.
+                                Ingested data from ${summary.ingested_runs || 0} out of ${summary.total_runs} model runs
+                                </p>                        
+                            `
+                            : ""
+                        )
                     }
-                    ${finished && submitted ? 
+                    ${finished && finished_ingestion ? 
                         "Results have been saved" : ''
                     }
                     <br /><br />
@@ -327,6 +333,8 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             </div>
         </div>
 
+        ${renderNotifications()}
+
         ${this._editMode ? 
             html`
             <fieldset class="notes">
@@ -350,7 +358,6 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             }             
             `
         }
-        ${this._renderProgressDialog()}
         `;
     }
 
@@ -416,37 +423,6 @@ export class MintResults extends connect(store)(MintPathwayPage) {
         store.dispatch(fetchPathwayEnsembles(this.pathway.id, modelid, ensembleids));
     }
     
-    _renderProgressDialog() {
-        return html`
-        <wl-dialog id="progressDialog" fixed persistent backdrop blockscrolling>
-            <h3 slot="header">Publish results</h3>
-            <div slot="content">
-                <p>
-                    Publishing results for ${this._progress_item ? this._progress_item.name : ""}
-                </p>
-                <wl-progress-bar style="width:100%" mode="indeterminate"></wl-progress-bar>
-            </div>
-            <div slot="footer">
-                ${this._progress_number == this._progress_total ? 
-                    html`<wl-button @click="${this._onDialogDone}" class="submit">Done</wl-button>` :
-                    html`<wl-button @click="${this._onStopProgress}" inverted flat>Stop</wl-button>`
-                }
-            </div>            
-        </wl-dialog>
-        `;
-    }
-
-    _onDialogDone() {
-        updatePathway(this.scenario, this.pathway);
-        hideDialog("progressDialog", this.shadowRoot!);
-    }
-
-    _onStopProgress() {
-        this._progress_abort = true;
-        updatePathway(this.scenario, this.pathway);
-        hideDialog("progressDialog", this.shadowRoot!);
-    }
-    
     _getModelURL (model:Model) {
         let url = this._regionid + '/models/explore/' + model.original_model;
         if (model.model_version) {
@@ -476,39 +452,16 @@ export class MintResults extends connect(store)(MintPathwayPage) {
 
     _publishAllResults(modelid) {
         let model = this.pathway.models[modelid];
-        this._progress_item = model;
-        this._progress_total = this.pathway.executable_ensemble_summary[modelid].total_runs;
-        this._progress_number = 0;
-
-        showDialog("progressDialog", this.shadowRoot!);
-
-        let start = 0;
-        let executionBatchSize = 4;
-
         /*
         -> Ingest thread to visualization database
         -> Register outputs to the data catalog        
         -> Publish run to provenance catalog
         */
-        sendDataForIngestion(this.scenario.id, this.subgoalid, this.pathway.id, this.prefs).then(() => {
-            this.pathway.executable_ensemble_summary[modelid].submitted_for_ingestion = true;
-            this._progress_number = this._progress_total;
-            /*
-            let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-            this.pathway.notes = {
-                ...this.pathway.notes!,
-                results: notes
-            };
-            this.pathway.last_update = {
-                ...this.pathway.last_update!,
-                results: {
-                    time: Date.now(),
-                    user: this.user!.email
-                } as StepUpdateInformation
-            };
-            */      
-           this._onDialogDone();    
-        })
+        showNotification("saveNotification", this.shadowRoot);       
+        
+        sendDataForIngestion(this.scenario.id, this.subgoalid, this.pathway.id, this.prefs);
+        
+        this.pathway.executable_ensemble_summary[modelid].submitted_for_ingestion = true;
     }
 
     _reloadAllRuns() {
@@ -516,50 +469,14 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             this._fetchRuns(modelid, this.currentPage[modelid], this.pageSize);
         })
     }
-
-    _stringify (obj: Object) {
-        if(!obj) {
-            return "";
-        }
-        let keys = Object.keys(obj);
-        let str = "";
-        keys.map((key) => {
-            let binding = isObject(obj[key]) ? this._stringify(obj[key]) : obj[key];
-            str += key + "=" + binding + "&";
-        })
-        return str;
-    }
-
-    _pathwayTotalRunsChanged (oldpathway: Pathway, newpathway: Pathway) {
-        if((oldpathway == null || newpathway == null) && oldpathway != newpathway)
-            return true;
-            
-        let oldtotal = 0;
-        Object.keys(oldpathway.executable_ensemble_summary).map((modelid) => {
-            oldtotal += oldpathway.executable_ensemble_summary[modelid].total_runs;
-        })
-        let newtotal = 0;
-        Object.keys(newpathway.executable_ensemble_summary).map((modelid) => {
-            newtotal += newpathway.executable_ensemble_summary[modelid].total_runs;
-        })        
-        return oldtotal != newtotal;
-    }
-
-    _pathwaySummaryChanged (oldpathway: Pathway, newpathway: Pathway) {
-        if((oldpathway == null || newpathway == null) && oldpathway != newpathway)
-            return true;
-        let oldsummary = this._stringify(oldpathway.executable_ensemble_summary);
-        let newsummary = this._stringify(newpathway.executable_ensemble_summary);
-        return oldsummary != newsummary;
-    }
     
     stateChanged(state: RootState) {
         super.setUser(state);
         super.setRegionId(state);
 
         // Before resetting pathway, check if the pathway run status has changed
-        let runs_status_changed = this._pathwaySummaryChanged(this.pathway, state.modeling.pathway);
-        let runs_total_changed = this._pathwayTotalRunsChanged(this.pathway, state.modeling.pathway);
+        let runs_status_changed = pathwaySummaryChanged(this.pathway, state.modeling.pathway);
+        let runs_total_changed = pathwayTotalRunsChanged(this.pathway, state.modeling.pathway);
 
         super.setPathway(state);
 
