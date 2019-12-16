@@ -114,7 +114,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
         Object.keys(this._geoShapes).map((geoId:string) => {
             let bbox = this._geoShapes[geoId].bbox as BoundingBox;
             let selbox = this._selectedRegion.bounding_box;
-            if (!bbox.xmin) {
+            if (!bbox || !bbox.xmin) {
                 return;
             }
             if (this._doBoxesIntersect(bbox, selbox)) {
