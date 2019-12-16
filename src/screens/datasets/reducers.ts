@@ -18,6 +18,8 @@ export interface Dataset extends IdNameObject {
     source: Source,
     categories?: string[],
     is_cached?: boolean,
+    resource_repr?: any,
+    dataset_repr?: any,
     resources: DataResource[]
 };
 
