@@ -134,7 +134,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         return html`
         <div style="display: flex; margin-bottom: 10px;">
             <wl-tab-group align="center" style="width: 100%;">
-                <wl-tab @click="${() => this._selectSubcategory('')}" checked>Base regions</wl-tab>
+                <wl-tab @click="${() => this._selectSubcategory('')}" checked>
+                    ${this.regionType ? this.regionType : 'Base regions'}
+                </wl-tab>
                 ${this._subcategories.map((cat => html`
                 <wl-tab @click="${() => this._selectSubcategory(cat)}">${cat}</wl-tab>
                 `))}
@@ -492,7 +494,11 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     }
 
     stateChanged(state: RootState) {
+        let cur_region = this._regionid;
         super.setRegion(state);
+        if (this._regionid != cur_region) {
+            this._selectedSubcategory = '';
+        }
         if (this._region)
             this._subcategories = this._region[this.regionType.toLowerCase() + '_subcategories'] || [];
 
