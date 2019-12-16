@@ -123,6 +123,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 let successful_runs = summary.successful_runs ? summary.successful_runs : 0;
                 let finished_runs = successful_runs + failed_runs;
                 
+                let submitted = (summary.submitted_for_execution || summary.submission_time);
                 let finished = (finished_runs == summary.total_runs);
                 let running = submitted_runs - finished_runs;
                 let pending = summary.total_runs - submitted_runs;
@@ -136,7 +137,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                     return "";
                 }
 
-                if(!summary.submission_time) {
+                if(!submitted) {
                     return html`
                     <li>
                         <wl-title level="4"><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></wl-title>
