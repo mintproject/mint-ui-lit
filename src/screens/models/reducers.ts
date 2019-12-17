@@ -45,7 +45,7 @@ export interface ModelParameter extends IdNameObject {
     value?: string,
     adjustment_variable?: string,
     accepted_values?: string[],
-    position: number
+    position?: number
 }
 
 export interface ModelDetail extends Model {

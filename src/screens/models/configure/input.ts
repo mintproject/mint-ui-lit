@@ -125,7 +125,7 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
                         html`
                         <br/>
                         <a target="_blank" href="${this._sampleResources[part.id].value[0]}">
-                            ${this._sampleResources[part.id].value[0].split('/').pop()}
+                            ${(<unknown>this._sampleResources[part.id].value[0] as string).split('/').pop()}
                         </a>` : ''}
                         ` : 
                             html`${part.id} <loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>`}
@@ -179,7 +179,7 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
                 label: [''] as Array<string>,
                 description: [''] as Array<string>,
                 dataCatalogIdentifier: [''] as Array<string>,
-                value: [''] as Array<string>,
+                value: ['' as any], // value could be string, boolean, date, number, etc...
                 hasPart: []
             } as SampleResource;
             this._selectedInputUri = '';
@@ -298,7 +298,7 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
                 id: (this._input as SampleCollection).hasPart.length.toString(),
                 label: [label],
                 description: [description],
-                value: [url],
+                value: [url as any],
                 dataCatalogIdentifier: [dataCatalogId],
             };
             (this._input as SampleCollection).hasPart.push(newSample);
@@ -356,7 +356,7 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
                     (<any>urlEl).refreshAttributes();
                     return;
                 }
-                editedInput.value = [urlEl.value];
+                editedInput.value = [urlEl.value as any];
                 editedInput.dataCatalogIdentifier = [dataCatalogIdEl.value];
             }
 
@@ -393,13 +393,13 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
                 return;
             }
 
-            let newSample = {
+            let newSample : SampleResource = {
                 id : '',
                 label: [label],
                 description: [description],
-                value: [url],
+                value: [url as any],
                 dataCatalogIdentifier: [dataCatalogId],
-            }
+            } as SampleResource;
             newSample.id  = (this._input as SampleCollection).hasPart.length.toString();
             (this._input as SampleCollection).hasPart.push(newSample);
             this._sampleResources[newSample.id] = newSample;
@@ -435,7 +435,7 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
                     (<any>urlEl).refreshAttributes();
                     return;
                 }
-                editedInput.value = [urlEl.value];
+                editedInput.value = [urlEl.value as any];
                 editedInput.dataCatalogIdentifier = [dataCatalogIdEl.value];
             }
 

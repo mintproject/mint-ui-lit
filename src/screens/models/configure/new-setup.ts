@@ -276,7 +276,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             });
             setupCreated.hasParameter = (setupCreated.hasParameter || []).map((param) => {
                 let newParam = this._parameters[param.id];
-                if (!newParam['isAdjustable'] && (!newParam.hasFixedValue || !newParam.hasFixedValue.length === 0) && newParam.hasDefaultValue) {
+                if (!newParam['isAdjustable'] && (!newParam.hasFixedValue || newParam.hasFixedValue.length === 0) && newParam.hasDefaultValue) {
                     newParam.hasFixedValue = newParam.hasDefaultValue;
                 }
                 newParam.id = '';
