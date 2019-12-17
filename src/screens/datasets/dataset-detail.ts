@@ -161,7 +161,7 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                 html`
                 <br />
                 <br />
-                <wl-title level="4">${_ds.resources.length} Resource(s)</wl-title>
+                <wl-title level="4">${_ds.resource_count} Resource(s)</wl-title>
                 <div style="height:400px; overflow:auto">
                     <div class="clt">
                         <ul>
@@ -247,6 +247,9 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                     } as BoundingBox;
                 });
                 map.setBoundingBoxes(covervalues as BoundingBox[]);
+                return true;
+            } else if (covertype.toLowerCase() == "polygon") {
+                map.setPolygon(covers[0].coordinates[0]);
                 return true;
             }
         }

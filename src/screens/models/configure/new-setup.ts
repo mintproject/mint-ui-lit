@@ -284,7 +284,6 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             });
 
             console.log('Creating...', setupCreated);
-            return;
 
             this._waitingFor = 'PostSetup' + this._setupIdentifier;
             this._setupIdentifier += 1;
