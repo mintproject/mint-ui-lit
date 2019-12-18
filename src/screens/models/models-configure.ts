@@ -232,6 +232,19 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             .details-table tr:nth-child(odd) {
                 background-color: rgb(246, 246, 246);
             }
+
+            .custom-button {
+                line-height: 20px;
+                cursor: pointer;
+                margin-right: 5px;
+                border: 1px solid green;
+                padding: 1px 3px;
+                border-radius: 4px;
+            }
+
+            .custom-button:hover {
+                background-color: rgb(224, 224, 224);
+            }
             `,
             SharedStyles
         ];
@@ -253,6 +266,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                         class="actionIcon bigActionIcon" style="float:right">
                         ${!this._hideModels ? "fullscreen" : "fullscreen_exit"}
                     </wl-icon>
+                    ${this._selectedConfig && !this._creating ? html`
+                    <span style="float:right;" class="custom-button" @click="${this._goToCatalog}">See on catalog</span>
+                    `: ''}
                     <div class="cltrow_padded">
                         <div class="cltmain">
                             <wl-title level="3" style="margin: 0px">
@@ -300,6 +316,15 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         </div>
         ${renderNotifications()}
         `
+    }
+
+    private _goToCatalog () {
+        let url = 'models/explore/' 
+                + this._selectedModel.split('/').pop() + '/' 
+                + this._selectedVersion.split('/').pop() + '/' 
+                + this._selectedConfig.split('/').pop();
+        if (this._selectedSetup) url += '/' + this._selectedSetup.split('/').pop();
+        goToPage(url)
     }
 
     private _configParametersLoading : Set<string> = new Set();

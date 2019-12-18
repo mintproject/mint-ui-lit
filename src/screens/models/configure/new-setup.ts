@@ -447,8 +447,17 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                     ${this._config.hasOutputTimeInterval ?
                     (this._timeInterval ? html`
                         <span class="time-interval">
-                            ${this._timeInterval.label}
-                            <wl-icon style="margin-left:10px">edit</wl-icon>
+                            <span style="display: flex; justify-content: space-between;">
+                                <span style="margin-right: 30px; text-decoration: underline;">
+                                    ${this._timeInterval.label ? this._timeInterval.label : this._timeInterval.id}
+                                </span>
+                                <span> 
+                                    ${this._timeInterval.intervalValue}
+                                    ${this._timeInterval.intervalUnit ? this._timeInterval.intervalUnit[0].label : ''}
+                                    <wl-icon style="margin-left:10px; --icon-size:  16px; cursor: pointer; vertical-align: middle;">edit</wl-icon>
+                                </span>
+                            </span>
+                            <span style="font-style: oblique; color: gray;"> ${this._timeInterval.description} </span>
                         </span>`
                         : html`${this._config.hasOutputTimeInterval[0].id} ${this._timeIntervalLoading ? 
                             html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`)
@@ -616,7 +625,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <wl-button @click="${this._cancel}" style="margin-right: 1em;" flat inverted>
                 <wl-icon>cancel</wl-icon>&ensp;Discard changes
             </wl-button>
-            <wl-button @click="${this._saveNewSetup}">
+            <wl-button @click="${this._saveNewSetup}" disabled>
                 <wl-icon>save</wl-icon>&ensp;Save
             </wl-button>
         </div>

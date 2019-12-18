@@ -389,8 +389,17 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     ${this._config.hasOutputTimeInterval ?
                     (this._timeInterval ? html`
                         <span class="time-interval">
-                            ${this._timeInterval.label}
-                            ${this._editing ? html`<wl-icon style="margin-left:10px">edit</wl-icon>` : ''}
+                            <span style="display: flex; justify-content: space-between;">
+                                <span style="margin-right: 30px; text-decoration: underline;">
+                                    ${this._timeInterval.label ? this._timeInterval.label : this._timeInterval.id}
+                                </span>
+                                <span> 
+                                    ${this._timeInterval.intervalValue}
+                                    ${this._timeInterval.intervalUnit ? this._timeInterval.intervalUnit[0].label : ''}
+                                    <wl-icon style="margin-left:10px; --icon-size:  16px; cursor: pointer; vertical-align: middle;">edit</wl-icon>
+                                </span>
+                            </span>
+                            <span style="font-style: oblique; color: gray;"> ${this._timeInterval.description} </span>
                         </span>`
                         : html`${this._config.hasOutputTimeInterval[0].id} ${this._timeIntervalLoading ? 
                             html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`)
@@ -405,7 +414,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     html`${this._config.hasProcess.map(a => typeof a === 'object' ? a.id : a).map((procUri:string) => 
                         (this._processes[procUri] ? html`
                         <span class="process">
-                            ${this._processes[procUri].label}
+                            ${this._processes[procUri].label ? this._processes[procUri].label : this._processes[procUri].id}
                         </span>`
                         : procUri + ' '))}
                     ${this._processesLoading.size > 0 ? html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`
