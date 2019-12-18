@@ -150,6 +150,22 @@ export class GoogleMapCustom extends GoogleMap {
         });
     }
 
+    public setPolygon(polygonArr: Array<Array<number>>) {
+        this.clear();  
+        let bbox : BoundingBox = {xmin: 91, xmax: -91, ymin: 181, ymax: -181};
+        polygonArr.forEach(([lat, lng]) => {
+            if (bbox.xmin > lat) bbox.xmin = lat;
+            if (bbox.xmax < lat) bbox.xmax = lat;
+            if (bbox.ymin > lng) bbox.ymin = lng;
+            if (bbox.ymax < lng) bbox.ymax = lng;
+        })
+        this.alignMapToBoundingBoxes([bbox]);
+        let polygon = new google.maps.Data.Polygon([
+            polygonArr.map(arr => {return {lat: arr[0], lng: arr[1]}})
+        ]);
+        this.map.data.add({geometry: polygon});
+    }
+
     public alignMapToPoints(points: Point[]) {
         let rect = this.getDimensions();
         let midpoint = calculateMapDetailsForPoints(points, rect.width, rect.height);

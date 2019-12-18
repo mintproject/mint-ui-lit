@@ -20,7 +20,9 @@ export interface Dataset extends IdNameObject {
     is_cached?: boolean,
     resource_repr?: any,
     dataset_repr?: any,
-    resources: DataResource[]
+    resources: DataResource[],
+    resource_count?: number,
+    spatial_coverage?: any,
 };
 
 export interface DataResource extends IdNameObject {

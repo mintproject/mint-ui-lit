@@ -90,7 +90,7 @@ export class RegionDatasets extends connect(store)(RegionQueryPage)  {
                                 html`<span style="color: lightsalmon">Available for download</span>`}
                             ${ds.resource_repr || ds.dataset_repr ? html` |
                             <span style="color: 'green'"> MINT Understandable Format </span>` : ''}
-                            <span style="color: gray">-</span> ${ds.resources.length} files
+                            <span style="color: gray">-</span> ${ds.resource_count} files
                         </div>
                     </wl-list-item>
                     `)
