@@ -625,7 +625,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <wl-button @click="${this._cancel}" style="margin-right: 1em;" flat inverted>
                 <wl-icon>cancel</wl-icon>&ensp;Discard changes
             </wl-button>
-            <wl-button @click="${this._saveNewSetup}">
+            <wl-button @click="${this._saveNewSetup}" disabled>
                 <wl-icon>save</wl-icon>&ensp;Save
             </wl-button>
         </div>
