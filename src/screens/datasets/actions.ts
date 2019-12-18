@@ -378,7 +378,9 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             //mode: "no-cors",
-            body: JSON.stringify({dataset_id: dsid})
+            body: JSON.stringify({
+                dataset_id: dsid,
+            })
         });
         req.then((response) => {
             response.json().then((obj) => {
@@ -450,7 +452,7 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
             // FIXME: on Dec16 within stoped working, going back to intersects but will 504
             spatial_coverage__intersects: geojson.geometry,
             //spatial_coverage__intersects: geojson.geometry, FIXME: this takes long to load.
-            limit: 5
+            limit: 10
         })
     })
 

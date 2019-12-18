@@ -92,7 +92,6 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
         if(!_ds && this._dataset && !this._dataset.loading) {
             return html `<center>No resources found for this dataset</center>`;
         }
-        console.log(_ds);
         return html`
             ${!_ds ?
                 html`<wl-progress-spinner class="loading"></wl-progress-spinner>`
@@ -161,7 +160,10 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                 html`
                 <br />
                 <br />
-                <wl-title level="4">${_ds.resource_count} Resource(s)</wl-title>
+                <wl-title level="4">
+                    ${_ds.resources.length < _ds.resource_count ? html`Showing ${_ds.resources.length} of` : ''}
+                    ${_ds.resource_count} Resource(s)
+                </wl-title>
                 <div style="height:400px; overflow:auto">
                     <div class="clt">
                         <ul>
