@@ -392,7 +392,8 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
     });
 
     Promise.all([prom1, prom2]).then((values:any) => {
-        dataset.resources = resources;
+        console.log(dataset);
+        if (dataset) dataset.resources = resources;
         dispatch({
             type: DATASETS_RESOURCE_QUERY,
             dsid: dsid,
@@ -442,7 +443,7 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
         datasets: null,
         loading: true
     });
-    
+
     let geojson = JSON.parse(region.geojson_blob);
     let req1 = fetch(prefs.data_catalog_api + "/datasets/find", {
         method: 'POST',
@@ -456,7 +457,45 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
         })
     })
 
-    let req2 = fetch(prefs.data_catalog_api + "/datasets/find", {
+    req1.then((res:any) => {
+        res.json().then((obj) => {
+            let datasets: Dataset[] = getDatasetsFromDCResponse(obj, {} as DatasetQueryParameters);
+            let transformation_example = {
+                id: "adfca6fb-ad82-4be3-87d8-8f60f9193e43",
+                name: "Global weather data from GPM in 2011.",
+                region: '',
+                datatype: '',
+                time_period: {
+                    start_date: toTimeStamp("2011-08-18T00:00:00"),
+                    end_date: toTimeStamp("2011-08-18T23:59:59"),
+                },
+                description: 'Global weather data from GPM in 2011.',
+                version: '',
+                limitations: '',
+                source: {
+                    name: '',
+                    url: '',
+                    type: '',
+                },
+                categories: [],
+                is_cached: true,
+                resource_repr: null,
+                dataset_repr: null,
+                resource_count: 1,
+                spatial_coverage: null,
+                resources: [],
+            }
+            datasets.push(transformation_example);
+            dispatch({
+                type: DATASETS_REGION_QUERY,
+                region: region,
+                datasets: datasets,
+                loading: false
+            });
+        });
+    });
+
+    /*let req2 = fetch(prefs.data_catalog_api + "/datasets/find", {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
@@ -471,6 +510,7 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
             objs.forEach(obj => {
                 datasets = datasets.concat( getDatasetsFromDCResponse(obj, {} as DatasetQueryParameters) )
             });
+            console.log(datasets);
             dispatch({
                 type: DATASETS_REGION_QUERY,
                 region: region,
@@ -478,5 +518,5 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
                 loading: false
             });
         })
-    });
+    });*/
 };
