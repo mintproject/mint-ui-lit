@@ -460,11 +460,12 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
     req1.then((res:any) => {
         res.json().then((obj) => {
             let datasets: Dataset[] = getDatasetsFromDCResponse(obj, {} as DatasetQueryParameters);
-            let transformation_example = {
+            let transformation_example : Dataset = {
                 id: "adfca6fb-ad82-4be3-87d8-8f60f9193e43",
                 name: "Global weather data from GPM in 2011.",
                 region: '',
                 datatype: '',
+                variables: [],
                 time_period: {
                     start_date: toTimeStamp("2011-08-18T00:00:00"),
                     end_date: toTimeStamp("2011-08-18T23:59:59"),
@@ -484,7 +485,7 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
                 resource_count: 1,
                 spatial_coverage: null,
                 resources: [],
-            }
+            } as Dataset;
             datasets.push(transformation_example);
             dispatch({
                 type: DATASETS_REGION_QUERY,

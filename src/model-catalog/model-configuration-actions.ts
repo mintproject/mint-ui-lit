@@ -34,7 +34,9 @@ export const modelConfigurationsGet: ActionCreator<ModelCatalogModelConfiguratio
             return { ...m, 
                 contributor: fixObjects(m.contributor),
                 author: fixObjects(m.author),
-                hasOutput: fixObjects(m.hasOutput)
+                hasOutput: fixObjects(m.hasOutput),
+                hasInput: fixObjects(m.hasInput),
+                hasParameter: fixObjects(m.hasParameter),
             }
         })
         dispatch({

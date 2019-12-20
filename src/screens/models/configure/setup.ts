@@ -507,20 +507,27 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 <col span="1">
                 <col span="1">
                 <col span="1">
+                <!--col span="1"-->
                 ${this._editing? html`<col span="1">` : ''}
-                <col span="1">
             </colgroup>
             <thead>
                 <th><b>Label</b></th>
                 <th><b>Type</b></th>
-                <th class="ta-right" style="white-space:nowrap;" colspan="${this._editing ?  '2' : '1'}">
+                <th class="ta-right" style="white-space:nowrap;">
                     <b>Value in this setup</b>
                     <span class="tooltip" style="white-space:normal;"
                      tip="If a value is set up in this field, you will not be able to change it in run time. For example, a price adjustment is set up to be 10%, it won't be editable when running the the model">
                         <wl-icon>help</wl-icon>
                     </span>
                 </th>
-                <th class="ta-right"><b>Unit</b></th>
+                <!--th class="ta-right" style="white-space:nowrap;" colspan="1">
+                    <b>Adjustable</b>
+                    <span class="tooltip" style="white-space:normal;"
+                     tip="An adjustable parameter is a knob that a user will be able to fill with a value when executing the model">
+                        <wl-icon>help</wl-icon>
+                    </span>
+                </th-->
+                ${this._editing? html`<th> </th>` : ''}
             </thead>
             <tbody>
             ${this._setup.hasParameter ? paramOrder.map((uri:string) => html`
@@ -538,13 +545,18 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         this._parameters[uri].hasFixedValue : (
                         this._parameters[uri].hasDefaultValue ? this._parameters[uri].hasDefaultValue + ' (default)' : '-'
                     )}
+                    ${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}
                 </td>
+                <!--td style="text-align: center;">
+                    <wl-button flat inverted>
+                        <wl-icon>check_box</wl-icon>
+                    </wl-button>
+                </td-->
                 ${this._editing ? html`
-                <td>
+                <td class="ta-right">
                     <wl-button flat inverted @click="${() => this._showParameterDialog(uri)}"class="small"><wl-icon>edit</wl-icon></wl-button>
                 </td>
                 `: ''}
-                <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
                 `
                 : html`<td colspan="5" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
             </tr>`)
@@ -847,7 +859,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         // Fetching not loaded inputs 
                         (this._setup.hasInput || []).forEach((i) => {
                             if (typeof i === 'object') {
-                                if (i.type.indexOf('DatasetSpecification') < 0) {
+                                if (i.type && i.type.indexOf('DatasetSpecification') < 0) {
                                     console.log(i, 'is not a DatasetSpecification (input)', this._setup);
                                 }
                                 i = i.id;

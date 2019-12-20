@@ -12,7 +12,7 @@ import { SAMPLE_RESOURCE_GET, MCASampleResourceGet } from './sample-resource-act
 import { SAMPLE_COLLECTION_GET, MCASampleCollectionGet } from './sample-collection-actions'
 import { modelConfigurationPut } from './actions';
 
-function debug (...args: any[]) { console.log('OBA:', ...args); }
+function debug (...args: any[]) {}// console.log('[MC setup]', ...args); }
 
 export const ALL_MODEL_CONFIGURATION_SETUPS = 'ALL_MODEL_CONFIGURATION_SETUPS'
 
@@ -21,11 +21,11 @@ interface MCAModelConfigurationSetupsGet extends Action<'MODEL_CONFIGURATION_SET
 export const modelConfigurationSetupsGet: ActionCreator<ModelCatalogModelConfigurationSetupThunkResult> = () => (dispatch) => {
     let state: any = store.getState();
     if (state.modelCatalog && (state.modelCatalog.loadedAll[ALL_MODEL_CONFIGURATION_SETUPS] || state.modelCatalog.loading[ALL_MODEL_CONFIGURATION_SETUPS])) {
-        console.log('All modelConfigurationSetups are already in memory or loading')
+        debug('All modelConfigurationSetups are already in memory or loading')
         return;
     }
 
-    debug('Fetching all modelConfigurationSetup');
+    debug('Fetching all');
     dispatch({type: START_LOADING, id: ALL_MODEL_CONFIGURATION_SETUPS});
 
     let api : ModelConfigurationSetupApi = new ModelConfigurationSetupApi();
@@ -37,14 +37,14 @@ export const modelConfigurationSetupsGet: ActionCreator<ModelCatalogModelConfigu
         });
         dispatch({type: END_LOADING, id: ALL_MODEL_CONFIGURATION_SETUPS});
     });
-    req.catch((err) => {console.log('Error on GET modelConfigurationSetups', err)});
+    req.catch((err) => {debug('Error on GET all', err)});
     return req;
 }
 
 export const MODEL_CONFIGURATION_SETUP_GET = "MODEL_CONFIGURATION_SETUP_GET";
 interface MCAModelConfigurationSetupGet extends Action<'MODEL_CONFIGURATION_SETUP_GET'> { payload: any };
 export const modelConfigurationSetupGet: ActionCreator<ModelCatalogModelConfigurationSetupThunkResult> = ( uri:string ) => (dispatch) => {
-    debug('Fetching modelConfigurationSetup', uri);
+    debug('Fetching', uri);
     let id : string = uri.split('/').pop();
     let api : ModelConfigurationSetupApi = new ModelConfigurationSetupApi();
     let req : Promise<ModelConfigurationSetup> = api.modelconfigurationsetupsIdGet({username: DEFAULT_GRAPH, id: id});
@@ -56,7 +56,7 @@ export const modelConfigurationSetupGet: ActionCreator<ModelCatalogModelConfigur
             payload: data
         });
     });
-    req.catch((err) => {console.log('Error on getModelConfigurationSetup', err)});
+    req.catch((err) => {debug('Error on GET', id, err)});
     return req;
 }
 
@@ -64,7 +64,7 @@ export const MODEL_CONFIGURATION_SETUP_POST = "MODEL_CONFIGURATION_SETUP_POST";
 interface MCAModelConfigurationSetupPost extends Action<'MODEL_CONFIGURATION_SETUP_POST'> { payload: any };
 export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
         (modelConfigurationSetup:ModelConfigurationSetup, modelConfiguration:ModelConfiguration, identifier:string) => (dispatch) => {
-    debug('creating new modelConfigurationSetup', modelConfigurationSetup);
+    debug('Creating new', modelConfigurationSetup);
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
     if (isValidId(modelConfigurationSetup.id)) {
@@ -82,7 +82,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
             parameterPromises.push(req);
             allPromises.push(req);
             req.then((resp) => {
-                    console.log('Response for POST parameter:', resp);
+                    debug('Response for POST parameter:', resp);
                     let uri = PREFIX_URI + resp.id;
                     let data = {};
                     resp.id = uri;
@@ -117,7 +117,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
                                 let req = sampleResourceApi.sampleresourcesPost({user: DEFAULT_GRAPH, sampleResource: s});
                                 resourcesForCollectionPromises.push(req);
                                 req.then((resp) => {
-                                    console.log('Response for POST sampleResource:', resp);
+                                    debug('Response for POST sampleResource:', resp);
                                     let uri = PREFIX_URI + resp.id;
                                     let data = {};
                                     data[uri] = resp;
@@ -126,7 +126,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
                                     dispatch({ type: SAMPLE_RESOURCE_GET, payload: data });
                                 });
                                 req.catch((err) => {
-                                    console.log('Error on POST sampleResource', err)
+                                    debug('Error on POST sampleResource', err)
                                 });
                             })
                             let partPromises = Promise.all(resourcesForCollectionPromises);
@@ -135,7 +135,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
                                 let req = sampleCollectionApi.samplecollectionsPost({user: DEFAULT_GRAPH, sampleCollection: sample});
                                 samplePromises.push(req);
                                 req.then((resp) => {
-                                        console.log('Response for POST sampleCollection:', resp);
+                                        debug('Response for POST sampleCollection:', resp);
                                         let uri = PREFIX_URI + resp.id;
                                         let data = {};
                                         data[uri] = resp;
@@ -145,7 +145,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
                                         resolve(resp);
                                 });
                                 req.catch((err) => {
-                                    console.log('Error on POST sampleCollection', err)
+                                    debug('Error on POST sampleCollection', err)
                                     reject(err);
                                 });
                             });
@@ -155,7 +155,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
                         let req = sampleResourceApi.sampleresourcesPost({user: DEFAULT_GRAPH, sampleResource: sample});
                         samplePromises.push(req);
                         req.then((resp) => {
-                                console.log('Response for POST sampleResource:', resp);
+                                debug('Response for POST sampleResource:', resp);
                                 let uri = PREFIX_URI + resp.id;
                                 let data = {};
                                 data[uri] = resp;
@@ -164,7 +164,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
                                 dispatch({ type: SAMPLE_RESOURCE_GET, payload: data });
                         });
                         req.catch((err) => {
-                            console.log('Error on POST sampleResource', err)
+                            debug('Error on POST sampleResource', err)
                         });
                     }
                 });
@@ -179,7 +179,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
                     let req = DSApi.datasetspecificationsPost({user: DEFAULT_GRAPH, datasetSpecification: newInput}); // This should be my username on prod.
                     //allPromises.push(req);
                     req.then((resp) => {
-                            console.log('Response for POST datasetSpecification:', resp);
+                            debug('Response for POST datasetSpecification:', resp);
                             let uri = PREFIX_URI + resp.id;
                             let data = {};
                             data[uri] = resp;
@@ -192,7 +192,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
                             resolve(resp);
                     });
                     req.catch((err) => {
-                        console.log('Error on POST datasetSpecification', err)
+                        debug('Error on POST datasetSpecification', err)
                         reject(err);
                     });
                 });
@@ -205,16 +205,15 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
 
         let waiting = Promise.all(allPromises);
         waiting.then((values) => {
-            console.log('AP', allPromises);
             modelConfigurationSetup.hasParameter = newParameters;
             modelConfigurationSetup.hasInput = newDS;
             modelConfigurationSetup.adjustableParameter = newParameters.filter(p => p["isAdjustable"]);
             modelConfigurationSetup.hasOutput = fixObjects(modelConfigurationSetup.hasOutput);
-            console.log('SS', modelConfigurationSetup)
+            debug('POST', modelConfigurationSetup)
             let api : ModelConfigurationSetupApi = new ModelConfigurationSetupApi(cfg);
             let req = api.modelconfigurationsetupsPost({user: DEFAULT_GRAPH, modelConfigurationSetup: modelConfigurationSetup}) // This should be my username on prod.
             req.then((resp) => {
-                console.log('Response for POST modelConfigurationSetup:', resp);
+                debug('Response for POST:', resp);
                 let uri = PREFIX_URI + resp.id;
                 let data = {};
                 data[uri] = resp;
@@ -224,7 +223,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
                     payload: data
                 });
 
-                console.log('PUT to', modelConfiguration); //FIXME: this is done in the UI right now....
+                debug('Updating parent config', modelConfiguration);
                 if (modelConfiguration.hasSetup) {
                     modelConfiguration.hasSetup.push(resp)
                 } else {
@@ -235,10 +234,11 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
                 });
             })
             req.catch((err) => {
-                console.log('Error on POST modelConfigurationSetup', err)
+                debug('Error on POST', err)
             });
         });
         waiting.catch((err) => {
+            // If any has errors we should delete everything FIXME
             console.error('POST setup failed!', err);
         });
     }
@@ -248,7 +248,7 @@ export const MODEL_CONFIGURATION_SETUP_PUT = "MODEL_CONFIGURATION_SETUP_PUT";
 interface MCAModelConfigurationSetupPut extends Action<'MODEL_CONFIGURATION_SETUP_PUT'> { payload: any };
 export const modelConfigurationSetupPut: ActionCreator<ModelCatalogModelConfigurationSetupThunkResult> = 
         ( modelConfigurationSetup: ModelConfigurationSetup ) => (dispatch) => {
-    debug('updating modelConfigurationSetup', modelConfigurationSetup.id);
+    debug('Updating', modelConfigurationSetup.id);
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
 
@@ -258,7 +258,7 @@ export const modelConfigurationSetupPut: ActionCreator<ModelCatalogModelConfigur
         let id : string = modelConfigurationSetup.id.split('/').pop();
         let req : Promise<ModelConfigurationSetup> = api.modelconfigurationsetupsIdPut({id: id, user: DEFAULT_GRAPH, modelConfigurationSetup: modelConfigurationSetup}); // This should be my username on prod.
         req.then((resp) => {
-            console.log('Response for PUT modelConfigurationSetup:', resp);
+            debug('Response for PUT:', resp);
             let data = {};
             data[modelConfigurationSetup.id] = resp;
             dispatch({
@@ -267,7 +267,7 @@ export const modelConfigurationSetupPut: ActionCreator<ModelCatalogModelConfigur
             });
             dispatch({type: END_LOADING, id: modelConfigurationSetup.id});
         })
-        req.catch((err) => {console.log('Error on PUT modelConfigurationSetup', err)})
+        req.catch((err) => {debug('Error on PUT', err)})
         return req;
     } else {
         console.error('TOKEN', status);
@@ -277,7 +277,7 @@ export const modelConfigurationSetupPut: ActionCreator<ModelCatalogModelConfigur
 export const MODEL_CONFIGURATION_SETUP_DELETE = "MODEL_CONFIGURATION_SETUP_DELETE";
 interface MCAModelConfigurationSetupDelete extends Action<'MODEL_CONFIGURATION_SETUP_DELETE'> { uri: string };
 export const modelConfigurationSetupDelete: ActionCreator<ModelCatalogModelConfigurationSetupThunkResult> = ( uri : string ) => (dispatch) => {
-    debug('deleting modelConfigurationSetup', uri);
+    debug('Deleting', uri);
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
 
@@ -286,13 +286,13 @@ export const modelConfigurationSetupDelete: ActionCreator<ModelCatalogModelConfi
         let id : string = uri.split('/').pop();
         let req : Promise<void> = api.modelconfigurationsetupsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
         req.then((resp) => {
-            console.log('Response for DELETE modelConfigurationSetup:', resp);
+            debug('Response for DELETE:', resp);
             dispatch({
                 type: MODEL_CONFIGURATION_SETUP_DELETE,
                 uri: uri
             });
         });
-        req.catch((err) => {console.log('Error on DELETE modelConfigurationSetup', err)});
+        req.catch((err) => {debug('Error on DELETE', err)});
         return req;
     } else {
         console.error('TOKEN', status);
