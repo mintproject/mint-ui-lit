@@ -33,9 +33,6 @@ import { ModelsConfigureInput } from './input';
 
 @customElement('models-new-setup')
 export class ModelsNewSetup extends connect(store)(PageViewElement) {
-    @property({type: Boolean})
-    private _editing : boolean = false;
-
     @property({type: Object})
     private _model: any = null;
 
@@ -267,7 +264,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             setupCreated.hasUsageNotes = [notes];
             setupCreated.keywords = [keywords.split(/ *, */).join('; ')];
             setupCreated.parameterAssignmentMethod = [assignMe];
-            setupCreated.hasRegion = [{id: region}];
+            if (region) setupCreated.hasRegion = [{id: region}];
 
             setupCreated.hasInput = (setupCreated.hasInput || []).map((input) => {
                 let newInput = this._inputs[input.id];
@@ -303,7 +300,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         if (this._config.hasParameter) {
             Object.values(this._parameters).sort(sortByPosition).forEach((id: any) => {
                 if (typeof id === 'object') id = id.id;
-                paramOrder.push(id);
+                if (id) paramOrder.push(id);
             });
             this._config.hasParameter.forEach((id: any) => {
                 if (typeof id === 'object') id = id.id;
@@ -318,7 +315,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         if (this._config.hasInput) {
             Object.values(this._inputs).sort(sortByPosition).forEach((id: any) => {
                 if (typeof id === 'object') id = id.id;
-                inputOrder.push(id);
+                if (id) inputOrder.push(id);
             });
             this._config.hasInput.forEach((id: any) => {
                 if (typeof id === 'object') id = id.id;
@@ -625,7 +622,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <wl-button @click="${this._cancel}" style="margin-right: 1em;" flat inverted>
                 <wl-icon>cancel</wl-icon>&ensp;Discard changes
             </wl-button>
-            <wl-button @click="${this._saveNewSetup}" disabled>
+            <wl-button @click="${this._saveNewSetup}">
                 <wl-icon>save</wl-icon>&ensp;Save
             </wl-button>
         </div>
@@ -727,6 +724,9 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         let datasetSpecId = ev.detail.datasetSpecificationUri;
         createdInput.id = datasetSpecId.split('/').pop() + createdInput.id;
 
+        if (this._sampleCollections[createdInput.id]) delete this._sampleCollections[createdInput.id];
+        if (this._sampleResources[createdInput.id]) delete this._sampleResources[createdInput.id];
+
         if (createdInput.type.indexOf('SampleCollection') >= 0) {
             this._sampleCollections[createdInput.id] = createdInput;
             createdInput.hasPart.forEach((sample) => {
@@ -754,7 +754,6 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             let modelChanged : boolean = (ui.selectedModel !== this._selectedModel);
             let versionChanged : boolean = (modelChanged || ui.selectedVersion !== this._selectedVersion)
             let configChanged : boolean = (versionChanged || ui.selectedConfig !== this._selectedConfig);
-            this._editing = (ui.mode === 'edit');
 
             super.setRegionId(state);
 
@@ -829,7 +828,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         // Fetching not loaded inputs 
                         (this._config.hasInput || []).forEach((i) => {
                             if (typeof i === 'object') {
-                                if (i.type.indexOf('DatasetSpecification') < 0) {
+                                if (i.type && i.type.indexOf('DatasetSpecification') < 0) {
                                     console.log(i, 'is not a DatasetSpecification (input)', this._config);
                                 }
                                 i = i.id;
