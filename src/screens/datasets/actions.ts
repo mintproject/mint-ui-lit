@@ -78,6 +78,35 @@ const getDatasetsFromDCResponse = (obj: any, queryParameters: DatasetQueryParame
     return datasets;
 }
 
+const getDatasetDetailFromDCResponse = (ds: any) => {
+    return {
+        id: ds['dataset_id'],
+        name: ds['name'] || '',
+        description: ds['description'] || '',
+        region: '',
+        variables: [],
+        datatype: ds['metadata']['datatype'] || '',
+        time_period: {
+            start_date: toTimeStamp(ds['metadata']['temporal_coverage']['start_time']),
+            end_date: toTimeStamp(ds['metadata']['temporal_coverage']['end_time']),
+        },
+        version: ds['metadata']['version'] || '',
+        limitations: ds['metadata']['limitations'] || '',
+        source: {
+            name: ds['metadata']['source'] || '',
+            url: ds['metadata']['source_url'] || '',
+            type: ds['metadata']['source_type'] || '',
+        },
+        categories: ds['categories'] || [],
+        is_cached: ds['metadata']['is_cached'] || false,
+        resource_repr: ds['metadata']['resource_repr'] || null,
+        dataset_repr: ds['metadata']['dataset_repr'] || null,
+        resource_count: ds['metadata']['resource_count'] || 0,
+        spatial_coverage: ds['metadata']['dataset_spatial_coverage'] || null,
+        resources: [],
+    }
+}
+
 const getResourcesFromDCResponse = (obj: any) => {
     return obj.dataset.resources.map(row => {
         return {
@@ -346,26 +375,26 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
         dataset: null,
         loading: true
     });
+    /* TODO: /datasets/get_dataset_info does not accept filters!
     let queryBody = {
         "dataset_ids__in": [dsid],
         "limit": 200
     };
-    /*if(region) {
+    if(region) {
         let geojson = JSON.parse(region.geojson_blob);
         queryBody["spatial_coverage__intersects"] = geojson.geometry;
     }*/
     let dataset: Dataset;
     let prom1 = new Promise((resolve, reject) => {
-        let req = fetch(prefs.data_catalog_api + "/datasets/find", {
+        let req = fetch(prefs.data_catalog_api + "/datasets/get_dataset_info", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             //mode: "no-cors",
-            body: JSON.stringify(queryBody)
+            body: JSON.stringify({"dataset_id": dsid})
         });
         req.then((response) => {
             response.json().then((obj) => {
-                let datasets: Dataset[] = getDatasetsFromDCResponse(obj, {})
-                dataset = datasets.length > 0 ? datasets[0] : null;
+                dataset =  getDatasetDetailFromDCResponse(obj)
                 resolve();
             })
         });
@@ -392,7 +421,6 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
     });
 
     Promise.all([prom1, prom2]).then((values:any) => {
-        console.log(dataset);
         if (dataset) dataset.resources = resources;
         dispatch({
             type: DATASETS_RESOURCE_QUERY,
