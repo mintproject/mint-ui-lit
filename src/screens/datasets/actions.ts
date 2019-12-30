@@ -270,19 +270,24 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
         });
 
         let geojson = JSON.parse(region.geojson_blob);
+        let queryData = {
+            standard_variable_names__in: driving_variables,
+            spatial_coverage__intersects: geojson.geometry,
+            end_time__gte: fromTimeStampToString(dates.start_date).replace(/\.\d{3}Z$/,''),
+            start_time__lte: fromTimeStampToString(dates.end_date).replace(/\.\d{3}Z$/,''),
+            limit: 5000
+        }
+
         fetch(prefs.data_catalog_api + "/datasets/find", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                standard_variable_names__in: driving_variables,
-                spatial_coverage__intersects: geojson.geometry,
-                end_time__gte: fromTimeStampToString(dates.start_date).replace(/\.\d{3}Z$/,''),
-                start_time__lte: fromTimeStampToString(dates.end_date).replace(/\.\d{3}Z$/,''),
-                limit: 5000
-            })
+            body: JSON.stringify(queryData)
         }).then((response) => {
             response.json().then((obj) => {
-                let datasets: Dataset[] = getResourceObjectsFromDCResponse(obj, 
+                console.log(queryData, obj);
+                /*let datasets: Dataset[] = getResourceObjectsFromDCResponse(obj, 
+                    {variables: driving_variables} as DatasetQueryParameters)*/
+                let datasets: Dataset[] = getDatasetsFromDCResponse(obj, 
                     {variables: driving_variables} as DatasetQueryParameters)
                 dispatch({
                     type: DATASETS_VARIABLES_QUERY,
