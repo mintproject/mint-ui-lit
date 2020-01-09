@@ -240,7 +240,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                                     let res = ensemble.bindings[input.id] as DataResource;
                                                     if(res) {
                                                         // FIXME: This should be resolved to a collection of resources
-                                                        let furl = this._getDatasetURL(res.name); 
+                                                        let furl = this._getDatasetURL(res); 
                                                         return html`
                                                             <td><a href="${furl}">${res.name}</a></td>
                                                         `;
@@ -392,13 +392,15 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         return url;
     } 
 
-    _getDatasetURL (resname: string) {
-        let config = this.prefs.mint;
-        let suffix = "/users/" + config.wings.username + "/" + config.wings.domain;
-        var purl = config.wings.server + suffix
-        var expurl = config.wings.export_url + "/export" + suffix;
-        let dsid = expurl + "/data/library.owl#" + resname;
-        return purl + "/data/fetch?data_id=" + escape(dsid);
+    _getDatasetURL (res: any) {
+        let furl = res.url;
+        let fname = res.name;
+        if(!furl) {
+            let location = res.location;
+            let prefs = this.prefs.mint;
+            furl = location.replace(prefs.localex.datadir, prefs.localex.dataurl);
+        }
+        return furl;
     }
 
     stateChanged(state: RootState) {
