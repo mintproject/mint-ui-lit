@@ -10,12 +10,19 @@ export interface Region extends IdNameObject {
     region_type?: string,
     bounding_box?: BoundingBox,
     model_catalog_uri?: string,
+    categories?: RegionCategory[],
+    subcategories?: IdMap<RegionCategory[]>
 }
 
 export interface RegionsState {
     regions?: RegionMap,
     top_region_ids?: string[],
     sub_region_ids?: IdMap<string[]>
+}
+
+export interface RegionCategory {
+    id: string,
+    description: string
 }
 
 export interface BoundingBox {

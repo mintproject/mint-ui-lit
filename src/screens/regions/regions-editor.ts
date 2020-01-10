@@ -8,7 +8,7 @@ import { goToPage } from '../../app/actions';
 import { addRegions, addSubcategory, removeSubcategory } from './actions';
 import { GOOGLE_API_KEY } from 'config/google-api-key';
 import { IdMap } from 'app/reducers';
-import { Region } from './reducers';
+import { Region, RegionCategory } from './reducers';
 
 import 'components/google-map-custom';
 import 'weightless/progress-spinner';
@@ -32,9 +32,6 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     private _regions: Region[];
 
     @property({type: Object})
-    private _allRegions: Region[];
-
-    @property({type: Object})
     private _selectedRegion: Region;
 
     @property({type: String})
@@ -50,7 +47,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     private _newregions: Array<any> = [];
 
     @property({type: Array})
-    private _subcategories: Array<string> = [];
+    private _subcategories: RegionCategory[] = [];
 
     @property({type: String})
     private _geojson_nameprop : string;
@@ -137,8 +134,8 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 <wl-tab @click="${() => this._selectSubcategory('')}" checked>
                     ${this.regionType ? this.regionType : 'Base regions'}
                 </wl-tab>
-                ${this._subcategories.map((cat => html`
-                <wl-tab @click="${() => this._selectSubcategory(cat)}">${cat}</wl-tab>
+                ${this._subcategories.map(((sc:RegionCategory) => html`
+                <wl-tab @click="${() => this._selectSubcategory(sc.id)}">${sc.id}</wl-tab>
                 `))}
             </wl-tab-group>
             <div class="tab-add-icon" @click="${this._showAddSubcategoryDialog}">
@@ -229,17 +226,17 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
         if(map && this._regions) {
             try {
-              //map.setRegions(this._regions, this._regionid);
-              if (this._selectedSubcategory == '') {
-                map.setRegions(this._regions, this._regionid);
-              } else {
-                map.setRegions(this._allRegions.filter((region) => region.region_type == this._selectedSubcategory), this._regionid);
-              }
+                map.setRegions(this._regions.filter(
+                    (region) => region.region_type == (this._selectedSubcategory ? this._selectedSubcategory : this.regionType)),
+                    this._regionid);
               this._mapReady = true;
             }
             catch {
               map.addEventListener("google-map-ready", (e) => {
-                map.setRegions(this._regions, this._regionid);
+                //map.setRegions(this._regions, this._regionid);
+                map.setRegions(this._regions.filter(
+                    (region) => region.region_type == (this._selectedSubcategory ? this._selectedSubcategory : this.regionType)),
+                    this._regionid);
                 this._mapReady = true;
               })
             }
@@ -249,7 +246,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     private _handleMapClick(ev: any) {
         if(ev.detail && ev.detail.id) {
             store.dispatch(selectSubRegion(ev.detail.id));
-            this._selectedRegion = this._allRegions.filter(r => r.id === ev.detail.id)[0];
+            this._selectedRegion = this._regions.filter(r => r.id === ev.detail.id)[0];
         }
     }
 
@@ -324,17 +321,20 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     _onAddSubcategorySubmit() {
         let nameEl = this.shadowRoot!.getElementById('subcategory-name') as HTMLInputElement;
+        let descEl = this.shadowRoot!.getElementById('subcategory-desc') as HTMLInputElement;
         let name = nameEl.value;
+        let desc = descEl.value;
         if (!name) {
             showNotification("formValuesIncompleteNotification", this.shadowRoot!);
             return;
         }
 
-        let index = this._subcategories.indexOf(name);
+        //let sclen = this._subcategories.filter((sc) => sc.id === name).length;
+        let index = this._subcategories.map((sc) => sc.id).indexOf(name);
         if (index < 0) {
-            addSubcategory(this._regionid, this.regionType, name).then((value) => {
+            addSubcategory(this._regionid, this.regionType, name, desc).then((value) => {
                 hideDialog("addSubcategoryDialog", this.shadowRoot);
-                this._subcategories.push(nameEl.value);
+                this._subcategories.push({id: name, description: desc});
                 this.requestUpdate();
             })
         } else {
@@ -361,6 +361,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 <br />
                 <form id="subcategoriesForm">
                     <wl-textfield id="subcategory-name" label="Subcategory name"></wl-textfield>
+                    <wl-textarea id="subcategory-desc" label="Description"></wl-textarea>
                 </form>
             </div>
             <div slot="footer">
@@ -378,10 +379,10 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             <div slot="content">
                 <br />
                 <form id="regionsForm">
-                    <wl-select label="Subcategory" id="subcategory-selector" style="margin-bottom: 1em;">
-                        <option value="base" selected>Base regions</option>
-                        ${this._subcategories.map((cat) => html`
-                        <option value="${cat}">${cat}</option>
+                    <wl-select label="Category" id="subcategory-selector" style="margin-bottom: 1em;">
+                        <option value="base" selected> ${this.regionType ? this.regionType : 'Base regions'} </option>
+                        ${this._subcategories.map((sc:RegionCategory) => html`
+                        <option value="${sc.id}">${sc.id}</option>
                         `)}
                     </wl-select>
                     <div>
@@ -499,8 +500,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         if (this._regionid != cur_region) {
             this._selectedSubcategory = '';
         }
-        if (this._region)
-            this._subcategories = this._region[this.regionType.toLowerCase() + '_subcategories'] || [];
+        if (this._region && this._region.subcategories && this._region.subcategories[this.regionType]) {
+            this._subcategories = this._region.subcategories[this.regionType];
+        }
 
         if(this._regionid && this._region) {
             let sr = state.regions.sub_region_ids;
@@ -508,9 +510,8 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                     (this._cur_topregionid != this._regionid || sr[this._regionid].length != this._cur_region_length)) {
                 this._cur_topregionid = this._regionid;
                 this._cur_region_length = sr[this._regionid].length;
-                console.log("Adding regions to map");
-                this._allRegions = sr[this._regionid].map((regionid) => state.regions.regions[regionid]);
-                this._regions = this._allRegions.filter((region) => region.region_type == this.regionType);
+                //console.log("Adding regions to map");
+                this._regions = sr[this._regionid].map((regionid) => state.regions.regions[regionid]);
                 this.addRegionsToMap();
             }
         }

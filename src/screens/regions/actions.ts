@@ -208,17 +208,15 @@ export const addRegions = (parent_regionid: string, regions: Region[]) : Promise
     );
 };
 
-export const addSubcategory = (parent_regionid: string, category: string, subcategory: string) : Promise<any> => {
+export const addSubcategory = (parent_regionid: string, category: string, subcategory_name: string,
+        subcategory_desc: string) : Promise<any> => {
     let regionRef = db.collection('regions').doc(parent_regionid);
-    let subcategory_name = category.toLowerCase() + '_subcategories';
-    let edit = {};
     return new Promise ((resolve, reject) => {
         regionRef.get().then((doc) => {
-            let subcategories = doc.get(subcategory_name) || [];
-            subcategories.push(subcategory);
-            edit[subcategory_name] = subcategories;
-
-            let setWithMerge = regionRef.set(edit, {merge: true});
+            let subcategories = doc.get('subcategories') || {};
+            if (!subcategories[category]) subcategories[category] = [];
+            subcategories[category].push({ id: subcategory_name, description: subcategory_desc});
+            let setWithMerge = regionRef.set({subcategories: subcategories}, {merge: true});
             setWithMerge.then(resolve);
         })
     });
@@ -226,28 +224,30 @@ export const addSubcategory = (parent_regionid: string, category: string, subcat
 
 export const removeSubcategory = (parent_regionid: string, category: string, subcategory: string) : Promise<any> => {
     let regionRef = db.collection('regions').doc(parent_regionid);
-    let subcategory_name = category.toLowerCase() + '_subcategories';
-    let edit = {};
 
     return new Promise ((resolve, reject) => {
         regionRef.get().then((doc) => {
-            let subcategories = doc.get(subcategory_name) || [];
-            let index = subcategories.indexOf(subcategory);
-            if (index < 0) {
-                reject();
-            } else {
-                //Remove subcategory from array
-                subcategories.splice(index, 1);
-                edit[subcategory_name] = subcategories;
-                let setWithMerge = regionRef.set(edit, {merge: true});
-                setWithMerge.then(resolve);
-                //Remove all regions for that subcategory
-                let deleteQuery = db.collection('regions/' + parent_regionid + '/subregions').where('region_type', '==', subcategory);
-                deleteQuery.get().then((querySnapshot) => {
-                    querySnapshot.forEach((doc) => {
-                        doc.ref.delete();
+            let subcategories = doc.get('subcategories') || {};
+            if (category in subcategories) {
+                console.log(subcategories[category]);
+                let index = subcategories[category].map(sc => sc.id).indexOf(subcategory);
+                if (index >= 0) {
+                    subcategories[category].splice(index, 1);
+                    let setWithMerge = regionRef.set({subcategories: subcategories}, {merge: true});
+
+                    setWithMerge.then(resolve);
+                    //Remove all regions for that subcategory
+                    let deleteQuery = db.collection('regions/' + parent_regionid + '/subregions').where('region_type', '==', subcategory);
+                    deleteQuery.get().then((querySnapshot) => {
+                        querySnapshot.forEach((doc) => {
+                            doc.ref.delete();
+                        });
                     });
-                });
+                } else {
+                    reject();
+                }
+            } else {
+                reject();
             }
         })
     });
