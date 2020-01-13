@@ -92,6 +92,10 @@ span.author {
     border: 2px solid cadetblue;
 }
 
+span.region {
+    border: 2px solid brown;
+}
+
 span.process {
     border: 2px solid purple;
 }

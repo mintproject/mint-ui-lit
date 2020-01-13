@@ -396,7 +396,9 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                                 <span> 
                                     ${this._timeInterval.intervalValue}
                                     ${this._timeInterval.intervalUnit ? this._timeInterval.intervalUnit[0].label : ''}
+                                    ${this._editing ? html`
                                     <wl-icon style="margin-left:10px; --icon-size:  16px; cursor: pointer; vertical-align: middle;">edit</wl-icon>
+                                    ` : ''}
                                 </span>
                             </span>
                             <span style="font-style: oblique; color: gray;"> ${this._timeInterval.description} </span>

@@ -12,13 +12,13 @@ import { IdMap } from 'app/reducers';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { personGet, personPost, modelConfigurationPut,
+import { personGet, personPost, modelConfigurationPut, regionGet,
          parameterGet, datasetSpecificationGet, gridGet,
          timeIntervalGet, processGet, softwareImageGet,
          sampleResourceGet, sampleCollectionGet } from 'model-catalog/actions';
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
-import { SampleResource, SampleCollection, SampleCollectionApi } from '@mintproject/modelcatalog_client';
+import { SampleResource, SampleCollection, Region } from '@mintproject/modelcatalog_client';
 
 import "weightless/slider";
 import "weightless/progress-spinner";
@@ -77,6 +77,9 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _softwareImage : any = null;
 
+    @property({type: Object})
+    private _regions : IdMap<Region> = {} as IdMap<Region>;
+
     @property({type: String})
     private _dialog : ''|'person'|'process'|'parameter'|'input' = '';
 
@@ -93,6 +96,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     private _sampleCollectionsLoading : Set<string> = new Set();
     private _authorsLoading : Set<string> = new Set();
     private _processesLoading : Set<string> = new Set();
+    private _regionsLoading : Set<string> = new Set();
     private _softwareImageLoading : boolean = false;
     private _gridLoading : boolean = false;
     private _timeIntervalLoading : boolean = false;
@@ -309,14 +313,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             keywords = this._setup.keywords[0].split(/ *; */).join(', ');
         }
 
-        let regions = '';
-        if (this._setup.hasRegion) {
-            regions = this._setup.hasRegion
-                .map(r => typeof r === 'object' ? r.id : r)
-                .map(r => r.split('/').pop().replace(/_|-/g, ' '))
-                .join(', ');
-        }
-
         // FIXME this should work with the new API
         let selectRegions = [];
         if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/Ethiopia') {
@@ -372,7 +368,13 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     <select id="edit-setup-region">
                         ${selectRegions.map(r => html`<option value="${r.id}">${r.label}</option>`)}
                     </select>
-                    ` : regions}
+                    ` : this._setup.hasRegion.map((reg) => this._regions[reg.id] ? html`
+                    <span class="region">
+                        ${this._regions[reg.id].label}
+                    </span>` : html`
+                        ${reg.id}
+                        <loading-dots style="--width: 20px"></loading-dots>
+                    `)}
                 </td>
             </tr>
 
@@ -469,7 +471,9 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                                 <span> 
                                     ${this._timeInterval.intervalValue}
                                     ${this._timeInterval.intervalUnit ? this._timeInterval.intervalUnit[0].label : ''}
+                                    ${this._editing ? html`
                                     <wl-icon style="margin-left:10px; --icon-size:  16px; cursor: pointer; vertical-align: middle;">edit</wl-icon>
+                                    ` : '' }
                                 </span>
                             </span>
                             <span style="font-style: oblique; color: gray;"> ${this._timeInterval.description} </span>
@@ -825,6 +829,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 this._sampleCollectionsLoading = new Set();
                 this._authors = {};
                 this._authorsLoading = new Set();
+                this._regions = {} as IdMap<Region>;
+                this._regionsLoading = new Set();
                 this._processes = {};
                 this._processesLoading = new Set();
             }
@@ -872,7 +878,22 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                             this._inputsLoading.add(i);
                         });
 
-                        // Fetching not loaded authors, for the momen only Persons TODO
+                        // Fetching not loaded regions
+                        (this._setup.hasRegion || []).forEach((regionObj: any) => {
+                            let regionId : string;
+                            if (typeof regionObj === 'object') {
+                                regionId = regionObj.id;
+                            } else {
+                                console.error(regionObj + ' is not an object (region)');
+                                regionId = regionObj.id;
+                            }
+                            if (!db.regions || !db.regions[regionId]) {
+                                store.dispatch(regionGet(regionId));
+                            }
+                            this._regionsLoading.add(regionId);
+                        });
+
+                        // Fetching not loaded authors, for the moment only Persons TODO
                         (this._setup.author || []).forEach((authorUri) => {
                             if (typeof authorUri === 'object') authorUri = authorUri.id;
                             if (!db.persons || !db.persons[authorUri]) {
@@ -995,6 +1016,19 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                                     tmp[uri] = db.persons[uri];
                                     this._authors = tmp;
                                     this._authorsLoading.delete(uri);
+                                }
+                            })
+                        }
+                    }
+
+                    if (db.regions) {
+                        if (this._regionsLoading.size > 0 && this._setup.hasRegion) {
+                            this._regionsLoading.forEach((uri:string) => {
+                                if (db.regions[uri]) {
+                                    let tmp = { ...this._regions };
+                                    tmp[uri] = db.regions[uri];
+                                    this._regions = tmp;
+                                    this._regionsLoading.delete(uri);
                                 }
                             })
                         }
