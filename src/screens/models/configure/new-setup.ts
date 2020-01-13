@@ -16,7 +16,8 @@ import { personGet, modelConfigurationSetupPost, parameterGet, datasetSpecificat
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
 import { IdMap } from 'app/reducers';
-import { SampleResource, SampleCollection, Region } from '@mintproject/modelcatalog_client';
+import { SampleResource, SampleCollection, Region, Model, ModelConfiguration, 
+         ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
 
 import "weightless/slider";
 import "weightless/progress-spinner";
@@ -26,18 +27,20 @@ import './person';
 import './process';
 import './parameter';
 import './input';
+import './region';
 import { ModelsConfigurePerson } from './person';
 import { ModelsConfigureProcess } from './process';
 import { ModelsConfigureParameter } from './parameter';
 import { ModelsConfigureInput } from './input';
+import { ModelsConfigureRegion } from './region';
 
 @customElement('models-new-setup')
 export class ModelsNewSetup extends connect(store)(PageViewElement) {
     @property({type: Object})
-    private _model: any = null;
+    private _model: Model;
 
     @property({type: Object})
-    private _regions : any = null;
+    private _regions : IdMap<Region> = {} as IdMap<Region>;
 
     @property({type: Object})
     private _version: any = null;
@@ -79,7 +82,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
     private _softwareImage : any = null;
 
     @property({type: String})
-    private _dialog : ''|'person'|'process'|'parameter'|'input' = '';
+    private _dialog : ''|'person'|'process'|'parameter'|'input'|'region' = '';
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
@@ -366,6 +369,8 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                     <select id="edit-config-regions">
                         ${visibleRegions.map((r:Region) => html`<option value="${r.id}">${r.label}</option>`)}
                     </select>
+                    <wl-button style="float:right;" class="small" flat inverted
+                        @click="${this._showRegionDialog}"><wl-icon>edit</wl-icon></wl-button>
                 </td>
             </tr>
 
@@ -631,6 +636,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         <models-configure-process id="process-configurator" ?active=${this._dialog == 'process'} class="page"></models-configure-process>
         <models-configure-parameter id="parameter-configurator" ?active=${this._dialog == 'parameter'} class="page"></models-configure-parameter>
         <models-configure-input id="input-configurator" ?active=${this._dialog == 'input'} class="page"></models-configure-input>
+        <models-configure-region id="region-configurator" ?active=${this._dialog == 'region'} class="page"></models-configure-region>
         ${renderNotifications()}`
     }
 
@@ -655,6 +661,13 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         this._dialog = 'input';
         let inputConfigurator = this.shadowRoot.getElementById('input-configurator') as ModelsConfigureInput;
         inputConfigurator.newInput(datasetSpecUri);
+    }
+
+    _showRegionDialog () {
+        this._dialog = 'region';
+        let regionConfigurator = this.shadowRoot.getElementById('region-configurator') as ModelsConfigureRegion;
+        //regionConfigurator.setSelected(selectedAuthors);
+        regionConfigurator.open();
     }
 
     _showAuthorDialog () {
@@ -739,12 +752,17 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         this.requestUpdate();
     }
 
+    _onRegionsSelected (ev) {
+        console.log('>>', ev.detail)
+    }
+
     firstUpdated () {
         this.addEventListener('dialogClosed', this._onClosedDialog);
         this.addEventListener('authorsSelected', this._onAuthorsSelected);
         this.addEventListener('processesSelected', this._onProcessesSelected);
         this.addEventListener('parameterEdited', this._onParameterEdited);
         this.addEventListener('inputCreated', this._onInputCreated);
+        this.addEventListener('regionsSelected', this._onRegionsSelected);
     }
 
     stateChanged(state: RootState) {
