@@ -5,7 +5,7 @@ import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
-import { addRegions, addSubcategory, removeSubcategory } from './actions';
+import { addRegions, addSubcategory } from './actions';
 import { GOOGLE_API_KEY } from 'config/google-api-key';
 import { IdMap } from 'app/reducers';
 import { Region, RegionCategory } from './reducers';
@@ -128,6 +128,13 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
 	// TODO: maybe move the description text outside and move the button to other place.
     protected render() {
+        let subcatArr = this._region ? 
+            (this._selectedSubcategory === '' ? 
+                this._region.categories.filter((c:RegionCategory) => c.id === this.regionType)
+                : this._region.subcategories[this.regionType].filter((c:RegionCategory) => 
+                    c.id === this._selectedSubcategory)
+            ) : [];
+        let subcat : RegionCategory | null = subcatArr.length > 0 ? subcatArr[0] : null;
         return html`
         <div style="display: flex; margin-bottom: 10px;">
             <wl-tab-group align="center" style="width: 100%;">
@@ -147,17 +154,19 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         <div class="desc-grid">
             <div style="grid-column: 1 / 2;">
             ${this.regionType && this._region ?
-                ( this.regionType === 'Administrative' ? html`
-                The following map shows the administrative regions in 
-                ${this._region.name || this._regionid}.`
-                : ( this.regionType === 'Agriculture' && this._regionid === 'ethiopia' ? html`
-                The following map shows areas of interest for agriculture modeling in Ethiopia.  These are small river catchments (Level 6 Catchments) which nest smaller sub-catchment suitable for granular analysis of agricultural production.  Colors reflect the fraction of cropland per watershed with darker green reflecting no crops and red representing 80% or more crops.
-                ` : html`
-                The following map shows the current areas of interest for ${this.regionType ?
-                this.regionType.toLowerCase() : ''} modeling in ${this._region.name || this._regionid}
-				`)
-                )
-            : ''}
+                (this.regionType === 'Administrative' ? html`
+                    The following map shows the administrative regions in ${this._region.name || this._regionid}.`
+                : html`
+                    The following map shows the current areas of interest for
+                    ${this.regionType ? this.regionType.toLowerCase() : ''} 
+                    modeling in ${this._region.name || this._regionid}`)
+                : ''}
+            ${subcat ? html`
+                ${subcat.description ? html`<div>${subcat.description}</div>` : ''}
+                ${subcat.citation ?
+                    html`<div style="font-size: 13px; font-style: italic; padding-top: 3px;">${subcat.citation}</div>`
+                    : ''}
+            ` : ''}
             </div>
             <div style="grid-column: 2 / 3;">
                 <wl-icon @click="${this._showAddRegionsDialog}" style="float:right;"
@@ -233,7 +242,6 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             }
             catch {
               map.addEventListener("google-map-ready", (e) => {
-                //map.setRegions(this._regions, this._regionid);
                 map.setRegions(this._regions.filter(
                     (region) => region.region_type == (this._selectedSubcategory ? this._selectedSubcategory : this.regionType)),
                     this._regionid);
@@ -329,7 +337,6 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             return;
         }
 
-        //let sclen = this._subcategories.filter((sc) => sc.id === name).length;
         let index = this._subcategories.map((sc) => sc.id).indexOf(name);
         if (index < 0) {
             addSubcategory(this._regionid, this.regionType, name, desc).then((value) => {
@@ -338,9 +345,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 this.requestUpdate();
             })
         } else {
-            /*showNotification("formValuesIncompleteNotification", this.shadowRoot!);
+            showNotification("formValuesIncompleteNotification", this.shadowRoot!);
             return;
-            /* This remove the region:*/
+            /* This remove the region:
             removeSubcategory(this._regionid, this.regionType, name).then((value) => {
                 hideDialog("addSubcategoryDialog", this.shadowRoot);
                 this._subcategories.splice(index, 1);
@@ -349,7 +356,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 });
                 if (this._selectedSubcategory == name) this._selectSubcategory('');
                 else this.requestUpdate();
-            })
+            })*/
         }
     }
 

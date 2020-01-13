@@ -252,3 +252,12 @@ export const removeSubcategory = (parent_regionid: string, category: string, sub
         })
     });
 };
+
+export const renameSubcategory = (parent_regionid: string, old_category: string, new_category: string) => {
+    let renameQuery = db.collection('regions/' + parent_regionid + '/subregions').where('region_type', '==', old_category);
+    renameQuery.get().then((querySnapshot) => {
+        querySnapshot.forEach((doc) => {
+            db.collection('regions/' + parent_regionid + '/subregions' ).doc(doc.id).update({'region_type': new_category});
+        });
+    });
+};

@@ -6,7 +6,7 @@ import { Configuration, Region, RegionApi } from '@mintproject/modelcatalog_clie
 import { idReducer, getStatusConfigAndUser, PREFIX_URI, DEFAULT_GRAPH,
          START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
 
-function debug (...args: any[]) { console.log('OBA:', ...args); }
+function debug (...args: any[]) { console.log('[MC Region]', ...args); }
 
 export const ALL_REGIONS = 'ALL_REGIONS'
 

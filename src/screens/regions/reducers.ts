@@ -22,7 +22,8 @@ export interface RegionsState {
 
 export interface RegionCategory {
     id: string,
-    description: string
+    description: string,
+    citation?: string
 }
 
 export interface BoundingBox {
