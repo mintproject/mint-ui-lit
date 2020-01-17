@@ -2,13 +2,14 @@ import { Action, ActionCreator } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
-import { Configuration, DefaultApi, ModelApi, SoftwareVersionApi, ModelConfigurationApi, ParameterApi, GridApi,
+import { Configuration, DefaultApi, ModelApi, ModelConfigurationApi, ParameterApi, GridApi,
          DatasetSpecificationApi, TimeIntervalApi, SoftwareImageApi } from '@mintproject/modelcatalog_client';
 
 export * from './person-actions';
 export * from './region-actions';
 export * from './process-actions';
 export * from './parameter-actions';
+export * from './version-actions';
 export * from './model-configuration-actions';
 export * from './model-configuration-setup-actions';
 export * from './dataset-specification-actions';
@@ -21,6 +22,7 @@ import { ModelCatalogRegionAction } from './region-actions';
 import { ModelCatalogGeoShapeAction } from './geo-shape-actions';
 import { ModelCatalogParameterAction } from './parameter-actions';
 import { ModelCatalogProcessAction } from './process-actions';
+import { ModelCatalogVersionAction } from './version-actions';
 import { ModelCatalogModelConfigurationAction } from './model-configuration-actions';
 import { ModelCatalogModelConfigurationSetupAction } from './model-configuration-setup-actions';
 import { ModelCatalogDatasetSpecificationAction } from './dataset-specification-actions';
@@ -92,21 +94,6 @@ export const modelsGet: ActionCreator<ModelCatalogThunkResult> = () => (dispatch
     req.catch((err) => {console.log('Error on getModels', err)});
 }
 
-export const VERSIONS_GET = "VERSIONS_GET";
-interface MCAVersionsGet extends Action<'VERSIONS_GET'> { payload: any };
-export const versionsGet: ActionCreator<ModelCatalogThunkResult> = () => (dispatch) => {
-    debug('Fetching versions');
-    let api = new SoftwareVersionApi();
-    let req = api.softwareversionsGet({username: DEFAULT_GRAPH});
-    req.then((data) => {
-        dispatch({
-            type: VERSIONS_GET,
-            payload: data.reduce(idReducer, {})
-        });
-    });
-    req.catch((err) => {console.log('Error on getVersions', err)});
-}
-
 export const GRID_GET = "GRID_GET";
 interface MCAGridGet extends Action<'GRID_GET'> { payload: any };
 export const gridGet: ActionCreator<ModelCatalogThunkResult> = (uri) => (dispatch) => {
@@ -164,7 +151,7 @@ export const softwareImageGet: ActionCreator<ModelCatalogThunkResult> = (uri) =>
 export type ModelCatalogAction = MCACommon | ModelCatalogPersonAction | ModelCatalogParameterAction | ModelCatalogProcessAction |
                                  ModelCatalogModelConfigurationAction | ModelCatalogRegionAction | ModelCatalogSampleCollectionAction |
                                  ModelCatalogSampleResourceAction | ModelCatalogDatasetSpecificationAction |
-                                 MCAModelsGet | MCAVersionsGet | ModelCatalogGeoShapeAction
+                                 ModelCatalogVersionAction | MCAModelsGet | ModelCatalogGeoShapeAction
                                  |ModelCatalogModelConfigurationSetupAction |
                                  MCAGridGet | MCATimeIntervalGet | MCASoftwareImageGet;
 
