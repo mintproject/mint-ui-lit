@@ -10,20 +10,22 @@ import { START_LOADING, END_LOADING, START_POST, END_POST,
          SAMPLE_RESOURCE_GET, SAMPLE_RESOURCES_GET, ALL_SAMPLE_RESOURCES, SAMPLE_RESOURCE_DELETE, 
          SAMPLE_COLLECTION_GET, SAMPLE_COLLECTIONS_GET, ALL_SAMPLE_COLLECTIONS, SAMPLE_COLLECTION_DELETE, 
          MODEL_CONFIGURATION_GET, MODEL_CONFIGURATIONS_GET, ALL_MODEL_CONFIGURATIONS, MODEL_CONFIGURATION_DELETE,
-         MODEL_CONFIGURATION_SETUP_GET,
+         MODEL_CONFIGURATION_SETUP_GET, MODEL_CONFIGURATION_SETUPS_GET,
          MODELS_GET, VERSIONS_GET, ALL_MODELS, ALL_VERSIONS, 
          GRID_GET, TIME_INTERVAL_GET, SOFTWARE_IMAGE_GET } from './actions'
 
-import { SampleResource, SampleCollection, DatasetSpecification, GeoShape } from '@mintproject/modelcatalog_client';
+import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup,
+    SampleResource, SampleCollection, DatasetSpecification, GeoShape } from '@mintproject/modelcatalog_client';
 import { IdMap } from 'app/reducers'
 
 export interface ModelCatalogState {
     loading: {[key:string]: boolean},
     loadedAll: {[key:string]: boolean},
     created: {[key:string]: string}, //Here we assign some identifier to a POST request, when complete stores the URI
-    models: any;
-    versions: any;
-    configurations: any;
+    models: IdMap<Model>;
+    versions: IdMap<SoftwareVersion>;
+    configurations: IdMap<ModelConfiguration>;
+    setups: IdMap<ModelConfigurationSetup>;
     parameters: any;
     //datasetSpecifications: any;
     persons: any;
@@ -32,7 +34,7 @@ export interface ModelCatalogState {
     timeIntervals: any;
     softwareImages: any;
     regions: any;
-    datasetSpecifications: {[key:string]: DatasetSpecification};
+    datasetSpecifications: IdMap<DatasetSpecification>;
     sampleResources: IdMap<SampleResource>;
     sampleCollections: IdMap<SampleCollection>;
     geoShapes: IdMap<GeoShape>;
@@ -45,6 +47,7 @@ const INITIAL_STATE: ModelCatalogState = {
     models: null,
     versions: null,
     configurations: null,
+    setups: {} as IdMap<ModelConfigurationSetup>,
     parameters: null,
     //datasetSpecifications: null,
     persons: null,
@@ -52,7 +55,7 @@ const INITIAL_STATE: ModelCatalogState = {
     processes: null,
     timeIntervals: null,
     softwareImages: null,
-    datasetSpecifications: {} as DatasetSpecification,
+    datasetSpecifications: {} as IdMap<DatasetSpecification>,
     sampleResources: {} as IdMap<SampleResource>,
     sampleCollections: {} as IdMap<SampleCollection>,
     geoShapes: {} as IdMap<GeoShape>,
@@ -128,10 +131,15 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 configurations: {...state.configurations, ...action.payload}
             }
 
+        case MODEL_CONFIGURATION_SETUPS_GET:
+            return {
+                ...state,
+                setups: {...state.setups, ...action.payload}
+            }
         case MODEL_CONFIGURATION_SETUP_GET:
             return {
                 ...state,
-                configurations: {...state.configurations, ...action.payload}
+                setups: {...state.setups, ...action.payload}
             }
 
         case PARAMETER_DELETE:

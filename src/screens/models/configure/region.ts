@@ -107,12 +107,16 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
         ];
     }
 
-    open () {
+    open (selectedRegions : Region[]) {
         if (this.active) {
             showDialog("authorDialog", this.shadowRoot);
             this._filter = '';
+            this._selected = {};
+            selectedRegions.forEach((r:Region) => {
+                this._selected[r.id] = true;
+            });
         } else {
-            setTimeout(() => {this.open()}, 300);
+            setTimeout(() => {this.open(selectedRegions)}, 300);
         }
     }
 
@@ -160,7 +164,7 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
             region.country.some((obj:Region) => obj.id === this._region.model_catalog_uri)
         );
 
-        console.log(subregions);
+        //console.log(subregions);
         return html`
             <wl-textfield label="Search regions" id="search-input" @input="${this._onSearchChange}"><wl-icon slot="after">search</wl-icon></wl-textfield>
             <div class="results" style="margin-top: 5px;">

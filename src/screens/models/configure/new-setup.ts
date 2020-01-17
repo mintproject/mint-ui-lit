@@ -667,7 +667,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         this._dialog = 'region';
         let regionConfigurator = this.shadowRoot.getElementById('region-configurator') as ModelsConfigureRegion;
         //regionConfigurator.setSelected(selectedAuthors);
-        regionConfigurator.open();
+        regionConfigurator.open([]);
     }
 
     _showAuthorDialog () {

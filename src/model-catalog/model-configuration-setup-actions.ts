@@ -12,7 +12,7 @@ import { SAMPLE_RESOURCE_GET, MCASampleResourceGet } from './sample-resource-act
 import { SAMPLE_COLLECTION_GET, MCASampleCollectionGet } from './sample-collection-actions'
 import { modelConfigurationPut } from './actions';
 
-function debug (...args: any[]) {}// console.log('[MC setup]', ...args); }
+function debug (...args: any[]) { console.log('[MC setup]', ...args); }
 
 export const ALL_MODEL_CONFIGURATION_SETUPS = 'ALL_MODEL_CONFIGURATION_SETUPS'
 
