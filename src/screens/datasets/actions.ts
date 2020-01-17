@@ -61,7 +61,7 @@ const getDatasetsFromDCResponse = (obj: any, queryParameters: DatasetQueryParame
                 end_date: (dmeta['temporal_coverage']['end_time'] ?
                     toTimeStamp(dmeta['temporal_coverage']['end_time'])
                     : null),
-            } : {},
+            } : null,
             description: dmeta['dataset_description'] || '',
             version: dmeta['version'] || '',
             limitations: dmeta['limitations'] || '',
@@ -84,44 +84,54 @@ const getDatasetsFromDCResponse = (obj: any, queryParameters: DatasetQueryParame
 }
 
 const getDatasetDetailFromDCResponse = (ds: any) => {
+    let dmeta = ds['metadata'];
     return {
         id: ds['dataset_id'],
         name: ds['name'] || '',
         description: ds['description'] || '',
         region: '',
         variables: [],
-        datatype: ds['metadata']['datatype'] || '',
-        time_period: {
-            start_date: toTimeStamp(ds['metadata']['temporal_coverage']['start_time']),
-            end_date: toTimeStamp(ds['metadata']['temporal_coverage']['end_time']),
-        },
-        version: ds['metadata']['version'] || '',
-        limitations: ds['metadata']['limitations'] || '',
+        datatype: dmeta['datatype'] || '',
+        time_period: dmeta['temporal_coverage'] ? {
+            start_date: (dmeta['temporal_coverage']['start_time'] ?
+                toTimeStamp(dmeta['temporal_coverage']['start_time'])
+                : null),
+            end_date: (dmeta['temporal_coverage']['end_time'] ? 
+                toTimeStamp(dmeta['temporal_coverage']['end_time'])
+                : null),
+        } : null,
+        version: dmeta['version'] || '',
+        limitations: dmeta['limitations'] || '',
         source: {
-            name: ds['metadata']['source'] || '',
-            url: ds['metadata']['source_url'] || '',
-            type: ds['metadata']['source_type'] || '',
+            name: dmeta['source'] || '',
+            url: dmeta['source_url'] || '',
+            type: dmeta['source_type'] || '',
         },
         categories: ds['categories'] || [],
-        is_cached: ds['metadata']['is_cached'] || false,
-        resource_repr: ds['metadata']['resource_repr'] || null,
-        dataset_repr: ds['metadata']['dataset_repr'] || null,
-        resource_count: ds['metadata']['resource_count'] || 0,
-        spatial_coverage: ds['metadata']['dataset_spatial_coverage'] || null,
+        is_cached: dmeta['is_cached'] || false,
+        resource_repr: dmeta['resource_repr'] || null,
+        dataset_repr: dmeta['dataset_repr'] || null,
+        resource_count: dmeta['resource_count'] || 0,
+        spatial_coverage: dmeta['dataset_spatial_coverage'] || null,
         resources: [],
     }
 }
 
 const getResourcesFromDCResponse = (obj: any) => {
     return obj.dataset.resources.map(row => {
+        let dmeta = row['resource_metadata'];
         return {
             id: row["resource_id"],
             name: row["resource_name"],
             url: row["resource_data_url"],
-            time_period: {
-                start_date: toTimeStamp(row['resource_metadata']['temporal_coverage']['start_time']),
-                end_date: toTimeStamp(row['resource_metadata']['temporal_coverage']['end_time'])
-            },
+            time_period: dmeta['temporal_coverage'] ? {
+                start_date: (dmeta['temporal_coverage']['start_time'] ?
+                    toTimeStamp(row['resource_metadata']['temporal_coverage']['start_time'])
+                    : null),
+                end_date: (dmeta['temporal_coverage']['end_time'] ?
+                    toTimeStamp(row['resource_metadata']['temporal_coverage']['end_time'])
+                    : null)
+            } : null,
             spatial_coverage: row["resource_metadata"]["spatial_coverage"],
             selected: true
         }
