@@ -54,10 +54,14 @@ const getDatasetsFromDCResponse = (obj: any, queryParameters: DatasetQueryParame
             name: ds['dataset_name'] || '',
             region: '',
             variables: queryParameters.variables,
-            time_period: {
-                start_date: toTimeStamp(dmeta['temporal_coverage']['start_time']),
-                end_date: toTimeStamp(dmeta['temporal_coverage']['end_time']),
-            },
+            time_period: dmeta['temporal_coverage'] ? {
+                start_date: (dmeta['temporal_coverage']['start_time'] ?
+                    toTimeStamp(dmeta['temporal_coverage']['start_time'])
+                    : null),
+                end_date: (dmeta['temporal_coverage']['end_time'] ?
+                    toTimeStamp(dmeta['temporal_coverage']['end_time'])
+                    : null),
+            } : {},
             description: dmeta['dataset_description'] || '',
             version: dmeta['version'] || '',
             limitations: dmeta['limitations'] || '',
