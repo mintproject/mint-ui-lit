@@ -2,24 +2,16 @@ import { property, html, customElement, css } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
 import { SharedStyles } from '../../styles/shared-styles';
+import { ExplorerStyles } from './model-explore/explorer-styles'
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
-import { ExplorerStyles } from './model-explore/explorer-styles'
 
 import { IdMap } from 'app/reducers';
-
-//import { ModelConfiguration, SoftwareVersion, Model, Region } from '@mintproject/modelcatalog_client';
-
-import './configure/configuration';
-import './configure/setup';
-import './configure/new-setup';
-import './configure/parameter';
-
-//import {  } from '../../util/model-catalog-actions';
+import { ModelConfigurationSetup, ModelConfiguration, SoftwareVersion, Model } from '@mintproject/modelcatalog_client';
 
 import "weightless/progress-spinner";
-import '../../components/loading-dots'
+import 'components/loading-dots'
 
 @customElement('models-tree')
 export class ModelsTree extends connect(store)(PageViewElement) {
@@ -27,13 +19,16 @@ export class ModelsTree extends connect(store)(PageViewElement) {
     private _regions : any = null;
 
     @property({type: Object})
-    private _models : any = null;
+    private _models : IdMap<Model> = {} as IdMap<Model>;
 
     @property({type: Object})
-    private _versions : any = null;
+    private _versions : IdMap<SoftwareVersion> = {} as IdMap<SoftwareVersion>;
 
     @property({type: Object})
-    private _configs : any = null;
+    private _configs : IdMap<ModelConfiguration> = {} as IdMap<ModelConfiguration>;
+
+    @property({type: Object})
+    private _setups : IdMap<ModelConfigurationSetup> = {} as IdMap<ModelConfigurationSetup>;
 
     @property({type: Object})
     private _visible : IdMap<boolean> = {};
@@ -54,8 +49,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
     private _creating : boolean = false;
 
     static get styles() {
-        return [ExplorerStyles,
-            css `
+        return [ExplorerStyles, SharedStyles, css`
             .inline-new-button {
                 line-height: 1.2em;
                 font-size: 1.2em;
@@ -91,17 +85,15 @@ export class ModelsTree extends connect(store)(PageViewElement) {
 
             span {
                 cursor: pointer;
-            }
-            `,
-            SharedStyles
+            }`
         ];
     }
 
-    _getId (resource) {
+    _getId (resource : Model | SoftwareVersion | ModelConfiguration | ModelConfigurationSetup) {
         return resource.id.split('/').pop();
     }
 
-    _createUrl (model, version?, config?, setup?) {
+    _createUrl (model:Model, version?:SoftwareVersion, config?:ModelConfiguration, setup?:ModelConfigurationSetup) {
         let url = 'models/configure/' + this._getId(model);
         if (version) {
             url += '/' + this._getId(version);
@@ -115,11 +107,11 @@ export class ModelsTree extends connect(store)(PageViewElement) {
         return url;
     }
 
-    _select (model, version, config, setup?) {
+    _select (model:Model, version:SoftwareVersion, config:ModelConfiguration, setup?:ModelConfigurationSetup) {
         goToPage(this._createUrl(model, version, config, setup));
     }
 
-    _selectNew (model, version, config?) {
+    _selectNew (model:Model, version:SoftwareVersion, config?:ModelConfigurationSetup) {
         goToPage(this._createUrl(model, version, config) + '/new');
     }
 
@@ -130,7 +122,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
         if (this._region && this._region.model_catalog_uri === 'https://w3id.org/okn/i/mint/Texas')
             this._region.model_catalog_uri = 'https://w3id.org/okn/i/mint/United_States';
 
-        const visibleSetup = (setup) => setup && (
+        const visibleSetup = (setup: ModelConfigurationSetup) => setup && (
             !setup.hasRegion || setup.hasRegion.length === 0 ||
             (this._region && !this._region.model_catalog_uri) ||
             setup.hasRegion.filter((r:any) => r.id === this._region.model_catalog_uri).length > 0 ||
@@ -144,7 +136,9 @@ export class ModelsTree extends connect(store)(PageViewElement) {
 
         return html`
         <ul style="padding-left: 10px; margin-top: 4px;">
-            ${Object.values(this._models).filter((model: any) => !!model.hasVersion).map((model: any) => html`
+            ${Object.values(this._models)
+                .filter((model: Model) => !!model.hasVersion)
+                .map((model: Model) => html`
             <li>
                 <span @click="${() => {
                     this._visible[model.id] = !this._visible[model.id];
@@ -158,7 +152,10 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                 ${this._visible[model.id] ? html`
                 ${!this._versions ? html`<loading-dots style="--width: 20px"></loading-dots>` : html`
                 <ul>
-                    ${model.hasVersion.filter(v => !!this._versions[v.id]).map((v) => this._versions[v.id]).map((version) => html`
+                    ${model.hasVersion
+                        .filter((v:any) => !!this._versions[v.id])
+                        .map((v:any) => this._versions[v.id])
+                        .map((version : SoftwareVersion) => html`
                     <li>
                         <span @click=${() => {
                              this._visible[version.id] = !this._visible[version.id];
@@ -166,24 +163,28 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                         }}>
                             <wl-icon>${this._visible[version.id] ? 'expand_more' : 'expand_less'}</wl-icon>
                             <span ?selected="${this._selectedVersion === version.id}" style="vertical-align: top;">
-                                ${version.label ? version.label : version.id.split('/').pop()}
+                                ${version.label ? version.label : this._getId(version)}
                             </span>
                         </span>
                         ${this._visible[version.id] ? html`
                         ${!this._configs ? html`<loading-dots style="--width: 20px"></loading-dots>` : html`
                         <ul style="padding-left: 30px;">
-                            ${(version.hasConfiguration || []).filter(c => !!c.id).map((c) => this._configs[c.id]).map((config) => html`
+                            ${(version.hasConfiguration || [])
+                                .filter(c => !!c.id)
+                                .map((c) => this._configs[c.id])
+                                .map((config : ModelConfiguration) => html`
                             <li>
                                 <a @click="${()=>{this._select(model, version, config)}}" ?selected="${this._selectedConfig === config.id}">
-                                    ${config ? config.label : config.id.split('/').pop()}
+                                    ${config ? config.label : this._getId(config)}
                                 </a>
                                 <ul>
-                                    ${((config ? config.hasSetup : []) || []).map((s) => this._configs[s.id])
+                                    ${(config.hasSetup || [])
+                                        .map((s:any) => this._setups[s.id])
                                         .filter(visibleSetup)
-                                        .map(setup => html`
+                                        .map((setup : ModelConfigurationSetup) => html`
                                     <li>
                                         <a @click="${()=>{this._select(model, version, config, setup)}}" ?selected="${this._selectedSetup === setup.id}">
-                                            ${setup ? setup.label : setup.id.split('/').pop()}
+                                            ${setup ? setup.label : this._getId(setup)}
                                         </a>
                                     </li>
                                     `)}
@@ -213,10 +214,6 @@ export class ModelsTree extends connect(store)(PageViewElement) {
             </li>
         `)}
         </ul>`;
-    }
-
-    firstUpdated () {
-        /*Everything is loaded*/
     }
 
     stateChanged(state: RootState) {
@@ -251,6 +248,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                 this._models = db.models;
                 this._versions = db.versions;
                 this._configs = db.configurations;
+                this._setups = db.setups;
                 this._regions = db.regions;
             }
         }

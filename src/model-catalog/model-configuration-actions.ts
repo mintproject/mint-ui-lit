@@ -11,7 +11,7 @@ import { DATASET_SPECIFICATION_GET, MCADatasetSpecificationGet } from './dataset
 import { SAMPLE_RESOURCE_GET, MCASampleResourceGet } from './sample-resource-actions'
 import { SAMPLE_COLLECTION_GET, MCASampleCollectionGet } from './sample-collection-actions'
 
-function debug (...args: any[]) { console.log('OBA:', ...args); }
+function debug (...args: any[]) { console.log('[MC configuration]', ...args); }
 
 export const ALL_MODEL_CONFIGURATIONS = 'ALL_MODEL_CONFIGURATIONS'
 
