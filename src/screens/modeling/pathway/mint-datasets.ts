@@ -452,6 +452,14 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         this._selectionUpdate = true;
         if(this._selectResourcesImmediateUpdate) {
             let newpathway = {...this.pathway};
+            newpathway.last_update = {
+                ...newpathway.last_update!,
+                parameters: null,
+                datasets: {
+                    time: Date.now(),
+                    user: this.user!.email
+                } as StepUpdateInformation
+            };    
             updatePathway(this.scenario, newpathway);
             showNotification("saveNotification", this.shadowRoot!);
         }
@@ -543,6 +551,8 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         };
         newpathway.last_update = {
             ...newpathway.last_update!,
+            parameters: null,
+            results: null,
             datasets: {
                 time: Date.now(),
                 user: this.user!.email
