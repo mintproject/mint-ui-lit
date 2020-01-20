@@ -246,7 +246,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
 
 export const MODEL_CONFIGURATION_SETUP_PUT = "MODEL_CONFIGURATION_SETUP_PUT";
 interface MCAModelConfigurationSetupPut extends Action<'MODEL_CONFIGURATION_SETUP_PUT'> { payload: any };
-export const modelConfigurationSetupPut: ActionCreator<ModelCatalogModelConfigurationSetupThunkResult> = 
+export const modelConfigurationSetupPut: ActionCreator<ThunkAction<Promise<ModelConfigurationSetup>, RootState, undefined, MCAModelConfigurationSetupGet | MCACommon>> = 
         ( modelConfigurationSetup: ModelConfigurationSetup ) => (dispatch) => {
     debug('Updating', modelConfigurationSetup.id);
     let status : string, cfg : Configuration, user : string;
@@ -272,6 +272,7 @@ export const modelConfigurationSetupPut: ActionCreator<ModelCatalogModelConfigur
     } else {
         console.error('TOKEN', status);
     }
+    return Promise.reject(new Error('Setup PUT error'));
 }
 
 export const MODEL_CONFIGURATION_SETUP_DELETE = "MODEL_CONFIGURATION_SETUP_DELETE";
