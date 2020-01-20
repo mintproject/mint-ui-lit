@@ -269,9 +269,10 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             editedSetup.adjustableParameter = editedSetup.adjustableParameter.map((uri) => {return  {id: uri}});
 
             console.log('saving', editedSetup);
-            store.dispatch(modelConfigurationSetupPut(editedSetup));
+            store.dispatch(modelConfigurationSetupPut(editedSetup)).then((setup) => {
+                goToPage(createUrl(this._model, this._version, this._config, this._setup));
+            });
             showNotification("saveNotification", this.shadowRoot!);
-            goToPage(createUrl(this._model, this._version, this._config, this._setup));
         }
     }
 

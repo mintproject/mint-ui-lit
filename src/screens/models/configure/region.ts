@@ -3,6 +3,8 @@ import { PageViewElement } from 'components/page-view-element';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../model-explore/explorer-styles'
+import { GOOGLE_API_KEY } from 'config/google-api-key';
+import { GoogleMapCustom } from 'components/google-map-custom';
 
 import { store, RootState } from 'app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
@@ -11,6 +13,7 @@ import { IdMap } from "app/reducers";
 
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
+import { RegionCategory } from "screens/regions/reducers";
 
 import { regionGet, regionsGet, regionPost, regionPut, regionDelete, ALL_REGIONS } from 'model-catalog/actions';
 
@@ -39,6 +42,12 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _regions : IdMap<Region> = {} as IdMap<Region>;
 
+    @property({type: Object})
+    private _mapRegions : any = [];
+
+    @property({type: Object})
+    private _selectedMapRegion : any = '';
+
     @property({type: String})
     private _filter : string = '';
 
@@ -51,8 +60,16 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _selected : IdMap<boolean> = {} as IdMap<boolean>;
 
+    @property({type: String})
+    private _selectedCategory: string = '';
+
+    @property({type: Boolean})
+    private _mapReady: boolean = false;
+
     private _postId : number = 1;
     private _searchPromise : ReturnType<typeof setTimeout> | null = null;
+
+    private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
 
     static get styles() {
         return [ExplorerStyles, SharedStyles, css`
@@ -103,8 +120,10 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
             height: 400px;
             overflow-y: scroll;
         }
-        `,
-        ];
+
+        #regionForm {
+            padding: 5px 0px;
+        }`];
     }
 
     open (selectedRegions : Region[]) {
@@ -135,6 +154,15 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
         }, 300);
     }
 
+    _changeTab (tab: ''|'map') {
+        if (this._tab != tab) {
+            if (this._tab !== 'map') {
+                this._selectedCategory = '';
+            }
+            this._tab = tab;
+        }
+    }
+
     protected render() {
         return html`
         <wl-dialog class="larger" id="authorDialog" fixed backdrop blockscrolling persistent>
@@ -143,15 +171,22 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
             </h3>
             <div slot="content">
                 <wl-tab-group align="center" value="${this._tab}">
-                    <wl-tab ?checked="${this._tab === ''}" @click="${() => {this._tab = ''}}">Search Region</wl-tab>
-                    <wl-tab ?checked="${this._tab === 'map'}" @click="${() => {this._tab = 'map'}}" disabled>Map</wl-tab>
+                    <wl-tab ?checked="${this._tab === ''}" @click="${() => {this._changeTab('')}}">Search Region</wl-tab>
+                    <wl-tab ?checked="${this._tab === 'map'}" @click="${() => {this._changeTab('map')}}">Map</wl-tab>
                 </wl-tab-group>
                 ${this._tab === '' ? this._renderSelectTab() : ''}
                 ${this._tab === 'map' ? this._renderMapTab() : ''}
             </div>
             <div slot="footer">
+                ${this._tab === '' ? html`
                 <wl-button @click="${this._cancel}" style="margin-right: 5px;" inverted flat ?disabled="${this._waiting}">Cancel</wl-button>
                 <wl-button @click="${this._onSubmitAuthors}" class="submit">Add selected regions</wl-button>
+                `: ''}
+                ${this._tab === 'map' ? html`
+                <wl-button @click="${() => {this._changeTab('')}}" style="margin-right: 5px;" inverted flat ?disabled="${this._waiting}">Cancel</wl-button>
+                <wl-button @click="${this._onSelectRegionFromMap}" class="submit"
+                    ?disabled="${this._waiting || !this._selectedMapRegion}">Add selected region</wl-button>
+                `: ''}
             </div>
         </wl-dialog>
         ${renderNotifications()}`
@@ -176,7 +211,7 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
                         <span class="${this._selected[region.id] ? 'bold' : ''}">${region.label ? region.label : region.id}</span>
                     </label>
                     <wl-button @click="${() => this._edit(region.id)}" flat inverted disabled><wl-icon>edit</wl-icon></wl-button>
-                    <wl-button @click="${() => this._delete(region.id)}" flat inverted disabled><wl-icon class="warning">delete</wl-icon></wl-button>
+                    <wl-button @click="${() => this._delete(region.id)}" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
                 </div>
                 `)}
             </div>`
@@ -184,9 +219,102 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
 
     _renderMapTab () {
         return html`
-            <form>
-                <wl-textfield id="new-author-name" label="Name" required></wl-textfield>
-            </form>`
+            <form id="regionForm">
+                <div class="input_half">
+                    <label>Region category</label>
+                    <select name="category-selector" value="" @change="${this._onRegionCategoryChange}">
+                        <option value="">None</option>
+                        ${this._region.categories.map((cat: RegionCategory) => {
+                            let subCategories = this._region.subcategories[cat.id] || [];
+                            return html`
+                            <option value="${cat.id}">${cat.id}</option>
+                            ${subCategories.length > 0 ? subCategories.map((subcat: RegionCategory) => {
+                                return html`<option value="${subcat.id}">&nbsp;&nbsp;&nbsp;&nbsp;${subcat.id}</option>`;
+                            }) : html`
+                                <option disabled>&nbsp;&nbsp;&nbsp;&nbsp;No subcategories</option>
+                            `}`
+                        })}
+                    </select>
+                </div>
+            </form>
+
+            ${!this._mapReady ? html`
+                <span>Please select a region category</span>
+            ` : ''}
+            <google-map-custom class="map" api-key="${GOOGLE_API_KEY}" 
+                .style="height:400px; visibility: ${this._mapReady ? 'visible': 'hidden'}"
+                disable-default-ui="true" draggable="true"
+                @click="${this._handleMapClick}"
+                mapTypeId="terrain" styles="${this._mapStyles}">
+            </google-map-custom>
+
+            ${this._selectedMapRegion ? html`
+            <b>Selected region name:</b> ${this._selectedMapRegion.name} <br/>
+            <b>Bounding Box:</b>
+                ${ this._selectedMapRegion.bounding_box.xmin.toFixed(4) + ',' + this._selectedMapRegion.bounding_box.ymin.toFixed(4) }
+                ${ this._selectedMapRegion.bounding_box.xmax.toFixed(4) + ',' + this._selectedMapRegion.bounding_box.ymax.toFixed(4) }
+            ` : ''}`
+    }
+
+    _onRegionCategoryChange () {
+        let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#regionForm")!;
+        let category = (form.elements["category-selector"] as HTMLSelectElement).value;
+        if (category != this._selectedCategory) {
+            this._selectedCategory = category;
+            this.addRegionsToMap();
+        }
+    }
+
+
+    public addRegionsToMap() {   
+        let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
+        let visibleRegions = this._mapRegions.filter((region) => region.region_type == this._selectedCategory);
+        if(map && visibleRegions) {
+            try {
+                map.setRegions(visibleRegions, this._regionid);
+              this._mapReady = true;
+            }
+            catch {
+              map.addEventListener("google-map-ready", (e) => {
+                map.setRegions(visibleRegions, this._regionid);
+                this._mapReady = true;
+              })
+            }
+        }
+    }
+
+    private _handleMapClick(ev: any) {
+        if(ev.detail && ev.detail.id) {
+            this._selectedMapRegion = this._mapRegions.filter(r => r.id === ev.detail.id)[0];
+        }
+    }
+
+    _onSelectRegionFromMap () {
+        this._waiting = true;
+        let selected = this._selectedMapRegion;
+        let newRegion : Region = {
+            label: [selected.name],
+            type: ["Region"],
+            country: [{id: this._region.model_catalog_uri}],
+            geo: [{
+                label: ["Bounding box for " + selected.name],
+                box: [selected.bounding_box.xmin + ',' + selected.bounding_box.ymin + ' '
+                    + selected.bounding_box.xmax + ',' + selected.bounding_box.ymax ],
+                type: ["GeoShape"]
+            }]
+        }
+        this._waitingFor = 'PostRegion' + this._postId;
+        this._postId += 1;
+        let postProm = store.dispatch(regionPost(newRegion, this._waitingFor));
+        
+        postProm.then((region) => {
+            this._waiting = false;
+            this._selected[region.id] = true;
+            this._changeTab('');
+        });
+        postProm.catch((error) => {
+            this._waiting = false;
+        })
     }
 
     _toggleSelection (region:Region) {
@@ -251,11 +379,11 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
     }
 
     _delete (regionUri) {
-        /*if (confirm('This Region will be deleted on all related resources')) {
+        if (confirm('This Region will be deleted on all related resources')) {
             store.dispatch(regionDelete(regionUri));
             if (this._selected[regionUri])
                 delete this._selected[regionUri];
-        }*/
+        }
     }
 
     firstUpdated () {
@@ -267,7 +395,15 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
             let db = state.modelCatalog;
             this._loading = db.loading[ALL_REGIONS]
             this._regions = db.regions;
-            super.setRegionId(state);
+            //super.setRegionId(state);
+            super.setRegion(state);
+            if (this._regionid && this._region) {
+                let sr = state.regions.sub_region_ids;
+                if (sr && sr[this._regionid]) {
+                    this._mapRegions = sr[this._regionid].map((regionid) => state.regions.regions[regionid]);
+                }
+            }
+
             /*if (this._waitingFor) {
                 if (this._new) {
                     if (db.created[this._waitingFor]) {

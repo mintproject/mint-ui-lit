@@ -49,7 +49,7 @@ export const geoShapesGet: ActionCreator<ModelCatalogGeoShapeThunkResult> = () =
 }
 
 export const GEO_SHAPE_GET = "GEO_SHAPE_GET";
-interface MCAGeoShapeGet extends Action<'GEO_SHAPE_GET'> { payload: any };
+export interface MCAGeoShapeGet extends Action<'GEO_SHAPE_GET'> { payload: any };
 export const geoShapeGet: ActionCreator<ModelCatalogGeoShapeThunkResult> = ( uri:string ) => (dispatch) => {
     debug('Fetching geoShape', uri);
     let id : string = uri.split('/').pop();
