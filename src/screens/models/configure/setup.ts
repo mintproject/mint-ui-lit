@@ -315,23 +315,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             keywords = this._setup.keywords[0].split(/ *; */).join(', ');
         }
 
-        // FIXME this should work with the new API
-        let selectRegions = [];
-        if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/Ethiopia') {
-            selectRegions = [
-                {label: 'Baro basin', id: 'https://w3id.org/okn/i/mint/Baro'},
-                {label: 'Gambella region', id: 'https://w3id.org/okn/i/mint/Gambella'},
-            ]
-        } else if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/South_Sudan') {
-            selectRegions = [
-                {label: 'Pongo basin', id: 'https://w3id.org/okn/i/mint/Pongo_Basin_SS'},
-            ]
-        } else if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/Texas') {
-            selectRegions = [
-                {label: 'Barton Springs', id: ''},
-            ]
-        }
-
         return html`
         <span id="start"/>
 
@@ -669,7 +652,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     _showRegionDialog () {
         this._dialog = 'region';
         let regionConfigurator = this.shadowRoot.getElementById('region-configurator') as ModelsConfigureRegion;
-        //regionConfigurator.setSelected(selectedAuthors);
         regionConfigurator.open(this._setup.hasRegion);
     }
 
