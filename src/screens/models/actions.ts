@@ -182,10 +182,12 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                                 } as Dataset;
                             }
                             fileio[value.io] = io;
-                            if(value.prop.match(/#hasInput$/)) {
-                                inputs.push(io);
-                            } else {
-                                outputs.push(io);
+                            if(value.prop) {
+                                if(value.prop.match(/#hasInput$/)) {
+                                    inputs.push(io);
+                                } else {
+                                    outputs.push(io);
+                                }
                             }
                         }
                         if(value.st) {
