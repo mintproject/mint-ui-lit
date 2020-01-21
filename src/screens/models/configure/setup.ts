@@ -269,9 +269,10 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             editedSetup.adjustableParameter = editedSetup.adjustableParameter.map((uri) => {return  {id: uri}});
 
             console.log('saving', editedSetup);
-            store.dispatch(modelConfigurationSetupPut(editedSetup));
+            store.dispatch(modelConfigurationSetupPut(editedSetup)).then((setup) => {
+                goToPage(createUrl(this._model, this._version, this._config, this._setup));
+            });
             showNotification("saveNotification", this.shadowRoot!);
-            goToPage(createUrl(this._model, this._version, this._config, this._setup));
         }
     }
 
@@ -312,23 +313,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         let keywords = '';
         if (this._setup.keywords) {
             keywords = this._setup.keywords[0].split(/ *; */).join(', ');
-        }
-
-        // FIXME this should work with the new API
-        let selectRegions = [];
-        if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/Ethiopia') {
-            selectRegions = [
-                {label: 'Baro basin', id: 'https://w3id.org/okn/i/mint/Baro'},
-                {label: 'Gambella region', id: 'https://w3id.org/okn/i/mint/Gambella'},
-            ]
-        } else if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/South_Sudan') {
-            selectRegions = [
-                {label: 'Pongo basin', id: 'https://w3id.org/okn/i/mint/Pongo_Basin_SS'},
-            ]
-        } else if (this._region['model_catalog_uri'] === 'https://w3id.org/okn/i/mint/Texas') {
-            selectRegions = [
-                {label: 'Barton Springs', id: ''},
-            ]
         }
 
         return html`
@@ -668,7 +652,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     _showRegionDialog () {
         this._dialog = 'region';
         let regionConfigurator = this.shadowRoot.getElementById('region-configurator') as ModelsConfigureRegion;
-        //regionConfigurator.setSelected(selectedAuthors);
         regionConfigurator.open(this._setup.hasRegion);
     }
 
