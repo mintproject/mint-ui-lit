@@ -1669,7 +1669,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                     let selectedUri = this._calibration ? this._calibration.uri : this._config.uri;
                     if (this._inputs != db.inputs[selectedUri]) this._inputs = db.inputs[selectedUri];
                     if (this._outputs != db.outputs[selectedUri]) this._outputs = db.outputs[selectedUri];
-                    if (this._parameters != db.parameters[selectedUri]) this._parameters = db.parameters[selectedUri];
+                    if (this._parameters != db.parameters[selectedUri]) {
+                        this._parameters = db.parameters[selectedUri]
+                            .map((p) => { return { ...p, position: parseInt(p.position) } })
+                            .sort((a,b) => { a.position - b.position });
+                    }
                 }
 
                 if (db.variables && this._IOStatus.size > 0) {
