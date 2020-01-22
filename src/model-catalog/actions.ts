@@ -1,6 +1,7 @@
 import { Action, ActionCreator } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
+import { IdMap } from 'app/reducers'
 
 import { Configuration, DefaultApi, ModelApi, ModelConfigurationApi, ParameterApi, GridApi,
          DatasetSpecificationApi, TimeIntervalApi, SoftwareImageApi } from '@mintproject/modelcatalog_client';
@@ -32,6 +33,26 @@ import { ModelCatalogSampleCollectionAction } from './sample-collection-actions'
 function debug (...args: any[]) {
     //console.log('OBA:', ...args);
 }
+
+export type ActionThunk<R,A extends Action> = ActionCreator<ThunkAction<R, RootState, undefined, A>>
+interface IdObject { id: string };
+
+export const getIdFromUri = (uri: string) : string => {
+    return uri.split('/').pop();
+}
+
+export function createIdMap<T extends IdObject> (item:T) : IdMap<T> {
+    let uri : string = PREFIX_URI + item.id
+    let map : IdMap<T> = {} as IdMap<T>;
+    map[uri] = item;
+    item.id = uri;
+    return map;
+}
+
+/*export function idReducer<T> (dic:IdMap<T>, item:T) {
+    dic[item.id] = item;
+    return dic;
+}*/
 
 export const idReducer = (dic:any, elem:any) => {
     dic[elem.id] = elem;

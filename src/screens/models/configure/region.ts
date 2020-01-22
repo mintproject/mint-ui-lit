@@ -15,7 +15,7 @@ import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 import { RegionCategory } from "screens/regions/reducers";
 
-import { regionGet, regionsGet, regionPost, regionPut, regionDelete, ALL_REGIONS } from 'model-catalog/actions';
+import { regionsGet, regionPost, regionDelete } from 'model-catalog/actions';
 
 import { renderExternalLink } from './util';
 
@@ -32,9 +32,6 @@ import { Textfield } from 'weightless/textfield';
 export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
     @property({type: String})
     private _tab: '' | 'map' = '';
-
-    @property({type: Boolean})
-    private _new : boolean = false;
 
     @property({type: Boolean})
     private _loading : boolean = false;
@@ -54,9 +51,6 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
     @property({type: Boolean})
     private _waiting : boolean = false;
 
-    @property({type: String})
-    private _waitingFor : string = '';
-
     @property({type: Object})
     private _selected : IdMap<boolean> = {} as IdMap<boolean>;
 
@@ -66,7 +60,6 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
     @property({type: Boolean})
     private _mapReady: boolean = false;
 
-    private _postId : number = 1;
     private _searchPromise : ReturnType<typeof setTimeout> | null = null;
 
     private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
@@ -180,7 +173,7 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
             <div slot="footer">
                 ${this._tab === '' ? html`
                 <wl-button @click="${this._cancel}" style="margin-right: 5px;" inverted flat ?disabled="${this._waiting}">Cancel</wl-button>
-                <wl-button @click="${this._onSubmitAuthors}" class="submit">Add selected regions</wl-button>
+                <wl-button @click="${this._onSubmitRegions}" class="submit">Add selected regions</wl-button>
                 `: ''}
                 ${this._tab === 'map' ? html`
                 <wl-button @click="${() => {this._changeTab('')}}" style="margin-right: 5px;" inverted flat ?disabled="${this._waiting}">Cancel</wl-button>
@@ -196,10 +189,10 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
         let subregions : Region[] = Object.values(this._regions || {}).filter((region:Region) => 
             region.country &&
             region.country.length > 0 &&
-            region.country.some((obj:Region) => obj.id === this._region.model_catalog_uri)
+            region.country.some((obj:Region) => obj.id === this._region.model_catalog_uri) &&
+            region.label.join().toLowerCase().includes(this._filter.toLowerCase())
         );
 
-        //console.log(subregions);
         return html`
             <wl-textfield label="Search regions" id="search-input" @input="${this._onSearchChange}"><wl-icon slot="after">search</wl-icon></wl-textfield>
             <div class="results" style="margin-top: 5px;">
@@ -296,6 +289,7 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
             label: [selected.name],
             type: ["Region"],
             country: [{id: this._region.model_catalog_uri}],
+            //TODO: description: [""],
             geo: [{
                 label: ["Bounding box for " + selected.name],
                 box: [selected.bounding_box.xmin + ',' + selected.bounding_box.ymin + ' '
@@ -303,9 +297,7 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
                 type: ["GeoShape"]
             }]
         }
-        this._waitingFor = 'PostRegion' + this._postId;
-        this._postId += 1;
-        let postProm = store.dispatch(regionPost(newRegion, this._waitingFor));
+        let postProm = store.dispatch(regionPost(newRegion));
         
         postProm.then((region) => {
             this._waiting = false;
@@ -322,46 +314,11 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
         this.requestUpdate();
     }
 
-    _onCreateAuthor () {
-        /*let nameEl = this.shadowRoot.getElementById('new-author-name') as Textfield;
-        if (nameEl ) {
-            let name = nameEl.value;
-            if (!name) {
-                showNotification("formValuesIncompleteNotification", this.shadowRoot!);
-                (<any>nameEl).refreshAttributes();
-                return;
-            }
-
-            let newRegion : Region = {
-                label: [name],
-            }
-
-            this._waitingFor = 'PostRegion' + this._postId;
-            this._postId += 1;
-            store.dispatch(regionPost(newRegion, this._waitingFor));
-            showNotification("saveNotification", this.shadowRoot!);
-        }*/
+    _onEditRegions () {
+        //TODO
     }
 
-    _onEditAuthor () {
-        /*let nameEl = this.shadowRoot.getElementById('edit-author-name') as Textfield;
-        if (nameEl) {
-            let name = nameEl.value;
-            if (!name) {
-                showNotification("formValuesIncompleteNotification", this.shadowRoot!);
-                (<any>nameEl).refreshAttributes();
-                return;
-            }
-
-            let editedRegion : Region = Object.assign({}, this._regions[this._selectedRegionUri])
-            editedRegion.label = [name];
-            this._waitingFor = editedRegion.id;
-            store.dispatch(regionPut(editedRegion));
-            showNotification("saveNotification", this.shadowRoot!);
-        }*/
-    }
-
-    _onSubmitAuthors () {
+    _onSubmitRegions () {
         let selectedRegions : Region[] = Object.values(this._regions).filter((region:Region) => this._selected[region.id])
 
         this.dispatchEvent(new CustomEvent('regionsSelected', {composed: true, detail: selectedRegions}));
@@ -372,10 +329,6 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
         this._filter = '';
         this.dispatchEvent(new CustomEvent('dialogClosed', {composed: true}));
         hideDialog("authorDialog", this.shadowRoot);
-    }
-
-    _edit (regionUri) {
-        //this._selectedRegionUri = regionUri;
     }
 
     _delete (regionUri) {
@@ -393,9 +346,7 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         if (state.modelCatalog) {
             let db = state.modelCatalog;
-            this._loading = db.loading[ALL_REGIONS]
             this._regions = db.regions;
-            //super.setRegionId(state);
             super.setRegion(state);
             if (this._regionid && this._region) {
                 let sr = state.regions.sub_region_ids;
@@ -403,26 +354,6 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
                     this._mapRegions = sr[this._regionid].map((regionid) => state.regions.regions[regionid]);
                 }
             }
-
-            /*if (this._waitingFor) {
-                if (this._new) {
-                    if (db.created[this._waitingFor]) {
-                        this._waiting = false;
-                        this._selected[db.created[this._waitingFor]] = true;
-                        this._new = false;
-                        this._waitingFor = '';
-                    } else {
-                        this._waiting = true;
-                    }
-                } else {
-                    this._waiting = db.loading[this._waitingFor];
-                    if (this._waiting === false) {
-                        this._selected[this._waitingFor] = true;
-                        this._selectedRegionUri = '';
-                        this._waitingFor = '';
-                    }
-                }
-            }*/
         }
     }
 }

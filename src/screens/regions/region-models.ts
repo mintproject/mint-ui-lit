@@ -12,7 +12,7 @@ import { UserPreferences, IdMap } from 'app/reducers';
 import { BoundingBox } from './reducers';
 import { modelsGet, versionsGet, modelConfigurationsGet, regionsGet, geoShapesGet,
          datasetSpecificationGet, sampleResourceGet, sampleCollectionGet,
-         ALL_MODELS, ALL_VERSIONS, ALL_MODEL_CONFIGURATIONS, ALL_REGIONS, ALL_GEO_SHAPES } from 'model-catalog/actions';
+         ALL_MODELS, ALL_VERSIONS, ALL_MODEL_CONFIGURATIONS, /*ALL_REGIONS,*/ ALL_GEO_SHAPES } from 'model-catalog/actions';
 import { GeoShape } from '@mintproject/modelcatalog_client';
 
 import { queryDatasetResourcesAndSave } from 'screens/datasets/actions';
@@ -203,7 +203,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
             let db = state.modelCatalog;
             if (!this._fullyLoaded) {
                 let loaded = db.loadedAll;
-                if (loaded[ALL_REGIONS] && loaded[ALL_MODELS] && loaded[ALL_GEO_SHAPES] && loaded[ALL_VERSIONS] &&
+                if (/*loaded[ALL_REGIONS] && */loaded[ALL_MODELS] && loaded[ALL_GEO_SHAPES] && loaded[ALL_VERSIONS] &&
                     loaded[ALL_MODEL_CONFIGURATIONS]) {
                     this._geoShapes = db.geoShapes;
                     this._mregions = db.regions;
