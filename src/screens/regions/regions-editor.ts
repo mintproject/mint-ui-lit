@@ -186,7 +186,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             ${this._selectedRegion ? html`
             <span style="display: inline-block; width: auto;">
                 <b>Selected region:</b>
-                ${ this._selectedRegion.name }
+                ${ this._selectedRegion.name } (id: ${this._selectedRegion.id})
             </span>
             <span style="display: inline-block;">
                 <b>Bounding box:</b>
