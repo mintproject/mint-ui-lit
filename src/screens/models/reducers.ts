@@ -33,6 +33,7 @@ export interface ModelIO extends IdNameObject {
     type?: string,
     variables: string[],
     value?: Dataset,
+    position?: number
 }
 
 export interface ModelParameter extends IdNameObject {
