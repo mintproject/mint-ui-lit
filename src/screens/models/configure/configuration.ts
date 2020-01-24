@@ -448,7 +448,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 ${this._editing? html`<th class="ta-right"></th>` : ''}
             </thead>
             <tbody>
-            ${this._config.hasParameter ? paramOrder.map((uri:string) => html`
+            ${this._config.hasParameter && this._config.hasParameter.length > 0 ? paramOrder.map((uri:string) => html`
             <tr>
                 ${this._parameters[uri] ? html`
                 <td>
@@ -484,7 +484,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <th colspan="2"><b>Input file</b></th>
             </thead>
             <tbody>
-            ${this._config.hasInput ? inputOrder.map((uri:string) => html `
+            ${this._config.hasInput && this._config.hasInput.length > 0? inputOrder.map((uri:string) => html `
             <tr>${this._inputs[uri] ? html`
                 <td colspan="${this._editing ? 1 : 2}">
                     <code style="font-size: 13px">${this._inputs[uri].label}</code>

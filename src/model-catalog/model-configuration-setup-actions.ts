@@ -6,10 +6,10 @@ import { Configuration, ModelConfiguration, ModelConfigurationSetup, ModelConfig
          SampleResourceApi, SampleCollectionApi, DatasetSpecification, SampleResource, SampleCollection } from '@mintproject/modelcatalog_client';
 import { idReducer, isValidId, fixObjects, getStatusConfigAndUser, PREFIX_URI, DEFAULT_GRAPH,
          START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
-import { PARAMETER_GET, MCAParameterGet } from './parameter-actions'
-import { DATASET_SPECIFICATION_GET, MCADatasetSpecificationGet } from './dataset-specification-actions'
-import { SAMPLE_RESOURCE_GET, MCASampleResourceGet } from './sample-resource-actions'
-import { SAMPLE_COLLECTION_GET, MCASampleCollectionGet } from './sample-collection-actions'
+import { PARAMETERS_ADD, MCAParametersAdd } from './parameter-actions'
+import { DATASET_SPECIFICATIONS_ADD, MCADatasetSpecificationsAdd } from './dataset-specification-actions'
+import { SAMPLE_RESOURCES_ADD, MCASampleResourcesAdd } from './sample-resource-actions'
+import { SAMPLE_COLLECTIONS_ADD, MCASampleCollectionsAdd } from './sample-collection-actions'
 import { modelConfigurationPut } from './actions';
 
 function debug (...args: any[]) { console.log('[MC setup]', ...args); }
@@ -90,7 +90,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
                     data[uri] = resp;
                     newParameters.push(resp);
                     dispatch({
-                        type: PARAMETER_GET,
+                        type: PARAMETERS_ADD,
                         payload: data
                     });
             });
@@ -123,7 +123,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
                                     data[uri] = resp;
                                     resp.id = uri;
                                     resourcesForCollection.push(resp);
-                                    dispatch({ type: SAMPLE_RESOURCE_GET, payload: data });
+                                    dispatch({ type: SAMPLE_RESOURCES_ADD, payload: data });
                                 });
                                 req.catch((err) => {
                                     debug('Error on POST sampleResource', err)
@@ -141,7 +141,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
                                         data[uri] = resp;
                                         resp.id = uri;
                                         newSample.push(resp);
-                                        dispatch({ type: SAMPLE_COLLECTION_GET, payload: data });
+                                        dispatch({ type: SAMPLE_COLLECTIONS_ADD, payload: data });
                                         resolve(resp);
                                 });
                                 req.catch((err) => {
@@ -161,7 +161,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
                                 data[uri] = resp;
                                 resp.id = uri;
                                 newSample.push(resp);
-                                dispatch({ type: SAMPLE_RESOURCE_GET, payload: data });
+                                dispatch({ type: SAMPLE_RESOURCES_ADD, payload: data });
                         });
                         req.catch((err) => {
                             debug('Error on POST sampleResource', err)
@@ -186,7 +186,7 @@ export const modelConfigurationSetupPost: ActionCreator<PostConfigThunk> =
                             resp.id = uri;
                             newDS.push(resp);
                             dispatch({
-                                type: DATASET_SPECIFICATION_GET,
+                                type: DATASET_SPECIFICATIONS_ADD,
                                 payload: data
                             });
                             resolve(resp);
@@ -304,5 +304,5 @@ export type ModelCatalogModelConfigurationSetupAction =  MCACommon | MCAModelCon
                                                     MCAModelConfigurationSetupPost | MCAModelConfigurationSetupPut | MCAModelConfigurationSetupDelete;
 type ModelCatalogModelConfigurationSetupThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogModelConfigurationSetupAction>;
 type PostConfigThunk = ThunkAction<void, RootState, undefined, 
-        ModelCatalogModelConfigurationSetupAction | MCAParameterGet | MCADatasetSpecificationGet | MCASampleResourceGet |
-        MCASampleCollectionGet>;
+        ModelCatalogModelConfigurationSetupAction | MCAParametersAdd | MCADatasetSpecificationsAdd |
+        MCASampleResourcesAdd | MCASampleCollectionsAdd>;

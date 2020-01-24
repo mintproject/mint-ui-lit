@@ -1,140 +1,136 @@
-import { Action, ActionCreator } from "redux";
-import { ThunkAction } from "redux-thunk";
-import { RootState, store } from 'app/store';
-
+import { Action } from "redux";
+import { IdMap } from 'app/reducers'
 import { Configuration, SampleCollection, SampleCollectionApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, PREFIX_URI, DEFAULT_GRAPH,
-         START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
+         DEFAULT_GRAPH } from './actions';
 
-function debug (...args: any[]) { console.log('OBA:', ...args); }
+function debug (...args: any[]) { console.log('[MC SampleCollection]', ...args); }
 
-export const ALL_SAMPLE_COLLECTIONS = 'ALL_SAMPLE_COLLECTIONS'
-
-export const SAMPLE_COLLECTIONS_GET = "SAMPLE_COLLECTIONS_GET";
-interface MCASampleCollectionsGet extends Action<'SAMPLE_COLLECTIONS_GET'> { payload: any };
-export const sampleCollectionsGet: ActionCreator<ModelCatalogSampleCollectionThunkResult> = () => (dispatch) => {
-    let state: any = store.getState();
-    if (state.modelCatalog && (state.modelCatalog.loadedAll[ALL_SAMPLE_COLLECTIONS] || state.modelCatalog.loading[ALL_SAMPLE_COLLECTIONS])) {
-        console.log('All sampleCollections are already in memory or loading')
-        return;
-    }
-
-    debug('Fetching all sampleCollection');
-    dispatch({type: START_LOADING, id: ALL_SAMPLE_COLLECTIONS});
-
-    let api : SampleCollectionApi = new SampleCollectionApi();
-    let req = api.samplecollectionsGet({username: DEFAULT_GRAPH});
-    req.then((data) => {
-            dispatch({
-                type: SAMPLE_COLLECTIONS_GET,
-                payload: data.reduce(idReducer, {})
-            });
-            dispatch({type: END_LOADING, id: ALL_SAMPLE_COLLECTIONS});
-    });
-    req.catch((err) => {console.log('Error on GET sampleCollections', err)});
-}
-
-export const SAMPLE_COLLECTION_GET = "SAMPLE_COLLECTION_GET";
-export interface MCASampleCollectionGet extends Action<'SAMPLE_COLLECTION_GET'> { payload: any };
-export const sampleCollectionGet: ActionCreator<ModelCatalogSampleCollectionThunkResult> = ( uri:string ) => (dispatch) => {
-    debug('Fetching sampleCollection', uri);
-
-    let id : string = uri.split('/').pop();
-    let api : SampleCollectionApi = new SampleCollectionApi();
-    let req = api.samplecollectionsIdGet({username: DEFAULT_GRAPH, id: id});
-    req.then((resp) => {
-            let data = {};
-            data[uri] = resp;
-            dispatch({
-                type: SAMPLE_COLLECTION_GET,
-                payload: data
-            });
-    });
-    req.catch((err) => {console.log('Error on getSampleCollection', err)});
-}
-
-export const SAMPLE_COLLECTION_POST = "SAMPLE_COLLECTION_POST";
-interface MCASampleCollectionPost extends Action<'SAMPLE_COLLECTION_POST'> { payload: any };
-export const sampleCollectionPost: ActionCreator<ModelCatalogSampleCollectionThunkResult> = (sampleCollection:SampleCollection, identifier:string) => (dispatch) => {
-    debug('creating new sampleCollection', sampleCollection);
-    let status : string, cfg : Configuration, user : string;
-    [status, cfg, user] = getStatusConfigAndUser();
-
-    if (status === 'DONE') {
-        dispatch({type: START_POST, id: identifier});
-        sampleCollection.id = undefined;
-        let api : SampleCollectionApi = new SampleCollectionApi(cfg);
-        let req = api.samplecollectionsPost({user: DEFAULT_GRAPH, sampleCollection: sampleCollection}); // This should be my username on prod.
-        req.then((resp) => {
-                console.log('Response for POST sampleCollection:', resp);
-                //Its returning the ID without the prefix
-                let uri = PREFIX_URI + resp.id;
-                let data = {};
-                data[uri] = resp;
-                resp.id = uri;
-                dispatch({
-                    type: SAMPLE_COLLECTION_GET,
-                    payload: data
-                });
-                dispatch({type: END_POST, id: identifier, uri: uri});
-            });
-        req.catch((err) => {console.log('Error on POST sampleCollection', err)});
-    } else {
-        console.error('TOKEN ERROR:', status);
-    }
-}
-
-export const SAMPLE_COLLECTION_PUT = "SAMPLE_COLLECTION_PUT";
-interface MCASampleCollectionPut extends Action<'SAMPLE_COLLECTION_PUT'> { payload: any };
-export const sampleCollectionPut: ActionCreator<ModelCatalogSampleCollectionThunkResult> = ( sampleCollection: SampleCollection ) => (dispatch) => {
-    debug('updating sampleCollection', sampleCollection.id);
-    let status : string, cfg : Configuration, user : string;
-    [status, cfg, user] = getStatusConfigAndUser();
-
-    if (status === 'DONE') {
-        dispatch({type: START_LOADING, id: sampleCollection.id});
-        let api : SampleCollectionApi = new SampleCollectionApi(cfg);
-        let id : string = sampleCollection.id.split('/').pop();
-        let req = api.samplecollectionsIdPut({id: id, user: DEFAULT_GRAPH, sampleCollection: sampleCollection}); // This should be my username on prod.
-        req.then((resp) => {
-                console.log('Response for PUT sampleCollection:', resp);
-                let data = {};
-                data[sampleCollection.id] = resp;
-                dispatch({
-                    type: SAMPLE_COLLECTION_GET,
-                    payload: data
-                });
-                dispatch({type: END_LOADING, id: sampleCollection.id});
-        });
-        req.catch((err) => {console.log('Error on PUT sampleCollection', err)});
-    } else {
-        console.error('TOKEN ERROR:', status);
-    }
-}
-
+export const SAMPLE_COLLECTIONS_ADD = "SAMPLE_COLLECTIONS_ADD";
 export const SAMPLE_COLLECTION_DELETE = "SAMPLE_COLLECTION_DELETE";
+
+export interface MCASampleCollectionsAdd extends Action<'SAMPLE_COLLECTIONS_ADD'> { payload: IdMap<SampleCollection> };
 interface MCASampleCollectionDelete extends Action<'SAMPLE_COLLECTION_DELETE'> { uri: string };
-export const sampleCollectionDelete: ActionCreator<ModelCatalogSampleCollectionThunkResult> = ( uri: string ) => (dispatch) => {
-    debug('deleting sampleCollection', uri);
+
+export type ModelCatalogSampleCollectionAction =  MCASampleCollectionsAdd | MCASampleCollectionDelete;
+
+let sampleCollectionsPromise : Promise<IdMap<SampleCollection>> | null = null;
+
+export const sampleCollectionsGet: ActionThunk<Promise<IdMap<SampleCollection>>, MCASampleCollectionsAdd> = () => (dispatch) => {
+    if (!sampleCollectionsPromise) {
+        sampleCollectionsPromise = new Promise((resolve, reject) => {
+            debug('Fetching all');
+            let api : SampleCollectionApi = new SampleCollectionApi();
+            let req : Promise<SampleCollection[]> = api.samplecollectionsGet({username: DEFAULT_GRAPH});
+            req.then((resp:SampleCollection[]) => {
+                let data : IdMap<SampleCollection> = resp.reduce(idReducer, {});
+                dispatch({
+                    type: SAMPLE_COLLECTIONS_ADD,
+                    payload: data
+                });
+                resolve(data);
+            });
+            req.catch((err) => {
+                console.error('Error on GET SampleCollections', err);
+                reject(err);
+            });
+        });
+    } else {
+        debug('All sampleCollections are already in memory or loading');
+    }
+    return sampleCollectionsPromise;
+}
+
+export const sampleCollectionGet: ActionThunk<Promise<SampleCollection>, MCASampleCollectionsAdd> = (uri:string) => (dispatch) => {
+    debug('Fetching', uri);
+    let id : string = getIdFromUri(uri);
+    let api : SampleCollectionApi = new SampleCollectionApi();
+    let req : Promise<SampleCollection> = api.samplecollectionsIdGet({username: DEFAULT_GRAPH, id: id});
+    req.then((resp:SampleCollection) => {
+        dispatch({
+            type: SAMPLE_COLLECTIONS_ADD,
+            payload: idReducer({}, resp)
+        });
+    });
+    req.catch((err) => {
+        console.error('Error on GET SampleCollection', err);
+    });
+    return req;
+}
+
+export const sampleCollectionPost: ActionThunk<Promise<SampleCollection>, MCASampleCollectionsAdd> = (sampleCollection:SampleCollection) => (dispatch) => {
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
-
     if (status === 'DONE') {
-        let api : SampleCollectionApi = new SampleCollectionApi(cfg);
-        let id : string = uri.split('/').pop();
-        let req = api.samplecollectionsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
-        req.then((resp) => {
+        debug('Creating new', sampleCollection);
+        let postProm = new Promise((resolve,reject) => {
+            let api : SampleCollectionApi = new SampleCollectionApi(cfg);
+            let req = api.samplecollectionsPost({user: DEFAULT_GRAPH, sampleCollection: sampleCollection}); // This should be my username on prod.
+            req.then((resp:SampleCollection) => {
+                debug('Response for POST', resp);
                 dispatch({
-                    type: SAMPLE_COLLECTION_DELETE,
-                    uri: uri
+                    type: SAMPLE_COLLECTIONS_ADD,
+                    payload: createIdMap(resp)
                 });
+                resolve(resp);
+            });
+            req.catch((err) => {
+                console.error('Error on POST SampleCollection', err);
+                reject(err);
+            });
         });
-        req.catch((err) => {console.log('Error on DELETE sampleCollection', err)});
+        return postProm;
     } else {
         console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('SampleCollection error'));
     }
 }
 
-export type ModelCatalogSampleCollectionAction =  MCACommon | MCASampleCollectionsGet | MCASampleCollectionGet | MCASampleCollectionPost | MCASampleCollectionPut |
-                                        MCASampleCollectionDelete;
-type ModelCatalogSampleCollectionThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogSampleCollectionAction>;
+export const sampleCollectionPut: ActionThunk<Promise<SampleCollection>, MCASampleCollectionsAdd> = (sampleCollection: SampleCollection) => (dispatch) => {
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+    if (status === 'DONE') {
+        debug('Updating', sampleCollection);
+        let api : SampleCollectionApi = new SampleCollectionApi(cfg);
+        let id : string = getIdFromUri(sampleCollection.id);
+        let req : Promise<SampleCollection> = api.samplecollectionsIdPut({id: id, user: DEFAULT_GRAPH, sampleCollection: sampleCollection});
+        req.then((resp) => {
+            debug('Response for PUT:', resp);
+            dispatch({
+                type: SAMPLE_COLLECTIONS_ADD,
+                payload: idReducer({}, resp)
+            });
+        });
+        req.catch((err) => {
+            console.error('Error on PUT SampleCollection', err);
+        });
+        return req;
+    } else {
+        console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('Token error'));
+    }
+}
+
+export const sampleCollectionDelete: ActionThunk<void, MCASampleCollectionDelete> = (sampleCollection:SampleCollection) => (dispatch) => {
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+    if (status === 'DONE') {
+        debug('Deleting', sampleCollection.id);
+        let api : SampleCollectionApi = new SampleCollectionApi(cfg);
+        let id : string = getIdFromUri(sampleCollection.id);
+        let req : Promise<void> = api.samplecollectionsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        req.then(() => {
+            dispatch({
+                type: SAMPLE_COLLECTION_DELETE,
+                uri: sampleCollection.id
+            });
+        });
+        req.catch((err) => {
+            console.error('Error on DELETE SampleCollection', err);
+        });
+        return req;
+    } else {
+        console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('Token error'));
+    }
+}

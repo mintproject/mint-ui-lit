@@ -11,7 +11,7 @@ import { goToPage } from 'app/actions';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { personGet, personsGet, personPost, personPut, personDelete, ALL_PERSONS } from 'model-catalog/actions';
+import { personGet, personsGet, personPost, personPut, personDelete } from 'model-catalog/actions';
 
 import { renderExternalLink } from './util';
 
@@ -268,13 +268,17 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
     }
 
     firstUpdated () {
-        store.dispatch(personsGet());
+        console.log('-------')
+        this._loading = true;
+        store.dispatch(personsGet()).then((persons) => {
+            console.log('asdasww')
+            this._loading = false;
+        });
     }
 
     stateChanged(state: RootState) {
         if (state.modelCatalog) {
             let db = state.modelCatalog;
-            this._loading = db.loading[ALL_PERSONS]
             this._persons = db.persons;
             if (this._waitingFor) {
                 if (this._new) {

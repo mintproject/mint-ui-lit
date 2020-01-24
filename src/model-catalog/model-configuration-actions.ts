@@ -6,10 +6,10 @@ import { Configuration, ModelConfiguration, ModelConfigurationApi, Parameter, Pa
          SampleResourceApi, SampleCollectionApi, DatasetSpecification, SampleResource, SampleCollection } from '@mintproject/modelcatalog_client';
 import { idReducer, isValidId, fixObjects, getStatusConfigAndUser, PREFIX_URI, DEFAULT_GRAPH,
          START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
-import { PARAMETER_GET, MCAParameterGet } from './parameter-actions'
-import { DATASET_SPECIFICATION_GET, MCADatasetSpecificationGet } from './dataset-specification-actions'
-import { SAMPLE_RESOURCE_GET, MCASampleResourceGet } from './sample-resource-actions'
-import { SAMPLE_COLLECTION_GET, MCASampleCollectionGet } from './sample-collection-actions'
+import { PARAMETERS_ADD, MCAParametersAdd } from './parameter-actions'
+import { MCADatasetSpecificationsAdd } from './dataset-specification-actions'
+import { SAMPLE_RESOURCES_ADD, MCASampleResourcesAdd } from './sample-resource-actions'
+import { SAMPLE_COLLECTIONS_ADD, MCASampleCollectionsAdd } from './sample-collection-actions'
 
 function debug (...args: any[]) { console.log('[MC configuration]', ...args); }
 
@@ -136,5 +136,5 @@ export type ModelCatalogModelConfigurationAction =  MCACommon | MCAModelConfigur
                                                     MCAModelConfigurationPost | MCAModelConfigurationPut | MCAModelConfigurationDelete;
 type ModelCatalogModelConfigurationThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogModelConfigurationAction>;
 type PostConfigThunk = ThunkAction<void, RootState, undefined, 
-        ModelCatalogModelConfigurationAction | MCAParameterGet | MCADatasetSpecificationGet | MCASampleResourceGet |
-        MCASampleCollectionGet>;
+        ModelCatalogModelConfigurationAction | MCAParametersAdd | MCADatasetSpecificationsAdd | MCASampleResourcesAdd |
+        MCASampleCollectionsAdd>;

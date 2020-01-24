@@ -1,140 +1,136 @@
-import { Action, ActionCreator } from "redux";
-import { ThunkAction } from "redux-thunk";
-import { RootState, store } from 'app/store';
-
+import { Action } from "redux";
+import { IdMap } from 'app/reducers'
 import { Configuration, Process, ProcessApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, PREFIX_URI, 
-         DEFAULT_GRAPH, START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
+         DEFAULT_GRAPH } from './actions';
 
-function debug (...args: any[]) { }// console.log('OBA:', ...args); }
+function debug (...args: any[]) { console.log('[MC Process]', ...args); }
 
-export const ALL_PROCESSES = 'ALL_PROCESSES'
-
-export const PROCESSES_GET = "PROCESSES_GET";
-interface MCAProcessesGet extends Action<'PROCESSES_GET'> { payload: any };
-export const processesGet: ActionCreator<ModelCatalogProcessThunkResult> = () => (dispatch) => {
-    let state: any = store.getState();
-    if (state.modelCatalog && (state.modelCatalog.loadedAll[ALL_PROCESSES] || state.modelCatalog.loading[ALL_PROCESSES])) {
-        console.log('All processes are already in memory or loading')
-        return;
-    }
-
-    debug('Fetching all process');
-    dispatch({type: START_LOADING, id: ALL_PROCESSES});
-
-    let api : ProcessApi = new ProcessApi();
-    let req = api.processsGet({username: DEFAULT_GRAPH});
-    req.then((data) => {
-            dispatch({
-                type: PROCESSES_GET,
-                payload: data.reduce(idReducer, {})
-            });
-            dispatch({type: END_LOADING, id: ALL_PROCESSES});
-    });
-    req.catch((err) => {console.log('Error on GET processes', err)});
-}
-
-export const PROCESS_GET = "PROCESS_GET";
-interface MCAProcessGet extends Action<'PROCESS_GET'> { payload: any };
-export const processGet: ActionCreator<ModelCatalogProcessThunkResult> = ( uri:string ) => (dispatch) => {
-    debug('Fetching process', uri);
-    let id : string = uri.split('/').pop();
-    let api : ProcessApi = new ProcessApi();
-    let req = api.processsIdGet({username: DEFAULT_GRAPH, id: id});
-    req.then((resp) => {
-            let data = {};
-            data[uri] = resp;
-            dispatch({
-                type: PROCESS_GET,
-                payload: data
-            });
-    });
-    req.catch((err) => {console.log('Error on getProcess', err)});
-}
-
-export const PROCESS_POST = "PROCESS_POST";
-interface MCAProcessPost extends Action<'PROCESS_POST'> { payload: any };
-export const processPost: ActionCreator<ModelCatalogProcessThunkResult> = (process:Process, identifier:string) => (dispatch) => {
-    debug('creating new process', process);
-    let status : string, cfg : Configuration, user : string;
-    [status, cfg, user] = getStatusConfigAndUser();
-
-    if (status === 'DONE') {
-        dispatch({type: START_POST, id: identifier});
-        process.id = undefined;
-        let api : ProcessApi = new ProcessApi(cfg);
-        let req = api.processsPost({user: DEFAULT_GRAPH, process: process}); // This should be my username on prod.
-        req.then((resp) => {
-                console.log('Response for POST process:', resp);
-                //Its returning the ID without the prefix
-                let uri = PREFIX_URI + resp.id;
-                let data = {};
-                data[uri] = resp;
-                resp.id = uri;
-                dispatch({
-                    type: PROCESS_GET,
-                    payload: data
-                });
-                dispatch({type: END_POST, id: identifier, uri: uri});
-        }); 
-        req.catch((err) => {console.log('Error on POST process', err)})
-    } else {
-        console.error('TOKEN ERROR:', status);
-    }
-}
-
-export const PROCESS_PUT = "PROCESS_PUT";
-interface MCAProcessPut extends Action<'PROCESS_PUT'> { payload: any };
-export const processPut: ActionCreator<ModelCatalogProcessThunkResult> = ( process: Process ) => (dispatch) => {
-    debug('updating process', process.id);
-    let status : string, cfg : Configuration, user : string;
-    [status, cfg, user] = getStatusConfigAndUser();
-
-    if (status === 'DONE') {
-        dispatch({type: START_LOADING, id: process.id});
-        let api : ProcessApi = new ProcessApi(cfg);
-        let id : string = process.id.split('/').pop();
-        let req = api.processsIdPut({id: id, user: DEFAULT_GRAPH, process: process}); // This should be my username on prod.
-        req.then((resp) => {
-                console.log('Response for PUT process:', resp);
-                let data = {};
-                data[process.id] = resp;
-                dispatch({
-                    type: PROCESS_GET,
-                    payload: data
-                });
-                dispatch({type: END_LOADING, id: process.id});
-        });
-        req.catch((err) => {console.log('Error on PUT process', err)})
-    } else {
-        console.error('TOKEN ERROR:', status);
-    }
-}
-
+export const PROCESSES_ADD = "PROCESSES_ADD";
 export const PROCESS_DELETE = "PROCESS_DELETE";
-interface MCAProcessDelete extends Action<'PROCESS_DELETE'> {uri: string};
-export const processDelete: ActionCreator<ModelCatalogProcessThunkResult> = ( uri: string) => (dispatch) => {
-    debug('updating process', uri);
+
+interface MCAProcessesAdd extends Action<'PROCESSES_ADD'> { payload: IdMap<Process> };
+interface MCAProcessDelete extends Action<'PROCESS_DELETE'> { uri: string };
+
+export type ModelCatalogProcessAction =  MCAProcessesAdd | MCAProcessDelete;
+
+let processesPromise : Promise<IdMap<Process>> | null = null;
+
+export const processesGet: ActionThunk<Promise<IdMap<Process>>, MCAProcessesAdd> = () => (dispatch) => {
+    if (!processesPromise) {
+        processesPromise = new Promise((resolve, reject) => {
+            debug('Fetching all');
+            let api : ProcessApi = new ProcessApi();
+            let req : Promise<Process[]> = api.processsGet({username: DEFAULT_GRAPH});
+            req.then((resp:Process[]) => {
+                let data : IdMap<Process> = resp.reduce(idReducer, {});
+                dispatch({
+                    type: PROCESSES_ADD,
+                    payload: data
+                });
+                resolve(data);
+            });
+            req.catch((err) => {
+                console.error('Error on GET Processes', err);
+                reject(err);
+            });
+        });
+    } else {
+        debug('All processes are already in memory or loading');
+    }
+    return processesPromise;
+}
+
+export const processGet: ActionThunk<Promise<Process>, MCAProcessesAdd> = (uri:string) => (dispatch) => {
+    debug('Fetching', uri);
+    let id : string = getIdFromUri(uri);
+    let api : ProcessApi = new ProcessApi();
+    let req : Promise<Process> = api.processsIdGet({username: DEFAULT_GRAPH, id: id});
+    req.then((resp:Process) => {
+        dispatch({
+            type: PROCESSES_ADD,
+            payload: idReducer({}, resp)
+        });
+    });
+    req.catch((err) => {
+        console.error('Error on GET Process', err);
+    });
+    return req;
+}
+
+export const processPost: ActionThunk<Promise<Process>, MCAProcessesAdd> = (process:Process) => (dispatch) => {
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
-
     if (status === 'DONE') {
-        let api : ProcessApi = new ProcessApi(cfg);
-        let id : string = uri.split('/').pop();
-        let req = api.processsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
-        req.then((resp) => {
-                console.log('Response for DELETE process:', resp);
+        debug('Creating new', process);
+        let postProm = new Promise((resolve,reject) => {
+            let api : ProcessApi = new ProcessApi(cfg);
+            let req = api.processsPost({user: DEFAULT_GRAPH, process: process}); // This should be my username on prod.
+            req.then((resp:Process) => {
+                debug('Response for POST', resp);
                 dispatch({
-                    type: PROCESS_DELETE,
-                    uri: uri
+                    type: PROCESSES_ADD,
+                    payload: createIdMap(resp)
                 });
+                resolve(resp);
+            });
+            req.catch((err) => {
+                console.error('Error on POST Process', err);
+                reject(err);
+            });
         });
-        req.catch((err) => {console.log('Error on DELETE process', err)});
+        return postProm;
     } else {
         console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('Process error'));
     }
 }
 
-export type ModelCatalogProcessAction =  MCACommon | MCAProcessesGet | MCAProcessGet | MCAProcessPost | MCAProcessPut |
-                                         MCAProcessDelete;
-type ModelCatalogProcessThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogProcessAction>;
+export const processPut: ActionThunk<Promise<Process>, MCAProcessesAdd> = (process: Process) => (dispatch) => {
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+    if (status === 'DONE') {
+        debug('Updating', process);
+        let api : ProcessApi = new ProcessApi(cfg);
+        let id : string = getIdFromUri(process.id);
+        let req : Promise<Process> = api.processsIdPut({id: id, user: DEFAULT_GRAPH, process: process});
+        req.then((resp) => {
+            debug('Response for PUT:', resp);
+            dispatch({
+                type: PROCESSES_ADD,
+                payload: idReducer({}, resp)
+            });
+        });
+        req.catch((err) => {
+            console.error('Error on PUT Process', err);
+        });
+        return req;
+    } else {
+        console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('Token error'));
+    }
+}
+
+export const processDelete: ActionThunk<void, MCAProcessDelete> = (process:Process) => (dispatch) => {
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+    if (status === 'DONE') {
+        debug('Deleting', process.id);
+        let api : ProcessApi = new ProcessApi(cfg);
+        let id : string = getIdFromUri(process.id);
+        let req : Promise<void> = api.processsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        req.then(() => {
+            dispatch({
+                type: PROCESS_DELETE,
+                uri: process.id
+            });
+        });
+        req.catch((err) => {
+            console.error('Error on DELETE Process', err);
+        });
+        return req;
+    } else {
+        console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('Token error'));
+    }
+}

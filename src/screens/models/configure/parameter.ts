@@ -12,7 +12,7 @@ import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
 import { parameterGet, parametersGet, parameterPost, parameterPut, 
-         parameterDelete, ALL_PARAMETERS } from 'model-catalog/actions';
+         parameterDelete } from 'model-catalog/actions';
 import { renderExternalLink, renderParameterType } from './util';
 
 import "weightless/progress-spinner";
