@@ -1,9 +1,11 @@
 import { IdNameObject } from "../../app/reducers";
 import { Reducer } from "redux";
 import { RootAction } from "../../app/store";
-import { DATASETS_VARIABLES_QUERY, DATASETS_GENERAL_QUERY, DATASETS_RESOURCE_QUERY, DATASETS_REGION_QUERY } from "./actions";
+import { DATASETS_VARIABLES_QUERY, DATASETS_GENERAL_QUERY, DATASETS_RESOURCE_QUERY,
+         DATASETS_REGION_QUERY, DATASET_ADD } from "./actions";
 import { DateRange } from "screens/modeling/reducers";
 import { BoundingBox } from "screens/regions/reducers";
+import { IdMap } from 'app/reducers';
 
 export interface Dataset extends IdNameObject {
     region: string,
@@ -15,7 +17,12 @@ export interface Dataset extends IdNameObject {
     limitations: string,
     source: Source,
     categories?: string[],
-    resources: DataResource[]
+    is_cached?: boolean,
+    resource_repr?: any,
+    dataset_repr?: any,
+    resources: DataResource[],
+    resource_count?: number,
+    spatial_coverage?: any,
 };
 
 export interface DataResource extends IdNameObject {
@@ -48,6 +55,7 @@ export interface DatasetsState {
     query_datasets?: DatasetsWithStatus
     region_datasets?: DatasetsWithStatus
     dataset?: DatasetWithStatus
+    datasets?: IdMap<Dataset>
 }
 export interface DatasetsWithStatus {
     loading: boolean,
@@ -106,6 +114,12 @@ const datasets: Reducer<DatasetsState, RootAction> = (state = INITIAL_STATE, act
             }
             return {
                 ...state,
+            };
+        case DATASET_ADD:
+            let tmp = {...state.datasets};
+            tmp[action.dsid] = action.dataset;
+            return {
+                ...state, datasets: tmp
             };
         default:
             return state;

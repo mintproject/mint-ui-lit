@@ -50,7 +50,6 @@ b.clickable, span.clickable {
     cursor: help;
     display: inline-block;
     position: relative;
-    float: right;
     margin: 5px 5px 0px 5px;
 }
 
@@ -91,6 +90,10 @@ th > span.tooltip > wl-icon {
 
 span.author {
     border: 2px solid cadetblue;
+}
+
+span.region {
+    border: 2px solid brown;
 }
 
 span.process {

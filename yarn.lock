@@ -1051,7 +1051,7 @@
     "@types/istanbul-reports" "^1.1.1"
     "@types/yargs" "^12.0.9"
 
-"@mintproject/modelcatalog_client@^1.1.5-dev":
+"@mintproject/modelcatalog_client@^1.2.1":
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/@mintproject/modelcatalog_client/-/modelcatalog_client-1.2.1.tgz#762fa6bdfc517674702cae7d19ffe7f115400c2a"
   integrity sha512-EJpNxwueCUTXGdKBN4/FKk+jANAKh0woOrLB2Hxz3sLNu58sQMZgZUJuuJyrf0XOWjgfMM961CfpjFzRiDiNfA==

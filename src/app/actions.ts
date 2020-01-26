@@ -11,17 +11,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 import { Action, ActionCreator } from 'redux';
 import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from './store';
-import { queryDatasetResources } from '../screens/datasets/actions';
 import { queryModelDetail } from '../screens/models/actions';
 import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetConfig,
          explorerSetCalibration, explorerSetMode } from '../screens/models/model-explore/ui-actions';
 import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread } from './ui-actions';
-import { auth } from '../config/firebase';
+import { auth, db } from '../config/firebase';
 import { User } from 'firebase';
-import { UserPreferences } from './reducers';
-import { SAMPLE_USER, SAMPLE_MINT_PREFERENCES_LOCAL, SAMPLE_MINT_PREFERENCES } from 'offline_data/sample_user';
+import { UserPreferences, MintPreferences } from './reducers';
 import { DefaultApi } from '@mintproject/modelcatalog_client';
-import { dexplorerSelectDataset } from 'screens/datasets/ui-actions';
+import { dexplorerSelectDataset, dexplorerSelectDatasetArea } from 'screens/datasets/ui-actions';
 
 export const BASE_HREF = document.getElementsByTagName("base")[0].href.replace(/^http(s)?:\/\/.*?\//, "/");
 
@@ -29,14 +27,14 @@ export const UPDATE_PAGE = 'UPDATE_PAGE';
 export const LOGIN = 'LOGIN';
 export const LOGOUT = 'LOGOUT';
 export const FETCH_USER = 'FETCH_USER';
-export const FETCH_USER_PREFERENCES = 'FETCH_USER_PREFERENCES';
+export const FETCH_MINT_CONFIG = 'FETCH_MINT_CONFIG';
 export const FETCH_MODEL_CATALOG_ACCESS_TOKEN = 'FETCH_MODEL_CATALOG_ACCESS_TOKEN';
 export const STATUS_MODEL_CATALOG_ACCESS_TOKEN = 'STATUS_MODEL_CATALOG_ACCESS_TOKEN';
 
 export interface AppActionUpdatePage extends Action<'UPDATE_PAGE'> { regionid?: string, page?: string, subpage?:string };
 export interface AppActionFetchUser extends Action<'FETCH_USER'> { user?: User | null };
-export interface AppActionFetchUserPreferences extends Action<'FETCH_USER_PREFERENCES'> { 
-  prefs?: UserPreferences | null 
+export interface AppActionFetchMintConfig extends Action<'FETCH_MINT_CONFIG'> { 
+  prefs?: MintPreferences | null 
 };
 export interface AppActionFetchModelCatalogAccessToken extends Action<'FETCH_MODEL_CATALOG_ACCESS_TOKEN'> {
     accessToken: string
@@ -45,7 +43,7 @@ export interface AppActionStatusModelCatalogAccessToken extends Action<'STATUS_M
     status: string
 };
 
-export type AppAction = AppActionUpdatePage | AppActionFetchUser | AppActionFetchUserPreferences |
+export type AppAction = AppActionUpdatePage | AppActionFetchUser | AppActionFetchMintConfig |
                         AppActionFetchModelCatalogAccessToken | AppActionStatusModelCatalogAccessToken;
 
 type ThunkResult = ThunkAction<void, RootState, undefined, AppAction>;
@@ -54,14 +52,6 @@ export const OFFLINE_DEMO_MODE = false;
 
 type UserThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchUser>;
 export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
-  if(OFFLINE_DEMO_MODE) {
-    dispatch({
-      type: FETCH_USER,
-      user: SAMPLE_USER as User
-    });
-    return;
-  }
-  
   //console.log("Subscribing to user authentication updates");
   auth.onAuthStateChanged(user => {
     if (user) {
@@ -94,15 +84,32 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
   });
 };
 
-type UserPrefsThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchUserPreferences>;
-export const fetchUserPreferences: ActionCreator<UserPrefsThunkResult> = () => (dispatch) => {
-  //if(OFFLINE_DEMO_MODE) {
-    dispatch({
-      type: FETCH_USER_PREFERENCES,
-      prefs: { mint: SAMPLE_MINT_PREFERENCES, modelCatalog: {} } as UserPreferences
-    });
-    return;
-  //}
+type UserPrefsThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchMintConfig>;
+export const fetchMintConfig: ActionCreator<UserPrefsThunkResult> = () => (dispatch) => {
+  db.doc("configs/main").get().then((doc) => {
+    let prefs = doc.data() as MintPreferences;
+    if(prefs.execution_engine == "wings") {
+      fetch(prefs.wings.server + "/config").then((res) => {
+        res.json().then((wdata) => {
+          prefs.wings.export_url = wdata["internal_server"]
+          prefs.wings.storage = wdata["storage"];
+          prefs.wings.dotpath = wdata["dotpath"];
+          prefs.wings.onturl = wdata["ontology"];
+          dispatch({
+            type: FETCH_MINT_CONFIG,
+            prefs: prefs
+          });
+        })
+      })
+    }
+    else {
+      dispatch({
+        type: FETCH_MINT_CONFIG,
+        prefs: prefs
+      });
+    }
+  })
+  return;
 };
 
 export const signIn = (email: string, password: string) => {
@@ -139,19 +146,25 @@ const modelCatalogLogin = (username: string, password: string) => {
 export const goToPage = (page:string) => {
   let state: any = store.getState();
   let regionid = state.ui ? state.ui.selected_top_regionid : "";
-  let url = BASE_HREF + (regionid ? regionid + "/" : "") + page;
+  let url = BASE_HREF + (regionid ? regionid + "/" : "") + (page ? page : "");
+  window.history.pushState({}, page, url);
+  store.dispatch(navigate(decodeURIComponent(location.pathname)));    
+}
+
+export const goToRegionPage = (regionid: string, page:string) => {
+  let state: any = store.getState();
+  let url = BASE_HREF + (regionid ? regionid + "/" : "") + (page ? page : "");
   window.history.pushState({}, page, url);
   store.dispatch(navigate(decodeURIComponent(location.pathname)));    
 }
 
 export const navigate: ActionCreator<ThunkResult> = (path: string) => (dispatch) => {
-  console.log(path);
+  //console.log(path);
   // Extract the page name from path.
   let cpath = path === BASE_HREF ? '/home' : path.slice(BASE_HREF.length);
   let regionIndex = cpath.indexOf("/");
 
   let regionid = cpath.substr(0, regionIndex);
-  store.dispatch(selectTopRegion(regionid));
 
   let page = cpath.substr(regionIndex + 1);
   let subpage = 'home';
@@ -166,7 +179,8 @@ export const navigate: ActionCreator<ThunkResult> = (path: string) => (dispatch)
     params.splice(0, 1);
   }
 
-  dispatch(loadPage(page, subpage, params));
+  store.dispatch(loadPage(page, subpage, params));
+  store.dispatch(selectTopRegion(regionid));
 };
 
 const loadPage: ActionCreator<ThunkResult> = 
@@ -262,6 +276,13 @@ const loadPage: ActionCreator<ThunkResult> =
           }
         });
         break;
+    case 'emulators':
+      import('../screens/emulators/emulators-home').then((_module) => {
+        if(params.length > 0) {
+          //store.dispatch(queryRegionDetail(params[0]));
+        }
+      });
+      break;
     case 'analysis':
         if (subpage == 'home') {
             import('../screens/analysis/analysis-home').then((_module) => {
@@ -287,8 +308,11 @@ const loadPage: ActionCreator<ThunkResult> =
     case 'datasets':
         import('../screens/datasets/datasets-home').then((_module) => {
           if(subpage == "browse") {
-              if(params.length > 0) {
+              if(params.length == 1) {
                 store.dispatch(dexplorerSelectDataset(params[0]));
+              }
+              else if(params.length == 2) {
+                store.dispatch(dexplorerSelectDatasetArea(params[0], params[1]));
               }
               else {
                 store.dispatch(dexplorerSelectDataset(null));

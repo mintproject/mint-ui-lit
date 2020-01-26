@@ -1,30 +1,43 @@
 import { Reducer } from "redux";
-import { RootAction } from "../app/store";
+import { RootAction } from "app/store";
 import { START_LOADING, END_LOADING, START_POST, END_POST,
          PERSON_GET, PERSONS_GET, ALL_PERSONS, PERSON_DELETE, 
          REGION_GET, REGIONS_GET, ALL_REGIONS, REGION_DELETE, 
+         GEO_SHAPE_GET, GEO_SHAPES_GET, ALL_GEO_SHAPES, GEO_SHAPE_DELETE, 
          PROCESS_GET, PROCESSES_GET, ALL_PROCESSES,  PROCESS_DELETE,
          PARAMETER_GET, PARAMETERS_GET, ALL_PARAMETERS, PARAMETER_DELETE,
+         DATASET_SPECIFICATION_GET, DATASET_SPECIFICATIONS_GET, ALL_DATASET_SPECIFICATIONS, DATASET_SPECIFICATION_DELETE, 
+         SAMPLE_RESOURCE_GET, SAMPLE_RESOURCES_GET, ALL_SAMPLE_RESOURCES, SAMPLE_RESOURCE_DELETE, 
+         SAMPLE_COLLECTION_GET, SAMPLE_COLLECTIONS_GET, ALL_SAMPLE_COLLECTIONS, SAMPLE_COLLECTION_DELETE, 
          MODEL_CONFIGURATION_GET, MODEL_CONFIGURATIONS_GET, ALL_MODEL_CONFIGURATIONS, MODEL_CONFIGURATION_DELETE,
-         MODELS_GET, VERSIONS_GET,
-         DATASET_SPECIFICATION_GET,
+         MODEL_CONFIGURATION_SETUP_GET, MODEL_CONFIGURATION_SETUPS_GET,
+         MODELS_GET, VERSIONS_GET, ALL_MODELS, ALL_VERSIONS, 
          GRID_GET, TIME_INTERVAL_GET, SOFTWARE_IMAGE_GET } from './actions'
+
+import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup,
+    SampleResource, SampleCollection, DatasetSpecification, GeoShape } from '@mintproject/modelcatalog_client';
+import { IdMap } from 'app/reducers'
 
 export interface ModelCatalogState {
     loading: {[key:string]: boolean},
     loadedAll: {[key:string]: boolean},
     created: {[key:string]: string}, //Here we assign some identifier to a POST request, when complete stores the URI
-    models: any;
-    versions: any;
-    configurations: any;
+    models: IdMap<Model>;
+    versions: IdMap<SoftwareVersion>;
+    configurations: IdMap<ModelConfiguration>;
+    setups: IdMap<ModelConfigurationSetup>;
     parameters: any;
-    datasetSpecifications: any;
+    //datasetSpecifications: any;
     persons: any;
     grids: any;
     processes: any;
     timeIntervals: any;
     softwareImages: any;
     regions: any;
+    datasetSpecifications: IdMap<DatasetSpecification>;
+    sampleResources: IdMap<SampleResource>;
+    sampleCollections: IdMap<SampleCollection>;
+    geoShapes: IdMap<GeoShape>;
 }
 
 const INITIAL_STATE: ModelCatalogState = { 
@@ -34,13 +47,18 @@ const INITIAL_STATE: ModelCatalogState = {
     models: null,
     versions: null,
     configurations: null,
+    setups: {} as IdMap<ModelConfigurationSetup>,
     parameters: null,
-    datasetSpecifications: null,
+    //datasetSpecifications: null,
     persons: null,
     grids: null,
     processes: null,
     timeIntervals: null,
-    softwareImages: null
+    softwareImages: null,
+    datasetSpecifications: {} as IdMap<DatasetSpecification>,
+    sampleResources: {} as IdMap<SampleResource>,
+    sampleCollections: {} as IdMap<SampleCollection>,
+    geoShapes: {} as IdMap<GeoShape>,
 } as ModelCatalogState;
 
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -77,7 +95,7 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
 
         case MODELS_GET:
             tmp = { ...state.loadedAll };
-            tmp['models'] = true;
+            tmp[ALL_MODELS] = true;
             return {
                 ...state,
                 loadedAll: tmp,
@@ -85,7 +103,7 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             }
         case VERSIONS_GET:
             tmp = { ...state.loadedAll };
-            tmp['versions'] = true;
+            tmp[ALL_VERSIONS] = true;
             return {
                 ...state,
                 loadedAll: tmp,
@@ -106,11 +124,22 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             }
         case MODEL_CONFIGURATIONS_GET:
             tmp = { ...state.loadedAll };
-            tmp['configurations'] = true;
+            tmp[ALL_MODEL_CONFIGURATIONS] = true;
             return {
                 ...state,
                 loadedAll: tmp,
                 configurations: {...state.configurations, ...action.payload}
+            }
+
+        case MODEL_CONFIGURATION_SETUPS_GET:
+            return {
+                ...state,
+                setups: {...state.setups, ...action.payload}
+            }
+        case MODEL_CONFIGURATION_SETUP_GET:
+            return {
+                ...state,
+                setups: {...state.setups, ...action.payload}
             }
 
         case PARAMETER_DELETE:
@@ -134,12 +163,6 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 parameters: {...state.parameters, ...action.payload}
             }
 
-        case DATASET_SPECIFICATION_GET:
-            return {
-                ...state,
-                datasetSpecifications: {...state.datasetSpecifications, ...action.payload}
-            }
-
         case REGION_DELETE:
             tmp = { ...state.regions };
             delete tmp[action.uri];
@@ -159,6 +182,27 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 ...state,
                 loadedAll: tmp,
                 regions: {...state.regions, ...action.payload}
+            }
+
+        case GEO_SHAPE_DELETE:
+            tmp = { ...state.geoShapes };
+            delete tmp[action.uri];
+            return {
+                ...state,
+                geoShapes: tmp
+            }
+        case GEO_SHAPE_GET:
+            return {
+                ...state,
+                geoShapes: {...state.geoShapes, ...action.payload}
+            }
+        case GEO_SHAPES_GET:
+            tmp = { ...state.loadedAll };
+            tmp[ALL_GEO_SHAPES] = true;
+            return {
+                ...state,
+                loadedAll: tmp,
+                geoShapes: {...state.geoShapes, ...action.payload}
             }
 
         case PERSON_DELETE:
@@ -201,6 +245,69 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
                 ...state,
                 loadedAll: tmp,
                 processes: {...state.processes, ...action.payload}
+            }
+
+        case DATASET_SPECIFICATION_DELETE:
+            tmp = { ...state.datasetSpecifications };
+            delete tmp[action.uri];
+            return {
+                ...state,
+                datasetSpecifications: tmp
+            }
+        case DATASET_SPECIFICATION_GET:
+            return {
+                ...state,
+                datasetSpecifications: {...state.datasetSpecifications, ...action.payload}
+            }
+        case DATASET_SPECIFICATIONS_GET:
+            tmp = { ...state.loadedAll };
+            tmp[ALL_DATASET_SPECIFICATIONS] = true;
+            return {
+                ...state,
+                loadedAll: tmp,
+                datasetSpecifications: {...state.datasetSpecifications, ...action.payload}
+            }
+
+        case SAMPLE_RESOURCE_DELETE:
+            tmp = { ...state.sampleResources };
+            delete tmp[action.uri];
+            return {
+                ...state,
+                sampleResources: tmp
+            }
+        case SAMPLE_RESOURCE_GET:
+            return {
+                ...state,
+                sampleResources: {...state.sampleResources, ...action.payload}
+            }
+        case SAMPLE_RESOURCES_GET:
+            tmp = { ...state.loadedAll };
+            tmp[ALL_SAMPLE_RESOURCES] = true;
+            return {
+                ...state,
+                loadedAll: tmp,
+                sampleResources: {...state.sampleResources, ...action.payload}
+            }
+
+        case SAMPLE_COLLECTION_DELETE:
+            tmp = { ...state.sampleCollections };
+            delete tmp[action.uri];
+            return {
+                ...state,
+                sampleCollections: tmp
+            }
+        case SAMPLE_COLLECTION_GET:
+            return {
+                ...state,
+                sampleCollections: {...state.sampleCollections, ...action.payload}
+            }
+        case SAMPLE_COLLECTIONS_GET:
+            tmp = { ...state.loadedAll };
+            tmp[ALL_SAMPLE_COLLECTIONS] = true;
+            return {
+                ...state,
+                loadedAll: tmp,
+                sampleCollections: {...state.sampleCollections, ...action.payload}
             }
 
         case GRID_GET:

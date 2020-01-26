@@ -6,19 +6,17 @@ import { store, RootState } from 'app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from 'app/actions';
 
-import { IdMap } from 'app/reducers';
+import { IdMap, UserPreferences } from 'app/reducers';
 import { Scenario, ScenarioList, Pathway } from 'screens/modeling/reducers';
 
 import { fromTimeStampToDateString } from "util/date-utils";
 import { getVariableLongName } from "offline_data/variable_list";
 
-import { listScenarios } from 'screens/modeling/actions';
-import { RegionList } from "screens/regions/reducers";
-import { queryRegions } from 'screens/regions/actions';
 import { db } from '../../config/firebase';
 
 import '../../components/nav-title'
-import { getVisualizationURL } from 'util/state_functions';
+import { getVisualizationURLs } from 'util/state_functions';
+import { Region, RegionMap } from 'screens/regions/reducers';
 
 function log (...args: any) {console.log('REPORT:', ...args)}
 
@@ -39,7 +37,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
   private _pathways = {};
 
   @property({type: Object})
-  private _subRegions: RegionList;
+  private _regions: RegionMap;
 
   @property({type: String})
   private _selectedScenarioId : string = '';
@@ -49,6 +47,9 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
 
   @property({type: String})
   private _selectedPathwayId : string = '';
+
+  @property({type: Object})
+  private prefs: UserPreferences;
 
   static get styles() {
     return [SharedStyles, css`
@@ -130,14 +131,14 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
       let drivingV = pathway.driving_variables && pathway.driving_variables.length > 0?
           getVariableLongName(pathway.driving_variables[0]) : '';
 
-      let vizurl = getVisualizationURL(pathway)
+      let vizurls = getVisualizationURLs(pathway, this.prefs.mint)
 
       return html`
         ${task ? html `
         <div class="main-content">
           <wl-title level="2" class="two-column-grid" style="padding: 0px;">
-            <span>Task:</span>
-            <span>${task.name}</span>
+            <span>Thread: </span>
+            <span>${task.name ? (task.name + " - ") : ""} ${pathway.name ? pathway.name : "Default thread"}</span>
           </wl-title>
 
           <wl-title level="3">Variables:</wl-title>
@@ -230,9 +231,11 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
               <span>${pathway.notes && pathway.notes.visualization ? pathway.notes.visualization : 'No notes'}</span>
             </div>
 
-          ${!vizurl || !pathway.executable_ensemble_summary || Object.keys(pathway.executable_ensemble_summary).length == 0 ? 
+          ${!vizurls || !pathway.executable_ensemble_summary || Object.keys(pathway.executable_ensemble_summary).length == 0 ? 
             'No visualizations for this run' : 
-            html `<iframe src="${vizurl}"></iframe>`
+            vizurls.map((vizurl) => {
+                return html`<iframe src="${vizurl}"></iframe>`;
+            })
           }
           </div>
           
@@ -248,13 +251,13 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
         <span id="start"></span>
         ${Object.values(this._scenarios).map((scenario:any) => html`
         <wl-title level="3" style="margin: 12px 0px 0px 12px">${scenario.name}</wl-title>
-          ${scenario.tasks.map((taskid) => this._tasks[taskid]).map((task) => html`
+          ${scenario.tasks.map((taskid) => this._tasks[taskid]).map((task) => task.pathways.map((pathway) => html`
             <wl-list-item class="active" @click="${() => {
               this._scrollUp();
-              goToPage(PREFIX_REPORT + scenario.id + '/' + task.id + '/' + Object.keys(task.pathways)[0]);
+              goToPage(PREFIX_REPORT + scenario.id + '/' + task.id + '/' + pathway.id);
             }}">
                 <wl-title level="4" style="margin: 0">
-                  ${task.name}
+                ${task.name ? (task.name + " - ") : ""} ${pathway.name ? pathway.name : "Default thread"}
                 </wl-title>
                 ${this._getSubgoalSummaryText(task)}
                 <div slot="after" style="display:flex">
@@ -262,7 +265,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
                 </div>
             </wl-list-item>
 
-          `)}
+          `))}
         `)}
         ${this._loading ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : '' }`
     } else {
@@ -285,7 +288,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
   _getSubgoalSummaryText(subgoal) {
     let response = subgoal.response_variables ? getVariableLongName(subgoal.response_variables[0]) : "";
     let subregionid = (subgoal.subregionid && subgoal.subregionid != "Select") ? subgoal.subregionid : null;
-    let regionname = subregionid && this._subRegions && this._subRegions[subregionid] ? this._subRegions[subregionid].name : this._region.name;
+    let regionname = subregionid && this._regions && this._regions[subregionid] ? this._regions[subregionid].name : this._region.name;
     return (response ? response + ": " : "") + regionname
   }
 
@@ -325,9 +328,13 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
                   this._scenarios[sid] = scenario.data();
                   this._scenarios[sid].tasks = [];
                 }
-                this._scenarios[sid].tasks.push(task.ref.id);
-                this._tasks[task.ref.id] = task.data();
-                this._tasks[task.ref.id].id = task.ref.id;
+                if(!this._tasks[task.ref.id]) {
+                  this._scenarios[sid].tasks.push(task.ref.id);
+                  this._tasks[task.ref.id] = task.data();
+                  this._tasks[task.ref.id].id = task.ref.id;
+                  this._tasks[task.ref.id].pathways = [];
+                }
+                this._tasks[task.ref.id].pathways.push(this._pathways[pathway]);
               }
             });
           });
@@ -354,17 +361,15 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
       this.fetchReports();
     }
 
+    this.prefs = state.app.prefs;
+
     if (state.ui) {
       this._selectedScenarioId = state.ui.selected_scenarioid;
       this._selectedTaskId = state.ui.selected_subgoalid;
       this._selectedPathwayId = state.ui.selected_pathwayid;
 
       if (state.ui.selected_top_regionid && state.regions!.regions) {
-        if (!state.regions!.query_result || !state.regions!.query_result[state.ui.selected_top_regionid]) {
-          store.dispatch(queryRegions(state.ui.selected_top_regionid));
-        } else {
-          this._subRegions = state.regions!.query_result[state.ui.selected_top_regionid]["*"];
-        }
+          this._regions = state.regions.regions;
       }
     }
   }

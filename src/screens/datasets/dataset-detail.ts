@@ -15,16 +15,21 @@ import "components/google-map-custom";
 import { ComparisonFeature } from 'screens/modeling/reducers';
 import { fromTimeStampToDateString } from 'util/date-utils';
 import { GOOGLE_API_KEY } from 'config/google-api-key';
-import { BoundingBox, Point } from 'screens/regions/reducers';
-import { showDialog, hideDialog } from 'util/ui_functions';
-import { calculateMapDetails } from 'screens/regions/actions';
+import { BoundingBox, Point, Region } from 'screens/regions/reducers';
 import { queryDatasetResources } from './actions';
 import { GoogleMapCustom } from 'components/google-map-custom';
+import { UserPreferences } from 'app/reducers';
+import { getRegionDetails } from 'screens/regions/actions';
+import { showDialog, hideDialog } from 'util/ui_functions';
 
 
 @customElement('dataset-detail')
 export class DatasetDetail extends connect(store)(PageViewElement) {
     private _dsid: string;
+    private _filterby_regionid: string;
+
+    @property({type: Object})
+    private _filterby_region: Region;
 
     @property({type: Array})
     private _dataset: DatasetWithStatus;
@@ -32,6 +37,9 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
     @property({type: Boolean})
     private _mapReady: boolean = false;
 
+    @property({type: Object})
+    private prefs : UserPreferences;
+    
     private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
 
     private _datasetFeatures: Array<ComparisonFeature> = [
@@ -81,7 +89,7 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
 
     protected render() {
         let _ds = (this._dataset && !this._dataset.loading) ? this._dataset.dataset : null;
-        if(!_ds && !this._dataset.loading) {
+        if(!_ds && this._dataset && !this._dataset.loading) {
             return html `<center>No resources found for this dataset</center>`;
         }
         return html`
@@ -89,9 +97,31 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                 html`<wl-progress-spinner class="loading"></wl-progress-spinner>`
                 :
                 html`
+                ${this._renderJsonDialog(_ds)}
                 <br />
                 <wl-title level="4">${_ds.name}</wl-title>
-                <wl-title level="5" style="color:#aaa">id:${_ds.id}</wl-title>
+                <div style="display:flex; justify-content:space-between">
+                    <wl-title level="5" style="color:#aaa">id:${_ds.id}</wl-title>
+                    <div style="text-align: right;">
+                        <span style="color: ${_ds.is_cached ? 'green' : 'lightsalmon'}">
+                            ${_ds.is_cached ? 'Available on MINT servers' : 'Available for download'}
+                        </span>
+                        ${_ds.resource_repr || _ds.dataset_repr ? html`
+                        |
+                        <span style="cursor: pointer; color: 'green'" @click="${() => {showDialog('jsonDialog', this.shadowRoot)}}">
+                            MINT Understandable Format
+                        </span>
+                        ` : ''}
+                        ${_ds.is_cached ? '' : html`
+                        <br />
+                        <span style="cursor: not-allowed;">
+                            <wl-button flat inverted outlined disabled style="margin-top: 5px; --button-padding: 4px 8px;">
+                                Download to MINT servers
+                            </wl-button>
+                        </span>
+                        `}
+                    </div>
+                </div>
                 <br />
                 <table class="pure-table pure-table-striped">
                     <thead>
@@ -112,6 +142,10 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                     </tbody>
                 </table>
                 <br />
+                ${this._filterby_region ? 
+                    html`<wl-title level="4">Region: ${this._filterby_region.name}</wl-title><br />`
+                    : ""
+                }
                 `
             }
             
@@ -126,7 +160,10 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                 html`
                 <br />
                 <br />
-                <wl-title level="4">${_ds.resources.length} Resource(s)</wl-title>
+                <wl-title level="4">
+                    ${_ds.resources.length < _ds.resource_count ? html`Showing ${_ds.resources.length} of` : ''}
+                    ${_ds.resource_count} Resource(s)
+                </wl-title>
                 <div style="height:400px; overflow:auto">
                     <div class="clt">
                         <ul>
@@ -157,6 +194,21 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
         `;
     }
 
+    _renderJsonDialog (ds) {
+        return html`
+        <wl-dialog class="larger" id="jsonDialog" fixed backdrop blockscrolling>
+            <h3 slot="header">
+                ${ds.resource_repr ? 'resource_repr' : 'dataset_repr'} details
+            </h3>
+            <div slot="content">
+                <pre>${JSON.stringify(ds.resource_repr || ds.dataset_repr, null, 2)}</pre>
+            </div>
+            <div slot="footer">
+                <wl-button @click="${() => { hideDialog("jsonDialog", this.shadowRoot); }}" style="margin-right: 5px;" inverted flat>Close</wl-button>
+            </div>
+        </wl-dialog>`
+    }
+
     _showDatasetLocations() {
         let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
         if(map && this._dataset && this._dataset.dataset) {
@@ -173,10 +225,10 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
 
     _setDatasetLocations(ds: Dataset) {
         let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
-        let covers = ds.resources.map((res) => res.spatial_coverage);
+        let covers = ds.resources.map((res) => res.spatial_coverage).filter((cover) => cover);
         if(covers.length > 0) {
+            map.style.display = "";
             let covertype = covers[0].type;
-            let covervalues = covers.map((cover) => cover.value);
             if(covertype.toLowerCase() == "point") {
                 let covervalues = covers.map((cover) => {
                     return {
@@ -198,26 +250,39 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                 });
                 map.setBoundingBoxes(covervalues as BoundingBox[]);
                 return true;
+            } else if (covertype.toLowerCase() == "polygon") {
+                map.setPolygon(covers[0].coordinates[0]);
+                return true;
             }
-        }            
+        }
+        else {
+            map.style.display = "none";
+        }
         return false;
     }
 
     stateChanged(state: RootState) {
         super.setRegion(state);
-        if(state.dataExplorerUI) {
+        this.prefs = state.app.prefs!;
+
+        if(state.dataExplorerUI && this._regionid && 
+                state.regions.sub_region_ids && state.regions.sub_region_ids[this._regionid]) {
             let newdsid = state.dataExplorerUI.selected_datasetid;
-            if(newdsid != this._dsid) {
+            let newregionid = state.dataExplorerUI.selected_regionid;
+            if(newdsid != this._dsid || newregionid != this._filterby_regionid) {
                 this._dsid = newdsid;
+                this._filterby_regionid = newregionid;
                 this._dataset = null;
                 this._mapReady = false;
-                if(this._dsid)
-                    store.dispatch(queryDatasetResources(this._dsid));
+                if(this._dsid) {
+                    this._filterby_region = newregionid ? state.regions.regions[newregionid] : null;
+                    store.dispatch(queryDatasetResources(this._dsid, this._filterby_region, this.prefs.mint))
+                }
             }
         }
-        if(state.datasets && state.datasets.dataset) {
+        if(state.datasets && this._dataset != state.datasets.dataset) {
             this._dataset = state.datasets.dataset;
-            if(!this._dataset.loading)
+            if(this._dataset && !this._dataset.loading)
                 this._showDatasetLocations();
         }
     }

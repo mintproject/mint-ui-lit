@@ -2,11 +2,16 @@ import { Action, ActionCreator } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
-import { Configuration, ModelConfiguration, ModelConfigurationApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, repeatAction, PREFIX_URI, DEFAULT_GRAPH,
+import { Configuration, ModelConfiguration, ModelConfigurationApi, Parameter, ParameterApi, DatasetSpecificationApi, 
+         SampleResourceApi, SampleCollectionApi, DatasetSpecification, SampleResource, SampleCollection } from '@mintproject/modelcatalog_client';
+import { idReducer, isValidId, fixObjects, getStatusConfigAndUser, PREFIX_URI, DEFAULT_GRAPH,
          START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
+import { PARAMETER_GET, MCAParameterGet } from './parameter-actions'
+import { DATASET_SPECIFICATION_GET, MCADatasetSpecificationGet } from './dataset-specification-actions'
+import { SAMPLE_RESOURCE_GET, MCASampleResourceGet } from './sample-resource-actions'
+import { SAMPLE_COLLECTION_GET, MCASampleCollectionGet } from './sample-collection-actions'
 
-function debug (...args: any[]) { console.log('OBA:', ...args); }
+function debug (...args: any[]) { console.log('[MC configuration]', ...args); }
 
 export const ALL_MODEL_CONFIGURATIONS = 'ALL_MODEL_CONFIGURATIONS'
 
@@ -23,15 +28,25 @@ export const modelConfigurationsGet: ActionCreator<ModelCatalogModelConfiguratio
     dispatch({type: START_LOADING, id: ALL_MODEL_CONFIGURATIONS});
 
     let api : ModelConfigurationApi = new ModelConfigurationApi();
-    api.modelconfigurationsGet({username: DEFAULT_GRAPH})
-        .then((data) => {
-            dispatch({
-                type: MODEL_CONFIGURATIONS_GET,
-                payload: data.reduce(idReducer, {})
-            });
-            dispatch({type: END_LOADING, id: ALL_MODEL_CONFIGURATIONS});
+    let req : Promise<ModelConfiguration[]> = api.modelconfigurationsGet({username: DEFAULT_GRAPH});
+    req.then((data) => {
+        data = data.map(m => {
+            return { ...m, 
+                contributor: fixObjects(m.contributor),
+                author: fixObjects(m.author),
+                hasOutput: fixObjects(m.hasOutput),
+                hasInput: fixObjects(m.hasInput),
+                hasParameter: fixObjects(m.hasParameter),
+            }
         })
-        .catch((err) => {console.log('Error on GET modelConfigurations', err)})
+        dispatch({
+            type: MODEL_CONFIGURATIONS_GET,
+            payload: data.reduce(idReducer, {})
+        });
+        dispatch({type: END_LOADING, id: ALL_MODEL_CONFIGURATIONS});
+    });
+    req.catch((err) => {console.log('Error on GET modelConfigurations', err)})
+    return req;
 }
 
 export const MODEL_CONFIGURATION_GET = "MODEL_CONFIGURATION_GET";
@@ -40,53 +55,33 @@ export const modelConfigurationGet: ActionCreator<ModelCatalogModelConfiguration
     debug('Fetching modelConfiguration', uri);
     let id : string = uri.split('/').pop();
     let api : ModelConfigurationApi = new ModelConfigurationApi();
-    api.modelconfigurationsIdGet({username: DEFAULT_GRAPH, id: id})
-        .then((resp) => {
-            let data = {};
-            data[uri] = resp;
-            dispatch({
-                type: MODEL_CONFIGURATION_GET,
-                payload: data
-            });
-        })
-        .catch((err) => {console.log('Error on getModelConfiguration', err)})
+    let req = api.modelconfigurationsIdGet({username: DEFAULT_GRAPH, id: id});
+    req.then((resp) => {
+        let data = {};
+        data[uri] = resp;
+        dispatch({
+            type: MODEL_CONFIGURATION_GET,
+            payload: data
+        });
+    });
+    req.catch((err) => {console.log('Error on getModelConfiguration', err)});
+    return req;
 }
 
 export const MODEL_CONFIGURATION_POST = "MODEL_CONFIGURATION_POST";
 interface MCAModelConfigurationPost extends Action<'MODEL_CONFIGURATION_POST'> { payload: any };
-export const modelConfigurationPost: ActionCreator<ModelCatalogModelConfigurationThunkResult> = (modelConfiguration:ModelConfiguration, identifier:string) => (dispatch) => {
+export const modelConfigurationPost: ActionCreator<PostConfigThunk> =
+        (modelConfiguration:ModelConfiguration, configUri:string, identifier:string) => (dispatch) => {
     debug('creating new modelConfiguration', modelConfiguration);
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
-
-    if (status === 'DONE') {
-        dispatch({type: START_POST, id: identifier});
-        modelConfiguration.id = undefined;
-        let api : ModelConfigurationApi = new ModelConfigurationApi(cfg);
-        api.modelconfigurationsPost({user: DEFAULT_GRAPH, modelConfiguration: modelConfiguration}) // This should be my username on prod.
-            .then((resp) => {
-                console.log('Response for POST modelConfiguration:', resp);
-                //Its returning the ID without the prefix
-                let uri = PREFIX_URI + resp.id;
-                let data = {};
-                data[uri] = resp;
-                resp.id = uri;
-                dispatch({
-                    type: MODEL_CONFIGURATION_GET,
-                    payload: data
-                });
-                dispatch({type: END_POST, id: identifier, uri: uri});
-            })
-            .catch((err) => {console.log('Error on POST modelConfiguration', err)})
-    } else if (status === 'LOADING') {
-        repeatAction(modelConfigurationPost, modelConfiguration);
-    }
+    console.error('POST ModelConfiguration not implemented yet');
 }
 
 export const MODEL_CONFIGURATION_PUT = "MODEL_CONFIGURATION_PUT";
 interface MCAModelConfigurationPut extends Action<'MODEL_CONFIGURATION_PUT'> { payload: any };
 export const modelConfigurationPut: ActionCreator<ModelCatalogModelConfigurationThunkResult> = ( modelConfiguration: ModelConfiguration ) => (dispatch) => {
-    debug('updating modelConfiguration', modelConfiguration.id);
+    debug('updating modelConfiguration', modelConfiguration);
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
 
@@ -94,20 +89,21 @@ export const modelConfigurationPut: ActionCreator<ModelCatalogModelConfiguration
         dispatch({type: START_LOADING, id: modelConfiguration.id});
         let api : ModelConfigurationApi = new ModelConfigurationApi(cfg);
         let id : string = modelConfiguration.id.split('/').pop();
-        api.modelconfigurationsIdPut({id: id, user: DEFAULT_GRAPH, modelConfiguration: modelConfiguration}) // This should be my username on prod.
-            .then((resp) => {
-                console.log('Response for PUT modelConfiguration:', resp);
-                let data = {};
-                data[modelConfiguration.id] = resp;
-                dispatch({
-                    type: MODEL_CONFIGURATION_GET,
-                    payload: data
-                });
-                dispatch({type: END_LOADING, id: modelConfiguration.id});
-            })
-            .catch((err) => {console.log('Error on PUT modelConfiguration', err)})
-    } else if (status === 'LOADING') {
-        repeatAction(modelConfigurationPut, modelConfiguration);
+        let req : Promise<ModelConfiguration> = api.modelconfigurationsIdPut({id: id, user: DEFAULT_GRAPH, modelConfiguration: modelConfiguration}) // This should be my username on prod.
+        req.then((resp) => {
+            console.log('Response for PUT modelConfiguration:', resp);
+            let data = {};
+            data[modelConfiguration.id] = resp;
+            dispatch({
+                type: MODEL_CONFIGURATION_GET,
+                payload: data
+            });
+            dispatch({type: END_LOADING, id: modelConfiguration.id});
+        });
+        req.catch((err) => {console.log('Error on PUT modelConfiguration', err)});
+        return req;
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 
@@ -121,20 +117,24 @@ export const modelConfigurationDelete: ActionCreator<ModelCatalogModelConfigurat
     if (status === 'DONE') {
         let api : ModelConfigurationApi = new ModelConfigurationApi(cfg);
         let id : string = uri.split('/').pop();
-        api.modelconfigurationsIdDelete({id: id, user: DEFAULT_GRAPH}) // This should be my username on prod.
-            .then((resp) => {
-                console.log('Response for DELETE modelConfiguration:', resp);
-                dispatch({
-                    type: MODEL_CONFIGURATION_DELETE,
-                    uri: uri
-                });
-            })
-            .catch((err) => {console.log('Error on DELETE modelConfiguration', err)})
-    } else if (status === 'LOADING') {
-        repeatAction(modelConfigurationDelete, uri);
+        let req = api.modelconfigurationsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        req.then((resp) => {
+            console.log('Response for DELETE modelConfiguration:', resp);
+            dispatch({
+                type: MODEL_CONFIGURATION_DELETE,
+                uri: uri
+            });
+        });
+        req.catch((err) => {console.log('Error on DELETE modelConfiguration', err)});
+        return req;
+    } else {
+        console.error('TOKEN ERROR:', status);
     }
 }
 
 export type ModelCatalogModelConfigurationAction =  MCACommon | MCAModelConfigurationsGet | MCAModelConfigurationGet | 
                                                     MCAModelConfigurationPost | MCAModelConfigurationPut | MCAModelConfigurationDelete;
 type ModelCatalogModelConfigurationThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogModelConfigurationAction>;
+type PostConfigThunk = ThunkAction<void, RootState, undefined, 
+        ModelCatalogModelConfigurationAction | MCAParameterGet | MCADatasetSpecificationGet | MCASampleResourceGet |
+        MCASampleCollectionGet>;

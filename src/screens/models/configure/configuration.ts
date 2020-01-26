@@ -16,16 +16,17 @@ import { personGet, personPost, modelConfigurationPut,
          timeIntervalGet, processGet, softwareImageGet, } from 'model-catalog/actions';
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
-import "weightless/slider";
 import "weightless/progress-spinner";
-//import "weightless/tab";
-//import "weightless/tab-group";
 import 'components/loading-dots'
 
 import './person';
 import './process';
+import './parameter';
+import './dataset-specification';
 import { ModelsConfigurePerson } from './person';
 import { ModelsConfigureProcess } from './process';
+import { ModelsConfigureParameter } from './parameter';
+import { ModelsConfigureDatasetSpecification } from './dataset-specification';
 
 @customElement('models-configure-configuration')
 export class ModelsConfigureConfiguration extends connect(store)(PageViewElement) {
@@ -63,7 +64,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     private _softwareImage : any = null;
 
     @property({type: String})
-    private _dialog : string = '';
+    private _dialog : ''|'person'|'process'|'parameter'|'input' = '';
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
@@ -144,8 +145,12 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
 
             .details-table tr td:first-child {
                 font-weight: bold;
-                text-align: right;
                 padding-right: 6px;
+                padding-left: 13px;
+            }
+
+            .details-table tr td:last-child {
+                padding-right: 13px;
             }
 
             .details-table tr:nth-child(odd) {
@@ -243,12 +248,15 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     }
 
     protected render() {
+        if (!this._config) {
+            return html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
+        }
         // Sort parameters by order
         let paramOrder = []
         if (this._config.hasParameter) {
             Object.values(this._parameters).sort(sortByPosition).forEach((id: any) => {
                 if (typeof id === 'object') id = id.id;
-                paramOrder.push(id);
+                if (id) paramOrder.push(id);
             });
             this._config.hasParameter.forEach((id) => {
                 if (typeof id === 'object') id = id.id;
@@ -263,7 +271,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         if (this._config.hasInput) {
             Object.values(this._inputs).sort(sortByPosition).forEach((id: any) => {
                 if (typeof id === 'object') id = id.id;
-                inputOrder.push(id);
+                if (id) inputOrder.push(id);
             });
             this._config.hasInput.forEach((id) => {
                 if (typeof id === 'object') id = id.id;
@@ -279,12 +287,17 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
 
         return html`
         <span id="start"/>
-        ${this._editing ? html`
-        <wl-textfield id="edit-config-name" label="Configuration name" value="${this._config.label}" required></wl-textfield>
-        `:''}
 
         <table class="details-table">
             <colgroup width="150px">
+
+            <tr>
+                ${this._editing ? html`
+                <td colspan="2" style="padding: 5px 20px;">
+                    <wl-textfield id="edit-config-name" label="Configuration name" value="${this._config.label}" required></wl-textfield>
+                </td>` : ''}
+            </tr>
+
             <tr>
                 <td>Description:</td>
                 <td>
@@ -304,7 +317,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             </tr>
 
             <tr>
-                <td>Authors:</td>
+                <td>Configuration creator:</td>
                 <td>
                     ${this._config.author && this._config.author.length > 0? 
                     html`${this._config.author.map(a => typeof a === 'object' ? a.id : a).map((authorUri:string) => 
@@ -376,8 +389,19 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     ${this._config.hasOutputTimeInterval ?
                     (this._timeInterval ? html`
                         <span class="time-interval">
-                            ${this._timeInterval.label}
-                            ${this._editing ? html`<wl-icon style="margin-left:10px">edit</wl-icon>` : ''}
+                            <span style="display: flex; justify-content: space-between;">
+                                <span style="margin-right: 30px; text-decoration: underline;">
+                                    ${this._timeInterval.label ? this._timeInterval.label : this._timeInterval.id}
+                                </span>
+                                <span> 
+                                    ${this._timeInterval.intervalValue}
+                                    ${this._timeInterval.intervalUnit ? this._timeInterval.intervalUnit[0].label : ''}
+                                    ${this._editing ? html`
+                                    <wl-icon style="margin-left:10px; --icon-size:  16px; cursor: pointer; vertical-align: middle;">edit</wl-icon>
+                                    ` : ''}
+                                </span>
+                            </span>
+                            <span style="font-style: oblique; color: gray;"> ${this._timeInterval.description} </span>
                         </span>`
                         : html`${this._config.hasOutputTimeInterval[0].id} ${this._timeIntervalLoading ? 
                             html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`)
@@ -392,7 +416,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     html`${this._config.hasProcess.map(a => typeof a === 'object' ? a.id : a).map((procUri:string) => 
                         (this._processes[procUri] ? html`
                         <span class="process">
-                            ${this._processes[procUri].label}
+                            ${this._processes[procUri].label ? this._processes[procUri].label : this._processes[procUri].id}
                         </span>`
                         : procUri + ' '))}
                     ${this._processesLoading.size > 0 ? html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`
@@ -417,7 +441,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             <thead>
                 <th><b>Label</b></th>
                 <th><b>Type</b></th>
-                <th class="ta-right">
+                <th class="ta-right" style="white-space:nowrap;">
                     <b>Default Value</b>
                 </th>
                 <th class="ta-right"><b>Unit</b></th>
@@ -440,7 +464,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
                 ${this._editing? html `
                 <td style="text-align: right;">
-                    <wl-button class="small"><wl-icon>edit</wl-icon></wl-button>
+                    <wl-button flat inverted @click="${() => this._showParameterDialog(uri)}" class="small"><wl-icon>edit</wl-icon></wl-button>
                 </td>
                 ` : ''}
                 `
@@ -455,22 +479,29 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             <colgroup>
                 <col span="1">
                 <col span="1">
-                <col span="1">
             </colgroup>
             <thead>
-                <th><b>Name</b></th>
-                <th><b>Description</b></th>
-                <th class="ta-right"><b>Format</b></th>
+                <th colspan="2"><b>Input file</b></th>
             </thead>
             <tbody>
             ${this._config.hasInput ? inputOrder.map((uri:string) => html `
             <tr>${this._inputs[uri] ? html`
-                <td><code>${this._inputs[uri].label}</code></td>
-                <td>${this._inputs[uri].description}</td>
-                <td class="ta-right monospaced">${this._inputs[uri].hasFormat}</td>`
-                : html`<td colspan="4" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
+                <td colspan="${this._editing ? 1 : 2}">
+                    <code style="font-size: 13px">${this._inputs[uri].label}</code>
+                    ${this._inputs[uri].hasFormat && this._inputs[uri].hasFormat.length === 1 ?  
+                        html`<span class="monospaced" style="color: gray;">(.${this._inputs[uri].hasFormat})<span>` : ''}
+                    <br/>
+                    ${this._inputs[uri].description}
+                </td>
+                ${this._editing ? html`
+                <td>
+                    <wl-button flat inverted @click="${() => this._showInputDialog(uri)}" class="small"><wl-icon>edit</wl-icon></wl-button>
+                </td>
+                ` : ''}
+                `
+                : html`<td colspan="2" style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></td>`}
             </tr>`)
-            : html`<tr><td colspan="4" class="info-center">- This configuration has no input files -</td></tr>`}
+            : html`<tr><td colspan="2" class="info-center">- This configuration has no input files -</td></tr>`}
             </tbody>
         </table>
 
@@ -492,16 +523,34 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         
         <models-configure-person id="person-configurator" ?active=${this._dialog == 'person'} class="page"></models-configure-person>
         <models-configure-process id="process-configurator" ?active=${this._dialog == 'process'} class="page"></models-configure-process>
+        <models-configure-parameter id="parameter-configurator" ?active=${this._dialog == 'parameter'} class="page"></models-configure-parameter>
+        <models-configure-dataset-specification id="dataset-specification-configurator" ?active=${this._dialog == 'input'} class="page">
+        </models-configure-dataset-specification>
         ${renderNotifications()}`
+    }
+
+    _showParameterDialog (parameterID: string) {
+        this._dialog = 'parameter';
+        let parameterConfigurator = this.shadowRoot.getElementById('parameter-configurator') as ModelsConfigureParameter;
+        parameterConfigurator.edit(parameterID, false);
+    }
+
+    _showInputDialog (inputID: string) {
+        this._dialog = 'input';
+        let datasetSpecificationConfigurator = this.shadowRoot.getElementById('dataset-specification-configurator') as ModelsConfigureDatasetSpecification;
+        datasetSpecificationConfigurator.edit(inputID);
     }
 
     _showAuthorDialog () {
         this._dialog = 'person';
-        console.log(this._config.author);
-        let selectedAuthors = this._config.author.filter(x => x.type === "Person").reduce((acc: any, author: any) => {
+        /* No all are objets! */
+        let selectedAuthors = this._config.author ? this._config.author
+                .map(x => typeof x === 'object' ? x : {id: x})
+                .reduce((acc: any, author: any) => {
             if (!acc[author.id]) acc[author.id] = true;
             return acc;
-        }, {})
+        }, {}) : {};
+
         let personConfigurator = this.shadowRoot.getElementById('person-configurator') as ModelsConfigurePerson;
         personConfigurator.setSelected(selectedAuthors);
         personConfigurator.open();
@@ -546,10 +595,24 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         this.requestUpdate();
     }
 
+    _onParameterEdited (ev) {
+        let editedParameter = ev.detail;
+        this._parameters[editedParameter.id] = editedParameter;
+        this.requestUpdate();
+    }
+
+    _onDatasetSpecificationEdited (ev) {
+        let editedInput = ev.detail;
+        this._inputs[editedInput.id] = editedInput;
+        this.requestUpdate();
+    }
+
     firstUpdated () {
         this.addEventListener('dialogClosed', this._onClosedDialog);
         this.addEventListener('authorsSelected', this._onAuthorsSelected);
         this.addEventListener('processesSelected', this._onProcessesSelected);
+        this.addEventListener('parameterEdited', this._onParameterEdited);
+        this.addEventListener('datasetSpecificationEdited', this._onDatasetSpecificationEdited);
     }
 
     stateChanged(state: RootState) {
@@ -616,7 +679,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                         // Fetching not loaded inputs 
                         (this._config.hasInput || []).forEach((i) => {
                             if (typeof i === 'object') {
-                                if (i.type.indexOf('DatasetSpecification') < 0) {
+                                if (i.type && i.type.indexOf('DatasetSpecification') < 0) {
                                     console.log(i, 'is not a DatasetSpecification (input)', this._config);
                                 }
                                 i = i.id;
@@ -695,7 +758,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     }
 
                     if (db.datasetSpecifications) {
-                        if (this._inputsLoading.size > 0 && this._config.hasParameter) {
+                        if (this._inputsLoading.size > 0 && this._config.hasInput) {
                             this._inputsLoading.forEach((uri:string) => {
                                 if (db.datasetSpecifications[uri]) {
                                     let tmp = { ...this._inputs };

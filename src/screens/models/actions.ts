@@ -14,6 +14,7 @@ import { apiFetch,  CALIBRATIONS_FOR_VAR_SN, METADATA_NOIO_FOR_MODEL_CONFIG, PAR
 IO_AND_VARS_SN_FOR_CONFIG } from '../../util/model-catalog-requests';
 import { Dataset } from "../datasets/reducers";
 import { getVariableProperty } from "offline_data/variable_list";
+import { MintPreferences } from "app/reducers";
 
 export interface ModelsActionList extends Action<'MODELS_LIST'> { models: Model[] };
 export interface ModelsActionVariablesQuery extends Action<'MODELS_VARIABLES_QUERY'> { 
@@ -25,11 +26,9 @@ export interface ModelsActionDetail extends Action<'MODELS_DETAIL'> { model: Mod
 
 export type ModelsAction = ModelsActionList | ModelsActionVariablesQuery |  ModelsActionDetail ;
 
-const MODEL_CATALOG_URI = "https://query.mint.isi.edu/api/mintproject/MINT-ModelCatalogQueries";
-
 // List all Model Configurations
 type ListModelsThunkResult = ThunkAction<void, RootState, undefined, ModelsActionList>;
-export const listAllModels: ActionCreator<ListModelsThunkResult> = () => (dispatch) => {
+export const listAllModels: ActionCreator<ListModelsThunkResult> = (prefs: MintPreferences) => (dispatch) => {
     
     // Offline mode example query
     if(OFFLINE_DEMO_MODE) {
@@ -40,7 +39,7 @@ export const listAllModels: ActionCreator<ListModelsThunkResult> = () => (dispat
         return;
     }
 
-    fetch(MODEL_CATALOG_URI + "/getModelConfigurations").then((response) => {
+    fetch(prefs.model_catalog_api + "/getModelConfigurations").then((response) => {
         response.json().then((obj) => {
             let models = [] as Model[];
             let bindings = obj["results"]["bindings"];
@@ -163,23 +162,33 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                                 id: value.io,
                                 name: value.iolabel,
                                 type: value.type,
+                                position: value.position ? parseInt(value.position) : 0,
                                 variables: []
                             };
                             if(value.fixedValueURL) {
                                 let dcids = value.fixedValueDCId.split(/\s*,\s*/);
                                 let urls = value.fixedValueURL.split(/\s*,\s*/);
+                                let resources = urls.map((url) => {
+                                    let fname = url.replace(/.*[#\/]/, '');
+                                    return { 
+                                        url: url,
+                                        id: fname,
+                                        name: fname,
+                                        selected: true
+                                    };
+                                });
                                 io.value = {
                                     id: dcids[0],
-                                    resources: urls.map((url) => { return {
-                                        url: url
-                                    }})
+                                    resources: resources
                                 } as Dataset;
                             }
                             fileio[value.io] = io;
-                            if(value.prop.match(/#hasInput$/)) {
-                                inputs.push(io);
-                            } else {
-                                outputs.push(io);
+                            if(value.prop) {
+                                if(value.prop.match(/#hasInput$/)) {
+                                    inputs.push(io);
+                                } else {
+                                    outputs.push(io);
+                                }
                             }
                         }
                         if(value.st) {
@@ -208,6 +217,7 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                             default: value.defaultvalue || "",
                             description: value.description || "",
                             adjustment_variable: adjustment_variable,
+                            position: value.position ? parseInt(value.position) : 0,
                             accepted_values: accepted_values
                         };
                         if(value.fixedValue)
@@ -254,7 +264,8 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                             dimensionality: meta['gridDim'] || "",
                             spatial_grid_type: (meta['gridType'] || "").replace(/.*#/, ''),
                             spatial_grid_resolution: meta['gridSpatial'] || "",
-                            minimum_output_time_interval: ""
+                            minimum_output_time_interval: "",
+                            usage_notes: meta['usageNotes'] || ""
                         };
                         //console.log(model);
                         return model;

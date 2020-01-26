@@ -245,7 +245,7 @@ export const fetchVersionsAndConfigs: ActionCreator<ApiThunkResult> = () => (dis
                 //console.log(na, nb)
                 return nb - na;
             }).map(key => data[modelUri][key]).forEach((ver:any, i:number) => {
-                let verUrl = baseUrl + '/' + ver.id;
+                let verUrl = baseUrl + '/' + ver.uri.split('/').pop();
                 let cfgUrl, calUrl;
                 //for (let j = (ver.configs ? ver.configs.length : 0)-1; j >= 0; j--) {
                 for (let j = 0; j < (ver.configs ? ver.configs.length : 0); j++) {
@@ -347,7 +347,7 @@ export const fetchVersionsForModel: ActionCreator<ApiThunkResult> = (uri:string)
         let baseUrl = uri.split('/').pop();
         // create urls going backwards on versions 
         Object.values(data).forEach((ver:any, i:number) => {
-            let verUrl = baseUrl + '/' + ver.id;
+            let verUrl = baseUrl + '/' + ver.uri.split('/').pop();
             let cfgUrl, calUrl;
             for (let j = (ver.configs ? ver.configs.length : 0)-1; j >= 0; j--) {
                 cfgUrl = verUrl + '/' + ver.configs[j].uri.split('/').pop();

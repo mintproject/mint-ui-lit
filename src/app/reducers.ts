@@ -11,9 +11,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 import { Reducer } from 'redux';
 import { RootAction } from './store';
 import { User } from 'firebase';
-import { UPDATE_PAGE, FETCH_USER, FETCH_USER_PREFERENCES, FETCH_MODEL_CATALOG_ACCESS_TOKEN,
-         STATUS_MODEL_CATALOG_ACCESS_TOKEN } from './actions';
-import { SAMPLE_MINT_PREFERENCES } from 'offline_data/sample_user';
+import { UPDATE_PAGE, FETCH_USER, FETCH_MINT_CONFIG, FETCH_MODEL_CATALOG_ACCESS_TOKEN,
+         STATUS_MODEL_CATALOG_ACCESS_TOKEN} from './actions';
 
 export interface IdMap<T> {
   [id: string]: T
@@ -38,20 +37,36 @@ export interface UserPreferences {
 
 export interface MintPreferences {
   wings: WingsPreferences,
+  localex?: LocalExecutionPreferences,
+  execution_engine?: "wings" | "localex",
+  wings_api: string,
+  ensemble_manager_api: string,
   ingestion_api: string,
-  visualization_url: string
+  visualization_url: string,
+  data_catalog_api: string,
+  model_catalog_api: string
 }
 
 export interface WingsPreferences {
   server: string,
-  export_url: string,
   domain: string,
   username: string,
   password: string,
-  storage: string,
-  dotpath: string,
-  onturl: string,
-  api: string,
+  datadir: string,
+  dataurl: string
+  // The following is retrieved from wings itself
+  export_url?: string,
+  storage?: string,
+  dotpath?: string,
+  onturl?: string,
+}
+
+export interface LocalExecutionPreferences {
+  datadir: string,
+  dataurl: string,
+  logdir: string,
+  logurl: string,
+  codedir: string
 }
 
 type ModelCatalogStatus = 'LOADING' | 'DONE' | 'ERROR';
@@ -64,7 +79,7 @@ export interface ModelCatalogPreferences {
 const INITIAL_STATE: AppState = {
   page: '',
   subpage: '',
-  prefs: {mint: SAMPLE_MINT_PREFERENCES as MintPreferences, modelCatalog: {} as ModelCatalogPreferences}
+  prefs: {mint: null, modelCatalog: {} as ModelCatalogPreferences}
 };
 
 const app: Reducer<AppState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -80,8 +95,8 @@ const app: Reducer<AppState, RootAction> = (state = INITIAL_STATE, action) => {
         ...state,
         user: action.user!
       };
-    case FETCH_USER_PREFERENCES:
-      let newPrefs = {...state.prefs, ...action.prefs};
+    case FETCH_MINT_CONFIG:
+      let newPrefs = {...state.prefs, mint: action.prefs};
       return {
         ...state,
         prefs: newPrefs

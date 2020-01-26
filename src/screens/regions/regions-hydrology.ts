@@ -5,21 +5,10 @@ import { PageViewElement } from '../../components/page-view-element';
 import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { goToPage } from '../../app/actions';
-import { queryRegions } from './actions';
-import { RegionsEditor } from './regions-editor';
-import { RegionList, Region } from './reducers';
-
-import { db } from 'config/firebase';
-import { fromTimeStampToDateString } from "util/date-utils";
-import { getVariableLongName } from "offline_data/variable_list";
 
 import 'weightless/divider';
 import './regions-editor';
 import '../../components/image-gallery'
-import { Dataset, DatasetsWithStatus } from 'screens/datasets/reducers';
-import { queryDatasetsByRegion } from 'screens/datasets/actions';
-import { IdMap } from 'app/reducers';
 
 @customElement('regions-hydrology')
 export class RegionsHydrology extends connect(store)(PageViewElement)  {

@@ -146,10 +146,10 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
                             <li>
                                 <div class="input_half">
                                 ${responseids.length == 0 ?
-                                    renderResponseVariables("", false)
+                                    renderResponseVariables("", false, ()=>{})
                                 :
                                     responseids.map((responseid) => {
-                                        return renderResponseVariables(responseid, false);
+                                        return renderResponseVariables(responseid, false, ()=>{});
                                     })
                                 }
                                 </div>
@@ -165,10 +165,10 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
                             <li>
                                 <div class="input_half">
                                 ${driverids.length == 0 ?
-                                    renderDrivingVariables("", false)
+                                    renderDrivingVariables("", false, ()=>{})
                                     :
                                     driverids.map((driverid) => {
-                                        return renderDrivingVariables(driverid, false);
+                                        return renderDrivingVariables(driverid, false, ()=>{});
                                     })
                                 }
                                 </div>
@@ -198,27 +198,27 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
         if (formElementsComplete(form, ["response_variable"])) {
             let driving_variable = (form.elements["driving_variable"] as HTMLSelectElement).value;
             let response_variable = (form.elements["response_variable"] as HTMLSelectElement).value;
-            this.pathway = {
+            let newpathway = {
                 ...this.pathway
             }
-            this.pathway.driving_variables = driving_variable ? [driving_variable] : [];
-            this.pathway.response_variables = response_variable ? [response_variable] : [];
+            newpathway.driving_variables = driving_variable ? [driving_variable] : [];
+            newpathway.response_variables = response_variable ? [response_variable] : [];
 
             // Update notes
             let notes = (form.elements["notes"] as HTMLTextAreaElement).value;
-            this.pathway.notes = {
-                ...this.pathway.notes!,
+            newpathway.notes = {
+                ...newpathway.notes!,
                 variables: notes
             };
-            this.pathway.last_update = {
-                ...this.pathway.last_update!,
+            newpathway.last_update = {
+                ...newpathway.last_update!,
                 variables: {
                     time: Date.now(),
                     user: this.user!.email
                 } as StepUpdateInformation
             };            
             
-            updatePathway(this.scenario, this.pathway);
+            updatePathway(this.scenario, newpathway);
             
             this._editMode = false;
             //hideDialog("variablesDialog", this.shadowRoot!);

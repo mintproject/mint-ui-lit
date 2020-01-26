@@ -2,11 +2,11 @@ import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 
-import { ModelMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation } from "../reducers";
+import { ModelMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, ExecutableEnsembleSummary } from "../reducers";
 import models, { VariableModels, Model } from "../../models/reducers";
 
 import { SharedStyles } from "../../../styles/shared-styles";
-import { updatePathway } from "../actions";
+import { updatePathway, deleteAllPathwayEnsembleIds } from "../actions";
 import { removeDatasetFromPathway, matchVariables, getUISelectedSubgoalRegion } from "../../../util/state_functions";
 
 import "weightless/tooltip";
@@ -18,6 +18,7 @@ import { queryModelsByVariables } from "../../models/actions";
 import { getVariableLongName } from "../../../offline_data/variable_list";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { Region } from "screens/regions/reducers";
+import { IdMap } from "app/reducers";
 
 store.addReducers({
     models
@@ -49,8 +50,8 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
             name: "More information",
-            fn: () => html `
-                <a target="_blank" href="#">Model Profile</a>
+            fn: (model:Model) => html `
+                <a target="_blank" href="${this._getModelSetupURL(model)}">Model Profile</a>
                 `
         },        
         {
@@ -203,6 +204,13 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                     The models below generate data that includes the indicator that you selected earlier: 
                     "${this.pathway.response_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
                     Other models that are available in the system do not generate that kind of result.
+                    ${this.pathway.driving_variables.length ? 
+                        html`
+                        These models also allow adjusting the adjustable variable you selected earlier:
+                        "${this.pathway.driving_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
+                        `
+                        : ""
+                    }
                     The column "Relevant Output File" shows the output file that contains the response variable.
                 </p>
                 <ul>
@@ -343,6 +351,20 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         return url;
     }
 
+    _getModelSetupURL (model:Model) {
+        let url = this._regionid + '/models/configure/' + model.original_model;
+        if (model.model_version) {
+            url += '/' + model.model_version;
+            if (model.model_configuration) {
+                url += '/' + model.model_configuration;
+                if (model.localname) {
+                    url += '/' + model.localname;
+                }
+            }
+        }
+        return url;
+    }
+
     _getSelectedModels() {
         let models:ModelMap = {};
         this.shadowRoot!.querySelectorAll("input.checkbox").forEach((cbox) => {
@@ -380,6 +402,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     _selectPathwayModels() {
         let models = this._getSelectedModels();
         let model_ensembles:ModelEnsembleMap = this.pathway.model_ensembles || {};
+        let executable_ensemble_summary:IdMap<ExecutableEnsembleSummary> = this.pathway.executable_ensemble_summary || {};
 
         if (Object.keys(models).length < 1) {
             showNotification("selectOneModelNotification", this.shadowRoot!);
@@ -400,6 +423,12 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                     })
                     delete model_ensembles[modelid];
                 }
+                if(executable_ensemble_summary[modelid]) {
+                    // Delete ensemble ids
+                    deleteAllPathwayEnsembleIds(this.scenario.id, this.pathway.id, modelid);
+                    // Remove executable summary
+                    delete executable_ensemble_summary[modelid];
+                }
             }
         });
 
@@ -410,7 +439,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         });
 
 
-        this.pathway = {
+        let newpathway = {
             ...this.pathway,
             models: models,
             model_ensembles: model_ensembles
@@ -418,47 +447,50 @@ export class MintModels extends connect(store)(MintPathwayPage) {
 
         // Update notes
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        this.pathway.notes = {
-            ...this.pathway.notes!,
+        newpathway.notes = {
+            ...newpathway.notes!,
             models: notes
         };
-        this.pathway.last_update = {
-            ...this.pathway.last_update!,
+        newpathway.last_update = {
+            ...newpathway.last_update!,
+            parameters: null,
+            datasets: null,
             models: {
                 time: Date.now(),
                 user: this.user!.email
             } as StepUpdateInformation
         };        
 
-        updatePathway(this.scenario, this.pathway); 
+        updatePathway(this.scenario, newpathway); 
         
         this._editMode = false;
         showNotification("saveNotification", this.shadowRoot!);
     }
 
     _removePathwayModel(modelid:string) {
-        let model = this.pathway.models![modelid];
+        let newpathway = { ...this.pathway };
+        let model = newpathway.models![modelid];
         if(model) {
             if(confirm("Are you sure you want to remove this model ?")) {
-                let models:ModelMap = this.pathway.models || {};
-                let model_ensembles:ModelEnsembleMap = this.pathway.model_ensembles || {};
+                let models:ModelMap = newpathway.models || {};
+                let model_ensembles:ModelEnsembleMap = newpathway.model_ensembles || {};
                 delete models[modelid];
                 if(model_ensembles[modelid]) {
                     let data_ensembles = { ...model_ensembles[modelid] };
                     Object.keys(data_ensembles).map((inputid) => {
                         let datasets = data_ensembles[inputid].slice();
                         datasets.map((dsid) => {
-                            this.pathway = removeDatasetFromPathway(this.pathway, dsid, modelid, inputid);
+                            newpathway = removeDatasetFromPathway(newpathway, dsid, modelid, inputid);
                         })
                     })
                     delete model_ensembles[modelid];
                 }
-                this.pathway = {
-                    ...this.pathway,
+                newpathway = {
+                    ...newpathway,
                     models: models,
                     model_ensembles: model_ensembles
                 }
-                updatePathway(this.scenario, this.pathway);                   
+                updatePathway(this.scenario, newpathway);                   
             }
         }
     }

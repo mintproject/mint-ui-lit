@@ -10,7 +10,9 @@ import { toTimeStamp } from 'util/date-utils';
 
 import "weightless/card";
 import "weightless/title";
+
 import { ComparisonFeature } from 'screens/modeling/reducers';
+import { UserPreferences } from 'app/reducers';
 
 @customElement('datasets-search')
 export class DatasetsSearch extends connect(store)(PageViewElement) {
@@ -20,8 +22,14 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _params : DatasetQueryParameters;
 
+    @property({type: Boolean})
+    private _firstSearch : boolean = true;
+
     @property({type: String})
     private _searchType : string = 'dataset_names';
+
+    @property({type: Object})
+    private prefs : UserPreferences;
 
     private _datasetFeatures: Array<ComparisonFeature> = [
         {
@@ -69,6 +77,10 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
                 width: calc(30% - 10px);
                 padding-left: 10px;
             }
+            .explanation {
+                color: rgb(102, 102, 102);
+                font-size: 13px;
+            }
             `,
             SharedStyles
         ];
@@ -76,6 +88,21 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
+        <div class="explanation">
+            <p>
+            The MINT dataset browser allows you to learn about the different datasets available in MINT.  
+            A single dataset can consist of many files (each file is called a resource).
+            </p>
+            <p>
+            In the search bar below you can search datasets in two ways, which you can choose on the right.  
+            One is to search their descriptions using a data source name (eg, GLDAS), keyword (eg crops), and regions 
+            (e.g. Pongo, Ethiopia). Another is to search their variables (e.g., precipitation).
+            </p>
+            <p>
+            You can then view more detailed information about a dataset by clicking on its name. You can also download 
+            any of the files (resources) in the dataset by clicking on the download link.
+            </p>
+        </div>
         <div class="searchForm">
             <wl-textfield id="search-input" label="Search datasets" @change=${this._onSearchInput}>
                 <div slot="before"> <wl-icon>search</wl-icon> </div>
@@ -99,7 +126,16 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
                                 <wl-title level="4">${ds.name}</wl-title>
                                 <a href="${this._region.id}/datasets/browse/${ds.id}">More Details</a>
                             </div>
-                            <wl-title level="5" style="color:#aaa">id:${ds.id}</wl-title>
+                            <div style="display:flex; justify-content:space-between">
+                                <wl-title level="5" style="color:#aaa">id:${ds.id}</wl-title>
+                                <span>
+                                    <span style="color: ${ds.is_cached ? 'green' : 'lightsalmon'}">
+                                        ${ds.is_cached ? 'Available on MINT servers' : 'Available for download'}
+                                    </span>
+                                    ${ds.resource_repr || ds.dataset_repr ? html` |
+                                    <span style="color: 'green'"> MINT Understandable Format </span>` : ''}
+                                </span>
+                            </div>
                             <br />
                             <table class="pure-table pure-table-striped">
                                 <thead>
@@ -153,7 +189,7 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
 
     _findDatasets() {
         let queryParams = this._createQueryParameters();
-        store.dispatch(queryGeneralDatasets(queryParams));
+        store.dispatch(queryGeneralDatasets(queryParams, this.prefs.mint));
     }
 
     _onSearchInput () {
@@ -174,7 +210,7 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
         }
         this._params = params;
         this._params.spatialCoverage = this._region.bounding_box;
-        store.dispatch(queryGeneralDatasets(this._params))
+        store.dispatch(queryGeneralDatasets(this._params, this.prefs.mint))
     }
 
     _clearSearchInput () {
@@ -191,6 +227,13 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
 
     stateChanged(state: RootState) {
         super.setRegion(state);
+        this.prefs = state.app.prefs!;
+
+        if (this.active && this._firstSearch && this.prefs.mint) {
+            this._firstSearch = false;
+            store.dispatch(queryGeneralDatasets({name: '*'}, this.prefs.mint))
+        }
+
         if(state.datasets) {
             // If there are details about a particular dataset
             if(state.datasets.query_datasets) {

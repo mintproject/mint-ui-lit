@@ -13,11 +13,9 @@ import './configure/configuration';
 import './configure/setup';
 import './configure/new-setup';
 import './configure/parameter';
+import './models-tree'
 
-import { fetchIOAndVarsSNForConfig, fetchAuthorsForModelConfig, fetchParametersForConfig,
-         fetchMetadataNoioForModelConfig, addParameters, addCalibration, addMetadata,
-         addInputs, addAuthor } from '../../util/model-catalog-actions';
-import { parameterGet, processesGet } from 'model-catalog/actions';
+import { parameterGet, processesGet, regionsGet } from 'model-catalog/actions';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
 
@@ -43,6 +41,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
 
     @property({type: Boolean})
     private _creating : boolean = false;
+
+    @property({type: Object})
+    private _regions : any = null;
 
     @property({type: Object})
     private _models : any = null;
@@ -228,101 +229,31 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             .details-table tr:nth-child(odd) {
                 background-color: rgb(246, 246, 246);
             }
+
+            .custom-button {
+                line-height: 20px;
+                cursor: pointer;
+                margin-right: 5px;
+                border: 1px solid green;
+                padding: 1px 3px;
+                border-radius: 4px;
+            }
+
+            .custom-button:hover {
+                background-color: rgb(224, 224, 224);
+            }
             `,
             SharedStyles
         ];
     }
-
-    _getId (resource) {
-        return resource.id.split('/').pop();
-    }
-
-    _createUrl (model, version?, config?, setup?) {
-        let url = 'models/configure/' + this._getId(model);
-        if (version) {
-            url += '/' + this._getId(version);
-            if (config) {
-                url += '/' + this._getId(config);
-                if (setup) {
-                    url += '/' + this._getId(setup);
-                }
-            }
-        }
-        return url;
-    }
-
-    _select (model, version, config, setup?) {
-        goToPage(this._createUrl(model, version, config, setup));
-    }
-
-    _selectNew (model, version, config?) {
-        goToPage(this._createUrl(model, version, config) + '/new');
-    }
-
-    _renderVersionTree () {
-        if (!this._models) 
-            return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
-        return html`
-        <ul>
-            ${Object.values(this._models).filter((model: any) => !!model.hasVersion).map((model: any) => html`
-            <li>
-                ${model.label}
-                ${!this._versions ? html`<loading-dots style="--width: 20px"></loading-dots>` : html`
-                <ul>
-                    ${model.hasVersion.filter(v => !!this._versions[v.id]).map((v) => this._versions[v.id]).map((version) => html`
-                    <li>
-                        ${version.label ? version.label : version.id.split('/').pop()}
-                        ${!this._configs ? html`<loading-dots style="--width: 20px"></loading-dots>` : html`
-                        <ul>
-                            ${(version.hasConfiguration || []).filter(c => !!c.id).map((c) => this._configs[c.id]).map((config) => html`
-                            <li>
-                                <a @click="${()=>{this._select(model, version, config)}}">
-                                    ${config ? config.label : 'ERR: no-config-label'}
-                                </a>
-                                <ul>
-                                    ${((config ? config.hasSetup : []) || []).map((s) => this._configs[s.id]).map(setup => html`
-                                    <li>
-                                        <a @click="${()=>{this._select(model, version, config, setup)}}">
-                                            ${setup ? setup.label : 'ERR: no-setup-label'}
-                                        </a>
-                                    </li>
-                                    `)}
-                                    <li>
-                                        <a class="inline-new-button" @click="${()=>{this._selectNew(model, version, config)}}">
-                                            <wl-icon>add_circle_outline</wl-icon>
-                                            Add new setup
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                            `)}
-                            <!--li>
-                                <a class="inline-new-button" @click="">
-                                    <wl-icon>add_circle_outline</wl-icon>
-                                    Add new configuration
-                                </a>
-                            </li-->
-                        </ul>`}
-                    </li>`)}
-                </ul>
-                `}
-            </li>
-        `)}
-        </ul>`;
-    }
-    //${()=>{this._selectNew(model, version)}}
 
     protected render() {
         return html`
         <div class="twocolumns">
             <div class="${this._hideModels ? 'left_closed' : 'left'}">
                 <div class="clt">
-                    <div class="cltrow_padded">
-                        <div class="cltmain">
-                            <wl-title level="4" style="margin: 0px">Models:</wl-title>
-                        </div>
-                    </div>                    
-                    ${this._renderVersionTree()}
+                    <wl-title level="4" style="margin: 4px; padding: 10px;">Models:</wl-title>
+                    <models-tree active></models-tree>
                 </div>
             </div>
 
@@ -332,6 +263,9 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                         class="actionIcon bigActionIcon" style="float:right">
                         ${!this._hideModels ? "fullscreen" : "fullscreen_exit"}
                     </wl-icon>
+                    ${this._selectedConfig && !this._creating ? html`
+                    <span style="float:right;" class="custom-button" @click="${this._goToCatalog}">See on catalog</span>
+                    `: ''}
                     <div class="cltrow_padded">
                         <div class="cltmain">
                             <wl-title level="3" style="margin: 0px">
@@ -356,7 +290,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                         </div>
                     </div>
 
-                    ${this._config || this._setup ? html`<div style="font-size: 13px">
+                    ${this._config || this._setup ? html`<div style="font-size: 13px; padding: 0px 10px;">
                         <p>
                             Model configurations are customizations of the model that use a subset of all the processes
                             and functions that are possible with the general model software.
@@ -369,10 +303,10 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                             by providing a URL to them, and edit the descriptions of the model configuration to reflect the changes.
                         </p>
                     </div>` : ''}
-                    <div style="padding: 0px 20px;">
-                        <models-configure-configuration class="page" ?active="${this._config && !this._setup && !this._creating}"></models-configure-configuration>
-                        <models-configure-setup class="page" ?active="${this._setup && !this._creating}"></models-configure-setup>
-                        <models-new-setup class="page" ?active="${this._config && this._creating}"></models-new-setup>
+                    <div style="padding: 0px 10px;">
+                        <models-configure-configuration class="page" ?active="${this._selectedConfig && !this._selectedSetup && !this._creating}"></models-configure-configuration>
+                        <models-configure-setup class="page" ?active="${this._selectedSetup && !this._creating}"></models-configure-setup>
+                        <models-new-setup class="page" ?active="${this._selectedConfig && this._creating}"></models-new-setup>
                     </div>
                 </div>
             </div>
@@ -381,12 +315,22 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         `
     }
 
+    private _goToCatalog () {
+        let url = 'models/explore/' 
+                + this._selectedModel.split('/').pop() + '/' 
+                + this._selectedVersion.split('/').pop() + '/' 
+                + this._selectedConfig.split('/').pop();
+        if (this._selectedSetup) url += '/' + this._selectedSetup.split('/').pop();
+        goToPage(url)
+    }
+
     private _configParametersLoading : Set<string> = new Set();
 
     firstUpdated () {
         store.dispatch(processesGet());
+        store.dispatch(regionsGet());
     }
-    
+
     stateChanged(state: RootState) {
         if (state.explorerUI) {
             let ui = state.explorerUI;
@@ -397,6 +341,8 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             let calibrationChanged : boolean = (configChanged || ui.selectedCalibration !== this._selectedSetup);
             this._editing = (ui.mode === 'edit');
             this._creating = (ui.mode === 'new');
+
+            super.setRegionId(state);
 
             if (modelChanged) {
                 this._selectedModel = ui.selectedModel;
@@ -429,6 +375,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 this._models = db.models;
                 this._versions = db.versions;
                 this._configs = db.configurations;
+                this._regions = db.regions;
 
                 // Set selected resource
                 if (!this._model && db.models && this._selectedModel && db.models[this._selectedModel]) {

@@ -4,7 +4,7 @@ import { SCENARIOS_LIST, SCENARIO_DETAILS, SCENARIO_SUBSCRIPTION, PATHWAY_SUBSCR
 import { Model } from "../models/reducers";
 import { Dataset, DataResource } from "../datasets/reducers";
 import { IdMap, IdNameObject } from "../../app/reducers";
-import { REGIONS_LIST } from "../regions/actions";
+import { REGIONS_LIST_TOP_REGIONS } from "../regions/actions";
 
 export interface ModelingState {
     scenarios?: ScenarioList
@@ -29,6 +29,7 @@ export interface Scenario extends IdNameObject {
     subregionid?: string
     dates: DateRange
     last_update?: string
+    last_update_user?: string
 }
 
 export interface DateRange {
@@ -146,6 +147,7 @@ export interface ExecutableEnsemble {
     bindings: InputBindings
     runid?: string
     submission_time: number
+    execution_engine?: "wings" | "localex"
     status: "FAILURE" | "SUCCESS" | "RUNNING" | "WAITING",
     run_progress?: number // 0 to 100 (percentage done)
     results: any[] // Chosen results after completed run
@@ -160,10 +162,10 @@ const INITIAL_STATE: ModelingState = {};
 
 const modeling: Reducer<ModelingState, RootAction> = (state = INITIAL_STATE, action) => {
     switch (action.type) {
-        case REGIONS_LIST:
+        case REGIONS_LIST_TOP_REGIONS:
             return {
                 ...state,
-                regions: action.list
+                regions: action.regions
             }        
         case SCENARIOS_LIST:
             return {

@@ -2,7 +2,7 @@ import { html } from "lit-element";
 import { StepUpdateInformation } from "../screens/modeling/reducers";
 import { VARIABLES } from "../offline_data/variable_list";
 
-export const renderVariables = (readonly: boolean) => {
+export const renderVariables = (readonly: boolean, response_callback: Function, driving_callback: Function) => {
     return html`
         <p>
         Indicators are the variables or index that indicates the state of the system being modeled.
@@ -11,11 +11,11 @@ export const renderVariables = (readonly: boolean) => {
         <div class="formRow">
             <div class="input_half">
                 <label>Indicators/Response of interest</label>
-                ${renderResponseVariables("", readonly)}
+                ${renderResponseVariables("", readonly, response_callback)}
             </div>  
             <div class="input_half">
                 <label>Adjustable Variables</label>
-                ${renderDrivingVariables("", readonly)}
+                ${renderDrivingVariables("", readonly, driving_callback)}
             </div>                            
         </div>     
     `;
@@ -23,20 +23,19 @@ export const renderVariables = (readonly: boolean) => {
 
 export const renderNotifications = () => {
     return html`
-    <wl-snackbar id="formValuesIncompleteNotification" fixed backdrop>
+    <wl-snackbar id="formValuesIncompleteNotification" fixed backdrop disableFocusTrap>
         <wl-icon slot="icon">error</wl-icon>
         <span>Please fill in all the required values.</span>
     </wl-snackbar>
-
-    <wl-snackbar id="saveNotification" hideDelay="2000" fixed backdrop>
+    <wl-snackbar id="saveNotification" hideDelay="2000" fixed backdrop disableFocusTrap>
         <wl-icon slot="icon">save</wl-icon>
         <span>Saving...</span>
     </wl-snackbar>
-    <wl-snackbar id="deleteNotification" hideDelay="2000" fixed backdrop>
+    <wl-snackbar id="deleteNotification" hideDelay="2000" fixed backdrop disableFocusTrap>
         <wl-icon slot="icon">delete</wl-icon>
         <span>Deleting...</span>
     </wl-snackbar>   
-    <wl-snackbar id="runNotification" persistent fixed backdrop>
+    <wl-snackbar id="runNotification" hideDelay="2000" fixed backdrop>
         <wl-icon slot="icon">settings</wl-icon>
         <span>Sending runs...Please wait</span>
     </wl-snackbar>       
@@ -48,16 +47,12 @@ export const renderNotifications = () => {
         <wl-icon slot="icon">error</wl-icon>
         <span>Please select at least two models.</span>
     </wl-snackbar>
-    <wl-snackbar id="cantSave" fixed backdrop>
-        <wl-icon slot="icon">error</wl-icon>
-        <span>Cannot save in this moment. Sorry!</span>
-    </wl-snackbar>
     `;
 }
 
-export const renderResponseVariables = (variableid: string, readonly: boolean) => {
+export const renderResponseVariables = (variableid: string, readonly: boolean, callback: Function) => {
     return html`
-        <select name="response_variable" ?disabled="${readonly}">
+        <select name="response_variable" ?disabled="${readonly}" @change=${callback}>
             ${Object.keys(VARIABLES['indicators']).map((categoryname) => {
                 let category = VARIABLES['indicators'][categoryname];
                 return html`
@@ -78,9 +73,9 @@ export const renderResponseVariables = (variableid: string, readonly: boolean) =
     `;
 }
 
-export const renderDrivingVariables = (variableid: string, readonly: boolean) => {
+export const renderDrivingVariables = (variableid: string, readonly: boolean, callback: Function) => {
     return html`
-        <select name="driving_variable" ?disabled="${readonly}">
+        <select name="driving_variable" ?disabled="${readonly}" @change=${callback}>
             <option value="">None</option>
             ${Object.keys(VARIABLES['adjustment_variables']).map((categoryname) => {
                 let category = VARIABLES['adjustment_variables'][categoryname];
@@ -89,6 +84,10 @@ export const renderDrivingVariables = (variableid: string, readonly: boolean) =>
                 ${Object.keys(category).map((varid) => {
                     let stdname = category[varid]["SVO_name"];
                     let name = category[varid]["long_name"];
+                    let intervention = category[varid]["intervention"];
+                    if(intervention) {
+                        name += " (Intervention: " + intervention.name + ")";
+                    }
                     return html`
                         <option value="${stdname}" ?selected="${stdname==variableid}">
                             ${name}

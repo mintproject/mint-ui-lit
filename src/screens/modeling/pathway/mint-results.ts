@@ -4,16 +4,18 @@ import { store, RootState } from "../../../app/store";
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { BASE_HREF } from "../../../app/actions";
-import { getPathwayRunsStatus, TASK_DONE, matchVariables, sendDataForIngestion, getUISelectedSubgoal } from "../../../util/state_functions";
-import { ExecutableEnsemble, StepUpdateInformation, ModelEnsembles } from "../reducers";
+import { pathwaySummaryChanged, pathwayTotalRunsChanged, matchVariables, sendDataForIngestion } from "../../../util/state_functions";
+import { ExecutableEnsemble, StepUpdateInformation, ModelEnsembles, Pathway } from "../reducers";
 import { updatePathway, getAllPathwayEnsembleIds, fetchPathwayEnsembles } from "../actions";
 import { showNotification, hideDialog, showDialog } from "../../../util/ui_functions";
 import { selectPathwaySection } from "../../../app/ui-actions";
-import { renderLastUpdateText } from "../../../util/ui_renders";
+import { renderLastUpdateText, renderNotifications } from "../../../util/ui_renders";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { Model } from "screens/models/reducers";
 import { IdMap } from "app/reducers";
 import { DataResource } from "screens/datasets/reducers";
+import { isObject } from "util";
+import { downloadFile } from "util/ui_functions";
 
 @customElement('mint-results')
 export class MintResults extends connect(store)(MintPathwayPage) {
@@ -23,7 +25,10 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     
     @property({type: Boolean})
     private _editMode: Boolean = false;
-    
+   
+    @property({type: Boolean})
+    private _showAllResults: Boolean = true;
+
     @property({type: Object})
     private _progress_item: Model;
     @property({type: Number})
@@ -33,10 +38,10 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     @property({type: Boolean})
     private _progress_abort: boolean;
 
-    @property({type: Number})
-    private totalPages = 0;
-    @property({type: Number})
-    private currentPage = 1;
+    @property({type: Object})
+    private totalPages : Map<string, number> = {} as Map<string, number>;
+    @property({type: Object})
+    private currentPage : Map<string, number> = {} as Map<string, number>;
     @property({type: Number})
     private pageSize = 100;
 
@@ -57,16 +62,6 @@ export class MintResults extends connect(store)(MintPathwayPage) {
         if(!this.pathway) {
             return html ``;
         }
-        
-        // If no models selected
-        /*
-        if(getPathwayRunsStatus(this.pathway) != TASK_DONE) {
-            return html `
-            <p>This step is for browsing the results of the models that you ran earlier.</p>
-            Please run some models first
-            `
-        }
-        */
 
        // Group running ensembles
        let grouped_ensembles = {};
@@ -82,7 +77,12 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             };
             let input_parameters = model.input_parameters
                 .filter((input) => !input.value)
-                .sort((a, b) => a.name.localeCompare(b.name));
+                .sort((a, b) => {
+                    if(a.position && b.position)
+                        return a.position - b.position;
+                    else 
+                        return a.name.localeCompare(b.name)
+                });
             input_parameters.map((ip) => {
                 if(!ip.value)
                     grouped_ensembles[model.id].params.push(ip);
@@ -92,7 +92,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                     grouped_ensembles[model.id].inputs.push(inf);
             })
             model.output_files.map((outf) => {
-                if(matchVariables(this.pathway.response_variables, outf.variables, false))
+                if(this._showAllResults || matchVariables(this.pathway.response_variables, outf.variables, false))
                     grouped_ensembles[model.id].outputs.push(outf);
             })
 
@@ -129,13 +129,19 @@ export class MintResults extends connect(store)(MintPathwayPage) {
            ${Object.keys(this.pathway.executable_ensemble_summary).map((modelid) => {
                let summary = this.pathway.executable_ensemble_summary[modelid];
                let model = this.pathway.models![modelid];
+               if(!model) {
+                   return;
+               }
                let grouped_ensemble = grouped_ensembles[modelid];
-               this.totalPages = Math.ceil(summary.total_runs/this.pageSize);
+               this.totalPages[modelid] = Math.ceil(summary.total_runs/this.pageSize);
                let finished_runs = summary.successful_runs + summary.failed_runs;
-               let submitted = this.pathway.executable_ensemble_summary[modelid].submitted_for_ingestion;
+               let submitted = summary.submitted_for_ingestion;
+               let finished_ingestion = (summary.ingested_runs == summary.total_runs);
                let finished = (finished_runs == summary.total_runs);
                let running = summary.submitted_runs - finished_runs;
                let pending = summary.total_runs - summary.submitted_runs;
+               if(!this.currentPage[modelid])
+                    this.currentPage[modelid] = 1;
 
                 if(!grouped_ensemble) {
                     this._fetchRuns(model.id, 1, this.pageSize)
@@ -150,20 +156,31 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                         Click on the RELOAD button if you are waiting for more runs to complete
                     </p>
                     <p>
-                    The model setup created ${summary.total_runs} configurations. 
+                    The parameter settings you selected required ${summary.total_runs} runs. 
                     ${!finished ? "So far, " : ""} ${summary.submitted_runs} model runs
                     ${!finished ? "have been" : "were"} submitted, out of which 
                     ${summary.successful_runs} succeeded and produced results, while ${summary.failed_runs} failed.
                     ${running > 0 ? html `${running} are currently running` : ""}
-                    ${pending > 0 ? html `, and ${pending} are waiting to be run` : ""}
+                    ${running > 0 && pending > 0 ? ', and ' : ''}
+                    ${pending > 0 ? html `${pending} are waiting to be run` : ""}
                     </p>
 
                     ${finished && !submitted ? 
                         html` <wl-button class="submit"
                         @click="${() => this._publishAllResults(model.id)}">Save all results</wl-button>`
-                        : ""
+                        : 
+                        (submitted && !finished_ingestion ? 
+                            html`
+                                <p>
+                                Please wait while saving and ingesting data... <br />
+                                Downloaded outputs from ${summary.fetched_run_outputs || 0} out of ${summary.total_runs} model runs.
+                                Ingested data from ${summary.ingested_runs || 0} out of ${summary.total_runs} model runs
+                                </p>                        
+                            `
+                            : ""
+                        )
                     }
-                    ${finished && submitted ? 
+                    ${finished && finished_ingestion ? 
                         "Results have been saved" : ''
                     }
                     <br /><br />
@@ -171,16 +188,23 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                     <div style="width:100%; border:1px solid #EEE;border-bottom:0px;">
                         ${grouped_ensemble && !grouped_ensemble.loading ? 
                         html`
-                        ${this.currentPage > 1 ? 
+                        ${this.currentPage[model.id] > 1 ? 
                             html `<wl-button flat inverted @click=${() => this._nextPage(model.id, -1)}>Back</wl-button>` :
                             html `<wl-button flat inverted disabled>Back</wl-button>`
                         }
-                        Page ${this.currentPage} of ${this.totalPages}
-                        ${this.currentPage < this.totalPages ? 
+                        Page ${this.currentPage[model.id]} of ${this.totalPages[model.id]}
+                        ${this.currentPage[model.id] < this.totalPages[model.id] ? 
                             html `<wl-button flat inverted @click=${() => this._nextPage(model.id, 1)}>Next</wl-button>` :
                             html `<wl-button flat inverted disabled>Next</wl-button>`
                         }
                         ` : ""
+                        }
+                        ${!grouped_ensemble || !grouped_ensemble.loading ?
+                        html`<wl-button type="button" flat inverted  style="float:right; --button-padding:7px" 
+                            ?disabled="${Object.keys(grouped_ensemble.ensembles).length == 0}"
+                            @click="${() => this._download(grouped_ensembles[model.id])}">
+                                <wl-icon>cloud_download</wl-icon>
+                            </wl-button>`: ""
                         }
                         ${!grouped_ensemble || !grouped_ensemble.loading ?
                         html`<wl-button type="button" flat inverted  style="float:right"
@@ -207,7 +231,13 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                         ${!readmode ? 
                                             html `<th></th>`: ""} <!-- Checkbox -->
                                         ${grouped_ensemble.outputs.length > 0 ? 
-                                            html `<th colspan="${grouped_ensemble.outputs.length}">Outputs</th>` : ""} <!-- Outputs -->
+                                            html `<th colspan="${grouped_ensemble.outputs.length}">
+                                            Outputs
+                                            &nbsp;
+                                            <a style="cursor:pointer" @click="${()=>{this._showAllResults = !this._showAllResults}}">
+                                            [${this._showAllResults ? "Hide extra outputs" : "Show all outputs"}]
+                                            </a>
+                                            </th>` : ""} <!-- Outputs -->
                                         ${grouped_ensemble.inputs.length > 0 ? 
                                             html `<th colspan="${grouped_ensemble.inputs.length}">Inputs</th>` : ""} <!-- Inputs -->
                                         ${grouped_ensemble.params.length > 0 ? 
@@ -252,10 +282,19 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                                 return Object.values(ensemble.results).map((result: any) => {
                                                     let oname = result.id.replace(/.+#/, '');
                                                     if(output.name == oname) {
-                                                        let furl = this._getResultDatasetURL(result);
-                                                        let filename = result.location.replace(/.+\//, '');
+                                                        let furl = result.url;
+                                                        let fname = result.name;
+                                                        if(!furl) {
+                                                            let location = result.location;
+                                                            let prefs = this.prefs.mint;
+                                                            furl = ensemble.execution_engine == "localex" ? 
+                                                                location.replace(prefs.localex.datadir, prefs.localex.dataurl) :
+                                                                location.replace(prefs.wings.datadir, prefs.wings.dataurl);
+                                                        }
+                                                        if(!fname)
+                                                            fname = result.location.replace(/.+\//, '');
                                                         return html`
-                                                            <td><a href="${furl}">${filename}</a></td>
+                                                            <td><a href="${furl}">${fname}</a></td>
                                                         `
                                                     }
                                                 });
@@ -264,9 +303,8 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                                                 let res = ensemble.bindings[input.id] as DataResource;
                                                 if(res) {
                                                     // FIXME: This could be resolved to a collection of resources
-                                                    let furl = this._getDatasetURL(res.name); 
                                                     return html`
-                                                        <td><a href="${furl}">${res.name}</a></td>
+                                                        <td><a href="${res.url}">${res.name}</a></td>
                                                     `;
                                                 }
                                             })}
@@ -295,6 +333,8 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             </div>
         </div>
 
+        ${renderNotifications()}
+
         ${this._editMode ? 
             html`
             <fieldset class="notes">
@@ -318,53 +358,69 @@ export class MintResults extends connect(store)(MintPathwayPage) {
             }             
             `
         }
-        ${this._renderProgressDialog()}
         `;
     }
 
+    _download (grouped_ensemble) {
+        console.log(grouped_ensemble)
+        let csv : string = (grouped_ensemble.outputs && grouped_ensemble.outputs.length > 0 ? 
+                            grouped_ensemble.outputs.map((outf) => outf.name.replace(/(-|_)/g, ' ')).join(';') + ';' : '')
+                         + (grouped_ensemble.inputs && grouped_ensemble.inputs.length > 0 ?
+                            grouped_ensemble.inputs.map((inf) => inf.name.replace(/(-|_)/g, ' ')).join(';') + ';' : '')
+                         + (grouped_ensemble.params && grouped_ensemble.params.length > 0 ? 
+                            grouped_ensemble.params.map((param) => param.name.replace(/(-|_)/g, ' ')).join(';') + ';' : '')
+        Object.values(grouped_ensemble.ensembles).forEach((ensemble:any) => {
+            csv += '\n';
+            let param_defaults = {};
+            this.pathway.models![ensemble.modelid].input_parameters.map((param) => param_defaults[param.id] = param.default);
+            grouped_ensemble.outputs.forEach((output:any) => {
+                if (Object.keys(ensemble.results).length == 0) {
+                    csv += ';'
+                } else {
+                    Object.values(ensemble.results).forEach((result:any) => {
+                        let oname = result.id.replace(/.+#/, '');
+                        if(output.name == oname) {
+                            let furl = result.url;
+                            let fname = result.name;
+                            if (!furl) {
+                                let location = result.location;
+                                let prefs = this.prefs.mint;
+                                furl = ensemble.execution_engine == "localex" ? 
+                                    location.replace(prefs.localex.datadir, prefs.localex.dataurl) :
+                                    location.replace(prefs.wings.datadir, prefs.wings.dataurl);
+                            }
+                            if (!fname)
+                                fname = result.location.replace(/.+\//, '');
+                            csv += furl + ';'
+                        }
+                    })
+                }
+            });
+            grouped_ensemble.inputs.forEach((input:any) => { 
+                let res = ensemble.bindings[input.id] as DataResource;
+                if (res) csv += res.url + ';';
+                else csv += ';';
+            });
+            grouped_ensemble.params.forEach((param:any) => { 
+                csv += (ensemble.bindings[param.id] ?  ensemble.bindings[param.id] : param_defaults[param.id]) + ';';
+            });
+        });
+
+        downloadFile(csv, 'results.csv', 'text/csv;encoding:utf-8');
+    }
+
     _nextPage(modelid: string, offset:  number) {
-        this._fetchRuns(modelid, this.currentPage + offset, this.pageSize)
+        this._fetchRuns(modelid, this.currentPage[modelid] + offset, this.pageSize)
     }
 
     async _fetchRuns (modelid: string, currentPage: number, pageSize: number) {
-        this.currentPage = currentPage;
+        this.currentPage[modelid] = currentPage;
         
         if(!this.pathwayModelEnsembleIds[modelid])
             this.pathwayModelEnsembleIds[modelid] =  await getAllPathwayEnsembleIds(this.scenario.id, this.pathway.id, modelid);
         
-        let ensembleids = this.pathwayModelEnsembleIds[modelid].slice((this.currentPage - 1)*pageSize, this.currentPage*pageSize);
+        let ensembleids = this.pathwayModelEnsembleIds[modelid].slice((currentPage - 1)*pageSize, currentPage*pageSize);
         store.dispatch(fetchPathwayEnsembles(this.pathway.id, modelid, ensembleids));
-    }
-    
-    _renderProgressDialog() {
-        return html`
-        <wl-dialog id="progressDialog" fixed persistent backdrop blockscrolling>
-            <h3 slot="header">Publish results</h3>
-            <div slot="content">
-                <p>
-                    Publishing results for ${this._progress_item ? this._progress_item.name : ""}
-                </p>
-                <wl-progress-bar style="width:100%" mode="indeterminate"></wl-progress-bar>
-            </div>
-            <div slot="footer">
-                ${this._progress_number == this._progress_total ? 
-                    html`<wl-button @click="${this._onDialogDone}" class="submit">Done</wl-button>` :
-                    html`<wl-button @click="${this._onStopProgress}" inverted flat>Stop</wl-button>`
-                }
-            </div>            
-        </wl-dialog>
-        `;
-    }
-
-    _onDialogDone() {
-        updatePathway(this.scenario, this.pathway);
-        hideDialog("progressDialog", this.shadowRoot!);
-    }
-
-    _onStopProgress() {
-        this._progress_abort = true;
-        updatePathway(this.scenario, this.pathway);
-        hideDialog("progressDialog", this.shadowRoot!);
     }
     
     _getModelURL (model:Model) {
@@ -396,52 +452,46 @@ export class MintResults extends connect(store)(MintPathwayPage) {
 
     _publishAllResults(modelid) {
         let model = this.pathway.models[modelid];
-        this._progress_item = model;
-        this._progress_total = this.pathway.executable_ensemble_summary[modelid].total_runs;
-        this._progress_number = 0;
-
-        showDialog("progressDialog", this.shadowRoot!);
-
-        let start = 0;
-        let executionBatchSize = 4;
-
         /*
         -> Ingest thread to visualization database
         -> Register outputs to the data catalog        
         -> Publish run to provenance catalog
         */
-        sendDataForIngestion(this.scenario.id, this.subgoalid, this.pathway.id, this.prefs).then(() => {
-            this.pathway.executable_ensemble_summary[modelid].submitted_for_ingestion = true;
-            this._progress_number = this._progress_total;
-            /*
-            let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-            this.pathway.notes = {
-                ...this.pathway.notes!,
-                results: notes
-            };
-            this.pathway.last_update = {
-                ...this.pathway.last_update!,
-                results: {
-                    time: Date.now(),
-                    user: this.user!.email
-                } as StepUpdateInformation
-            };
-            */      
-           this._onDialogDone();    
-        })
+        showNotification("saveNotification", this.shadowRoot);       
+        
+        sendDataForIngestion(this.scenario.id, this.subgoalid, this.pathway.id, this.prefs);
+        
+        this.pathway.executable_ensemble_summary[modelid].submitted_for_ingestion = true;
     }
 
+    _reloadAllRuns() {
+        Object.keys(this.pathway.model_ensembles).map((modelid) => {
+            this._fetchRuns(modelid, this.currentPage[modelid], this.pageSize);
+        })
+    }
+    
     stateChanged(state: RootState) {
         super.setUser(state);
         super.setRegionId(state);
+
+        // Before resetting pathway, check if the pathway run status has changed
+        let runs_status_changed = pathwaySummaryChanged(this.pathway, state.modeling.pathway);
+        let runs_total_changed = pathwayTotalRunsChanged(this.pathway, state.modeling.pathway);
+
         super.setPathway(state);
 
         if(state.ui) {
             this.subgoalid = state.ui.selected_subgoalid
         }
-
         if(state.modeling.ensembles) {
             this._ensembles = state.modeling.ensembles;
+        }
+
+        if(runs_status_changed) {
+            if(runs_total_changed) {
+                this.pathwayModelEnsembleIds = {};
+            }
+            this._reloadAllRuns();
         }
     }
 }

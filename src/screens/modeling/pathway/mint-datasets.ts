@@ -167,11 +167,11 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                         }
                                         return html`
                                         <li>
-                                        <a target="_blank" href="${this._regionid}/datasets/browse/${dataset.id}">${dataset.name}</a>
+                                        <a target="_blank" href="${this._regionid}/datasets/browse/${dataset.id}/${this.getSubregionId()}">${dataset.name}</a>
                                         ${resources.length > 1 ?
                                             html`
                                                 <br />
-                                                ( ${selected_resources.length} / ${resources.length} resources - 
+                                                ( ${selected_resources.length} / ${resources.length} files - 
                                                 <a style="cursor:pointer"
                                                     @click="${() => this._selectDatasetResources(dataset, true)}">Change</a> )
                                             `
@@ -189,9 +189,9 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                 let loading = queriedInputDatasetStatuses.loading;
                                 let queriedInputDatasets = queriedInputDatasetStatuses.datasets;
                                 let inputtype = input.type.replace(/.*#/, '');
-                                let dtypeMatchingInputDatasets = queriedInputDatasets; /*(queriedInputDatasets || []).filter((dataset: Dataset) => {
-                                    return (dataset.datatype == inputtype); // FIXME: Hiding this for now
-                                })*/
+                                let dtypeMatchingInputDatasets = (queriedInputDatasets || []).filter((dataset: Dataset) => {
+                                    return (dataset.datatype == inputtype);
+                                })
                                 return html `
                                 <li>
                                     Select an input dataset for <b>${input.name}</b>. (You can select more than one dataset if you want several runs). 
@@ -225,7 +225,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                                             type="checkbox" data-datasetid="${dataset.id}"
                                                             ?checked="${(bindings || []).indexOf(dataset.id!) >= 0}"></input></td>
                                                         <td class="${matched ? 'matched': ''}">
-                                                            <a target="_blank" href="${this._regionid}/datasets/browse/${dataset.id}">${dataset.name}</a>
+                                                            <a target="_blank" href="${this._regionid}/datasets/browse/${dataset.id}/${this.getSubregionId()}">${dataset.name}</a>
                                                             ${resources.length > 1 ?
                                                             html`
                                                                 <br />
@@ -253,7 +253,8 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                                         <a style="cursor:pointer" @click="${() => {this._showAllDatasets = !this._showAllDatasets}}">
                                                             ${!this._showAllDatasets ? "Show" : "Hide"} 
                                                             ${queriedInputDatasets.length - dtypeMatchingInputDatasets.length} datasets
-                                                            that matched the input variables but not input datatype. They might need some data transformation
+                                                            that matched the input variables, but not input datatype (${inputtype}). 
+                                                            They might need some data transformation.
                                                         </a>
                                                     </td>
                                                 </tr>
@@ -369,7 +370,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                         </tr>
                     </thead>
                     <tbody>
-                        ${((this._selectResourcesDataset || {}).resources || []).map((resource) => {
+                        ${((this._selectResourcesDataset || {} as Dataset).resources || []).map((resource) => {
                             return html`
                                 <tr>
                                     <td>
@@ -450,7 +451,16 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         })
         this._selectionUpdate = true;
         if(this._selectResourcesImmediateUpdate) {
-            updatePathway(this.scenario, this.pathway);
+            let newpathway = {...this.pathway};
+            newpathway.last_update = {
+                ...newpathway.last_update!,
+                parameters: null,
+                datasets: {
+                    time: Date.now(),
+                    user: this.user!.email
+                } as StepUpdateInformation
+            };    
+            updatePathway(this.scenario, newpathway);
             showNotification("saveNotification", this.shadowRoot!);
         }
         hideDialog("resourceSelectionDialog", this.shadowRoot);
@@ -529,14 +539,20 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         // Turn off edit mode
         this._editMode = false;
 
+        let newpathway = {
+            ...this.pathway
+        };
+
         // Update notes
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        this.pathway.notes = {
-            ...this.pathway.notes!,
+        newpathway.notes = {
+            ...newpathway.notes!,
             datasets: notes
         };
-        this.pathway.last_update = {
-            ...this.pathway.last_update!,
+        newpathway.last_update = {
+            ...newpathway.last_update!,
+            parameters: null,
+            results: null,
             datasets: {
                 time: Date.now(),
                 user: this.user!.email
@@ -545,14 +561,15 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
 
         // Update pathway itself
         //console.log(this.pathway);
-        updatePathway(this.scenario, this.pathway);
+        updatePathway(this.scenario, newpathway);
         showNotification("saveNotification", this.shadowRoot!);
     }
 
     _removePathwayDataset(modelid: string, inputid: string, datasetid:string) {
         if(confirm("Are you sure you want to remove this dataset ?")) {
-            this.pathway = removeDatasetFromPathway(this.pathway, datasetid, modelid, inputid);
-            updatePathway(this.scenario, this.pathway);
+            let newpathway = {...this.pathway};
+            newpathway = removeDatasetFromPathway(newpathway, datasetid, modelid, inputid);
+            updatePathway(this.scenario, newpathway);
         }
     }
 
@@ -579,7 +596,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                             this._editMode) {
                         //console.log("Querying datasets for model: " + modelid+", input: " + input.id);
                         store.dispatch(queryDatasetsByVariables(
-                            modelid, input.id, input.variables, dates, this._subgoal_region));
+                            modelid, input.id, input.variables, dates, this._subgoal_region, this.prefs.mint));
                     } else {
                         this._queriedDatasets[modelid][input.id!] = {
                             loading: false,
@@ -596,18 +613,17 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         }
     }
 
+    getSubregionId() {
+        return this.subgoal.subregionid || this.scenario.subregionid || this.scenario.regionid;
+    }
+
     stateChanged(state: RootState) {
         super.setUser(state);
-
         super.setRegion(state);
-        if(state.regions && state.regions.query_result) {
-            let subregionid = this.subgoal.subregionid || this.scenario.subregionid || this.scenario.regionid;
-            if(subregionid == this._regionid) {
-                this._subgoal_region = this._region;
-            }
-            else if (state.regions.query_result[this._regionid] && state.regions.query_result[this._regionid]["*"]){
-                this._subgoal_region = state.regions.query_result[this._regionid]["*"][subregionid];
-            }
+        
+        if(state.regions && state.regions.regions && state.regions.sub_region_ids) {
+            let subregionid = this.getSubregionId();
+            this._subgoal_region = state.regions.regions[subregionid];
         }
 
         let pathwayid = this.pathway ? this.pathway.id : null;

@@ -233,10 +233,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                 .tooltip-text {
                     display: inline;
                     border-bottom: 1px dotted;
+                    margin: 0;
                 }
 
                 .tooltip.nm {
-                    float: unset;
                     margin: 0;
                 }
 
@@ -369,7 +369,7 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _addConfig () {
         if (this._model && this._version && this._config) {
-            let url = 'models/configure/' + this._model.uri.split('/').pop() + '/' + this._version.id + '/'
+            let url = 'models/configure/' + this._model.uri.split('/').pop() + '/' + this._version.uri.split('/').pop() + '/'
                     + this._config.uri.split('/').pop() + '/new';
             goToPage(url)
         }
@@ -408,9 +408,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             (<any>configSelectorWl).refreshAttributes();
         } else if (configSelectorWl) {
             /* FIXME: Sometimes, when versions data load faster than the wl-selector renders, we could end here.
-             * The selectors will appear empty, but any update fixes it.
-             * Something like a configSelectorWl.addEventListener('DOMContentLoaded', update..) should fix it but i
-             * cannot make it works :-( */
+             * The selectors will appear empty, but any update fixes it. */
             setTimeout(() => {
                 this._updateConfigSelector();
             }, 400);
@@ -490,7 +488,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         let hasCalibrations = !!(this._config && this._config.calibrations);
         return html`
             <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" 
-                class="tooltip ${hasVersions? '' : 'hidden'}">
+                style="float: right;" class="tooltip ${hasVersions? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
             <a target="_blank" href="${this._config ? this._config.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
@@ -500,7 +498,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             </wl-select>
 
             <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region"
-                class="tooltip ${hasCalibrations? '' : 'hidden'}">
+                style="float: right;" class="tooltip ${hasCalibrations? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
             <a target="_blank" href="${this._calibration ? this._calibration.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
@@ -775,20 +773,19 @@ export class ModelView extends connect(store)(PageViewElement) {
             ${this._model.indices ? html`
             <wl-title level="2" style="font-size: 16px;">Relevant for calculating index:</wl-title>
             <ul style="margin-top: 5px">
+                ${this._model.indices.split(/ *, */).map(iuri => this._indices[iuri] ? html`
                 <li>
-                ${this._indices ? (this._indices.length === 0 ? html`
-                    <a target="_blank" href="${this._model.indices}">
-                        ${this._model.indices.split('/').pop().split('#').pop()}
+                    <a target="_blank" href="${iuri}">
+                        ${this._indices[iuri][0].label}
                     </a>
-                ` : html`
-                    <a target="_blank" href="${this._model.indices}">
-                        ${this._indices[0].label}
-                    </a>
-                `)
-                : html`
-                    ${this._model.indices.split('/').pop()} 
-                    <loading-dots style="--width: 20px"></loading-dots> `}
                 </li>
+                ` : 
+                html`
+                <li>
+                    ${iuri.split('/').pop()} 
+                    <loading-dots style="--width: 20px"></loading-dots>
+                </li>
+                `)}
             </ul>`
             :''}
             ${this._config ? this._renderMetadataResume() : ''}
@@ -846,12 +843,19 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${(!this._configAuthors || this._configAuthors.length > 0) ? html`
                     <br/>
                     <wl-text>
-                        <b>Authors:</b>
+                        <b>Configuration creator:</b>
                         ${this._configAuthors ? 
                             (this._configAuthors || []).map(x => x.name).join(', ') 
                             : html`<loading-dots style="--height: 8px"></loading-dots>`}
                     </wl-text>
                     `: '' }
+                    ${this._configMetadata[0].usageNotes ? html`
+                    <br/>
+                    <wl-text>
+                        <b>Usage notes:</b>
+                        ${this._configMetadata[0].usageNotes}
+                    </wl-text>
+                    ` : ''}
                     <ul>
                     ${this._configMetadata[0].fundS ? 
                         html`<wl-text><b>Funding Source:</b> ${this._configMetadata[0].fundS} </wl-text>` : ''}
@@ -900,7 +904,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <loading-dots style="--width: 20px"></loading-dots>`
                                 : html`
                                 <span class="tooltip nm" style="text-align: center;"
-                                    tip="${this._parameters.length - this._parameters.filter(x => !!x.fixedValue).length} parameters can be selected in this setup">
+                                    tip="${this._parameters.filter(x => !!x.fixedValue).length} parameters have been pre-selected in this setup">
                                 ${ (this._parameters.length - this._parameters.filter(x => !!x.fixedValue).length) +
                                    '/' + this._parameters.length }
                                 </span>`
@@ -913,7 +917,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <loading-dots style="--width: 20px"></loading-dots>`
                                 : html `
                                 <span class="tooltip nm" style="text-align: center;"
-                                    tip="${this._inputs.length - this._inputs.filter(x => !!x.fixedValueURL).length} inputs can be selected in this setup">
+                                    tip="${this._inputs.filter(x => !!x.fixedValueURL).length} inputs have been pre-selected in this setup">
                                 ${ (this._inputs.length - this._inputs.filter(x => !!x.fixedValueURL).length) +
                                    '/' + this._inputs.length }
                                 </span>`}
@@ -931,12 +935,19 @@ export class ModelView extends connect(store)(PageViewElement) {
                         ${(!this._calibrationAuthors || this._calibrationAuthors.length > 0) ? html`
                         <br/>
                         <wl-text>
-                            <b>Authors:</b>
+                            <b>Setup creator:</b>
                             ${this._calibrationAuthors ? 
                                 (this._calibrationAuthors || []).map(x => x.name).join(', ') 
                                 : html`<loading-dots style="--height: 8px"></loading-dots>`}
                         </wl-text>
                         `: '' }
+                        ${this._calibrationMetadata[0].usageNotes ? html`
+                        <br/>
+                        <wl-text>
+                            <b>Usage notes:</b>
+                            ${this._calibrationMetadata[0].usageNotes}
+                        </wl-text>
+                        ` : ''}
                         <ul>
                         ${this._calibrationMetadata[0].paramAssignMethod ?
                             html`<li><b>Parameter assignment method:</b> ${this._calibrationMetadata[0].paramAssignMethod}</li>`: ''}
@@ -1060,9 +1071,14 @@ export class ModelView extends connect(store)(PageViewElement) {
                         </span></td>
                         <td>${io.desc}</td>
                         ${this._calibration? html`
-                        <td style="text-align: right;">${io.fixedValueURL ? html`
-                            <a target="_blank" href="${io.fixedValueURL}">${io.fixedValueURL.split('/').pop()}</a>
-                        ` : html`<span style="color:#999999;">-</span>`}</td>
+                        <td style="text-align: right;">${io.fixedValueURL ? 
+                            io.fixedValueURL.split(/ *, */).map((url, i) => (i != 0) ? html`
+                            <br/>
+                            <a target="_blank" href="${url}">${url.split('/').pop()}</a>
+                            ` : html`
+                            <a target="_blank" href="${url}">${url.split('/').pop()}</a>
+                            `)
+                            : html`<span style="color:#999999;">-</span>`}</td>
                         ` : html``}
                         <td style="text-align: right;" class="number">${io.format}</td>
                     </tr>`)}
@@ -1217,7 +1233,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </table>`
                     : html`
                     <div class="text-centered"><h4>
-                    This information has not been specified yet.
+                        There is no description available for the variables in this file.
                     </h4></div>
                     `
                 }`
@@ -1258,7 +1274,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </table>`
                     : html`
                     <div class="text-centered"><h4>
-                        This information has not been specified yet.
+                        There is no description available for the variables in this file.
                     </h4></div>
                     `
                 }`
@@ -1577,21 +1593,23 @@ export class ModelView extends connect(store)(PageViewElement) {
                 this._allVersions = db.versions;
                 this._allModels = db.models;
                 this._uriToUrl= db.urls;
+                this._indices = db.vars;
 
                 if (db.models && !this._model) {
                     this._model = db.models[this._selectedModel];
                     if (this._model && this._model.indices) {
-                        store.dispatch(fetchDescriptionForVar(this._model.indices));
+                        this._model.indices.split(/ *, */).forEach(uri => store.dispatch(fetchDescriptionForVar(uri)));
+                        //store.dispatch(fetchDescriptionForVar(this._model.indices));
                     }
                 }
                 if (db.versions && !this._versions) {
                     this._versions = db.versions[this._selectedModel];
                 }
                 if (this._versions && !this._version) {
-                    let versionId : string = this._selectedVersion.split('/').pop();
+                    //let versionId : string = this._selectedVersion.split('/').pop();
                     this._version = this._versions.reduce((V, ver) => {
                         if (V) return V;
-                        else return (ver.id === versionId) ? ver : null;
+                        else return (ver.uri === this._selectedVersion) ? ver : null;
                     }, null)
                 }
                 if (this._version && !this._config) {
@@ -1619,9 +1637,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                         })
                     })
                 }
-                if (!this._indices && db.vars && this._model && this._model.indices) {
+                /*if (!this._indices && db.vars && this._model && this._model.indices) {
                     this._indices = db.vars[this._model.indices];
-                }
+                }*/
                 if (!this._explDiagrams && db.explDiagrams) {
                     this._explDiagrams = db.explDiagrams[this._selectedModel];
                 }
@@ -1651,7 +1669,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                     let selectedUri = this._calibration ? this._calibration.uri : this._config.uri;
                     if (this._inputs != db.inputs[selectedUri]) this._inputs = db.inputs[selectedUri];
                     if (this._outputs != db.outputs[selectedUri]) this._outputs = db.outputs[selectedUri];
-                    if (this._parameters != db.parameters[selectedUri]) this._parameters = db.parameters[selectedUri];
+                    if (this._parameters != db.parameters[selectedUri]) {
+                        this._parameters = db.parameters[selectedUri]
+                            .map((p) => { return { ...p, position: parseInt(p.position) } })
+                            .sort((a,b) => { a.position - b.position });
+                    }
                 }
 
                 if (db.variables && this._IOStatus.size > 0) {
