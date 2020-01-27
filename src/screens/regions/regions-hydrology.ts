@@ -48,27 +48,6 @@ export class RegionsHydrology extends connect(store)(PageViewElement)  {
                 src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/PIHMRiverBasin/POI.png",
                 desc: "The three river basins that were our focus in 2018 (overlayed with points of interest)."}
             ]
-        } else if (this._regionid === 'ethiopia') {
-            items = [
-            {   label: "Ethiopia relief boundary",
-                src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Ethiopia_relief_boundary.png"},
-            {   label: "Ethiopia relief subbasins (94MB)",
-                src: "images/thumbnails/Ethiopia_relief_subbasins_med.png",
-                thumbnail: "images/thumbnails/Ethiopia_relief_subbasins_small.png",
-                external: "http://mint.isi.edu/data/Ethiopia_relief_subbasins_big.png"},
-            {   label: "Blue Nile Tributaries relief and boundaries (76MB)",
-                src: "images/thumbnails/Blue_Nile_Tribs_relief_and_boundaries_med.png",
-                thumbnail: "images/thumbnails/Blue_Nile_Tribs_relief_and_boundaries_small.png",
-                external: "http://mint.isi.edu/data/Blue_Nile_Tribs_relief_and_boundaries_big.png"},
-            {   label: "Guder relief rivers boundary",
-                src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Guder_relief_rivers_boundary.png"},
-            {   label: "Jamma relief river boundary",
-                src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Jamma_relief_river_boundary.png"},
-            {   label: "Muger relief rivers boundary",
-                src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Muger_relief_rivers_boundary.png"},
-            {   label: "Dashilo relief river boundary",
-                src: "https://raw.githubusercontent.com/mintproject/EthiopiaDemo/master/ImproveQuality/Dashilo_relief_river_boundary.png"},
-            ]
         } else {
             items = [];
         }
