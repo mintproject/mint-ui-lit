@@ -138,7 +138,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
         dspecs.forEach(dspecUri => {
             if (state && state.modelCatalog && state.modelCatalog.datasetSpecifications &&
                 state.modelCatalog.datasetSpecifications[dspecUri]) {
-                console.log(dspecUri, 'already loaded');
+                //console.log(dspecUri, 'already loaded');
             } else {
                 store.dispatch(datasetSpecificationGet(dspecUri))
             }
