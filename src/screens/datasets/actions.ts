@@ -48,50 +48,118 @@ export type DatasetsAction = DatasetsActionVariablesQuery | DatasetsActionGenera
 
 const getDatasetsFromDCResponse = (obj: any, queryParameters: DatasetQueryParameters) => {
     let datasets = obj.datasets.map(ds => {
+        let dmeta = ds['dataset_metadata'];
         return {
             id: ds['dataset_id'],
             name: ds['dataset_name'] || '',
             region: '',
             variables: queryParameters.variables,
-            datatype: ds['dataset_metadata']['datatype'] || '',
-            time_period: {
-                start_date: toTimeStamp(ds['dataset_metadata']['temporal_coverage']['start_time']),
-                end_date: toTimeStamp(ds['dataset_metadata']['temporal_coverage']['end_time']),
-            },
-            description: ds['dataset_metadata']['dataset_description'] || '',
-            version: ds['dataset_metadata']['version'] || '',
-            limitations: ds['dataset_metadata']['limitations'] || '',
+            time_period: dmeta['temporal_coverage'] ? {
+                start_date: (dmeta['temporal_coverage']['start_time'] ?
+                    toTimeStamp(dmeta['temporal_coverage']['start_time'])
+                    : null),
+                end_date: (dmeta['temporal_coverage']['end_time'] ?
+                    toTimeStamp(dmeta['temporal_coverage']['end_time'])
+                    : null),
+            } : null,
+            description: dmeta['dataset_description'] || '',
+            version: dmeta['version'] || '',
+            limitations: dmeta['limitations'] || '',
             source: {
-                name: ds['dataset_metadata']['source'] || '',
-                url: ds['dataset_metadata']['source_url'] || '',
-                type: ds['dataset_metadata']['source_type'] || '',
+                name: dmeta['source'] || '',
+                url: dmeta['source_url'] || '',
+                type: dmeta['source_type'] || '',
             },
-            categories: ds['categories'] || [],
-            is_cached: ds['dataset_metadata']['is_cached'] || false,
-            resource_repr: ds['dataset_metadata']['resource_repr'] || null,
-            dataset_repr: ds['dataset_metadata']['dataset_repr'] || null,
-            resource_count: ds['dataset_metadata']['resource_count'] || 0,
-            spatial_coverage: ds['dataset_metadata']['dataset_spatial_coverage'] || null,
-            resources: [],
+            is_cached: dmeta['is_cached'] || false,
+            resource_repr: dmeta['resource_repr'] || null,
+            dataset_repr: dmeta['dataset_repr'] || null,
+            resource_count: dmeta['resource_count'] || 0,
+            spatial_coverage: dmeta['dataset_spatial_coverage'] || null,
+            datatype: dmeta["datatype"] || dmeta["data_type"] || "",
+            categories: dmeta["category_tags"] || [],
+            resources: []            
         }
     });
     return datasets;
 }
 
+const getDatasetDetailFromDCResponse = (ds: any) => {
+    let dmeta = ds['metadata'];
+    return {
+        id: ds['dataset_id'],
+        name: ds['name'] || '',
+        description: ds['description'] || '',
+        region: '',
+        variables: [],
+        datatype: dmeta['datatype'] || '',
+        time_period: dmeta['temporal_coverage'] ? {
+            start_date: (dmeta['temporal_coverage']['start_time'] ?
+                toTimeStamp(dmeta['temporal_coverage']['start_time'])
+                : null),
+            end_date: (dmeta['temporal_coverage']['end_time'] ? 
+                toTimeStamp(dmeta['temporal_coverage']['end_time'])
+                : null),
+        } : null,
+        version: dmeta['version'] || '',
+        limitations: dmeta['limitations'] || '',
+        source: {
+            name: dmeta['source'] || '',
+            url: dmeta['source_url'] || '',
+            type: dmeta['source_type'] || '',
+        },
+        categories: ds['categories'] || [],
+        is_cached: dmeta['is_cached'] || false,
+        resource_repr: dmeta['resource_repr'] || null,
+        dataset_repr: dmeta['dataset_repr'] || null,
+        resource_count: dmeta['resource_count'] || 0,
+        spatial_coverage: dmeta['dataset_spatial_coverage'] || null,
+        resources: [],
+    }
+}
+
 const getResourcesFromDCResponse = (obj: any) => {
     return obj.dataset.resources.map(row => {
+        let dmeta = row['resource_metadata'];
         return {
             id: row["resource_id"],
             name: row["resource_name"],
             url: row["resource_data_url"],
-            time_period: {
-                start_date: toTimeStamp(row['resource_metadata']['temporal_coverage']['start_time']),
-                end_date: toTimeStamp(row['resource_metadata']['temporal_coverage']['end_time'])
-            },
+            time_period: dmeta['temporal_coverage'] ? {
+                start_date: (dmeta['temporal_coverage']['start_time'] ?
+                    toTimeStamp(row['resource_metadata']['temporal_coverage']['start_time'])
+                    : null),
+                end_date: (dmeta['temporal_coverage']['end_time'] ?
+                    toTimeStamp(row['resource_metadata']['temporal_coverage']['end_time'])
+                    : null)
+            } : null,
             spatial_coverage: row["resource_metadata"]["spatial_coverage"],
             selected: true
         }
     });
+}
+
+const getDatasetResourceListFromDCResponse = (obj: any) => {
+    let resources = [];
+    obj.resources.map((row: any) => {
+        let rmeta = row["resource_metadata"];
+        let tcover = rmeta["temporal_coverage"];
+        let scover = rmeta["spatial_coverage"];
+        let tcoverstart = tcover ? toTimeStamp(tcover["start_time"]) : null;
+        let tcoverend = tcover ? toTimeStamp(tcover["end_time"]) : null;
+        
+        resources.push({
+            id: row["resource_id"],
+            name: row["resource_name"],
+            url: row["resource_data_url"],
+            time_period: {
+                start_date: tcoverstart,
+                end_date: tcoverend
+            },
+            spatial_coverage: scover,
+            selected: true
+        });    
+    });
+    return resources;
 }
 
 const getResourceObjectsFromDCResponse = (obj: any, queryParameters: DatasetQueryParameters) => {
@@ -173,6 +241,7 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
 
     obj.datasets.map((row: any) => {
         let dmeta = row["dataset_metadata"];
+        let tcover = dmeta["temporal_coverage"];
         let dsid = row["dataset_id"];
         let ds : Dataset = {
             id: dsid,
@@ -180,8 +249,8 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
             region: "",
             variables: queryParameters.variables,
             time_period: {
-                start_date: null, //tcover["start_time"].replace(/T.+$/, ''),
-                end_date: null
+                start_date: tcover ? tcover["start_time"].replace(/T.+$/, '') : null,
+                end_date: tcover ? tcover["end_time"].replace(/T.+$/, '') : null,
             } as DateRange,
             description: row["dataset_description"] || "",
             version: dmeta["version"] || "",
@@ -241,26 +310,60 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
         });
 
         let geojson = JSON.parse(region.geojson_blob);
+        let dsQueryData = {
+            standard_variable_names__in: driving_variables,
+            spatial_coverage__intersects: geojson.geometry,
+            end_time__gte: fromTimeStampToString(dates.start_date).replace(/\.\d{3}Z$/,''),
+            start_time__lte: fromTimeStampToString(dates.end_date).replace(/\.\d{3}Z$/,''),
+            limit: 100
+        }
+
+        let resQueryData = {
+            filter: {
+                spatial_coverage__intersects: geojson.geometry,
+                end_time__gte: fromTimeStampToString(dates.start_date).replace(/\.\d{3}Z$/,''),
+                start_time__lte: fromTimeStampToString(dates.end_date).replace(/\.\d{3}Z$/,'')
+            },
+            limit: 5000
+        }
+
         fetch(prefs.data_catalog_api + "/datasets/find", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                standard_variable_names__in: driving_variables,
-                spatial_coverage__intersects: geojson.geometry,
-                end_time__gte: fromTimeStampToString(dates.start_date).replace(/\.\d{3}Z$/,''),
-                start_time__lte: fromTimeStampToString(dates.end_date).replace(/\.\d{3}Z$/,''),
-                limit: 5000
-            })
+            body: JSON.stringify(dsQueryData)
         }).then((response) => {
             response.json().then((obj) => {
-                let datasets: Dataset[] = getResourceObjectsFromDCResponse(obj, 
+                /*let datasets: Dataset[] = getResourceObjectsFromDCResponse(obj, 
+                    {variables: driving_variables} as DatasetQueryParameters)*/
+                let datasets: Dataset[] = getDatasetsFromDCResponse(obj, 
                     {variables: driving_variables} as DatasetQueryParameters)
-                dispatch({
-                    type: DATASETS_VARIABLES_QUERY,
-                    modelid: modelid,
-                    inputid: inputid,
-                    datasets: datasets,
-                    loading: false
+                
+                // FIXME: Doing this for all datasets by default for now
+                // - Should change this to do on-demand only later
+                Promise.all(
+                    datasets.map((ds) => {
+                        delete ds["spatial_coverage"];
+                        resQueryData["dataset_id"] = ds.id;
+                        return fetch(prefs.data_catalog_api + "/datasets/dataset_resources", {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(resQueryData)
+                        });
+                    })
+                ).then((responses) => {
+                    Promise.all((responses.map((resp) =>  resp.json()))).then((resp_objs) => {
+                        for(let i=0; i<datasets.length; i++)  {
+                            let resp_obj = resp_objs[i];
+                            datasets[i].resources = getDatasetResourceListFromDCResponse(resp_obj);
+                        }
+                        dispatch({
+                            type: DATASETS_VARIABLES_QUERY,
+                            modelid: modelid,
+                            inputid: inputid,
+                            datasets: datasets,
+                            loading: false
+                        });
+                    })
                 });
             })
         });
@@ -346,26 +449,26 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
         dataset: null,
         loading: true
     });
+    /* TODO: /datasets/get_dataset_info does not accept filters!
     let queryBody = {
         "dataset_ids__in": [dsid],
         "limit": 200
     };
-    /*if(region) {
+    if(region) {
         let geojson = JSON.parse(region.geojson_blob);
         queryBody["spatial_coverage__intersects"] = geojson.geometry;
     }*/
     let dataset: Dataset;
     let prom1 = new Promise((resolve, reject) => {
-        let req = fetch(prefs.data_catalog_api + "/datasets/find", {
+        let req = fetch(prefs.data_catalog_api + "/datasets/get_dataset_info", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             //mode: "no-cors",
-            body: JSON.stringify(queryBody)
+            body: JSON.stringify({"dataset_id": dsid})
         });
         req.then((response) => {
             response.json().then((obj) => {
-                let datasets: Dataset[] = getDatasetsFromDCResponse(obj, {})
-                dataset = datasets.length > 0 ? datasets[0] : null;
+                dataset =  getDatasetDetailFromDCResponse(obj)
                 resolve();
             })
         });
@@ -392,7 +495,7 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
     });
 
     Promise.all([prom1, prom2]).then((values:any) => {
-        dataset.resources = resources;
+        if (dataset) dataset.resources = resources;
         dispatch({
             type: DATASETS_RESOURCE_QUERY,
             dsid: dsid,
@@ -442,7 +545,7 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
         datasets: null,
         loading: true
     });
-    
+
     let geojson = JSON.parse(region.geojson_blob);
     let req1 = fetch(prefs.data_catalog_api + "/datasets/find", {
         method: 'POST',
@@ -456,7 +559,46 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
         })
     })
 
-    let req2 = fetch(prefs.data_catalog_api + "/datasets/find", {
+    req1.then((res:any) => {
+        res.json().then((obj) => {
+            let datasets: Dataset[] = getDatasetsFromDCResponse(obj, {} as DatasetQueryParameters);
+            let transformation_example : Dataset = {
+                id: "adfca6fb-ad82-4be3-87d8-8f60f9193e43",
+                name: "Global weather data from GPM in 2011.",
+                region: '',
+                datatype: '',
+                variables: [],
+                time_period: {
+                    start_date: toTimeStamp("2011-08-18T00:00:00"),
+                    end_date: toTimeStamp("2011-08-18T23:59:59"),
+                },
+                description: 'Global weather data from GPM in 2011.',
+                version: '',
+                limitations: '',
+                source: {
+                    name: '',
+                    url: '',
+                    type: '',
+                },
+                categories: [],
+                is_cached: true,
+                resource_repr: null,
+                dataset_repr: null,
+                resource_count: 1,
+                spatial_coverage: null,
+                resources: [],
+            } as Dataset;
+            datasets.push(transformation_example);
+            dispatch({
+                type: DATASETS_REGION_QUERY,
+                region: region,
+                datasets: datasets,
+                loading: false
+            });
+        });
+    });
+
+    /*let req2 = fetch(prefs.data_catalog_api + "/datasets/find", {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
@@ -471,6 +613,7 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
             objs.forEach(obj => {
                 datasets = datasets.concat( getDatasetsFromDCResponse(obj, {} as DatasetQueryParameters) )
             });
+            console.log(datasets);
             dispatch({
                 type: DATASETS_REGION_QUERY,
                 region: region,
@@ -478,5 +621,5 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
                 loading: false
             });
         })
-    });
+    });*/
 };

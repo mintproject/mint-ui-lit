@@ -20,7 +20,7 @@ import { renderVariables, renderNotifications } from "../../util/ui_renders";
 import { resetForm, showDialog, formElementsComplete, showNotification, hideDialog, hideNotification } from "../../util/ui_functions";
 import { firestore } from "firebase";
 import { toTimeStamp, fromTimeStampToDateString } from "util/date-utils";
-import { RegionMap, Region } from "screens/regions/reducers";
+import { RegionMap, Region, RegionCategory } from "screens/regions/reducers";
 import { getVariableLongName, getVariableIntervention } from "offline_data/variable_list";
 
 
@@ -35,6 +35,9 @@ export class MintScenario extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _categorizedRegions: any; 
+
+    @property({type: String})
+    private _selectedCategory: string = '';
 
     @property({type: Object})
     private _scenario_details!: ScenarioDetails | null;
@@ -395,6 +398,29 @@ export class MintScenario extends connect(store)(PageViewElement) {
         `;
     }
 
+    _onRegionCategoryChange () {
+        let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#subObjectiveForm")!;
+        let category = (form.elements["subgoal_subregion_category"] as HTMLSelectElement).value;
+        let selector = form.elements["subgoal_subregion"] as HTMLSelectElement
+        if (category != this._selectedCategory && selector) {
+            this._selectedCategory = category;
+            while (selector.options.length > 0) {
+                selector.remove(selector.options.length - 1);
+            }
+            let defOption = document.createElement('option');
+            defOption.text = 'None';
+            defOption.value = '';
+            selector.options.add(defOption);
+
+            this._categorizedRegions[category].forEach((region:Region) => {
+                let newOption = document.createElement('option');
+                newOption.text = region.name;
+                newOption.value = region.id;
+                selector.options.add(newOption);
+            });
+        }
+    }
+
     _renderSubObjectiveForm() {
         return html`
             <p>
@@ -422,23 +448,26 @@ export class MintScenario extends connect(store)(PageViewElement) {
             <!-- Sub Region -->
             <div class="formRow">
                 <div class="input_half">
+                    <label>Region category</label>
+                    <select name="subgoal_subregion_category" value="${this._selectedCategory}" @change="${this._onRegionCategoryChange}">
+                        <option value="">None</option>
+                        ${this._region.categories.map((cat: RegionCategory) => {
+                            let subCategories = this._region.subcategories[cat.id] || [];
+                            return html`
+                            <option value="${cat.id}">${cat.id}</option>
+                            ${subCategories.length > 0 ? subCategories.map((subcat: RegionCategory) => {
+                                return html`<option value="${subcat.id}">&nbsp;&nbsp;&nbsp;&nbsp;${subcat.id}</option>`;
+                            }) : html`
+                                <option disabled>&nbsp;&nbsp;&nbsp;&nbsp;No subcategories</option>
+                            `}`
+                        })}
+                    </select>
+                </div>            
+
+                <div class="input_half">
                     <label>Region</label>
                     <select name="subgoal_subregion">
                         <option value="">None</option>
-                        ${Object.keys(this._categorizedRegions || {}).map((categoryname) => {
-                            let subRegions = this._categorizedRegions[categoryname];
-                            return html`
-                            <optgroup label="${categoryname}">
-                            ${subRegions.map((subRegion) => {
-                            //if(subRegion.name.match(/[a-zA-Z]/)) {
-                                return html`
-                                <option value="${subRegion.id}">${subRegion.name}</option>
-                                `;
-                            //}
-                            })}
-                            </optgroup>
-                            `
-                        })}
                     </select>
                 </div>            
             </div>

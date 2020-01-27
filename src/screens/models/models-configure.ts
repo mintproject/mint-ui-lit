@@ -15,9 +15,6 @@ import './configure/new-setup';
 import './configure/parameter';
 import './models-tree'
 
-import { fetchIOAndVarsSNForConfig, fetchAuthorsForModelConfig, fetchParametersForConfig,
-         fetchMetadataNoioForModelConfig, addParameters, addCalibration, addMetadata,
-         addInputs, addAuthor } from '../../util/model-catalog-actions';
 import { parameterGet, processesGet, regionsGet } from 'model-catalog/actions';
 
 import { showDialog, hideDialog } from 'util/ui_functions';

@@ -59,7 +59,8 @@ export class RegionDatasets extends connect(store)(RegionQueryPage)  {
     }
 
     _isGPM (ds: Dataset) {
-        return (ds.name.toLowerCase() + ds.description.toLowerCase()).includes('gpm') ||
+        return ds.id === "adfca6fb-ad82-4be3-87d8-8f60f9193e43" ||
+               (ds.name.toLowerCase() + ds.description.toLowerCase()).includes('gpm') ||
                 ds.resources.some((r) => r.name.includes('gpm'))
     }
 

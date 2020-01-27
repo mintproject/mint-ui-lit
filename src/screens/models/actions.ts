@@ -162,6 +162,7 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                                 id: value.io,
                                 name: value.iolabel,
                                 type: value.type,
+                                position: value.position ? parseInt(value.position) : 0,
                                 variables: []
                             };
                             if(value.fixedValueURL) {
@@ -182,10 +183,12 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                                 } as Dataset;
                             }
                             fileio[value.io] = io;
-                            if(value.prop.match(/#hasInput$/)) {
-                                inputs.push(io);
-                            } else {
-                                outputs.push(io);
+                            if(value.prop) {
+                                if(value.prop.match(/#hasInput$/)) {
+                                    inputs.push(io);
+                                } else {
+                                    outputs.push(io);
+                                }
                             }
                         }
                         if(value.st) {

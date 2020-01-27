@@ -38,6 +38,8 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
     @property({type: String})
     private _log: string;
 
+    private _initialSubmit: boolean = false;
+
     private pathwayModelEnsembleIds: IdMap<string[]> = {};
 
     static get styles() {
@@ -240,7 +242,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                                     let res = ensemble.bindings[input.id] as DataResource;
                                                     if(res) {
                                                         // FIXME: This should be resolved to a collection of resources
-                                                        let furl = this._getDatasetURL(res.name); 
+                                                        let furl = this._getDatasetURL(res); 
                                                         return html`
                                                             <td><a href="${furl}">${res.name}</a></td>
                                                         `;
@@ -288,6 +290,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             thread_id: this.pathway.id,
             model_id: modelid
         };
+        this._initialSubmit = true;
         showNotification("runNotification", this.shadowRoot);
         let me = this;
         postJSONResource({
@@ -315,6 +318,10 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             onLoad: function(e: any) {
                 let log = e.target.responseText;
                 log = log.replace(/\\n/g, "\n");
+                log = log.replace(/\\t/g, "\t");
+                log = log.replace(/\\u001b.+?m/g, "");
+                log = log.replace(/^"/, "");
+                log = log.replace(/"$/, "");
                 me._log = log;
                 //console.log(me._log);
             },
@@ -392,13 +399,15 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         return url;
     } 
 
-    _getDatasetURL (resname: string) {
-        let config = this.prefs.mint;
-        let suffix = "/users/" + config.wings.username + "/" + config.wings.domain;
-        var purl = config.wings.server + suffix
-        var expurl = config.wings.export_url + "/export" + suffix;
-        let dsid = expurl + "/data/library.owl#" + resname;
-        return purl + "/data/fetch?data_id=" + escape(dsid);
+    _getDatasetURL (res: any) {
+        let furl = res.url;
+        let fname = res.name;
+        if(!furl) {
+            let location = res.location;
+            let prefs = this.prefs.mint;
+            furl = location.replace(prefs.localex.datadir, prefs.localex.dataurl);
+        }
+        return furl;
     }
 
     stateChanged(state: RootState) {
@@ -406,8 +415,8 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         super.setRegionId(state);
 
         // Before resetting pathway, check if the pathway run status has changed
-        let runs_changed = pathwaySummaryChanged(this.pathway, state.modeling.pathway);
-        let runs_total_changed = pathwayTotalRunsChanged(this.pathway, state.modeling.pathway);
+        let runs_changed = this._initialSubmit || pathwaySummaryChanged(this.pathway, state.modeling.pathway);
+        let runs_total_changed = this._initialSubmit || pathwayTotalRunsChanged(this.pathway, state.modeling.pathway);
 
         super.setPathway(state);
 
@@ -417,6 +426,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
 
         // If run status has changed, then reload all runs
         if(runs_changed) {
+            this._initialSubmit = false;
             if(runs_total_changed) {
                 console.log("Total runs changed !");
                 this.pathwayModelEnsembleIds = {};
@@ -428,7 +438,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 console.log("Reload finished");
             });
         }
-        
+
         if(state.modeling.ensembles) {
             this._ensembles = state.modeling.ensembles; 
         }

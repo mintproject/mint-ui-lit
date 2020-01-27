@@ -453,6 +453,8 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         };
         newpathway.last_update = {
             ...newpathway.last_update!,
+            parameters: null,
+            datasets: null,
             models: {
                 time: Date.now(),
                 user: this.user!.email

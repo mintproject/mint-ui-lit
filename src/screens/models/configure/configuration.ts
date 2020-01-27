@@ -256,7 +256,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         if (this._config.hasParameter) {
             Object.values(this._parameters).sort(sortByPosition).forEach((id: any) => {
                 if (typeof id === 'object') id = id.id;
-                paramOrder.push(id);
+                if (id) paramOrder.push(id);
             });
             this._config.hasParameter.forEach((id) => {
                 if (typeof id === 'object') id = id.id;
@@ -271,7 +271,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         if (this._config.hasInput) {
             Object.values(this._inputs).sort(sortByPosition).forEach((id: any) => {
                 if (typeof id === 'object') id = id.id;
-                inputOrder.push(id);
+                if (id) inputOrder.push(id);
             });
             this._config.hasInput.forEach((id) => {
                 if (typeof id === 'object') id = id.id;
@@ -396,7 +396,9 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                                 <span> 
                                     ${this._timeInterval.intervalValue}
                                     ${this._timeInterval.intervalUnit ? this._timeInterval.intervalUnit[0].label : ''}
+                                    ${this._editing ? html`
                                     <wl-icon style="margin-left:10px; --icon-size:  16px; cursor: pointer; vertical-align: middle;">edit</wl-icon>
+                                    ` : ''}
                                 </span>
                             </span>
                             <span style="font-style: oblique; color: gray;"> ${this._timeInterval.description} </span>
@@ -677,7 +679,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                         // Fetching not loaded inputs 
                         (this._config.hasInput || []).forEach((i) => {
                             if (typeof i === 'object') {
-                                if (i.type.indexOf('DatasetSpecification') < 0) {
+                                if (i.type && i.type.indexOf('DatasetSpecification') < 0) {
                                     console.log(i, 'is not a DatasetSpecification (input)', this._config);
                                 }
                                 i = i.id;
