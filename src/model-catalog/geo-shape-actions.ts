@@ -5,7 +5,7 @@ import { Configuration, GeoShape, GeoShapeApi } from '@mintproject/modelcatalog_
 import { ActionThunk, getIdFromUri, createIdMap, idReducer,
          getStatusConfigAndUser, DEFAULT_GRAPH } from './actions';
 
-function debug (...args: any[]) { console.log('[MC GeoShape]', ...args); }
+function debug (...args: any[]) {}// console.log('[MC GeoShape]', ...args); }
 
 const str_to_bbox = (bb: string) : BoundingBox => {
     let coords = bb.split(/,| /g);

@@ -58,27 +58,11 @@ export const getStatusConfigAndUser = () => {
     return [status, cfg, user];
 }
 
-
-export const START_LOADING = 'START_LOADING';
-export interface MCAStartLoading extends Action<'START_LOADING'> { id: string };
-export const END_LOADING = 'END_LOADING';
-export interface MCAEndLoading extends Action<'END_LOADING'> { id: string };
-
-export const START_POST = 'START_POST';
-export interface MCAStartPost extends Action<'START_POST'> { id: string };
-export const END_POST = 'END_POST';
-export interface MCAEndPost extends Action<'END_POST'> { id: string, uri: string };
-
-export type MCACommon = MCAStartLoading | MCAEndLoading | MCAStartPost | MCAEndPost ;
-
-export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogTimeIntervalAction | ModelCatalogSoftwareImageAction |
-                                 MCACommon | ModelCatalogPersonAction | ModelCatalogParameterAction | ModelCatalogProcessAction |
-                                 ModelCatalogModelConfigurationAction | ModelCatalogRegionAction |
-                                 ModelCatalogGridAction |
-                                 ModelCatalogSampleCollectionAction |
-                                 ModelCatalogSampleResourceAction | ModelCatalogDatasetSpecificationAction |
-                                 ModelCatalogVersionAction | ModelCatalogGeoShapeAction
-                                 |ModelCatalogModelConfigurationSetupAction;
+export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAction | 
+        ModelCatalogModelConfigurationAction | ModelCatalogModelConfigurationSetupAction | ModelCatalogPersonAction |
+        ModelCatalogRegionAction | ModelCatalogGeoShapeAction | ModelCatalogGridAction | ModelCatalogProcessAction |
+        ModelCatalogParameterAction | ModelCatalogTimeIntervalAction | ModelCatalogSoftwareImageAction |
+        ModelCatalogDatasetSpecificationAction | ModelCatalogSampleResourceAction | ModelCatalogSampleCollectionAction;
 
 export * from './model-actions';
 export * from './version-actions';

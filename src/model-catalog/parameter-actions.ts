@@ -4,7 +4,7 @@ import { Configuration, Parameter, ParameterApi } from '@mintproject/modelcatalo
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
          DEFAULT_GRAPH } from './actions';
 
-function debug (...args: any[]) { console.log('[MC Parameter]', ...args); }
+function debug (...args: any[]) {}// console.log('[MC Parameter]', ...args); }
 
 export const PARAMETERS_ADD = "PARAMETERS_ADD";
 export const PARAMETER_DELETE = "PARAMETER_DELETE";
@@ -63,23 +63,28 @@ export const parameterPost: ActionThunk<Promise<Parameter>, MCAParametersAdd> = 
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {
         debug('Creating new', parameter);
-        let postProm = new Promise((resolve,reject) => {
-            let api : ParameterApi = new ParameterApi(cfg);
-            let req = api.parametersPost({user: DEFAULT_GRAPH, parameter: parameter}); // This should be my username on prod.
-            req.then((resp:Parameter) => {
-                debug('Response for POST', resp);
-                dispatch({
-                    type: PARAMETERS_ADD,
-                    payload: createIdMap(resp)
+        if (parameter.id) {
+            return Promise.reject(new Error('Cannot create Parameter, object has ID'));
+        } else {
+            return new Promise((resolve,reject) => {
+                let api : ParameterApi = new ParameterApi(cfg);
+                let req = api.parametersPost({user: DEFAULT_GRAPH, parameter: parameter}); // This should be my username on prod.
+                req.then((resp:Parameter) => {
+                    debug('Response for POST', resp);
+                    //Parameter can have a flag 'isAdjustable'
+                    resp['isAdjustable'] = parameter['isAdjustable'];
+                    dispatch({
+                        type: PARAMETERS_ADD,
+                        payload: createIdMap(resp)
+                    });
+                    resolve(resp);
                 });
-                resolve(resp);
+                req.catch((err) => {
+                    console.error('Error on POST Parameter', err);
+                    reject(err);
+                });
             });
-            req.catch((err) => {
-                console.error('Error on POST Parameter', err);
-                reject(err);
-            });
-        });
-        return postProm;
+        }
     } else {
         console.error('TOKEN ERROR:', status);
         return Promise.reject(new Error('Parameter error'));

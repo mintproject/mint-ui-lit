@@ -2,6 +2,8 @@ import { Reducer } from "redux";
 import { RootAction } from "app/store";
 import { MODELS_ADD, MODEL_DELETE,
          VERSIONS_ADD, VERSION_DELETE,
+         MODEL_CONFIGURATIONS_ADD, MODEL_CONFIGURATION_DELETE,
+         MODEL_CONFIGURATION_SETUPS_ADD, MODEL_CONFIGURATION_SETUP_DELETE,
          PERSONS_ADD, PERSON_DELETE,
          REGIONS_ADD, REGION_DELETE,
          GEO_SHAPES_ADD, GEO_SHAPE_DELETE,
@@ -13,9 +15,6 @@ import { MODELS_ADD, MODEL_DELETE,
          SAMPLE_RESOURCES_ADD, SAMPLE_RESOURCE_DELETE, 
          SAMPLE_COLLECTIONS_ADD, SAMPLE_COLLECTION_DELETE, 
          SOFTWARE_IMAGES_ADD, SOFTWARE_IMAGE_DELETE,
-         START_LOADING, END_LOADING, START_POST, END_POST,
-         MODEL_CONFIGURATION_GET, MODEL_CONFIGURATIONS_GET, ALL_MODEL_CONFIGURATIONS, MODEL_CONFIGURATION_DELETE,
-         MODEL_CONFIGURATION_SETUP_GET, MODEL_CONFIGURATION_SETUPS_GET,
          } from './actions'
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Region, GeoShape, Grid,
@@ -96,6 +95,11 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             return { ...state, timeIntervals: {...state.timeIntervals, ...action.payload} };
         case SOFTWARE_IMAGES_ADD:
             return { ...state, softwareImages: {...state.softwareImages, ...action.payload} };
+        case MODEL_CONFIGURATIONS_ADD:
+            return { ...state, configurations: {...state.configurations, ...action.payload} };
+        case MODEL_CONFIGURATION_SETUPS_ADD:
+            return { ...state, setups: {...state.setups, ...action.payload} };
+
 
         case MODEL_DELETE:
             tmp = { ...state.models };
@@ -149,70 +153,14 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             tmp = { ...state.softwareImages };
             delete tmp[action.uri];
             return { ...state, softwareImages: tmp };
-
-
-        case START_POST:
-            tmp = { ...state.created };
-            tmp[action.id] = '';
-            return {
-                ...state,
-                created: tmp,
-            }
-        case END_POST:
-            tmp = { ...state.created };
-            tmp[action.id] = action.uri;
-            return {
-                ...state,
-                created: tmp,
-            }
-        case START_LOADING:
-            tmp = { ...state.loading };
-            tmp[action.id] = true;
-            return {
-                ...state,
-                loading: tmp,
-            }
-        case END_LOADING:
-            tmp = { ...state.loading };
-            tmp[action.id] = false
-            return {
-                ...state,
-                loading: tmp,
-            }
-
-
         case MODEL_CONFIGURATION_DELETE:
-            tmp = { ...state.configurations }
-            tmp[action.uri] = undefined
-            return {
-                ...state,
-                configurations: tmp
-            }
-        case MODEL_CONFIGURATION_GET:
-            return {
-                ...state,
-                configurations: {...state.configurations, ...action.payload}
-            }
-        case MODEL_CONFIGURATIONS_GET:
-            tmp = { ...state.loadedAll };
-            tmp[ALL_MODEL_CONFIGURATIONS] = true;
-            return {
-                ...state,
-                loadedAll: tmp,
-                configurations: {...state.configurations, ...action.payload}
-            }
-
-        case MODEL_CONFIGURATION_SETUPS_GET:
-            return {
-                ...state,
-                setups: {...state.setups, ...action.payload}
-            }
-        case MODEL_CONFIGURATION_SETUP_GET:
-            return {
-                ...state,
-                setups: {...state.setups, ...action.payload}
-            }
-
+            tmp = { ...state.configurations };
+            delete tmp[action.uri];
+            return { ...state, configurations: tmp };
+        case MODEL_CONFIGURATION_SETUP_DELETE:
+            tmp = { ...state.setups };
+            delete tmp[action.uri];
+            return { ...state, setups: tmp };
 
         default:
             return state;

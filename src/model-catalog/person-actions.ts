@@ -4,7 +4,7 @@ import { Configuration, Person, PersonApi } from '@mintproject/modelcatalog_clie
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
          DEFAULT_GRAPH } from './actions';
 
-function debug (...args: any[]) { console.log('[MC Person]', ...args); }
+function debug (...args: any[]) {}// console.log('[MC Person]', ...args); }
 
 export const PERSONS_ADD = "PERSONS_ADD";
 export const PERSON_DELETE = "PERSON_DELETE";

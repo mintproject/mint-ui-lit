@@ -1,10 +1,10 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
-import { Configuration, SampleCollection, SampleCollectionApi } from '@mintproject/modelcatalog_client';
+import { Configuration, SampleCollection, SampleCollectionApi, SampleResource } from '@mintproject/modelcatalog_client';
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
-         DEFAULT_GRAPH } from './actions';
+         DEFAULT_GRAPH, sampleResourcePost } from './actions';
 
-function debug (...args: any[]) { console.log('[MC SampleCollection]', ...args); }
+function debug (...args: any[]) {}// console.log('[MC SampleCollection]', ...args); }
 
 export const SAMPLE_COLLECTIONS_ADD = "SAMPLE_COLLECTIONS_ADD";
 export const SAMPLE_COLLECTION_DELETE = "SAMPLE_COLLECTION_DELETE";
@@ -63,23 +63,31 @@ export const sampleCollectionPost: ActionThunk<Promise<SampleCollection>, MCASam
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {
         debug('Creating new', sampleCollection);
-        let postProm = new Promise((resolve,reject) => {
-            let api : SampleCollectionApi = new SampleCollectionApi(cfg);
-            let req = api.samplecollectionsPost({user: DEFAULT_GRAPH, sampleCollection: sampleCollection}); // This should be my username on prod.
-            req.then((resp:SampleCollection) => {
-                debug('Response for POST', resp);
-                dispatch({
-                    type: SAMPLE_COLLECTIONS_ADD,
-                    payload: createIdMap(resp)
+        if (sampleCollection.id) {
+            return Promise.reject(new Error('Cannot create SampleCollection, object has ID'));
+        } else {
+            return new Promise((resolve,reject) => {
+                Promise.all( 
+                    (sampleCollection.hasPart || []).map((sample:SampleResource) => dispatch(sampleResourcePost(sample)))
+                ).then((samples: SampleResource[]) => {
+                    sampleCollection.hasPart = samples;
+                    let api : SampleCollectionApi = new SampleCollectionApi(cfg);
+                    let req = api.samplecollectionsPost({user: DEFAULT_GRAPH, sampleCollection: sampleCollection}); // This should be my username on prod.
+                    req.then((resp:SampleCollection) => {
+                        debug('Response for POST', resp);
+                        dispatch({
+                            type: SAMPLE_COLLECTIONS_ADD,
+                            payload: createIdMap(resp)
+                        });
+                        resolve(resp);
+                    });
+                    req.catch((err) => {
+                        console.error('Error on POST SampleCollection', err);
+                        reject(err);
+                    });
                 });
-                resolve(resp);
             });
-            req.catch((err) => {
-                console.error('Error on POST SampleCollection', err);
-                reject(err);
-            });
-        });
-        return postProm;
+        }
     } else {
         console.error('TOKEN ERROR:', status);
         return Promise.reject(new Error('SampleCollection error'));

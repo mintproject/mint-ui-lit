@@ -1,10 +1,11 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
-import { Configuration, DatasetSpecification, DatasetSpecificationApi } from '@mintproject/modelcatalog_client';
+import { Configuration, DatasetSpecification, DatasetSpecificationApi, SampleResource,
+         SampleCollection } from '@mintproject/modelcatalog_client';
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
-         DEFAULT_GRAPH } from './actions';
+         DEFAULT_GRAPH, sampleCollectionPost, sampleResourcePost } from './actions';
 
-function debug (...args: any[]) { console.log('[MC DatasetSpecification]', ...args); }
+function debug (...args: any[]) { }//console.log('[MC DatasetSpecification]', ...args); }
 
 export const DATASET_SPECIFICATIONS_ADD = "DATASET_SPECIFICATIONS_ADD";
 export const DATASET_SPECIFICATION_DELETE = "DATASET_SPECIFICATION_DELETE";
@@ -63,23 +64,33 @@ export const datasetSpecificationPost: ActionThunk<Promise<DatasetSpecification>
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {
         debug('Creating new', datasetSpecification);
-        let postProm = new Promise((resolve,reject) => {
-            let api : DatasetSpecificationApi = new DatasetSpecificationApi(cfg);
-            let req = api.datasetspecificationsPost({user: DEFAULT_GRAPH, datasetSpecification: datasetSpecification}); // This should be my username on prod.
-            req.then((resp:DatasetSpecification) => {
-                debug('Response for POST', resp);
-                dispatch({
-                    type: DATASET_SPECIFICATIONS_ADD,
-                    payload: createIdMap(resp)
+        if (datasetSpecification.id) {
+            return Promise.reject(new Error('Cannot create DatasetSpecification, object has ID'));
+        } else {
+            return new Promise((resolve,reject) => {
+                Promise.all( (datasetSpecification.hasFixedResource || []).map((sample:SampleResource|SampleCollection) => {
+                    return sample.type.indexOf('SampleCollection') >= 0 ? 
+                        dispatch(sampleCollectionPost(sample))
+                        : dispatch(sampleResourcePost(sample));
+                })).then((samples) => {
+                    datasetSpecification.hasFixedResource = samples;
+                    let api : DatasetSpecificationApi = new DatasetSpecificationApi(cfg);
+                    let req = api.datasetspecificationsPost({user: DEFAULT_GRAPH, datasetSpecification: datasetSpecification}); // This should be my username on prod.
+                    req.then((resp:DatasetSpecification) => {
+                        debug('Response for POST', resp);
+                        dispatch({
+                            type: DATASET_SPECIFICATIONS_ADD,
+                            payload: createIdMap(resp)
+                        });
+                        resolve(resp);
+                    });
+                    req.catch((err) => {
+                        console.error('Error on POST DatasetSpecification', err);
+                        reject(err);
+                    });
                 });
-                resolve(resp);
             });
-            req.catch((err) => {
-                console.error('Error on POST DatasetSpecification', err);
-                reject(err);
-            });
-        });
-        return postProm;
+        }
     } else {
         console.error('TOKEN ERROR:', status);
         return Promise.reject(new Error('DatasetSpecification error'));

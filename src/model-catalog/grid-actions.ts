@@ -4,7 +4,7 @@ import { Configuration, Grid, GridApi } from '@mintproject/modelcatalog_client';
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
          DEFAULT_GRAPH } from './actions';
 
-function debug (...args: any[]) { console.log('[MC Grid]', ...args); }
+function debug (...args: any[]) {}// console.log('[MC Grid]', ...args); }
 
 export const GRIDS_ADD = "GRIDS_ADD";
 export const GRID_DELETE = "GRID_DELETE";

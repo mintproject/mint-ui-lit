@@ -4,7 +4,7 @@ import { Configuration, Region, RegionApi, GeoShape } from '@mintproject/modelca
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser,
          DEFAULT_GRAPH, geoShapePost, geoShapeDelete } from './actions';
 
-function debug (...args: any[]) { console.log('[MC Region]', ...args); }
+function debug (...args: any[]) {}// console.log('[MC Region]', ...args); }
 
 export const REGIONS_ADD = "REGIONS_ADD";
 export const REGION_DELETE = "REGION_DELETE";

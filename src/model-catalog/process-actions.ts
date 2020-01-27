@@ -4,7 +4,7 @@ import { Configuration, Process, ProcessApi } from '@mintproject/modelcatalog_cl
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
          DEFAULT_GRAPH } from './actions';
 
-function debug (...args: any[]) { console.log('[MC Process]', ...args); }
+function debug (...args: any[]) {}// console.log('[MC Process]', ...args); }
 
 export const PROCESSES_ADD = "PROCESSES_ADD";
 export const PROCESS_DELETE = "PROCESS_DELETE";

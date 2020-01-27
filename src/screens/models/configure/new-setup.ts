@@ -228,12 +228,6 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         goToPage(createUrl(this._model, this._version, this._config));
     }
 
-    private _parameterIdentifier = 0;
-    private _waitingParameters : Set<string> = new Set();
-    private _newParametersUris : string[] = [];
-    private _setupIdentifier = 0;
-    private _waitingFor : string = '';
-
     _saveNewSetup () {
         let nameEl      = this.shadowRoot.getElementById('new-setup-name') as HTMLInputElement;
         let descEl      = this.shadowRoot.getElementById('new-setup-desc') as HTMLInputElement;
@@ -266,9 +260,17 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             setupCreated.keywords = [keywords.split(/ *, */).join('; ')];
             setupCreated.parameterAssignmentMethod = [assignMe];
 
-            setupCreated.hasInput = (setupCreated.hasInput || []).map((input: SampleCollection | SampleResource) => {
+            setupCreated.hasInput = (setupCreated.hasInput || []).map((input: DatasetSpecification) => {
                 let newInput = this._inputs[input.id];
                 newInput.id = '';
+                newInput.hasFixedResource = (newInput.hasFixedResource||[]).map((sample:SampleCollection|SampleResource) => {
+                    sample.id = '';
+                    sample['hasPart'] = ((<SampleCollection>sample).hasPart||[]).map((sr:SampleResource) => {
+                        sr.id = '';
+                        return sr;
+                    });
+                    return sample;
+                });
                 return newInput;
             });
             setupCreated.hasParameter = (setupCreated.hasParameter || []).map((param: Parameter) => {
@@ -280,13 +282,9 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 return newParam;
             });
 
-            console.log('Creating...', setupCreated);
-
-            this._waitingFor = 'PostSetup' + this._setupIdentifier;
-            this._setupIdentifier += 1;
-
-            store.dispatch(modelConfigurationSetupPost(setupCreated, this._config, this._waitingFor));
-
+            store.dispatch(modelConfigurationSetupPost(setupCreated, this._config)).then((setup:ModelConfigurationSetup) => {
+                goToPage(createUrl(this._model, this._version, this._config, setup));
+            });
             showNotification("saveNotification", this.shadowRoot!);
         }
     }
@@ -806,15 +804,6 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 let db = state.modelCatalog;
                 this._regions = db.regions;
 
-                //TO SAVE
-                if (this._waitingFor) {
-                    if (db.created[this._waitingFor]) {
-                        let newid = db.created[this._waitingFor];
-                        this._waitingFor = '';
-                        goToPage(createUrl(this._model, this._version, this._config, {id: newid}));
-                    }
-                }
-
                 // Set selected resources
                 if (!this._model && db.models && this._selectedModel && db.models[this._selectedModel]) {
                     this._model = db.models[this._selectedModel];
@@ -828,8 +817,6 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         this._setup = { ...db.configurations[this._selectedConfig] } as ModelConfigurationSetup; 
                         this._setup.author = [];
                         this._setup.hasRegion = [];
-                        this._waitingParameters = new Set();
-                        this._newParametersUris = [];
 
                         // Fetching not loaded parameters 
                         (this._setup.hasParameter || []).forEach((p:Parameter) => {

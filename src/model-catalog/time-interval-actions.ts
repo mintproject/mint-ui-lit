@@ -4,7 +4,7 @@ import { Configuration, TimeInterval, TimeIntervalApi } from '@mintproject/model
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
          DEFAULT_GRAPH } from './actions';
 
-function debug (...args: any[]) { console.log('[MC TimeInterval]', ...args); }
+function debug (...args: any[]) {}// console.log('[MC TimeInterval]', ...args); }
 
 export const TIME_INTERVALS_ADD = "TIME_INTERVALS_ADD";
 export const TIME_INTERVAL_DELETE = "TIME_INTERVAL_DELETE";

@@ -11,8 +11,7 @@ import { goToPage } from 'app/actions';
 import { UserPreferences, IdMap } from 'app/reducers';
 import { BoundingBox } from './reducers';
 import { modelsGet, versionsGet, modelConfigurationsGet, regionsGet, geoShapesGet,
-         datasetSpecificationGet, sampleResourceGet, sampleCollectionGet,
-         /*ALL_MODELS, ALL_VERSIONS,*/ ALL_MODEL_CONFIGURATIONS, /*ALL_REGIONS, ALL_GEO_SHAPES*/ } from 'model-catalog/actions';
+         datasetSpecificationGet, sampleResourceGet, sampleCollectionGet } from 'model-catalog/actions';
 import { GeoShape } from '@mintproject/modelcatalog_client';
 
 import { queryDatasetResourcesAndSave } from 'screens/datasets/actions';
@@ -64,17 +63,25 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
         return [SharedStyles, css``];
     }
 
-    _loadingAux = false;
     protected firstUpdated() {
-        Promise.all([
-            store.dispatch(regionsGet()),
-            store.dispatch(geoShapesGet()),
-            store.dispatch(modelsGet()),
-            store.dispatch(versionsGet())
-        ]).then((v) => {
-            this._loadingAux = true;
+        let pGeo = store.dispatch(geoShapesGet());
+        let pReg = store.dispatch(regionsGet());
+        let pMod = store.dispatch(modelsGet());
+        let pVer = store.dispatch(versionsGet());
+        let pCon = store.dispatch(modelConfigurationsGet());
+
+        pGeo.then((v) => { this._geoShapes = v});
+        pReg.then((v) => { this._mregions = v});
+        pMod.then((v) => { this._models = v});
+        pVer.then((v) => { this._versions = v});
+        pCon.then((v) => { this._configs = v});
+
+        Promise.all([pGeo, pReg, pMod, pVer, pCon]).then((v) => {
+            this._fullyLoaded = true;
+            if (this._selectedRegion) {
+                this._getMatchingModels();
+            }
         })
-        store.dispatch(modelConfigurationsGet());
     }
 
     _getModelURL (setupURI: string) {
@@ -206,22 +213,6 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
 
         if (state && state.modelCatalog) {
             let db = state.modelCatalog;
-            if (!this._fullyLoaded) {
-                let loaded = db.loadedAll;
-                if (/*loaded[ALL_REGIONS] && loaded[ALL_GEO_SHAPES] && loaded[ALL_MODELS] && loaded[ALL_VERSIONS] &&*/
-                    loaded[ALL_MODEL_CONFIGURATIONS] && this._loadingAux) {
-                    this._geoShapes = db.geoShapes;
-                    this._mregions = db.regions;
-                    this._models = db.models;
-                    this._versions = db.versions;
-                    this._configs = db.configurations;
-                    this._fullyLoaded = true;
-                    if (this._selectedRegion) {
-                        this._getMatchingModels();
-                    }
-                }
-            }
-
             if (this._datasetSpecsLoading.size > 0) {
                 this._datasetSpecsLoading.forEach((uri:string) => {
                     if (db.datasetSpecifications[uri]) {

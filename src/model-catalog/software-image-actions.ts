@@ -4,7 +4,7 @@ import { Configuration, SoftwareImage, SoftwareImageApi } from '@mintproject/mod
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
          DEFAULT_GRAPH } from './actions';
 
-function debug (...args: any[]) { console.log('[MC SoftwareImage]', ...args); }
+function debug (...args: any[]) {}// console.log('[MC SoftwareImage]', ...args); }
 
 export const SOFTWARE_IMAGES_ADD = "SOFTWARE_IMAGES_ADD";
 export const SOFTWARE_IMAGE_DELETE = "SOFTWARE_IMAGE_DELETE";

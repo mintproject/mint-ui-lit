@@ -4,7 +4,7 @@ import { Configuration, SampleResource, SampleResourceApi } from '@mintproject/m
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
          DEFAULT_GRAPH } from './actions';
 
-function debug (...args: any[]) { console.log('[MC SampleResource]', ...args); }
+function debug (...args: any[]) {}// console.log('[MC SampleResource]', ...args); }
 
 export const SAMPLE_RESOURCES_ADD = "SAMPLE_RESOURCES_ADD";
 export const SAMPLE_RESOURCE_DELETE = "SAMPLE_RESOURCE_DELETE";
@@ -63,23 +63,26 @@ export const sampleResourcePost: ActionThunk<Promise<SampleResource>, MCASampleR
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {
         debug('Creating new', sampleResource);
-        let postProm = new Promise((resolve,reject) => {
-            let api : SampleResourceApi = new SampleResourceApi(cfg);
-            let req = api.sampleresourcesPost({user: DEFAULT_GRAPH, sampleResource: sampleResource}); // This should be my username on prod.
-            req.then((resp:SampleResource) => {
-                debug('Response for POST', resp);
-                dispatch({
-                    type: SAMPLE_RESOURCES_ADD,
-                    payload: createIdMap(resp)
+        if (sampleResource.id) {
+            return Promise.reject(new Error('Cannot create SampleResource, object has ID'));
+        } else {
+            return new Promise((resolve,reject) => {
+                let api : SampleResourceApi = new SampleResourceApi(cfg);
+                let req = api.sampleresourcesPost({user: DEFAULT_GRAPH, sampleResource: sampleResource}); // This should be my username on prod.
+                req.then((resp:SampleResource) => {
+                    debug('Response for POST', resp);
+                    dispatch({
+                        type: SAMPLE_RESOURCES_ADD,
+                        payload: createIdMap(resp)
+                    });
+                    resolve(resp);
                 });
-                resolve(resp);
+                req.catch((err) => {
+                    console.error('Error on POST SampleResource', err);
+                    reject(err);
+                });
             });
-            req.catch((err) => {
-                console.error('Error on POST SampleResource', err);
-                reject(err);
-            });
-        });
-        return postProm;
+        }
     } else {
         console.error('TOKEN ERROR:', status);
         return Promise.reject(new Error('SampleResource error'));
