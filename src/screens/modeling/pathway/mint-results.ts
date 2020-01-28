@@ -364,18 +364,18 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     _download (grouped_ensemble) {
         console.log(grouped_ensemble)
         let csv : string = (grouped_ensemble.outputs && grouped_ensemble.outputs.length > 0 ? 
-                            grouped_ensemble.outputs.map((outf) => outf.name.replace(/(-|_)/g, ' ')).join(';') + ';' : '')
+                            grouped_ensemble.outputs.map((outf) => outf.name.replace(/(-|_)/g, ' ')).join(',') + ',' : '')
                          + (grouped_ensemble.inputs && grouped_ensemble.inputs.length > 0 ?
-                            grouped_ensemble.inputs.map((inf) => inf.name.replace(/(-|_)/g, ' ')).join(';') + ';' : '')
+                            grouped_ensemble.inputs.map((inf) => inf.name.replace(/(-|_)/g, ' ')).join(',') + ',' : '')
                          + (grouped_ensemble.params && grouped_ensemble.params.length > 0 ? 
-                            grouped_ensemble.params.map((param) => param.name.replace(/(-|_)/g, ' ')).join(';') + ';' : '')
+                            grouped_ensemble.params.map((param) => param.name.replace(/(-|_)/g, ' ')).join(',') + ',' : '')
         Object.values(grouped_ensemble.ensembles).forEach((ensemble:any) => {
             csv += '\n';
             let param_defaults = {};
             this.pathway.models![ensemble.modelid].input_parameters.map((param) => param_defaults[param.id] = param.default);
             grouped_ensemble.outputs.forEach((output:any) => {
                 if (Object.keys(ensemble.results).length == 0) {
-                    csv += ';'
+                    csv += ','
                 } else {
                     Object.values(ensemble.results).forEach((result:any) => {
                         let oname = result.id.replace(/.+#/, '');
@@ -391,18 +391,18 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                             }
                             if (!fname)
                                 fname = result.location.replace(/.+\//, '');
-                            csv += furl + ';'
+                            csv += furl + ','
                         }
                     })
                 }
             });
             grouped_ensemble.inputs.forEach((input:any) => { 
                 let res = ensemble.bindings[input.id] as DataResource;
-                if (res) csv += res.url + ';';
-                else csv += ';';
+                if (res) csv += res.url + ',';
+                else csv += ',';
             });
             grouped_ensemble.params.forEach((param:any) => { 
-                csv += (ensemble.bindings[param.id] ?  ensemble.bindings[param.id] : param_defaults[param.id]) + ';';
+                csv += (ensemble.bindings[param.id] ?  ensemble.bindings[param.id] : param_defaults[param.id]) + ',';
             });
         });
 
