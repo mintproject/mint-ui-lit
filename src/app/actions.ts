@@ -20,6 +20,7 @@ import { User } from 'firebase';
 import { UserPreferences, MintPreferences } from './reducers';
 import { DefaultApi } from '@mintproject/modelcatalog_client';
 import { dexplorerSelectDataset, dexplorerSelectDatasetArea } from 'screens/datasets/ui-actions';
+import { selectEmulatorModel } from 'screens/emulators/actions';
 
 export const BASE_HREF = document.getElementsByTagName("base")[0].href.replace(/^http(s)?:\/\/.*?\//, "/");
 
@@ -278,9 +279,10 @@ const loadPage: ActionCreator<ThunkResult> =
         break;
     case 'emulators':
       import('../screens/emulators/emulators-home').then((_module) => {
-        if(params.length > 0) {
-          //store.dispatch(queryRegionDetail(params[0]));
-        }
+        let model = subpage;
+        if(model == "home")
+          model = "pihm";
+        store.dispatch(selectEmulatorModel(model))
       });
       break;
     case 'analysis':
