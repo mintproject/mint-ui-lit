@@ -42,6 +42,9 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
     private _parameter : Parameter | null = null;
 
     @property({type: Boolean})
+    private _editDefaults : boolean = false;
+
+    @property({type: Boolean})
     private _useRanges : boolean = false;
 
     @property({type: Boolean})
@@ -148,6 +151,31 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
                     placeholder="${this._parameter.hasDefaultValue}" required>
                     <span slot="after">${this._parameter.usesUnit ?(this._parameter.usesUnit[0] as any).label : ''}</span>
                 </wl-textfield>
+
+                <div class="checkbox" ?active="${this._editDefaults}" @click="${this._toggleEditDefaults}"
+                     style="margin-top: 10px;">
+                    <wl-icon></wl-icon>
+                    <span>Edit configuration defauls</span>
+                </div>
+
+                <div class="min-max-input" style="display: ${this._editDefaults ? '' : 'none'}">
+                    <wl-textfield
+                        type="number"
+                        id="edit-parameter-min-value" label="Minumum"
+                        value="${ this._parameter.hasMinimumAcceptedValue ? this._parameter.hasMinimumAcceptedValue[0] : '' }">
+                    </wl-textfield>
+                    <wl-textfield 
+                        type="number"
+                        id="edit-parameter-default-value" label="Default value"
+                        value="${this._parameter.hasDefaultValue}">
+                    </wl-textfield>
+                    <wl-textfield 
+                        type="number"
+                        id="edit-parameter-max-value" label="Maximum"
+                        value="${ this._parameter.hasMaximumAcceptedValue ? this._parameter.hasMaximumAcceptedValue[0] : ''}">
+                    </wl-textfield>
+                </div>
+
                 `}
             </form>`
         }
@@ -230,6 +258,10 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
         this._useRanges = !this._useRanges;
     }
 
+    _toggleEditDefaults () {
+        this._editDefaults = !this._editDefaults;
+    }
+
     /* parameterID is the URI of the parameter to edit,
      * if fixed is true we are editing ONLY the fixedValue of this parameter.
      */
@@ -237,6 +269,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
         if (this.active) {
             this._selectedParameterUri = parameterID;
             this._fixed = fixed;
+            this._editDefaults = false;
 
             let state: any = store.getState();
             if (state && state.modelCatalog && state.modelCatalog.parameters && state.modelCatalog.parameters[parameterID]) {
@@ -287,23 +320,37 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
         if (fixedValEl) {
             let fixedVal = fixedValEl.value;
             let description = descriptionEl.value;
-            let min : number, max : number;
-            if (this._parameter.hasMinimumAcceptedValue && this._parameter.hasMinimumAcceptedValue.length > 0) {
-                min = Number(this._parameter.hasMinimumAcceptedValue[0]);
-            }
-            if (this._parameter.hasMaximumAcceptedValue && this._parameter.hasMaximumAcceptedValue.length > 0) {
-                max = Number(this._parameter.hasMaximumAcceptedValue[0]);
+            let min : number, max : number, def : number;
+            if (this._editDefaults) {
+                let defaultEl = this.shadowRoot.getElementById('edit-parameter-default-value') as Textfield;
+                let minEl = this.shadowRoot.getElementById('edit-parameter-min-value') as Textfield;
+                let maxEl = this.shadowRoot.getElementById('edit-parameter-max-value') as Textfield;
+                if (minEl.value) min = minEl.value;
+                if (maxEl.value) max = maxEl.value;
+                if (defaultEl.value) def = defaultEl.value;
+            } else {
+                if (this._parameter.hasMinimumAcceptedValue && this._parameter.hasMinimumAcceptedValue.length > 0) {
+                    min = Number(this._parameter.hasMinimumAcceptedValue[0]);
+                }
+                if (this._parameter.hasMaximumAcceptedValue && this._parameter.hasMaximumAcceptedValue.length > 0) {
+                    max = Number(this._parameter.hasMaximumAcceptedValue[0]);
+                }
             }
 
-            if (!fixedVal || (min!=undefined && Number(fixedVal)<min) || (max!=undefined && Number(fixedVal)>max)) {
+            if ((!fixedVal && !this._editDefaults) || (min!=undefined && Number(fixedVal)<min) || (max!=undefined && Number(fixedVal)>max)) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>fixedValEl).refreshAttributes();
                 return;
             }
 
             let editedParameter : Parameter = Object.assign({}, this._parameter);
-            editedParameter.hasFixedValue = [fixedVal as any];
             editedParameter.description = [description];
+            if (fixedVal) editedParameter.hasFixedValue = [fixedVal as any];
+            if (this._editDefaults) {
+                if (def) editedParameter.hasDefaultValue = [def as any];
+                if (min) editedParameter.hasMinimumAcceptedValue = [min as any]
+                if (max) editedParameter.hasMaximumAcceptedValue = [max as any]
+            }
             this.dispatchEvent(new CustomEvent('parameterEdited', {composed: true, detail: editedParameter }));
             this._cancel();
         }
