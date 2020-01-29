@@ -107,6 +107,13 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     @property({type: String})
     private _tab : 'overview'|'io'|'variables'|'software'|'tech'|'assumptions'|'example' = 'overview';
+    
+    private _emulators = {
+        'https://w3id.org/okn/i/mint/CYCLES' : '/emulators/cycles',
+        'https://w3id.org/okn/i/mint/TOPOFLOW': '/emulators/topoflow',
+        'https://w3id.org/okn/i/mint/PIHM' : '/emulators/pihm',
+        'https://w3id.org/okn/i/mint/HAND' : '/emulators/hand'
+    }
 
     // URIs of selected resources
     private _selectedModel = null;
@@ -533,6 +540,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </wl-title>
                     <wl-divider style="margin-bottom: .5em;"></wl-divider>
                     <wl-text >${this._model.desc}</wl-text>
+                    ${this._emulators[this._selectedModel] ?  html`
+                    <div style="margin-top: 4px;">
+                        You can see this <b>model emulators</b> clicking
+                        <a href="${'/'+this._regionid+this._emulators[this._selectedModel]}">here</a>.
+                    </div>` 
+                    : ''}
                     <div id="desc-ext">
                         ${this._model.authors? html`<wl-text><b>• Authors:</b> ${ this._model.authors.join(', ') }</wl-text>` :''}
                         ${this._model.fundS? html`<wl-text><b>• Funding:</b> ${ this._model.fundS }</wl-text>` :''}
@@ -1534,6 +1547,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     store.dispatch(fetchDiagramsForModelConfig(ui.selectedModel));
                     store.dispatch(fetchSampleVisForModelConfig(ui.selectedModel));
                     store.dispatch(fetchScreenshotsForModelConfig(ui.selectedModel));
+                    super.setRegion(state);
                 }
                 this._selectedModel = ui.selectedModel;
 
