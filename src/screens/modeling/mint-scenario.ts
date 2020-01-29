@@ -412,7 +412,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
             defOption.value = '';
             selector.options.add(defOption);
 
-            this._categorizedRegions[category].forEach((region:Region) => {
+            (this._categorizedRegions[category]||[]).forEach((region:Region) => {
                 let newOption = document.createElement('option');
                 newOption.text = region.name;
                 newOption.value = region.id;

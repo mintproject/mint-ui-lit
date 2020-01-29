@@ -161,7 +161,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
                 <div class="min-max-input" style="display: ${this._editDefaults ? '' : 'none'}">
                     <wl-textfield
                         type="number"
-                        id="edit-parameter-min-value" label="Minumum"
+                        id="edit-parameter-min-value" label="Minimum"
                         value="${ this._parameter.hasMinimumAcceptedValue ? this._parameter.hasMinimumAcceptedValue[0] : '' }">
                     </wl-textfield>
                     <wl-textfield 
@@ -226,7 +226,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
                 <div class="min-max-input ${this._useRanges ? '' : 'no-ranges'}">
                     <wl-textfield
                         type="number"
-                        id="edit-parameter-min-value" label="Minumum"
+                        id="edit-parameter-min-value" label="Minimum"
                         value="${min}" ?required="${this._useRanges}">
                     </wl-textfield>
                     <wl-textfield 
@@ -325,9 +325,9 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
                 let defaultEl = this.shadowRoot.getElementById('edit-parameter-default-value') as Textfield;
                 let minEl = this.shadowRoot.getElementById('edit-parameter-min-value') as Textfield;
                 let maxEl = this.shadowRoot.getElementById('edit-parameter-max-value') as Textfield;
-                if (minEl.value) min = minEl.value;
-                if (maxEl.value) max = maxEl.value;
-                if (defaultEl.value) def = defaultEl.value;
+                if (minEl.value) min = parseFloat(minEl.value);
+                if (maxEl.value) max = parseFloat(maxEl.value);
+                if (defaultEl.value) def = parseFloat(defaultEl.value);
             } else {
                 if (this._parameter.hasMinimumAcceptedValue && this._parameter.hasMinimumAcceptedValue.length > 0) {
                     min = Number(this._parameter.hasMinimumAcceptedValue[0]);
