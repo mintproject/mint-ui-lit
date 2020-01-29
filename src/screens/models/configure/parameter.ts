@@ -161,7 +161,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
                 <div class="min-max-input" style="display: ${this._editDefaults ? '' : 'none'}">
                     <wl-textfield
                         type="number"
-                        id="edit-parameter-min-value" label="Minumum"
+                        id="edit-parameter-min-value" label="Minimum"
                         value="${ this._parameter.hasMinimumAcceptedValue ? this._parameter.hasMinimumAcceptedValue[0] : '' }">
                     </wl-textfield>
                     <wl-textfield 
@@ -226,7 +226,7 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
                 <div class="min-max-input ${this._useRanges ? '' : 'no-ranges'}">
                     <wl-textfield
                         type="number"
-                        id="edit-parameter-min-value" label="Minumum"
+                        id="edit-parameter-min-value" label="Minimum"
                         value="${min}" ?required="${this._useRanges}">
                     </wl-textfield>
                     <wl-textfield 
