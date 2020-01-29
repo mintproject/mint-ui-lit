@@ -3,6 +3,7 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 
 import { Configuration, DefaultApi, ModelApi, ModelConfigurationApi, ParameterApi, GridApi,
+         ConfigurationSetupApi, ModelConfigurationSetup,
          DatasetSpecificationApi, TimeIntervalApi, SoftwareImageApi } from '@mintproject/modelcatalog_client';
 
 export * from './person-actions';
@@ -146,6 +147,15 @@ export const softwareImageGet: ActionCreator<ModelCatalogThunkResult> = (uri) =>
         });
     });
     req.catch((err) => {console.log('Error on getSoftwareImage', err)});
+}
+
+/*export const SOFTWARE_IMAGE_GET = "SOFTWARE_IMAGE_GET";
+interface MCASoftwareImageGet extends Action<'SOFTWARE_IMAGE_GET'> { payload: any };*/
+export function setupGetAll (uri:string) : Promise<ModelConfigurationSetup> {
+    debug('!Fetching setup', uri);
+    let id = uri.split('/').pop();
+    let api = new ConfigurationSetupApi();
+    return api.customConfigurationsetupsIdGet({username: DEFAULT_GRAPH, id: id});
 }
 
 export type ModelCatalogAction = MCACommon | ModelCatalogPersonAction | ModelCatalogParameterAction | ModelCatalogProcessAction |

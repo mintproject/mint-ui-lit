@@ -11,7 +11,7 @@ import { goToPage } from 'app/actions';
 import { UserPreferences, IdMap } from 'app/reducers';
 import { BoundingBox } from './reducers';
 import { modelsGet, versionsGet, modelConfigurationsGet, regionsGet, geoShapesGet,
-         datasetSpecificationGet, sampleResourceGet, sampleCollectionGet,
+         datasetSpecificationGet, sampleResourceGet, sampleCollectionGet, setupGetAll,
          ALL_MODELS, ALL_VERSIONS, ALL_MODEL_CONFIGURATIONS, ALL_REGIONS, ALL_GEO_SHAPES } from 'model-catalog/actions';
 import { GeoShape } from '@mintproject/modelcatalog_client';
 
@@ -24,17 +24,13 @@ interface GeoShapeBBox extends GeoShape {
 @customElement('region-models')
 export class RegionModels extends connect(store)(RegionQueryPage)  {
     @property({type: Object})
-    private _datasetSpecsLoading : Set<string> = new Set();
-    @property({type: Object})
-    private _sampleCollectionsLoading : Set<string> = new Set();
-    @property({type: Object})
-    private _sampleResourcesLoading : Set<string> = new Set();
-
-    @property({type: Object})
     private prefs : UserPreferences;
 
     @property({type: Boolean})
     private _fullyLoaded : boolean = false;
+
+    @property({type: Boolean})
+    private _loadingDatasets : boolean = false;
 
     @property({type: Object})
     private _geoShapes : IdMap<GeoShapeBBox> = {} as IdMap<GeoShapeBBox>;
@@ -57,11 +53,17 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
     @property({type: Array})
     private _matchingModelSetups : any = [];
 
+    @property({type: Object})
+    private _categorizedMatchingSetups : any = {};
+
     @property({type: Array})
     private _matchingModelDatasets : any = [];
 
     static get styles() {
-        return [SharedStyles, css``];
+        return [SharedStyles, css`
+        .no-decorator {
+            text-decoration: none;
+        }`];
     }
 
     protected firstUpdated() {
@@ -111,6 +113,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
     private _getMatchingModels() {
         this._matchingModelSetups = [];
         this._matchingModelDatasets = [];
+        this._loadingDatasets = true;
         Object.keys(this._geoShapes).map((geoId:string) => {
             let bbox = this._geoShapes[geoId].bbox as BoundingBox;
             let selbox = this._selectedRegion.bounding_box;
@@ -119,10 +122,8 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
             }
             if (this._doBoxesIntersect(bbox, selbox)) {
                 let region : any = Object.values(this._mregions).filter((r:any) => r.geo && r.geo.length > 0 && r.geo[0].id === geoId)[0];
-                let regionType = this.regionType === 'Administrative' ? 'Economy' : this.regionType;
                 let modelsInside = Object.values(this._configs)
-                    .filter((c:any) => c.hasModelCategory && c.hasModelCategory.indexOf(regionType) >= 0 &&
-                                       c.type && c.type.indexOf('ModelConfigurationSetup') >= 0 &&
+                    .filter((c:any) => c.type && c.type.indexOf('ModelConfigurationSetup') >= 0 &&
                                        c.hasRegion && c.hasRegion.length > 0 &&
                                        c.hasRegion.filter((r:any) => r.id === region.id).length > 0);
                 if (modelsInside) {
@@ -130,57 +131,93 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
                 }
             }
         });
-        let dspecs : Set<string> = new Set();
-        this._matchingModelSetups.forEach((model:any) => (model.hasInput||[]).forEach(input => dspecs.add(input.id)));
-        this._datasetSpecsLoading = dspecs;
-
-        let state : any = store.getState();
-        dspecs.forEach(dspecUri => {
-            if (state && state.modelCatalog && state.modelCatalog.datasetSpecifications &&
-                state.modelCatalog.datasetSpecifications[dspecUri]) {
-                //console.log(dspecUri, 'already loaded');
-            } else {
-                store.dispatch(datasetSpecificationGet(dspecUri))
+        this._categorizedMatchingSetups = this._matchingModelSetups.reduce((dic, setup) => {
+            let cat : string = setup.hasModelCategory && setup.hasModelCategory.length > 0 ?
+                    setup.hasModelCategory[0] : ''; 
+            if (cat) {
+                if (!dic[cat]) dic[cat] = [setup];
+                else dic[cat].push(setup)
             }
+            return dic;
+        }, {})
+
+        Promise.all(this._matchingModelSetups.map(setup => setupGetAll(setup.id))).then((setups) => {
+            let datasets = new Set();
+            setups.forEach((setup:any) => {
+                (setup.hasInput||[]).forEach(input => {
+                    (input.hasFixedResource||[]).forEach(sample => {
+                        (sample.dataCatalogIdentifier||[]).forEach(dsid => {
+                            if (dsid[0] != 'F' && dsid[1] != 'F' && dsid[2] != 'F')
+                                datasets.add(dsid);
+                        });
+                    });
+                    (input.hasPart||[]).forEach(sample => {
+                        console.log('!collection', sample)
+                    });
+                });
+            });
+            datasets.forEach(ds => {
+                this._matchingModelDatasets.push(ds);
+                store.dispatch(queryDatasetResourcesAndSave(ds, this._selectedRegion, this.prefs.mint));
+            });
+            this._loadingDatasets = false;
         });
     }
 
     protected render() {
         return html`
-            ${this._selectedRegion && this._matchingModelSetups ? 
-                html`
-                    <wl-title level="4" style="font-size: 17px; margin-top: 20px;">Models for ${this._selectedRegion.name}</wl-title>
-                    ${this._fullyLoaded ? html`
-                    ${!this._matchingModelSetups || this._matchingModelSetups.length == 0 ? 'No models for this region' :
-                    html`<ul>${this._matchingModelSetups.map((model) => html`
-                        <li><a href="${this._getModelURL(model.id)}">${model.label}</a></li>`)
-                    }</ul>`}
-                    ` : html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
-                    }
-                `
+            ${this._selectedRegion ? html`
+                <wl-title level="4" style="font-size: 17px; margin-top: 20px;">Models for ${this._selectedRegion.name}</wl-title>
+                ${this._fullyLoaded ? html`
+                    ${Object.keys(this._categorizedMatchingSetups).length == 0 ?  'No models for this region' : ''}
+                    ${Object.keys(this._categorizedMatchingSetups).map((category:string) => html`
+                        <wl-expansion name="models">
+                            <span slot="title">${category} models</span>
+                            <span slot="description">${this._categorizedMatchingSetups[category].length} setups found</span>
+                            ${this._categorizedMatchingSetups[category].map((setup) => html`
+                            <a href="${this._getModelURL(setup.id)}" class="no-decorator"><wl-list-item class="active">
+                                <wl-icon slot="before">web</wl-icon>
+                                <wl-title level="4" style="margin: 0;">${setup.label}</wl-title>
+
+                                <div>
+                                    <b>Regions:</b>
+                                    ${setup.hasRegion.map(r => this._mregions[r.id].label).join(', ')}
+                                </div>
+
+                            </wl-list-item></a>
+                            `)}
+                        </wl-expansion>
+                    `)}
+
+                    ` 
+
+                    : html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`}`
                 : ""
             }
-            ${this._selectedRegion && this._matchingModelDatasets && this._matchingModelSetups.length > 0?
+
+            ${this._selectedRegion && this._matchingModelSetups.length > 0?
             html`
                 <wl-title level="4" style="font-size: 17px; margin-top: 20px;">Datasets used by models in ${this._selectedRegion.name}</wl-title>
-
-                ${!this._fullyLoaded || this._datasetSpecsLoading.size > 0 || this._sampleCollectionsLoading.size > 0 || this._sampleResourcesLoading.size > 0 ?
-                html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`: ''}
-
-                ${this._matchingModelDatasets.length === 0 ? 'No datasets for models in ' + this._selectedRegion.name : ''}
-
-                ${this._matchingModelDatasets.map(dsId => this._datasets && this._datasets[dsId] ? html`
-                    <wl-list-item class="active" @click="${() => goToPage('datasets/browse/'+dsId)}">
-                        <wl-icon slot="before">folder</wl-icon>
-                        <wl-title level="4" style="margin: 0">${this._datasets[dsId].name}</wl-title>
-                        <div>
-                            ${this._datasets[dsId].is_cached ? 
-                                html`<span style="color: green">Available on MINT servers</span>` :
-                                html`<span style="color: lightsalmon">Available for download</span>`}
-                            <span style="color: gray">-</span> ${this._datasets[dsId].resource_count} files
-                        </div>
-                    </wl-list-item>
-                `: '')}
+                ${this._loadingDatasets ? html`
+                <div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` 
+                : html`
+                    ${this._matchingModelDatasets.length === 0 ? 
+                    'No datasets for models in ' + this._selectedRegion.name 
+                    : html`
+                        ${this._matchingModelDatasets.map(dsId => this._datasets && this._datasets[dsId] ? html`
+                            <wl-list-item class="active" @click="${() => goToPage('datasets/browse/'+dsId)}">
+                                <wl-icon slot="before">folder</wl-icon>
+                                <wl-title level="4" style="margin: 0">${this._datasets[dsId].name}</wl-title>
+                                <div>
+                                    ${this._datasets[dsId].is_cached ? 
+                                        html`<span style="color: green">Available on MINT servers</span>` :
+                                        html`<span style="color: lightsalmon">Available for download</span>`}
+                                    <span style="color: gray">-</span> ${this._datasets[dsId].resource_count} files
+                                </div>
+                            </wl-list-item>
+                        `: '')}
+                    `}
+                `}
             `: ''
             }
         `;
@@ -216,66 +253,6 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
                     }
                 }
             }
-
-            if (this._datasetSpecsLoading.size > 0) {
-                this._datasetSpecsLoading.forEach((uri:string) => {
-                    if (db.datasetSpecifications[uri]) {
-                        let dss = db.datasetSpecifications[uri];
-                        this._datasetSpecsLoading.delete(uri);
-                        this.requestUpdate();
-                        if (dss.hasFixedResource && dss.hasFixedResource.length > 0) {
-                            dss.hasFixedResource.forEach(fixed => {
-                                if (fixed.type.indexOf('SampleCollection') >= 0) {
-                                    if (!db.sampleCollections || !db.sampleCollections[fixed.id])
-                                        store.dispatch(sampleCollectionGet(fixed.id))
-                                    this._sampleCollectionsLoading.add(fixed.id);
-                                } else {
-                                    if (!db.sampleResources || !db.sampleResources[fixed.id])
-                                        store.dispatch(sampleResourceGet(fixed.id))
-                                    this._sampleResourcesLoading.add(fixed.id);
-                                }
-                            });
-                        }
-                    }
-                });
-            }
-
-            if (this._sampleResourcesLoading.size > 0) {
-                this._sampleResourcesLoading.forEach((uri:string) => {
-                    if (db.sampleResources[uri]) {
-                        let sample = db.sampleResources[uri];
-                        this._sampleResourcesLoading.delete(uri);
-                        this.requestUpdate();
-                        if (sample.dataCatalogIdentifier) {
-                            sample.dataCatalogIdentifier.forEach(id => {
-                                if (id[0] != 'F' && id[1] != 'F' && id[2] != 'F') {
-                                    this._matchingModelDatasets.push(id)
-                                    store.dispatch(queryDatasetResourcesAndSave(id, this._selectedRegion, this.prefs.mint));
-                                    this.requestUpdate();
-                                }
-                            });
-                        }
-                    }
-                });
-            }
-
-            if (this._sampleCollectionsLoading.size > 0) {
-                this._sampleCollectionsLoading.forEach((uri:string) => {
-                    if (db.sampleCollections[uri]) {
-                        let collection = db.sampleCollections[uri];
-                        this._sampleCollectionsLoading.delete(uri);
-                        this.requestUpdate();
-                        if (collection.hasPart) {
-                            collection.hasPart.forEach((sample:any) => {
-                                if (!db.sampleResources || !db.sampleResources[sample.id])
-                                    store.dispatch(sampleResourceGet(sample.id))
-                                this._sampleResourcesLoading.add(sample.id);
-                            });
-                        }
-                    }
-                });
-            }
-
         }
     }
 }
