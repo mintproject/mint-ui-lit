@@ -1,7 +1,7 @@
 import { Action, ActionCreator } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "../../app/store";
-import { Dataset, DatasetDetail, DatasetQueryParameters } from "./reducers";
+import { Dataset, DatasetDetail, DatasetQueryParameters, DataResource } from "./reducers";
 import { EXAMPLE_DATASETS_QUERY } from "../../offline_data/sample_datasets";
 import { OFFLINE_DEMO_MODE } from "../../app/actions";
 import { IdMap, MintPreferences } from "app/reducers";
@@ -273,6 +273,34 @@ const getDatasetObjectsFromDCResponse = (obj: any, queryParameters: DatasetQuery
 }
 
 // Query Data Catalog by Variables
+export function loadResourcesForDataset (datasetid:string, dates:DateRange, region:Region, prefs:MintPreferences) : Promise<DataResource[]> {
+    return new Promise((resolve,reject) => {
+        let geojson = JSON.parse(region.geojson_blob);
+        let resQueryData = {
+            dataset_id: datasetid,
+            filter: {
+                spatial_coverage__intersects: geojson.geometry,
+                end_time__gte: fromTimeStampToString(dates.start_date).replace(/\.\d{3}Z$/,''),
+                start_time__lte: fromTimeStampToString(dates.end_date).replace(/\.\d{3}Z$/,'')
+            },
+            limit: 5000
+        };
+
+        let req = fetch(prefs.data_catalog_api + "/datasets/dataset_resources", {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(resQueryData)
+        });
+        req.then(r => {
+            r.json().then(resp => {
+                let resources = getDatasetResourceListFromDCResponse(resp);
+                resolve(resources);
+            })
+        });
+        req.catch(reject);
+    });
+}
+
 type QueryDatasetsThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionVariablesQuery>;
 export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> = 
         (modelid: string, inputid: string, driving_variables: string[], dates: DateRange, region: Region, 
@@ -301,6 +329,7 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
         }
     }
     else {
+        //START
         dispatch({
             type: DATASETS_VARIABLES_QUERY,
             modelid: modelid,
@@ -318,53 +347,28 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
             limit: 100
         }
 
-        let resQueryData = {
-            filter: {
-                spatial_coverage__intersects: geojson.geometry,
-                end_time__gte: fromTimeStampToString(dates.start_date).replace(/\.\d{3}Z$/,''),
-                start_time__lte: fromTimeStampToString(dates.end_date).replace(/\.\d{3}Z$/,'')
-            },
-            limit: 5000
-        }
-
         fetch(prefs.data_catalog_api + "/datasets/find", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(dsQueryData)
         }).then((response) => {
             response.json().then((obj) => {
-                /*let datasets: Dataset[] = getResourceObjectsFromDCResponse(obj, 
-                    {variables: driving_variables} as DatasetQueryParameters)*/
                 let datasets: Dataset[] = getDatasetsFromDCResponse(obj, 
                     {variables: driving_variables} as DatasetQueryParameters)
-                
-                // FIXME: Doing this for all datasets by default for now
-                // - Should change this to do on-demand only later
-                Promise.all(
-                    datasets.map((ds) => {
-                        delete ds["spatial_coverage"];
-                        resQueryData["dataset_id"] = ds.id;
-                        return fetch(prefs.data_catalog_api + "/datasets/dataset_resources", {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify(resQueryData)
-                        });
-                    })
-                ).then((responses) => {
-                    Promise.all((responses.map((resp) =>  resp.json()))).then((resp_objs) => {
-                        for(let i=0; i<datasets.length; i++)  {
-                            let resp_obj = resp_objs[i];
-                            datasets[i].resources = getDatasetResourceListFromDCResponse(resp_obj);
-                        }
-                        dispatch({
-                            type: DATASETS_VARIABLES_QUERY,
-                            modelid: modelid,
-                            inputid: inputid,
-                            datasets: datasets,
-                            loading: false
-                        });
-                    })
+
+                datasets.map((ds) => {
+                    delete ds["spatial_coverage"];
+                    ds.resources_loaded = false;
                 });
+
+                dispatch({
+                    type: DATASETS_VARIABLES_QUERY,
+                    modelid: modelid,
+                    inputid: inputid,
+                    datasets: datasets,
+                    loading: false
+                });
+
             })
         });
     }

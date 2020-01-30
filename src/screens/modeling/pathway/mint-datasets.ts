@@ -6,7 +6,7 @@ import datasets, { Dataset, ModelDatasets } from "../../datasets/reducers";
 import { DatasetMap, DataEnsembleMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, SubGoal } from "../reducers";
 import { SharedStyles } from "../../../styles/shared-styles";
 import { Model } from "../../models/reducers";
-import { queryDatasetsByVariables } from "../../datasets/actions";
+import { queryDatasetsByVariables, loadResourcesForDataset } from "../../datasets/actions";
 import { updatePathway } from "../actions";
 import { removeDatasetFromPathway, matchVariables, getPathwayDatasetsStatus, TASK_DONE, getUISelectedSubgoal } from "../../../util/state_functions";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
@@ -17,6 +17,7 @@ import { IdMap } from "../../../app/reducers";
 import { fromTimeStampToDateString } from "util/date-utils";
 
 import "weightless/snackbar";
+import 'components/loading-dots';
 import { Region } from "screens/regions/reducers";
 
 store.addReducers({
@@ -36,6 +37,9 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
 
     @property({type: Boolean})
     private _editMode: Boolean = false;
+
+    @property({type: Boolean})
+    private _waiting: Boolean = false;
 
     @property({type: Array})
     private _datasetsToCompare: Dataset[] = [];
@@ -226,14 +230,23 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                                             ?checked="${(bindings || []).indexOf(dataset.id!) >= 0}"></input></td>
                                                         <td class="${matched ? 'matched': ''}">
                                                             <a target="_blank" href="${this._regionid}/datasets/browse/${dataset.id}/${this.getSubregionId()}">${dataset.name}</a>
-                                                            ${resources.length > 1 ?
-                                                            html`
-                                                                <br />
-                                                                ( ${selected_resources.length} / ${resources.length} resources -  
-                                                                <a style="cursor:pointer"
-                                                                    @click="${() => this._selectDatasetResources(dataset, false)}">Change</a> )
-                                                            `
-                                                            : ""}
+                                                            <br/>
+                                                            (${dataset.resources_loaded ? 
+                                                                (resources.length === 0 ?
+                                                                    'This dataset has no resources'
+                                                                    : html`
+                                                                    ${selected_resources.length} / ${resources.length} resources -  
+                                                                    <a style="cursor:pointer"
+                                                                        @click="${() => this._selectDatasetResources(dataset, false)}">Change</a>
+                                                                `)
+                                                            : html`
+                                                                ${dataset.resource_count} total resources - 
+                                                                <a style="cursor:pointer" @click="${() => {
+                                                                    this._loadDatasetResources(dataset);
+                                                                    this._selectDatasetResources(dataset, false);
+                                                                }}">Filter and select</a>
+                                                            `})
+
                                                         </td>
                                                         <td>${(dataset.categories || []).join(", ")}</td>
                                                         <td>${dataset.region}</td>
@@ -288,8 +301,11 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                         html `<wl-button flat inverted
                             @click="${() => this._setEditMode(false)}">CANCEL</wl-button>`
                         : html``}
-                    <wl-button type="button" class="submit" 
-                        @click="${() => this._selectPathwayDatasets()}">Select &amp; Continue</wl-button>
+                    <wl-button type="button" class="submit" ?disabled="${this._waiting}"
+                            @click="${() => this._loadAndSelectPathwayDatasets()}">
+                        Select &amp; Continue
+                        ${this._waiting? html`<loading-dots style="--width: 20px"></loading-dots>` : ''}
+                    </wl-button>
                 </div>  
                 <fieldset class="notes">
                     <legend>Notes</legend>
@@ -387,6 +403,9 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                         })}
                     </tbody>
                 </table>            
+                ${!(this._selectResourcesDataset||{}).resources_loaded ? html`
+                    <div style="margin-top: 10px; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>
+                `:'' }
             </div>   
             <div slot="footer">
                 <wl-button @click="${this._closeResourceSelectionDialog}" inverted flat>Close</wl-button>
@@ -428,6 +447,17 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                     }
         });
         return selected_datasets;     
+    }
+
+    _loadDatasetResources(dataset: Dataset) {
+        let dates = this.pathway.dates || this.subgoal.dates || this.scenario.dates;
+        let req = loadResourcesForDataset(dataset.id, dates, this._subgoal_region, this.prefs.mint)
+        req.then((resources) => {
+            dataset.resources = resources;
+            dataset.resources_loaded = true;
+            dataset.resources.forEach(r => {r.selected = true})
+        });
+        return req;
     }
 
     _selectDatasetResources(dataset: Dataset, immediate_update: boolean) {
@@ -485,6 +515,29 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         showDialog("comparisonDialog", this.shadowRoot!);
     }
 
+    _loadAndSelectPathwayDatasets() {
+        let new_datasets = []
+        this._waiting = true;
+        Object.keys(this.pathway.models!).map((modelid) => {
+            let model = this.pathway.models![modelid];
+            model.input_files.filter((input) => !input.value).map((input) => {
+                let inputid = input.id!;
+                Object.values(this._getDatasetSelections(modelid, inputid)).forEach((ds) => {
+                    new_datasets.push(ds);
+                });
+            })
+        });
+
+        Promise.all(Object.values(new_datasets)
+                .filter(ds => !ds.resources_loaded)
+                .map(ds => this._loadDatasetResources(ds))
+        ).then((values) => {
+            this._waiting = false;
+            this._selectPathwayDatasets();
+        });
+
+    }
+
     _selectPathwayDatasets() {
         Object.keys(this.pathway.models!).map((modelid) => {
             let model = this.pathway.models![modelid];
@@ -524,7 +577,6 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                         model_ensembles[modelid] = {};
                     if(!model_ensembles[modelid][inputid])
                         model_ensembles[modelid][inputid] = [];
-                    let ds = new_datasets[dsid];
                     model_ensembles[modelid][inputid].push(dsid!);
                     datasets[dsid] = new_datasets[dsid];
                 });
