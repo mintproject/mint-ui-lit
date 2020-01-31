@@ -114,6 +114,7 @@ const getDatasetDetailFromDCResponse = (ds: any) => {
         resource_count: dmeta['resource_count'] || 0,
         spatial_coverage: dmeta['dataset_spatial_coverage'] || null,
         resources: [],
+        config: dmeta['config'] || null,
     }
 }
 

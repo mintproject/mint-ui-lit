@@ -27,9 +27,6 @@ export class RegionDatasets extends connect(store)(RegionQueryPage)  {
     private _datasets : DatasetsWithStatus;
 
     @property({type: Object})
-    private _data_trans_url : string = 'https://data-trans.mint.isi.edu/pipeline';
-    
-    @property({type: Object})
     private prefs : UserPreferences;
     
     static get styles() {
@@ -41,8 +38,8 @@ export class RegionDatasets extends connect(store)(RegionQueryPage)  {
     }
 
     _transform (ds: Dataset) {
-        let url : URL = new URL(this._data_trans_url);
-        url.searchParams.append('slct_adp', '10 topoflow4_climate_write_func%2FDcatReadTopoflow4ClimateUploadFunc');
+        let url : URL = new URL(`https://data-trans.mint.isi.edu/pipeline/create?dcatId=${ds.id}`);
+        /*url.searchParams.append('slct_adp', '10 topoflow4_climate_write_func%2FDcatReadTopoflow4ClimateUploadFunc');
         //url.searchParams.append('add_adp', '');
         //url.searchParams.append('update_pipe', '');
         url.searchParams.append('clear_add_pipe', '');
@@ -54,14 +51,12 @@ export class RegionDatasets extends connect(store)(RegionQueryPage)  {
         url.searchParams.append('0.inputs.DEM_yres_arcsecs', '257');
         url.searchParams.append('0.inputs.var_name', 'HQprecipitation');
         //url.searchParams.append('0.inputs.DEM_ncols', '30');
-        //url.searchParams.append('0.inputs.DEM_nrows', '30');
+        //url.searchParams.append('0.inputs.DEM_nrows', '30');*/
         return String(url);
     }
 
     _isGPM (ds: Dataset) {
-        return ds.id === "adfca6fb-ad82-4be3-87d8-8f60f9193e43" ||
-               (ds.name.toLowerCase() + ds.description.toLowerCase()).includes('gpm') ||
-                ds.resources.some((r) => r.name.includes('gpm'))
+        return ds.id === "adfca6fb-ad82-4be3-87d8-8f60f9193e43";
     }
 
     protected render() {
