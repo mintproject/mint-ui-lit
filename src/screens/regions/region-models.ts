@@ -7,6 +7,7 @@ import 'components/google-map-custom';
 import 'weightless/progress-spinner';
 import { RegionQueryPage } from './region-query-page';
 import { SharedStyles } from 'styles/shared-styles';
+import { ExplorerStyles } from 'screens/models/model-explore/explorer-styles';
 import { goToPage } from 'app/actions';
 import { UserPreferences, IdMap } from 'app/reducers';
 import { BoundingBox } from './reducers';
@@ -60,7 +61,12 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
     private _matchingModelDatasets : any = [];
 
     static get styles() {
-        return [SharedStyles, css`
+        return [SharedStyles, ExplorerStyles, css`
+        .tooltip:hover::after {
+            font-size: 14px;
+            width: 320px;
+        }
+
         .no-decorator {
             text-decoration: none;
         }`];
@@ -167,6 +173,9 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
     protected render() {
         return html`
             ${this._selectedRegion ? html`
+                <span tip="Regions displayed here are calculated based on a box around the region highlighted in the map." style="font-size: 17px;float:right" class="tooltip">
+                    <wl-icon>help_outline</wl-icon>
+                </span>
                 <wl-title level="4" style="font-size: 17px; margin-top: 20px;">Models for ${this._selectedRegion.name}</wl-title>
                 ${this._fullyLoaded ? html`
                     ${Object.keys(this._categorizedMatchingSetups).length == 0 ?  'No models for this region' : ''}

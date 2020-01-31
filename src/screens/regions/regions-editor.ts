@@ -20,7 +20,6 @@ import { selectSubRegion } from 'app/ui-actions';
 
 import "./region-models";
 import "./region-datasets";
-import "./region-tasks";
 
 @customElement('regions-editor')
 export class RegionsEditor extends connect(store)(PageViewElement)  {
@@ -205,7 +204,6 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
         <region-models class="page" ?active="${this._mapReady}" regionType="${this.regionType}"></region-models>
         <region-datasets class="page" ?active="${this._mapReady}" regionType="${this.regionType}"></region-datasets>
-        <region-tasks class="page" ?active="${this._mapReady}" regionType="${this.regionType}"></region-tasks>
 
         <br />
         <br />
