@@ -456,6 +456,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
             dataset.resources = resources;
             dataset.resources_loaded = true;
             dataset.resources.forEach(r => {r.selected = true})
+            this.requestUpdate();
         });
         return req;
     }
