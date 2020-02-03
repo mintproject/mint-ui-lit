@@ -117,7 +117,19 @@ export const VARIABLES = {
             "var3": {
                 "long_name": "Total Water Storage",
                 "SVO_name": "total_water_storage"
-            }            
+            },
+            "var10": {
+                "long_name": "Rainfall standardized index",
+                "SVO_name": "atmosphere_water__precipitation_standardized_index"
+            },
+            "var11": {
+                "long_name": "Rainfall evapotranspiration standardized index",
+                "SVO_name": "atmosphere_water__precipitation_evapotranspiration_standardized_index"
+            },
+            "var12": {
+                "long_name": "Evaporation volume flux index",
+                "SVO_name": "evaporation_volume_flux_index"
+            }
         }
     }
 };
