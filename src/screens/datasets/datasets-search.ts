@@ -1,12 +1,17 @@
 import { html, customElement, property, css } from 'lit-element';
-import { PageViewElement } from '../../components/page-view-element';
+import { PageViewElement } from 'components/page-view-element';
 
-import { SharedStyles } from '../../styles/shared-styles';
-import { RootState, store } from '../../app/store';
-import { DatasetDetail, DatasetQueryParameters, Dataset, DatasetsWithStatus } from './reducers';
+import { SharedStyles } from 'styles/shared-styles';
+import { RootState, store } from 'app/store';
+import { DatasetDetail, DatasetQueryParameters, DatasetsWithStatus } from './reducers';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { queryGeneralDatasets } from './actions';
 import { toTimeStamp } from 'util/date-utils';
+import { IdMap } from 'app/reducers';
+
+import { searchDatasets, SearchQueryParameters } from 'data-catalog/actions';
+import dataCatalog from 'data-catalog/reducers';
+import { Dataset } from 'data-catalog/datacatalog_client';
 
 import "weightless/card";
 import "weightless/title";
@@ -14,19 +19,30 @@ import "weightless/title";
 import { ComparisonFeature } from 'screens/modeling/reducers';
 import { UserPreferences } from 'app/reducers';
 
+store.addReducers({
+    dataCatalog
+});
+
 @customElement('datasets-search')
 export class DatasetsSearch extends connect(store)(PageViewElement) {
-    @property({type: Array})
-    private _datasets: DatasetsWithStatus;
-
     @property({type: Object})
-    private _params : DatasetQueryParameters;
-
+    private _datasetsPreview: IdMap<Dataset> = {};
     @property({type: Boolean})
-    private _firstSearch : boolean = true;
+    private _previewLoading : boolean = false;
+    @property({type: Boolean})
+    private _previewError : boolean = false;
 
     @property({type: String})
     private _searchType : string = 'dataset_names';
+    @property({type: String})
+    private _searchTerm : string = '';
+
+    @property({type: Array})
+    private _datasets: IdMap<Dataset> = {};
+    @property({type: Boolean})
+    private _searchLoading : boolean = false;
+    @property({type: Boolean})
+    private _searchError : boolean = false;
 
     @property({type: Object})
     private prefs : UserPreferences;
@@ -81,6 +97,16 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
                 color: rgb(102, 102, 102);
                 font-size: 13px;
             }
+            .info-center {
+                text-align: center;
+                font-size: 13pt;
+                height: 32px;
+                line-height:32px;
+                color: #999;
+            }
+            .info-center > a {
+                cursor: pointer;
+            }
             `,
             SharedStyles
         ];
@@ -114,131 +140,135 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
         </div>
 
         <div class="searchResults">
-            ${this._datasets ? 
-                (this._datasets.loading ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>` :
-                html`
-                    <br />
-                    <wl-title level="3">Found ${this._datasets.datasets.length} datasets</wl-title>
-                    ${this._datasets.datasets.map((ds) => {
-                        return html`
-                        <wl-card>
-                            <div style="display:flex; justify-content:space-between">
-                                <wl-title level="4">${ds.name}</wl-title>
-                                <a href="${this._region.id}/datasets/browse/${ds.id}">More Details</a>
-                            </div>
-                            <div style="display:flex; justify-content:space-between">
-                                <wl-title level="5" style="color:#aaa">id:${ds.id}</wl-title>
-                                <span>
-                                    <span style="color: ${ds.is_cached ? 'green' : 'lightsalmon'}">
-                                        ${ds.is_cached ? 'Available on MINT servers' : 'Available for download'}
-                                    </span>
-                                    ${ds.resource_repr || ds.dataset_repr ? html` |
-                                    <span style="color: 'green'"> MINT Understandable Format </span>` : ''}
-                                </span>
-                            </div>
-                            <br />
-                            <table class="pure-table pure-table-striped">
-                                <thead>
-                                    <tr>
-                                        <th style="width:15%">Metadata</th>
-                                        <th>Value</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${this._datasetFeatures.map((feature) => {
-                                        return html`
-                                        <tr>
-                                            <td style="width:15%"><b>${feature.name}</b></td>
-                                            <td>${feature.fn(ds)}</td>
-                                        </tr>
-                                        `;
-                                    })}
-                                </tbody>
-                            </table>
-                        </wl-card>
-                        <br />
-                        `;
-                    })}
-                `
-                ) : ""
+            ${!this._searchTerm ? ( this._previewError ? html`
+                <div class="info-center">- An error has ocurred. <a @click="${this._reloadPreview}">Click here to retry.</a> -</div>`
+                : (this._previewLoading ? html`
+                <wl-progress-spinner class="loading"></wl-progress-spinner>`
+                : this._renderDatasetResults(Object.values(this._datasetsPreview)))
+            ) : this._searchError ? html`
+                <div class="info-center">- An error has ocurred. <a @click="${this._performSearch}">Click here to retry.</a> -</div>`
+                : (this._searchLoading ? html`
+                <wl-progress-spinner class="loading"></wl-progress-spinner>`
+                : this._renderDatasetResults(Object.values(this._datasets)))
             }
         </div>
         `
     }
 
-    _createQueryParameters() {
-        let dsname = (this.shadowRoot.querySelector("#ds_name") as HTMLInputElement).value;
-        let dsvars = (this.shadowRoot.querySelector("#ds_variables") as HTMLInputElement).value;
-        let dsstart = (this.shadowRoot.querySelector("#ds_start_date") as HTMLInputElement).value;
-        let dsend = (this.shadowRoot.querySelector("#ds_end_date") as HTMLInputElement).value;
-
-        let queryParams = {} as DatasetQueryParameters;
-        if(dsname)
-            queryParams.name = dsname;
-        if(dsvars)
-            queryParams.variables = dsvars.split(/\s*,\s*/);
-        if(dsstart || dsend) {
-            queryParams.dateRange = {
-                start_date: dsstart ? toTimeStamp(dsstart) : null,
-                end_date: dsend ? toTimeStamp(dsend) : null
-            }
-        }
-        //queryParams.spatialCoverage = this._region.bounding_box;
-        return queryParams;
-    }
-
-    _findDatasets() {
-        let queryParams = this._createQueryParameters();
-        store.dispatch(queryGeneralDatasets(queryParams, this.prefs.mint));
+    _renderDatasetResults (datasets: Dataset[]) {
+        return html`
+            <wl-title level="3" style="margin-top: 4px;">Found ${datasets.length} datasets</wl-title>
+            ${datasets.map((ds) => {
+                return html`
+                <wl-card>
+                    <div style="display:flex; justify-content:space-between">
+                        <wl-title level="4">${ds.name}</wl-title>
+                        <a href="${this._region ? this._region.id : 'none'}/datasets/browse/${ds.id}">More Details</a>
+                    </div>
+                    <div style="display:flex; justify-content:space-between">
+                        <wl-title level="5" style="color:#aaa">ID: ${ds.id}</wl-title>
+                        <span>
+                            <span style="color: ${ds.is_cached ? 'green' : 'lightsalmon'}">
+                                ${ds.is_cached ? 'Available on MINT servers' : 'Available for download'}
+                            </span>
+                            ${ds.resource_repr || ds.dataset_repr ? html` |
+                            <span style="color: 'green'"> MINT Understandable Format </span>` : ''}
+                        </span>
+                    </div>
+                    <br />
+                    <table class="pure-table pure-table-striped">
+                        <thead>
+                            <tr>
+                                <th style="width:15%">Metadata</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${this._datasetFeatures.map((feature) => {
+                                return html`
+                                <tr>
+                                    <td style="width:15%"><b>${feature.name}</b></td>
+                                    <td>${feature.fn(ds)}</td>
+                                </tr>
+                                `;
+                            })}
+                        </tbody>
+                    </table>
+                </wl-card>
+                <br />
+                `;
+            })}`
     }
 
     _onSearchInput () {
         let inputElement : HTMLElement | null = this.shadowRoot!.getElementById('search-input');
         if (!inputElement) return;
-
-        let input : string = inputElement['value'].toLowerCase();
-        let params : DatasetQueryParameters = {};
-        switch (this._searchType) {
-            case 'dataset_names':
-                params.name = "*" + input + "*";
-                break;
-            case 'standard_variable_names':
-                params.variables = [ "*" + input + "*" ]
-                break;
-            default:
-                console.log('Invalid search type')
-        }
-        this._params = params;
-        this._params.spatialCoverage = this._region.bounding_box;
-        store.dispatch(queryGeneralDatasets(this._params, this.prefs.mint))
+        let lastSearch : string = this._searchTerm;
+        this._searchTerm = inputElement['value'].toLowerCase();
+        if (!this._searchTerm || this._searchTerm === lastSearch) return;
+        this._performSearch();
     }
 
-    _clearSearchInput () {
-        this._params = {};
-        this._datasets = null;
+    _performSearch () {
+        this._searchError = false;
+        this._searchLoading = true;
+        let params : SearchQueryParameters = {};
+        switch (this._searchType) {
+            case 'dataset_names':
+                params.name = "*" + this._searchTerm + "*";
+                break;
+            case 'standard_variable_names':
+                params.variables = [ "*" + this._searchTerm + "*" ];
+                break;
+            default:
+                console.log('Invalid search type');
+        }
+        //let value = this._searchTerm; Can use this if we want to search on input
+        let searchPromise = store.dispatch(searchDatasets(params));
+        searchPromise.then((datasets) => {
+            this._searchLoading = false;
+            this._datasets = datasets;
+        });
+        searchPromise.catch(() => {
+            this._searchLoading = false;
+            this._searchError = true;
+        });
     }
 
     _onSearchTypeChange () {
         let selectElement : HTMLElement | null = this.shadowRoot!.getElementById('search-type-selector');
         if (!selectElement) return;
         this._searchType = selectElement['value'].toLowerCase();
-        this._clearSearchInput();
+        this._datasets = {};
+    }
+
+    _reloadPreview () {
+        this._previewLoading = true;
+        this._previewError = false;
+        let reqPrev = store.dispatch(searchDatasets({}));
+        reqPrev.then((datasets) => {
+            this._previewLoading = false;
+            this._datasetsPreview = datasets;
+        });
+        reqPrev.catch((e) => {
+            this._previewLoading = false;
+            this._previewError = true;
+        });
+    }
+
+    protected firstUpdated () {
+        this._reloadPreview();
     }
 
     stateChanged(state: RootState) {
         super.setRegion(state);
         this.prefs = state.app.prefs!;
 
-        if (this.active && this._firstSearch && this.prefs.mint) {
-            this._firstSearch = false;
-            store.dispatch(queryGeneralDatasets({name: '*'}, this.prefs.mint))
-        }
-
-        if(state.datasets) {
+        /*if(state.datasets) {
             // If there are details about a particular dataset
             if(state.datasets.query_datasets) {
                 this._datasets = state.datasets.query_datasets;
             }
-        }
+        }*/
     }
 }    
