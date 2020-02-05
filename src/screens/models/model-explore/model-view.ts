@@ -542,8 +542,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <wl-text >${this._model.desc}</wl-text>
                     ${this._emulators[this._selectedModel] ?  html`
                     <div style="margin-top: 4px;">
-                        You can see this <b>model emulators</b> clicking
-                        <a href="${'/'+this._regionid+this._emulators[this._selectedModel]}">here</a>.
+                        You can see execution results for this model on
+                        <a href="${'/'+this._regionid+this._emulators[this._selectedModel]}">the emulations page</a>.
                     </div>` 
                     : ''}
                     <div id="desc-ext">
@@ -669,7 +669,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${this._configMetadata[0].dImg ? html`
                     <tr>
                         <td><b>Software Image:</b></td>
-                        <td><code>${this._configMetadata[0].dImg}</code></td>
+                        <td>
+                            <a target="_blank"
+                               href="https://hub.docker.com/r/${this._configMetadata[0].dImg.split(':')[0]}/tags">
+                                <code>${this._configMetadata[0].dImg}</code>
+                            </a>
+                        </td>
                     </tr>` : '' }
                     ${this._configMetadata[0].repo ? html`
                     <tr>
@@ -702,7 +707,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${this._calibrationMetadata[0].dImg ? html`
                     <tr>
                         <td><b>Software Image:</b></td>
-                        <td><code>${this._calibrationMetadata[0].dImg}</code></td>
+                        <td>
+                            <a target="_blank"
+                               href="https://hub.docker.com/r/${this._configMetadata[0].dImg.split(':')[0]}/tags">
+                                <code>${this._calibrationMetadata[0].dImg}</code>
+                            </a>
+                        </td>
                     </tr>` : '' }
                     ${this._calibrationMetadata[0].repo ? html`
                     <tr>
