@@ -106,7 +106,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _screenshots : any = null;
 
     @property({type: String})
-    private _tab : 'overview'|'io'|'variables'|'software'|'tech'|'assumptions'|'example' = 'overview';
+    private _tab : 'overview'|'io'|'variables'|'tech'|'example' = 'overview';
     
     private _emulators = {
         'https://w3id.org/okn/i/mint/CYCLES' : '/emulators/cycles',
@@ -552,6 +552,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                         ${this._model.publisher? html`<wl-text><b>• Publisher:</b> ${ this._model.publisher }</wl-text>` :''}
                         ${this._model.dateP? html`<wl-text><b>• Publication date:</b> ${ this._model.dateP }</wl-text>` :''}
                         ${this._model.referenceP? html`<wl-text><b>• Preferred citation:</b> <i>${ this._model.referenceP }<i></wl-text>` :''}
+                        ${this._model.doc? html`<wl-text>
+                            <b>• Documentation:</b>
+                            <a target="_blank" href="${this._model.doc}">${this._model.doc.split('/').pop()}</a>
+                        </wl-text>` :''}
                     </div>
                     ${this._renderSelectors()}
                 </div>
@@ -565,17 +569,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => {this._tab = 'variables'}}"
                             >Variables</wl-tab>
 
-                        ${this._model.assumptions? html`
-                        <wl-tab id="tab-assumptions" @click="${() => {this._tab = 'assumptions'}}"
-                            >Assumptions</wl-tab>
-                        ` : ''}
                         ${this._model.example? html`
-                        <wl-tab id="tab-example" @click="${() => {this._tab = 'example'}}"
-                            >Example</wl-tab>
-                        ` : ''}
+                        <wl-tab id="tab-example" @click="${() => {this._tab = 'example'}}">
+                            Example
+                        </wl-tab>` : ''}
 
-                        <wl-tab id="tab-software" @click="${() => {this._tab = 'software'}}"
-                            >Compatible Software</wl-tab>
                         <wl-tab id="tab-overview" ?checked=${this._tab=='tech'} @click="${() => {this._tab = 'tech'}}"
                             >Technical Information</wl-tab>
                     </wl-tab-group>
@@ -587,8 +585,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${(this._tab === 'io') ? this._renderTabIO() : ''}
                     ${(this._tab === 'variables') ? this._renderTabVariables() : ''}
                     ${(this._tab === 'example') ? this._renderTabExample() : ''}
-                    ${(this._tab === 'assumptions') ? this._renderTabAssumptions() : ''}
-                    ${(this._tab === 'software') ? this._renderTabSoftware() : ''}
                 </div>
             </div>`
     }
@@ -642,11 +638,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <tr>
                         <td><b>Source code:</b></td>
                         <td><a target="_blank" href="${this._model.sourceC}">${this._model.sourceC}</a></td>
-                    </tr>` : ''}
-                    ${this._model.doc? html`
-                    <tr>
-                        <td><b>Documentation:</b></td>
-                        <td><a target="_blank" href="${this._model.doc}">${this._model.doc}</a></td>
                     </tr>` : ''}
                     ${this._model.installInstr? html`
                     <tr>
@@ -793,6 +784,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${this._model.purpose.map(a => a? html`<li>${capitalizeFirstLetter(a)}.</li>`: '')}
             </ul>`
             :''}
+            ${this._model.assumptions? html`
+            <wl-title level="2" style="font-size: 16px;">Assumptions:</wl-title>
+            <ul style="margin-top: 5px">
+                ${this._model.assumptions.split('.').map(a => a? html`<li>${a}.</li>`:'')}
+            </ul>`
+            :''}
             ${this._model.indices ? html`
             <wl-title level="2" style="font-size: 16px;">Relevant for calculating index:</wl-title>
             <ul style="margin-top: 5px">
@@ -812,7 +809,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             </ul>`
             :''}
             ${this._config ? this._renderMetadataResume() : ''}
-
+            ${this._renderRelatedModels()}
             ${this._renderGallery()}`
     }
     /* HTML description are not working 
@@ -830,7 +827,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 .filter(p => (this._configMetadata[0].processes || []).indexOf(p) < 0) : [];
         }
         return html`
-            <fieldset style="border-radius: 5px; padding-top: 0px; border: 2px solid #D9D9D9; margin-bottom: 8px;">
+            <fieldset style="border-radius: 5px; padding: 0px 7px; border: 2px solid #D9D9D9; margin-bottom: 8px;">
                 <legend style="font-weight: bold; font-size: 12px; color: gray;">Selected configuration</legend>
                 <div class="metadata-top-buttons">
                     <div class="button-preview" @click=${() => this._changeTab('io')}>
@@ -918,7 +915,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 )}
 
                 ${this._calibration ? html`
-                <fieldset style="border-radius: 5px; padding-top: 0px; border: 2px solid #D9D9D9; margin-bottom: 8px;">
+                <fieldset style="border-radius: 5px; padding: 0px 7px; border: 2px solid #D9D9D9; margin-bottom: 8px;">
                     <legend style="font-weight: bold; font-size: 12px; color: gray;">Selected setup</legend>
                     <div class="metadata-top-buttons">
                         <div class="button-preview" @click=${() => this._changeTab('io')}>
@@ -1205,14 +1202,6 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
     }
 
-    _renderTabAssumptions () {
-        return html`
-        <wl-title level="3">Assumptions:</wl-title>
-        <ul>
-        ${this._model.assumptions.split('.').map(a=> a?html`<li>${a}.</li>`:'')}
-        </ul>`
-    }
-
     _renderTabExample () {
         return html`<div id="mk-example"></div>`
     }
@@ -1350,10 +1339,10 @@ export class ModelView extends connect(store)(PageViewElement) {
         `;
     }
 
-    _renderTabSoftware () {
+    _renderRelatedModels () {
         return html`
         ${(this._compModels && this._compModels.length > 0)? html`
-        <wl-title level="3"> Related models: </wl-title>
+        <wl-title level="2" style="font-size: 16px;">Related models:</wl-title>
         <table class="pure-table pure-table-bordered">
             <thead>
                 <th>Name</th>
@@ -1368,59 +1357,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <td>${m.desc}</td>
                 </tr>`)}
             </tbody>
-        </table>
-        `:html`
-        <br/><h3 style="margin-left:30px">
-            No compatible software has been described in the model catalog yet.
-        </h3>
-        `}
-        `
-
-        /*return html`${(this._config)?
-            html`${(this._compInput && this._compInput.length>0) || 
-                   (this._compOutput && this._compOutput.length>0) ?
-                html`
-                    ${(this._compInput && this._compInput.length>0)?
-                        html`<h3> This model configuration uses standard variables that can be produced from:</h3>
-                        ${this._renderCompatibleVariableTable(this._compInput)}`
-                        : html``
-                    }
-                    ${(this._compOutput && this._compOutput.length>0)?
-                        html`<h3> This model configuration produces standard variables that can be used by:</h3>
-                        ${this._renderCompatibleVariableTable(this._compOutput)}`
-                        : html``
-                    }`
-                : html``
-            }`
-            : html`<br/><h3 style="margin-left:30px">Please select a configuration for this model.</h3>`
-        }
-        ${(this._compModels && this._compModels.length > 0)? html`
-        <h3> Related models: </h3>
-        <table class="pure-table pure-table-bordered">
-            <thead>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Description</th>
-            </thead>
-            <tbody>
-            ${this._compModels.map( (m:any) => html`
-                <tr>
-                    <td><a @click="${() => {this._goToModel(m)}}">${m.label}</a></td>
-                    <td>${m.categories.join(', ')}</td>
-                    <td>${m.desc}</td>
-                </tr>`)}
-            </tbody>
-        </table>
-        `:html``}
-        ${((!this._compModels || this._compModels.length === 0) && (!this._compInput || this._compInput.length == 0) && (!this._compOutput || this._compOutput.length == 0))?
-            html`
-                <br/><h3 style="margin-left:30px">
-                    No compatible software has been described in the model catalog yet.
-                </h3>
-            `
-            :html``
-        }
-        `*/
+        </table>`:''}`
     }
 
     _goToModel (model:any) {
@@ -1472,7 +1409,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <div style="float: right; margin: 1em 0;">
                     <loading-dots style="--height: 10px"></loading-dots>
                 </div>` : ''}
-                <h3>Gallery:</h3>
+                <wl-title level="2" style="font-size: 16px;">Gallery:</wl-title>
                 <image-gallery style="--width: 300px; --height: 160px;" .items="${items}"></image-gallery>`;
         } else {
             // Shows nothing when no gallery
