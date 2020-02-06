@@ -7,7 +7,6 @@ import 'components/google-map-custom';
 import 'weightless/progress-spinner';
 import { RegionQueryPage } from './region-query-page';
 import { SharedStyles } from 'styles/shared-styles';
-import { ExplorerStyles } from 'screens/models/model-explore/explorer-styles';
 import { goToPage } from 'app/actions';
 import { UserPreferences, IdMap } from 'app/reducers';
 import { BoundingBox } from './reducers';
@@ -61,13 +60,15 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
     private _matchingModelDatasets : any = [];
 
     static get styles() {
-        return [SharedStyles, ExplorerStyles, css`
-        .tooltip:hover::after {
-            font-size: 14px;
-            width: 320px;
+        return [SharedStyles, css`
+        .info-center {
+            font-size: 12pt;
+            color: #999;
+            padding-left: 16px;
+            padding-bottom: 1em;
         }
 
-        .no-decorator {
+        .no-decorator:hover {
             text-decoration: none;
         }`];
     }
@@ -173,10 +174,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
     protected render() {
         return html`
             ${this._selectedRegion ? html`
-                <span tip="Regions displayed here are calculated based on a box around the region highlighted in the map." style="font-size: 17px;float:right" class="tooltip">
-                    <wl-icon>help_outline</wl-icon>
-                </span>
-                <wl-title level="4" style="font-size: 17px; margin-top: 20px;">Models for ${this._selectedRegion.name}</wl-title>
+            <wl-title level="4" style="font-size: 17px; margin-top: 20px;">Models for ${this._selectedRegion.name}</wl-title>
                 ${this._fullyLoaded ? html`
                     ${Object.keys(this._categorizedMatchingSetups).length == 0 ?  'No models for this region' : ''}
                     ${Object.keys(this._categorizedMatchingSetups).map((category:string) => html`
@@ -196,10 +194,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
                             </wl-list-item></a>
                             `)}
                         </wl-expansion>
-                    `)}
-
-                    ` 
-
+                    `)}` 
                     : html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`}`
                 : ""
             }
@@ -210,8 +205,10 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
                 ${this._loadingDatasets ? html`
                 <div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` 
                 : html`
-                    ${this._matchingModelDatasets.length === 0 ? 
-                    'No datasets for models in ' + this._selectedRegion.name 
+                    ${this._matchingModelDatasets.length === 0 ? html`
+                    <div class="info-center">
+                        No datasets for models in ${this._selectedRegion.name}
+                    </div>`
                     : html`
                         ${this._matchingModelDatasets.map(dsId => this._datasets && this._datasets[dsId] ? html`
                             <wl-list-item class="active" @click="${() => goToPage('datasets/browse/'+dsId)}">

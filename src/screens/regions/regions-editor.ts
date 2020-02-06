@@ -120,8 +120,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             .download-map-button:hover {
                 background: #E0E3EF;
                 color: rgb(48, 74, 145);
-            }
-            `
+            }`
         ];
     }
 
@@ -181,8 +180,8 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             mapTypeId="terrain" styles="${this._mapStyles}">
         </google-map-custom>
 
+        ${this._selectedRegion ? html`
         <div class="bottom-panel">
-            ${this._selectedRegion ? html`
             <span style="display: inline-block; width: auto;">
                 <b>Selected region:</b>
                 ${ this._selectedRegion.name } (id: ${this._selectedRegion.id})
@@ -196,11 +195,13 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                     <wl-icon style="--icon-size: 16px;">cloud_download</wl-icon>
                 </span>
             </span>
-            `
-            : ''}
         </div>
-
-        <br />
+        <div style="color: #777;">
+            <b>Note:</b>
+            Datasets and models displayed below are retrieved based on the bounding box of the region highlighted in the map.
+            Results from overlapping regions may be included
+        </div>`
+        : ''}
 
         <region-models class="page" ?active="${this._mapReady}" regionType="${this.regionType}"></region-models>
         <region-datasets class="page" ?active="${this._mapReady}" regionType="${this.regionType}"></region-datasets>
