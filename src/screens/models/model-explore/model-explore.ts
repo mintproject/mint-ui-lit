@@ -212,7 +212,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     <model-preview 
                         uri="${key}"
                         altDesc="${this._variables[key] ? this._variables[key] : ''}"
-                        altTitle="${this._variables[key] ? 'With matching variables ('+this._variables[key].split(';').length+'):' : ''}"
+                        altTitle="${this._variables[key] ? 'The search results matched the following model variables ('+this._variables[key].split(';').length+'):' : ''}"
                         .style="${!this._activeModels[key]? 'display: none;' : ''}">
                     </model-preview>
                     `
