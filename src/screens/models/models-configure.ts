@@ -230,6 +230,12 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 background-color: rgb(246, 246, 246);
             }
 
+            .title-prefix {
+                font-size: 15px;
+                font-weight: normal;
+                color: rgb(153, 153, 153) !important;
+            }
+
             .custom-button {
                 line-height: 20px;
                 cursor: pointer;
@@ -268,13 +274,16 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     `: ''}
                     <div class="cltrow_padded">
                         <div class="cltmain">
-                            <wl-title level="3" style="margin: 0px">
-                                ${this._creating ? 'Creating a new ' + (this._config ? 'setup' : 'configuration') + ' for ' 
-                                : (this._editing ? 'Editing ': '')}
+                            <wl-title level="3" style="margin: 0px; ${(this._config&&!this._setup)? 'color:rgb(6, 108, 67);':''}">
+                                ${this._creating ? html`<span class="title-prefix">
+                                    CREATING A NEW ${this._config? 'SETUP' : 'CONFIGURATION'} FOR
+                                </span>` 
+                                : (this._editing ? html`<span class="title-prefix">EDITING:</span>`: '')}
+
                                 ${this._setup ? 
-                                    this._setup.label 
+                                    html`<span class="title-prefix">SETUP:</span> ${ this._setup.label }`
                                     : (this._config ? 
-                                        this._config.label 
+                                        html`<span class="title-prefix">CONFIGURATION:</span> ${ this._config.label }`
                                         : (this._version ? this._version.label : 'Select a model configuration or setup on the left panel.')
                                 )}
                             </wl-title>
