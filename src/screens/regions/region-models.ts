@@ -61,7 +61,14 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
 
     static get styles() {
         return [SharedStyles, css`
-        .no-decorator {
+        .info-center {
+            font-size: 12pt;
+            color: #999;
+            padding-left: 16px;
+            padding-bottom: 1em;
+        }
+
+        .no-decorator:hover {
             text-decoration: none;
         }`];
     }
@@ -167,7 +174,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
     protected render() {
         return html`
             ${this._selectedRegion ? html`
-                <wl-title level="4" style="font-size: 17px; margin-top: 20px;">Models for ${this._selectedRegion.name}</wl-title>
+            <wl-title level="4" style="font-size: 17px; margin-top: 20px;">Models for ${this._selectedRegion.name}</wl-title>
                 ${this._fullyLoaded ? html`
                     ${Object.keys(this._categorizedMatchingSetups).length == 0 ?  'No models for this region' : ''}
                     ${Object.keys(this._categorizedMatchingSetups).map((category:string) => html`
@@ -187,10 +194,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
                             </wl-list-item></a>
                             `)}
                         </wl-expansion>
-                    `)}
-
-                    ` 
-
+                    `)}` 
                     : html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`}`
                 : ""
             }
@@ -201,8 +205,10 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
                 ${this._loadingDatasets ? html`
                 <div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` 
                 : html`
-                    ${this._matchingModelDatasets.length === 0 ? 
-                    'No datasets for models in ' + this._selectedRegion.name 
+                    ${this._matchingModelDatasets.length === 0 ? html`
+                    <div class="info-center">
+                        No datasets for models in ${this._selectedRegion.name}
+                    </div>`
                     : html`
                         ${this._matchingModelDatasets.map(dsId => this._datasets && this._datasets[dsId] ? html`
                             <wl-list-item class="active" @click="${() => goToPage('datasets/browse/'+dsId)}">
