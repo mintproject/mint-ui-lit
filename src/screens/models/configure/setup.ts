@@ -232,12 +232,12 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
 
     _cancel () {
         this._scrollUp();
-        goToPage(createUrl(this._model, this._version, this._setup, this._setup));
+        goToPage(createUrl(this._model, this._version, this._config, this._setup));
     }
 
     _edit () {
         this._scrollUp();
-        goToPage(createUrl(this._model, this._version, this._setup, this._setup) + '/edit');
+        goToPage(createUrl(this._model, this._version, this._config, this._setup) + '/edit');
     }
 
     _saveConfig () {
@@ -266,11 +266,11 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             editedSetup.keywords = [keywords.split(/ *, */).join('; ')];
             editedSetup.hasComponentLocation = [compLoc];
             //FIXME: for some reason adjustableParameter is not an object
-            editedSetup.adjustableParameter = editedSetup.adjustableParameter.map((uri) => {return  {id: uri}});
+            editedSetup.adjustableParameter = (editedSetup.adjustableParameter||[]).map((uri) => {return  {id: uri}});
 
             console.log('saving', editedSetup);
             store.dispatch(modelConfigurationSetupPut(editedSetup)).then((setup) => {
-                goToPage(createUrl(this._model, this._version, this._config, this._setup));
+                goToPage(createUrl(this._model, this._version, this._config, setup));
             });
             showNotification("saveNotification", this.shadowRoot!);
         }
