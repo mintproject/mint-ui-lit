@@ -9,6 +9,7 @@ import { goToPage } from '../../app/actions';
 
 import { IdMap } from 'app/reducers';
 import { ModelConfigurationSetup, ModelConfiguration, SoftwareVersion, Model } from '@mintproject/modelcatalog_client';
+import { regionsGet } from 'model-catalog/actions';
 
 import "weightless/progress-spinner";
 import 'components/loading-dots'
@@ -214,6 +215,10 @@ export class ModelsTree extends connect(store)(PageViewElement) {
             </li>
         `)}
         </ul>`;
+    }
+
+    protected firstUpdated () {
+        store.dispatch(regionsGet());
     }
 
     stateChanged(state: RootState) {

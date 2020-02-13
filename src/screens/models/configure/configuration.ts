@@ -444,7 +444,6 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <th class="ta-right" style="white-space:nowrap;">
                     <b>Default Value</b>
                 </th>
-                <th class="ta-right"><b>Unit</b></th>
                 ${this._editing? html`<th class="ta-right"></th>` : ''}
             </thead>
             <tbody>
@@ -460,8 +459,8 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 </td>
                 <td class="ta-right">
                     ${this._parameters[uri].hasDefaultValue ? this._parameters[uri].hasDefaultValue : '-'}
+                    ${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}
                 </td>
-                <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
                 ${this._editing? html `
                 <td style="text-align: right;">
                     <wl-button flat inverted @click="${() => this._showParameterDialog(uri)}" class="small"><wl-icon>edit</wl-icon></wl-button>
