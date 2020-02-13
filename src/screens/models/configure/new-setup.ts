@@ -554,7 +554,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 <col span="1">
             </colgroup>
             <thead>
-                <th><b>Input file</b></th>
+                <th><b>Input description</b></th>
                 <th style="white-space:nowrap;" colspan="2">
                     <b>Value in this setup</b>
                     <span class="tooltip" style="white-space:normal;" tip="If a value is set up in this field, you will not be able to change it in run time.">

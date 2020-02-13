@@ -480,7 +480,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <col span="1">
             </colgroup>
             <thead>
-                <th colspan="2"><b>Input file</b></th>
+                <th colspan="2"><b>Input description</b></th>
             </thead>
             <tbody>
             ${this._config.hasInput && this._config.hasInput.length > 0? inputOrder.map((uri:string) => html `

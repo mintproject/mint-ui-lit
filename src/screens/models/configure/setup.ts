@@ -558,7 +558,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 <col span="1">
             </colgroup>
             <thead>
-                <th><b>Input file</b></th>
+                <th><b>Input description</b></th>
                 <th colspan="2"><b>File URL in this setup</b></th>
             </thead>
             <tbody>
