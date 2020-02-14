@@ -226,7 +226,6 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                   <div class="header"> 
                     <span class="title">
                         ${this._model.label}
-                        ${this._model.doc ? html`<a target="_blank" href="${this._model.doc}"><wl-icon>open_in_new</wl-icon></a>`: html``}
                     </span>
                     <span class="icon"><wl-icon @click="${()=>{this._compare(this._model.uri)}}">compare_arrows</wl-icon></span>
                     <span class="ver-conf-text">
