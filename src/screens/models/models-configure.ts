@@ -278,7 +278,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                                 ${this._creating ? html`<span class="title-prefix">
                                     CREATING A NEW ${this._config? 'SETUP' : 'CONFIGURATION'} FOR
                                 </span>` 
-                                : (this._editing ? html`<span class="title-prefix">EDITING:</span>`: '')}
+                                : (this._editing ? html`<span class="title-prefix">EDITING</span>`: '')}
 
                                 ${this._setup ? 
                                     html`<span class="title-prefix">SETUP:</span> ${ this._setup.label }`
@@ -393,13 +393,11 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 if (!this._version && db.versions && this._selectedVersion && db.versions[this._selectedVersion]) {
                     this._version = db.versions[this._selectedVersion];
                 }
-                if (db.configurations) {
-                    if (!this._config && this._selectedConfig && db.configurations[this._selectedConfig]) {
-                        this._config = db.configurations[this._selectedConfig];
-                    }
-                    if (!this._setup && this._selectedSetup && db.configurations[this._selectedSetup]) {
-                        this._setup = db.configurations[this._selectedSetup];
-                    }
+                if (!this._config && db.configurations && this._selectedConfig && db.configurations[this._selectedConfig]) {
+                    this._config = db.configurations[this._selectedConfig];
+                }
+                if (!this._setup && db.setups && this._selectedSetup && db.setups[this._selectedSetup]) {
+                    this._setup = db.setups[this._selectedSetup];
                 }
             }
         }

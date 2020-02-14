@@ -189,7 +189,7 @@ export class AppHome extends connect(store)(PageViewElement) {
                 <p>
                     The MINT QuickStart User Guide that gives an introduction and overview of the capabilities 
                     of MINT is available 
-                    <a target="_blank" href="https://drive.google.com/open?id=1vjFW7nm1ADMNsO-84fbCnLInyGTXV_01">
+                    <a target="_blank" href="https://mintproject.readthedocs.io/en/latest/#mint-quickstart-user-guide">
                         here</a>.
                     It includes a glossary and an FAQ.
                 </p>

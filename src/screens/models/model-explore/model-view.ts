@@ -554,7 +554,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                         ${this._model.referenceP? html`<wl-text><b>• Preferred citation:</b> <i>${ this._model.referenceP }<i></wl-text>` :''}
                         ${this._model.doc? html`<wl-text>
                             <b>• Documentation:</b>
-                            <a target="_blank" href="${this._model.doc}">${this._model.doc.split('/').pop()}</a>
+                            <a target="_blank" href="${this._model.doc}">
+                                ${this._model.doc.split('/').pop() || this._model.doc}
+                            </a>
                         </wl-text>` :''}
                     </div>
                     ${this._renderSelectors()}
