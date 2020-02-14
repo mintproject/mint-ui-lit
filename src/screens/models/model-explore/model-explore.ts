@@ -13,6 +13,7 @@ import { explorerSetCompareA, explorerSetCompareB } from "./ui-actions";
 import explorer from '../../../util/model-catalog-reducers';
 import explorerUI from "./ui-reducers";
 import { UriModels } from '../../../util/model-catalog-reducers';
+import { modelsSearchIndex, modelsSearchIntervention, modelsSearchRegion } from 'model-catalog/actions';
 
 import './model-preview'
 import './model-view'
@@ -196,6 +197,9 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 --><wl-select id="search-type-selector" label="Search on" @input="${this._onSearchTypeChange}" value="${this._searchType}">
                    <option value="full-text">Full text</option>
                    <option value="variables">Variable names</option>
+                   <option value="index">Index</option>
+                   <option value="intervention">Intervention</option>
+                   <option value="region">Region</option>
                 </wl-select>
             </div>
 
@@ -247,6 +251,15 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             case 'variables':
                 this._searchByVariableName(input);
                 break;
+            case 'index':
+                this._searchByIndex(input);
+                break;
+            case 'intervention':
+                this._searchByIntervention(input);
+                break;
+            case 'region':
+                this._searchByRegion(input);
+                break;
             default:
                 console.log('Invalid search type')
         }
@@ -287,6 +300,96 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             this._lastTimeout = setTimeout(
                 ()=>{ store.dispatch(fetchSearchModelByVarSN(input)); },
                 750);
+        } else {
+            this._loading=false;
+            this._clearSearchInput();
+        }
+    }
+
+    _searchByIndex (input:string) {
+        this._loading=true;
+        if (this._lastTimeout) {
+            clearTimeout(this._lastTimeout);
+        }
+        if (input) {
+            Object.keys(this._models).forEach((key:string) => {
+                this._activeModels[key] = false;
+            })
+            this._activeCount = 0;
+            this._lastTimeout = setTimeout(
+                ()=>{ 
+                    let req = modelsSearchIndex(input);
+                    req.then((result:any) => {
+                        let validIds = result.map(x => x.id);
+                        console.log('Results', validIds);
+
+                        Object.keys(this._models).forEach((key:string) => {
+                            this._activeModels[key] = (validIds.indexOf(key) >= 0);
+                        });
+                        this._activeCount = validIds.length;
+                        this._loading=false;
+                    });
+                }, 750);
+        } else {
+            this._loading=false;
+            this._clearSearchInput();
+        }
+    }
+
+    _searchByIntervention (input:string) {
+        this._loading=true;
+        if (this._lastTimeout) {
+            clearTimeout(this._lastTimeout);
+        }
+        if (input) {
+            Object.keys(this._models).forEach((key:string) => {
+                this._activeModels[key] = false;
+            })
+            this._activeCount = 0;
+            this._lastTimeout = setTimeout(
+                ()=>{ 
+                    let req = modelsSearchIntervention(input);
+                    req.then((result:any) => {
+                        let validIds = result.map(x => x.id);
+                        console.log('Results', validIds);
+
+                        Object.keys(this._models).forEach((key:string) => {
+                            this._activeModels[key] = (validIds.indexOf(key) >= 0);
+                        });
+                        this._activeCount = validIds.length;
+                        this._loading=false;
+                    });
+                }, 750);
+        } else {
+            this._loading=false;
+            this._clearSearchInput();
+        }
+    }
+
+    _searchByRegion (input:string) {
+        this._loading=true;
+        if (this._lastTimeout) {
+            clearTimeout(this._lastTimeout);
+        }
+        if (input) {
+            Object.keys(this._models).forEach((key:string) => {
+                this._activeModels[key] = false;
+            })
+            this._activeCount = 0;
+            this._lastTimeout = setTimeout(
+                ()=>{ 
+                    let req = modelsSearchRegion(input);
+                    req.then((result:any) => {
+                        let validIds = result.map(x => x.id);
+                        console.log('Results', validIds);
+
+                        Object.keys(this._models).forEach((key:string) => {
+                            this._activeModels[key] = (validIds.indexOf(key) >= 0);
+                        });
+                        this._activeCount = validIds.length;
+                        this._loading=false;
+                    });
+                }, 750);
         } else {
             this._loading=false;
             this._clearSearchInput();
