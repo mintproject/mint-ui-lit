@@ -195,7 +195,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     <div slot="before"> <wl-icon>search</wl-icon> </div>
                 </wl-textfield><!--
                 --><wl-select id="search-type-selector" label="Search on" @input="${this._onSearchTypeChange}" value="${this._searchType}">
-                   <option value="full-text">Full text</option>
+                   <option value="full-text">Name, description and keywords</option>
                    <option value="variables">Variable names</option>
                    <option value="index">Index</option>
                    <option value="intervention">Intervention</option>
