@@ -9,7 +9,6 @@ import { store, RootState } from '../../../app/store';
 import { goToPage } from '../../../app/actions';
 
 import { fetchSearchModelByVarSN } from '../../../util/model-catalog-actions';
-import { explorerSetCompareA, explorerSetCompareB } from "./ui-actions";
 import explorer from '../../../util/model-catalog-reducers';
 import explorerUI from "./ui-reducers";
 import { UriModels } from '../../../util/model-catalog-reducers';
@@ -17,7 +16,6 @@ import { UriModels } from '../../../util/model-catalog-reducers';
 import './model-preview'
 import './model-view'
 import './model-edit'
-import './model-compare'
 
 import "weightless/textfield";
 import "weightless/icon";
@@ -57,9 +55,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     @property({type: Boolean})
     private _loading : boolean = true;
 
-    @property({type: Number})
-    private _comparing : number = 0;
-
     static get styles() {
         return [SharedStyles, ExplorerStyles,
             css `
@@ -75,13 +70,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
             wl-button {
                 padding: 6px 10px;
-            }
-
-            #model-comparison {
-                margin: 0 auto;
-                width: 75%;
-                max-height: 100%;
-                overflow: scroll;
             }
 
             #model-search-results {
@@ -148,10 +136,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     _goToExplorer () {
         goToPage('models/explore');
-        if (this._comparing === 2) {
-            store.dispatch(explorerSetCompareA({}));
-            store.dispatch(explorerSetCompareB({}));
-        }
     }
 
     protected render() {
@@ -169,10 +153,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     _renderSearch () {
         return html`
-            ${this._comparing>0? html`
-            <div id="model-comparison" style="padding-bottom: 1em;"> <model-compare></model-compare> </div>
-            ` :html``}
-            ${this._comparing<2? html`
             <wl-text class="explanation">
                 The MINT model browser allows you to learn about the different models included in MINT.
                 Each model can have separate configurations, each representing a unique set up of that
@@ -210,7 +190,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
                 ${Object.keys(this._models).map( (key:string) => html`
                     <model-preview 
-                        uri="${key}"
+                        id="${key}"
                         altDesc="${this._variables[key] ? this._variables[key] : ''}"
                         altTitle="${this._variables[key] ? 'With Variables ('+this._variables[key].split(';').length+'):' : ''}"
                         .style="${!this._activeModels[key]? 'display: none;' : ''}">
@@ -218,7 +198,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     `
                 )}
             </div>
-            ` : html``}
         `
     }
 
@@ -340,10 +319,17 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             }
         }
 
+        /*if (state.modelCatalog) {
+            let db = state.modelCatalog;
+            let models = db.models;
+            this._models = models;
+            console.log('---------')
+            console.log(models);
+            console.log(this._models);
+        }*/
+
+
         if (state.explorerUI) {
-            this._comparing = 0;
-            if ( state.explorerUI.compareA && state.explorerUI.compareA.model) this._comparing += 1;
-            if ( state.explorerUI.compareB && state.explorerUI.compareB.model) this._comparing += 1;
             this._mode = state.explorerUI.mode;
         }
     }

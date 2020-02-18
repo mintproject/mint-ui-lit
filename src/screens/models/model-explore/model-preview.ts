@@ -13,8 +13,11 @@ import { explorerCompareModel } from './ui-actions'
 
 @customElement('model-preview')
 export class ModelPreview extends connect(store)(PageViewElement) {
-    @property({type: String})
-        uri : string = "";
+    @property({type: String}) public id : string = "";
+    @property({type: Number}) private _nVersions : number = -1;
+    @property({type: Number}) private _nConfigs  : number = -1;
+    @property({type: Number}) private _nSetups   : number = -1;
+    @property({type: Object}) private _regions : null | any = null;
 
     @property({type: String})
         altDesc : string = '';
@@ -198,12 +201,16 @@ export class ModelPreview extends connect(store)(PageViewElement) {
 
     protected render() {
         if (this._model) {
+            //console.log(this._model);
+            let modelType : string[] = this._model.type ?
+                    this._model.type.map(t => t.replace('Model', '')).filter(t => !!t)
+                    : [];
         return html`
             <table>
               <tr>
                 <td class="left"> 
                   <div class="text-centered one-line">
-                    ${this._ready ? html`
+                    ${this._nSetups > 0? html`
                         <b style="color: darkgreen;">Executable in MINT</b>
                     `: html`
                         <b>Not executable in MINT</b>
@@ -216,22 +223,19 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                     }
                   </div>
                   <div class="text-centered two-lines">
-                    Category: ${this._model.categories? html`${this._model.categories[0]}` : html`-`}
+                    Category: ${this._model.hasModelCategory ? html`${this._model.hasModelCategory[0]}` : html`-`}
                     <br/>
-                    Type: ${this._model.type? html`${this._model.type}`: html`-`}
+                    Type: ${modelType ? modelType : '-'}
                   </div>
                 </td>
 
                 <td class="right">
                   <div class="header"> 
-                    <span class="title">
-                        ${this._model.label}
-                        ${this._model.doc ? html`<a target="_blank" href="${this._model.doc}"><wl-icon>open_in_new</wl-icon></a>`: html``}
-                    </span>
+                    <span class="title">${this._model.label}</span>
                     <span class="icon"><wl-icon @click="${()=>{this._compare(this._model.uri)}}">compare_arrows</wl-icon></span>
                     <span class="ver-conf-text">
-                    ${this._vers > 0 ? this._vers.toString() + ' version' + (this._vers > 1? 's' :'') : 'No versions'},
-                    ${this._configs > 0 ? this._configs.toString() + ' config' + (this._configs > 1? 's' :'') : 'No configs'}
+                    ${this._nVersions > 0 ? this._nVersions.toString() + ' version' + (this._nVersions > 1? 's' :'') : 'No versions'},
+                    ${this._nConfigs > 0 ? this._nConfigs.toString() + ' config' + (this._nConfigs > 1? 's' :'') : 'No configs'}
                     </span>
                   </div>
                   <div class="content" style="${this.altDesc? '' : 'text-align: justify;'}">
@@ -242,17 +246,18 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                         })}`: 
                         this._model.desc}
                   </div>
-                  ${this._model.regions ? html `
+                  ${this._regions ? html `
                   <div class="footer one-line" style="height: auto;">
                     <span class="keywords"> 
                         <b>Regions:</b> 
-                        ${this._model.regions}
+                        ${this._regions.map(r => r.label).join(', ')}
                     </span>
                   </div>` : ''}
                   <div class="footer one-line" style="padding-top: 0px;">
                     <span class="keywords"> 
                         <b>Keywords:</b> 
-                        ${this._model.keywords?  html`${this._model.keywords.join(', ')}` : html`No keywords`}
+                        ${this._model.keywords && this._model.keywords.length > 0 ? 
+                            this._model.keywords.join(';').split(/ *; */).join(', ') : 'No keywords'}
                     </span>
                     <a href="${this._regionid + '/'+ this._url}" class="details-button" @click="${this._goToThisModel}"> More details </a>
                   </div>
@@ -277,7 +282,74 @@ export class ModelPreview extends connect(store)(PageViewElement) {
 
     stateChanged(state: RootState) {
         super.setRegionId(state);
-        if (state.explorer) {
+        let db = state.modelCatalog;
+        if (db && db.models[this.id] && db.models[this.id] != this._model) {
+            this._model = db.models[this.id];
+            if (this._model.hasVersion) {
+                this._nVersions = this._model.hasVersion.length;
+                this._nConfigs  = -1;
+                this._nSetups   = -1;
+                this._regions = null;
+            } else {
+                this._nVersions = 0;
+                this._nConfigs  = 0;
+                this._nSetups   = 0;
+                this._regions = [];
+            }
+        }
+
+        if (this._nVersions > 0 && this._nConfigs < 0 && db && Object.keys(db.versions).length > 0) {
+            this._nConfigs = this._model.hasVersion
+                    .map((ver:any) => db.versions[ver.id])
+                    .filter((ver) => !!ver)
+                    .reduce((sum:number, ver) => sum + (ver.hasConfiguration || []).length, 0);
+            if (this._nConfigs === 0) this._nSetups = 0;
+        }
+
+        if (this._nConfigs > 0 && this._nSetups < 0 && db && Object.keys(db.configurations).length > 0) {
+            this._nSetups = this._model.hasVersion
+                    .map((ver:any) => db.versions[ver.id])
+                    .filter((ver) => !!ver)
+                    .reduce((sum:number, ver) =>
+                            sum + (ver.hasConfiguration || [])
+                                    .map((cfg:any) => db.configurations[cfg.id])
+                                    .filter((cfg) => !!cfg)
+                                    .reduce((sum2:number, cfg) => sum2 + (cfg.hasSetup || []).length, 0)
+            , 0);
+        }
+
+        if (db && Object.keys(db.regions).length > 0 && Object.keys(db.setups).length > 0 && this._nSetups > 0 && !this._regions) {
+            this._regions = [];
+
+            this._model.hasVersion.forEach((ver:any) => {
+                (db.versions[ver.id].hasConfiguration || []).forEach((cfg:any) => {
+                    (db.configurations[cfg.id].hasSetup || []).forEach((setup:any) => {
+                        console.log(setup, db.setups.length);
+                        (db.setups[setup.id].hasRegion || []).forEach((reg:any) => {
+                            this._regions.push( db.regions[reg.id] )
+                        })
+                    })
+                })
+            })
+            console.log('r', this._regions );
+        }
+
+
+        /*if (this._model && db && db.versions && db.configurations && db.setups) {
+            this._nVersions = this._model.hasVersion.map(v => v.id);
+            console.log('1', db.versions);
+            console.log('2', db.configurations);
+            console.log('3', db.setups);
+            //this._nConfig  = db.versions[this._model.id].
+            //this._nSetup
+        }*/
+
+        /*if (db && db.models && db.models[this.id] && db.models[this.id].id != this._modelId) {
+            console.log('ID Changed', this._modelId, '->', db.models[this.id].id);
+            this._modelId = db.models[this.id].id;
+        }*/
+
+        /*if (state.explorer) {
             let db = state.explorer;
             if (db.models && db.models[this.uri]) {
                 this._model = db.models[this.uri];
@@ -302,6 +374,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                 this._configs = 0;
             }
         }
-        this._vers = this._model && this._model.versions ? this._model.versions.length : 0;
+        this._vers = this._model && this._model.versions ? this._model.versions.length : 0;*/
     }
+
 }
