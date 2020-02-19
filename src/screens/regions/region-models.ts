@@ -10,9 +10,9 @@ import { SharedStyles } from 'styles/shared-styles';
 import { goToPage } from 'app/actions';
 import { UserPreferences, IdMap } from 'app/reducers';
 import { BoundingBox } from './reducers';
-import { modelsGet, versionsGet, modelConfigurationsGet, regionsGet, geoShapesGet,
+import { modelsGet, versionsGet, modelConfigurationsGet, regionsGet, geoShapesGet, modelConfigurationSetupsGet,
          datasetSpecificationGet, sampleResourceGet, sampleCollectionGet, setupGetAll,
-         ALL_MODELS, ALL_VERSIONS, ALL_MODEL_CONFIGURATIONS, ALL_REGIONS, ALL_GEO_SHAPES } from 'model-catalog/actions';
+         ALL_MODELS, ALL_VERSIONS, ALL_MODEL_CONFIGURATIONS, ALL_MODEL_CONFIGURATION_SETUPS, ALL_REGIONS, ALL_GEO_SHAPES } from 'model-catalog/actions';
 import { GeoShape } from '@mintproject/modelcatalog_client';
 
 import { queryDatasetResourcesAndSave } from 'screens/datasets/actions';
@@ -48,6 +48,9 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
     private _configs : any = {}
 
     @property({type: Object})
+    private _setups : any = {}
+
+    @property({type: Object})
     private _datasets : any = {}
 
     @property({type: Array})
@@ -79,6 +82,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
         store.dispatch(modelsGet());
         store.dispatch(versionsGet());
         store.dispatch(modelConfigurationsGet());
+        store.dispatch(modelConfigurationSetupsGet());
     }
 
     _getModelURL (setupURI: string) {
@@ -129,10 +133,8 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
             }
             if (this._doBoxesIntersect(bbox, selbox)) {
                 let region : any = Object.values(this._mregions).filter((r:any) => r.geo && r.geo.length > 0 && r.geo[0].id === geoId)[0];
-                let modelsInside = Object.values(this._configs)
-                    .filter((c:any) => c.type && c.type.indexOf('ModelConfigurationSetup') >= 0 &&
-                                       c.hasRegion && c.hasRegion.length > 0 &&
-                                       c.hasRegion.filter((r:any) => r.id === region.id).length > 0);
+                let modelsInside = Object.values(this._setups)
+                    .filter((c:any) => (c.hasRegion||[]).filter((r:any) => r.id === region.id).length > 0);
                 if (modelsInside) {
                     this._matchingModelSetups = this._matchingModelSetups.concat(modelsInside);
                 }
@@ -247,12 +249,13 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
             if (!this._fullyLoaded) {
                 let loaded = db.loadedAll;
                 if (loaded[ALL_REGIONS] && loaded[ALL_MODELS] && loaded[ALL_GEO_SHAPES] && loaded[ALL_VERSIONS] &&
-                    loaded[ALL_MODEL_CONFIGURATIONS]) {
+                    loaded[ALL_MODEL_CONFIGURATIONS] && loaded[ALL_MODEL_CONFIGURATION_SETUPS]) {
                     this._geoShapes = db.geoShapes;
                     this._mregions = db.regions;
                     this._models = db.models;
                     this._versions = db.versions;
                     this._configs = db.configurations;
+                    this._setups = db.setups;
                     this._fullyLoaded = true;
                     if (this._selectedRegion) {
                         this._getMatchingModels();
