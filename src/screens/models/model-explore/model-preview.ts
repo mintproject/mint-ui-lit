@@ -7,9 +7,13 @@ import { html, property, customElement, css } from 'lit-element';
 
 import { goToPage } from '../../../app/actions';
 
-import { FetchedModel } from "../../../util/api-interfaces";
 import { ExplorerStyles } from './explorer-styles'
 import { explorerCompareModel } from './ui-actions'
+
+import { isEmpty, isSubregion } from 'model-catalog/util';
+import { IdMap } from 'app/reducers';
+import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Parameter, SoftwareImage,
+         Person, Process, SampleResource, SampleCollection, Region } from '@mintproject/modelcatalog_client';
 
 @customElement('model-preview')
 export class ModelPreview extends connect(store)(PageViewElement) {
@@ -17,28 +21,14 @@ export class ModelPreview extends connect(store)(PageViewElement) {
     @property({type: Number}) private _nVersions : number = -1;
     @property({type: Number}) private _nConfigs  : number = -1;
     @property({type: Number}) private _nSetups   : number = -1;
-    @property({type: Object}) private _regions : null | any = null;
-
-    @property({type: String})
-        altDesc : string = '';
-
-    @property({type: String})
-        altTitle : string = '';
+    @property({type: Number}) private _nLocalSetups : number = -1;
+    @property({type: Object}) private _regions : null | Set<Region> = null;
 
     @property({type: Object})
-    private _model! : FetchedModel;
+    private _model! : Model;
 
     @property({type: String})
     private _url : string = '';
-
-    @property({type: Number})
-    private _vers : number = -1;
-
-    @property({type: Number})
-    private _configs : number = -1;
-
-    @property({type: Boolean})
-    private _ready : boolean = false;
 
     constructor () {
         super();
@@ -232,25 +222,22 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                 <td class="right">
                   <div class="header"> 
                     <span class="title">${this._model.label}</span>
-                    <span class="icon"><wl-icon @click="${()=>{this._compare(this._model.uri)}}">compare_arrows</wl-icon></span>
+                    <span class="icon"><wl-icon @click="${()=>{this._compare(this._model.id)}}">compare_arrows</wl-icon></span>
                     <span class="ver-conf-text">
                     ${this._nVersions > 0 ? this._nVersions.toString() + ' version' + (this._nVersions > 1? 's' :'') : 'No versions'},
                     ${this._nConfigs > 0 ? this._nConfigs.toString() + ' config' + (this._nConfigs > 1? 's' :'') : 'No configs'}
                     </span>
                   </div>
-                  <div class="content" style="${this.altDesc? '' : 'text-align: justify;'}">
-                    ${this.altDesc ? 
-                        html`<b>${this.altTitle}</b> ${this.altDesc.split(';').map((v, i) => {
-                            if (i===0) return html`<code>${v}</code>`;
-                            else return html`, <code>${v}</code>`;
-                        })}`: 
-                        this._model.desc}
+
+                  <div class="content">
+                    <slot name="description"></slot>
                   </div>
-                  ${this._regions ? html `
+
+                  ${Array.from(this._regions || []).length > 0 ? html`
                   <div class="footer one-line" style="height: auto;">
                     <span class="keywords"> 
                         <b>Regions:</b> 
-                        ${this._regions.map(r => r.label).join(', ')}
+                        ${Array.from(this._regions).map(r => r.label).join(', ')}
                     </span>
                   </div>` : ''}
                   <div class="footer one-line" style="padding-top: 0px;">
@@ -289,51 +276,56 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                 this._nVersions = this._model.hasVersion.length;
                 this._nConfigs  = -1;
                 this._nSetups   = -1;
+                this._nLocalSetups = -1;
                 this._regions = null;
             } else {
                 this._nVersions = 0;
                 this._nConfigs  = 0;
                 this._nSetups   = 0;
-                this._regions = [];
+                this._nLocalSetups = 0;
+                this._regions = new Set();
             }
         }
 
-        if (this._nVersions > 0 && this._nConfigs < 0 && db && Object.keys(db.versions).length > 0) {
+        if (this._nVersions > 0 && this._nConfigs < 0 && Object.keys(db.versions).length > 0) {
             this._nConfigs = this._model.hasVersion
                     .map((ver:any) => db.versions[ver.id])
-                    .filter((ver) => !!ver)
-                    .reduce((sum:number, ver) => sum + (ver.hasConfiguration || []).length, 0);
+                    .filter((ver:SoftwareVersion) => !!ver)
+                    .reduce((sum:number, ver:SoftwareVersion) => sum + (ver.hasConfiguration || []).length, 0);
             if (this._nConfigs === 0) this._nSetups = 0;
         }
 
-        if (this._nConfigs > 0 && this._nSetups < 0 && db && Object.keys(db.configurations).length > 0) {
+        if (this._nConfigs > 0 && this._nSetups < 0 && !this._regions && this._region &&
+                ![db.configurations, db.setups, db.regions].map(isEmpty).some(b=>b)) {
+            this._regions = new Set();
+            this._nLocalSetups = 0;
             this._nSetups = this._model.hasVersion
                     .map((ver:any) => db.versions[ver.id])
-                    .filter((ver) => !!ver)
-                    .reduce((sum:number, ver) =>
+                    .filter((ver:SoftwareVersion) => !!ver)
+                    .reduce((sum:number, ver:SoftwareVersion) =>
                             sum + (ver.hasConfiguration || [])
                                     .map((cfg:any) => db.configurations[cfg.id])
-                                    .filter((cfg) => !!cfg)
-                                    .reduce((sum2:number, cfg) => sum2 + (cfg.hasSetup || []).length, 0)
+                                    .filter((cfg:ModelConfiguration) => !!cfg)
+                                    .reduce((sum2:number, cfg:ModelConfiguration) =>
+                                        sum2 + (cfg.hasSetup || [])
+                                                .map((setup:any) => db.setups[setup.id])
+                                                .filter((setup:ModelConfigurationSetup) => !!setup)
+                                                .reduce((sum3:number, setup:ModelConfigurationSetup) => {
+                                                    this._nSetups = this._nSetups + (setup.hasRegion || [])
+                                                            .map((reg:any) => db.regions[reg.id])
+                                                            .filter((reg:Region) => {
+                                                                if (isSubregion(this._region.model_catalog_uri,reg)) {
+                                                                    this._regions.add(reg);
+                                                                    return true
+                                                                } else {
+                                                                    return false
+                                                                }
+                                                            }).length;
+                                                    return sum3 + 1;
+                                                }, 0)
+                                    , 0)
             , 0);
         }
-
-        if (db && Object.keys(db.regions).length > 0 && Object.keys(db.setups).length > 0 && this._nSetups > 0 && !this._regions) {
-            this._regions = [];
-
-            this._model.hasVersion.forEach((ver:any) => {
-                (db.versions[ver.id].hasConfiguration || []).forEach((cfg:any) => {
-                    (db.configurations[cfg.id].hasSetup || []).forEach((setup:any) => {
-                        console.log(setup, db.setups.length);
-                        (db.setups[setup.id].hasRegion || []).forEach((reg:any) => {
-                            this._regions.push( db.regions[reg.id] )
-                        })
-                    })
-                })
-            })
-            console.log('r', this._regions );
-        }
-
 
         /*if (this._model && db && db.versions && db.configurations && db.setups) {
             this._nVersions = this._model.hasVersion.map(v => v.id);
