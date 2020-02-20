@@ -10,7 +10,7 @@ import { goToPage } from '../../../app/actions';
 import { ExplorerStyles } from './explorer-styles'
 import { explorerCompareModel } from './ui-actions'
 
-import { isEmpty, isSubregion } from 'model-catalog/util';
+import { getId, isEmpty, isSubregion, getLatestVersion, getLatestConfiguration, getLatestSetup } from 'model-catalog/util';
 import { IdMap } from 'app/reducers';
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Parameter, SoftwareImage,
          Person, Process, SampleResource, SampleCollection, Region } from '@mintproject/modelcatalog_client';
@@ -29,6 +29,8 @@ export class ModelPreview extends connect(store)(PageViewElement) {
 
     @property({type: String})
     private _url : string = '';
+
+    private PREFIX : string = '/models/explore/';
 
     constructor () {
         super();
@@ -200,11 +202,14 @@ export class ModelPreview extends connect(store)(PageViewElement) {
               <tr>
                 <td class="left"> 
                   <div class="text-centered one-line">
-                    ${this._nSetups > 0? html`
+                    ${this._nLocalSetups > 0? html`
                         <b style="color: darkgreen;">Executable in MINT</b>
-                    `: html`
-                        <b>Not executable in MINT</b>
-                    `} 
+                    `: (this._nSetups > 0 ? html`
+                        <b>Executable in MINT for other Region</b>
+                    ` : html`
+                        <b style="color: chocolate;">Not executable in MINT</b>
+                    `) 
+                    } 
                   </div>
                   <div>
                     <span class="helper"></span>${this._model.logo ? 
@@ -246,7 +251,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                         ${this._model.keywords && this._model.keywords.length > 0 ? 
                             this._model.keywords.join(';').split(/ *; */).join(', ') : 'No keywords'}
                     </span>
-                    <a href="${this._regionid + '/'+ this._url}" class="details-button" @click="${this._goToThisModel}"> More details </a>
+                    <a href="${this._regionid + this._url}" class="details-button"> More details </a>
                   </div>
                 </td>
               </tr>
@@ -270,6 +275,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         super.setRegionId(state);
         let db = state.modelCatalog;
+        /* Load this model and, if is needed versions, configs and setups */
         if (db && db.models[this.id] && db.models[this.id] != this._model) {
             this._model = db.models[this.id];
             if (this._model.hasVersion) {
@@ -278,34 +284,57 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                 this._nSetups   = -1;
                 this._nLocalSetups = -1;
                 this._regions = null;
+                this._url = ''
             } else {
                 this._nVersions = 0;
                 this._nConfigs  = 0;
                 this._nSetups   = 0;
                 this._nLocalSetups = 0;
                 this._regions = new Set();
+                this._url = this.PREFIX + getId(this._model);
             }
         }
 
         if (this._nVersions > 0 && this._nConfigs < 0 && Object.keys(db.versions).length > 0) {
+            let lastVersion : SoftwareVersion | null = null;
             this._nConfigs = this._model.hasVersion
                     .map((ver:any) => db.versions[ver.id])
                     .filter((ver:SoftwareVersion) => !!ver)
-                    .reduce((sum:number, ver:SoftwareVersion) => sum + (ver.hasConfiguration || []).length, 0);
-            if (this._nConfigs === 0) this._nSetups = 0;
+                    .reduce((sum:number, ver:SoftwareVersion) => {
+                        lastVersion = getLatestVersion(lastVersion, ver);
+                        return sum + (ver.hasConfiguration || []).length;
+                    }, 0);
+            if (this._nConfigs === 0) {
+                this._nSetups = 0;
+                this._url = this.PREFIX + getId(this._model) + (lastVersion ? '/' + getId(lastVersion) : '');
+            }
         }
 
         if (this._nConfigs > 0 && this._nSetups < 0 && !this._regions && this._region &&
                 ![db.configurations, db.setups, db.regions].map(isEmpty).some(b=>b)) {
+            // We filter for region, so we need to compute the url, local setups and regions.
             this._regions = new Set();
             this._nLocalSetups = 0;
+
+            let lastVersion : SoftwareVersion | null = null;
+            let lastConfig : ModelConfiguration | null = null;
+            let lastSetup : ModelConfigurationSetup | null = null;
+
+            // Count setups and compute url and regions.
             this._nSetups = this._model.hasVersion
                     .map((ver:any) => db.versions[ver.id])
-                    .filter((ver:SoftwareVersion) => !!ver)
+                    .filter((ver:SoftwareVersion) => { 
+                        lastVersion = getLatestVersion(lastVersion, ver);
+                        return !!ver;
+                    })
                     .reduce((sum:number, ver:SoftwareVersion) =>
                             sum + (ver.hasConfiguration || [])
                                     .map((cfg:any) => db.configurations[cfg.id])
-                                    .filter((cfg:ModelConfiguration) => !!cfg)
+                                    .filter((cfg:ModelConfiguration) => {
+                                        if (lastVersion === ver)
+                                            lastConfig = getLatestConfiguration(lastConfig, cfg);
+                                        return !!cfg;
+                                    })
                                     .reduce((sum2:number, cfg:ModelConfiguration) =>
                                         sum2 + (cfg.hasSetup || [])
                                                 .map((setup:any) => db.setups[setup.id])
@@ -316,6 +345,9 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                                                             .filter((reg:Region) => {
                                                                 if (isSubregion(this._region.model_catalog_uri,reg)) {
                                                                     this._regions.add(reg);
+                                                                    if (lastConfig === cfg)
+                                                                        lastSetup = getLatestSetup(lastSetup, setup);
+                                                                    this._nLocalSetups += 1;
                                                                     return true
                                                                 } else {
                                                                     return false
@@ -325,48 +357,14 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                                                 }, 0)
                                     , 0)
             , 0);
+            this._url = this.PREFIX + getId(this._model) + (lastVersion ?
+                ('/' +  getId(lastVersion) + (lastConfig ?
+                    '/' + getId(lastConfig) + (lastSetup ? 
+                        '/' + getId(lastSetup)
+                        : '')
+                    : '')
+                )
+                : '')
         }
-
-        /*if (this._model && db && db.versions && db.configurations && db.setups) {
-            this._nVersions = this._model.hasVersion.map(v => v.id);
-            console.log('1', db.versions);
-            console.log('2', db.configurations);
-            console.log('3', db.setups);
-            //this._nConfig  = db.versions[this._model.id].
-            //this._nSetup
-        }*/
-
-        /*if (db && db.models && db.models[this.id] && db.models[this.id].id != this._modelId) {
-            console.log('ID Changed', this._modelId, '->', db.models[this.id].id);
-            this._modelId = db.models[this.id].id;
-        }*/
-
-        /*if (state.explorer) {
-            let db = state.explorer;
-            if (db.models && db.models[this.uri]) {
-                this._model = db.models[this.uri];
-            }
-
-            if (db.urls && db.urls[this.uri]) {
-                this._url = 'models/explore/' + db.urls[this.uri];
-            } else {
-                this._url = 'models/explore/' + this.uri.split('/').pop();
-            }
-
-            if (db.versions && db.versions[this.uri]) {
-                this._configs = db.versions[this.uri].reduce((acc, ver) => acc + (ver.configs ? ver.configs.length : 0), 0)
-                db.versions[this.uri].forEach((v) => {
-                    (v.configs || []).forEach((c) => {
-                        if (c.calibrations && c.calibrations.length > 0 && this._model.regions) {
-                            this._ready = true;
-                        }
-                    });
-                });
-            } else {
-                this._configs = 0;
-            }
-        }
-        this._vers = this._model && this._model.versions ? this._model.versions.length : 0;*/
     }
-
 }
