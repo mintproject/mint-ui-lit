@@ -19,6 +19,7 @@ import { ModelCatalogSoftwareImageAction } from './software-image-actions';
 import { ModelCatalogDatasetSpecificationAction } from './dataset-specification-actions';
 import { ModelCatalogSampleResourceAction } from './sample-resource-actions';
 import { ModelCatalogSampleCollectionAction } from './sample-collection-actions';
+import { ModelCatalogImageAction } from './image-actions';
 
 export const DEFAULT_GRAPH = 'mint@isi.edu';
 export const PREFIX_URI = 'https://w3id.org/okn/i/mint/'
@@ -62,7 +63,8 @@ export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAc
         ModelCatalogModelConfigurationAction | ModelCatalogModelConfigurationSetupAction | ModelCatalogPersonAction |
         ModelCatalogRegionAction | ModelCatalogGeoShapeAction | ModelCatalogGridAction | ModelCatalogProcessAction |
         ModelCatalogParameterAction | ModelCatalogTimeIntervalAction | ModelCatalogSoftwareImageAction |
-        ModelCatalogDatasetSpecificationAction | ModelCatalogSampleResourceAction | ModelCatalogSampleCollectionAction;
+        ModelCatalogDatasetSpecificationAction | ModelCatalogSampleResourceAction | ModelCatalogSampleCollectionAction |
+        ModelCatalogImageAction;
 
 export * from './model-actions';
 export * from './version-actions';
@@ -79,3 +81,4 @@ export * from './software-image-actions';
 export * from './dataset-specification-actions';
 export * from './sample-resource-actions';
 export * from './sample-collection-actions';
+export * from './image-actions';

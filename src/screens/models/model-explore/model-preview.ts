@@ -13,7 +13,9 @@ import { explorerCompareModel } from './ui-actions'
 import { getId, isEmpty, isSubregion, getLatestVersion, getLatestConfiguration, getLatestSetup } from 'model-catalog/util';
 import { IdMap } from 'app/reducers';
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Parameter, SoftwareImage,
-         Person, Process, SampleResource, SampleCollection, Region } from '@mintproject/modelcatalog_client';
+         Person, Process, SampleResource, SampleCollection, Region, Image } from '@mintproject/modelcatalog_client';
+
+import '../../../components/loading-dots';
 
 @customElement('model-preview')
 export class ModelPreview extends connect(store)(PageViewElement) {
@@ -22,20 +24,13 @@ export class ModelPreview extends connect(store)(PageViewElement) {
     @property({type: Number}) private _nConfigs  : number = -1;
     @property({type: Number}) private _nSetups   : number = -1;
     @property({type: Number}) private _nLocalSetups : number = -1;
-    @property({type: Object}) private _regions : null | Set<Region> = null;
-
-    @property({type: Object})
-    private _model! : Model;
-
-    @property({type: String})
-    private _url : string = '';
+    @property({type: String}) private _url      : string = '';
+    @property({type: Object}) private _regions  : null | Set<Region> = null;
+    @property({type: Object}) private _model!   : Model;
+    @property({type: Object}) private _logo!    : Image;
+    @property({type: Boolean}) private _loadingLogo : boolean = false;
 
     private PREFIX : string = '/models/explore/';
-
-    constructor () {
-        super();
-        this.active = true;
-    }
 
     static get styles() {
         return [ExplorerStyles,
@@ -187,6 +182,10 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                     cursor: pointer;
                     font-weight: bold;
                 }
+
+                loading-dots {
+                    --width: 20px;
+                }
             `
         ];
     }
@@ -202,19 +201,20 @@ export class ModelPreview extends connect(store)(PageViewElement) {
               <tr>
                 <td class="left"> 
                   <div class="text-centered one-line">
-                    ${this._nLocalSetups > 0? html`
-                        <b style="color: darkgreen;">Executable in MINT</b>
-                    `: (this._nSetups > 0 ? html`
-                        <b>Executable in MINT for other Region</b>
-                    ` : html`
-                        <b style="color: chocolate;">Not executable in MINT</b>
-                    `) 
-                    } 
+                  ${this._nLocalSetups < 0 ? html`<loading-dots></loading-dots>`
+                    : (this._nLocalSetups > 0 ? html`<b style="color: darkgreen;">Executable in MINT</b>`
+                      : (this._nSetups > 0 ? html`<b>Executable in MINT for other Region</b>`
+                        : html`<b style="color: chocolate;">Not executable in MINT</b>`
+                      )
+                    )
+                  }
                   </div>
                   <div>
-                    <span class="helper"></span>${this._model.logo ? 
-                        html`<img src="${this._model.logo}"/>`
+                    <span class="helper"></span>
+                    ${this._loadingLogo ? html`<wl-progress-spinner></wl-progress-spinner>`
+                      : (this._logo && this._logo.value ? html`<img src="${this._logo.value[0]}"/>`
                         : html`<wl-icon id="img-placeholder">image</wl-icon>`
+                      )
                     }
                   </div>
                   <div class="text-centered two-lines">
@@ -273,11 +273,14 @@ export class ModelPreview extends connect(store)(PageViewElement) {
     }
 
     stateChanged(state: RootState) {
+        let lastParentRegion = this._regionid
         super.setRegionId(state);
         let db = state.modelCatalog;
         /* Load this model and, if is needed versions, configs and setups */
-        if (db && db.models[this.id] && db.models[this.id] != this._model) {
+        if (db && db.models[this.id] && (db.models[this.id] != this._model || lastParentRegion != this._regionid)) {
             this._model = db.models[this.id];
+            this._loadingLogo = (this._model.logo && this._model.logo.length > 0);
+
             if (this._model.hasVersion) {
                 this._nVersions = this._model.hasVersion.length;
                 this._nConfigs  = -1;
@@ -295,7 +298,12 @@ export class ModelPreview extends connect(store)(PageViewElement) {
             }
         }
 
-        if (this._nVersions > 0 && this._nConfigs < 0 && Object.keys(db.versions).length > 0) {
+        if (this._loadingLogo && !isEmpty(db.images) && db.images[(this._model.logo[0] as Image).id]) {
+            this._loadingLogo = false;
+            this._logo = db.images[(this._model.logo[0] as Image).id];
+        }
+
+        if (this._nVersions > 0 && this._nConfigs < 0 && !isEmpty(db.versions)) {
             let lastVersion : SoftwareVersion | null = null;
             this._nConfigs = this._model.hasVersion
                     .map((ver:any) => db.versions[ver.id])
@@ -306,6 +314,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                     }, 0);
             if (this._nConfigs === 0) {
                 this._nSetups = 0;
+                this._nLocalSetups = 0;
                 this._url = this.PREFIX + getId(this._model) + (lastVersion ? '/' + getId(lastVersion) : '');
             }
         }

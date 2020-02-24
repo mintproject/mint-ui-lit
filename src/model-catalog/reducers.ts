@@ -15,10 +15,11 @@ import { MODELS_ADD, MODEL_DELETE,
          SAMPLE_RESOURCES_ADD, SAMPLE_RESOURCE_DELETE, 
          SAMPLE_COLLECTIONS_ADD, SAMPLE_COLLECTION_DELETE, 
          SOFTWARE_IMAGES_ADD, SOFTWARE_IMAGE_DELETE,
+         IMAGES_ADD, IMAGE_DELETE
          } from './actions'
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Region, GeoShape, Grid,
-         Process, Parameter, TimeInterval, SoftwareImage, DatasetSpecification, SampleResource, 
+         Process, Parameter, TimeInterval, SoftwareImage, DatasetSpecification, SampleResource, Image,
          SampleCollection } from '@mintproject/modelcatalog_client';
 import { IdMap } from 'app/reducers'
 
@@ -42,6 +43,7 @@ export interface ModelCatalogState {
     datasetSpecifications:  IdMap<DatasetSpecification>;
     sampleResources:        IdMap<SampleResource>;
     sampleCollections:      IdMap<SampleCollection>;
+    images:                 IdMap<Image>;
 }
 
 const INITIAL_STATE: ModelCatalogState = { 
@@ -63,7 +65,8 @@ const INITIAL_STATE: ModelCatalogState = {
     softwareImages:         {} as IdMap<SoftwareImage>,
     datasetSpecifications:  {} as IdMap<DatasetSpecification>,
     sampleResources:        {} as IdMap<SampleResource>,
-    sampleCollections:      {} as IdMap<SampleCollection>
+    sampleCollections:      {} as IdMap<SampleCollection>,
+    images:                 {} as IdMap<Image>
 } as ModelCatalogState;
 
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -99,7 +102,8 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             return { ...state, configurations: {...state.configurations, ...action.payload} };
         case MODEL_CONFIGURATION_SETUPS_ADD:
             return { ...state, setups: {...state.setups, ...action.payload} };
-
+        case IMAGES_ADD:
+            return { ...state, images: {...state.images, ...action.payload} };
 
         case MODEL_DELETE:
             tmp = { ...state.models };
@@ -161,6 +165,10 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             tmp = { ...state.setups };
             delete tmp[action.uri];
             return { ...state, setups: tmp };
+        case IMAGE_DELETE:
+            tmp = { ...state.images };
+            delete tmp[action.uri];
+            return { ...state, images: tmp };
 
         default:
             return state;
