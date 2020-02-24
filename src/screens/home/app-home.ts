@@ -26,6 +26,9 @@ export class AppHome extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _regions!: Region[];
 
+    @property({type: String})
+    private _preferredRegion : string = '';
+
     @property({type: Boolean})
     private _mapReady: boolean = false;
 
@@ -152,13 +155,16 @@ export class AppHome extends connect(store)(PageViewElement) {
     private _addRegions() {
       let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
       if(map && this._regions) {
+        let prefRegions = this._regions.filter((region:Region) => region.id === this._preferredRegion);
         try {
           map.setRegions(this._regions, this._regionid);
+          if (prefRegions.length > 0) map.alignMapToRegions(prefRegions);
           this._mapReady = true;
         }
         catch {
           map.addEventListener("google-map-ready", (e) => {
             map.setRegions(this._regions, this._regionid);
+            if (prefRegions.length > 0) map.alignMapToRegions(prefRegions);
             this._mapReady = true;
           })
         }
@@ -620,6 +626,13 @@ export class AppHome extends connect(store)(PageViewElement) {
 
     // This is called every time something is updated in the store.
     stateChanged(state: RootState) {
+        if (state.app && state.app.prefs && state.app.prefs.profile) {
+            let profile = state.app.prefs.profile;
+            if (profile.preferredRegion != this._preferredRegion) {
+                this._preferredRegion = profile.preferredRegion;
+            }
+        }
+
         if(state.regions && state.regions.regions) {
             if(this._regionids != state.regions.top_region_ids) {
               this._regionids = state.regions.top_region_ids;
@@ -628,5 +641,5 @@ export class AppHome extends connect(store)(PageViewElement) {
             }
         }
         super.setRegionId(state);
-    }    
+    }
 }
