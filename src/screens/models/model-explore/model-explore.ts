@@ -1,29 +1,29 @@
 import { html, customElement, property, css } from 'lit-element';
-import { PageViewElement } from '../../../components/page-view-element';
+import { PageViewElement } from 'components/page-view-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-
 import { ExplorerStyles } from './explorer-styles'
-import { SharedStyles } from '../../../styles/shared-styles';
-import { store, RootState } from '../../../app/store';
+import { SharedStyles } from 'styles/shared-styles';
+import { store, RootState } from 'app/store';
 
-import { goToPage } from '../../../app/actions';
+import { goToPage } from 'app/actions';
+import { IdMap } from 'app/reducers';
 
-import { fetchSearchModelByVarSN } from '../../../util/model-catalog-actions';
-import { explorerSetCompareA, explorerSetCompareB } from "./ui-actions";
-import explorer from '../../../util/model-catalog-reducers';
-import explorerUI from "./ui-reducers";
-import { UriModels } from '../../../util/model-catalog-reducers';
+import { fetchSearchModelByVarSN } from 'util/model-catalog-actions';
+
+import { isEmpty } from 'model-catalog/util';
+import { Model } from '@mintproject/modelcatalog_client';
 import { modelsSearchIndex, modelsSearchIntervention, modelsSearchRegion } from 'model-catalog/actions';
 
 import './model-preview'
 import './model-view'
 import './model-edit'
-import './model-compare'
 
 import "weightless/textfield";
 import "weightless/icon";
 import "weightless/select";
 
+import explorer from '../../../util/model-catalog-reducers';
+import explorerUI from "./ui-reducers";
 store.addReducers({
     explorer,
     explorerUI
@@ -32,13 +32,10 @@ store.addReducers({
 @customElement('model-explorer')
 export class ModelExplorer extends connect(store)(PageViewElement) {
     @property({type: Object})
-    private _models! : UriModels;// = {} as UriModels;
+    private _models! : IdMap<Model>;
 
     @property({type: String})
     private _selectedUri : string = '';
-
-    @property({type: String})
-    private _mode : string = 'view';
 
     @property({type: String})
     private _filter : string = '';
@@ -47,19 +44,13 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     private _searchType : string = 'full-text';
 
     private _fullText : {[s: string]: string} = {};
-    private _variables : {[s: string]: string} = {};
+    private _variables : {[s: string]: string[]} = {};
 
     @property({type: Object})
     private _activeModels : {[s: string]: boolean} = {};
 
-    @property({type: Number})
-    private _activeCount : number = 0;
-
     @property({type: Boolean})
     private _loading : boolean = true;
-
-    @property({type: Number})
-    private _comparing : number = 0;
 
     static get styles() {
         return [SharedStyles, ExplorerStyles,
@@ -78,13 +69,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 padding: 6px 10px;
             }
 
-            #model-comparison {
-                margin: 0 auto;
-                width: 75%;
-                max-height: 100%;
-                overflow: scroll;
-            }
-
             #model-search-results {
                 margin: 0 auto;
                 overflow: scroll;
@@ -94,8 +78,15 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
             #model-search-results > model-preview {
                 margin: 0 auto;
-                display: block;
                 width: 75%;
+            }
+
+            model-preview {
+                display:none;
+            }
+
+            model-preview[active] {
+                display: block;
             }
 
             #model-view-cont {
@@ -136,6 +127,11 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 cursor: pointer;
             }
 
+            .centered-info {
+                padding-bottom: 1em;
+                text-align:center;
+            }
+
             .explanation {
                 display: block;
                 margin: 0 auto;
@@ -149,31 +145,21 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     _goToExplorer () {
         goToPage('models/explore');
-        if (this._comparing === 2) {
-            store.dispatch(explorerSetCompareA({}));
-            store.dispatch(explorerSetCompareB({}));
-        }
     }
 
     protected render() {
         return html`
             ${this._selectedUri? 
                 //Display only selected model or the search
-                (this._mode === 'view' ?
-                    html`<div id="model-view-cont"><model-view></model-view></div>`
-                    : html`<div id="model-view-cont"><model-edit></model-edit></div>`
-                )
+                html`<div id="model-view-cont"><model-view></model-view></div>`
                 : this._renderSearch()
             }
         `;
     }
 
     _renderSearch () {
+        let hasResults = Object.values(this._activeModels).some(x=>x);
         return html`
-            ${this._comparing>0? html`
-            <div id="model-comparison" style="padding-bottom: 1em;"> <model-compare></model-compare> </div>
-            ` :html``}
-            ${this._comparing<2? html`
             <wl-text class="explanation">
                 The MINT model browser allows you to learn about the different models included in MINT.
                 Each model can have separate configurations, each representing a unique set up of that
@@ -204,25 +190,25 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             </div>
 
             <div id="model-search-results">
-                <div style="padding-bottom: 1em; text-align:center;">
                 ${this._loading? html`
-                    <wl-progress-spinner></wl-progress-spinner>`
-                : html`
-                ${this._activeCount == 0? html`<wl-text style="font-size: 1.4em;">No model fits the search parameters</wl-text>`: html``}
-                `}
-                </div>
+                    <div class="centered-info"><wl-progress-spinner></wl-progress-spinner></div>`
+                : (hasResults ? 
+                    Object.keys(this._models).map((key:string) => html`
+                    <model-preview .id="${key}" ?active="${this._activeModels[key]}">
 
-                ${Object.keys(this._models).map( (key:string) => html`
-                    <model-preview 
-                        uri="${key}"
-                        altDesc="${this._variables[key] ? this._variables[key] : ''}"
-                        altTitle="${this._variables[key] ? 'The search results matched the following model variables ('+this._variables[key].split(';').length+'):' : ''}"
-                        .style="${!this._activeModels[key]? 'display: none;' : ''}">
-                    </model-preview>
-                    `
-                )}
+                      <div slot="description">
+                        ${this._variables[key] ? html`
+                            <b>With variables (${this._variables[key].length}):</b>
+                            ${this._variables[key].map((v, i) => html`${i>0?', ':''}<code>${v}</code>`)}`
+                        : this._models[key].description}
+                      </div>
+
+                    </model-preview>`)
+                    :html`<div class="centered-info">
+                        <wl-text style="font-size: 1.4em;">No model fits the search parameters</wl-text>
+                    </div>`)
+                }
             </div>
-            ` : html``}
         `
     }
 
@@ -241,12 +227,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         let input : string = inputElement['value'].toLowerCase();
         switch (this._searchType) {
             case 'full-text':
-                let count = 0;
-                Object.keys(this._models).forEach((key:string) => {
-                    this._activeModels[key] = this._fullText[key].includes(input);
-                    if (this._activeModels[key]) count += 1;
-                });
-                this._activeCount = count;
+                this._searchByFullText(input);
                 break;
             case 'variables':
                 this._searchByVariableName(input);
@@ -269,12 +250,10 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     _clearSearchInput () {
         this._filter = '';
-        let count = 0;
+        this._variables = {};
         Object.keys(this._models).forEach((key:string) => {
             this._activeModels[key] = true;
-            count += 1;
         });
-        this._activeCount = count;
     }
 
     _onSearchTypeChange () {
@@ -283,7 +262,12 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
         this._searchType = selectElement['value'].toLowerCase();
         this._clearSearchInput();
-        this._variables = {};
+    }
+
+    _searchByFullText (input:string) {
+        Object.keys(this._models).forEach((key:string) => {
+            this._activeModels[key] = this._fullText[key].includes(input);
+        });
     }
 
     _lastTimeout:any;
@@ -296,7 +280,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             Object.keys(this._models).forEach((key:string) => {
                 this._activeModels[key] = false;
             })
-            this._activeCount = 0;
             this._lastTimeout = setTimeout(
                 ()=>{ store.dispatch(fetchSearchModelByVarSN(input)); },
                 750);
@@ -315,18 +298,15 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             Object.keys(this._models).forEach((key:string) => {
                 this._activeModels[key] = false;
             })
-            this._activeCount = 0;
             this._lastTimeout = setTimeout(
                 ()=>{ 
                     let req = modelsSearchIndex(input);
                     req.then((result:any) => {
                         let validIds = result.map(x => x.id);
-                        console.log('Results', validIds);
 
                         Object.keys(this._models).forEach((key:string) => {
                             this._activeModels[key] = (validIds.indexOf(key) >= 0);
                         });
-                        this._activeCount = validIds.length;
                         this._loading=false;
                     });
                 }, 750);
@@ -345,18 +325,15 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             Object.keys(this._models).forEach((key:string) => {
                 this._activeModels[key] = false;
             })
-            this._activeCount = 0;
             this._lastTimeout = setTimeout(
                 ()=>{ 
                     let req = modelsSearchIntervention(input);
                     req.then((result:any) => {
                         let validIds = result.map(x => x.id);
-                        console.log('Results', validIds);
 
                         Object.keys(this._models).forEach((key:string) => {
                             this._activeModels[key] = (validIds.indexOf(key) >= 0);
                         });
-                        this._activeCount = validIds.length;
                         this._loading=false;
                     });
                 }, 750);
@@ -375,18 +352,15 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             Object.keys(this._models).forEach((key:string) => {
                 this._activeModels[key] = false;
             })
-            this._activeCount = 0;
             this._lastTimeout = setTimeout(
                 ()=>{ 
                     let req = modelsSearchRegion(input);
                     req.then((result:any) => {
                         let validIds = result.map(x => x.id);
-                        console.log('Results', validIds);
 
                         Object.keys(this._models).forEach((key:string) => {
                             this._activeModels[key] = (validIds.indexOf(key) >= 0);
                         });
-                        this._activeCount = validIds.length;
                         this._loading=false;
                     });
                 }, 750);
@@ -397,57 +371,49 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     }
 
     stateChanged(state: RootState) {
-        if (state.explorer) {
-            if (state.explorer.models && this._models != state.explorer.models) {
-                this._models = state.explorer.models;
-                this._fullText = {};
-                this._activeModels = {};
-                let count = 0;
-                Object.keys(this._models).forEach((key:string) => {
-                    let model = this._models[key];
-                    this._fullText[key] = (model.label
-                                           + (model.desc? model.desc : '')
-                                           + (model.keywords? model.keywords : '') 
-                                           + (model.type? model.type : ''))
-                                           + (model.regions ? model.regions : '');
-                    this._fullText[key] = this._fullText[key].toLowerCase();
-                    this._filter = '';
-                    this._activeModels[key] = true;
-                    count += 1;
-                });
-                this._activeCount = count;
-                if (count > 0)
-                    this._loading = false;
-            }
+        if (state.explorerUI && state.explorerUI.selectedModel != this._selectedUri) {
+            this._selectedUri = state.explorerUI.selectedModel;
+        }
 
-            if (state.explorer.search && state.explorer.search[this._filter]) {
-                Object.keys(this._models).forEach((key:string) => {
-                    this._activeModels[key] = false;
+        if (state.modelCatalog) {
+            let db = state.modelCatalog;
+            if (this._models != db.models && !isEmpty(db.models)) {
+                this._models = db.models;
+
+                /* Computing full-text search */
+                this._fullText = {};
+                Object.values(this._models).forEach((model:Model) => {
+                    this._fullText[model.id] = (
+                        (model.label ? model.label.join() : '') +
+                        (model.description ? model.description.join() : '') +
+                        (model.keywords ? model.keywords.join() : '')
+                    ).toLowerCase();
                 });
-                let count = 0;
-                this._variables = {};
-                Object.keys(state.explorer.search[this._filter]).forEach((key:string) =>{
-                    this._activeModels[key] = true;
-                    this._variables[key] = state.explorer!.search[this._filter][key].join(';');
-                    count += 1;
-                });
-                this._activeCount = count;
+                this._activeModels = {};
+                if (!this._filter) {
+                    Object.keys(this._models).forEach((key:string) => {
+                        this._activeModels[key] = true;
+                    });
+                } else {
+                    this._searchByFullText(this._filter);
+                }
                 this._loading = false;
             }
         }
-        if (state.explorerUI && state.explorerUI.selectedModel != this._selectedUri) {
-            if (state.explorer && state.explorer.models[state.explorerUI.selectedModel]) {
-                this._selectedUri = state.explorerUI.selectedModel;
-            } else {
-                this._selectedUri = '';
-            }
-        }
 
-        if (state.explorerUI) {
-            this._comparing = 0;
-            if ( state.explorerUI.compareA && state.explorerUI.compareA.model) this._comparing += 1;
-            if ( state.explorerUI.compareB && state.explorerUI.compareB.model) this._comparing += 1;
-            this._mode = state.explorerUI.mode;
+        if (state.explorer) {
+            if (state.explorer.search && state.explorer.search[this._filter]) {
+                this._variables = { ...state.explorer.search[this._filter] };
+
+                Object.keys(this._models).forEach((key:string) => {
+                    if (this._variables[key]) {
+                        this._activeModels[key] = true;
+                    } else {
+                        this._activeModels[key] = false;
+                    }
+                });
+                this._loading = false;
+            }
         }
     }
 }

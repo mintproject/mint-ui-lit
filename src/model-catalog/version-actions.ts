@@ -1,54 +1,136 @@
-import { Action, ActionCreator } from "redux";
-import { ThunkAction } from "redux-thunk";
-import { RootState, store } from 'app/store';
-
+import { Action } from "redux";
+import { IdMap } from 'app/reducers'
 import { Configuration, SoftwareVersion, SoftwareVersionApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, PREFIX_URI, DEFAULT_GRAPH,
-         START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
+         DEFAULT_GRAPH } from './actions';
 
-function debug (...args: any[]) { console.log('[MC Version]', ...args); }
+function debug (...args: any[]) { console.log('[MC SoftwareVersion]', ...args); }
 
-export const ALL_VERSIONS = 'ALL_VERSIONS'
+export const VERSIONS_ADD = "VERSIONS_ADD";
+export const VERSION_DELETE = "VERSION_DELETE";
 
-export const VERSIONS_GET = "VERSIONS_GET";
-interface MCAVersionsGet extends Action<'VERSIONS_GET'> { payload: any };
-export const versionsGet: ActionCreator<ModelCatalogVersionThunkResult> = () => (dispatch) => {
-    let state: any = store.getState();
-    if (state.modelCatalog && (state.modelCatalog.loadedAll[ALL_VERSIONS] || state.modelCatalog.loading[ALL_VERSIONS])) {
-        debug('All versions are already in memory or loading')
-        return;
+interface MCAVersionsAdd extends Action<'VERSIONS_ADD'> { payload: IdMap<SoftwareVersion> };
+interface MCAVersionDelete extends Action<'VERSION_DELETE'> { uri: string };
+
+export type ModelCatalogVersionAction =  MCAVersionsAdd | MCAVersionDelete;
+
+let versionsPromise : Promise<IdMap<SoftwareVersion>> | null = null;
+
+export const versionsGet: ActionThunk<Promise<IdMap<SoftwareVersion>>, MCAVersionsAdd> = () => (dispatch) => {
+    if (!versionsPromise) {
+        versionsPromise = new Promise((resolve, reject) => {
+            debug('Fetching all');
+            let api : SoftwareVersionApi = new SoftwareVersionApi();
+            let req : Promise<SoftwareVersion[]> = api.softwareversionsGet({username: DEFAULT_GRAPH});
+            req.then((resp:SoftwareVersion[]) => {
+                let data : IdMap<SoftwareVersion> = resp.reduce(idReducer, {});
+                dispatch({
+                    type: VERSIONS_ADD,
+                    payload: data
+                });
+                resolve(data);
+            });
+            req.catch((err) => {
+                console.error('Error on GET Versions', err);
+                reject(err);
+            });
+        });
+    } else {
+        debug('All versions are already in memory or loading');
     }
-    dispatch({type: START_LOADING, id: ALL_VERSIONS});
-
-    let api = new SoftwareVersionApi();
-    let req = api.softwareversionsGet({username: DEFAULT_GRAPH});
-    req.then((data) => {
-        dispatch({
-            type: VERSIONS_GET,
-            payload: data.reduce(idReducer, {})
-        });
-        dispatch({type: END_LOADING, id: ALL_VERSIONS});
-    });
-    req.catch((err) => {console.log('Error on GET versions', err)});
+    return versionsPromise;
 }
 
-export const VERSION_GET = "VERSION_GET";
-interface MCAVersionGet extends Action<'VERSION_GET'> { payload: any };
-export const versionGet: ActionCreator<ModelCatalogVersionThunkResult> = ( uri:string ) => (dispatch) => {
-    debug('Fetching version', uri);
-    let id : string = uri.split('/').pop();
+export const versionGet: ActionThunk<Promise<SoftwareVersion>, MCAVersionsAdd> = (uri:string) => (dispatch) => {
+    debug('Fetching', uri);
+    let id : string = getIdFromUri(uri);
     let api : SoftwareVersionApi = new SoftwareVersionApi();
-    let req = api.softwareversionsIdGet({username: DEFAULT_GRAPH, id: id});
-    req.then((resp) => {
-        let data = {};
-        data[uri] = resp;
+    let req : Promise<SoftwareVersion> = api.softwareversionsIdGet({username: DEFAULT_GRAPH, id: id});
+    req.then((resp:SoftwareVersion) => {
         dispatch({
-            type: VERSION_GET,
-            payload: data
+            type: VERSIONS_ADD,
+            payload: idReducer({}, resp)
         });
     });
-    req.catch((err) => {console.log('Error on getVersion', err)});
+    req.catch((err) => {
+        console.error('Error on GET SoftwareVersion', err);
+    });
+    return req;
 }
 
-export type ModelCatalogVersionAction =  MCACommon | MCAVersionsGet | MCAVersionGet;
-type ModelCatalogVersionThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogVersionAction>;
+export const versionPost: ActionThunk<Promise<SoftwareVersion>, MCAVersionsAdd> = (version:SoftwareVersion) => (dispatch) => {
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+    if (status === 'DONE') {
+        debug('Creating new', version);
+        let postProm = new Promise((resolve,reject) => {
+            let api : SoftwareVersionApi = new SoftwareVersionApi(cfg);
+            let req = api.softwareversionsPost({user: DEFAULT_GRAPH, softwareVersion: version}); // This should be my username on prod.
+            req.then((resp:SoftwareVersion) => {
+                debug('Response for POST', resp);
+                dispatch({
+                    type: VERSIONS_ADD,
+                    payload: createIdMap(resp)
+                });
+                resolve(resp);
+            });
+            req.catch((err) => {
+                console.error('Error on POST SoftwareVersion', err);
+                reject(err);
+            });
+        });
+        return postProm;
+    } else {
+        console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('SoftwareVersion error'));
+    }
+}
+
+export const versionPut: ActionThunk<Promise<SoftwareVersion>, MCAVersionsAdd> = (version: SoftwareVersion) => (dispatch) => {
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+    if (status === 'DONE') {
+        debug('Updating', version);
+        let api : SoftwareVersionApi = new SoftwareVersionApi(cfg);
+        let id : string = getIdFromUri(version.id);
+        let req : Promise<SoftwareVersion> = api.softwareversionsIdPut({id: id, user: DEFAULT_GRAPH, softwareVersion: version});
+        req.then((resp) => {
+            debug('Response for PUT:', resp);
+            dispatch({
+                type: VERSIONS_ADD,
+                payload: idReducer({}, resp)
+            });
+        });
+        req.catch((err) => {
+            console.error('Error on PUT SoftwareVersion', err);
+        });
+        return req;
+    } else {
+        console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('Token error'));
+    }
+}
+
+export const versionDelete: ActionThunk<void, MCAVersionDelete> = (version:SoftwareVersion) => (dispatch) => {
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+    if (status === 'DONE') {
+        debug('Deleting', version.id);
+        let api : SoftwareVersionApi = new SoftwareVersionApi(cfg);
+        let id : string = getIdFromUri(version.id);
+        let req : Promise<void> = api.softwareversionsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        req.then(() => {
+            dispatch({
+                type: VERSION_DELETE,
+                uri: version.id
+            });
+        });
+        req.catch((err) => {
+            console.error('Error on DELETE SoftwareVersion', err);
+        });
+        return req;
+    } else {
+        console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('Token error'));
+    }
+}

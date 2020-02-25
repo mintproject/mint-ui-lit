@@ -1,139 +1,139 @@
-import { Action, ActionCreator } from "redux";
-import { ThunkAction } from "redux-thunk";
-import { RootState, store } from 'app/store';
-
+import { Action } from "redux";
+import { IdMap } from 'app/reducers'
 import { Configuration, SampleResource, SampleResourceApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, PREFIX_URI, DEFAULT_GRAPH,
-         START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
+         DEFAULT_GRAPH } from './actions';
 
-function debug (...args: any[]) { console.log('OBA:', ...args); }
+function debug (...args: any[]) {}// console.log('[MC SampleResource]', ...args); }
 
-export const ALL_SAMPLE_RESOURCES = 'ALL_SAMPLE_RESOURCES'
-
-export const SAMPLE_RESOURCES_GET = "SAMPLE_RESOURCES_GET";
-interface MCASampleResourcesGet extends Action<'SAMPLE_RESOURCES_GET'> { payload: any };
-export const sampleResourcesGet: ActionCreator<ModelCatalogSampleResourceThunkResult> = () => (dispatch) => {
-    let state: any = store.getState();
-    if (state.modelCatalog && (state.modelCatalog.loadedAll[ALL_SAMPLE_RESOURCES] || state.modelCatalog.loading[ALL_SAMPLE_RESOURCES])) {
-        console.log('All sampleResources are already in memory or loading')
-        return;
-    }
-
-    debug('Fetching all sampleResource');
-    dispatch({type: START_LOADING, id: ALL_SAMPLE_RESOURCES});
-
-    let api : SampleResourceApi = new SampleResourceApi();
-    let req = api.sampleresourcesGet({username: DEFAULT_GRAPH});
-    req.then((data) => {
-            dispatch({
-                type: SAMPLE_RESOURCES_GET,
-                payload: data.reduce(idReducer, {})
-            });
-            dispatch({type: END_LOADING, id: ALL_SAMPLE_RESOURCES});
-    });
-    req.catch((err) => {console.log('Error on GET sampleResources', err)});
-}
-
-export const SAMPLE_RESOURCE_GET = "SAMPLE_RESOURCE_GET";
-export interface MCASampleResourceGet extends Action<'SAMPLE_RESOURCE_GET'> { payload: any };
-export const sampleResourceGet: ActionCreator<ModelCatalogSampleResourceThunkResult> = ( uri:string ) => (dispatch) => {
-    debug('Fetching sampleResource', uri);
-    let id : string = uri.split('/').pop();
-    let api : SampleResourceApi = new SampleResourceApi();
-    let req = api.sampleresourcesIdGet({username: DEFAULT_GRAPH, id: id});
-    req.then((resp) => {
-            let data = {};
-            data[uri] = resp;
-            dispatch({
-                type: SAMPLE_RESOURCE_GET,
-                payload: data
-            });
-    });
-    req.catch((err) => {console.log('Error on getSampleResource', err)});
-}
-
-export const SAMPLE_RESOURCE_POST = "SAMPLE_RESOURCE_POST";
-interface MCASampleResourcePost extends Action<'SAMPLE_RESOURCE_POST'> { payload: any };
-export const sampleResourcePost: ActionCreator<ModelCatalogSampleResourceThunkResult> = (sampleResource:SampleResource, identifier:string) => (dispatch) => {
-    debug('creating new sampleResource', sampleResource);
-    let status : string, cfg : Configuration, user : string;
-    [status, cfg, user] = getStatusConfigAndUser();
-
-    if (status === 'DONE') {
-        dispatch({type: START_POST, id: identifier});
-        sampleResource.id = undefined;
-        let api : SampleResourceApi = new SampleResourceApi(cfg);
-        let req = api.sampleresourcesPost({user: DEFAULT_GRAPH, sampleResource: sampleResource}); // This should be my username on prod.
-        req.then((resp) => {
-                console.log('Response for POST sampleResource:', resp);
-                //Its returning the ID without the prefix
-                let uri = PREFIX_URI + resp.id;
-                let data = {};
-                data[uri] = resp;
-                resp.id = uri;
-                dispatch({
-                    type: SAMPLE_RESOURCE_GET,
-                    payload: data
-                });
-                dispatch({type: END_POST, id: identifier, uri: uri});
-            });
-        req.catch((err) => {console.log('Error on POST sampleResource', err)});
-    } else {
-        console.error('TOKEN ERROR:', status);
-    }
-}
-
-export const SAMPLE_RESOURCE_PUT = "SAMPLE_RESOURCE_PUT";
-interface MCASampleResourcePut extends Action<'SAMPLE_RESOURCE_PUT'> { payload: any };
-export const sampleResourcePut: ActionCreator<ModelCatalogSampleResourceThunkResult> = ( sampleResource: SampleResource ) => (dispatch) => {
-    debug('updating sampleResource', sampleResource.id);
-    let status : string, cfg : Configuration, user : string;
-    [status, cfg, user] = getStatusConfigAndUser();
-
-    if (status === 'DONE') {
-        dispatch({type: START_LOADING, id: sampleResource.id});
-        let api : SampleResourceApi = new SampleResourceApi(cfg);
-        let id : string = sampleResource.id.split('/').pop();
-        let req = api.sampleresourcesIdPut({id: id, user: DEFAULT_GRAPH, sampleResource: sampleResource}); // This should be my username on prod.
-        req.then((resp) => {
-                console.log('Response for PUT sampleResource:', resp);
-                let data = {};
-                data[sampleResource.id] = resp;
-                dispatch({
-                    type: SAMPLE_RESOURCE_GET,
-                    payload: data
-                });
-                dispatch({type: END_LOADING, id: sampleResource.id});
-        });
-        req.catch((err) => {console.log('Error on PUT sampleResource', err)});
-    } else {
-        console.error('TOKEN ERROR:', status);
-    }
-}
-
+export const SAMPLE_RESOURCES_ADD = "SAMPLE_RESOURCES_ADD";
 export const SAMPLE_RESOURCE_DELETE = "SAMPLE_RESOURCE_DELETE";
+
+export interface MCASampleResourcesAdd extends Action<'SAMPLE_RESOURCES_ADD'> { payload: IdMap<SampleResource> };
 interface MCASampleResourceDelete extends Action<'SAMPLE_RESOURCE_DELETE'> { uri: string };
-export const sampleResourceDelete: ActionCreator<ModelCatalogSampleResourceThunkResult> = ( uri: string ) => (dispatch) => {
-    debug('deleting sampleResource', uri);
+
+export type ModelCatalogSampleResourceAction =  MCASampleResourcesAdd | MCASampleResourceDelete;
+
+let sampleResourcesPromise : Promise<IdMap<SampleResource>> | null = null;
+
+export const sampleResourcesGet: ActionThunk<Promise<IdMap<SampleResource>>, MCASampleResourcesAdd> = () => (dispatch) => {
+    if (!sampleResourcesPromise) {
+        sampleResourcesPromise = new Promise((resolve, reject) => {
+            debug('Fetching all');
+            let api : SampleResourceApi = new SampleResourceApi();
+            let req : Promise<SampleResource[]> = api.sampleresourcesGet({username: DEFAULT_GRAPH});
+            req.then((resp:SampleResource[]) => {
+                let data : IdMap<SampleResource> = resp.reduce(idReducer, {});
+                dispatch({
+                    type: SAMPLE_RESOURCES_ADD,
+                    payload: data
+                });
+                resolve(data);
+            });
+            req.catch((err) => {
+                console.error('Error on GET SampleResources', err);
+                reject(err);
+            });
+        });
+    } else {
+        debug('All sampleResources are already in memory or loading');
+    }
+    return sampleResourcesPromise;
+}
+
+export const sampleResourceGet: ActionThunk<Promise<SampleResource>, MCASampleResourcesAdd> = (uri:string) => (dispatch) => {
+    debug('Fetching', uri);
+    let id : string = getIdFromUri(uri);
+    let api : SampleResourceApi = new SampleResourceApi();
+    let req : Promise<SampleResource> = api.sampleresourcesIdGet({username: DEFAULT_GRAPH, id: id});
+    req.then((resp:SampleResource) => {
+        dispatch({
+            type: SAMPLE_RESOURCES_ADD,
+            payload: idReducer({}, resp)
+        });
+    });
+    req.catch((err) => {
+        console.error('Error on GET SampleResource', err);
+    });
+    return req;
+}
+
+export const sampleResourcePost: ActionThunk<Promise<SampleResource>, MCASampleResourcesAdd> = (sampleResource:SampleResource) => (dispatch) => {
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
-
     if (status === 'DONE') {
-        let api : SampleResourceApi = new SampleResourceApi(cfg);
-        let id : string = uri.split('/').pop();
-        let req = api.sampleresourcesIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
-        req.then((resp) => {
-                dispatch({
-                    type: SAMPLE_RESOURCE_DELETE,
-                    uri: uri
+        debug('Creating new', sampleResource);
+        if (sampleResource.id) {
+            return Promise.reject(new Error('Cannot create SampleResource, object has ID'));
+        } else {
+            return new Promise((resolve,reject) => {
+                let api : SampleResourceApi = new SampleResourceApi(cfg);
+                let req = api.sampleresourcesPost({user: DEFAULT_GRAPH, sampleResource: sampleResource}); // This should be my username on prod.
+                req.then((resp:SampleResource) => {
+                    debug('Response for POST', resp);
+                    dispatch({
+                        type: SAMPLE_RESOURCES_ADD,
+                        payload: createIdMap(resp)
+                    });
+                    resolve(resp);
                 });
-        });
-        req.catch((err) => {console.log('Error on DELETE sampleResource', err)});
+                req.catch((err) => {
+                    console.error('Error on POST SampleResource', err);
+                    reject(err);
+                });
+            });
+        }
     } else {
         console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('SampleResource error'));
     }
 }
 
-export type ModelCatalogSampleResourceAction =  MCACommon | MCASampleResourcesGet | MCASampleResourceGet | MCASampleResourcePost | MCASampleResourcePut |
-                                        MCASampleResourceDelete;
-type ModelCatalogSampleResourceThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogSampleResourceAction>;
+export const sampleResourcePut: ActionThunk<Promise<SampleResource>, MCASampleResourcesAdd> = (sampleResource: SampleResource) => (dispatch) => {
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+    if (status === 'DONE') {
+        debug('Updating', sampleResource);
+        let api : SampleResourceApi = new SampleResourceApi(cfg);
+        let id : string = getIdFromUri(sampleResource.id);
+        let req : Promise<SampleResource> = api.sampleresourcesIdPut({id: id, user: DEFAULT_GRAPH, sampleResource: sampleResource});
+        req.then((resp) => {
+            debug('Response for PUT:', resp);
+            dispatch({
+                type: SAMPLE_RESOURCES_ADD,
+                payload: idReducer({}, resp)
+            });
+        });
+        req.catch((err) => {
+            console.error('Error on PUT SampleResource', err);
+        });
+        return req;
+    } else {
+        console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('Token error'));
+    }
+}
+
+export const sampleResourceDelete: ActionThunk<void, MCASampleResourceDelete> = (sampleResource:SampleResource) => (dispatch) => {
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+    if (status === 'DONE') {
+        debug('Deleting', sampleResource.id);
+        let api : SampleResourceApi = new SampleResourceApi(cfg);
+        let id : string = getIdFromUri(sampleResource.id);
+        let req : Promise<void> = api.sampleresourcesIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        req.then(() => {
+            dispatch({
+                type: SAMPLE_RESOURCE_DELETE,
+                uri: sampleResource.id
+            });
+        });
+        req.catch((err) => {
+            console.error('Error on DELETE SampleResource', err);
+        });
+        return req;
+    } else {
+        console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('Token error'));
+    }
+}

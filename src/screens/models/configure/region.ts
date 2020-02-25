@@ -15,7 +15,7 @@ import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 import { RegionCategory } from "screens/regions/reducers";
 
-import { regionsGet, regionPost, regionDelete/*, ALL_REGIONS*/ } from 'model-catalog/actions';
+import { regionsGet, regionPost, regionDelete } from 'model-catalog/actions';
 
 import { renderExternalLink } from './util';
 
@@ -203,8 +203,8 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
                         <wl-icon class="custom-checkbox">${this._selected[region.id] ? 'check_box' : 'check_box_outline_blank'}</wl-icon>
                         <span class="${this._selected[region.id] ? 'bold' : ''}">${region.label ? region.label : region.id}</span>
                     </label>
-                    <wl-button @click="" flat inverted disabled><wl-icon>edit</wl-icon></wl-button>
-                    <wl-button @click="${() => this._delete(region.id)}" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
+                    <wl-button flat inverted disabled><wl-icon>edit</wl-icon></wl-button>
+                    <wl-button @click="${() => this._delete(region)}" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
                 </div>
                 `)}
             </div>`
@@ -314,6 +314,10 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
         this.requestUpdate();
     }
 
+    _onEditRegions () {
+        //TODO
+    }
+
     _onSubmitRegions () {
         let selectedRegions : Region[] = Object.values(this._regions).filter((region:Region) => this._selected[region.id])
 
@@ -327,11 +331,11 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
         hideDialog("authorDialog", this.shadowRoot);
     }
 
-    _delete (regionUri) {
+    _delete (region: Region) {
         if (confirm('This Region will be deleted on all related resources')) {
-            store.dispatch(regionDelete(regionUri));
-            if (this._selected[regionUri])
-                delete this._selected[regionUri];
+            store.dispatch(regionDelete(region));
+            if (this._selected[region.id])
+                delete this._selected[region.id];
         }
     }
 
@@ -342,7 +346,6 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         if (state.modelCatalog) {
             let db = state.modelCatalog;
-            //this._loading = db.loading[ALL_REGIONS]
             this._regions = db.regions;
             super.setRegion(state);
             if (this._regionid && this._region) {

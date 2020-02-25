@@ -20,7 +20,8 @@ store.addReducers({
 });
 
 import modelCatalog from 'model-catalog/reducers'
-import { modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet } from '../../model-catalog/actions';
+import { modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet, processesGet, 
+         regionsGet, imagesGet } from '../../model-catalog/actions';
 
 store.addReducers({
     modelCatalog
@@ -122,8 +123,8 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <wl-icon>search</wl-icon>
                     <div>Browse Models</div>
                 </a>
-                <!--a href="{this._regionid}/models/register"-->
-                <a disabled>
+                <a href="${this._regionid}/models/register">
+                <!--a disabled-->
                     <wl-icon>library_add</wl-icon>
                     <div>Add Models</div>
                 </a>
@@ -153,6 +154,9 @@ export class ModelsHome extends connect(store)(PageViewElement) {
         store.dispatch(versionsGet());
         store.dispatch(modelConfigurationsGet());
         store.dispatch(modelConfigurationSetupsGet());
+        store.dispatch(regionsGet());
+        store.dispatch(imagesGet());
+        store.dispatch(processesGet());
     }
 
     stateChanged(state: RootState) {

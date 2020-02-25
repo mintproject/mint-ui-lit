@@ -9,6 +9,7 @@ import { goToPage } from '../../app/actions';
 
 import { IdMap } from 'app/reducers';
 import { ModelConfigurationSetup, ModelConfiguration, SoftwareVersion, Model } from '@mintproject/modelcatalog_client';
+import { regionsGet } from 'model-catalog/actions';
 
 import "weightless/progress-spinner";
 import 'components/loading-dots'
@@ -159,7 +160,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                     </span>
                 </span>
                 ${this._visible[model.id] ? html`
-                ${!this._versions ? html`<loading-dots style="--width: 20px; vertical-align: top;"></loading-dots>` : html`
+                ${Object.keys(this._versions).length === 0 ? html`<loading-dots style="--width: 20px; vertical-align: top;"></loading-dots>` : html`
                 <ul>
                     ${model.hasVersion
                         .filter((v:any) => !!this._versions[v.id])
@@ -176,7 +177,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                             </span>
                         </span>
                         ${this._visible[version.id] ? html`
-                        ${!this._configs ? html`<loading-dots style="--width: 20px; vertical-align: top;"></loading-dots>` : html`
+                        ${Object.keys(this._configs).length === 0 ? html`<loading-dots style="--width: 20px; vertical-align: top;"></loading-dots>` : html`
                         <ul style="padding-left: 30px;">
                             ${(version.hasConfiguration || [])
                                 .filter(c => !!c.id)
@@ -225,6 +226,10 @@ export class ModelsTree extends connect(store)(PageViewElement) {
             </li>
         `)}
         </ul>`;
+    }
+
+    protected firstUpdated () {
+        store.dispatch(regionsGet());
     }
 
     stateChanged(state: RootState) {

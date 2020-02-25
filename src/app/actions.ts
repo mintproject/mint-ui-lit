@@ -17,7 +17,7 @@ import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetCo
 import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread } from './ui-actions';
 import { auth, db } from '../config/firebase';
 import { User } from 'firebase';
-import { UserPreferences, MintPreferences } from './reducers';
+import { UserPreferences, MintPreferences, UserProfile } from './reducers';
 import { DefaultApi } from '@mintproject/modelcatalog_client';
 import { dexplorerSelectDataset, dexplorerSelectDatasetArea } from 'screens/datasets/ui-actions';
 import { selectEmulatorModel } from 'screens/emulators/actions';
@@ -28,12 +28,14 @@ export const UPDATE_PAGE = 'UPDATE_PAGE';
 export const LOGIN = 'LOGIN';
 export const LOGOUT = 'LOGOUT';
 export const FETCH_USER = 'FETCH_USER';
+export const FETCH_USER_PROFILE = 'FETCH_USER_PROFILE';
 export const FETCH_MINT_CONFIG = 'FETCH_MINT_CONFIG';
 export const FETCH_MODEL_CATALOG_ACCESS_TOKEN = 'FETCH_MODEL_CATALOG_ACCESS_TOKEN';
 export const STATUS_MODEL_CATALOG_ACCESS_TOKEN = 'STATUS_MODEL_CATALOG_ACCESS_TOKEN';
 
 export interface AppActionUpdatePage extends Action<'UPDATE_PAGE'> { regionid?: string, page?: string, subpage?:string };
 export interface AppActionFetchUser extends Action<'FETCH_USER'> { user?: User | null };
+export interface AppActionFetchUserPreferences extends Action<'FETCH_USER_PROFILE'> { profile?: UserProfile };
 export interface AppActionFetchMintConfig extends Action<'FETCH_MINT_CONFIG'> { 
   prefs?: MintPreferences | null 
 };
@@ -44,12 +46,27 @@ export interface AppActionStatusModelCatalogAccessToken extends Action<'STATUS_M
     status: string
 };
 
-export type AppAction = AppActionUpdatePage | AppActionFetchUser | AppActionFetchMintConfig |
+export type AppAction = AppActionUpdatePage | AppActionFetchUser | AppActionFetchUserPreferences | AppActionFetchMintConfig |
                         AppActionFetchModelCatalogAccessToken | AppActionStatusModelCatalogAccessToken;
 
 type ThunkResult = ThunkAction<void, RootState, undefined, AppAction>;
 
 export const OFFLINE_DEMO_MODE = false;
+
+/* This retrieve the user profile from the db. Maybe we should move this to other file. */
+type UserProfileThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchUserPreferences>;
+export const fetchUserProfile: ActionCreator<UserProfileThunkResult> = (user:User) => (dispatch) => {
+    let ref = db.collection('users').doc(user.email);
+    ref.get().then((qs) => {
+        let profile = qs.data();
+        if (profile) {
+            dispatch({
+                type: FETCH_USER_PROFILE,
+                profile: profile as UserProfile
+            });
+        }
+    })
+}
 
 type UserThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchUser>;
 export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
@@ -71,6 +88,8 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
           console.error('Login failed!');
           // Should log out
       }
+
+      dispatch(fetchUserProfile(user));
 
       dispatch({
         type: FETCH_USER,

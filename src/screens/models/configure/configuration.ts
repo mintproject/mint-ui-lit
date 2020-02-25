@@ -444,11 +444,10 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <th class="ta-right" style="white-space:nowrap;">
                     <b>Default Value</b>
                 </th>
-                <th class="ta-right"><b>Unit</b></th>
                 ${this._editing? html`<th class="ta-right"></th>` : ''}
             </thead>
             <tbody>
-            ${this._config.hasParameter ? paramOrder.map((uri:string) => html`
+            ${this._config.hasParameter && this._config.hasParameter.length > 0 ? paramOrder.map((uri:string) => html`
             <tr>
                 ${this._parameters[uri] ? html`
                 <td>
@@ -460,8 +459,8 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 </td>
                 <td class="ta-right">
                     ${this._parameters[uri].hasDefaultValue ? this._parameters[uri].hasDefaultValue : '-'}
+                    ${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}
                 </td>
-                <td class="ta-right">${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}</td>
                 ${this._editing? html `
                 <td style="text-align: right;">
                     <wl-button flat inverted @click="${() => this._showParameterDialog(uri)}" class="small"><wl-icon>edit</wl-icon></wl-button>
@@ -481,10 +480,10 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <col span="1">
             </colgroup>
             <thead>
-                <th colspan="2"><b>Input file</b></th>
+                <th colspan="2"><b>Input description</b></th>
             </thead>
             <tbody>
-            ${this._config.hasInput ? inputOrder.map((uri:string) => html `
+            ${this._config.hasInput && this._config.hasInput.length > 0? inputOrder.map((uri:string) => html `
             <tr>${this._inputs[uri] ? html`
                 <td colspan="${this._editing ? 1 : 2}">
                     <code style="font-size: 13px">${this._inputs[uri].label}</code>
