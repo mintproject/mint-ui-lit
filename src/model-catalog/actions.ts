@@ -66,6 +66,48 @@ export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAc
         ModelCatalogDatasetSpecificationAction | ModelCatalogSampleResourceAction | ModelCatalogSampleCollectionAction |
         ModelCatalogImageAction;
 
+//FIXME: The API is returning only one model (void), doing the fetch instead.
+const muri = "https://api.models.mint.isi.edu/v1.3.0/custom/model/"
+export const modelsSearchIndex = (term:string) => {
+    /*let MApi : ModelApi = new ModelApi();
+    let req = MApi.customModelIndexGet({label:term, username: DEFAULT_GRAPH, customQueryName: 'custom_model_index'});
+    return req;*/
+    
+    return new Promise((resolve, reject) => {
+        let req = fetch(muri + "index?custom_query_name=custom_model_index&username=mint%40isi.edu&label=" + term);
+        req.then((response) => {
+            response.json().then(resolve);
+        });
+        req.catch(reject);
+    });
+}
+
+export const modelsSearchIntervention = (term:string) => {
+    /*let MApi : ModelApi = new ModelApi();
+    let req = MApi.customModelInterventionGet({label:term, username: DEFAULT_GRAPH, customQueryName: 'custom_model_intervetion'});
+    return req;*/
+    return new Promise((resolve, reject) => {
+        let req = fetch(muri + "intervention?custom_query_name=custom_model_intervetion&username=mint%40isi.edu&label=" + term);
+        req.then((response) => {
+            response.json().then(resolve);
+        });
+        req.catch(reject);
+    });
+}
+
+export const modelsSearchRegion = (term:string) => {
+    /*let MApi : ModelApi = new ModelApi();
+    let req = MApi.customModelRegion({label:term, username: DEFAULT_GRAPH, customQueryName: 'custom_model_region'});
+    return req;*/
+    return new Promise((resolve, reject) => {
+        let req = fetch(muri + "region?custom_query_name=custom_model_region&username=mint%40isi.edu&label=" + term);
+        req.then((response) => {
+            response.json().then(resolve);
+        });
+        req.catch(reject);
+    });
+}
+
 export * from './model-actions';
 export * from './version-actions';
 export * from './model-configuration-actions';

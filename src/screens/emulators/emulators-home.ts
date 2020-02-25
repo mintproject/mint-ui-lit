@@ -1,4 +1,4 @@
-import { html, css, customElement } from 'lit-element';
+import { html, css, customElement, property } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
 import { SharedStyles } from '../../styles/shared-styles';
@@ -12,9 +12,18 @@ import { Pathway, ExecutableEnsembleSummary } from 'screens/modeling/reducers';
 import "weightless/tab-group";
 import "weightless/tab";
 
+import emulators from './reducers';
+import { goToPage } from 'app/actions';
+
+store.addReducers({
+    emulators
+});
+
 @customElement("emulators-home")
 export class EmulatorsHome extends connect(store)(PageViewElement) {
-
+    @property({type: String})
+    private _selectedModel : string = '';
+    
     static get styles() {
         return [
             css `
@@ -39,16 +48,9 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
         ];
     }
 
-    private _setVisibility(emulator, model) {
-        let displaystyle = emulator == model ? "" : "none";
-        this.shadowRoot.getElementById(emulator + "_emulators").style.display = displaystyle;
-    }
-
     private _showEmulators(model) {
-        this._setVisibility("pihm", model);
-        this._setVisibility("topoflow", model);
-        this._setVisibility("cycles", model);
-        this._setVisibility("hand", model);
+        this._selectedModel = model;
+        goToPage("emulators/" + model);
     }
 
     protected render() {
@@ -58,13 +60,13 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
             <nav-title .nav="${nav}"></nav-title>
 
             <wl-tab-group align="center" style="width: 100%;">
-                <wl-tab @click="${() => this._showEmulators('pihm')}" checked>PIHM</wl-tab>
-                <wl-tab @click="${() => this._showEmulators('topoflow')}">TOPOFLOW</wl-tab>
-                <wl-tab @click="${() => this._showEmulators('hand')}">HAND</wl-tab>
-                <wl-tab @click="${() => this._showEmulators('cycles')}">CYCLES</wl-tab>
+                <wl-tab @click="${() => this._showEmulators('pihm')}" ?checked="${this._selectedModel=='pihm'}">PIHM</wl-tab>
+                <wl-tab @click="${() => this._showEmulators('topoflow')}" ?checked="${this._selectedModel=='topoflow'}">TOPOFLOW</wl-tab>
+                <wl-tab @click="${() => this._showEmulators('hand')}" ?checked="${this._selectedModel=='hand'}">HAND</wl-tab>
+                <wl-tab @click="${() => this._showEmulators('cycles')}" ?checked="${this._selectedModel=='cycles'}">CYCLES</wl-tab>
             </wl-tab-group>
 
-            <div id="pihm_emulators" class="emulators">
+            <div id="pihm_emulators" class="emulators" .style="display:${this._selectedModel=='pihm' ? '': 'none'}">
                 <h2>PIHM Emulators</h2>
                 <table class="pure-table pure-table-bordered">
                     <thead>
@@ -89,7 +91,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                 </table>
             </div>
 
-            <div id="topoflow_emulators" style="display:none" class="emulators">
+            <div id="topoflow_emulators" .style="display:${this._selectedModel=='topoflow' ? '': 'none'}" class="emulators">
                 <h2>TOPOFLOW Emulators</h2>
                 <table class="pure-table pure-table-bordered">
                     <thead>
@@ -128,7 +130,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                 </table>
             </div>
 
-            <div id="hand_emulators" style="display:none" class="emulators">
+            <div id="hand_emulators" .style="display:${this._selectedModel=='hand' ? '': 'none'}" class="emulators">
                 <h2>HAND Emulators</h2>
                 <table class="pure-table pure-table-bordered">
                     <thead>
@@ -148,14 +150,19 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                 </table>
             </div>
 
-            <div id="cycles_emulators" style="display:none" class="emulators">
+            <div id="cycles_emulators" .style="display:${this._selectedModel=='cycles' ? '': 'none'}" class="emulators">
                 <h2>CYCLES Emulators</h2>
                 <table class="pure-table pure-table-bordered">
                     <thead>
                         <tr><th>Region</th><th>Time period</th><th>Input (data preparation has been completed)</th><th>Model setup has been tested (outside MINT)</th><th>Setup (the model setup available in MINT)</th><th>Ensemble description (range of parameters completed in the simulation)</th><th>Output summary (Ensemble)</th><th>Results reviewed by modeler</th><th>Quality</th><th>Status</th><th>Validated?</th><th>Comments</th></tr>
                     </thead>
                     <tbody>
-                    </tbody>
+                        <tr><td>Oromia (1 point)</td><td>2000-2017</td><td>Crop:<a href="https://github.com/pegasus-isi/pegasus-cycles/raw/master/data/crops.crop">https://github.com/pegasus-isi/pegasus-cycles/raw/master/data/crops.crop</a> Weather-Soil: <a href="https://data.mint.isi.edu/files/cycles-input-data/oromia/weather-soil/Arsi_Amigna_7.884865046N_40.19527054E.zip">https://data.mint.isi.edu/files/cycles-input-data/oromia/weather-soil/Arsi_Amigna_7.884865046N_40.19527054E.zip</a></td><td>Yes</td><td><a href="https://w3id.org/okn/i/mint/cycles-0.10.2-alpha-collection-oromia-single-point">https://w3id.org/okn/i/mint/cycles-0.10.2-alpha-collection-oromia-single-point</a></td><td>Start year: 2000; end year: 2017; crop:Maize; planting date: 100, 107,114; end planting date: 149; fert rates: 0; weed fraction: 0.05 </td><td><a href="https://dev.mint.isi.edu/ethiopia/modeling/scenario/B46nwKOrapiUoBP35Go0/Rx22lqnlXwYLivm5OK3d/Vz3LTGVndvaDuODoHbVk/results">https://dev.mint.isi.edu/ethiopia/modeling/scenario/B46nwKOrapiUoBP35Go0/Rx22lqnlXwYLivm5OK3d/Vz3LTGVndvaDuODoHbVk/results</a></td><td>NO</td><td>Completed</td><td>NO</td></tr>
+                        <tr><td>Oromia region (1 point per Woreda)</td><td>2000-2017</td><td>Crop:<a href="https://github.com/pegasus-isi/pegasus-cycles/raw/master/data/crops.crop">https://github.com/pegasus-isi/pegasus-cycles/raw/master/data/crops.crop</a> Weather-Soil: <a href="https://dev.mint.isi.edu/ethiopia/datasets/browse/ac34f01b-1484-4403-98ea-3a380838cab1/ethiopia">https://dev.mint.isi.edu/ethiopia/datasets/browse/ac34f01b-1484-4403-98ea-3a380838cab1/ethiopia</a></td><td>No (not necessary)</td><td><a href="https://w3id.org/okn/i/mint/cycles-0.9.4-alpha-collection-oromia">https://w3id.org/okn/i/mint/cycles-0.9.4-alpha-collection-oromia</a></td><td>Start year: 2000; end year: 2017; crop:Sesame; planting date: 152; end planting date: 201; fert rates: 0, 78, 156, 312, 625; weed fraction: 0.05, 0.25, 1</td><td><a href="https://dev.mint.isi.edu/ethiopia/modeling/scenario/B46nwKOrapiUoBP35Go0/SQfF7dWbW6aCfJpOP46Z/LK668mvW46e8W3gc9Zaj/results">https://dev.mint.isi.edu/ethiopia/modeling/scenario/B46nwKOrapiUoBP35Go0/SQfF7dWbW6aCfJpOP46Z/LK668mvW46e8W3gc9Zaj/results</a></td><td>NO</td><td>Completed</td><td>NO</td><td><a href="https://data.mint.isi.edu/files/sharedResults/Cycles/sesame.zip">https://data.mint.isi.edu/files/sharedResults/Cycles/sesame.zip</a></td></tr>
+                        <tr><td>Oromia region (1 point per Woreda)</td><td>2000-2017</td><td>Crop:<a href="https://github.com/pegasus-isi/pegasus-cycles/raw/master/data/crops.crop">https://github.com/pegasus-isi/pegasus-cycles/raw/master/data/crops.crop</a> Weather-Soil: <a href="https://dev.mint.isi.edu/ethiopia/datasets/browse/ac34f01b-1484-4403-98ea-3a380838cab1/ethiopia">https://dev.mint.isi.edu/ethiopia/datasets/browse/ac34f01b-1484-4403-98ea-3a380838cab1/ethiopia</a></td><td>NO (not necessary)</td><td><a href="https://w3id.org/okn/i/mint/cycles-0.9.4-alpha-collection-oromia">https://w3id.org/okn/i/mint/cycles-0.9.4-alpha-collection-oromia</a></td><td>Start year: 2000; end year: 2017; crop:Maize, Sorghum; planting date: 121; end planting date: 196; fert rates: 0, 78, 156, 312, 625, 1250; weed fraction: 0.05, 0.25, 1</td><td><a href="https://dev.mint.isi.edu/ethiopia/modeling/scenario/B46nwKOrapiUoBP35Go0/TGkwnP8xDcVZl98a4P2b/ylaGy6lRW59X17JvSMVT/results">https://dev.mint.isi.edu/ethiopia/modeling/scenario/B46nwKOrapiUoBP35Go0/TGkwnP8xDcVZl98a4P2b/ylaGy6lRW59X17JvSMVT/results</a></td><td>NO</td><td>Completed</td><td>NO</td><td><a href="https://data.mint.isi.edu/files/sharedResults/Cycles/maize_sorghum.zip">https://data.mint.isi.edu/files/sharedResults/Cycles/maize_sorghum.zip</a></td></tr>
+                        <tr><td>Oromia region (1 point per Woreda)</td><td>2000-2017</td><td>Crop:<a href="https://github.com/pegasus-isi/pegasus-cycles/raw/master/data/crops.crop">https://github.com/pegasus-isi/pegasus-cycles/raw/master/data/crops.crop</a> Weather-Soil: <a href="https://dev.mint.isi.edu/ethiopia/datasets/browse/ac34f01b-1484-4403-98ea-3a380838cab1/ethiopia">https://dev.mint.isi.edu/ethiopia/datasets/browse/ac34f01b-1484-4403-98ea-3a380838cab1/ethiopia</a></td><td>NO (not necessary)</td><td><a href="https://w3id.org/okn/i/mint/cycles-0.9.4-alpha-collection-oromia">https://w3id.org/okn/i/mint/cycles-0.9.4-alpha-collection-oromia</a></td><td>Start year: 2000; end year: 2017; crop:SpringBarley; planting date: 135; end planting date: 196; fert rates: 0, 78, 156, 312, 625; weed fraction: 0.05, 0.25, 1</td><td><a href="https://dev.mint.isi.edu/ethiopia/modeling/scenario/B46nwKOrapiUoBP35Go0/VXE8dVUiEyN1FY4zHSOV/l2QgEeoX15hL6OSRTPTP/results">https://dev.mint.isi.edu/ethiopia/modeling/scenario/B46nwKOrapiUoBP35Go0/VXE8dVUiEyN1FY4zHSOV/l2QgEeoX15hL6OSRTPTP/results</a></td><td>NO</td><td>Completed</td><td>NO</td><td><a href="https://data.mint.isi.edu/files/sharedResults/Cycles/barley.zip">https://data.mint.isi.edu/files/sharedResults/Cycles/barley.zip</a></td></tr>
+                        <tr><td>Oromia region (1 point per Woreda)</td><td>2000-2017</td><td>Crop:<a href="https://github.com/pegasus-isi/pegasus-cycles/raw/master/data/crops.crop">https://github.com/pegasus-isi/pegasus-cycles/raw/master/data/crops.crop</a>Weather-Soil: <a href="https://dev.mint.isi.edu/ethiopia/datasets/browse/ac34f01b-1484-4403-98ea-3a380838cab1/ethiopia">https://dev.mint.isi.edu/ethiopia/datasets/browse/ac34f01b-1484-4403-98ea-3a380838cab1/ethiopia</a></td><td>NO (not necessary)</td><td><a href="https://w3id.org/okn/i/mint/cycles-0.9.4-alpha-collection-oromia">https://w3id.org/okn/i/mint/cycles-0.9.4-alpha-collection-oromia</a></td><td>Start year: 2000; end year: 2017; crop:Teff; planting date: 181; end planting date: 232; fert rates: 0, 94, 187; weed fraction: 0.05, 0.25, 1</td><td><a href="https://dev.mint.isi.edu/ethiopia/modeling/scenario/B46nwKOrapiUoBP35Go0/rryVw0PUyXJgOwdrnLui/GBw3gzZXqTvQK157q7dU/results">https://dev.mint.isi.edu/ethiopia/modeling/scenario/B46nwKOrapiUoBP35Go0/rryVw0PUyXJgOwdrnLui/GBw3gzZXqTvQK157q7dU/results</a></td><td>NO</td><td>Completed</td><td>NO</td><td><a href="https://data.mint.isi.edu/files/sharedResults/Cycles/teff.zip">https://data.mint.isi.edu/files/sharedResults/Cycles/teff.zip</a></td></tr>
+                   </tbody>
                 </table>
                 <ul>
                     <li>
@@ -259,6 +266,10 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
 
     stateChanged(state: RootState) {
         super.setRegionId(state);
+
+        if(state.emulators && state.emulators.selected_model) {
+            this._selectedModel = state.emulators.selected_model;
+        }
     }
 }
 

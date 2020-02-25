@@ -31,6 +31,10 @@ store.addReducers({
 export class ModelsHome extends connect(store)(PageViewElement) {
     @property({type: String})
     private _selectedModelId : string = '';
+    @property({type: String})
+    private _selectedConfig : string = '';
+    @property({type: String})
+    private _selectedSetup : string = '';
 
     static get styles() {
         return [
@@ -47,6 +51,10 @@ export class ModelsHome extends connect(store)(PageViewElement) {
 
                 wl-card.card-button a {
                     color: rgb(6, 67, 108);
+                    text-decoration: none;
+                }
+                
+                .no-decoration, .no-decoration:hover {
                     text-decoration: none;
                 }
 
@@ -67,6 +75,15 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             `,
             SharedStyles
         ];
+    }
+
+    private _getHelpLink () {
+        let uri : string = 'https://mintproject.readthedocs.io/en/latest/modelcatalog/';
+        if (this._selectedSetup)
+            return uri + '#model-configuration-setup';
+        if (this._selectedConfig)
+            return uri + '#model-configuration';
+        return uri;
     }
 
     protected render() {
@@ -92,7 +109,14 @@ export class ModelsHome extends connect(store)(PageViewElement) {
         }
 
         return html`
-            <nav-title .nav="${nav}" max="2"></nav-title>
+            <nav-title .nav="${nav}" max="2">
+                <a slot="after" class="no-decoration" target="_blank" href="${this._getHelpLink()}">
+                    <wl-button style="--button-bg: forestgreen; --button-bg-hover: darkgreen; --button-padding: 8px;">
+                        <wl-icon style="margin-right: 5px;">help_outline</wl-icon>
+                        <b>Help</b>
+                    </wl-button>
+                </a>
+            </nav-title>
 
             <div class="${this._subpage != 'home' ? 'hiddensection' : 'icongrid'}">
                 <a href="${this._regionid}/models/explore">
@@ -140,6 +164,8 @@ export class ModelsHome extends connect(store)(PageViewElement) {
         super.setRegionId(state);
         if (state && state.explorerUI) {
             this._selectedModelId = state.explorerUI.selectedModel.split('/').pop();
+            this._selectedConfig = state.explorerUI.selectedConfig;
+            this._selectedSetup = state.explorerUI.selectedCalibration;
         }
     }
 }

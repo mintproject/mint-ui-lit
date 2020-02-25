@@ -60,6 +60,8 @@ export class NavTitle extends LitElement {
                 `:html``}
                 )}
                 </div>
+
+                <slot name="after"></slot>
             </div>
         `;
     }

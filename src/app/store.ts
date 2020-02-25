@@ -53,6 +53,8 @@ import { MessagesAction } from 'screens/messages/actions';
 import { ModelCatalogAction } from 'model-catalog/actions';
 import { ModelCatalogState } from 'model-catalog/reducers';
 import { DExplorerUIAction } from 'screens/datasets/ui-actions';
+import { EmulatorsState } from 'screens/emulators/reducers';
+import { EmulatorsAction } from 'screens/emulators/actions';
 
 // Overall state extends static states and partials lazy states.
 export interface RootState {
@@ -61,6 +63,7 @@ export interface RootState {
   models?: ModelsState;
   datasets?: DatasetsState;
   regions?: RegionsState;
+  emulators?: EmulatorsState;
   explorer?: ExplorerState;
   messages?: MessagesState;
   explorerUI?: ExplorerUIState;
@@ -69,7 +72,7 @@ export interface RootState {
   ui: UIState
 }
 
-export type RootAction = AppAction | ModelingAction | ModelsAction | DatasetsAction |
+export type RootAction = AppAction | ModelingAction | ModelsAction | DatasetsAction | EmulatorsAction |
                          RegionsAction | UIAction | ApiAction | ExplorerUIAction |
                          MessagesAction | ModelCatalogAction | DExplorerUIAction;
 

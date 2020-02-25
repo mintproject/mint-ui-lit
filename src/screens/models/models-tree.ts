@@ -54,11 +54,20 @@ export class ModelsTree extends connect(store)(PageViewElement) {
             .inline-new-button {
                 line-height: 1.2em;
                 font-size: 1.2em;
+                vertical-align: middle;
             }
 
             .inline-new-button > wl-icon {
-                --icon-size: 1.2em;
-                vertical-align: top;
+                --icon-size: 1em;
+                margin: 1px;
+            }
+
+            .config {
+                color: rgb(6, 108, 67);
+            }
+
+            .setup {
+                color: rgb(6, 67, 108);
             }
 
             ul {
@@ -175,7 +184,8 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                                 .map((c) => this._configs[c.id])
                                 .map((config : ModelConfiguration) => html`
                             <li>
-                                <a @click="${()=>{this._select(model, version, config)}}" ?selected="${this._selectedConfig === config.id}">
+                                <a class="config" @click="${()=>{this._select(model, version, config)}}"
+                                   ?selected="${this._selectedConfig === config.id}">
                                     ${config ? config.label : this._getId(config)}
                                 </a>
                                 <ul>
@@ -184,13 +194,14 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                                         .filter(visibleSetup)
                                         .map((setup : ModelConfigurationSetup) => html`
                                     <li>
-                                        <a @click="${()=>{this._select(model, version, config, setup)}}" ?selected="${this._selectedSetup === setup.id}">
+                                        <a class="setup" @click="${()=>{this._select(model, version, config, setup)}}"
+                                           ?selected="${this._selectedSetup === setup.id}">
                                             ${setup ? setup.label : this._getId(setup)}
                                         </a>
                                     </li>
                                     `)}
                                     <li>
-                                        <a class="inline-new-button" @click="${()=>{this._selectNew(model, version, config)}}">
+                                        <a class="inline-new-button setup" @click="${()=>{this._selectNew(model, version, config)}}">
                                             <wl-icon>add_circle_outline</wl-icon>
                                             <span ?selected="${this._creating && this._selectedConfig === config.id}">
                                                 Add new setup
@@ -201,7 +212,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                             </li>
                             `)}
                             <!--li>
-                                <a class="inline-new-button" @click="">
+                                <a class="inline-new-button config" @click="">
                                     <wl-icon>add_circle_outline</wl-icon>
                                     Add new configuration
                                 </a>

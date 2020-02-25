@@ -1,11 +1,11 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, ModelConfigurationSetup, ModelConfigurationSetupApi, ModelConfiguration,
-         Parameter, DatasetSpecification } from '@mintproject/modelcatalog_client';
+         ConfigurationSetupApi, Parameter, DatasetSpecification } from '@mintproject/modelcatalog_client';
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, fixObjects,
          DEFAULT_GRAPH, parameterPost, datasetSpecificationPost, modelConfigurationPut } from './actions';
 
-function debug (...args: any[]) { console.log('[MC ModelConfigurationSetup]', ...args); }
+function debug (...args: any[]) { }// console.log('[MC ModelConfigurationSetup]', ...args); }
 
 export const MODEL_CONFIGURATION_SETUPS_ADD = "MODEL_CONFIGURATION_SETUPS_ADD";
 export const MODEL_CONFIGURATION_SETUP_DELETE = "MODEL_CONFIGURATION_SETUP_DELETE";
@@ -168,4 +168,11 @@ export const modelConfigurationSetupDelete: ActionThunk<void, MCAModelConfigurat
         console.error('TOKEN ERROR:', status);
         return Promise.reject(new Error('Token error'));
     }
+}
+
+export function setupGetAll (uri:string) : Promise<ModelConfigurationSetup> {
+    debug('Fetching setup (all info)', uri);
+    let id = uri.split('/').pop();
+    let api = new ConfigurationSetupApi();
+    return api.customConfigurationsetupsIdGet({username: DEFAULT_GRAPH, id: id});
 }

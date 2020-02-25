@@ -48,7 +48,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     private _drivingVariables: string[] = [];
 
     private _comparisonFeatures: Array<ComparisonFeature> = [
-        {
+        /*{
             name: "More information",
             fn: (model:Model) => html `
                 <a target="_blank" href="${this._getModelSetupURL(model)}">Model Profile</a>
@@ -59,7 +59,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             fn: (model:Model) => html `
                 <a target="_blank" href="${this._getModelURL(model)}">${model.original_model}</a>
                 `
-        },        
+        },        */
         {
             name: "Adjustable variables",
             fn: (model:Model) => {
@@ -311,10 +311,14 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         <wl-dialog class="comparison" fixed backdrop blockscrolling id="comparisonDialog">
             <table class="pure-table pure-table-striped">
                 <thead>
-                    <th style="border-right:1px solid #EEE"></th>
+                    <th style="border-right:1px solid #EEE; font-size: 14px;">Model details</th>
                     ${this._modelsToCompare.map((model) => {
                         return html`
-                        <th .style="width:${100/(this._modelsToCompare.length)}%"><b>${model.name}</b></th>
+                        <th .style="width:${100/(this._modelsToCompare.length)}%">
+                            <a target="_blank" href="${this._getModelURL(model)}" style="font-weight: bold; font-size: 15px;">
+                                ${model.name}
+                            </a>
+                        </th>
                         `
                     })}
                 </thead>

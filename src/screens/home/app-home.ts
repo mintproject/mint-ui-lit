@@ -194,17 +194,26 @@ export class AppHome extends connect(store)(PageViewElement) {
                 <wl-title level="3">QuickStart User Guide</wl-title>
                 <p>
                     The MINT QuickStart User Guide that gives an introduction and overview of the capabilities 
-                    of MINT is available <a>here</a>. It includes a glossary and an FAQ.
+                    of MINT is available 
+                    <a target="_blank" href="https://mintproject.readthedocs.io/en/latest/#mint-quickstart-user-guide">
+                        here</a>.
+                    It includes a glossary and an FAQ.
                 </p>
                 <wl-title level="3">Step-by-Step Training Document</wl-title>
                 <p>
                     The MINT Training Document that introduces visually the main components of the MINT user
-                    interface is available <a>here</a>. It includes additional information and pointers in the last page.
+                    interface is available 
+                    <a target="_blank" href="https://drive.google.com/file/d/12nx2MkZuZUzKj2pP0ZRz8u3j7_vVfND2/view">here</a>.
+                    It includes additional information and pointers in the last page.
                 </p>
                 <wl-title level="3">User Interface Walkthrough Slides</wl-title>
-                <p>A slide deck with a detailed walkthrough of the MINT user interface is available <a>here</a>.</p>
+                <p>A slide deck with a detailed walkthrough of the MINT user interface is available 
+                   <a target="_blank" href="https://drive.google.com/open?id=1F9rYnA-goWRhkAUsK0ujR3XWXYm4dt0C">here</a>.
+                </p>
                 <wl-title level="3">User Interface Walkthrough Video</wl-title>
-                <p>A video with a walkthrough of the MINT user interface is available <a>here</a>.</p>
+                <p>A video with a walkthrough of the MINT user interface is available 
+                   <a target="_blank" href="https://drive.google.com/file/d/1FENjOdCkbES_Cc8s74tKUrJSEvQXs1zv/view">here</a>.
+                </p>
             </div>
             <div slot="footer">
             </div>

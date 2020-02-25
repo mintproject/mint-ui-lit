@@ -162,6 +162,7 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
                                 id: value.io,
                                 name: value.iolabel,
                                 type: value.type,
+                                position: value.position ? parseInt(value.position) : 0,
                                 variables: []
                             };
                             if(value.fixedValueURL) {
