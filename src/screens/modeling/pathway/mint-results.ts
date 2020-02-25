@@ -201,7 +201,7 @@ export class MintResults extends connect(store)(MintPathwayPage) {
                         }
                         ${!grouped_ensemble || !grouped_ensemble.loading ?
                         html`<wl-button type="button" flat inverted  style="float:right; --button-padding:7px" 
-                            ?disabled="${Object.keys(grouped_ensemble.ensembles).length == 0}"
+                            ?disabled="${!grouped_ensemble || Object.keys(grouped_ensemble.ensembles).length == 0}"
                             @click="${() => this._download(grouped_ensembles[model.id])}">
                                 <wl-icon>cloud_download</wl-icon>
                             </wl-button>`: ""

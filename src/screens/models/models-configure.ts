@@ -112,6 +112,12 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             .custom-button:hover {
                 background-color: rgb(224, 224, 224);
             }
+
+            .title-prefix {
+                font-size: 15px;
+                font-weight: normal;
+                color: rgb(153, 153, 153) !important;
+            }
             `,
             SharedStyles
         ];
