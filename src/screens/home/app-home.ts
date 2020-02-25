@@ -640,6 +640,9 @@ export class AppHome extends connect(store)(PageViewElement) {
             if (profile.preferredRegion != this._preferredRegion) {
                 this._preferredRegion = profile.preferredRegion;
             }
+            if (!profile.preferredRegion) {
+                this._preferredRegion = 'south_sudan';
+            }
         }
 
         if(state.regions && state.regions.regions) {
