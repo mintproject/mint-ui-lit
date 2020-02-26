@@ -8,7 +8,7 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
 
 import { IdMap } from 'app/reducers';
-import { ModelConfigurationSetup, ModelConfiguration, SoftwareVersion, Model } from '@mintproject/modelcatalog_client';
+import { ModelConfigurationSetup, ModelConfiguration, SoftwareVersion, Model, Region } from '@mintproject/modelcatalog_client';
 import { regionsGet } from 'model-catalog/actions';
 import { isSubregion } from 'model-catalog/util';
 
@@ -18,7 +18,7 @@ import 'components/loading-dots'
 @customElement('models-tree')
 export class ModelsTree extends connect(store)(PageViewElement) {
     @property({type: Object})
-    private _regions : any = null;
+    private _regions : IdMap<Region> = {} as IdMap<Region>;
 
     @property({type: Object})
     private _models : IdMap<Model> = {} as IdMap<Model>;
@@ -130,22 +130,9 @@ export class ModelsTree extends connect(store)(PageViewElement) {
         if (!this._models || !this._region || !this._regions) 
             return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
 
-        /*if (this._region && this._region.model_catalog_uri === 'https://w3id.org/okn/i/mint/Texas')
-            this._region.model_catalog_uri = 'https://w3id.org/okn/i/mint/United_States';
-
-        const visibleSetup = (setup: ModelConfigurationSetup) => setup && (
-            !setup.hasRegion || setup.hasRegion.length === 0 ||
-            (this._region && !this._region.model_catalog_uri) ||
-            setup.hasRegion.filter((r:any) => r.id === this._region.model_catalog_uri).length > 0 ||
-            setup.hasRegion.filter((r:any) => 
-                this._regions[r.id] &&
-                this._regions[r.id].country &&
-                this._regions[r.id].country.length > 0 &&
-                this._regions[r.id].country[0].id === this._region.model_catalog_uri
-            ).length > 0
-        );*/
-
-        const visibleSetup = (setup: ModelConfigurationSetup) => isSubregion(this._region.model_catalog_uri, setup);
+        const visibleSetup = (setup: ModelConfigurationSetup) => ((setup||{}).hasRegion||[]).map((region:Region) =>
+            isSubregion(this._region.model_catalog_uri, this._regions[region.id])
+        ).some(x=>x);
 
         return html`
         <ul style="padding-left: 10px; margin-top: 4px;">
