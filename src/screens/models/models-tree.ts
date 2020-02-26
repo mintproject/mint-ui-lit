@@ -10,6 +10,7 @@ import { goToPage } from '../../app/actions';
 import { IdMap } from 'app/reducers';
 import { ModelConfigurationSetup, ModelConfiguration, SoftwareVersion, Model } from '@mintproject/modelcatalog_client';
 import { regionsGet } from 'model-catalog/actions';
+import { isSubregion } from 'model-catalog/util';
 
 import "weightless/progress-spinner";
 import 'components/loading-dots'
@@ -129,7 +130,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
         if (!this._models || !this._region || !this._regions) 
             return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
 
-        if (this._region && this._region.model_catalog_uri === 'https://w3id.org/okn/i/mint/Texas')
+        /*if (this._region && this._region.model_catalog_uri === 'https://w3id.org/okn/i/mint/Texas')
             this._region.model_catalog_uri = 'https://w3id.org/okn/i/mint/United_States';
 
         const visibleSetup = (setup: ModelConfigurationSetup) => setup && (
@@ -142,7 +143,9 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                 this._regions[r.id].country.length > 0 &&
                 this._regions[r.id].country[0].id === this._region.model_catalog_uri
             ).length > 0
-        );
+        );*/
+
+        const visibleSetup = (setup: ModelConfigurationSetup) => isSubregion(this._region.model_catalog_uri, setup);
 
         return html`
         <ul style="padding-left: 10px; margin-top: 4px;">

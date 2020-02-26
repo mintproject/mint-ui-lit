@@ -187,9 +187,9 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
 
     _renderSelectTab () {
         let subregions : Region[] = Object.values(this._regions || {}).filter((region:Region) => 
-            region.country &&
-            region.country.length > 0 &&
-            region.country.some((obj:Region) => obj.id === this._region.model_catalog_uri) &&
+            region.partOf &&
+            region.partOf.length > 0 &&
+            region.partOf.some((obj:Region) => obj.id === this._region.model_catalog_uri) &&
             region.label.join().toLowerCase().includes(this._filter.toLowerCase())
         );
 
@@ -288,7 +288,7 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
         let newRegion : Region = {
             label: [selected.name],
             type: ["Region"],
-            country: [{id: this._region.model_catalog_uri}],
+            partOf: [{id: this._region.model_catalog_uri}],
             //TODO: description: [""],
             geo: [{
                 label: ["Bounding box for " + selected.name],
