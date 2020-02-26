@@ -203,7 +203,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                   <div class="text-centered one-line">
                   ${this._nLocalSetups < 0 ? html`<loading-dots></loading-dots>`
                     : (this._nLocalSetups > 0 ? html`<b style="color: darkgreen;">Executable in MINT</b>`
-                      : (this._nSetups > 0 ? html`<b>Executable in MINT for other Region</b>`
+                      : (this._nSetups > 0 ? html`<b>Executable in MINT in another region</b>`
                         : html`<b style="color: chocolate;">Not executable in MINT</b>`
                       )
                     )
