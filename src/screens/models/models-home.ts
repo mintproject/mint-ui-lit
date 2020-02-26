@@ -53,7 +53,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     color: rgb(6, 67, 108);
                     text-decoration: none;
                 }
-                
+
                 .no-decoration, .no-decoration:hover {
                     text-decoration: none;
                 }
@@ -123,8 +123,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <wl-icon>search</wl-icon>
                     <div>Browse Models</div>
                 </a>
-                <a href="${this._regionid}/models/register">
-                <!--a disabled-->
+                <a disabled>
                     <wl-icon>library_add</wl-icon>
                     <div>Add Models</div>
                 </a>
