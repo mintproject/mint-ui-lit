@@ -403,7 +403,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                         })}
                     </tbody>
                 </table>            
-                ${!(this._selectResourcesDataset||{}).resources_loaded ? html`
+                ${!(this._selectResourcesDataset||{})['resources_loaded'] ? html`
                     <div style="margin-top: 10px; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>
                 `:'' }
             </div>   

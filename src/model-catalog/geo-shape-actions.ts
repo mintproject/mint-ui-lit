@@ -1,161 +1,151 @@
-import { Action, ActionCreator } from "redux";
-import { ThunkAction } from "redux-thunk";
-import { RootState, store } from 'app/store';
-
+import { Action } from "redux";
+import { IdMap } from 'app/reducers';
+import { BoundingBox } from 'screens/regions/reducers';
 import { Configuration, GeoShape, GeoShapeApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, PREFIX_URI, DEFAULT_GRAPH,
-         START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer,
+         getStatusConfigAndUser, DEFAULT_GRAPH } from './actions';
 
-function debug (...args: any[]) { console.log('OBA:', ...args); }
+function debug (...args: any[]) {}// console.log('[MC GeoShape]', ...args); }
 
-const str_to_bbox = (bb: string) => {
+const str_to_bbox = (bb: string) : BoundingBox => {
     let coords = bb.split(/,| /g);
-    return { xmin: coords[0], ymin: coords[1], xmax: coords[2], ymax: coords[3] };
+    return { 
+        xmin: parseFloat(coords[0]),
+        ymin: parseFloat(coords[1]),
+        xmax: parseFloat(coords[2]),
+        ymax: parseFloat(coords[3])
+    };
 }
 
-const fixGeoShape = (gs : any) => {
+const parseBoundingBox = (gs:GeoShape) : GeoShape => {
     if (gs.box && gs.box.length === 1) {
-        return { ...gs, bbox: str_to_bbox(gs.box[0]) };
+        return { ...gs, bbox: str_to_bbox(gs.box[0]) } as GeoShape;
     } else {
         return gs;
     }
 }
 
-export const ALL_GEO_SHAPES = 'ALL_GEO_SHAPES'
-
-export const GEO_SHAPES_GET = "GEO_SHAPES_GET";
-interface MCAGeoShapesGet extends Action<'GEO_SHAPES_GET'> { payload: any };
-export const geoShapesGet: ActionCreator<ModelCatalogGeoShapeThunkResult> = () => (dispatch) => {
-    let state: any = store.getState();
-    if (state.modelCatalog && (state.modelCatalog.loadedAll[ALL_GEO_SHAPES] || state.modelCatalog.loading[ALL_GEO_SHAPES])) {
-        console.log('All geoShapes are already in memory or loading')
-        return;
-    }
-
-    debug('Fetching all geoShape');
-    dispatch({type: START_LOADING, id: ALL_GEO_SHAPES});
-
-    let api : GeoShapeApi = new GeoShapeApi();
-    let req = api.geoshapesGet({username: DEFAULT_GRAPH});
-    req.then((data) => {
-        data = data.map(fixGeoShape);
-        dispatch({
-            type: GEO_SHAPES_GET,
-            payload: data.reduce(idReducer, {})
-        });
-        dispatch({type: END_LOADING, id: ALL_GEO_SHAPES});
-    });
-    req.catch((err) => {console.log('Error on GET geoShapes', err)});
-}
-
-export const GEO_SHAPE_GET = "GEO_SHAPE_GET";
-export interface MCAGeoShapeGet extends Action<'GEO_SHAPE_GET'> { payload: any };
-export const geoShapeGet: ActionCreator<ModelCatalogGeoShapeThunkResult> = ( uri:string ) => (dispatch) => {
-    debug('Fetching geoShape', uri);
-    let id : string = uri.split('/').pop();
-    let api : GeoShapeApi = new GeoShapeApi();
-    let req = api.geoshapesIdGet({username: DEFAULT_GRAPH, id: id});
-    req.then((resp) => {
-        let data = {};
-        data[uri] = resp;
-        dispatch({
-            type: GEO_SHAPE_GET,
-            payload: data
-        });
-    })
-    req.catch((err) => {console.log('Error on getGeoShape', err)});
-}
-
-export const GEO_SHAPE_POST = "GEO_SHAPE_POST";
-interface MCAGeoShapePost extends Action<'GEO_SHAPE_POST'> { payload: any };
-export const geoShapePost: ActionCreator<ModelCatalogGeoShapeThunkResult> = (geoShape:GeoShape, identifier:string) => (dispatch) => {
-    debug('creating new geoShape', geoShape);
-    let status : string, cfg : Configuration, user : string;
-    [status, cfg, user] = getStatusConfigAndUser();
-
-    if (status === 'DONE') {
-        dispatch({type: START_POST, id: identifier});
-        geoShape.id = undefined;
-        let api : GeoShapeApi = new GeoShapeApi(cfg);
-        let req = api.geoshapesPost({user: DEFAULT_GRAPH, geoShape: geoShape}) // This should be my username on prod.
-        req.then((resp) => {
-            console.log('Response for POST geoShape:', resp);
-            //Its returning the ID without the prefix
-            let uri = PREFIX_URI + resp.id;
-            let data = {};
-            data[uri] = resp;
-            resp.id = uri;
-            dispatch({
-                type: GEO_SHAPE_GET,
-                payload: data
-            });
-            dispatch({type: END_POST, id: identifier, uri: uri});
-        });
-        req.catch((err) => {console.log('Error on POST geoShape', err)});
-    } else {
-        console.error('TOKEN ERROR:', status);
-    }
-}
-
-export const GEO_SHAPE_PUT = "GEO_SHAPE_PUT";
-interface MCAGeoShapePut extends Action<'GEO_SHAPE_PUT'> { payload: any };
-export const geoShapePut: ActionCreator<ModelCatalogGeoShapeThunkResult> = ( geoShape: GeoShape ) => (dispatch) => {
-    debug('updating geoShape', geoShape.id);
-    let status : string, cfg : Configuration, user : string;
-    [status, cfg, user] = getStatusConfigAndUser();
-
-    if (status === 'DONE') {
-        dispatch({type: START_LOADING, id: geoShape.id});
-        let api : GeoShapeApi = new GeoShapeApi(cfg);
-        let id : string = geoShape.id.split('/').pop();
-        let req = api.geoshapesIdPut({id: id, user: DEFAULT_GRAPH, geoShape: geoShape}) // This should be my username on prod.
-        req.then((resp) => {
-            console.log('Response for PUT geoShape:', resp);
-            let data = {};
-            data[geoShape.id] = resp;
-            dispatch({
-                type: GEO_SHAPE_GET,
-                payload: data
-            });
-            dispatch({type: END_LOADING, id: geoShape.id});
-        });
-        req.catch((err) => {console.log('Error on PUT geoShape', err)});
-    } else {
-        console.error('TOKEN ERROR:', status);
-    }
-}
-
+export const GEO_SHAPES_ADD = "GEO_SHAPES_ADD";
 export const GEO_SHAPE_DELETE = "GEO_SHAPE_DELETE";
+
+export interface MCAGeoShapesAdd extends Action<'GEO_SHAPES_ADD'> { payload: IdMap<GeoShape> };
 interface MCAGeoShapeDelete extends Action<'GEO_SHAPE_DELETE'> { uri: string };
-export const geoShapeDelete: ActionCreator<ModelCatalogGeoShapeThunkResult> = ( uri: string ) => (dispatch) => {
-    debug('deleting geoShape', uri);
+
+export type ModelCatalogGeoShapeAction =  MCAGeoShapesAdd | MCAGeoShapeDelete;
+
+let geoShapesPromise : Promise<IdMap<GeoShape>> | null = null;
+
+export const geoShapesGet: ActionThunk<Promise<IdMap<GeoShape>>, MCAGeoShapesAdd> = () => (dispatch) => {
+    if (!geoShapesPromise) {
+        geoShapesPromise = new Promise((resolve, reject) => {
+            debug('Fetching all');
+            let api : GeoShapeApi = new GeoShapeApi();
+            let req : Promise<GeoShape[]> = api.geoshapesGet({username: DEFAULT_GRAPH});
+            req.then((resp:GeoShape[]) => {
+                let data : IdMap<GeoShape> = resp.map(parseBoundingBox).reduce(idReducer, {});
+                dispatch({
+                    type: GEO_SHAPES_ADD,
+                    payload: data
+                });
+                resolve(data);
+            });
+            req.catch((err) => {
+                console.error('Error on GET GeoShapes', err);
+                reject(err);
+            });
+        });
+    } else {
+        debug('All GeoShapes are already in memory or loading');
+    }
+    return geoShapesPromise;
+}
+
+export const geoShapeGet: ActionThunk<Promise<GeoShape>, MCAGeoShapesAdd> = ( uri:string ) => (dispatch) => {
+    debug('Fetching', uri);
+    let id : string = getIdFromUri(uri);
+    let api : GeoShapeApi = new GeoShapeApi();
+    let req : Promise<GeoShape> = api.geoshapesIdGet({username: DEFAULT_GRAPH, id: id});
+    req.then((resp:GeoShape) => {
+        dispatch({
+            type: GEO_SHAPES_ADD,
+            payload: idReducer({}, resp)
+        });
+    });
+    req.catch((err) => {
+        console.error('Error on GET GeoShapes', err);
+    });
+    return req;
+}
+
+export const geoShapePost: ActionThunk<Promise<GeoShape>, MCAGeoShapesAdd> = (geoShape:GeoShape) => (dispatch) => {
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
-
     if (status === 'DONE') {
+        debug('Creating new', geoShape);
         let api : GeoShapeApi = new GeoShapeApi(cfg);
-        let id : string = uri.split('/').pop();
-        let req = api.geoshapesIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
-        req.then((resp) => {
+        let req = api.geoshapesPost({user: DEFAULT_GRAPH, geoShape: geoShape})
+        req.then((resp:GeoShape) => {
+            debug('Response for POST:', resp);
+            dispatch({
+                type: GEO_SHAPES_ADD,
+                payload: createIdMap(resp)
+            });
+        });
+        req.catch((err) => {
+            console.error('Error on POST GeoShape', err);
+        });
+        return req;
+    } else {
+        console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('GeoShape error'));
+    }
+}
+
+export const geoShapePut: ActionThunk<Promise<GeoShape>, MCAGeoShapesAdd> = ( geoShape: GeoShape ) => (dispatch) => {
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+    if (status === 'DONE') {
+        debug('Updating', geoShape);
+        let api : GeoShapeApi = new GeoShapeApi(cfg);
+        let id : string = getIdFromUri(geoShape.id);
+        let req : Promise<GeoShape> = api.geoshapesIdPut({id: id, user: DEFAULT_GRAPH, geoShape: geoShape});
+        req.then((resp:GeoShape) => {
+            debug('Response for PUT:', resp);
+            dispatch({
+                type: GEO_SHAPES_ADD,
+                payload: idReducer({}, resp)
+            });
+        });
+        req.catch((err) => {
+            console.error('Error on PUT GeoShape', err);
+        });
+        return req;
+    } else {
+        console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('Token error'));
+    }
+}
+
+export const geoShapeDelete: ActionThunk<void, MCAGeoShapeDelete> = ( geoShape: GeoShape ) => (dispatch) => {
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+    if (status === 'DONE') {
+        debug('Deleting', geoShape);
+        let api : GeoShapeApi = new GeoShapeApi(cfg);
+        let id : string = getIdFromUri(geoShape.id);
+        let req : Promise<void> = api.geoshapesIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        req.then(() => {
             dispatch({
                 type: GEO_SHAPE_DELETE,
-                uri: uri
+                uri: geoShape.id
             });
-            /*console.log('Response for DELETE geoShape:', resp);
-            let data = {};
-            data[geoShape.id] = resp;
-            dispatch({
-                type: GEO_SHAPE_GET,
-                payload: data
-            });
-            dispatch({type: END_LOADING, id: geoShape.id});*/
         });
-        req.catch((err) => {console.log('Error on DELETE geoShape', err)});
+        req.catch((err) => {
+            console.error('Error on DELETE GeoShape', err);
+        });
+        return req;
     } else {
         console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('Token error'));
     }
 }
-
-export type ModelCatalogGeoShapeAction =  MCACommon | MCAGeoShapesGet | MCAGeoShapeGet | MCAGeoShapePost | MCAGeoShapePut |
-                                        MCAGeoShapeDelete;
-type ModelCatalogGeoShapeThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogGeoShapeAction>;

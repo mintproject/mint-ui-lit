@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@babel/runtime-corejs2": "^7.3.1",
-    "@mintproject/modelcatalog_client": "^1.6.0",
+    "@mintproject/modelcatalog_client": "^1.7.2",
     "@polymer/app-layout": "^3.0.2",
     "@polymer/polymer": "^3.1.0",
     "@types/codemirror": "^0.0.78",
