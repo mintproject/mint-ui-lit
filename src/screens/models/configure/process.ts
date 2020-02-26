@@ -11,7 +11,7 @@ import { goToPage } from 'app/actions';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { processGet, processesGet, processPost, processPut,  processDelete, ALL_PROCESSES } from 'model-catalog/actions';
+import { processGet, processesGet, processPost, processPut,  processDelete } from 'model-catalog/actions';
 
 import { renderExternalLink } from './util';
 
@@ -301,13 +301,15 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
     }
 
     firstUpdated () {
-        store.dispatch(processesGet());
+        this._loading = true;
+        store.dispatch(processesGet()).then((processes) =>{
+            this._loading = false;
+        })
     }
 
     stateChanged(state: RootState) {
         if (state.modelCatalog) {
             let db = state.modelCatalog;
-            this._loading = db.loading[ALL_PROCESSES]
             this._processes = db.processes;
             if (this._waitingFor) {
                 if (this._new) {

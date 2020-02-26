@@ -1,140 +1,141 @@
-import { Action, ActionCreator } from "redux";
-import { ThunkAction } from "redux-thunk";
-import { RootState, store } from 'app/store';
-
+import { Action } from "redux";
+import { IdMap } from 'app/reducers'
 import { Configuration, Parameter, ParameterApi } from '@mintproject/modelcatalog_client';
-import { idReducer, getStatusConfigAndUser, PREFIX_URI, DEFAULT_GRAPH,
-         START_LOADING, END_LOADING, START_POST, END_POST, MCACommon } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
+         DEFAULT_GRAPH } from './actions';
 
-function debug (...args: any[]) {}// console.log('OBA:', ...args); }
+function debug (...args: any[]) {}// console.log('[MC Parameter]', ...args); }
 
-export const ALL_PARAMETERS = 'ALL_PARAMETERS'
-
-export const PARAMETERS_GET = "PARAMETERS_GET";
-interface MCAParametersGet extends Action<'PARAMETERS_GET'> { payload: any };
-export const parametersGet: ActionCreator<ModelCatalogParameterThunkResult> = () => (dispatch) => {
-    let state: any = store.getState();
-    if (state.modelCatalog && (state.modelCatalog.loadedAll[ALL_PARAMETERS] || state.modelCatalog.loading[ALL_PARAMETERS])) {
-        console.log('All parameters are already in memory or loading')
-        return;
-    }
-
-    debug('Fetching all parameter');
-    dispatch({type: START_LOADING, id: ALL_PARAMETERS});
-
-    let api : ParameterApi = new ParameterApi();
-    let req = api.parametersGet({username: DEFAULT_GRAPH});
-    req.then((data) => {
-            dispatch({
-                type: PARAMETERS_GET,
-                payload: data.reduce(idReducer, {})
-            });
-            dispatch({type: END_LOADING, id: ALL_PARAMETERS});
-    });
-    req.catch((err) => {console.log('Error on GET parameters', err)});
-}
-
-export const PARAMETER_GET = "PARAMETER_GET";
-export interface MCAParameterGet extends Action<'PARAMETER_GET'> { payload: any };
-export const parameterGet: ActionCreator<ModelCatalogParameterThunkResult> = ( uri:string ) => (dispatch) => {
-    debug('Fetching parameter', uri);
-    let id : string = uri.split('/').pop();
-    let api : ParameterApi = new ParameterApi();
-    let req = api.parametersIdGet({username: DEFAULT_GRAPH, id: id});
-    req.then((resp) => {
-            let data = {};
-            data[uri] = resp;
-            dispatch({
-                type: PARAMETER_GET,
-                payload: data
-            });
-    });
-    req.catch((err) => {console.log('Error on getParameter', err)});
-}
-
-export const PARAMETER_POST = "PARAMETER_POST";
-interface MCAParameterPost extends Action<'PARAMETER_POST'> { payload: any };
-export const parameterPost: ActionCreator<ModelCatalogParameterThunkResult> = (parameter:Parameter, identifier:string) => (dispatch) => {
-    debug('creating new parameter', parameter);
-    let status : string, cfg : Configuration, user : string;
-    [status, cfg, user] = getStatusConfigAndUser();
-
-    if (status === 'DONE') {
-        dispatch({type: START_POST, id: identifier});
-        parameter.id = undefined;
-        let api : ParameterApi = new ParameterApi(cfg);
-        let req = api.parametersPost({user: DEFAULT_GRAPH, parameter: parameter}) // This should be my username on prod.
-        req.then((resp) => {
-                console.log('Response for POST parameter:', resp);
-                //Its returning the ID without the prefix
-                let uri = PREFIX_URI + resp.id;
-                let data = {};
-                data[uri] = resp;
-                resp.id = uri;
-                dispatch({
-                    type: PARAMETER_GET,
-                    payload: data
-                });
-                dispatch({type: END_POST, id: identifier, uri: uri});
-        });
-        req.catch((err) => {console.log('Error on POST parameter', err)});
-    } else {
-        console.error('TOKEN ERROR:', status);
-    }
-}
-
-export const PARAMETER_PUT = "PARAMETER_PUT";
-interface MCAParameterPut extends Action<'PARAMETER_PUT'> { payload: any };
-export const parameterPut: ActionCreator<ModelCatalogParameterThunkResult> = ( parameter: Parameter ) => (dispatch) => {
-    debug('updating parameter', parameter.id);
-    let status : string, cfg : Configuration, user : string;
-    [status, cfg, user] = getStatusConfigAndUser();
-
-    if (status === 'DONE') {
-        dispatch({type: START_LOADING, id: parameter.id});
-        let api : ParameterApi = new ParameterApi(cfg);
-        let id : string = parameter.id.split('/').pop();
-        let req = api.parametersIdPut({id: id, user: DEFAULT_GRAPH, parameter: parameter}); // This should be my username on prod.
-        req.then((resp) => {
-                console.log('Response for PUT parameter:', resp);
-                let data = {};
-                data[parameter.id] = resp;
-                dispatch({
-                    type: PARAMETER_GET,
-                    payload: data
-                });
-                dispatch({type: END_LOADING, id: parameter.id});
-        });
-        req.catch((err) => {console.log('Error on PUT parameter', err)});
-    } else {
-        console.error('TOKEN ERROR:', status);
-    }
-}
-
+export const PARAMETERS_ADD = "PARAMETERS_ADD";
 export const PARAMETER_DELETE = "PARAMETER_DELETE";
-interface MCAParameterDelete extends Action<'PARAMETER_DELETE'> {uri: string};
-export const parameterDelete: ActionCreator<ModelCatalogParameterThunkResult> = ( uri: string ) => (dispatch) => {
-    debug('updating parameter', uri);
+
+export interface MCAParametersAdd extends Action<'PARAMETERS_ADD'> { payload: IdMap<Parameter> };
+interface MCAParameterDelete extends Action<'PARAMETER_DELETE'> { uri: string };
+
+export type ModelCatalogParameterAction =  MCAParametersAdd | MCAParameterDelete;
+
+let parametersPromise : Promise<IdMap<Parameter>> | null = null;
+
+export const parametersGet: ActionThunk<Promise<IdMap<Parameter>>, MCAParametersAdd> = () => (dispatch) => {
+    if (!parametersPromise) {
+        parametersPromise = new Promise((resolve, reject) => {
+            debug('Fetching all');
+            let api : ParameterApi = new ParameterApi();
+            let req : Promise<Parameter[]> = api.parametersGet({username: DEFAULT_GRAPH});
+            req.then((resp:Parameter[]) => {
+                let data : IdMap<Parameter> = resp.reduce(idReducer, {});
+                dispatch({
+                    type: PARAMETERS_ADD,
+                    payload: data
+                });
+                resolve(data);
+            });
+            req.catch((err) => {
+                console.error('Error on GET Parameters', err);
+                reject(err);
+            });
+        });
+    } else {
+        debug('All parameters are already in memory or loading');
+    }
+    return parametersPromise;
+}
+
+export const parameterGet: ActionThunk<Promise<Parameter>, MCAParametersAdd> = (uri:string) => (dispatch) => {
+    debug('Fetching', uri);
+    let id : string = getIdFromUri(uri);
+    let api : ParameterApi = new ParameterApi();
+    let req : Promise<Parameter> = api.parametersIdGet({username: DEFAULT_GRAPH, id: id});
+    req.then((resp:Parameter) => {
+        dispatch({
+            type: PARAMETERS_ADD,
+            payload: idReducer({}, resp)
+        });
+    });
+    req.catch((err) => {
+        console.error('Error on GET Parameter', err);
+    });
+    return req;
+}
+
+export const parameterPost: ActionThunk<Promise<Parameter>, MCAParametersAdd> = (parameter:Parameter) => (dispatch) => {
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
-
     if (status === 'DONE') {
-        let api : ParameterApi = new ParameterApi(cfg);
-        let id : string = uri.split('/').pop();
-        let req = api.parametersIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
-        req.then((resp) => {
-                console.log('Response for DELETE parameter:', resp);
-                dispatch({
-                    type: PARAMETER_DELETE,
-                    uri: uri
+        debug('Creating new', parameter);
+        if (parameter.id) {
+            return Promise.reject(new Error('Cannot create Parameter, object has ID'));
+        } else {
+            return new Promise((resolve,reject) => {
+                let api : ParameterApi = new ParameterApi(cfg);
+                let req = api.parametersPost({user: DEFAULT_GRAPH, parameter: parameter}); // This should be my username on prod.
+                req.then((resp:Parameter) => {
+                    debug('Response for POST', resp);
+                    //Parameter can have a flag 'isAdjustable'
+                    resp['isAdjustable'] = parameter['isAdjustable'];
+                    dispatch({
+                        type: PARAMETERS_ADD,
+                        payload: createIdMap(resp)
+                    });
+                    resolve(resp);
                 });
-        });
-        req.catch((err) => {console.log('Error on DELETE parameter', err)});
+                req.catch((err) => {
+                    console.error('Error on POST Parameter', err);
+                    reject(err);
+                });
+            });
+        }
     } else {
         console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('Parameter error'));
     }
 }
 
-export type ModelCatalogParameterAction =  MCACommon | MCAParametersGet | MCAParameterGet | MCAParameterPost |
-                                           MCAParameterPut | MCAParameterDelete;
-type ModelCatalogParameterThunkResult = ThunkAction<void, RootState, undefined, ModelCatalogParameterAction>;
+export const parameterPut: ActionThunk<Promise<Parameter>, MCAParametersAdd> = (parameter: Parameter) => (dispatch) => {
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+    if (status === 'DONE') {
+        debug('Updating', parameter);
+        let api : ParameterApi = new ParameterApi(cfg);
+        let id : string = getIdFromUri(parameter.id);
+        let req : Promise<Parameter> = api.parametersIdPut({id: id, user: DEFAULT_GRAPH, parameter: parameter});
+        req.then((resp) => {
+            debug('Response for PUT:', resp);
+            dispatch({
+                type: PARAMETERS_ADD,
+                payload: idReducer({}, resp)
+            });
+        });
+        req.catch((err) => {
+            console.error('Error on PUT Parameter', err);
+        });
+        return req;
+    } else {
+        console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('Token error'));
+    }
+}
+
+export const parameterDelete: ActionThunk<void, MCAParameterDelete> = (parameter:Parameter) => (dispatch) => {
+    let status : string, cfg : Configuration, user : string;
+    [status, cfg, user] = getStatusConfigAndUser();
+    if (status === 'DONE') {
+        debug('Deleting', parameter.id);
+        let api : ParameterApi = new ParameterApi(cfg);
+        let id : string = getIdFromUri(parameter.id);
+        let req : Promise<void> = api.parametersIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        req.then(() => {
+            dispatch({
+                type: PARAMETER_DELETE,
+                uri: parameter.id
+            });
+        });
+        req.catch((err) => {
+            console.error('Error on DELETE Parameter', err);
+        });
+        return req;
+    } else {
+        console.error('TOKEN ERROR:', status);
+        return Promise.reject(new Error('Token error'));
+    }
+}

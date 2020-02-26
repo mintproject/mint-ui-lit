@@ -12,7 +12,7 @@ import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
 import { datasetSpecificationGet, datasetSpecificationsGet, datasetSpecificationPost, datasetSpecificationPut, 
-         datasetSpecificationDelete, ALL_DATASET_SPECIFICATIONS } from 'model-catalog/actions';
+         datasetSpecificationDelete } from 'model-catalog/actions';
 import { renderExternalLink } from './util';
 
 import "weightless/progress-spinner";

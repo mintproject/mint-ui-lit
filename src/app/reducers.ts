@@ -11,8 +11,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 import { Reducer } from 'redux';
 import { RootAction } from './store';
 import { User } from 'firebase';
-import { UPDATE_PAGE, FETCH_USER, FETCH_MINT_CONFIG, FETCH_MODEL_CATALOG_ACCESS_TOKEN,
-         STATUS_MODEL_CATALOG_ACCESS_TOKEN} from './actions';
+import { UPDATE_PAGE, FETCH_USER, FETCH_USER_PROFILE, FETCH_MINT_CONFIG,
+         FETCH_MODEL_CATALOG_ACCESS_TOKEN, STATUS_MODEL_CATALOG_ACCESS_TOKEN} from './actions';
 
 export interface IdMap<T> {
   [id: string]: T
@@ -32,7 +32,8 @@ export interface AppState {
 
 export interface UserPreferences {
   mint: MintPreferences,
-  modelCatalog: ModelCatalogPreferences
+  modelCatalog: ModelCatalogPreferences,
+  profile?: UserProfile
 }
 
 export interface MintPreferences {
@@ -76,6 +77,10 @@ export interface ModelCatalogPreferences {
   status: ModelCatalogStatus
 }
 
+export type UserProfile = {
+    preferredRegion: string
+}
+
 const INITIAL_STATE: AppState = {
   page: '',
   subpage: '',
@@ -94,6 +99,12 @@ const app: Reducer<AppState, RootAction> = (state = INITIAL_STATE, action) => {
       return {
         ...state,
         user: action.user!
+      };
+    case FETCH_USER_PROFILE:
+      let newPrefsWithProfile = { ...state.prefs, profile: action.profile };
+      return {
+        ...state,
+        prefs: newPrefsWithProfile
       };
     case FETCH_MINT_CONFIG:
       let newPrefs = {...state.prefs, mint: action.prefs};

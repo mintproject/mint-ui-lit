@@ -10,9 +10,10 @@ import { SharedStyles } from 'styles/shared-styles';
 import { goToPage } from 'app/actions';
 import { UserPreferences, IdMap } from 'app/reducers';
 import { BoundingBox } from './reducers';
-import { modelsGet, versionsGet, modelConfigurationsGet, regionsGet, geoShapesGet, modelConfigurationSetupsGet,
-         datasetSpecificationGet, sampleResourceGet, sampleCollectionGet, setupGetAll,
-         ALL_MODELS, ALL_VERSIONS, ALL_MODEL_CONFIGURATIONS, ALL_MODEL_CONFIGURATION_SETUPS, ALL_REGIONS, ALL_GEO_SHAPES } from 'model-catalog/actions';
+
+import { modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet, regionsGet, geoShapesGet,
+         datasetSpecificationGet, sampleResourceGet, sampleCollectionGet, setupGetAll } from 'model-catalog/actions';
+
 import { GeoShape } from '@mintproject/modelcatalog_client';
 
 import { queryDatasetResourcesAndSave } from 'screens/datasets/actions';
@@ -77,12 +78,19 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
     }
 
     protected firstUpdated() {
-        store.dispatch(regionsGet());
-        store.dispatch(geoShapesGet());
-        store.dispatch(modelsGet());
-        store.dispatch(versionsGet());
-        store.dispatch(modelConfigurationsGet());
-        store.dispatch(modelConfigurationSetupsGet());
+        let pGeo = store.dispatch(geoShapesGet());
+        let pReg = store.dispatch(regionsGet());
+        let pMod = store.dispatch(modelsGet());
+        let pVer = store.dispatch(versionsGet());
+        let pCon = store.dispatch(modelConfigurationsGet());
+        let pSet = store.dispatch(modelConfigurationSetupsGet());
+
+        Promise.all([pGeo, pReg, pMod, pVer, pCon, pSet]).then((v) => {
+            this._fullyLoaded = true;
+            if (this._selectedRegion) {
+                this._getMatchingModels();
+            }
+        })
     }
 
     _getModelURL (setupURI: string) {
@@ -246,22 +254,12 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
 
         if (state && state.modelCatalog) {
             let db = state.modelCatalog;
-            if (!this._fullyLoaded) {
-                let loaded = db.loadedAll;
-                if (loaded[ALL_REGIONS] && loaded[ALL_MODELS] && loaded[ALL_GEO_SHAPES] && loaded[ALL_VERSIONS] &&
-                    loaded[ALL_MODEL_CONFIGURATIONS] && loaded[ALL_MODEL_CONFIGURATION_SETUPS]) {
-                    this._geoShapes = db.geoShapes;
-                    this._mregions = db.regions;
-                    this._models = db.models;
-                    this._versions = db.versions;
-                    this._configs = db.configurations;
-                    this._setups = db.setups;
-                    this._fullyLoaded = true;
-                    if (this._selectedRegion) {
-                        this._getMatchingModels();
-                    }
-                }
-            }
+            this._geoShapes = db.geoShapes;
+            this._mregions = db.regions;
+            this._models = db.models;
+            this._versions = db.versions;
+            this._configs = db.configurations;
+            this._setups = db.setups;
         }
     }
 }
