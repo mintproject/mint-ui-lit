@@ -67,7 +67,7 @@ export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAc
         ModelCatalogImageAction;
 
 //FIXME: The API is returning only one model (void), doing the fetch instead.
-const muri = "https://api.models.mint.isi.edu/v1.3.0/custom/model/"
+const muri = "https://api.models.mint.isi.edu/v1.3.1/custom/model/"
 export const modelsSearchIndex = (term:string) => {
     /*let MApi : ModelApi = new ModelApi();
     let req = MApi.customModelIndexGet({label:term, username: DEFAULT_GRAPH, customQueryName: 'custom_model_index'});
