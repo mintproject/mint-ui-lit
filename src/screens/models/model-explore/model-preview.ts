@@ -262,12 +262,6 @@ export class ModelPreview extends connect(store)(PageViewElement) {
         }
     }
 
-    _goToThisModel (e) {
-        e.preventDefault();
-        goToPage(this._url);
-        return false;
-    }
-
     _compare (uri:string) {
         store.dispatch(explorerCompareModel(uri));
     }
@@ -333,14 +327,15 @@ export class ModelPreview extends connect(store)(PageViewElement) {
             this._nSetups = this._model.hasVersion
                     .map((ver:any) => db.versions[ver.id])
                     .filter((ver:SoftwareVersion) => { 
-                        lastVersion = getLatestVersion(lastVersion, ver);
+                        if (!lastSetup)
+                            lastVersion = getLatestVersion(lastVersion, ver);
                         return !!ver;
                     })
                     .reduce((sum:number, ver:SoftwareVersion) =>
                             sum + (ver.hasConfiguration || [])
                                     .map((cfg:any) => db.configurations[cfg.id])
                                     .filter((cfg:ModelConfiguration) => {
-                                        if (lastVersion === ver)
+                                        if (!lastSetup && lastVersion === ver)
                                             lastConfig = getLatestConfiguration(lastConfig, cfg);
                                         return !!cfg;
                                     })
@@ -354,8 +349,18 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                                                             .filter((reg:Region) => {
                                                                 if (isSubregion(this._region.model_catalog_uri,reg)) {
                                                                     this._regions.add(reg);
-                                                                    if (lastConfig === cfg)
-                                                                        lastSetup = getLatestSetup(lastSetup, setup);
+                                                                    if (!lastSetup) {
+                                                                        lastSetup = setup;
+                                                                        lastConfig = cfg;
+                                                                        lastVersion = ver;
+                                                                    } else {
+                                                                        let s_ver = getLatestVersion(lastVersion, ver);
+                                                                        if (s_ver != lastVersion) {
+                                                                            lastSetup = setup;
+                                                                            lastConfig = cfg;
+                                                                            lastVersion = ver;
+                                                                        }
+                                                                    }
                                                                     this._nLocalSetups += 1;
                                                                     return true
                                                                 } else {

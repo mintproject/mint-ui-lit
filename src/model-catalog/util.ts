@@ -7,7 +7,7 @@ export const getId = (obj: any) => {
 export const isSubregion = (parentRegionId:string, region:Region) => {
     return region && (
         (region.id === parentRegionId) || 
-        (region.country||[]).some(r => r.id === parentRegionId)
+        (region.partOf||[]).some(r => r.id === parentRegionId)
     );
 }
 
