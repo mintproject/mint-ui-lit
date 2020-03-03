@@ -118,8 +118,17 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             ${Object.keys(this.pathway.executable_ensemble_summary).map((modelid) => {
                 let summary = this.pathway.executable_ensemble_summary[modelid];
                 let model = this.pathway.models![modelid];
+                console.log('mid', modelid);
                 let grouped_ensemble = grouped_ensembles[modelid];
                 this.totalPages[modelid] = Math.ceil(summary.total_runs/this.pageSize);
+
+                let nParameters = Object.values(this.pathway.model_ensembles[modelid])
+                        .map(m => m.length)
+                        .reduce((ac,len) => ac*len, 1);
+                let nInputs = Object.values(this.pathway.datasets).reduce((ac,dc) => 
+                        ac * dc.resources.filter(r => r.selected).length
+                , 1);
+
                 let submitted_runs = summary.submitted_runs ? summary.submitted_runs : 0;
                 let failed_runs = summary.failed_runs ? summary.failed_runs : 0;
                 let successful_runs = summary.successful_runs ? summary.successful_runs : 0;
@@ -144,7 +153,8 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                     <li>
                         <wl-title level="4"><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></wl-title>
                         <p>
-                            The parameter settings you selected require ${summary.total_runs} runs. 
+                            The parameter settings you selected require ${summary.total_runs} runs
+                            (${nInputs} input resources &#215; ${nParameters} parameters).
                         </p>
                         <wl-button class="submit"
                             @click="${() => this._submitRuns(model.id)}">Send Runs</wl-button>
@@ -161,7 +171,8 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                         completed runs by going to the Results tab even when other runs are still not completed.
                     </p>                    
                     <p>
-                    The parameter settings you selected require ${summary.total_runs} runs. 
+                    The parameter settings you selected require ${summary.total_runs} runs 
+                    (${nInputs} input resources &#215; ${nParameters} parameters).
                     ${!finished ? "So far, " : ""} ${submitted_runs} model runs
                     ${!finished ? "have been" : "were"} submitted, out of which 
                     ${successful_runs} succeeded, while ${failed_runs} failed.
@@ -418,7 +429,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         let runs_changed = this._initialSubmit || pathwaySummaryChanged(this.pathway, state.modeling.pathway);
         let runs_total_changed = this._initialSubmit || pathwayTotalRunsChanged(this.pathway, state.modeling.pathway);
 
-        super.setPathway(state);
+        super.setPathway(state) 
 
         if(state.ui && state.ui.selected_subgoalid) {
             this._subgoalid = state.ui.selected_subgoalid;
