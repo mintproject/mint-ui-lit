@@ -1,22 +1,15 @@
 import { html, property, customElement, css } from 'lit-element';
 
-import { PageViewElement } from 'components/page-view-element';
+import { PageViewElement } from '../../../components/page-view-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
+import { store, RootState } from '../../../app/store';
 
-// FIXME
 import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail, CompIODetail,
          ExplanationDiagramDetail } from "../../../util/api-interfaces";
 import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersionsForModel, 
         fetchIOAndVarsSNForConfig, fetchVarsSNAndUnitsForIO, fetchDiagramsForModelConfig,  fetchSampleVisForModelConfig,
         fetchMetadataForModelConfig, fetchMetadataNoioForModelConfig, fetchScreenshotsForModelConfig,
         fetchAuthorsForModelConfig, fetchDescriptionForVar } from '../../../util/model-catalog-actions';
-//
-import { Model,
-         Image } from '@mintproject/modelcatalog_client';
-import { modelGet, imageGet } from 'model-catalog/actions';
-import { capitalizeFirstLetter, getId } from 'model-catalog/util';
-
 import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
@@ -33,22 +26,20 @@ import "weightless/progress-bar";
 import '../../../components/image-gallery'
 import '../../../components/loading-dots'
 
+function capitalizeFirstLetter (s:string) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 const PAGE_PREFIX : string = 'models/explore/';
 
 @customElement('model-view')
 export class ModelView extends connect(store)(PageViewElement) {
-    // URIs of selected resources
-    @property({type:String}) private _selectedModel   : string = '';
-    @property({type:String}) private _selectedVersion : string = '';
-    @property({type:String}) private _selectedConfig  : string = '';
-    @property({type:String}) private _selectedSetup   : string = '';
+    @property({type: Object})
+    private _model! : FetchedModel;
 
-    @property({type: Object}) private _model! : Model;
-    @property({type: Object}) private _logo! : Image;
+    @property({type: String})
+    private _uri : string = "-";
 
-    @property({type: Boolean}) private _loadingLogo : boolean = false;
-
-    /***********/
     @property({type: Number})
     private _count : number = 0;
 
@@ -116,12 +107,23 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     @property({type: String})
     private _tab : 'overview'|'io'|'variables'|'tech'|'example' = 'overview';
-
+    
     private _emulators = {
         'https://w3id.org/okn/i/mint/CYCLES' : '/emulators/cycles',
         'https://w3id.org/okn/i/mint/TOPOFLOW': '/emulators/topoflow',
         'https://w3id.org/okn/i/mint/PIHM' : '/emulators/pihm',
         'https://w3id.org/okn/i/mint/HAND' : '/emulators/hand'
+    }
+
+    // URIs of selected resources
+    private _selectedModel = null;
+    private _selectedVersion = null;
+    private _selectedConfig = null;
+    private _selectedCalibration = null;
+
+    constructor () {
+        super();
+        this.active = true;
     }
 
     static get styles() {
@@ -190,10 +192,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     float: right;
                     --icon-size: 26px;
                     padding-top: 4px;
-                }
-
-                a[disabled] {
-                    cursor: not-allowed;
+                    cursor: pointer;
                 }
 
                 .wrapper {
@@ -425,7 +424,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
     }
 
-    _updateSetupSelector () {
+    _updateCalibrationSelector () {
         let calibrationSelectorWl = this.shadowRoot!.getElementById('calibration-selector');
         let calibrationSelector = calibrationSelectorWl? calibrationSelectorWl.getElementsByTagName('select')[0] : null;
         if (calibrationSelector && this._config) {
@@ -464,7 +463,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
     }
 
-    _onSetupChange () {
+    _onCalibrationChange () {
         let calibrationSelectorWl = this.shadowRoot!.getElementById('calibration-selector');
         let calibrationSelector = calibrationSelectorWl? calibrationSelectorWl.getElementsByTagName('select')[0] : null;
         if (calibrationSelector) {
@@ -493,7 +492,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             //return html`<wl-progress-bar></wl-progress-bar>`;
         }
         let hasVersions = (this._versions.length > 0);
-        let hasSetups = !!(this._config && this._config.calibrations);
+        let hasCalibrations = !!(this._config && this._config.calibrations);
         return html`
             <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" 
                 style="float: right;" class="tooltip ${hasVersions? '' : 'hidden'}">
@@ -506,82 +505,59 @@ export class ModelView extends connect(store)(PageViewElement) {
             </wl-select>
 
             <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region"
-                style="float: right;" class="tooltip ${hasSetups? '' : 'hidden'}">
+                style="float: right;" class="tooltip ${hasCalibrations? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
             <a target="_blank" href="${this._calibration ? this._calibration.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
                 class="rdf-icon ${this._calibration? '' : 'hidden'}"></a> 
-            <wl-select label="Select a configuration setup" id="calibration-selector" @input="${this._onSetupChange}"
-                class="${hasSetups? '' : 'hidden'}">
+            <wl-select label="Select a configuration setup" id="calibration-selector" @input="${this._onCalibrationChange}"
+                class="${hasCalibrations? '' : 'hidden'}">
             </wl-select>
 
             <div class="info-center ${hasVersions? 'hidden' : ''}">- No version available -</div>
-            <div class="info-center ${(hasSetups || !hasVersions || (hasVersions && !this._config))? 'hidden': ''}"
+            <div class="info-center ${(hasCalibrations || !hasVersions || (hasVersions && !this._config))? 'hidden': ''}"
                 >- No configuration setup available <a class="clickable" @click="${this._addConfig}">add one</a> -</div>
         `
     }
 
     protected render() {
         if (!this._model) return html``;
-        let modelType : string[] = this._model.type ?
-                this._model.type.map((t:string) => t.replace('Model', '')).filter(t => !!t)
-                : [];
         return html`
             <div class="wrapper">
                 <div class="col-img text-centered">
-                    ${this._loadingLogo ? 
-                      html`<wl-progress-spinner></wl-progress-spinner>`
-                      : (this._logo && this._logo.value ?
-                        html`<img src="${this._logo.value[0]}"/>`
-                        : html`<wl-icon id="img-placeholder">image</wl-icon>`)
-                    }
-                    ${this._model.dateCreated ?
-                      html`<div><b>Creation date:</b> ${this._model.dateCreated}</div>`
-                      :''}
-                    ${this._model.hasModelCategory ?
-                      html`<div><b>Category:</b> ${this._model.hasModelCategory.join(', ')}</div>`
-                      :''}
-                    ${modelType.length > 0 ? html`<div><b>Model type:</b> ${modelType.join(', ')}</div>`:''}
+                    ${this._model.logo ? 
+                    html`<img src="${this._model.logo}"/>`
+                    : html`<wl-icon id="img-placeholder">image</wl-icon>`}
+                    ${this._model.dateC ? html`<div><b>Creation date:</b> ${this._model.dateC}</div>`:''}
+                    ${this._model.categories ? html`<div><b>Category:</b> ${this._model.categories}</div>`:''}
+                    ${this._model.type ? html`<div><b>Model type:</b> ${this._model.type}</div>`:''}
                 </div>
                 <div class="col-desc" style="text-align: justify;">
                     <wl-title level="2">
-                        <a target="_blank" href="${this._model.id}" class="rdf-icon"></a>
+                        <a target="_blank" href="${this._model ? this._model.uri : ''}" class="rdf-icon"></a>
                         ${this._model.label}
-                        <a @click="${this._setEditMode}" disabled><wl-icon id="edit-model-icon">edit</wl-icon></a>
+                        <a @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
                     </wl-title>
                     <wl-divider style="margin-bottom: .5em;"></wl-divider>
-                    <wl-text >${this._model.description}</wl-text>
+                    <wl-text >${this._model.desc}</wl-text>
                     ${this._emulators[this._selectedModel] ?  html`
                     <div style="margin-top: 4px;">
                         You can see execution results for this model on
                         <a href="${'/'+this._regionid+this._emulators[this._selectedModel]}">the emulations page</a>.
                     </div>` 
                     : ''}
-                    <!-- CONTINUE HERE-->
                     <div id="desc-ext">
-                        ${this._model.author?
-                          html`<wl-text><b>• Authors:</b> ${ this._model.author.map(getId).join(', ') }</wl-text>` 
-                          :''}
-                        ${this._model.hasFunding?
-                          html`<wl-text><b>• Funding:</b> ${ this._model.hasFunding }<!--FIXME--></wl-text>`
-                          :''}
-                        ${this._model.publisher?
-                          html`<wl-text><b>• Publisher:</b> ${ this._model.publisher.map(getId).join(', ') }</wl-text>`
-                          :''}
-                        ${this._model.datePublished?
-                          html`<wl-text><b>• Publication date:</b> ${ this._model.datePublished }</wl-text>`
-                          :''}
-                        ${this._model.citation?
-                          html`<wl-text><b>• Preferred citation:</b> <i>${ this._model.citation }<i></wl-text>` 
-                          :''}
-                        ${this._model.hasDocumentation?
-                          html`<wl-text>
+                        ${this._model.authors? html`<wl-text><b>• Authors:</b> ${ this._model.authors.join(', ') }</wl-text>` :''}
+                        ${this._model.fundS? html`<wl-text><b>• Funding:</b> ${ this._model.fundS }</wl-text>` :''}
+                        ${this._model.publisher? html`<wl-text><b>• Publisher:</b> ${ this._model.publisher }</wl-text>` :''}
+                        ${this._model.dateP? html`<wl-text><b>• Publication date:</b> ${ this._model.dateP }</wl-text>` :''}
+                        ${this._model.referenceP? html`<wl-text><b>• Preferred citation:</b> <i>${ this._model.referenceP }<i></wl-text>` :''}
+                        ${this._model.doc? html`<wl-text>
                             <b>• Documentation:</b>
-                            <a target="_blank" href="${this._model.hasDocumentation[0]}">
-                                ${this._model.hasDocumentation[0].split('/').pop() || this._model.hasDocumentation}
+                            <a target="_blank" href="${this._model.doc}">
+                                ${this._model.doc.split('/').pop() || this._model.doc}
                             </a>
-                          </wl-text>`
-                          :''}
+                        </wl-text>` :''}
                     </div>
                     ${this._renderSelectors()}
                 </div>
@@ -604,9 +580,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                             >Technical Information</wl-tab>
                     </wl-tab-group>
                 </div>
-            </div>`
-    }
-/*
+
                 <div class="row-tab-content">
                     ${(this._tab === 'overview') ? this._renderTabOverview() : ''}
                     ${(this._tab === 'tech') ? this._renderTabTechnical() : ''}
@@ -615,7 +589,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${(this._tab === 'example') ? this._renderTabExample() : ''}
                 </div>
             </div>`
-    }*/
+    }
 
     _renderTabTechnical () {
         let showModel = this._model.os || this._model.pl || this._model.memReq || this._model.procReq || this._model.softwareReq ||
@@ -1456,7 +1430,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     updated () {
         if (this._versions) {
             this._updateConfigSelector();
-            this._updateSetupSelector();
+            this._updateCalibrationSelector();
         }
         if (this._tab == 'example' && this._model.example) {
             let example = this.shadowRoot.getElementById('mk-example');
@@ -1507,58 +1481,13 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     stateChanged(state: RootState) {
-        super.setRegion(state);
-        let ui = state.explorerUI;
-        let db = state.modelCatalog;
-
-        // check whats changed
-        let modelChanged : boolean = ui && (ui.selectedModel !== this._selectedModel);
-        let versionChanged : boolean = ui && (modelChanged || ui.selectedVersion !== this._selectedVersion)
-        let configChanged : boolean = ui && (versionChanged || ui.selectedConfig !== this._selectedConfig);
-        let setupChanged : boolean = ui && (configChanged || ui.selectedCalibration !== this._selectedSetup);
-
-        if (modelChanged) {
-            this._selectedModel = ui.selectedModel;
-            this._model = null;
-            this._loadingLogo = false;
-            if (!db || !db.models[this._selectedModel]) {
-                store.dispatch(modelGet(this._selectedModel));
-            }
-        }
-
-        //load data
-        if (db) {
-            //Model
-            if (this._selectedModel && !this._model && db.models[this._selectedModel]) {
-                this._model = db.models[this._selectedModel];
-                this._logo = null;
-                console.log('load model', this._model);
-                //Request Logo
-                if (this._model.logo || this._model.logo.length > 0) {
-                    let logoId = (this._model.logo[0] as Image).id;
-                    if (!db.images[logoId]) {
-                        store.dispatch(imageGet(logoId));
-                    }
-                    this._loadingLogo = true;
-                }
-            }
-
-            //Load Logo
-            if (this._loadingLogo && db.images[(this._model.logo[0] as Image).id]) {
-                this._logo = db.images[(this._model.logo[0] as Image).id];
-                this._loadingLogo = false;
-            }
-        }
-    }
-
-    stateChanged2(state: RootState) {
         if (state.explorerUI) {
             let ui = state.explorerUI;
             // check whats changed
             let modelChanged : boolean = (ui.selectedModel !== this._selectedModel);
             let versionChanged : boolean = (modelChanged || ui.selectedVersion !== this._selectedVersion)
             let configChanged : boolean = (versionChanged || ui.selectedConfig !== this._selectedConfig);
-            let calibrationChanged : boolean = (configChanged || ui.selectedCalibration !== this._selectedSetup);
+            let calibrationChanged : boolean = (configChanged || ui.selectedCalibration !== this._selectedCalibration);
 
             // Fetch & reset data
             if (modelChanged) {
@@ -1610,7 +1539,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     store.dispatch(fetchParametersForConfig(ui.selectedCalibration));
                     store.dispatch(fetchAuthorsForModelConfig(ui.selectedCalibration));
                 }
-                this._selectedSetup = ui.selectedCalibration;
+                this._selectedCalibration = ui.selectedCalibration;
                 this._calibration = null;
                 this._calibrationMetadata = null;
                 this._calibrationAuthors = null;
@@ -1655,7 +1584,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 if (this._config && !this._calibration) {
                     this._calibration = (this._config.calibrations || []).reduce((C, cal) => {
                         if (C) return C;
-                        return (cal.uri === this._selectedSetup) ? cal : null;
+                        return (cal.uri === this._selectedCalibration) ? cal : null;
                     }, null);
                 }
 
@@ -1697,7 +1626,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
                 if (db.metadata) {
                     if (!this._configMetadata && this._config) this._configMetadata = db.metadata[this._selectedConfig];
-                    if (!this._calibrationMetadata && this._calibration) this._calibrationMetadata = db.metadata[this._selectedSetup];
+                    if (!this._calibrationMetadata && this._calibration) this._calibrationMetadata = db.metadata[this._selectedCalibration];
                 }
                 if (this._config || this._calibration) {
                     let selectedUri = this._calibration ? this._calibration.uri : this._config.uri;
