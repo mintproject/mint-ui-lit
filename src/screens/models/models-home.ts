@@ -113,7 +113,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                 <a slot="after" class="no-decoration" target="_blank" href="${this._getHelpLink()}">
                     <wl-button style="--button-bg: forestgreen; --button-bg-hover: darkgreen; --button-padding: 8px;">
                         <wl-icon style="margin-right: 5px;">help_outline</wl-icon>
-                        <b>Help</b>
+                        <b>Documentation</b>
                     </wl-button>
                 </a>
             </nav-title>

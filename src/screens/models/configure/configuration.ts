@@ -341,7 +341,12 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <td>
                     ${this._config.hasSoftwareImage ? 
                     ((this._softwareImage && Object.keys(this._softwareImage).length > 0) ?
-                        html`<span class="software-image">${this._softwareImage.label}</span>`
+                        html`<span class="software-image">
+                            <a target="_blank"
+                               href="https://hub.docker.com/r/${this._softwareImage.label[0].split(':')[0]}/tags">
+                                ${this._softwareImage.label}
+                            </a>
+                        </span>`
                         : html`${this._config.hasSoftwareImage[0].id} ${this._softwareImageLoading ?
                             html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`)
                     : 'No software image'}
