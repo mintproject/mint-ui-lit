@@ -536,7 +536,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <wl-title level="2">
                         <a target="_blank" href="${this._model ? this._model.uri : ''}" class="rdf-icon"></a>
                         ${this._model.label}
-                        <a @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
+                        <a style="display:none" @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
                     </wl-title>
                     <wl-divider style="margin-bottom: .5em;"></wl-divider>
                     <wl-text >${this._model.desc}</wl-text>
