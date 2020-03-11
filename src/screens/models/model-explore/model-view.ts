@@ -536,7 +536,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <wl-title level="2">
                         <a target="_blank" href="${this._model ? this._model.uri : ''}" class="rdf-icon"></a>
                         ${this._model.label}
-                        <a @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
+                        <a style="display:none" @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
                     </wl-title>
                     <wl-divider style="margin-bottom: .5em;"></wl-divider>
                     <wl-text >${this._model.desc}</wl-text>
@@ -558,6 +558,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 ${this._model.doc.split('/').pop() || this._model.doc}
                             </a>
                         </wl-text>` :''}
+                        ${this._model.keywords? html`<wl-text><b>• Keywords:</b> ${ this._model.keywords.join(', ') }</wl-text>` :''}
                     </div>
                     ${this._renderSelectors()}
                 </div>
@@ -975,8 +976,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                             html`<li><b>Parameter assignment method:</b> ${this._calibrationMetadata[0].paramAssignMethod}</li>`: ''}
                         ${this._calibrationMetadata[0].fundS && this._configMetadata[0].fundS != this._calibrationMetadata[0].fundS? 
                             html`<wl-text><b>Funding Source:</b> ${this._configMetadata[0].fundS} </wl-text>` : ''}
-                        ${this._calibrationMetadata[0].regionName && 
-                          this._calibrationMetadata[0].regionName != this._configMetadata[0].regionName ?
+                        ${this._calibrationMetadata[0].regionName && (
+                          !this._configMetadata || this._configMetadata.length < 1 || !this._configMetadata[0].regionName ||
+                          this._calibrationMetadata[0].regionName != this._configMetadata[0].regionName) ?
                             html`<li><b>Region:</b> ${this._calibrationMetadata[0].regionName}</li>`: ''}
 
                         ${(this._calibrationMetadata[0].tIValue && this._calibrationMetadata[0].tIUnits && 
@@ -1428,14 +1430,16 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     updated () {
-        if (this._versions) {
-            this._updateConfigSelector();
-            this._updateCalibrationSelector();
-        }
-        if (this._tab == 'example' && this._model.example) {
-            let example = this.shadowRoot.getElementById('mk-example');
-            if (example) {
-                example.innerHTML = marked(this._model.example);
+        if (this._model) {
+            if (this._versions) {
+                this._updateConfigSelector();
+                this._updateCalibrationSelector();
+            }
+            if (this._tab == 'example' && this._model.example) {
+                let example = this.shadowRoot.getElementById('mk-example');
+                if (example) {
+                    example.innerHTML = marked(this._model.example);
+                }
             }
         }
         /* HTML description are not working
