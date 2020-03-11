@@ -558,6 +558,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 ${this._model.doc.split('/').pop() || this._model.doc}
                             </a>
                         </wl-text>` :''}
+                        ${this._model.keywords? html`<wl-text><b>• Keywords:</b> ${ this._model.keywords.join(', ') }</wl-text>` :''}
                     </div>
                     ${this._renderSelectors()}
                 </div>
@@ -975,8 +976,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                             html`<li><b>Parameter assignment method:</b> ${this._calibrationMetadata[0].paramAssignMethod}</li>`: ''}
                         ${this._calibrationMetadata[0].fundS && this._configMetadata[0].fundS != this._calibrationMetadata[0].fundS? 
                             html`<wl-text><b>Funding Source:</b> ${this._configMetadata[0].fundS} </wl-text>` : ''}
-                        ${this._calibrationMetadata[0].regionName && 
-                          this._calibrationMetadata[0].regionName != this._configMetadata[0].regionName ?
+                        ${this._calibrationMetadata[0].regionName && (
+                          this._configMetadata.length < 1 || !this._configMetadata[0].regionName ||
+                          this._calibrationMetadata[0].regionName != this._configMetadata[0].regionName) ?
                             html`<li><b>Region:</b> ${this._calibrationMetadata[0].regionName}</li>`: ''}
 
                         ${(this._calibrationMetadata[0].tIValue && this._calibrationMetadata[0].tIUnits && 
