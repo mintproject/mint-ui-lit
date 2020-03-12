@@ -168,6 +168,12 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
             return dic;
         }, {})
 
+        let uniq = {}
+        Object.keys(this._categorizedMatchingSetups).forEach((key:string) => {
+            uniq[key] = Array.from(new Set(this._categorizedMatchingSetups[key]));
+        });
+        this._categorizedMatchingSetups = uniq;
+
         Promise.all(this._matchingModelSetups.map(setup => setupGetAll(setup.id))).then((setups) => {
             let datasets = new Set();
             setups.forEach((setup:any) => {
