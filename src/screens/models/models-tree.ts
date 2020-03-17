@@ -58,6 +58,11 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                 vertical-align: middle;
             }
 
+            wl-icon {
+                position: relative;
+                top: 5px;
+            }
+
             .inline-new-button > wl-icon {
                 --icon-size: 1em;
                 margin: 1px;
@@ -164,12 +169,12 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                     this.requestUpdate();
                 }}">
                     <wl-icon>${this._visible[model.id] ? 'expand_more' : 'expand_less'}</wl-icon>
-                    <span ?selected="${this._selectedModel === model.id}" style="vertical-align: top;">
+                    <span ?selected="${this._selectedModel === model.id}">
                         ${model.label}
                     </span>
                 </span>
                 ${this._visible[model.id] ? html`
-                ${Object.keys(this._versions).length === 0 ? html`<loading-dots style="--width: 20px; vertical-align: top;"></loading-dots>` : html`
+                ${Object.keys(this._versions).length === 0 ? html`<loading-dots style="--width: 20px;"></loading-dots>` : html`
                 <ul>
                     ${model.hasVersion
                         .filter((v:any) => !!this._versions[v.id])
@@ -184,12 +189,12 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                             <wl-icon>${this._visible[version.id] ? 'expand_more' : 'expand_less'}</wl-icon>
                             <!-- FIXME tag is not on the npm package right now -->
                             ${version['tag'] ? version['tag'].map((tag:string) => html`<span class="tag ${tag}">${tag}</span>`) : ''}
-                            <span ?selected="${this._selectedVersion === version.id}" style="vertical-align: top;">
+                            <span ?selected="${this._selectedVersion === version.id}">
                                 ${version.label ? version.label : this._getId(version)}
                             </span>
                         </span>
                         ${this._visible[version.id] ? html`
-                        ${Object.keys(this._configs).length === 0 ? html`<loading-dots style="--width: 20px; vertical-align: top;"></loading-dots>` : html`
+                        ${Object.keys(this._configs).length === 0 ? html`<loading-dots style="--width: 20px;"></loading-dots>` : html`
                         <ul style="padding-left: 30px;">
                             ${(version.hasConfiguration || [])
                                 .filter(c => !!c.id)
@@ -208,7 +213,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                                         .filter(visibleSetup)
                                         .sort(sortSetups)
                                         .map((setup : ModelConfigurationSetup) => html`
-                                    <li>
+                                    <li style="list-style:disc">
                                         ${setup.tag ? setup.tag.map((tag:string) => html`<span class="tag ${tag}">${tag}</span>`) : ''}
                                         <a class="setup" @click="${()=>{this._select(model, version, config, setup)}}"
                                            ?selected="${this._selectedSetup === setup.id}">

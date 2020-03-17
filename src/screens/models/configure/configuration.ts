@@ -19,10 +19,13 @@ import { sortByPosition, createUrl, renderExternalLink, renderParameterType } fr
 import "weightless/progress-spinner";
 import 'components/loading-dots'
 
+import './grid';
 import './person';
 import './process';
 import './parameter';
 import './dataset-specification';
+
+import { ModelsConfigureGrid } from './grid';
 import { ModelsConfigurePerson } from './person';
 import { ModelsConfigureProcess } from './process';
 import { ModelsConfigureParameter } from './parameter';
@@ -64,7 +67,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     private _softwareImage : any = null;
 
     @property({type: String})
-    private _dialog : ''|'person'|'process'|'parameter'|'input' = '';
+    private _dialog : ''|'person'|'process'|'parameter'|'input'|'grid' = '';
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
@@ -371,20 +374,30 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                         <span class="grid">
                             <span style="margin-right: 30px; text-decoration: underline;">${this._grid.label}</span>
                             <span style="font-style: oblique; color: gray;">${this._grid.type.filter(g => g != 'Grid')}</span>
-                            ${this._editing ? html`<wl-icon style="margin-left:10px">edit</wl-icon>` : ''}
                             <br/>
                             <div style="display: flex; justify-content: space-between;">
                                 <span style="font-size: 12px;">Spatial resolution:</span>
-                                <span style="margin-right:20px; font-size: 14px;" class="monospaced">${this._grid.hasSpatialResolution}</span>
+                                <span style="margin-right:20px; font-size: 14px;" class="monospaced">
+                                    ${this._grid.hasSpatialResolution && this._grid.hasSpatialResolution.length > 0 ?
+                                        this._grid.hasSpatialResolution[0] : '-'}
+                                </span>
                                 <span style="font-size: 12px;">Dimensions:</span>
-                                <span style="margin-right:20px" class="number">${this._grid.hasDimension}</span>
+                                <span style="margin-right:20px" class="number">
+                                    ${this._grid.hasDimension && this._grid.hasDimension.length > 0 ? this._grid.hasDimension[0] : '-'}
+                                </span>
                                 <span style="font-size: 12px;">Shape:</span>
-                                <span style="font-size: 14px" class="monospaced">${this._grid.hasShape}</span>
+                                <span style="font-size: 14px" class="monospaced">
+                                    ${this._grid.hasShape && this._grid.hasShape.length > 0 ? this._grid.hasShape[0] : '-'}
+                                </span>
                             </div>
                         </span>`
                         : html`${this._config.hasGrid[0].id} ${this._gridLoading ?
                             html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`) 
                     : 'No grid'}
+                    ${this._editing ? html`
+                    <wl-button style="float:right;" class="small" flat inverted
+                        @click="${this._showGridDialog}"><wl-icon>edit</wl-icon></wl-button>
+                    `: ''}
                 </td>
             </tr>
 
@@ -525,12 +538,22 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             </wl-button>
         </div>`}
         
+        <models-configure-grid id="grid-configurator" ?active=${this._dialog == 'grid'} class="page"></models-configure-grid>
         <models-configure-person id="person-configurator" ?active=${this._dialog == 'person'} class="page"></models-configure-person>
         <models-configure-process id="process-configurator" ?active=${this._dialog == 'process'} class="page"></models-configure-process>
         <models-configure-parameter id="parameter-configurator" ?active=${this._dialog == 'parameter'} class="page"></models-configure-parameter>
         <models-configure-dataset-specification id="dataset-specification-configurator" ?active=${this._dialog == 'input'} class="page">
         </models-configure-dataset-specification>
         ${renderNotifications()}`
+    }
+
+    _showGridDialog () {
+        this._dialog = 'grid';
+        let gridConfigurator = this.shadowRoot.getElementById('grid-configurator') as ModelsConfigureGrid;
+        console.log('Grid:', this._grid);
+        if (this._grid)
+            gridConfigurator.setSelected(this._grid);
+        gridConfigurator.open();
     }
 
     _showParameterDialog (parameterID: string) {
@@ -611,8 +634,17 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         this.requestUpdate();
     }
 
+    _onGridSelected () {
+        let gridConfigurator = this.shadowRoot.getElementById('grid-configurator') as ModelsConfigureGrid;
+        let selectedGrid = gridConfigurator.getSelected();
+        console.log('SELECTED GRID:',selectedGrid);
+        this._grid = selectedGrid;
+        this.requestUpdate();
+    }
+
     firstUpdated () {
         this.addEventListener('dialogClosed', this._onClosedDialog);
+        this.addEventListener('gridSelected', this._onGridSelected);
         this.addEventListener('authorsSelected', this._onAuthorsSelected);
         this.addEventListener('processesSelected', this._onProcessesSelected);
         this.addEventListener('parameterEdited', this._onParameterEdited);
