@@ -505,6 +505,8 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         super.setRegion(state);
         if (this._regionid != cur_region) {
             this._selectedSubcategory = '';
+            store.dispatch(selectSubRegion(""));
+            this._selectedRegion = null;
         }
         if (this._region && this._region.subcategories && this._region.subcategories[this.regionType]) {
             this._subcategories = this._region.subcategories[this.regionType];
