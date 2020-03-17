@@ -12,7 +12,7 @@ import { IdMap } from 'app/reducers';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { personGet, personPost, modelConfigurationSetupPut, regionGet,
+import { personGet, modelConfigurationSetupPut, regionGet, modelConfigurationSetupDelete,
          parameterGet, datasetSpecificationGet, gridGet,
          timeIntervalGet, processGet, softwareImageGet,
          sampleResourceGet, sampleCollectionGet } from 'model-catalog/actions';
@@ -241,6 +241,14 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     _edit () {
         this._scrollUp();
         goToPage(createUrl(this._model, this._version, this._config, this._setup) + '/edit');
+    }
+
+    _delete () {
+        if (confirm('This setup will be deleted on all related resources')) {
+            store.dispatch( modelConfigurationSetupDelete(this._setup) );
+            goToPage(createUrl(this._model, this._version, this._config));
+            //FIXME: Do something after the removal, is not removing the related resources.
+        }
     }
 
     _saveConfig () {
@@ -647,10 +655,9 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             </wl-button>
         </div>` 
         :html`
-        <div style="float:right; margin-top: 1em;">
-            <wl-button @click="${this._edit}">
-                <wl-icon>edit</wl-icon>&ensp;Edit
-            </wl-button>
+        <div style="margin-top: 1em;">
+            <wl-button style="float:right;" @click="${this._edit}"> <wl-icon>edit</wl-icon>&ensp;Edit </wl-button>
+            <wl-button style="--primary-hue: 0; --primary-saturation: 75%" @click="${this._delete}"> <wl-icon>delete</wl-icon>&ensp;Delete </wl-button>
         </div>`}
 
         <models-configure-grid id="grid-configurator" ?active=${this._dialog == 'grid'} class="page"></models-configure-grid>

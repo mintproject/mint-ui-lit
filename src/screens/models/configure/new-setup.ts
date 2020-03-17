@@ -257,6 +257,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
 
             delete setupCreated.hasSetup;
             setupCreated.id = undefined;
+            setupCreated.type = ['ModelConfigurationSetup', 'Theory-GuidedModel', 'ConfigurationSetup'];
             setupCreated.label = [name];
             setupCreated.description = [desc];
             setupCreated.hasUsageNotes = [notes];
