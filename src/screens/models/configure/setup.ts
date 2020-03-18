@@ -278,9 +278,11 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             editedSetup.description = [desc];
             editedSetup.keywords = [keywords.split(/ *, */).join('; ')];
             editedSetup.hasComponentLocation = [compLoc];
-            //FIXME: for some reason adjustableParameter is not an object
-            editedSetup.adjustableParameter = (editedSetup.adjustableParameter||[])
-                    .map((uri) => {return  {id: uri} as Parameter});
+            /*editedSetup.adjustableParameter = (editedSetup.adjustableParameter||[])
+                    .map((uri) => {return  {id: uri} as Parameter});*/
+
+            editedSetup.hasGrid = this._grid ? [this._grid] : undefined;
+            editedSetup.hasOutputTimeInterval = this._timeInterval ? [this._timeInterval] : undefined;
 
             console.log('saving', editedSetup);
             store.dispatch(modelConfigurationSetupPut(editedSetup)).then((setup) => {

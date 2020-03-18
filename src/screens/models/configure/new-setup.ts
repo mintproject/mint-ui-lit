@@ -266,6 +266,9 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             setupCreated.keywords = [keywords.split(/ *, */).join('; ')];
             setupCreated.parameterAssignmentMethod = [assignMe];
 
+            setupCreated.hasGrid = this._grid ? [this._grid] : undefined;
+            setupCreated.hasOutputTimeInterval = this._timeInterval ? [this._timeInterval] : undefined;
+
             setupCreated.hasInput = (setupCreated.hasInput || []).map((input: DatasetSpecification) => {
                 let newInput = this._inputs[input.id];
                 newInput.id = '';
