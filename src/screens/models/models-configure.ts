@@ -128,7 +128,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         <div class="twocolumns">
             <div class="${this._hideModels ? 'left_closed' : 'left'}">
                 <div class="clt">
-                    <wl-title level="4" style="margin: 4px; padding: 10px;">Models:</wl-title>
+                    <wl-title level="4" style="margin: 4px; padding: 10px 10px 0px 10px;">Models:</wl-title>
                     <models-tree active></models-tree>
                 </div>
             </div>

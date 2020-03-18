@@ -24,8 +24,6 @@ import 'components/loading-dots'
 import { Person } from '@mintproject/modelcatalog_client';
 import { Textfield } from 'weightless/textfield';
 
-let identifierId : number = 1;
-
 @customElement('models-configure-person')
 export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
     @property({type: Boolean})
@@ -42,9 +40,6 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
 
     @property({type: Boolean})
     private _waiting : boolean = false;
-
-    @property({type: String})
-    private _waitingFor : string = '';
 
     @property({type: Object})
     private _selected : {[key:string]: boolean | undefined} = {};
@@ -235,7 +230,6 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             if (email) editedPerson.email = [email];
             if (web) editedPerson.website = [web];
 
-            this._waitingFor = editedPerson.id;
             this._waiting = true;
             store.dispatch(personPut(editedPerson)).then((person: Person) => {
                 this._waiting = false;
