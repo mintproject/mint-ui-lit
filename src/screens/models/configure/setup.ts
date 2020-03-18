@@ -26,6 +26,7 @@ import "weightless/progress-spinner";
 import 'components/loading-dots'
 
 import './grid';
+import './time-interval';
 import './person';
 import './process';
 import './parameter';
@@ -33,6 +34,7 @@ import './input';
 import './region';
 
 import { ModelsConfigureGrid } from './grid';
+import { ModelsConfigureTimeInterval } from './time-interval';
 import { ModelsConfigurePerson } from './person';
 import { ModelsConfigureProcess } from './process';
 import { ModelsConfigureParameter } from './parameter';
@@ -87,7 +89,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     private _regions : IdMap<Region> = {} as IdMap<Region>;
 
     @property({type: String})
-    private _dialog : ''|'person'|'process'|'parameter'|'input'|'region'|'grid' = '';
+    private _dialog : ''|'person'|'process'|'parameter'|'input'|'region'|'grid'|'timeInterval' = '';
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
@@ -434,9 +436,9 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Grid:</td>
                 <td>
-                    ${this._setup.hasGrid ?
-                    (this._grid ?
-                        html`
+                    ${this._gridLoading ?
+                        html`${this._setup.hasGrid[0].id} <loading-dots style="--width: 20px"></loading-dots>`
+                        : (this._grid ?  html`
                         <span class="grid">
                             <span style="margin-right: 30px; text-decoration: underline;">${this._grid.label}</span>
                             <span style="font-style: oblique; color: gray;">${this._grid.type.filter(g => g != 'Grid')}</span>
@@ -456,10 +458,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                                     ${this._grid.hasShape && this._grid.hasShape.length > 0 ? this._grid.hasShape[0] : '-'}
                                 </span>
                             </div>
-                        </span>`
-                        : html`${this._setup.hasGrid[0].id} ${this._gridLoading ?
-                            html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`) 
-                    : 'No grid'}
+                        </span>` : 'No grid'
+                    )}
                     ${this._editing ? html`
                     <wl-button style="float:right;" class="small" flat inverted
                         @click="${this._showGridDialog}"><wl-icon>edit</wl-icon></wl-button>
@@ -470,8 +470,9 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Time interval:</td>
                 <td>
-                    ${this._setup.hasOutputTimeInterval ?
-                    (this._timeInterval ? html`
+                    ${this._timeIntervalLoading ? 
+                        html`${this._setup.hasOutputTimeInterval[0].id} <loading-dots style="--width: 20px"></loading-dots>`
+                        : (this._timeInterval ? html`
                         <span class="time-interval">
                             <span style="display: flex; justify-content: space-between;">
                                 <span style="margin-right: 30px; text-decoration: underline;">
@@ -480,16 +481,15 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                                 <span> 
                                     ${this._timeInterval.intervalValue}
                                     ${this._timeInterval.intervalUnit ? this._timeInterval.intervalUnit[0].label : ''}
-                                    ${this._editing ? html`
-                                    <wl-icon style="margin-left:10px; --icon-size:  16px; cursor: pointer; vertical-align: middle;">edit</wl-icon>
-                                    ` : '' }
                                 </span>
                             </span>
                             <span style="font-style: oblique; color: gray;"> ${this._timeInterval.description} </span>
-                        </span>`
-                        : html`${this._setup.hasOutputTimeInterval[0].id} ${this._timeIntervalLoading ? 
-                            html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`)
-                    : 'No time interval'}
+                        </span>` : 'No time interval'
+                    )}
+                    ${this._editing ? html`
+                    <wl-button style="float:right;" class="small" flat inverted
+                        @click="${this._showTimeIntervalDialog}"><wl-icon>edit</wl-icon></wl-button>
+                    ` : ''}
                 </td>
             </tr>
 
@@ -661,6 +661,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         </div>`}
 
         <models-configure-grid id="grid-configurator" ?active=${this._dialog == 'grid'} class="page"></models-configure-grid>
+        <models-configure-time-interval id="time-interval-configurator" ?active=${this._dialog == 'timeInterval'} class="page">
+        </models-configure-time-interval>
         <models-configure-person id="person-configurator" ?active=${this._dialog == 'person'} class="page"></models-configure-person>
         <models-configure-process id="process-configurator" ?active=${this._dialog == 'process'} class="page"></models-configure-process>
         <models-configure-parameter id="parameter-configurator" ?active=${this._dialog == 'parameter'} class="page"></models-configure-parameter>
@@ -672,10 +674,17 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     _showGridDialog () {
         this._dialog = 'grid';
         let gridConfigurator = this.shadowRoot.getElementById('grid-configurator') as ModelsConfigureGrid;
-        console.log('Grid:', this._grid);
         if (this._grid)
             gridConfigurator.setSelected(this._grid);
         gridConfigurator.open();
+    }
+
+    _showTimeIntervalDialog () {
+        this._dialog = 'timeInterval';
+        let timeIntervalConfigurator = this.shadowRoot.getElementById('time-interval-configurator') as ModelsConfigureTimeInterval;
+        if (this._timeInterval)
+            timeIntervalConfigurator.setSelected(this._timeInterval);
+        timeIntervalConfigurator.open();
     }
 
     _loadSample (sampleID : string) {
@@ -800,8 +809,16 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     _onGridSelected () {
         let gridConfigurator = this.shadowRoot.getElementById('grid-configurator') as ModelsConfigureGrid;
         let selectedGrid = gridConfigurator.getSelected();
-        console.log('SELECTED GRID:',selectedGrid);
+        console.log('Changed grid:', selectedGrid);
         this._grid = selectedGrid;
+        this.requestUpdate();
+    }
+
+    _onTimeIntervalSelected () {
+        let timeIntervalConfigurator = this.shadowRoot.getElementById('time-interval-configurator') as ModelsConfigureTimeInterval;
+        let selectedTimeInterval = timeIntervalConfigurator.getSelected();
+        console.log('Changed time interval:', selectedTimeInterval);
+        this._timeInterval = selectedTimeInterval;
         this.requestUpdate();
     }
 
@@ -817,6 +834,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     firstUpdated () {
         this.addEventListener('dialogClosed', this._onClosedDialog);
         this.addEventListener('gridSelected', this._onGridSelected);
+        this.addEventListener('timeIntervalSelected', this._onTimeIntervalSelected);
         this.addEventListener('authorsSelected', this._onAuthorsSelected);
         this.addEventListener('processesSelected', this._onProcessesSelected);
         this.addEventListener('parameterEdited', this._onParameterEdited);
