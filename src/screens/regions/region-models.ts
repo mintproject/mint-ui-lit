@@ -13,6 +13,7 @@ import { BoundingBox } from './reducers';
 
 import { modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet, regionsGet, geoShapesGet,
          datasetSpecificationGet, sampleResourceGet, sampleCollectionGet, setupGetAll } from 'model-catalog/actions';
+import { isSubregion } from 'model-catalog/util';
 /*=======
 import { modelsGet, versionsGet, modelConfigurationsGet, regionsGet, geoShapesGet, ,
          datasetSpecificationGet, sampleResourceGet, sampleCollectionGet, setupGetAll,
@@ -152,7 +153,7 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
             if (this._doBoxesIntersect(bbox, selbox)) {
                 let region : any = Object.values(this._mregions).filter((r:any) => r.geo && r.geo.length > 0 && r.geo[0].id === geoId)[0];
                 let modelsInside = Object.values(this._setups)
-                    .filter((c:any) => (c.hasRegion||[]).filter((r:any) => r.id === region.id).length > 0);
+                    .filter((c:any) => (c.hasRegion||[]).some((r:any) => isSubregion(region.id, this._mregions[r.id])));
                 if (modelsInside) {
                     this._matchingModelSetups = this._matchingModelSetups.concat(modelsInside);
                 }
