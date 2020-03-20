@@ -89,6 +89,9 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
     @property({type: String})
     private _dialog : ''|'person'|'process'|'parameter'|'input'|'region'|'grid'|'timeInterval' = '';
 
+    @property({type: String})
+    private _mode : string = '';
+
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
     private _selectedConfig : string = '';
@@ -647,18 +650,16 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         ${renderNotifications()}`
     }
 
-    _clearForm () {
+    clearForm () {
         let nameEl      = this.shadowRoot.getElementById('new-setup-name') as HTMLInputElement;
         let descEl      = this.shadowRoot.getElementById('new-setup-desc') as HTMLInputElement;
         let keywordsEl  = this.shadowRoot.getElementById('new-setup-keywords') as HTMLInputElement;
-        let regionEl    = this.shadowRoot.getElementById('edit-config-regions') as HTMLInputElement;
         let assignMeEl  = this.shadowRoot.getElementById('new-setup-assign-method') as HTMLInputElement;
         let usageEl     = this.shadowRoot.getElementById('new-setup-usage-notes') as HTMLInputElement;
-        if (nameEl && descEl && keywordsEl && assignMeEl && regionEl) {
+        if (nameEl && descEl && keywordsEl && assignMeEl) {
             nameEl      .value = '';
             descEl      .value = '';
             keywordsEl  .value = '';
-            regionEl    .value = '';
             assignMeEl  .value = '';
             usageEl     .value = '';
         }
@@ -818,6 +819,11 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             let versionChanged : boolean = (modelChanged || ui.selectedVersion !== this._selectedVersion)
             let configChanged : boolean = (versionChanged || ui.selectedConfig !== this._selectedConfig);
 
+            if (ui.mode != this._mode) {
+                this.clearForm();
+            }
+            this._mode = ui.mode;
+
             super.setRegionId(state);
 
             if (modelChanged) {
@@ -849,7 +855,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 this._processes = {};
                 this._processesLoading = new Set();
 
-                this._clearForm();
+                this.clearForm();
             }
 
             if (state.modelCatalog) {
@@ -972,7 +978,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                             this._inputsLoading.forEach((uri:string) => {
                                 if (db.datasetSpecifications[uri]) {
                                     let tmp = { ...this._inputs };
-                                    tmp[uri] = db.datasetSpecifications[uri];
+                                    tmp[uri] = { ... db.datasetSpecifications[uri] };
                                     this._inputs = tmp;
                                     this._inputsLoading.delete(uri);
                                 }

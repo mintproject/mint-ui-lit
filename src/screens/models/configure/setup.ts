@@ -365,7 +365,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Region:</td>
                 <td>
-                    ${this._setup.hasRegion.map((r:Region) => this._regions[r.id] ?
+                    ${(this._setup.hasRegion || []).map((r:Region) => this._regions[r.id] ?
                         html`<span class="region">${this._regions[r.id].label}</span>`
                         : html`${r.id} <loading-dots style="--width: 20px"></loading-dots>`
                     )}
