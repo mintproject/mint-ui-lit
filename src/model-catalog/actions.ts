@@ -20,6 +20,8 @@ import { ModelCatalogDatasetSpecificationAction } from './dataset-specification-
 import { ModelCatalogSampleResourceAction } from './sample-resource-actions';
 import { ModelCatalogSampleCollectionAction } from './sample-collection-actions';
 import { ModelCatalogImageAction } from './image-actions';
+import { ModelCatalogOrganizationAction } from './organization-actions';
+import { ModelCatalogFundingInformationAction } from './funding-information-actions';
 
 export const DEFAULT_GRAPH = 'mint@isi.edu';
 export const PREFIX_URI = 'https://w3id.org/okn/i/mint/'
@@ -183,3 +185,5 @@ export * from './dataset-specification-actions';
 export * from './sample-resource-actions';
 export * from './sample-collection-actions';
 export * from './image-actions';
+export * from './organization-actions';
+export * from './funding-information-actions';

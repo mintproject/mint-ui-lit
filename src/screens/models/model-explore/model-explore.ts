@@ -151,7 +151,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         return html`
             ${this._selectedUri? 
                 //Display only selected model or the search
-                html`<div id="model-view-cont"><model-view></model-view></div>`
+                html`<div id="model-view-cont"><model-view active></model-view></div>`
                 : this._renderSearch()
             }
         `;

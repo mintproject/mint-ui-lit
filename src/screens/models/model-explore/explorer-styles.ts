@@ -50,7 +50,6 @@ b.clickable, span.clickable {
     cursor: help;
     display: inline-block;
     position: relative;
-    margin: 5px 5px 0px 5px;
 }
 
 .tooltip:hover:after {
@@ -88,8 +87,18 @@ th > span.tooltip > wl-icon {
     vertical-align: bottom;
 }
 
+span.resource {
+    margin-right: 4px;
+    border-radius: 4px;
+    padding: 1px 4px;
+}
+
 span.author {
     border: 2px solid cadetblue;
+}
+
+span.organization {
+    border: 2px solid lightseagreen;
 }
 
 span.region {

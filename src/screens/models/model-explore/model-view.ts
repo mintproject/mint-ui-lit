@@ -1,19 +1,28 @@
 import { html, property, customElement, css } from 'lit-element';
 
-import { PageViewElement } from '../../../components/page-view-element';
+import { PageViewElement } from 'components/page-view-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from '../../../app/store';
+import { store, RootState } from 'app/store';
 
+// FIXME
 import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail, CompIODetail,
          ExplanationDiagramDetail } from "../../../util/api-interfaces";
 import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersionsForModel, 
         fetchIOAndVarsSNForConfig, fetchVarsSNAndUnitsForIO, fetchDiagramsForModelConfig,  fetchSampleVisForModelConfig,
         fetchMetadataForModelConfig, fetchMetadataNoioForModelConfig, fetchScreenshotsForModelConfig,
         fetchAuthorsForModelConfig, fetchDescriptionForVar } from '../../../util/model-catalog-actions';
+//
+import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Organization, FundingInformation, 
+         Image } from '@mintproject/modelcatalog_client';
+import { modelGet, versionGet, modelConfigurationGet,  imageGet, personGet, organizationGet, fundingInformationGet } from 'model-catalog/actions';
+import { capitalizeFirstLetter, getId, getLabel, getURL } from 'model-catalog/util';
+
 import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
 import marked from 'marked';
+
+import { showDialog, hideDialog } from 'util/ui_functions';
 
 import { goToPage } from '../../../app/actions';
 import "weightless/expansion";
@@ -23,23 +32,34 @@ import "weightless/card";
 import "weightless/icon";
 import "weightless/progress-spinner";
 import "weightless/progress-bar";
+import "weightless/select";
 import '../../../components/image-gallery'
 import '../../../components/loading-dots'
 
-function capitalizeFirstLetter (s:string) {
-    return s.charAt(0).toUpperCase() + s.slice(1);
-}
+import { Select } from "weightless/select";
 
-const PAGE_PREFIX : string = 'models/explore/';
 
 @customElement('model-view')
 export class ModelView extends connect(store)(PageViewElement) {
-    @property({type: Object})
-    private _model! : FetchedModel;
+    private PREFIX : string = 'models/explore/';
+    // URIs of selected resources
+    @property({type:String}) private _selectedModel   : string = '';
+    @property({type:String}) private _selectedVersion : string = '';
+    @property({type:String}) private _selectedConfig  : string = '';
+    @property({type:String}) private _selectedSetup   : string = '';
 
-    @property({type: String})
-    private _uri : string = "-";
+    @property({type: Object}) private _loading : IdMap<boolean> = {} as IdMap<boolean>;
+    @property({type: Object}) private _model! : Model;
+    @property({type: Object}) private _logo! : Image;
+    @property({type: Object}) private _authors : IdMap<Person> = {} as IdMap<Person>;
+    @property({type: Object}) private _funding : IdMap<Funding> = {} as IdMap<Funding>;
+    @property({type: Object}) private _organizations : IdMap<Organization> = {} as IdMap<Organization>;
+    @property({type: Object}) private _versions : IdMap<SoftwareVersion> = {} as IdMap<SoftwareVersion>;
+    @property({type: Object}) private _configs : IdMap<Configuration> = {} as IdMap<Configuration>;
 
+    @property({type: Boolean}) private _shouldUpdateConfigs : boolean = false;
+    @property({type: Boolean}) private _shouldUpdateSetups : boolean = false;
+    /***********/
     @property({type: Number})
     private _count : number = 0;
 
@@ -68,9 +88,6 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _allVersions : any = null;
     private _allModels : any = null;
     private _uriToUrl : Map<string,string> | null = null;
-
-    @property({type: Object})
-    private _versions!: VersionDetail[];
 
     @property({type: Object})
     private _version : VersionDetail | null = null;
@@ -107,7 +124,7 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     @property({type: String})
     private _tab : 'overview'|'io'|'variables'|'tech'|'example' = 'overview';
-    
+
     private _emulators = {
         'https://w3id.org/okn/i/mint/CYCLES' : '/emulators/cycles',
         'https://w3id.org/okn/i/mint/TOPOFLOW': '/emulators/topoflow',
@@ -115,20 +132,16 @@ export class ModelView extends connect(store)(PageViewElement) {
         'https://w3id.org/okn/i/mint/HAND' : '/emulators/hand'
     }
 
-    // URIs of selected resources
-    private _selectedModel = null;
-    private _selectedVersion = null;
-    private _selectedConfig = null;
-    private _selectedCalibration = null;
-
-    constructor () {
-        super();
-        this.active = true;
-    }
-
     static get styles() {
         return [SharedStyles, ExplorerStyles,
             css `
+                .config-selector {
+                    display: grid;
+                    grid-template-columns: 50px auto 114px;
+                    align-items: center;
+                    height: 50px;
+                }
+
                 #hack {
                     display: none;
                 }
@@ -192,7 +205,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                     float: right;
                     --icon-size: 26px;
                     padding-top: 4px;
-                    cursor: pointer;
+                }
+
+                a[disabled] {
+                    cursor: not-allowed;
                 }
 
                 .wrapper {
@@ -210,7 +226,7 @@ export class ModelView extends connect(store)(PageViewElement) {
 
                 .col-img {
                     grid-column: 1 / 2;
-                    grid-row: 1;
+                    grid-row: 2;
                     padding: 16px;
                 }
 
@@ -223,6 +239,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
 
                 .col-desc {
+                    grid-column: 2 / 5;
+                    grid-row: 2;
+                }
+
+                .col-title {
                     grid-column: 2 / 5;
                     grid-row: 1;
                 }
@@ -258,12 +279,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                 
                 .row-tab-header {
                     grid-column: 1 / 5;
-                    grid-row: 2;
+                    grid-row: 3;
                 }
                 
                 .row-tab-content {
                     grid-column: 1 / 5;
-                    grid-row: 3;
+                    grid-row: 4;
                 }
                 
                 .info-center {
@@ -370,8 +391,54 @@ export class ModelView extends connect(store)(PageViewElement) {
                     border-bottom: 1px dotted;
                     cursor: pointer;
                 }
+
+                .code-example {
+                    display: grid;
+                    grid-template-columns: auto 38px;
+                    line-height:38px;
+                    height: 38px;
+                    background-color: white;
+                    padding-left:10px;
+                    border-radius: 8px;
+                    margin: 10px;
+                }
                 `
         ];
+    }
+
+
+    _renderCLIDialog () {
+        return html`
+        <wl-dialog class="larger" id="CLIDialog" fixed backdrop blockscrolling>
+            <h3 slot="header">Execute on Desktop</h3>
+            <div slot="content">
+                <wl-text> You can run this model with the following command: </wl-text>
+                <div class="monospaced code-example">
+                    <div style="font-size: 14px">
+                        <span style="color: darkgray;">$</span> mint run ${getId(this._model)}
+                    </div>
+                    <div>
+                        <wl-button inverted flat>
+                            <wl-icon>link</wl-icon>
+                        </wl-button>
+                    </div>
+                </div>
+                <wl-text> 
+                    Visit the
+                    <a target="_blank" href="https://mint-cli.readthedocs.io/en/latest/">
+                        MINT CLI website
+                    </a>
+                    for documentation and installation instructions.
+                </wl-text>
+            </div>
+            <div slot="footer">
+                <wl-button @click="${() => hideDialog("CLIDialog", this.shadowRoot)}" style="margin-right: 5px;" inverted flat>Close</wl-button>
+            </div>
+        </wl-dialog>`
+    }
+
+    _openCLIDialog () {
+        showDialog("CLIDialog", this.shadowRoot);
     }
 
     _addConfig () {
@@ -388,82 +455,95 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _updateConfigSelector () {
-        let configSelectorWl = this.shadowRoot!.getElementById('config-selector');
-        let configSelector = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
-        if (configSelector) {
-            while (configSelector.options.length > 0) {
+        let configSelectorWl : Select = this.shadowRoot!.getElementById('config-selector');
+        let configSelector : HTMLSelectElement | null = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
+        if (configSelectorWl && configSelector) {
+            console.log('Updating Selector');
+            this._shouldUpdateConfigs = false;
+            while (configSelector.options.length > 0)
                 configSelector.remove(configSelector.options.length - 1);
-            }
-            this._versions.forEach((v:any) => {
+
+            let newOption = document.createElement('option');
+            newOption.text = 'No configuration'
+            newOption.value = "";
+            configSelector.add(newOption, null);
+
+            this._model.hasVersion
+                    .map((ver:SoftwareVersion) => this._versions[ver.id] ? this._versions[ver.id] : ver)
+                    .forEach((ver:SoftwareVersion) => {
                 let newOption = document.createElement('option');
-                newOption.text = v.label;
+                newOption.text = getLabel(ver);
+                newOption.value = ver.id;
                 newOption.disabled = true;
                 configSelector.add(newOption, null);
-                (v.configs || []).forEach((c:any) => {
-                    let newOption = document.createElement('option');
-                    newOption.text = '\xA0\xA0' + c.label;
-                    newOption.value = c.uri;
-                    configSelector.add(newOption, null);
-                })
-            })
-            configSelector.value = this._config ? this._config.uri : '';
+
+                if (ver.hasConfiguration) {
+                    ver.hasConfiguration.forEach((cfg:Configuration) => {
+                        let newOption = document.createElement('option');
+                        newOption.text = '\xA0\xA0' + getLabel(cfg);
+                        newOption.value = cfg.id;
+                        configSelector.add(newOption, null);
+                    });
+                }
+            });
+
+            configSelector.value = this._selectedConfig;
+            configSelector.setAttribute("style", "padding-right: 38px;");
             // FIX ARROW
             let arrowEl = configSelectorWl.shadowRoot.getElementById('arrow');
-            if (arrowEl) {
-                arrowEl.style.pointerEvents = "none";
-            }
-            (<any>configSelectorWl).refreshAttributes();
-        } else if (configSelectorWl) {
+            if (arrowEl) arrowEl.style.pointerEvents = "none";
+            configSelectorWl.refreshAttributes();
+        } else {
             /* FIXME: Sometimes, when versions data load faster than the wl-selector renders, we could end here.
              * The selectors will appear empty, but any update fixes it. */
+            console.warn('selector not found');
             setTimeout(() => {
                 this._updateConfigSelector();
             }, 400);
-        } else {
-            //console.log('This can even happen?')
-        }
-    }
-
-    _updateCalibrationSelector () {
-        let calibrationSelectorWl = this.shadowRoot!.getElementById('calibration-selector');
-        let calibrationSelector = calibrationSelectorWl? calibrationSelectorWl.getElementsByTagName('select')[0] : null;
-        if (calibrationSelector && this._config) {
-            while (calibrationSelector.options.length > 0) {
-                calibrationSelector.remove(calibrationSelector.options.length - 1);
-            }
-            let unselect = document.createElement('option');
-            unselect.text = '\xA0\xA0No setup selected'
-            unselect.value = '';
-            calibrationSelector.add(unselect, null);
-            (this._config.calibrations || []).forEach((c:any) => {
-                let newOption = document.createElement('option');
-                newOption.text = '\xA0\xA0' + c.label;
-                newOption.value = c.uri;
-                calibrationSelector.add(newOption, null);
-            })
-            calibrationSelector.value = this._calibration ? this._calibration.uri : '';
-            // FIX ARROW
-            let arrowEl = calibrationSelectorWl.shadowRoot.getElementById('arrow');
-            if (arrowEl) {
-                arrowEl.style.pointerEvents = "none";
-            }
-            (<any>calibrationSelectorWl).refreshAttributes();
         }
     }
 
     _onConfigChange () {
-        let configSelectorWl = this.shadowRoot!.getElementById('config-selector');
-        let configSelector = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
-        if (configSelector) {
-            if (this._uriToUrl[configSelector.value]) {
-                goToPage(PAGE_PREFIX + this._uriToUrl[configSelector.value]);
-            } else {
-                console.error('Theres no URL for selected config URI, please report this issue!');
-            }
+        let configSelectorWl : Select = this.shadowRoot!.getElementById('config-selector');
+        let configSelector : HTMLSelectElement | null = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
+        if (configSelectorWl && configSelector) {
+            let cfgURL = configSelector.value;
+            let ver = Object.values(this._versions).filter((ver:SoftwareVersion) => 
+                (ver.hasConfiguration||[]).some((cfg:ModelConfiguration) => cfg.id === cfgURL)
+            ).pop();
+            goToPage(this.PREFIX + getURL(this._model, ver, cfgURL));
         }
     }
 
-    _onCalibrationChange () {
+    _updateSetupSelector () {
+        let setupSelectorWl : Select = this.shadowRoot!.getElementById('setup-selector');
+        let setupSelector : HTMLSelectElement | null = setupSelectorWl? setupSelectorWl.getElementsByTagName('select')[0] : null;
+        if (setupSelectorWl && setupSelector && this._config) {
+            while (setupSelector.options.length > 0) 
+                setupSelector.remove(setupSelector.options.length - 1);
+
+            let unselect = document.createElement('option');
+            unselect.text = '\xA0\xA0No setup selected'
+            unselect.value = '';
+            setupSelector.add(unselect, null);
+            (this._config.hasSetup || []).forEach((setup:ModelConfigurationSetup) => {
+                let newOption = document.createElement('option');
+                newOption.text = '\xA0\xA0' + getLabel(setup);
+                newOption.value = setup.id;
+                setupSelector.add(newOption, null);
+            })
+            setupSelector.value = this._selectedSetup;
+            configSelector.setAttribute("style", "padding-right: 38px;");
+            // FIX ARROW
+            let arrowEl = setupSelectorWl.shadowRoot.getElementById('arrow');
+            if (arrowEl) {
+                arrowEl.style.pointerEvents = "none";
+            }
+            setupSelectorWl.refreshAttributes();
+        }
+    }
+
+    _onSetupChange () {
         let calibrationSelectorWl = this.shadowRoot!.getElementById('calibration-selector');
         let calibrationSelector = calibrationSelectorWl? calibrationSelectorWl.getElementsByTagName('select')[0] : null;
         if (calibrationSelector) {
@@ -487,13 +567,63 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _renderSelectors () {
-        if (!this._versions) {
+        if (!this._model.hasVersion) {
             return html`<div class="info-center">- No version available -</div>`;
             //return html`<wl-progress-bar></wl-progress-bar>`;
         }
-        let hasVersions = (this._versions.length > 0);
-        let hasCalibrations = !!(this._config && this._config.calibrations);
+        let hasVersions = (this._model.hasVersion.length > 0);
+        let hasSetups = !!(this._config && this._config.calibrations);
+
         return html`
+            <div class="config-selector">
+                <span style="text-align: center;">
+                    <wl-button flat inverted @click="">
+                        <span class="rdf-icon">
+                    </wl-button>
+                </span>
+                <span>
+                    <wl-select label="Select a configuration" id="config-selector" @input="${this._onConfigChange}">
+                    </wl-select>
+                </span>
+                <span>
+                    <wl-button flat inverted @click="">
+                        <wl-icon>edit</wl-icon>
+                    </wl-button>
+                    <wl-button flat inverted @click=${this._openCLIDialog}>
+                        <wl-icon>code</wl-icon>
+                    </wl-button>
+                    <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" 
+                         class="tooltip" style="top: 4px;">
+                        <wl-icon style="--icon-size: 24px;">help_outline</wl-icon>
+                    </span>
+                </span>
+            </div>
+
+            <div class="config-selector ${this._selectedConfig ? '' : 'hidden'}">
+                <span style="text-align: center;">
+                    <wl-button flat inverted @click="">
+                        <span class="rdf-icon">
+                    </wl-button>
+                </span>
+                <span>
+                    <wl-select label="Select a configuration setup" id="setup-selector" @input="${this._onSetupChange}">
+                    </wl-select>
+                </span>
+                <span>
+                    <wl-button flat inverted @click="">
+                        <wl-icon>edit</wl-icon>
+                    </wl-button>
+                    <wl-button flat inverted @click=${this._openCLIDialog}>
+                        <wl-icon>code</wl-icon>
+                    </wl-button>
+                    <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region" 
+                         class="tooltip" style="top: 4px;">
+                        <wl-icon style="--icon-size: 24px;">help_outline</wl-icon>
+                    </span>
+                </span>
+            </div>
+
+
             <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" 
                 style="float: right;" class="tooltip ${hasVersions? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
@@ -505,60 +635,113 @@ export class ModelView extends connect(store)(PageViewElement) {
             </wl-select>
 
             <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region"
-                style="float: right;" class="tooltip ${hasCalibrations? '' : 'hidden'}">
+                style="float: right;" class="tooltip ${hasSetups? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
             <a target="_blank" href="${this._calibration ? this._calibration.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
                 class="rdf-icon ${this._calibration? '' : 'hidden'}"></a> 
-            <wl-select label="Select a configuration setup" id="calibration-selector" @input="${this._onCalibrationChange}"
-                class="${hasCalibrations? '' : 'hidden'}">
+            <wl-select label="Select a configuration setup" id="calibration-selector" @input="${this._onSetupChange}"
+                class="${hasSetups? '' : 'hidden'}">
             </wl-select>
 
             <div class="info-center ${hasVersions? 'hidden' : ''}">- No version available -</div>
-            <div class="info-center ${(hasCalibrations || !hasVersions || (hasVersions && !this._config))? 'hidden': ''}"
+            <div class="info-center ${(hasSetups || !hasVersions || (hasVersions && !this._config))? 'hidden': ''}"
                 >- No configuration setup available <a class="clickable" @click="${this._addConfig}">add one</a> -</div>
         `
     }
 
     protected render() {
         if (!this._model) return html``;
+        let modelType : string[] = this._model.type ?
+                this._model.type.map((t:string) => t.replace('Model', '')).filter(t => !!t)
+                : [];
+
         return html`
             <div class="wrapper">
-                <div class="col-img text-centered">
-                    ${this._model.logo ? 
-                    html`<img src="${this._model.logo}"/>`
-                    : html`<wl-icon id="img-placeholder">image</wl-icon>`}
-                    ${this._model.dateC ? html`<div><b>Creation date:</b> ${this._model.dateC}</div>`:''}
-                    ${this._model.categories ? html`<div><b>Category:</b> ${this._model.categories}</div>`:''}
-                    ${this._model.type ? html`<div><b>Model type:</b> ${this._model.type}</div>`:''}
-                </div>
-                <div class="col-desc" style="text-align: justify;">
+                <div class="col-title">
                     <wl-title level="2">
-                        <a target="_blank" href="${this._model ? this._model.uri : ''}" class="rdf-icon"></a>
+                        <a target="_blank" href="${this._model.id}" class="rdf-icon"></a>
                         ${this._model.label}
                         <a style="display:none" @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
                     </wl-title>
+                </div>
+                <div class="col-img text-centered">
+                    ${this._model.logo && this._model.logo.length > 0 ? (
+                        this._loading[this._model.logo[0].id] ?
+                            html`<wl-progress-spinner></wl-progress-spinner>`
+                            : (this._logo.value ?
+                                html`<img src="${this._logo.value[0]}"/>`
+                                : 'Logo has no value'
+                            )
+                    ): 'No logo'}
+                    ${this._model.dateCreated ?
+                      html`<div><b>Creation date:</b> ${this._model.dateCreated}</div>`
+                      :''}
+                    ${this._model.hasModelCategory ?
+                      html`<div><b>Category:</b> ${this._model.hasModelCategory.join(', ')}</div>`
+                      :''}
+                    ${modelType.length > 0 ? html`<div><b>Model type:</b> ${modelType.join(', ')}</div>`:''}
+                </div>
+                <div class="col-desc" style="text-align: justify;">
                     <wl-divider style="margin-bottom: .5em;"></wl-divider>
-                    <wl-text >${this._model.desc}</wl-text>
+                    <wl-text >${this._model.description}</wl-text>
                     ${this._emulators[this._selectedModel] ?  html`
                     <div style="margin-top: 4px;">
                         You can see execution results for this model on
-                        <a href="${'/'+this._regionid+this._emulators[this._selectedModel]}">the emulations page</a>.
+                        <a href="${'/'+this._regionid+this._emulators[this._selectedModel]}">the emulators page</a>.
                     </div>` 
                     : ''}
                     <div id="desc-ext">
-                        ${this._model.authors? html`<wl-text><b>• Authors:</b> ${ this._model.authors.join(', ') }</wl-text>` :''}
-                        ${this._model.fundS? html`<wl-text><b>• Funding:</b> ${ this._model.fundS }</wl-text>` :''}
-                        ${this._model.publisher? html`<wl-text><b>• Publisher:</b> ${ this._model.publisher }</wl-text>` :''}
-                        ${this._model.dateP? html`<wl-text><b>• Publication date:</b> ${ this._model.dateP }</wl-text>` :''}
-                        ${this._model.referenceP? html`<wl-text><b>• Preferred citation:</b> <i>${ this._model.referenceP }<i></wl-text>` :''}
-                        ${this._model.doc? html`<wl-text>
+                        ${this._model.author?
+                          html`<wl-text><b>• Authors:</b>
+                            ${ this._model.author.map((author:Person) => this._loading[author.id] ? 
+                                html`${getId(author)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
+                                : html`
+                                    <span class="resource author">
+                                        ${getLabel(this._authors[author.id])}
+                                    </span>
+                            `) }
+                          </wl-text>` 
+                          :''}
+                        ${this._model.hasFunding?
+                          html`<wl-text><b>• Funding:</b> 
+                            ${this._model.hasFunding.map((fund:FundingInformation) => this._loading[fund.id] ?
+                            html`${getId(fund)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
+                            : (this._funding[fund.id].fundingSource || []).map((org:Organization) => 
+                                this._loading[org.id] ? 
+                                html`${getId(org)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
+                                : html`<span class="resource organization">
+                                    ${getLabel(this._organizations[org.id])}
+                                </span>`)
+                            )}
+                        </wl-text>` :''}
+
+                        ${this._model.publisher?
+                          html`<wl-text><b>• Publisher:</b> 
+                            ${ this._model.publisher.map((publisher:Organization) => html`
+                            <span class="resource organization">
+                                ${getLabel(publisher)}
+                            </span>
+                            `)}
+                        </wl-text>` :''}
+
+    <!-- CONTINUE HERE-->
+                        ${this._model.datePublished?
+                          html`<wl-text><b>• Publication date:</b> ${ this._model.datePublished }</wl-text>`
+                          :''}
+                        ${this._model.citation?
+                          html`<wl-text><b>• Preferred citation:</b> <i>${ this._model.citation }<i></wl-text>` 
+                          :''}
+                        ${this._model.hasDocumentation?
+                          html`<wl-text>
                             <b>• Documentation:</b>
-                            <a target="_blank" href="${this._model.doc}">
-                                ${this._model.doc.split('/').pop() || this._model.doc}
+                            <a target="_blank" href="${this._model.hasDocumentation[0]}">
+                                ${this._model.hasDocumentation[0].split('/').pop() || this._model.hasDocumentation}
                             </a>
                         </wl-text>` :''}
-                        ${this._model.keywords? html`<wl-text><b>• Keywords:</b> ${ this._model.keywords.join(', ') }</wl-text>` :''}
+                        ${this._model.keywords? html`<wl-text><b>• Keywords:</b>
+                            ${ this._model.keywords.map((kws:string) => kws.split(/ *; */).map(capitalizeFirstLetter).join(', ') ).join(', ') }
+                        </wl-text>` :''}
                     </div>
                     ${this._renderSelectors()}
                 </div>
@@ -581,7 +764,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                             >Technical Information</wl-tab>
                     </wl-tab-group>
                 </div>
-
+            </div>
+            ${this._renderCLIDialog()}`
+    }
+/*
                 <div class="row-tab-content">
                     ${(this._tab === 'overview') ? this._renderTabOverview() : ''}
                     ${(this._tab === 'tech') ? this._renderTabTechnical() : ''}
@@ -590,7 +776,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${(this._tab === 'example') ? this._renderTabExample() : ''}
                 </div>
             </div>`
-    }
+    }*/
 
     _renderTabTechnical () {
         let showModel = this._model.os || this._model.pl || this._model.memReq || this._model.procReq || this._model.softwareReq ||
@@ -1430,17 +1616,19 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     updated () {
-        if (this._model) {
+        if (this._shouldUpdateConfigs) this._updateConfigSelector();
+        if (this._shouldUpdateSetups) this._updateSetupSelector();
+        /*if (this._model) {
             if (this._versions) {
                 this._updateConfigSelector();
-                this._updateCalibrationSelector();
+                //this._updateCalibrationSelector();
             }
-            if (this._tab == 'example' && this._model.example) {
+            /*if (this._tab == 'example' && this._model.example) {
                 let example = this.shadowRoot.getElementById('mk-example');
                 if (example) {
                     example.innerHTML = marked(this._model.example);
                 }
-            }
+            }*
         }
         /* HTML description are not working
         if (this._tab == 'overview' && this._model && this._model.indices && this._indices && this._indices.length > 0) {
@@ -1485,175 +1673,125 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     stateChanged(state: RootState) {
-        if (state.explorerUI) {
-            let ui = state.explorerUI;
-            // check whats changed
-            let modelChanged : boolean = (ui.selectedModel !== this._selectedModel);
-            let versionChanged : boolean = (modelChanged || ui.selectedVersion !== this._selectedVersion)
-            let configChanged : boolean = (versionChanged || ui.selectedConfig !== this._selectedConfig);
-            let calibrationChanged : boolean = (configChanged || ui.selectedCalibration !== this._selectedCalibration);
+        super.setRegion(state);
+        let ui = state.explorerUI;
+        let db = state.modelCatalog;
 
-            // Fetch & reset data
-            if (modelChanged) {
-                if (ui.selectedModel) {
-                    store.dispatch(fetchVersionsForModel(ui.selectedModel));
-                    store.dispatch(fetchDiagramsForModelConfig(ui.selectedModel));
-                    store.dispatch(fetchSampleVisForModelConfig(ui.selectedModel));
-                    store.dispatch(fetchScreenshotsForModelConfig(ui.selectedModel));
-                    super.setRegion(state);
-                }
-                this._selectedModel = ui.selectedModel;
+        // check whats changed
+        let modelChanged : boolean = ui && (ui.selectedModel !== this._selectedModel);
+        let versionChanged : boolean = ui && (modelChanged || ui.selectedVersion !== this._selectedVersion);
+        let configChanged : boolean = ui && (versionChanged || ui.selectedConfig !== this._selectedConfig);
+        let setupChanged : boolean = ui && (configChanged || ui.selectedCalibration !== this._selectedSetup);
 
-                this._model = null;
-                this._indices = null;
-                this._versions = null;
-                this._compModels = null;
-                this._explDiagrams = null;
-                this._sampleVis = null;
-                this._screenshots = null;
-            }
-            if (versionChanged) {
-                this._selectedVersion = ui.selectedVersion;
-                this._version = null;
-            }
-            if (configChanged) {
-                if (ui.selectedConfig) {
-                    //store.dispatch(fetchMetadataForModelConfig(ui.selectedConfig));
-                    store.dispatch(fetchMetadataNoioForModelConfig(ui.selectedConfig));
-                    store.dispatch(fetchCompatibleSoftwareForConfig(ui.selectedConfig));
-                    store.dispatch(fetchIOAndVarsSNForConfig(ui.selectedConfig));
-                    store.dispatch(fetchParametersForConfig(ui.selectedConfig));
-                    store.dispatch(fetchAuthorsForModelConfig(ui.selectedConfig));
-                }
-                this._selectedConfig = ui.selectedConfig;
-                this._config = null;
-                this._configMetadata = null;
-                this._compInput = null;
-                this._compOutput = null;
-                this._configAuthors = null;
+        if (db && modelChanged) {
+            this._selectedModel = ui.selectedModel;
+            this._model = null;
+            if (this._selectedModel && (!db || !db.models[this._selectedModel])) {
+                this._loading[this._selectedModel] = true;
+                store.dispatch(modelGet(this._selectedModel)).then((model:Model) => {
+                    this._loading[this._selectedModel] = false;
+                    this._model = model;
 
-                this._variables = {};
-                this._IOStatus = new Set();
-            }
-            if (calibrationChanged) {
-                if (ui.selectedCalibration) {
-                    //store.dispatch(fetchMetadataForModelConfig(ui.selectedCalibration));
-                    store.dispatch(fetchMetadataNoioForModelConfig(ui.selectedCalibration));
-                    store.dispatch(fetchIOAndVarsSNForConfig(ui.selectedCalibration));
-                    store.dispatch(fetchParametersForConfig(ui.selectedCalibration));
-                    store.dispatch(fetchAuthorsForModelConfig(ui.selectedCalibration));
-                }
-                this._selectedCalibration = ui.selectedCalibration;
-                this._calibration = null;
-                this._calibrationMetadata = null;
-                this._calibrationAuthors = null;
-            }
-            if (configChanged || calibrationChanged) {
-                this._inputs = null;
-                this._outputs = null;
-                this._parameters = null;
-            }
-
-            // Load data 
-            if (state.explorer) {
-                let db = state.explorer;
-                this._allVersions = db.versions;
-                this._allModels = db.models;
-                this._uriToUrl= db.urls;
-                this._indices = db.vars;
-
-                if (db.models && !this._model) {
-                    this._model = db.models[this._selectedModel];
-                    if (this._model && this._model.indices) {
-                        this._model.indices.split(/ *, */).forEach(uri => store.dispatch(fetchDescriptionForVar(uri)));
-                        //store.dispatch(fetchDescriptionForVar(this._model.indices));
+                    // Logo
+                    this._logo = null;
+                    if (this._model.logo && this._model.logo.length > 0) {
+                        let logoId = (this._model.logo[0] as Image).id;
+                        if (db.images[logoId]) {
+                            this._logo = db.images[logoId];
+                        } else {
+                            this._loading[logoId] = true;
+                            store.dispatch(imageGet(logoId)).then((logo: Image) => {
+                                this._loading[logoId] = false;
+                                this._logo = logo;
+                            });
+                        }
                     }
-                }
-                if (db.versions && !this._versions) {
-                    this._versions = db.versions[this._selectedModel];
-                }
-                if (this._versions && !this._version) {
-                    //let versionId : string = this._selectedVersion.split('/').pop();
-                    this._version = this._versions.reduce((V, ver) => {
-                        if (V) return V;
-                        else return (ver.uri === this._selectedVersion) ? ver : null;
-                    }, null)
-                }
-                if (this._version && !this._config) {
-                    this._config = (this._version.configs || []).reduce((C, cfg) => {
-                        if (C) return C;
-                        else return (cfg.uri === this._selectedConfig) ? cfg : null;
-                    }, null);
-                }
-                if (this._config && !this._calibration) {
-                    this._calibration = (this._config.calibrations || []).reduce((C, cal) => {
-                        if (C) return C;
-                        return (cal.uri === this._selectedCalibration) ? cal : null;
-                    }, null);
-                }
 
-                // Update compatible models.
-                if (!this._compModels && this._model && this._model.categories) {
-                    this._compModels = [];
-                    Object.values(state.explorer.models || {}).forEach((model:FetchedModel) => {
-                        this._model.categories.forEach((cat:string) => {
-                            //FIXME: for the moment all models only has one category. change this to a SET
-                            if (model.categories && model.categories.indexOf(cat)>=0 && model.uri != this._selectedModel) {
-                                this._compModels.push(model);
+                    // Authors
+                    if (this._model.author) {
+                        this._model.author.forEach((author:Person) => {
+                            if (db.persons[author.id]) {
+                                this._authors[author.id] = db.persons[author.id];
+                            } else {
+                                this._loading[author.id] = true;
+                                store.dispatch(personGet(author.id)).then((person:Person) => {
+                                    this._loading[author.id] = false;
+                                    this._authors[author.id] = person;
+                                    this.requestUpdate();
+                                });
                             }
                         })
-                    })
-                }
-                /*if (!this._indices && db.vars && this._model && this._model.indices) {
-                    this._indices = db.vars[this._model.indices];
-                }*/
-                if (!this._explDiagrams && db.explDiagrams) {
-                    this._explDiagrams = db.explDiagrams[this._selectedModel];
-                }
-                if (!this._sampleVis && db.sampleVis) {
-                    this._sampleVis = db.sampleVis[this._selectedModel];
-                }
-                if (!this._screenshots && db.screenshots) {
-                    this._screenshots = db.screenshots[this._selectedModel];
-                }
-                if (!this._compInput && this._config && db.compatibleInput) {
-                    this._compInput = db.compatibleInput[this._config.uri];
-                }
-                if (!this._compOutput && this._config && db.compatibleOutput) {
-                    this._compOutput = db.compatibleOutput[this._config.uri];
-                }
-                if (!this._configAuthors && this._config && db.authors) {
-                    this._configAuthors = db.authors[this._config.uri];
-                }
-                if (!this._calibrationAuthors && this._calibration && db.authors) {
-                    this._calibrationAuthors = db.authors[this._calibration.uri];
-                }
-                if (db.metadata) {
-                    if (!this._configMetadata && this._config) this._configMetadata = db.metadata[this._selectedConfig];
-                    if (!this._calibrationMetadata && this._calibration) this._calibrationMetadata = db.metadata[this._selectedCalibration];
-                }
-                if (this._config || this._calibration) {
-                    let selectedUri = this._calibration ? this._calibration.uri : this._config.uri;
-                    if (this._inputs != db.inputs[selectedUri]) this._inputs = db.inputs[selectedUri];
-                    if (this._outputs != db.outputs[selectedUri]) this._outputs = db.outputs[selectedUri];
-                    if (this._parameters != db.parameters[selectedUri]) {
-                        this._parameters = db.parameters[selectedUri]
-                            .map((p) => { return { ...p, position: parseInt(p.position) } })
-                            .sort((a,b) => { a.position - b.position });
                     }
-                }
 
-                if (db.variables && this._IOStatus.size > 0) {
-                    this._IOStatus.forEach((uri:string) => {
-                        if (db.variables[uri]) {
-                            this._variables[uri] = db.variables[uri];
-                            this._IOStatus.delete(uri);
-                            this._count += 1;//FIXME
-                        }
-                    });
-                }
+                    //Funding
+                    if (this._model.hasFunding) {
+                        this._model.hasFunding.forEach((fund:FundingInformation) => {
+                            if (db.fundingInformations[fund.id]) {
+                                this._funding[fund.id] = db.fundingInformations[fund.id];
+                            } else {
+                                this._loading[fund.id] = true;
+                                store.dispatch(fundingInformationGet(fund.id)).then((funding:FundingInformation) => {
+                                    this._loading[fund.id] = false;
+                                    this._funding[fund.id] = funding;
+                                    if (funding.fundingSource) {
+                                        funding.fundingSource.forEach((org:Organization) => {
+                                            if (db.organizations[org.id]) {
+                                                this._organizations[org.id] = db.organizations[org.id];
+                                            } else {
+                                                this._loading[org.id] = true;
+                                                store.dispatch(organizationGet(org.id)).then((organization:Organization) => {
+                                                    this._loading[org.id] = false;
+                                                    this._organizations[org.id] = organization;
+                                                    this.requestUpdate();
+                                                });
+                                            }
+                                        });
+                                    }
+                                    this.requestUpdate();
+                                });
+                            }
+                        });
+                    }
 
+
+                    // Version
+                    if (this._model.hasVersion) {
+                        this._model.hasVersion.forEach((ver:SoftwareVersion) => {
+                            if (db.versions[ver.id]) {
+                                this._versions[ver.id] = db.versions[ver.id];
+                            } else {
+                                this._loading[ver.id] = true;
+                                store.dispatch(versionGet(ver.id)).then((version:SoftwareVersion) => {
+                                    this._loading[ver.id] = false;
+                                    this._versions[ver.id] = version;
+                                    this._shouldUpdateConfigs = true;
+                                });
+                            }
+                        });
+                    }
+                });
             }
         }
+
+
+        if (db && configChanged) {
+            this._selectedConfig = ui.selectedConfig;
+            this._config = null;
+            if (ui.selectedConfig) {
+                if (db.configurations[this._selectedConfig]) {
+                    this._config = db.configurations[this._selectedConfig];
+                    this._shouldUpdateSetups = true;
+                } else {
+                    this._loading[this._selectedConfig] = true;
+                    store.dispatch(modelConfigurationGet(this._selectedConfig)).then((cfg:ModelConfiguration) => {
+                        this._loading[this._selectedConfig] = false;
+                        this._config = cfg;
+                        this._shouldUpdateSetups = true;
+                    });
+                }
+            }
+        }
+
     }
+
 }
