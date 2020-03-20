@@ -26,6 +26,8 @@ import "weightless/progress-bar";
 import '../../../components/image-gallery'
 import '../../../components/loading-dots'
 
+import { showDialog, hideDialog } from 'util/ui_functions';
+
 function capitalizeFirstLetter (s:string) {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -114,6 +116,9 @@ export class ModelView extends connect(store)(PageViewElement) {
         'https://w3id.org/okn/i/mint/PIHM' : '/emulators/pihm',
         'https://w3id.org/okn/i/mint/HAND' : '/emulators/hand'
     }
+
+    @property({type: String})
+    private _runArgs : string = '';
 
     // URIs of selected resources
     private _selectedModel = null;
@@ -228,7 +233,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
 
                 .col-desc > wl-select {
-                    width: calc(100% - 55px);
+                    width: calc(100% - 100px);
                     margin-left:25px;
                 }
 
@@ -370,8 +375,63 @@ export class ModelView extends connect(store)(PageViewElement) {
                     border-bottom: 1px dotted;
                     cursor: pointer;
                 }
+
+                .code-example {
+                    display: grid;
+                    grid-template-columns: auto 38px;
+                    line-height:38px;
+                    height: 38px;
+                    background-color: white;
+                    padding-left:10px;
+                    border-radius: 8px;
+                    margin: 10px;
+                }
                 `
         ];
+    }
+
+    _renderCLIDialog () {
+        return html`
+        <wl-dialog class="larger" id="CLIDialog" fixed backdrop blockscrolling>
+            <h3 slot="header">Execute on Desktop/Server</h3>
+            <div slot="content">
+                <wl-text> You can run this model with the following command: </wl-text>
+                <div class="monospaced code-example">
+                    <div style="font-size: 14px">
+                        <span style="color: darkgray;">$</span> mint run ${this._runArgs}
+                    </div>
+                    <div>
+                        <wl-button inverted flat @click="${this._copyRun}">
+                            <wl-icon>link</wl-icon>
+                        </wl-button>
+                    </div>
+                </div>
+                <wl-text> 
+                    Visit the
+                    <a target="_blank" href="https://mint-cli.readthedocs.io/en/latest/">
+                        MINT CLI website
+                    </a>
+                    for documentation and installation instructions.
+                </wl-text>
+            </div>
+            <div slot="footer">
+                <wl-button @click="${() => hideDialog("CLIDialog", this.shadowRoot)}" style="margin-right: 5px;" inverted flat>Close</wl-button>
+            </div>
+        </wl-dialog>`
+    }
+
+    _openCLIDialog (uri:string) {
+        this._runArgs = uri.split('/').pop();
+        showDialog("CLIDialog", this.shadowRoot);
+    }
+
+    _copyRun () {
+        let text : string = 'min run ' + this._runArgs;
+        navigator.clipboard.writeText(text).then(() => {
+            console.log('Text copied!');
+        }, (err) => {
+            console.warn('Could no copy text', err);
+        })
     }
 
     _addConfig () {
@@ -498,6 +558,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                 style="float: right;" class="tooltip ${hasVersions? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
+            <wl-button flat inverted @click=${() => this._openCLIDialog(this._config.uri)}
+                style="float:right; top:12px" class="${this._config && this._config.uri && hasVersions? '':'hidden'}">
+                <wl-icon>code</wl-icon>
+            </wl-button>
             <a target="_blank" href="${this._config ? this._config.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
                 class="rdf-icon ${this._config? '' : 'hidden'}"></a> 
             <wl-select label="Select a configuration" id="config-selector" @input="${this._onConfigChange}"
@@ -508,6 +572,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                 style="float: right;" class="tooltip ${hasCalibrations? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
+            <wl-button flat inverted @click=${() => this._openCLIDialog(this._calibration.uri)}
+                style="float:right; top:12px" class="${this._calibration && this._calibration.uri && hasVersions? '':'hidden'}">
+                <wl-icon>code</wl-icon>
+            </wl-button>
             <a target="_blank" href="${this._calibration ? this._calibration.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
                 class="rdf-icon ${this._calibration? '' : 'hidden'}"></a> 
             <wl-select label="Select a configuration setup" id="calibration-selector" @input="${this._onCalibrationChange}"
@@ -523,6 +591,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     protected render() {
         if (!this._model) return html``;
         return html`
+            ${this._renderCLIDialog()}
             <div class="wrapper">
                 <div class="col-img text-centered">
                     ${this._model.logo ? 
