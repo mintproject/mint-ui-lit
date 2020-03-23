@@ -875,6 +875,13 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         this._setup = { ...db.configurations[this._selectedConfig] } as ModelConfigurationSetup; 
                         this._setup.author = [];
                         this._setup.hasRegion = [];
+                        if (this._region && this._region.model_catalog_uri) {
+                            if (db.regions && db.regions[this._region.model_catalog_uri]) {
+                                this._setup.hasRegion.push( db.regions[this._region.model_catalog_uri] );
+                            } else {
+                                this._setup.hasRegion.push( {id: this._region.model_catalog_uri, label: [this._region.name]} );
+                            }
+                        }
 
                         // Fetching not loaded parameters 
                         (this._setup.hasParameter || []).forEach((p:Parameter) => {

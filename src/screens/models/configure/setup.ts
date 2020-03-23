@@ -246,7 +246,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     }
 
     _delete () {
-        if (confirm('This setup will be deleted on all related resources')) {
+        if (confirm('This setup and all its associated resources (variables, files) will be deleted. Are you sure?')) {
             store.dispatch( modelConfigurationSetupDelete(this._setup) );
             goToPage(createUrl(this._model, this._version, this._config));
             //FIXME: Do something after the removal, is not removing the related resources.
