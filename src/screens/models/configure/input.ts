@@ -259,10 +259,9 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
             let dataCatalogId = dataCatalogIdEl.value;
             let url = urlEl.value;
             let editedSample = { ...sample };
-            if (!label || !description || !url) {
+            if (!label || !url) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>labelEl).refreshAttributes();
-                (<any>descriptionEl).refreshAttributes();
                 (<any>urlEl).refreshAttributes();
                 return;
             }
@@ -286,10 +285,9 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
             let description = descriptionEl.value;
             let dataCatalogId = dataCatalogIdEl.value;
             let url = urlEl.value;
-            if (!label || !description || !url) {
+            if (!label || !url) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>labelEl).refreshAttributes();
-                (<any>descriptionEl).refreshAttributes();
                 (<any>urlEl).refreshAttributes();
                 return;
             }
@@ -334,10 +332,9 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
         if (labelEl && descriptionEl) {
             let label = labelEl.value;
             let description = descriptionEl.value;
-            if (!label || !description || (this._collection && (this._input as SampleCollection).hasPart.length == 0)) {
+            if (!label || (this._collection && (this._input as SampleCollection).hasPart.length == 0)) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>labelEl).refreshAttributes();
-                (<any>descriptionEl).refreshAttributes();
                 return;
             }
 
@@ -385,10 +382,9 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
             let description = descriptionEl.value;
             let dataCatalogId = dataCatalogIdEl.value;
             let url = urlEl.value;
-            if (!label || !description || !url) {
+            if (!label || !url) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>labelEl).refreshAttributes();
-                (<any>descriptionEl).refreshAttributes();
                 (<any>urlEl).refreshAttributes();
                 return;
             }
@@ -415,10 +411,9 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
         if (labelEl && descriptionEl) {
             let label = labelEl.value;
             let description = descriptionEl.value;
-            if (!label || !description || (this._collection && (this._input as SampleCollection).hasPart.length > 0)) {
+            if (!label || (this._collection && (this._input as SampleCollection).hasPart.length > 0)) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>labelEl).refreshAttributes();
-                (<any>descriptionEl).refreshAttributes();
                 return;
             }
 
