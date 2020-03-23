@@ -393,9 +393,9 @@ export class ModelView extends connect(store)(PageViewElement) {
     _renderCLIDialog () {
         return html`
         <wl-dialog class="larger" id="CLIDialog" fixed backdrop blockscrolling>
-            <h3 slot="header">Execute on Desktop/Server</h3>
+            <h3 slot="header">Execute on Desktop Application for Model Execution</h3>
             <div slot="content">
-                <wl-text> You can run this model with the following command: </wl-text>
+                <wl-text> You can run this model on DAME with the following command: </wl-text>
                 <div class="monospaced code-example">
                     <div style="font-size: 14px">
                         <span style="color: darkgray;">$</span> mint run ${this._runArgs}
@@ -409,8 +409,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <wl-text> 
                     Visit the
                     <a target="_blank" href="https://mint-cli.readthedocs.io/en/latest/">
-                        MINT CLI website
+                        <b>DAME</b> website
                     </a>
+                    (Desktop Application for Model Execution) 
                     for documentation and installation instructions.
                 </wl-text>
             </div>
