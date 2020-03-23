@@ -507,7 +507,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         let configSelectorWl : Select = this.shadowRoot!.getElementById('config-selector');
         let configSelector : HTMLSelectElement | null = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
         if (configSelectorWl && configSelector) {
-            let cfgURL = configSelector.value;
+            let cfgURL : string = configSelector.value;
             let ver = Object.values(this._versions).filter((ver:SoftwareVersion) => 
                 (ver.hasConfiguration||[]).some((cfg:ModelConfiguration) => cfg.id === cfgURL)
             ).pop();
@@ -519,6 +519,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         let setupSelectorWl : Select = this.shadowRoot!.getElementById('setup-selector');
         let setupSelector : HTMLSelectElement | null = setupSelectorWl? setupSelectorWl.getElementsByTagName('select')[0] : null;
         if (setupSelectorWl && setupSelector && this._config) {
+            this._shouldUpdateSetups = false;
             while (setupSelector.options.length > 0) 
                 setupSelector.remove(setupSelector.options.length - 1);
 
@@ -533,7 +534,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 setupSelector.add(newOption, null);
             })
             setupSelector.value = this._selectedSetup;
-            configSelector.setAttribute("style", "padding-right: 38px;");
+            setupSelector.setAttribute("style", "padding-right: 38px;");
             // FIX ARROW
             let arrowEl = setupSelectorWl.shadowRoot.getElementById('arrow');
             if (arrowEl) {
@@ -544,25 +545,15 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _onSetupChange () {
-        let calibrationSelectorWl = this.shadowRoot!.getElementById('calibration-selector');
-        let calibrationSelector = calibrationSelectorWl? calibrationSelectorWl.getElementsByTagName('select')[0] : null;
-        if (calibrationSelector) {
-            if (this._uriToUrl[calibrationSelector.value]) {
-                goToPage(PAGE_PREFIX + this._uriToUrl[calibrationSelector.value]);
-            } else if (calibrationSelector.value === '') {
-                let id = this._config.uri.split('/').pop();
-                let fullURI = PAGE_PREFIX + this._uriToUrl[this._config.uri]
-                let sp = fullURI.split('/')
-                let frg = '';
-                do {
-                    frg = sp.pop();
-                } while (frg != id);
-                sp.push(frg);
-                let uri = sp.join('/');
-                goToPage(uri);
-            } else {
-                console.error('Theres no URL for selected configuration setup URI, please report this issue!');
-            }
+        let setupSelectorWl : Select = this.shadowRoot!.getElementById('setup-selector');
+        let setupSelector : HTMLSelectElement | null = setupSelectorWl? setupSelectorWl.getElementsByTagName('select')[0] : null;
+        if (setupSelectorWl && setupSelector) {
+            let setupURL : string = setupSelector.value;
+
+            let ver = Object.values(this._versions).filter((ver:SoftwareVersion) => 
+                (ver.hasConfiguration||[]).some((cfg:ModelConfiguration) => cfg.id === this._config.id)
+            ).pop();
+            goToPage(this.PREFIX + getURL(this._model, ver, this._config, setupURL));
         }
     }
 
@@ -599,7 +590,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </span>
             </div>
 
-            <div class="config-selector ${this._selectedConfig ? '' : 'hidden'}">
+            <div class="config-selector 
+                ${this._selectedConfig && this._config && this._config.hasSetup && this._config.hasSetup.length > 0? '' : 'hidden'}">
                 <span style="text-align: center;">
                     <wl-button flat inverted @click="">
                         <span class="rdf-icon">
@@ -623,35 +615,14 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </span>
             </div>
 
-
-            <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" 
-                style="float: right;" class="tooltip ${hasVersions? '' : 'hidden'}">
-                <wl-icon>help_outline</wl-icon>
-            </span>
-            <a target="_blank" href="${this._config ? this._config.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
-                class="rdf-icon ${this._config? '' : 'hidden'}"></a> 
-            <wl-select label="Select a configuration" id="config-selector" @input="${this._onConfigChange}"
-                class="${hasVersions? '' : 'hidden'}">
-            </wl-select>
-
-            <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region"
-                style="float: right;" class="tooltip ${hasSetups? '' : 'hidden'}">
-                <wl-icon>help_outline</wl-icon>
-            </span>
-            <a target="_blank" href="${this._calibration ? this._calibration.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
-                class="rdf-icon ${this._calibration? '' : 'hidden'}"></a> 
-            <wl-select label="Select a configuration setup" id="calibration-selector" @input="${this._onSetupChange}"
-                class="${hasSetups? '' : 'hidden'}">
-            </wl-select>
-
             <div class="info-center ${hasVersions? 'hidden' : ''}">- No version available -</div>
-            <div class="info-center ${(hasSetups || !hasVersions || (hasVersions && !this._config))? 'hidden': ''}"
+            <div class="info-center ${this._config && (!this._config.hasSetup || this._config.hasSetup.length === 0) ? '': 'hidden'}"
                 >- No configuration setup available <a class="clickable" @click="${this._addConfig}">add one</a> -</div>
         `
     }
 
     protected render() {
-        if (!this._model) return html``;
+        if (!this._model) return html`NO MODEL`;
         let modelType : string[] = this._model.type ?
                 this._model.type.map((t:string) => t.replace('Model', '')).filter(t => !!t)
                 : [];
@@ -764,19 +735,19 @@ export class ModelView extends connect(store)(PageViewElement) {
                             >Technical Information</wl-tab>
                     </wl-tab-group>
                 </div>
-            </div>
-            ${this._renderCLIDialog()}`
-    }
-/*
                 <div class="row-tab-content">
                     ${(this._tab === 'overview') ? this._renderTabOverview() : ''}
+                </div>
+            </div>
+            ${this._renderCLIDialog()} `
+    }
+
+    /*
                     ${(this._tab === 'tech') ? this._renderTabTechnical() : ''}
                     ${(this._tab === 'io') ? this._renderTabIO() : ''}
                     ${(this._tab === 'variables') ? this._renderTabVariables() : ''}
                     ${(this._tab === 'example') ? this._renderTabExample() : ''}
-                </div>
-            </div>`
-    }*/
+    */
 
     _renderTabTechnical () {
         let showModel = this._model.os || this._model.pl || this._model.memReq || this._model.procReq || this._model.softwareReq ||
@@ -967,36 +938,32 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     _renderTabOverview () {
         return html`
-            ${this._model.purpose? html`
+            ${this._model.hasPurpose && this._model.hasPurpose.length > 0 ? html`
             <wl-title level="2" style="font-size: 16px;">Model purpose:</wl-title>
             <ul style="margin-top: 5px">
-                ${this._model.purpose.map(a => a? html`<li>${capitalizeFirstLetter(a)}.</li>`: '')}
-            </ul>`
-            :''}
-            ${this._model.assumptions? html`
+                ${this._model.hasPurpose.map((p:string) => html`<li>${capitalizeFirstLetter(p)}.</li>`)}
+            </ul>`:''}
+
+            ${this._model.hasAssumption && this._model.hasAssumption.length > 0 ? html`
             <wl-title level="2" style="font-size: 16px;">Assumptions:</wl-title>
             <ul style="margin-top: 5px">
-                ${this._model.assumptions.split('.').map(a => a? html`<li>${a}.</li>`:'')}
+                ${this._model.hasAssumption.map((a:string) => a.split('.').map((txt:string) => 
+                html`<li>${txt}.</li>`
+                ))}
             </ul>`
             :''}
-            ${this._model.indices ? html`
+            ${this._model.usefulForCalculatingIndex && this._model.usefulForCalculatingIndex.length > 0 ? html`
             <wl-title level="2" style="font-size: 16px;">Relevant for calculating index:</wl-title>
             <ul style="margin-top: 5px">
-                ${this._model.indices.split(/ *, */).map(iuri => this._indices[iuri] ? html`
+                ${this._model.usefulForCalculatingIndex.map((index:any) => html`
                 <li>
-                    <a target="_blank" href="${iuri}">
-                        ${this._indices[iuri][0].label}
+                    <a target="_blank" href="${index.id}">
+                        ${getLabel(index)}
                     </a>
                 </li>
-                ` : 
-                html`
-                <li>
-                    ${iuri.split('/').pop()} 
-                    <loading-dots style="--width: 20px"></loading-dots>
-                </li>
                 `)}
-            </ul>`
-            :''}
+            </ul>` :''}
+
             ${this._config ? this._renderMetadataResume() : ''}
             ${this._renderRelatedModels()}
             ${this._renderGallery()}`
@@ -1015,6 +982,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             calProc = this._calibrationMetadata[0].processes ? this._calibrationMetadata[0].processes
                 .filter(p => (this._configMetadata[0].processes || []).indexOf(p) < 0) : [];
         }
+        console.log('>>', this._config);
         return html`
             <fieldset style="border-radius: 5px; padding: 0px 7px; border: 2px solid #D9D9D9; margin-bottom: 8px;">
                 <legend style="font-weight: bold; font-size: 12px; color: gray;">Selected configuration</legend>
@@ -1686,91 +1654,89 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (db && modelChanged) {
             this._selectedModel = ui.selectedModel;
             this._model = null;
-            if (this._selectedModel && (!db || !db.models[this._selectedModel])) {
-                this._loading[this._selectedModel] = true;
-                store.dispatch(modelGet(this._selectedModel)).then((model:Model) => {
-                    this._loading[this._selectedModel] = false;
-                    this._model = model;
+            this._loading[this._selectedModel] = true;
+            store.dispatch(modelGet(this._selectedModel)).then((model:Model) => {
+                this._loading[this._selectedModel] = false;
+                this._model = model;
 
-                    // Logo
-                    this._logo = null;
-                    if (this._model.logo && this._model.logo.length > 0) {
-                        let logoId = (this._model.logo[0] as Image).id;
-                        if (db.images[logoId]) {
-                            this._logo = db.images[logoId];
+                // Logo
+                this._logo = null;
+                if (this._model.logo && this._model.logo.length > 0) {
+                    let logoId = (this._model.logo[0] as Image).id;
+                    if (db.images[logoId]) {
+                        this._logo = db.images[logoId];
+                    } else {
+                        this._loading[logoId] = true;
+                        store.dispatch(imageGet(logoId)).then((logo: Image) => {
+                            this._loading[logoId] = false;
+                            this._logo = logo;
+                        });
+                    }
+                }
+
+                // Authors
+                if (this._model.author) {
+                    this._model.author.forEach((author:Person) => {
+                        if (db.persons[author.id]) {
+                            this._authors[author.id] = db.persons[author.id];
                         } else {
-                            this._loading[logoId] = true;
-                            store.dispatch(imageGet(logoId)).then((logo: Image) => {
-                                this._loading[logoId] = false;
-                                this._logo = logo;
+                            this._loading[author.id] = true;
+                            store.dispatch(personGet(author.id)).then((person:Person) => {
+                                this._loading[author.id] = false;
+                                this._authors[author.id] = person;
+                                this.requestUpdate();
                             });
                         }
-                    }
+                    })
+                }
 
-                    // Authors
-                    if (this._model.author) {
-                        this._model.author.forEach((author:Person) => {
-                            if (db.persons[author.id]) {
-                                this._authors[author.id] = db.persons[author.id];
-                            } else {
-                                this._loading[author.id] = true;
-                                store.dispatch(personGet(author.id)).then((person:Person) => {
-                                    this._loading[author.id] = false;
-                                    this._authors[author.id] = person;
-                                    this.requestUpdate();
-                                });
-                            }
-                        })
-                    }
-
-                    //Funding
-                    if (this._model.hasFunding) {
-                        this._model.hasFunding.forEach((fund:FundingInformation) => {
-                            if (db.fundingInformations[fund.id]) {
-                                this._funding[fund.id] = db.fundingInformations[fund.id];
-                            } else {
-                                this._loading[fund.id] = true;
-                                store.dispatch(fundingInformationGet(fund.id)).then((funding:FundingInformation) => {
-                                    this._loading[fund.id] = false;
-                                    this._funding[fund.id] = funding;
-                                    if (funding.fundingSource) {
-                                        funding.fundingSource.forEach((org:Organization) => {
-                                            if (db.organizations[org.id]) {
-                                                this._organizations[org.id] = db.organizations[org.id];
-                                            } else {
-                                                this._loading[org.id] = true;
-                                                store.dispatch(organizationGet(org.id)).then((organization:Organization) => {
-                                                    this._loading[org.id] = false;
-                                                    this._organizations[org.id] = organization;
-                                                    this.requestUpdate();
-                                                });
-                                            }
-                                        });
-                                    }
-                                    this.requestUpdate();
-                                });
-                            }
-                        });
-                    }
+                //Funding
+                if (this._model.hasFunding) {
+                    this._model.hasFunding.forEach((fund:FundingInformation) => {
+                        if (db.fundingInformations[fund.id]) {
+                            this._funding[fund.id] = db.fundingInformations[fund.id];
+                        } else {
+                            this._loading[fund.id] = true;
+                            store.dispatch(fundingInformationGet(fund.id)).then((funding:FundingInformation) => {
+                                this._loading[fund.id] = false;
+                                this._funding[fund.id] = funding;
+                                if (funding.fundingSource) {
+                                    funding.fundingSource.forEach((org:Organization) => {
+                                        if (db.organizations[org.id]) {
+                                            this._organizations[org.id] = db.organizations[org.id];
+                                        } else {
+                                            this._loading[org.id] = true;
+                                            store.dispatch(organizationGet(org.id)).then((organization:Organization) => {
+                                                this._loading[org.id] = false;
+                                                this._organizations[org.id] = organization;
+                                                this.requestUpdate();
+                                            });
+                                        }
+                                    });
+                                }
+                                this.requestUpdate();
+                            });
+                        }
+                    });
+                }
 
 
-                    // Version
-                    if (this._model.hasVersion) {
-                        this._model.hasVersion.forEach((ver:SoftwareVersion) => {
-                            if (db.versions[ver.id]) {
-                                this._versions[ver.id] = db.versions[ver.id];
-                            } else {
-                                this._loading[ver.id] = true;
-                                store.dispatch(versionGet(ver.id)).then((version:SoftwareVersion) => {
-                                    this._loading[ver.id] = false;
-                                    this._versions[ver.id] = version;
-                                    this._shouldUpdateConfigs = true;
-                                });
-                            }
-                        });
-                    }
-                });
-            }
+                // Version
+                if (this._model.hasVersion) {
+                    this._model.hasVersion.forEach((ver:SoftwareVersion) => {
+                        if (db.versions[ver.id]) {
+                            this._versions[ver.id] = db.versions[ver.id];
+                        } else {
+                            this._loading[ver.id] = true;
+                            store.dispatch(versionGet(ver.id)).then((version:SoftwareVersion) => {
+                                this._loading[ver.id] = false;
+                                this._versions[ver.id] = version;
+                                this._shouldUpdateConfigs = true;
+                            });
+                        }
+                    });
+                }
+            });
         }
 
 
@@ -1787,6 +1753,23 @@ export class ModelView extends connect(store)(PageViewElement) {
                         this._loading[this._selectedConfig] = false;
                         this._config = cfg;
                         this._shouldUpdateSetups = true;
+                    });
+                }
+            }
+        }
+
+        if (db && setupChanged) {
+            this._selectedSetup = ui.selectedCalibration;
+            this._setup = null;
+            this._shouldUpdateSetups = true;
+            if (ui.selectedSetup) {
+                if (db.setups[this._selectedSetup]) {
+                    this._setup = db.setups[this._selectedSetup];
+                } else {
+                    this._loading[this._selectedSetup] = true;
+                    store.dispatch(modelConfigurationSetupGet(this._selectedSetup)).then((setup:ModelConfigurationSetup) => {
+                        this._loading[this._selectedSetup] = false;
+                        this._setup = setup;
                     });
                 }
             }
