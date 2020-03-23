@@ -18,9 +18,6 @@
   "github": {
     "release": true
   },
-  "hooks": {
-    "after:bump": "echo ${version} > VERSION"
-  },
   "npm": {
     "publish": false,
     "publishPath": ".",

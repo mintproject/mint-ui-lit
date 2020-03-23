@@ -13,12 +13,8 @@ import { BoundingBox } from './reducers';
 
 import { modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet, regionsGet, geoShapesGet,
          datasetSpecificationGet, sampleResourceGet, sampleCollectionGet, setupGetAll } from 'model-catalog/actions';
+
 import { isSubregion } from 'model-catalog/util';
-/*=======
-import { modelsGet, versionsGet, modelConfigurationsGet, regionsGet, geoShapesGet, ,
-         datasetSpecificationGet, sampleResourceGet, sampleCollectionGet, setupGetAll,
-         ALL_MODELS, ALL_VERSIONS, ALL_MODEL_CONFIGURATIONS, ALL_MODEL_CONFIGURATION_SETUPS, ALL_REGIONS, ALL_GEO_SHAPES } from 'model-catalog/actions';
->>>>>>> f10994b0085dc5eafecc152b9a48e41e5fbbe823*/
 import { GeoShape } from '@mintproject/modelcatalog_client';
 
 import { queryDatasetResourcesAndSave } from 'screens/datasets/actions';
@@ -89,12 +85,6 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
         let pVer = store.dispatch(versionsGet());
         let pCon = store.dispatch(modelConfigurationsGet());
         let pSet = store.dispatch(modelConfigurationSetupsGet());
-
-        /*pGeo.then((v) => { this._geoShapes = v});
-        pReg.then((v) => { this._mregions = v});
-        pMod.then((v) => { this._models = v});
-        pVer.then((v) => { this._versions = v});
-        pCon.then((v) => { this._configs = v});*/
 
         Promise.all([pGeo, pReg, pMod, pVer, pCon, pSet]).then((v) => {
             this._fullyLoaded = true;
