@@ -37,6 +37,10 @@ export class RegionsHome extends connect(store)(PageViewElement) {
             regions-agriculture {
                 height: calc(100% - 40px);
             }
+
+            .svgicon[disabled] > svg {
+                fill: dimgray;
+            }
             `,
         ];
     }
@@ -76,12 +80,23 @@ export class RegionsHome extends connect(store)(PageViewElement) {
                     </div>                
                     <div>Hydrology</div>
                 </a>
+                ${this._regionid === 'texas' ?
+                html`
+                <a disabled>
+                    <div class="svgicon" disabled>
+                        ${adminIcon}
+                    </div> 
+                    <div>Administrative</div>
+                </a>
+                `
+                :html`
                 <a href="${this._regionid}/regions/administrative">
                     <div class="svgicon">
                         ${adminIcon}
                     </div> 
                     <div>Administrative</div>
                 </a>
+                `}
                 <!--a href="{this._regionid}/regions/manual"-->
                 <a disabled>
                     <wl-icon>edit</wl-icon>

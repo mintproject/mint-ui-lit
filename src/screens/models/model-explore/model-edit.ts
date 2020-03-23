@@ -211,9 +211,9 @@ export class ModelEdit extends connect(store)(PageViewElement) {
                     <fieldset>
                         <legend>Technical Information</legend>
                         <wl-textfield label="Operating systems" value="${this._model.os ? this._model.os.join(', ') : ''}"></wl-textfield>
-                        <wl-textfield label="Memory requeriments" value="${this._model.memReq || ''}"></wl-textfield>
-                        <wl-textfield label="Processor requeriments" value="${this._model.procReq || ''}"></wl-textfield>
-                        <wl-textfield label="Software requeriments" value="${this._model.softwareReq || ''}"></wl-textfield>
+                        <wl-textfield label="Memory requirements" value="${this._model.memReq || ''}"></wl-textfield>
+                        <wl-textfield label="Processor requirements" value="${this._model.procReq || ''}"></wl-textfield>
+                        <wl-textfield label="Software requirements" value="${this._model.softwareReq || ''}"></wl-textfield>
                         <wl-textfield label="Web page" value="${this._model.web || ''}"></wl-textfield>
                         <wl-textfield label="Download URL" value="${this._model.downloadURL || ''}"></wl-textfield>
                         <wl-textfield label="Documentation URL" value="${this._model.doc || ''}"></wl-textfield>

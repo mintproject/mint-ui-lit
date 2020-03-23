@@ -7,6 +7,7 @@ import { ExplorerStyles } from '../model-explore/explorer-styles'
 import { store, RootState } from 'app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from 'app/actions';
+import { IdMap } from "app/reducers";
 
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
@@ -24,9 +25,6 @@ import 'components/loading-dots'
 import { Process } from '@mintproject/modelcatalog_client';
 import { Textfield } from 'weightless/textfield';
 
-let identifierId : number = 1;
-const nil = {};
-
 @customElement('models-configure-process')
 export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
     @property({type: Boolean})
@@ -43,9 +41,6 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
 
     @property({type: Boolean})
     private _waiting : boolean = false;
-
-    @property({type: String})
-    private _waitingFor : string = '';
 
     @property({type: Object})
     private _selected : {[key:string]: boolean | undefined} = {};
@@ -142,7 +137,7 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
                         <wl-icon slot="after">search</wl-icon>
                     </wl-textfield>
                     <div class="results" style="margin-top: 5px;">
-                        ${Object.values(this._processes || nil)
+                        ${Object.values(this._processes) 
                             .filter((process:Process) => (process.label||[]).join().toLowerCase().includes(this._filter.toLowerCase()))
                             .map((process:Process) => html`
                         <div class="process-container">
@@ -167,7 +162,7 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
                 : html`
                 <wl-textfield label="Search process" id="search-input" @input="${this._onSearchChange}"><wl-icon slot="after">search</wl-icon></wl-textfield>
                 <div class="results" style="margin-top: 5px;">
-                    ${Object.values(this._processes || nil)
+                    ${Object.values(this._processes)
                         .filter((process:Process) => (process.label||[]).join().toLowerCase().includes(this._filter.toLowerCase()))
                         .map((process:Process) => html`
                     <div class="process-container">
@@ -176,7 +171,7 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
                             <span class="${this._selected[process.id] ? 'bold' : ''}">${process.label ? process.label : process.id}</span>
                         </label>
                         <wl-button @click="${() => this._edit(process.id)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
-                        <wl-button @click="${() => this._delete(process.id)}" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
+                        <wl-button @click="${() => this._delete(process)}" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
                     </div>
                 `)}
                 ${this._loading ? html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : ''}
@@ -239,9 +234,12 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
                 newProcess.influences = influences;
             }
 
-            this._waitingFor = 'PostProcess' + identifierId;
-            identifierId += 1;
-            store.dispatch(processPost(newProcess, this._waitingFor));
+            this._waiting = true;
+            store.dispatch(processPost(newProcess)).then((process:Process) => {
+                this._waiting = false;
+                this._selected[process.id] = true;
+                this._new = false;
+            });
             showNotification("saveNotification", this.shadowRoot!);
         }
     }
@@ -258,14 +256,19 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
 
             let editedProcess : Process = Object.assign({}, this._processes[this._selectedProcessUri])
             editedProcess.label = [name];
-            let influences : Process[] = Object.keys(this._secondarySelected).filter(uri => this._secondarySelected[uri])
+            /*let influences : Process[] = Object.keys(this._secondarySelected).filter(uri => this._secondarySelected[uri])
                     .map((uri:string) => { return {id: uri} as Process });
             if (influences.length > 0) {
                 editedProcess.influences = { ...editedProcess.influences, ...influences };
-            }
+            }*/
 
-            this._waitingFor = editedProcess.id;
-            store.dispatch(processPut(editedProcess));
+            this._waiting = true;
+            store.dispatch(processPut(editedProcess)).then((process:Process) => {
+                this._waiting = false;
+                this._selected[process.id] = true;
+                this._new = false;
+                this._selectedProcessUri = '';
+            });
             showNotification("saveNotification", this.shadowRoot!);
         }
     }
@@ -292,11 +295,11 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
         this._selectedProcessUri = processUri;
     }
 
-    _delete (processUri) {
+    _delete (process:Process) {
         if (confirm('This Process will be deleted on all related resources')) {
-            store.dispatch(processDelete(processUri));
-            if (this._selected[processUri])
-                delete this._selected[processUri];
+            store.dispatch(processDelete(process));
+            if (this._selected[process.id])
+                delete this._selected[process.id];
         }
     }
 
@@ -311,25 +314,6 @@ export class ModelsConfigureProcess extends connect(store)(PageViewElement) {
         if (state.modelCatalog) {
             let db = state.modelCatalog;
             this._processes = db.processes;
-            if (this._waitingFor) {
-                if (this._new) {
-                    if (db.created[this._waitingFor]) {
-                        this._waiting = false;
-                        this._selected[db.created[this._waitingFor]] = true;
-                        this._new = false;
-                        this._waitingFor = '';
-                    } else {
-                        this._waiting = true;
-                    }
-                } else {
-                    this._waiting = db.loading[this._waitingFor];
-                    if (this._waiting === false) {
-                        this._selected[this._waitingFor] = true;
-                        this._selectedProcessUri = '';
-                        this._waitingFor = '';
-                    }
-                }
-            }
         }
     }
 }

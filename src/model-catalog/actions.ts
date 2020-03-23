@@ -40,6 +40,29 @@ export function createIdMap<T extends IdObject> (item:T) : IdMap<T> {
 }
 
 export const idReducer = (dic:any, elem:any) => {
+    /* Checking for non objects on arrays */
+    Object.keys(elem).forEach((key:string) => {
+        if (key !== 'id' && key !== 'bbox') {
+            let props = elem[key];
+            if (props instanceof Array) {
+                let len : number = props.length;
+                if (len > 1) {
+                    let t : string = (typeof props[0]);
+                    let b : boolean = true;
+                    for (let i : number = 1; i < len; b = b && (t === typeof props[i++]));
+                    if (!b) {
+                        // Theres an inconsistency on the type of data on the array.
+                        // Changing strings to id-objects.
+                        // FIXME this will not work when all the objects have the wrong type.
+                        console.warn(elem, key, 'not all the elements are of the same type. Creating id objects...');
+                        elem[key] = props.map((p:any) => (p instanceof Object) ? p : {id: p} );
+                    }
+                }
+            } else if (props !== undefined) {
+                console.warn(elem, key, 'is not an Array')
+            }
+        }
+    });
     dic[elem.id] = elem;
     return dic;
 }
@@ -67,14 +90,14 @@ export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAc
         ModelCatalogImageAction;
 
 //FIXME: The API is returning only one model (void), doing the fetch instead.
-const muri = "https://api.models.mint.isi.edu/v1.3.1/custom/model/"
+const CUSTOM_URI = "https://api.models.mint.isi.edu/v1.4.0/custom/";
 export const modelsSearchIndex = (term:string) => {
     /*let MApi : ModelApi = new ModelApi();
     let req = MApi.customModelIndexGet({label:term, username: DEFAULT_GRAPH, customQueryName: 'custom_model_index'});
     return req;*/
     
     return new Promise((resolve, reject) => {
-        let req = fetch(muri + "index?custom_query_name=custom_model_index&username=mint%40isi.edu&label=" + term);
+        let req = fetch(CUSTOM_URI + "model/index?custom_query_name=custom_model_index&username=mint%40isi.edu&label=" + term);
         req.then((response) => {
             response.json().then(resolve);
         });
@@ -87,7 +110,7 @@ export const modelsSearchIntervention = (term:string) => {
     let req = MApi.customModelInterventionGet({label:term, username: DEFAULT_GRAPH, customQueryName: 'custom_model_intervetion'});
     return req;*/
     return new Promise((resolve, reject) => {
-        let req = fetch(muri + "intervention?custom_query_name=custom_model_intervetion&username=mint%40isi.edu&label=" + term);
+        let req = fetch(CUSTOM_URI + "model/intervention?custom_query_name=custom_model_intervetion&username=mint%40isi.edu&label=" + term);
         req.then((response) => {
             response.json().then(resolve);
         });
@@ -100,7 +123,43 @@ export const modelsSearchRegion = (term:string) => {
     let req = MApi.customModelRegion({label:term, username: DEFAULT_GRAPH, customQueryName: 'custom_model_region'});
     return req;*/
     return new Promise((resolve, reject) => {
-        let req = fetch(muri + "region?custom_query_name=custom_model_region&username=mint%40isi.edu&label=" + term);
+        let req = fetch(CUSTOM_URI + "model/region?custom_query_name=custom_model_region&username=mint%40isi.edu&label=" + term);
+        req.then((response) => {
+            response.json().then(resolve);
+        });
+        req.catch(reject);
+    });
+}
+
+export const modelsSearchVariable = (term:string) => {
+    /*let MApi : ModelApi = new ModelApi();
+    let req = MApi.customModelsVariable({label:term, username: DEFAULT_GRAPH, customQueryName: 'custom_models_variable'});
+    return req;*/
+    return new Promise((resolve, reject) => {
+        let req = fetch(CUSTOM_URI + "models/variable?username=mint%40isi.edu&custom_query_name=custom_models_variable&label=" + term);
+        req.then((response) => {
+            response.json().then(resolve);
+        });
+        req.catch(reject);
+    });
+}
+
+export const modelsSearchStandardVariable = (term:string) => {
+    /*let MApi : ModelApi = new ModelApi();
+    let req = MApi.customModelsStandardVariable({label:term, username: DEFAULT_GRAPH, customQueryName: ''});
+    return req;*/
+    return new Promise((resolve, reject) => {
+        let req = fetch(CUSTOM_URI + "models/standard_variable?username=mint%40isi.edu&custom_query_name=custom_model_standard_variable&label=" + term);
+        req.then((response) => {
+            response.json().then(resolve);
+        });
+        req.catch(reject);
+    });
+}
+
+export const setupsSearchVariable = (term:string) => {
+    return new Promise((resolve, reject) => {
+        let req = fetch(CUSTOM_URI + "modelconfigurationsetups/variable?username=mint%40isi.edu&custom_query_name=custom_modelconfigurationsetups_variable&label=" + term);
         req.then((response) => {
             response.json().then(resolve);
         });

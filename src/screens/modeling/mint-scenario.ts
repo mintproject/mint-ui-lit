@@ -55,6 +55,9 @@ export class MintScenario extends connect(store)(PageViewElement) {
     private _hideObjectives: boolean = false;
     
     @property({type: Boolean})
+    private _pathwayListExpanded: boolean = false;
+    
+    @property({type: Boolean})
     private _subgoalEditMode: boolean = false;
 
     @property({type: Object})
@@ -139,6 +142,27 @@ export class MintScenario extends connect(store)(PageViewElement) {
         //console.log("rendering");
         if(!this._scenario_details) {
             return html``;
+        }
+
+        let pathways  = []
+        let totalPathways = 0;
+        if (this._selectedSubgoal && this._selectedSubgoal.pathways) {
+            let orderedKeys = Object.values(this._selectedSubgoal.pathways)
+                    .sort((a,b) => a.name.localeCompare(b.name))
+                    .map(pw => pw.id);
+            totalPathways = orderedKeys.length;
+            if (totalPathways > 2 && !this._pathwayListExpanded) {
+                let index = orderedKeys.indexOf(this._selectedPathwayId as string);
+                if (index === (orderedKeys.length-1)) {
+                    pathways.push(orderedKeys[index-1]);
+                    pathways.push(orderedKeys[index]);
+                } else {
+                    pathways.push(orderedKeys[index]);
+                    pathways.push(orderedKeys[index+1]);
+                }
+            } else {
+                pathways = orderedKeys;
+            }
         }
         return html`
             <!-- Top Scenario Heading -->
@@ -233,7 +257,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                     @click="${() => showDialog('threadsHelpDialog', this.shadowRoot)}">Read more</a>
                             </div>
                             <ul>
-                            ${Object.values(((this._selectedSubgoal || {}) as SubGoal).pathways || {}).map((pathway: PathwayInfo) => {
+                            ${pathways.map(pid => this._selectedSubgoal.pathways[pid]).map((pathway: PathwayInfo, i: number) => {
                                 let pname = pathway.name ? pathway.name : this._selectedSubgoal.name;
                                 let url = "modeling/scenario/" + this._scenario!.id + "/" + 
                                     this._selectedSubgoal.id + "/" + pathway.id;
@@ -247,12 +271,18 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                                     html`<div style="color:#888">Default thread</div>`
                                                 }
                                             </div>
+                                            ${i != (pathways.length-1) || totalPathways < 3 ? html`
                                             <wl-icon @click="${this._editPathwayDialog}" 
                                                 data-pathwayid="${pathway.id}"
                                                 class="actionIcon editIcon">edit</wl-icon>
                                             <wl-icon @click="${this._onDeletePathway}" 
                                                 data-pathwayid="${pathway.id}"
-                                                class="actionIcon deleteIcon">delete</wl-icon>
+                                                class="actionIcon deleteIcon">delete</wl-icon>`
+                                            : html`
+                                            <a @click="${(e) => {this._pathwayListExpanded = !this._pathwayListExpanded}}">
+                                                (Show ${this._pathwayListExpanded ? 'less' : (totalPathways - 2) + ' more'})
+                                            </a>
+                                            `}
                                         </div>
                                     </li>
                                 `;

@@ -23,11 +23,16 @@ import "weightless/slider";
 import "weightless/progress-spinner";
 import 'components/loading-dots'
 
+import './grid';
+import './time-interval';
 import './person';
 import './process';
 import './parameter';
 import './input';
 import './region';
+
+import { ModelsConfigureGrid } from './grid';
+import { ModelsConfigureTimeInterval } from './time-interval';
 import { ModelsConfigurePerson } from './person';
 import { ModelsConfigureProcess } from './process';
 import { ModelsConfigureParameter } from './parameter';
@@ -82,7 +87,10 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
     private _softwareImage : any = null;
 
     @property({type: String})
-    private _dialog : ''|'person'|'process'|'parameter'|'input'|'region' = '';
+    private _dialog : ''|'person'|'process'|'parameter'|'input'|'region'|'grid'|'timeInterval' = '';
+
+    @property({type: String})
+    private _mode : string = '';
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
@@ -254,11 +262,15 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
 
             delete setupCreated.hasSetup;
             setupCreated.id = undefined;
+            setupCreated.type = ['ModelConfigurationSetup', 'Theory-GuidedModel', 'ConfigurationSetup'];
             setupCreated.label = [name];
             setupCreated.description = [desc];
             setupCreated.hasUsageNotes = [notes];
             setupCreated.keywords = [keywords.split(/ *, */).join('; ')];
             setupCreated.parameterAssignmentMethod = [assignMe];
+
+            setupCreated.hasGrid = this._grid ? [this._grid] : undefined;
+            setupCreated.hasOutputTimeInterval = this._timeInterval ? [this._timeInterval] : undefined;
 
             setupCreated.hasInput = (setupCreated.hasInput || []).map((input: DatasetSpecification) => {
                 let newInput = this._inputs[input.id];
@@ -409,34 +421,41 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Grid:</td>
                 <td>
-                    ${this._setup.hasGrid ?
-                    (this._grid ?
-                        html`
+                    ${this._gridLoading ?
+                        html`${this._setup.hasGrid[0].id} <loading-dots style="--width: 20px"></loading-dots>`
+                        : (this._grid ?  html`
                         <span class="grid">
                             <span style="margin-right: 30px; text-decoration: underline;">${this._grid.label}</span>
                             <span style="font-style: oblique; color: gray;">${this._grid.type.filter(g => g != 'Grid')}</span>
-                            <wl-icon style="margin-left:10px">edit</wl-icon>
                             <br/>
                             <div style="display: flex; justify-content: space-between;">
                                 <span style="font-size: 12px;">Spatial resolution:</span>
-                                <span style="margin-right:20px; font-size: 14px;" class="monospaced">${this._grid.hasSpatialResolution}</span>
+                                <span style="margin-right:20px; font-size: 14px;" class="monospaced">
+                                    ${this._grid.hasSpatialResolution && this._grid.hasSpatialResolution.length > 0 ?
+                                        this._grid.hasSpatialResolution[0] : '-'}
+                                </span>
                                 <span style="font-size: 12px;">Dimensions:</span>
-                                <span style="margin-right:20px" class="number">${this._grid.hasDimension}</span>
+                                <span style="margin-right:20px" class="number">
+                                    ${this._grid.hasDimension && this._grid.hasDimension.length > 0 ? this._grid.hasDimension[0] : '-'}
+                                </span>
                                 <span style="font-size: 12px;">Shape:</span>
-                                <span style="font-size: 14px" class="monospaced">${this._grid.hasShape}</span>
+                                <span style="font-size: 14px" class="monospaced">
+                                    ${this._grid.hasShape && this._grid.hasShape.length > 0 ? this._grid.hasShape[0] : '-'}
+                                </span>
                             </div>
-                        </span>`
-                        : html`${this._setup.hasGrid[0].id} ${this._gridLoading ?
-                            html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`) 
-                    : 'No grid'}
+                        </span>` : 'No grid'
+                    )}
+                    <wl-button style="float:right;" class="small" flat inverted
+                        @click="${this._showGridDialog}"><wl-icon>edit</wl-icon></wl-button>
                 </td>
             </tr>
 
             <tr>
                 <td>Time interval:</td>
                 <td>
-                    ${this._setup.hasOutputTimeInterval ?
-                    (this._timeInterval ? html`
+                    ${this._timeIntervalLoading ? 
+                        html`${this._setup.hasOutputTimeInterval[0].id} <loading-dots style="--width: 20px"></loading-dots>`
+                        : (this._timeInterval ? html`
                         <span class="time-interval">
                             <span style="display: flex; justify-content: space-between;">
                                 <span style="margin-right: 30px; text-decoration: underline;">
@@ -445,14 +464,13 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                                 <span> 
                                     ${this._timeInterval.intervalValue}
                                     ${this._timeInterval.intervalUnit ? this._timeInterval.intervalUnit[0].label : ''}
-                                    <wl-icon style="margin-left:10px; --icon-size:  16px; cursor: pointer; vertical-align: middle;">edit</wl-icon>
                                 </span>
                             </span>
                             <span style="font-style: oblique; color: gray;"> ${this._timeInterval.description} </span>
-                        </span>`
-                        : html`${this._setup.hasOutputTimeInterval[0].id} ${this._timeIntervalLoading ? 
-                            html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`)
-                    : 'No time interval'}
+                        </span>` : 'No time interval'
+                    )}
+                    <wl-button style="float:right;" class="small" flat inverted
+                        @click="${this._showTimeIntervalDialog}"><wl-icon>edit</wl-icon></wl-button>
                 </td>
             </tr>
 
@@ -620,7 +638,10 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 <wl-icon>save</wl-icon>&ensp;Save
             </wl-button>
         </div>
-        
+
+        <models-configure-grid id="grid-configurator" ?active=${this._dialog == 'grid'} class="page"></models-configure-grid>
+        <models-configure-time-interval id="time-interval-configurator" ?active=${this._dialog == 'timeInterval'} class="page">
+        </models-configure-time-interval>
         <models-configure-person id="person-configurator" ?active=${this._dialog == 'person'} class="page"></models-configure-person>
         <models-configure-process id="process-configurator" ?active=${this._dialog == 'process'} class="page"></models-configure-process>
         <models-configure-parameter id="parameter-configurator" ?active=${this._dialog == 'parameter'} class="page"></models-configure-parameter>
@@ -629,21 +650,35 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         ${renderNotifications()}`
     }
 
-    _clearForm () {
+    clearForm () {
         let nameEl      = this.shadowRoot.getElementById('new-setup-name') as HTMLInputElement;
         let descEl      = this.shadowRoot.getElementById('new-setup-desc') as HTMLInputElement;
         let keywordsEl  = this.shadowRoot.getElementById('new-setup-keywords') as HTMLInputElement;
-        let regionEl    = this.shadowRoot.getElementById('edit-config-regions') as HTMLInputElement;
         let assignMeEl  = this.shadowRoot.getElementById('new-setup-assign-method') as HTMLInputElement;
         let usageEl     = this.shadowRoot.getElementById('new-setup-usage-notes') as HTMLInputElement;
-        if (nameEl && descEl && keywordsEl && assignMeEl && regionEl) {
+        if (nameEl && descEl && keywordsEl && assignMeEl) {
             nameEl      .value = '';
             descEl      .value = '';
             keywordsEl  .value = '';
-            regionEl    .value = '';
             assignMeEl  .value = '';
             usageEl     .value = '';
         }
+    }
+
+    _showGridDialog () {
+        this._dialog = 'grid';
+        let gridConfigurator = this.shadowRoot.getElementById('grid-configurator') as ModelsConfigureGrid;
+        if (this._grid)
+            gridConfigurator.setSelected(this._grid);
+        gridConfigurator.open();
+    }
+
+    _showTimeIntervalDialog () {
+        this._dialog = 'timeInterval';
+        let timeIntervalConfigurator = this.shadowRoot.getElementById('time-interval-configurator') as ModelsConfigureTimeInterval;
+        if (this._timeInterval)
+            timeIntervalConfigurator.setSelected(this._timeInterval);
+        timeIntervalConfigurator.open();
     }
 
     _showNewInputDialog ( datasetSpecUri : string ) {
@@ -749,8 +784,26 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         this.requestUpdate();
     }
 
+    _onGridSelected () {
+        let gridConfigurator = this.shadowRoot.getElementById('grid-configurator') as ModelsConfigureGrid;
+        let selectedGrid = gridConfigurator.getSelected();
+        console.log('Changed grid:', selectedGrid);
+        this._grid = selectedGrid;
+        this.requestUpdate();
+    }
+
+    _onTimeIntervalSelected () {
+        let timeIntervalConfigurator = this.shadowRoot.getElementById('time-interval-configurator') as ModelsConfigureTimeInterval;
+        let selectedTimeInterval = timeIntervalConfigurator.getSelected();
+        console.log('Changed time interval:', selectedTimeInterval);
+        this._timeInterval = selectedTimeInterval;
+        this.requestUpdate();
+    }
+
     firstUpdated () {
         this.addEventListener('dialogClosed', this._onClosedDialog);
+        this.addEventListener('gridSelected', this._onGridSelected);
+        this.addEventListener('timeIntervalSelected', this._onTimeIntervalSelected);
         this.addEventListener('authorsSelected', this._onAuthorsSelected);
         this.addEventListener('processesSelected', this._onProcessesSelected);
         this.addEventListener('parameterEdited', this._onParameterEdited);
@@ -765,6 +818,11 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             let modelChanged : boolean = (ui.selectedModel !== this._selectedModel);
             let versionChanged : boolean = (modelChanged || ui.selectedVersion !== this._selectedVersion)
             let configChanged : boolean = (versionChanged || ui.selectedConfig !== this._selectedConfig);
+
+            if (ui.mode != this._mode) {
+                this.clearForm();
+            }
+            this._mode = ui.mode;
 
             super.setRegionId(state);
 
@@ -797,7 +855,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 this._processes = {};
                 this._processesLoading = new Set();
 
-                this._clearForm();
+                this.clearForm();
             }
 
             if (state.modelCatalog) {
@@ -817,6 +875,13 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         this._setup = { ...db.configurations[this._selectedConfig] } as ModelConfigurationSetup; 
                         this._setup.author = [];
                         this._setup.hasRegion = [];
+                        if (this._region && this._region.model_catalog_uri) {
+                            if (db.regions && db.regions[this._region.model_catalog_uri]) {
+                                this._setup.hasRegion.push( db.regions[this._region.model_catalog_uri] );
+                            } else {
+                                this._setup.hasRegion.push( {id: this._region.model_catalog_uri, label: [this._region.name]} );
+                            }
+                        }
 
                         // Fetching not loaded parameters 
                         (this._setup.hasParameter || []).forEach((p:Parameter) => {
@@ -920,7 +985,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                             this._inputsLoading.forEach((uri:string) => {
                                 if (db.datasetSpecifications[uri]) {
                                     let tmp = { ...this._inputs };
-                                    tmp[uri] = db.datasetSpecifications[uri];
+                                    tmp[uri] = { ... db.datasetSpecifications[uri] };
                                     this._inputs = tmp;
                                     this._inputsLoading.delete(uri);
                                 }

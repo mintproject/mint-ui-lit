@@ -24,8 +24,6 @@ import 'components/loading-dots'
 import { Person } from '@mintproject/modelcatalog_client';
 import { Textfield } from 'weightless/textfield';
 
-let identifierId : number = 1;
-
 @customElement('models-configure-person')
 export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
     @property({type: Boolean})
@@ -42,9 +40,6 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
 
     @property({type: Boolean})
     private _waiting : boolean = false;
-
-    @property({type: String})
-    private _waitingFor : string = '';
 
     @property({type: Object})
     private _selected : {[key:string]: boolean | undefined} = {};
@@ -146,7 +141,7 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
                 : html`
                 <wl-textfield label="Search persons" id="search-input" @input="${this._onSearchChange}"><wl-icon slot="after">search</wl-icon></wl-textfield>
                 <div class="results" style="margin-top: 5px;">
-                    ${Object.values(this._persons || {})
+                    ${Object.values(this._persons)
                         .filter(person => (person.label||[]).join().toLowerCase().includes(this._filter.toLowerCase()))
                         .map((person) => html`
                     <div class="author-container">
@@ -155,12 +150,12 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
                             <span class="${this._selected[person.id] ? 'bold' : ''}">${person.label ? person.label : person.id}</span>
                         </label>
                         <wl-button @click="${() => this._edit(person.id)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
-                        <wl-button @click="${() => this._delete(person.id)}" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
+                        <wl-button @click="${() => this._delete(person)}" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
                     </div>
                 `)}
                 ${this._loading ? html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : ''}
                 </div>
-                or <a @click="${() => {this._new = true;}}">create a new Person</a>
+                or <a style="cursor:pointer" @click="${() => {this._new = true;}}">create a new Person</a>
             `)}
             </div>
             <div slot="footer">
@@ -206,9 +201,12 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             if (email) newPerson.email = [email];
             if (web) newPerson.website = [web];
 
-            this._waitingFor = 'PostPerson' + identifierId;
-            identifierId += 1;
-            store.dispatch(personPost(newPerson, this._waitingFor));
+            this._waiting = true;
+            store.dispatch(personPost(newPerson)).then((person:Person) => {
+                this._waiting = false;
+                this._selected[person.id] = true;
+                this._new = false;
+            });
             showNotification("saveNotification", this.shadowRoot!);
         }
     }
@@ -232,8 +230,13 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
             if (email) editedPerson.email = [email];
             if (web) editedPerson.website = [web];
 
-            this._waitingFor = editedPerson.id;
-            store.dispatch(personPut(editedPerson));
+            this._waiting = true;
+            store.dispatch(personPut(editedPerson)).then((person: Person) => {
+                this._waiting = false;
+                this._selected[person.id] = true;
+                this._new = false;
+                this._selectedPersonUri = '';
+            });
             showNotification("saveNotification", this.shadowRoot!);
         }
     }
@@ -259,19 +262,17 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
         this._selectedPersonUri = personUri;
     }
 
-    _delete (personUri) {
+    _delete (person: Person) {
         if (confirm('This Person will be deleted on all related resources')) {
-            store.dispatch(personDelete(personUri));
-            if (this._selected[personUri])
-                delete this._selected[personUri];
+            store.dispatch(personDelete(person));
+            if (this._selected[person.id])
+                delete this._selected[person.id];
         }
     }
 
     firstUpdated () {
-        console.log('-------')
         this._loading = true;
         store.dispatch(personsGet()).then((persons) => {
-            console.log('asdasww')
             this._loading = false;
         });
     }
@@ -280,25 +281,6 @@ export class ModelsConfigurePerson extends connect(store)(PageViewElement) {
         if (state.modelCatalog) {
             let db = state.modelCatalog;
             this._persons = db.persons;
-            if (this._waitingFor) {
-                if (this._new) {
-                    if (db.created[this._waitingFor]) {
-                        this._waiting = false;
-                        this._selected[db.created[this._waitingFor]] = true;
-                        this._new = false;
-                        this._waitingFor = '';
-                    } else {
-                        this._waiting = true;
-                    }
-                } else {
-                    this._waiting = db.loading[this._waitingFor];
-                    if (this._waiting === false) {
-                        this._selected[this._waitingFor] = true;
-                        this._selectedPersonUri = '';
-                        this._waitingFor = '';
-                    }
-                }
-            }
         }
     }
 }

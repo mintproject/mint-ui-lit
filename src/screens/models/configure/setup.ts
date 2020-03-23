@@ -12,7 +12,7 @@ import { IdMap } from 'app/reducers';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { personGet, personPost, modelConfigurationSetupPut, regionGet,
+import { personGet, modelConfigurationSetupPut, regionGet, modelConfigurationSetupDelete,
          parameterGet, datasetSpecificationGet, gridGet,
          timeIntervalGet, processGet, softwareImageGet,
          sampleResourceGet, sampleCollectionGet } from 'model-catalog/actions';
@@ -25,11 +25,16 @@ import "weightless/slider";
 import "weightless/progress-spinner";
 import 'components/loading-dots'
 
+import './grid';
+import './time-interval';
 import './person';
 import './process';
 import './parameter';
 import './input';
 import './region';
+
+import { ModelsConfigureGrid } from './grid';
+import { ModelsConfigureTimeInterval } from './time-interval';
 import { ModelsConfigurePerson } from './person';
 import { ModelsConfigureProcess } from './process';
 import { ModelsConfigureParameter } from './parameter';
@@ -84,7 +89,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     private _regions : IdMap<Region> = {} as IdMap<Region>;
 
     @property({type: String})
-    private _dialog : ''|'person'|'process'|'parameter'|'input'|'region' = '';
+    private _dialog : ''|'person'|'process'|'parameter'|'input'|'region'|'grid'|'timeInterval' = '';
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
@@ -240,6 +245,14 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         goToPage(createUrl(this._model, this._version, this._config, this._setup) + '/edit');
     }
 
+    _delete () {
+        if (confirm('This setup and all its associated resources (variables, files) will be deleted. Are you sure?')) {
+            store.dispatch( modelConfigurationSetupDelete(this._setup) );
+            goToPage(createUrl(this._model, this._version, this._config));
+            //FIXME: Do something after the removal, is not removing the related resources.
+        }
+    }
+
     _saveConfig () {
         let labelEl     = this.shadowRoot.getElementById('edit-setup-name') as HTMLInputElement;
         let descEl      = this.shadowRoot.getElementById('edit-setup-desc') as HTMLInputElement;
@@ -265,8 +278,11 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             editedSetup.description = [desc];
             editedSetup.keywords = [keywords.split(/ *, */).join('; ')];
             editedSetup.hasComponentLocation = [compLoc];
-            //FIXME: for some reason adjustableParameter is not an object
-            editedSetup.adjustableParameter = (editedSetup.adjustableParameter||[]).map((uri) => {return  {id: uri}});
+            /*editedSetup.adjustableParameter = (editedSetup.adjustableParameter||[])
+                    .map((uri) => {return  {id: uri} as Parameter});*/
+
+            editedSetup.hasGrid = this._grid ? [this._grid] : undefined;
+            editedSetup.hasOutputTimeInterval = this._timeInterval ? [this._timeInterval] : undefined;
 
             console.log('saving', editedSetup);
             store.dispatch(modelConfigurationSetupPut(editedSetup)).then((setup) => {
@@ -302,8 +318,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 if (typeof id === 'object') id = id.id;
                 inputOrder.push(id);
             });
-            this._setup.hasInput.forEach((id) => {
-                if (typeof id === 'object') id = id['id'];
+            this._setup.hasInput.forEach((input) => {
+                let id : string = (typeof input === 'object') ? input.id : input;
                 if (inputOrder.indexOf(id) < 0) {
                     inputOrder.push(id)
                 }
@@ -349,7 +365,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Region:</td>
                 <td>
-                    ${this._setup.hasRegion.map((r:Region) => this._regions[r.id] ?
+                    ${(this._setup.hasRegion || []).map((r:Region) => this._regions[r.id] ?
                         html`<span class="region">${this._regions[r.id].label}</span>`
                         : html`${r.id} <loading-dots style="--width: 20px"></loading-dots>`
                     )}
@@ -398,7 +414,12 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 <td>
                     ${this._setup.hasSoftwareImage ? 
                     ((this._softwareImage && Object.keys(this._softwareImage).length > 0) ?
-                        html`<span class="software-image">${this._softwareImage.label}</span>`
+                        html`<span class="software-image">
+                            <a target="_blank"
+                               href="https://hub.docker.com/r/${this._softwareImage.label[0].split(':')[0]}/tags">
+                                ${this._softwareImage.label}
+                            </a>
+                        </span>`
                         : html`${this._setup.hasSoftwareImage[0]['id']} ${this._softwareImageLoading ?
                             html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`)
                     : 'No software image'}
@@ -417,34 +438,43 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Grid:</td>
                 <td>
-                    ${this._setup.hasGrid ?
-                    (this._grid ?
-                        html`
+                    ${this._gridLoading ?
+                        html`${this._setup.hasGrid[0].id} <loading-dots style="--width: 20px"></loading-dots>`
+                        : (this._grid ?  html`
                         <span class="grid">
                             <span style="margin-right: 30px; text-decoration: underline;">${this._grid.label}</span>
                             <span style="font-style: oblique; color: gray;">${this._grid.type.filter(g => g != 'Grid')}</span>
-                            ${this._editing ? html`<wl-icon style="margin-left:10px">edit</wl-icon>` : ''}
                             <br/>
                             <div style="display: flex; justify-content: space-between;">
                                 <span style="font-size: 12px;">Spatial resolution:</span>
-                                <span style="margin-right:20px; font-size: 14px;" class="monospaced">${this._grid.hasSpatialResolution}</span>
+                                <span style="margin-right:20px; font-size: 14px;" class="monospaced">
+                                    ${this._grid.hasSpatialResolution && this._grid.hasSpatialResolution.length > 0 ?
+                                        this._grid.hasSpatialResolution[0] : '-'}
+                                </span>
                                 <span style="font-size: 12px;">Dimensions:</span>
-                                <span style="margin-right:20px" class="number">${this._grid.hasDimension}</span>
+                                <span style="margin-right:20px" class="number">
+                                    ${this._grid.hasDimension && this._grid.hasDimension.length > 0 ? this._grid.hasDimension[0] : '-'}
+                                </span>
                                 <span style="font-size: 12px;">Shape:</span>
-                                <span style="font-size: 14px" class="monospaced">${this._grid.hasShape}</span>
+                                <span style="font-size: 14px" class="monospaced">
+                                    ${this._grid.hasShape && this._grid.hasShape.length > 0 ? this._grid.hasShape[0] : '-'}
+                                </span>
                             </div>
-                        </span>`
-                        : html`${this._setup.hasGrid[0].id} ${this._gridLoading ?
-                            html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`) 
-                    : 'No grid'}
+                        </span>` : 'No grid'
+                    )}
+                    ${this._editing ? html`
+                    <wl-button style="float:right;" class="small" flat inverted
+                        @click="${this._showGridDialog}"><wl-icon>edit</wl-icon></wl-button>
+                    `: ''}
                 </td>
             </tr>
 
             <tr>
                 <td>Time interval:</td>
                 <td>
-                    ${this._setup.hasOutputTimeInterval ?
-                    (this._timeInterval ? html`
+                    ${this._timeIntervalLoading ? 
+                        html`${this._setup.hasOutputTimeInterval[0].id} <loading-dots style="--width: 20px"></loading-dots>`
+                        : (this._timeInterval ? html`
                         <span class="time-interval">
                             <span style="display: flex; justify-content: space-between;">
                                 <span style="margin-right: 30px; text-decoration: underline;">
@@ -453,16 +483,15 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                                 <span> 
                                     ${this._timeInterval.intervalValue}
                                     ${this._timeInterval.intervalUnit ? this._timeInterval.intervalUnit[0].label : ''}
-                                    ${this._editing ? html`
-                                    <wl-icon style="margin-left:10px; --icon-size:  16px; cursor: pointer; vertical-align: middle;">edit</wl-icon>
-                                    ` : '' }
                                 </span>
                             </span>
                             <span style="font-style: oblique; color: gray;"> ${this._timeInterval.description} </span>
-                        </span>`
-                        : html`${this._setup.hasOutputTimeInterval[0].id} ${this._timeIntervalLoading ? 
-                            html`<loading-dots style="--width: 20px"></loading-dots>` : ''}`)
-                    : 'No time interval'}
+                        </span>` : 'No time interval'
+                    )}
+                    ${this._editing ? html`
+                    <wl-button style="float:right;" class="small" flat inverted
+                        @click="${this._showTimeIntervalDialog}"><wl-icon>edit</wl-icon></wl-button>
+                    ` : ''}
                 </td>
             </tr>
 
@@ -628,12 +657,14 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             </wl-button>
         </div>` 
         :html`
-        <div style="float:right; margin-top: 1em;">
-            <wl-button @click="${this._edit}">
-                <wl-icon>edit</wl-icon>&ensp;Edit
-            </wl-button>
+        <div style="margin-top: 1em;">
+            <wl-button style="float:right;" @click="${this._edit}"> <wl-icon>edit</wl-icon>&ensp;Edit </wl-button>
+            <wl-button style="--primary-hue: 0; --primary-saturation: 75%" @click="${this._delete}"> <wl-icon>delete</wl-icon>&ensp;Delete </wl-button>
         </div>`}
-        
+
+        <models-configure-grid id="grid-configurator" ?active=${this._dialog == 'grid'} class="page"></models-configure-grid>
+        <models-configure-time-interval id="time-interval-configurator" ?active=${this._dialog == 'timeInterval'} class="page">
+        </models-configure-time-interval>
         <models-configure-person id="person-configurator" ?active=${this._dialog == 'person'} class="page"></models-configure-person>
         <models-configure-process id="process-configurator" ?active=${this._dialog == 'process'} class="page"></models-configure-process>
         <models-configure-parameter id="parameter-configurator" ?active=${this._dialog == 'parameter'} class="page"></models-configure-parameter>
@@ -641,6 +672,22 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         <models-configure-region id="region-configurator" ?active=${this._dialog == 'region'} class="page"></models-configure-region>
         ${renderNotifications()}`
     } 
+
+    _showGridDialog () {
+        this._dialog = 'grid';
+        let gridConfigurator = this.shadowRoot.getElementById('grid-configurator') as ModelsConfigureGrid;
+        if (this._grid)
+            gridConfigurator.setSelected(this._grid);
+        gridConfigurator.open();
+    }
+
+    _showTimeIntervalDialog () {
+        this._dialog = 'timeInterval';
+        let timeIntervalConfigurator = this.shadowRoot.getElementById('time-interval-configurator') as ModelsConfigureTimeInterval;
+        if (this._timeInterval)
+            timeIntervalConfigurator.setSelected(this._timeInterval);
+        timeIntervalConfigurator.open();
+    }
 
     _loadSample (sampleID : string) {
         if (!this._sampleResources[sampleID] && !this._sampleResourcesLoading.has(sampleID)) {
@@ -761,6 +808,22 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         this.requestUpdate();
     }
 
+    _onGridSelected () {
+        let gridConfigurator = this.shadowRoot.getElementById('grid-configurator') as ModelsConfigureGrid;
+        let selectedGrid = gridConfigurator.getSelected();
+        console.log('Changed grid:', selectedGrid);
+        this._grid = selectedGrid;
+        this.requestUpdate();
+    }
+
+    _onTimeIntervalSelected () {
+        let timeIntervalConfigurator = this.shadowRoot.getElementById('time-interval-configurator') as ModelsConfigureTimeInterval;
+        let selectedTimeInterval = timeIntervalConfigurator.getSelected();
+        console.log('Changed time interval:', selectedTimeInterval);
+        this._timeInterval = selectedTimeInterval;
+        this.requestUpdate();
+    }
+
     updated () {
         if (this._editing && this._setup) {
             if (this._setup.parameterAssignmentMethod && this._setup.parameterAssignmentMethod.length === 1) {
@@ -772,6 +835,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
 
     firstUpdated () {
         this.addEventListener('dialogClosed', this._onClosedDialog);
+        this.addEventListener('gridSelected', this._onGridSelected);
+        this.addEventListener('timeIntervalSelected', this._onTimeIntervalSelected);
         this.addEventListener('authorsSelected', this._onAuthorsSelected);
         this.addEventListener('processesSelected', this._onProcessesSelected);
         this.addEventListener('parameterEdited', this._onParameterEdited);

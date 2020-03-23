@@ -26,6 +26,8 @@ import "weightless/progress-bar";
 import '../../../components/image-gallery'
 import '../../../components/loading-dots'
 
+import { showDialog, hideDialog } from 'util/ui_functions';
+
 function capitalizeFirstLetter (s:string) {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -114,6 +116,9 @@ export class ModelView extends connect(store)(PageViewElement) {
         'https://w3id.org/okn/i/mint/PIHM' : '/emulators/pihm',
         'https://w3id.org/okn/i/mint/HAND' : '/emulators/hand'
     }
+
+    @property({type: String})
+    private _runArgs : string = '';
 
     // URIs of selected resources
     private _selectedModel = null;
@@ -228,7 +233,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
 
                 .col-desc > wl-select {
-                    width: calc(100% - 55px);
+                    width: calc(100% - 100px);
                     margin-left:25px;
                 }
 
@@ -370,8 +375,64 @@ export class ModelView extends connect(store)(PageViewElement) {
                     border-bottom: 1px dotted;
                     cursor: pointer;
                 }
+
+                .code-example {
+                    display: grid;
+                    grid-template-columns: auto 38px;
+                    line-height:38px;
+                    height: 38px;
+                    background-color: white;
+                    padding-left:10px;
+                    border-radius: 8px;
+                    margin: 10px;
+                }
                 `
         ];
+    }
+
+    _renderCLIDialog () {
+        return html`
+        <wl-dialog class="larger" id="CLIDialog" fixed backdrop blockscrolling>
+            <h3 slot="header">Execute on Desktop Application for Model Execution</h3>
+            <div slot="content">
+                <wl-text> You can run this model on DAME with the following command: </wl-text>
+                <div class="monospaced code-example">
+                    <div style="font-size: 14px">
+                        <span style="color: darkgray;">$</span> mint run ${this._runArgs}
+                    </div>
+                    <div>
+                        <wl-button inverted flat @click="${this._copyRun}">
+                            <wl-icon>link</wl-icon>
+                        </wl-button>
+                    </div>
+                </div>
+                <wl-text> 
+                    Visit the
+                    <a target="_blank" href="https://mint-cli.readthedocs.io/en/latest/">
+                        <b>DAME</b> website
+                    </a>
+                    (Desktop Application for Model Execution) 
+                    for documentation and installation instructions.
+                </wl-text>
+            </div>
+            <div slot="footer">
+                <wl-button @click="${() => hideDialog("CLIDialog", this.shadowRoot)}" style="margin-right: 5px;" inverted flat>Close</wl-button>
+            </div>
+        </wl-dialog>`
+    }
+
+    _openCLIDialog (uri:string) {
+        this._runArgs = uri.split('/').pop();
+        showDialog("CLIDialog", this.shadowRoot);
+    }
+
+    _copyRun () {
+        let text : string = 'min run ' + this._runArgs;
+        navigator.clipboard.writeText(text).then(() => {
+            console.log('Text copied!');
+        }, (err) => {
+            console.warn('Could no copy text', err);
+        })
     }
 
     _addConfig () {
@@ -498,6 +559,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                 style="float: right;" class="tooltip ${hasVersions? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
+            <wl-button flat inverted @click=${() => this._openCLIDialog(this._config.uri)}
+                style="float:right; top:12px" class="${this._config && this._config.uri && hasVersions? '':'hidden'}">
+                <wl-icon>code</wl-icon>
+            </wl-button>
             <a target="_blank" href="${this._config ? this._config.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
                 class="rdf-icon ${this._config? '' : 'hidden'}"></a> 
             <wl-select label="Select a configuration" id="config-selector" @input="${this._onConfigChange}"
@@ -508,6 +573,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                 style="float: right;" class="tooltip ${hasCalibrations? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
+            <wl-button flat inverted @click=${() => this._openCLIDialog(this._calibration.uri)}
+                style="float:right; top:12px" class="${this._calibration && this._calibration.uri && hasVersions? '':'hidden'}">
+                <wl-icon>code</wl-icon>
+            </wl-button>
             <a target="_blank" href="${this._calibration ? this._calibration.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
                 class="rdf-icon ${this._calibration? '' : 'hidden'}"></a> 
             <wl-select label="Select a configuration setup" id="calibration-selector" @input="${this._onCalibrationChange}"
@@ -523,6 +592,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     protected render() {
         if (!this._model) return html``;
         return html`
+            ${this._renderCLIDialog()}
             <div class="wrapper">
                 <div class="col-img text-centered">
                     ${this._model.logo ? 
@@ -536,7 +606,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <wl-title level="2">
                         <a target="_blank" href="${this._model ? this._model.uri : ''}" class="rdf-icon"></a>
                         ${this._model.label}
-                        <a @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
+                        <a style="display:none" @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
                     </wl-title>
                     <wl-divider style="margin-bottom: .5em;"></wl-divider>
                     <wl-text >${this._model.desc}</wl-text>
@@ -558,6 +628,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 ${this._model.doc.split('/').pop() || this._model.doc}
                             </a>
                         </wl-text>` :''}
+                        ${this._model.keywords? html`<wl-text><b>• Keywords:</b> ${ this._model.keywords.join(', ') }</wl-text>` :''}
                     </div>
                     ${this._renderSelectors()}
                 </div>
@@ -975,8 +1046,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                             html`<li><b>Parameter assignment method:</b> ${this._calibrationMetadata[0].paramAssignMethod}</li>`: ''}
                         ${this._calibrationMetadata[0].fundS && this._configMetadata[0].fundS != this._calibrationMetadata[0].fundS? 
                             html`<wl-text><b>Funding Source:</b> ${this._configMetadata[0].fundS} </wl-text>` : ''}
-                        ${this._calibrationMetadata[0].regionName && 
-                          this._calibrationMetadata[0].regionName != this._configMetadata[0].regionName ?
+                        ${this._calibrationMetadata[0].regionName && (
+                          !this._configMetadata || this._configMetadata.length < 1 || !this._configMetadata[0].regionName ||
+                          this._calibrationMetadata[0].regionName != this._configMetadata[0].regionName) ?
                             html`<li><b>Region:</b> ${this._calibrationMetadata[0].regionName}</li>`: ''}
 
                         ${(this._calibrationMetadata[0].tIValue && this._calibrationMetadata[0].tIUnits && 
@@ -1428,14 +1500,16 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     updated () {
-        if (this._versions) {
-            this._updateConfigSelector();
-            this._updateCalibrationSelector();
-        }
-        if (this._tab == 'example' && this._model.example) {
-            let example = this.shadowRoot.getElementById('mk-example');
-            if (example) {
-                example.innerHTML = marked(this._model.example);
+        if (this._model) {
+            if (this._versions) {
+                this._updateConfigSelector();
+                this._updateCalibrationSelector();
+            }
+            if (this._tab == 'example' && this._model.example) {
+                let example = this.shadowRoot.getElementById('mk-example');
+                if (example) {
+                    example.innerHTML = marked(this._model.example);
+                }
             }
         }
         /* HTML description are not working
