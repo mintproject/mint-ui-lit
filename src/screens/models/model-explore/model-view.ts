@@ -613,7 +613,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${this._emulators[this._selectedModel] ?  html`
                     <div style="margin-top: 4px;">
                         You can see execution results for this model on
-                        <a href="${'/'+this._regionid+this._emulators[this._selectedModel]}">the emulations page</a>.
+                        <a href="${'/'+this._regionid+this._emulators[this._selectedModel]}">the emulators page</a>.
                     </div>` 
                     : ''}
                     <div id="desc-ext">
