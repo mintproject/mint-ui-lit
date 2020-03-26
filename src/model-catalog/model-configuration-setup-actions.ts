@@ -2,7 +2,7 @@ import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, ModelConfigurationSetup, ModelConfigurationSetupApi, ModelConfiguration,
          ConfigurationSetupApi, Parameter, DatasetSpecification } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, fixObjects,
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, fixObjects, getUser,
          DEFAULT_GRAPH, parameterPost, datasetSpecificationPost, modelConfigurationPut } from './actions';
 
 function debug (...args: any[]) { }// console.log('[MC ModelConfigurationSetup]', ...args); }
@@ -21,17 +21,24 @@ export const modelConfigurationSetupsGet: ActionThunk<Promise<IdMap<ModelConfigu
     if (!modelConfigurationSetupsPromise) {
         modelConfigurationSetupsPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
+            let user : string = getUser();
             let api : ModelConfigurationSetupApi = new ModelConfigurationSetupApi();
-            let req : Promise<ModelConfigurationSetup[]> = api.modelconfigurationsetupsGet({username: DEFAULT_GRAPH});
-            req.then((resp:ModelConfigurationSetup[]) => {
-                let data : IdMap<ModelConfigurationSetup> = resp.reduce(idReducer, {});
-                dispatch({
-                    type: MODEL_CONFIGURATION_SETUPS_ADD,
-                    payload: data
+            //let req1 : Promise<ModelConfigurationSetup[]> = api.modelconfigurationsetupsGet({username: DEFAULT_GRAPH});
+            let req2 : Promise<ModelConfigurationSetup[]> = api.modelconfigurationsetupsGet({username: user});
+
+            let promises : Promise<ModelConfigurationSetup[]>[] = [req2];
+            promises.forEach((p:Promise<ModelConfigurationSetup[]>, i:number) => {
+                p.then((resp:ModelConfigurationSetup[]) => dispatch({ type: MODEL_CONFIGURATION_SETUPS_ADD, payload: resp.reduce(idReducer, {}) }));
+                p.catch((err) => console.error('Error on GET ModelConfigurationSetups ' + (i==0?'System':'User'), err));
+            });
+
+            Promise.all(promises).then((values) => {
+                let data : IdMap<ModelConfigurationSetup> = {};
+                values.forEach((arr:ModelConfigurationSetup[]) => {
+                    data = arr.reduce(idReducer, data);
                 });
                 resolve(data);
-            });
-            req.catch((err) => {
+            }).catch((err) => {
                 console.error('Error on GET ModelConfigurationSetups', err);
                 reject(err);
             });
@@ -45,8 +52,9 @@ export const modelConfigurationSetupsGet: ActionThunk<Promise<IdMap<ModelConfigu
 export const modelConfigurationSetupGet: ActionThunk<Promise<ModelConfigurationSetup>, MCAModelConfigurationSetupsAdd> = (uri:string) => (dispatch) => {
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
+    let user : string = getUser();
     let api : ModelConfigurationSetupApi = new ModelConfigurationSetupApi();
-    let req : Promise<ModelConfigurationSetup> = api.modelconfigurationsetupsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<ModelConfigurationSetup> = api.modelconfigurationsetupsIdGet({username: user, id: id});
     req.then((resp:ModelConfigurationSetup) => {
         dispatch({
             type: MODEL_CONFIGURATION_SETUPS_ADD,

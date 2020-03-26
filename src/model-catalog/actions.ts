@@ -82,6 +82,11 @@ export const getStatusConfigAndUser = () => {
     return [status, cfg, user];
 }
 
+export const getUser = () => {
+    let state: any = store.getState();
+    return state.app.user ? state.app.user.email : DEFAULT_GRAPH;
+}
+
 export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAction | 
         ModelCatalogModelConfigurationAction | ModelCatalogModelConfigurationSetupAction | ModelCatalogPersonAction |
         ModelCatalogRegionAction | ModelCatalogGeoShapeAction | ModelCatalogGridAction | ModelCatalogProcessAction |
