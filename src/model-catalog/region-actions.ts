@@ -22,10 +22,10 @@ export const regionsGet: ActionThunk<Promise<IdMap<Region>>, MCARegionsAdd> = ()
             debug('Fetching all');
             let user : string = getUser();
             let api : RegionApi = new RegionApi();
-            let req1 : Promise<Region[]> = api.regionsGet({username: DEFAULT_GRAPH});
+            //let req1 : Promise<Region[]> = api.regionsGet({username: DEFAULT_GRAPH});
             let req2 : Promise<Region[]> = api.regionsGet({username: user});
 
-            let promises : Promise<Region[]>[] = [req1, req2];
+            let promises : Promise<Region[]>[] = [req2];
             promises.forEach((p:Promise<Region[]>, i:number) => {
                 p.then((resp:Region[]) => dispatch({ type: REGIONS_ADD, payload: resp.reduce(idReducer, {}) as IdMap<Region> }));
                 p.catch((err) => console.error('Error on GET Regions' + (i==0?'System':'User'), err) );

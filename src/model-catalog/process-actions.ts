@@ -22,10 +22,10 @@ export const processesGet: ActionThunk<Promise<IdMap<Process>>, MCAProcessesAdd>
             debug('Fetching all');
             let user : string = getUser();
             let api : ProcessApi = new ProcessApi();
-            let req1 : Promise<Process[]> = api.processsGet({username: DEFAULT_GRAPH});
+            //let req1 : Promise<Process[]> = api.processsGet({username: DEFAULT_GRAPH});
             let req2 : Promise<Process[]> = api.processsGet({username: user});
 
-            let promises : Promise<Process[]>[] = [req1, req2];
+            let promises : Promise<Process[]>[] = [req2];
             promises.forEach((p:Promise<Process[]>, i:number) => {
                 p.then((resp:Process[]) => dispatch({ type: PROCESSES_ADD, payload: resp.reduce(idReducer, {}) }));
                 p.catch((err) => console.error('Error on GET Processes ' + (i==0?'System':'User'), err));

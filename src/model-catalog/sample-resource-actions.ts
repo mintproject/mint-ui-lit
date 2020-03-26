@@ -22,10 +22,10 @@ export const sampleResourcesGet: ActionThunk<Promise<IdMap<SampleResource>>, MCA
             debug('Fetching all');
             let api : SampleResourceApi = new SampleResourceApi();
             let user : string = getUser();
-            let req1 : Promise<SampleResource[]> = api.sampleresourcesGet({username: DEFAULT_GRAPH});
+            //let req1 : Promise<SampleResource[]> = api.sampleresourcesGet({username: DEFAULT_GRAPH});
             let req2 : Promise<SampleResource[]> = api.sampleresourcesGet({username: user});
 
-            let promises : Promise<SampleResource[]>[] = [req1, req2];
+            let promises : Promise<SampleResource[]>[] = [req2];
             promises.forEach((p:Promise<SampleResource[]>, i:number) => {
                 p.then((resp:SampleResource[]) => dispatch({ type: SAMPLE_RESOURCES_ADD, payload: resp.reduce(idReducer, {}) }));
                 p.catch((err) => console.error('Error on GET SampleResources ' + (i==0?'System':'User'), err));

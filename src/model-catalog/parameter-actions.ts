@@ -22,10 +22,10 @@ export const parametersGet: ActionThunk<Promise<IdMap<Parameter>>, MCAParameters
             debug('Fetching all');
             let api : ParameterApi = new ParameterApi();
             let user : string = getUser();
-            let req1 : Promise<Parameter[]> = api.parametersGet({username: DEFAULT_GRAPH});
+            //let req1 : Promise<Parameter[]> = api.parametersGet({username: DEFAULT_GRAPH});
             let req2 : Promise<Parameter[]> = api.parametersGet({username: user});
 
-            let promises : Promise<Parameter[]>[] = [req1, req2];
+            let promises : Promise<Parameter[]>[] = [req2];
             promises.forEach((p:Promise<Parameter[]>, i:number) => {
                 p.then((resp:Parameter[]) => dispatch({ type: PARAMETERS_ADD, payload: resp.reduce(idReducer, {}) }));
                 p.catch((err) => console.error('Error on GET Parameters ' + (i==0?'System':'User'), err));

@@ -22,10 +22,10 @@ export const sampleCollectionsGet: ActionThunk<Promise<IdMap<SampleCollection>>,
             debug('Fetching all');
             let api : SampleCollectionApi = new SampleCollectionApi();
             let user : string = getUser();
-            let req1 : Promise<SampleCollection[]> = api.samplecollectionsGet({username: DEFAULT_GRAPH});
+            //let req1 : Promise<SampleCollection[]> = api.samplecollectionsGet({username: DEFAULT_GRAPH});
             let req2 : Promise<SampleCollection[]> = api.samplecollectionsGet({username: user});
 
-            let promises : Promise<SampleCollection[]>[] = [req1, req2];
+            let promises : Promise<SampleCollection[]>[] = [req2];
             promises.forEach((p:Promise<SampleCollection[]>, i:number) => {
                 p.then((resp:SampleCollection[]) => dispatch({ type: SAMPLE_COLLECTIONS_ADD, payload: resp.reduce(idReducer, {}) }));
                 p.catch((err) => console.error('Error on GET SampleCollections ' + (i==0?'System':'User'), err));

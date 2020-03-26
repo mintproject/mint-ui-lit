@@ -23,10 +23,10 @@ export const datasetSpecificationsGet: ActionThunk<Promise<IdMap<DatasetSpecific
             debug('Fetching all');
             let api : DatasetSpecificationApi = new DatasetSpecificationApi();
             let user : string = getUser();
-            let req1 : Promise<DatasetSpecification[]> = api.datasetspecificationsGet({username: DEFAULT_GRAPH});
+            //let req1 : Promise<DatasetSpecification[]> = api.datasetspecificationsGet({username: DEFAULT_GRAPH});
             let req2 : Promise<DatasetSpecification[]> = api.datasetspecificationsGet({username: user});
 
-            let promises : Promise<DatasetSpecification[]>[] = [req1, req2];
+            let promises : Promise<DatasetSpecification[]>[] = [req2];
             promises.forEach((p:Promise<DatasetSpecification[]>, i:number) => {
                 p.then((resp:DatasetSpecification[]) => dispatch({ type: DATASET_SPECIFICATIONS_ADD, payload: resp.reduce(idReducer, {}) }));
                 p.catch((err) => console.error('Error on GET DatasetSpecifications ' + (i==0?'System':'User'), err));

@@ -22,10 +22,10 @@ export const gridsGet: ActionThunk<Promise<IdMap<Grid>>, MCAGridsAdd> = () => (d
             debug('Fetching all');
             let user : string = getUser();
             let api : GridApi = new GridApi();
-            let req1 : Promise<Grid[]> = api.gridsGet({username: DEFAULT_GRAPH});
+            //let req1 : Promise<Grid[]> = api.gridsGet({username: DEFAULT_GRAPH});
             let req2 : Promise<Grid[]> = api.gridsGet({username: user});
 
-            let promises : Promise<Grid[]>[] = [req1, req2];
+            let promises : Promise<Grid[]>[] = [req2];
             promises.forEach((p:Promise<Grid[]>, i:number) => {
                 p.then((resp:Grid[]) => dispatch({ type: GRIDS_ADD, payload: resp.reduce(idReducer, {}) }));
                 p.catch((err) => console.error('Error on Get Grids ' + (i==0?'System':'User'), err));

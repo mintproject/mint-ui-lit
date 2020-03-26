@@ -23,10 +23,10 @@ export const modelConfigurationSetupsGet: ActionThunk<Promise<IdMap<ModelConfigu
             debug('Fetching all');
             let user : string = getUser();
             let api : ModelConfigurationSetupApi = new ModelConfigurationSetupApi();
-            let req1 : Promise<ModelConfigurationSetup[]> = api.modelconfigurationsetupsGet({username: DEFAULT_GRAPH});
+            //let req1 : Promise<ModelConfigurationSetup[]> = api.modelconfigurationsetupsGet({username: DEFAULT_GRAPH});
             let req2 : Promise<ModelConfigurationSetup[]> = api.modelconfigurationsetupsGet({username: user});
 
-            let promises : Promise<ModelConfigurationSetup[]>[] = [req1, req2];
+            let promises : Promise<ModelConfigurationSetup[]>[] = [req2];
             promises.forEach((p:Promise<ModelConfigurationSetup[]>, i:number) => {
                 p.then((resp:ModelConfigurationSetup[]) => dispatch({ type: MODEL_CONFIGURATION_SETUPS_ADD, payload: resp.reduce(idReducer, {}) }));
                 p.catch((err) => console.error('Error on GET ModelConfigurationSetups ' + (i==0?'System':'User'), err));

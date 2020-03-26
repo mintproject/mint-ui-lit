@@ -22,10 +22,10 @@ export const personsGet: ActionThunk<Promise<IdMap<Person>>, MCAPersonsAdd> = ()
             debug('Fetching all');
             let user : string = getUser();
             let api : PersonApi = new PersonApi();
-            let req1 : Promise<Person[]> = api.personsGet({username: DEFAULT_GRAPH});
+            //let req1 : Promise<Person[]> = api.personsGet({username: DEFAULT_GRAPH});
             let req2 : Promise<Person[]> = api.personsGet({username: user});
 
-            let promises : Promise<Person[]>[] = [req1, req2];
+            let promises : Promise<Person[]>[] = [req2];
             promises.forEach((p:Promise<Person[]>, i:number) => {
                 p.then((resp:Person[]) => dispatch({ type: PERSONS_ADD, payload: resp.reduce(idReducer, {}) }));
                 p.catch((err) => console.error('Error on GET Persons ' + (i==0?'System':'User'), err));

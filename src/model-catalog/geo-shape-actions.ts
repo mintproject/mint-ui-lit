@@ -41,10 +41,10 @@ export const geoShapesGet: ActionThunk<Promise<IdMap<GeoShape>>, MCAGeoShapesAdd
             debug('Fetching all');
             let api : GeoShapeApi = new GeoShapeApi();
             let user : string = getUser();
-            let req1 : Promise<GeoShape[]> = api.geoshapesGet({username: DEFAULT_GRAPH});
+            //let req1 : Promise<GeoShape[]> = api.geoshapesGet({username: DEFAULT_GRAPH});
             let req2 : Promise<GeoShape[]> = api.geoshapesGet({username: user});
 
-            let promises : Promise<GeoShape[]>[] = [req1, req2];
+            let promises : Promise<GeoShape[]>[] = [req2];
             promises.forEach((p:Promise<GeoShape[]>, i:number) => {
                 p.then((resp:GeoShape[]) => dispatch({ type: GEO_SHAPES_ADD, payload: resp.reduce(idReducer, {}) }));
                 p.catch((err) => console.error('Error on GET GeoShapes ' + (i==0?'System':'User'), err));

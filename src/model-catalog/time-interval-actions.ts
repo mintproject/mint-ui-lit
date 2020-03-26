@@ -22,10 +22,10 @@ export const timeIntervalsGet: ActionThunk<Promise<IdMap<TimeInterval>>, MCATime
             debug('Fetching all');
             let user : string = getUser();
             let api : TimeIntervalApi = new TimeIntervalApi();
-            let req1 : Promise<TimeInterval[]> = api.timeintervalsGet({username: DEFAULT_GRAPH});
+            //let req1 : Promise<TimeInterval[]> = api.timeintervalsGet({username: DEFAULT_GRAPH});
             let req2 : Promise<TimeInterval[]> = api.timeintervalsGet({username: user});
 
-            let promises : Promise<TimeInterval[]>[] = [req1, req2];
+            let promises : Promise<TimeInterval[]>[] = [req2];
             promises.forEach((p:Promise<TimeInterval[]>, i:number) => {
                 p.then((resp:TimeInterval[]) => dispatch({ type: TIME_INTERVALS_ADD, payload: resp.reduce(idReducer, {}) }));
                 p.catch((err) => console.error('Error on GET TimeIntervals ' + (i==0?'System':'User'), err));
