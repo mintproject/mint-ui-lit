@@ -386,6 +386,17 @@ export class ModelView extends connect(store)(PageViewElement) {
                     border-radius: 8px;
                     margin: 10px;
                 }
+
+                .small-tooltip:hover::after {
+                    bottom: 38px;
+                    right: 10%;
+                    width: 130px;
+                }
+
+                .small-tooltip:hover::before {
+                    bottom: 32px;
+                    right: 35%;
+                }
                 `
         ];
     }
@@ -556,13 +567,15 @@ export class ModelView extends connect(store)(PageViewElement) {
         let hasCalibrations = !!(this._config && this._config.calibrations);
         return html`
             <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" 
-                style="float: right;" class="tooltip ${hasVersions? '' : 'hidden'}">
+                style="float: right; top: -3px;" class="tooltip ${hasVersions? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
-            <wl-button flat inverted @click=${() => this._openCLIDialog(this._config.uri)}
-                style="float:right; top:12px" class="${this._config && this._config.uri && hasVersions? '':'hidden'}">
-                <wl-icon>code</wl-icon>
-            </wl-button>
+            <span class="tooltip small-tooltip ${this._config && this._config.uri && hasVersions? '':'hidden'}"
+                  tip="Download and Run" style="float:right; margin: 0px; top: 10px;">
+                <wl-button flat inverted @click=${() => this._openCLIDialog(this._config.uri)}>
+                    <wl-icon>code</wl-icon>
+                </wl-button>
+            </span>
             <a target="_blank" href="${this._config ? this._config.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
                 class="rdf-icon ${this._config? '' : 'hidden'}"></a> 
             <wl-select label="Select a configuration" id="config-selector" @input="${this._onConfigChange}"
@@ -570,13 +583,15 @@ export class ModelView extends connect(store)(PageViewElement) {
             </wl-select>
 
             <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region"
-                style="float: right;" class="tooltip ${hasCalibrations? '' : 'hidden'}">
+                style="float: right; top: -3px;" class="tooltip ${hasCalibrations? '' : 'hidden'}">
                 <wl-icon>help_outline</wl-icon>
             </span>
-            <wl-button flat inverted @click=${() => this._openCLIDialog(this._calibration.uri)}
-                style="float:right; top:12px" class="${this._calibration && this._calibration.uri && hasVersions? '':'hidden'}">
-                <wl-icon>code</wl-icon>
-            </wl-button>
+            <span class="tooltip small-tooltip ${this._calibration && this._calibration.uri && hasVersions? '':'hidden'}"
+                  tip="Download and Run" style="float:right; margin: 0px; top: 10px;">
+                <wl-button flat inverted @click=${() => this._openCLIDialog(this._calibration.uri)}>
+                    <wl-icon>code</wl-icon>
+                </wl-button>
+            </span>
             <a target="_blank" href="${this._calibration ? this._calibration.uri : ''}" style="margin: 17px 5px 0px 0px; float:left;"
                 class="rdf-icon ${this._calibration? '' : 'hidden'}"></a> 
             <wl-select label="Select a configuration setup" id="calibration-selector" @input="${this._onCalibrationChange}"
