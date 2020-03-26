@@ -993,14 +993,14 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         }
 
                         // Fetching ONE softwareImage FIXME
-                        /*if (!this._softwareImage && this._setup.hasSoftwareImage) {
+                        if (!this._softwareImage && this._setup.hasSoftwareImage) {
                             let si = this._setup.hasSoftwareImage[0];
                             let siId = typeof si === 'object' ? si.id : si;
                             if (!db.softwareImages || !db.softwareImages[siId]) {
                                 store.dispatch(softwareImageGet(siId));
                                 this._softwareImageLoading = true;
                             }
-                        }*/
+                        }
 
                     }
                 }

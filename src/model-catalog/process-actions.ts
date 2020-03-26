@@ -1,7 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Process, ProcessApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
          DEFAULT_GRAPH } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Process]', ...args); }
@@ -20,17 +20,24 @@ export const processesGet: ActionThunk<Promise<IdMap<Process>>, MCAProcessesAdd>
     if (!processesPromise) {
         processesPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
+            let user : string = getUser();
             let api : ProcessApi = new ProcessApi();
-            let req : Promise<Process[]> = api.processsGet({username: DEFAULT_GRAPH});
-            req.then((resp:Process[]) => {
-                let data : IdMap<Process> = resp.reduce(idReducer, {});
-                dispatch({
-                    type: PROCESSES_ADD,
-                    payload: data
+            let req1 : Promise<Process[]> = api.processsGet({username: DEFAULT_GRAPH});
+            let req2 : Promise<Process[]> = api.processsGet({username: user});
+
+            let promises : Promise<Process[]>[] = [req1, req2];
+            promises.forEach((p:Promise<Process[]>, i:number) => {
+                p.then((resp:Process[]) => dispatch({ type: PROCESSES_ADD, payload: resp.reduce(idReducer, {}) }));
+                p.catch((err) => console.error('Error on GET Processes ' + (i==0?'System':'User'), err));
+            });
+
+            Promise.all(promises).then((values) => {
+                let data : IdMap<Process> = {};
+                values.forEach((ps:Process[]) => {
+                    data = ps.reduce(idReducer, data);
                 });
                 resolve(data);
-            });
-            req.catch((err) => {
+            }).catch((err) => {
                 console.error('Error on GET Processes', err);
                 reject(err);
             });
@@ -44,8 +51,9 @@ export const processesGet: ActionThunk<Promise<IdMap<Process>>, MCAProcessesAdd>
 export const processGet: ActionThunk<Promise<Process>, MCAProcessesAdd> = (uri:string) => (dispatch) => {
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
+    let user : string = getUser();
     let api : ProcessApi = new ProcessApi();
-    let req : Promise<Process> = api.processsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<Process> = api.processsIdGet({username: user, id: id});
     req.then((resp:Process) => {
         dispatch({
             type: PROCESSES_ADD,

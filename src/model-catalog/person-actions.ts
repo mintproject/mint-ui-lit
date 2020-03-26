@@ -1,7 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Person, PersonApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
          DEFAULT_GRAPH } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Person]', ...args); }
@@ -20,17 +20,24 @@ export const personsGet: ActionThunk<Promise<IdMap<Person>>, MCAPersonsAdd> = ()
     if (!personsPromise) {
         personsPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
+            let user : string = getUser();
             let api : PersonApi = new PersonApi();
-            let req : Promise<Person[]> = api.personsGet({username: DEFAULT_GRAPH});
-            req.then((resp:Person[]) => {
-                let data : IdMap<Person> = resp.reduce(idReducer, {});
-                dispatch({
-                    type: PERSONS_ADD,
-                    payload: data
+            let req1 : Promise<Person[]> = api.personsGet({username: DEFAULT_GRAPH});
+            let req2 : Promise<Person[]> = api.personsGet({username: user});
+
+            let promises : Promise<Person[]>[] = [req1, req2];
+            promises.forEach((p:Promise<Person[]>, i:number) => {
+                p.then((resp:Person[]) => dispatch({ type: PERSONS_ADD, payload: resp.reduce(idReducer, {}) }));
+                p.catch((err) => console.error('Error on GET Persons ' + (i==0?'System':'User'), err));
+            });
+
+            Promise.all(promises).then((values) => {
+                let data : IdMap<Person> = {};
+                values.forEach((arr:Person[]) => {
+                    data = arr.reduce(idReducer, data);
                 });
                 resolve(data);
-            });
-            req.catch((err) => {
+            }).catch((err) => {
                 console.error('Error on GET Persons', err);
                 reject(err);
             });
@@ -43,9 +50,10 @@ export const personsGet: ActionThunk<Promise<IdMap<Person>>, MCAPersonsAdd> = ()
 
 export const personGet: ActionThunk<Promise<Person>, MCAPersonsAdd> = (uri:string) => (dispatch) => {
     debug('Fetching', uri);
+    let user : string = getUser();
     let id : string = getIdFromUri(uri);
     let api : PersonApi = new PersonApi();
-    let req : Promise<Person> = api.personsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<Person> = api.personsIdGet({username: user, id: id});
     req.then((resp:Person) => {
         dispatch({
             type: PERSONS_ADD,

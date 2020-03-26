@@ -1,7 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, SampleCollection, SampleCollectionApi, SampleResource } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
          DEFAULT_GRAPH, sampleResourcePost } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC SampleCollection]', ...args); }
@@ -21,16 +21,23 @@ export const sampleCollectionsGet: ActionThunk<Promise<IdMap<SampleCollection>>,
         sampleCollectionsPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
             let api : SampleCollectionApi = new SampleCollectionApi();
-            let req : Promise<SampleCollection[]> = api.samplecollectionsGet({username: DEFAULT_GRAPH});
-            req.then((resp:SampleCollection[]) => {
-                let data : IdMap<SampleCollection> = resp.reduce(idReducer, {});
-                dispatch({
-                    type: SAMPLE_COLLECTIONS_ADD,
-                    payload: data
+            let user : string = getUser();
+            let req1 : Promise<SampleCollection[]> = api.samplecollectionsGet({username: DEFAULT_GRAPH});
+            let req2 : Promise<SampleCollection[]> = api.samplecollectionsGet({username: user});
+
+            let promises : Promise<SampleCollection[]>[] = [req1, req2];
+            promises.forEach((p:Promise<SampleCollection[]>, i:number) => {
+                p.then((resp:SampleCollection[]) => dispatch({ type: SAMPLE_COLLECTIONS_ADD, payload: resp.reduce(idReducer, {}) }));
+                p.catch((err) => console.error('Error on GET SampleCollections ' + (i==0?'System':'User'), err));
+            });
+
+            Promise.all(promises).then((values) => {
+                let data : IdMap<SampleCollection> = {};
+                values.forEach((arr:SampleCollection[]) => {
+                    data = arr.reduce(idReducer, data);
                 });
                 resolve(data);
-            });
-            req.catch((err) => {
+            }).catch((err) => {
                 console.error('Error on GET SampleCollections', err);
                 reject(err);
             });
@@ -44,8 +51,9 @@ export const sampleCollectionsGet: ActionThunk<Promise<IdMap<SampleCollection>>,
 export const sampleCollectionGet: ActionThunk<Promise<SampleCollection>, MCASampleCollectionsAdd> = (uri:string) => (dispatch) => {
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
+    let user : string = getUser();
     let api : SampleCollectionApi = new SampleCollectionApi();
-    let req : Promise<SampleCollection> = api.samplecollectionsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<SampleCollection> = api.samplecollectionsIdGet({username: user, id: id});
     req.then((resp:SampleCollection) => {
         dispatch({
             type: SAMPLE_COLLECTIONS_ADD,

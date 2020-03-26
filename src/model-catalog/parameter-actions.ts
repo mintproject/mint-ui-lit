@@ -1,7 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Parameter, ParameterApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
          DEFAULT_GRAPH } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Parameter]', ...args); }
@@ -21,16 +21,23 @@ export const parametersGet: ActionThunk<Promise<IdMap<Parameter>>, MCAParameters
         parametersPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
             let api : ParameterApi = new ParameterApi();
-            let req : Promise<Parameter[]> = api.parametersGet({username: DEFAULT_GRAPH});
-            req.then((resp:Parameter[]) => {
-                let data : IdMap<Parameter> = resp.reduce(idReducer, {});
-                dispatch({
-                    type: PARAMETERS_ADD,
-                    payload: data
+            let user : string = getUser();
+            let req1 : Promise<Parameter[]> = api.parametersGet({username: DEFAULT_GRAPH});
+            let req2 : Promise<Parameter[]> = api.parametersGet({username: user});
+
+            let promises : Promise<Parameter[]>[] = [req1, req2];
+            promises.forEach((p:Promise<Parameter[]>, i:number) => {
+                p.then((resp:Parameter[]) => dispatch({ type: PARAMETERS_ADD, payload: resp.reduce(idReducer, {}) }));
+                p.catch((err) => console.error('Error on GET Parameters ' + (i==0?'System':'User'), err));
+            });
+
+            Promise.all(promises).then((values) => {
+                let data : IdMap<Parameter> = {};
+                values.forEach((params:Parameter[]) => {
+                    data = params.reduce(idReducer, data);
                 });
                 resolve(data);
-            });
-            req.catch((err) => {
+            }).catch((err) => {
                 console.error('Error on GET Parameters', err);
                 reject(err);
             });
@@ -44,8 +51,9 @@ export const parametersGet: ActionThunk<Promise<IdMap<Parameter>>, MCAParameters
 export const parameterGet: ActionThunk<Promise<Parameter>, MCAParametersAdd> = (uri:string) => (dispatch) => {
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
+    let user : string = getUser();
     let api : ParameterApi = new ParameterApi();
-    let req : Promise<Parameter> = api.parametersIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<Parameter> = api.parametersIdGet({username: user, id: id});
     req.then((resp:Parameter) => {
         dispatch({
             type: PARAMETERS_ADD,

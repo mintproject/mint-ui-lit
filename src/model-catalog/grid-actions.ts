@@ -1,7 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Grid, GridApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
          DEFAULT_GRAPH } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Grid]', ...args); }
@@ -20,18 +20,25 @@ export const gridsGet: ActionThunk<Promise<IdMap<Grid>>, MCAGridsAdd> = () => (d
     if (!gridsPromise) {
         gridsPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
+            let user : string = getUser();
             let api : GridApi = new GridApi();
-            let req : Promise<Grid[]> = api.gridsGet({username: DEFAULT_GRAPH});
-            req.then((resp:Grid[]) => {
-                let data : IdMap<Grid> = resp.reduce(idReducer, {});
-                dispatch({
-                    type: GRIDS_ADD,
-                    payload: data
+            let req1 : Promise<Grid[]> = api.gridsGet({username: DEFAULT_GRAPH});
+            let req2 : Promise<Grid[]> = api.gridsGet({username: user});
+
+            let promises : Promise<Grid[]>[] = [req1, req2];
+            promises.forEach((p:Promise<Grid[]>, i:number) => {
+                p.then((resp:Grid[]) => dispatch({ type: GRIDS_ADD, payload: resp.reduce(idReducer, {}) }));
+                p.catch((err) => console.error('Error on Get Grids ' + (i==0?'System':'User'), err));
+            });
+
+            Promise.all(promises).then((values) => {
+                let data : IdMap<Grid> = {};
+                values.forEach((grids:Grid[]) => {
+                    data = grids.reduce(idReducer, data);
                 });
                 resolve(data);
-            });
-            req.catch((err) => {
-                console.error('Error on GET Grids', err);
+            }).catch((err) => {
+                console.error('Error on GET Grid', err);
                 reject(err);
             });
         });
@@ -44,8 +51,9 @@ export const gridsGet: ActionThunk<Promise<IdMap<Grid>>, MCAGridsAdd> = () => (d
 export const gridGet: ActionThunk<Promise<Grid>, MCAGridsAdd> = (uri:string) => (dispatch) => {
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
+    let user : string = getUser();
     let api : GridApi = new GridApi();
-    let req : Promise<Grid> = api.gridsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<Grid> = api.gridsIdGet({username: user, id: id});
     req.then((resp:Grid) => {
         dispatch({
             type: GRIDS_ADD,
