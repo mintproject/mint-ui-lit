@@ -20,6 +20,7 @@ import { ModelCatalogDatasetSpecificationAction } from './dataset-specification-
 import { ModelCatalogSampleResourceAction } from './sample-resource-actions';
 import { ModelCatalogSampleCollectionAction } from './sample-collection-actions';
 import { ModelCatalogImageAction } from './image-actions';
+import { ModelCatalogVariablePresentationAction } from './variable-presentation-actions';
 
 export const DEFAULT_GRAPH = 'mint@isi.edu';
 export const PREFIX_URI = 'https://w3id.org/okn/i/mint/'
@@ -92,7 +93,7 @@ export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAc
         ModelCatalogRegionAction | ModelCatalogGeoShapeAction | ModelCatalogGridAction | ModelCatalogProcessAction |
         ModelCatalogParameterAction | ModelCatalogTimeIntervalAction | ModelCatalogSoftwareImageAction |
         ModelCatalogDatasetSpecificationAction | ModelCatalogSampleResourceAction | ModelCatalogSampleCollectionAction |
-        ModelCatalogImageAction;
+        ModelCatalogImageAction | ModelCatalogVariablePresentationAction;
 
 //FIXME: The API is returning only one model (void), doing the fetch instead.
 const CUSTOM_URI = "https://api.models.mint.isi.edu/v1.4.0/custom/";
@@ -162,16 +163,6 @@ export const modelsSearchStandardVariable = (term:string) => {
     });
 }
 
-export const setupsSearchVariable = (term:string) => {
-    return new Promise((resolve, reject) => {
-        let req = fetch(CUSTOM_URI + "modelconfigurationsetups/variable?username=mint%40isi.edu&custom_query_name=custom_modelconfigurationsetups_variable&label=" + term);
-        req.then((response) => {
-            response.json().then(resolve);
-        });
-        req.catch(reject);
-    });
-}
-
 export * from './model-actions';
 export * from './version-actions';
 export * from './model-configuration-actions';
@@ -188,3 +179,4 @@ export * from './dataset-specification-actions';
 export * from './sample-resource-actions';
 export * from './sample-collection-actions';
 export * from './image-actions';
+export * from './variable-presentation-actions';

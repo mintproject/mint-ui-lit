@@ -15,19 +15,16 @@ import { MODELS_ADD, MODEL_DELETE,
          SAMPLE_RESOURCES_ADD, SAMPLE_RESOURCE_DELETE, 
          SAMPLE_COLLECTIONS_ADD, SAMPLE_COLLECTION_DELETE, 
          SOFTWARE_IMAGES_ADD, SOFTWARE_IMAGE_DELETE,
-         IMAGES_ADD, IMAGE_DELETE
+         IMAGES_ADD, IMAGE_DELETE,
+         VARIABLE_PRESENTATIONS_ADD, VARIABLE_PRESENTATION_DELETE,
          } from './actions'
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Region, GeoShape, Grid,
          Process, Parameter, TimeInterval, SoftwareImage, DatasetSpecification, SampleResource, Image,
-         SampleCollection } from '@mintproject/modelcatalog_client';
+         SampleCollection, VariablePresentation } from '@mintproject/modelcatalog_client';
 import { IdMap } from 'app/reducers'
 
 export interface ModelCatalogState {
-    loading: {[key:string]: boolean},
-    loadedAll: {[key:string]: boolean},
-    created: {[key:string]: string}, //Here we assign some identifier to a POST request, when complete stores the URI
-
     models:                 IdMap<Model>;
     versions:               IdMap<SoftwareVersion>;
     configurations:         IdMap<ModelConfiguration>;
@@ -44,13 +41,10 @@ export interface ModelCatalogState {
     sampleResources:        IdMap<SampleResource>;
     sampleCollections:      IdMap<SampleCollection>;
     images:                 IdMap<Image>;
+    variablePresentations:  IdMap<VariablePresentation>;
 }
 
 const INITIAL_STATE: ModelCatalogState = { 
-    loading: {},
-    loadedAll: {},
-    created: {},
-
     models:                 {} as IdMap<Model>,
     versions:               {} as IdMap<SoftwareVersion>,
     configurations:         {} as IdMap<ModelConfiguration>,
@@ -66,7 +60,8 @@ const INITIAL_STATE: ModelCatalogState = {
     datasetSpecifications:  {} as IdMap<DatasetSpecification>,
     sampleResources:        {} as IdMap<SampleResource>,
     sampleCollections:      {} as IdMap<SampleCollection>,
-    images:                 {} as IdMap<Image>
+    images:                 {} as IdMap<Image>,
+    variablePresentations:  {} as IdMap<VariablePresentation>
 } as ModelCatalogState;
 
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -104,6 +99,8 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             return { ...state, setups: {...state.setups, ...action.payload} };
         case IMAGES_ADD:
             return { ...state, images: {...state.images, ...action.payload} };
+        case VARIABLE_PRESENTATIONS_ADD:
+            return { ...state, variablePresentations: {...state.variablePresentations, ...action.payload} };
 
         case MODEL_DELETE:
             tmp = { ...state.models };
@@ -169,6 +166,10 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             tmp = { ...state.images };
             delete tmp[action.uri];
             return { ...state, images: tmp };
+        case VARIABLE_PRESENTATION_DELETE:
+            tmp = { ...state.variablePresentations };
+            delete tmp[action.uri];
+            return { ...state, variablePresentations: tmp };
 
         default:
             return state;

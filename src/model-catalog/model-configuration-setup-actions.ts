@@ -180,7 +180,17 @@ export const modelConfigurationSetupDelete: ActionThunk<void, MCAModelConfigurat
 
 export function setupGetAll (uri:string) : Promise<ModelConfigurationSetup> {
     debug('Fetching setup (all info)', uri);
+    let user : string = getUser();
     let id = uri.split('/').pop();
-    let api = new ConfigurationSetupApi();
-    return api.customConfigurationsetupsIdGet({username: DEFAULT_GRAPH, id: id});
+    let api : ModelConfigurationSetupApi = new ModelConfigurationSetupApi();
+    return api.customModelconfigurationsetupsIdGet({username: user, id: id});
 }
+
+export const setupsSearchVariable = (term:string) => {
+    debug('Searching by variable:', term);
+    let user : string = getUser();
+    let api : ModelConfigurationSetupApi = new ModelConfigurationSetupApi();
+    let req : Promise<ModelConfigurationSetup[]> = api.customModelconfigurationsetupsVariableGet({username: user, label: term});
+    return req;
+}
+

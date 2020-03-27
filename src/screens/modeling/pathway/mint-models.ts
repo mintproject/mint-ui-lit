@@ -8,6 +8,7 @@ import models, { VariableModels, Model } from "../../models/reducers";
 import { SharedStyles } from "../../../styles/shared-styles";
 import { updatePathway, deleteAllPathwayEnsembleIds } from "../actions";
 import { removeDatasetFromPathway, matchVariables, getUISelectedSubgoalRegion } from "../../../util/state_functions";
+import { isSubregion } from "model-catalog/util";
 
 import "weightless/tooltip";
 import "weightless/popover-card";
@@ -131,6 +132,9 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         let done = (this.pathway.models && modelids.length > 0);
         let availableModels = this._queriedModels[this._responseVariables.join(",")] || [];
         let regionModels = availableModels.filter((model: Model) => {
+            if (!!model.hasRegion && 
+                model.hasRegion.some((region) => isSubregion(this._region.model_catalog_uri, region)))
+                return true;
             let model_region_name = model.calibrated_region.toLowerCase();
             let top_region_name = this._region.name.toLowerCase();
             let task_region_name = this._subregion ? this._subregion.name.toLowerCase() : null;
@@ -405,6 +409,11 @@ export class MintModels extends connect(store)(MintPathwayPage) {
 
     _selectPathwayModels() {
         let models = this._getSelectedModels();
+        Object.values(models).forEach((model) => {
+            if (model.hasRegion)
+                delete model.hasRegion;
+        });
+        console.log('9>', models);
         let model_ensembles:ModelEnsembleMap = this.pathway.model_ensembles || {};
         let executable_ensemble_summary:IdMap<ExecutableEnsembleSummary> = this.pathway.executable_ensemble_summary || {};
 
