@@ -331,6 +331,16 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
     }
     else {
         //START
+        if (driving_variables.length == 0) {
+            dispatch({
+                type: DATASETS_VARIABLES_QUERY,
+                modelid: modelid,
+                inputid: inputid,
+                datasets: [],
+                loading: false
+            });
+            return;
+        }
         dispatch({
             type: DATASETS_VARIABLES_QUERY,
             modelid: modelid,

@@ -4,7 +4,7 @@ import { Configuration, Parameter, ParameterApi } from '@mintproject/modelcatalo
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
          DEFAULT_GRAPH } from './actions';
 
-function debug (...args: any[]) {}// console.log('[MC Parameter]', ...args); }
+function debug (...args: any[]) { console.log('[MC Parameter]', ...args); }
 
 export const PARAMETERS_ADD = "PARAMETERS_ADD";
 export const PARAMETER_DELETE = "PARAMETER_DELETE";
