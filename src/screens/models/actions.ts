@@ -126,12 +126,15 @@ const dsSpecToIO = (ds: DatasetSpecification) => {
         variables: [], //TODO does not return hasInput -> hasPresentation -> hasStandarVariable
     }
 
-    /*console.log('o>', ds.hasPresentation);
     if (ds.hasPresentation) {
-        Promise.all(ds.hasPresentation.map(vp => variablePresentationGetProm(vp.id))).then((results:any) => {
-            console.log('*>', results);
-        });
-    }*/
+        let vars : Set<string> = new Set();
+        ds.hasPresentation.map(vp => {
+            (vp.hasStandardVariable||[]).forEach((sv) => 
+                vars.add(sv.label ? sv.label[0] : "")
+            )
+        })
+        io.variables = Array.from(vars);
+    }
 
     if (ds.hasFixedResource) {
         io["value"] = fixedToValue(ds.hasFixedResource[0]);
@@ -227,8 +230,6 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
         Promise.all(
             setups.map((s:ModelConfigurationSetup) => setupGetAll(s.id))
         ).then((setups) => {
-            //console.log('0>', setups);
-            //console.log('1>', setups.map(setupToOldModel));
             dispatch({
                 type: MODELS_VARIABLES_QUERY,
                 variables: response_variables,
