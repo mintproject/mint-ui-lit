@@ -413,7 +413,6 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             if (model.hasRegion)
                 delete model.hasRegion;
         });
-        console.log('9>', models);
         let model_ensembles:ModelEnsembleMap = this.pathway.model_ensembles || {};
         let executable_ensemble_summary:IdMap<ExecutableEnsembleSummary> = this.pathway.executable_ensemble_summary || {};
 
