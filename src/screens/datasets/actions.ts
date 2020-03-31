@@ -638,3 +638,32 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
         })
     });*/
 };
+
+export const queryDatasetResourcesRaw = (dsid: string, region: Region, prefs: MintPreferences) : Promise<Dataset[]> => {
+    let queryBody = {
+        "dataset_ids__in": [dsid],
+        "limit": 100
+    };
+    if (region) {
+        let geojson = JSON.parse(region.geojson_blob);
+        queryBody["spatial_coverage__intersects"] = geojson.geometry;
+    }
+
+    let prom : Promise<Dataset[]> = new Promise((resolve, reject) => {
+        fetch(prefs.data_catalog_api + "/datasets/find", {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(queryBody)
+        }).then((response) => {
+            response.json().then((obj) => {
+                let datasets: Dataset[] = getDatasetsFromDCResponse(obj, {});
+                resolve(datasets);
+            }).catch((err) => {
+                reject(err);
+            });
+        }).catch((err) => {
+            reject(err);
+        });
+    });
+    return prom;
+};

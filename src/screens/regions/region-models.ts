@@ -5,7 +5,7 @@ import { connect } from 'pwa-helpers/connect-mixin';
 
 import 'components/google-map-custom';
 import 'weightless/progress-spinner';
-import { RegionQueryPage } from './region-query-page';
+import { PageViewElement } from 'components/page-view-element';
 import { SharedStyles } from 'styles/shared-styles';
 import { goToPage } from 'app/actions';
 import { UserPreferences, IdMap } from 'app/reducers';
@@ -15,54 +15,40 @@ import { modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetup
          datasetSpecificationGet, sampleResourceGet, sampleCollectionGet, setupGetAll } from 'model-catalog/actions';
 
 import { isSubregion } from 'model-catalog/util';
-import { GeoShape } from '@mintproject/modelcatalog_client';
+import { GeoShape, Region, Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
+import { Dataset } from "screens/datasets/reducers";
 
-import { queryDatasetResourcesAndSave } from 'screens/datasets/actions';
+import { queryDatasetResourcesAndSave, queryDatasetResourcesRaw } from 'screens/datasets/actions';
 
 interface GeoShapeBBox extends GeoShape {
     bbox?: BoundingBox
 }
 
 @customElement('region-models')
-export class RegionModels extends connect(store)(RegionQueryPage)  {
+export class RegionModels extends connect(store)(PageViewElement)  {
     @property({type: Object})
     private prefs : UserPreferences;
 
+    @property({type: Object})
+    protected _selectedRegion: any;
+
     @property({type: Boolean})
-    private _fullyLoaded : boolean = false;
+    private _loading : boolean = false;
 
-    @property({type: Boolean})
-    private _loadingDatasets : boolean = false;
+    /* Model catalog data */
+    @property({type: Object}) private _geoShapes : IdMap<GeoShapeBBox> = {};
+    @property({type: Object}) private _regions : IdMap<Region> = {};
+    @property({type: Object}) private _models : IdMap<Model> = {};
+    @property({type: Object}) private _versions : IdMap<SoftwareVersion> = {};
+    @property({type: Object}) private _configs : IdMap<ModelConfiguration> = {};
+    @property({type: Object}) private _setups : IdMap<ModelConfigurationSetup> = {};
 
-    @property({type: Object})
-    private _geoShapes : IdMap<GeoShapeBBox> = {} as IdMap<GeoShapeBBox>;
+    @property({type: Boolean}) private _loadingSetups : boolean = false;
+    @property({type: Array}) private _matchingSetups : ModelConfigurationSetup[] = [];
+    @property({type: Object}) private _categorizedMatchingSetups : IdMap<ModelConfigurationSetup[]> = {};
 
-    @property({type: Object})
-    private _mregions : any = {}
-
-    @property({type: Object})
-    private _models : any = {}
-
-    @property({type: Object})
-    private _versions : any = {}
-
-    @property({type: Object})
-    private _configs : any = {}
-
-    @property({type: Object})
-    private _setups : any = {}
-
-    @property({type: Object})
-    private _datasets : any = {}
-
-    @property({type: Array})
-    private _matchingModelSetups : any = [];
-
-    @property({type: Object})
-    private _categorizedMatchingSetups : any = {};
-
-    @property({type: Array})
-    private _matchingModelDatasets : any = [];
+    @property({type: Boolean}) private _loadingDatasets : boolean = false;
+    @property({type: Array}) private _matchingModelDatasets : Dataset[] = [];
 
     static get styles() {
         return [SharedStyles, css`
@@ -86,8 +72,9 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
         let pCon = store.dispatch(modelConfigurationsGet());
         let pSet = store.dispatch(modelConfigurationSetupsGet());
 
+        this._loading = true;
         Promise.all([pGeo, pReg, pMod, pVer, pCon, pSet]).then((v) => {
-            this._fullyLoaded = true;
+            this._loading = false;
             if (this._selectedRegion) {
                 this._getMatchingModels();
             }
@@ -131,43 +118,55 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
     }
 
     private _getMatchingModels() {
-        this._matchingModelSetups = [];
+        /* Get setups */
+        this._matchingSetups = [];
+        this._loadingSetups = true;
+        let selbox : BoundingBox = this._selectedRegion.bounding_box;
+        let regions : Set<string> = new Set();
+        let parentRegion : string = this._region.model_catalog_uri;
+
+        Object.values(this._regions).forEach((region:Region) => {
+            (region.geo || []).forEach((geo:GeoShape) => {
+                let geoshape = this._geoShapes[geo.id];
+                if (geoshape && geoshape.bbox) {
+                    let bbox : BoundingBox = geoshape.bbox;
+                    if (bbox && bbox.xmin && this._doBoxesIntersect(bbox, selbox) && isSubregion(parentRegion, region)) {
+                        regions.add(region.id);
+                    }
+                }
+            });
+        });
+        //console.log('regions:', regions);
+
+        let setups : Set<string> = new Set();
+        Object.values(this._setups).forEach((setup:ModelConfigurationSetup) => {
+            if ( (setup.hasRegion || []).some((region:Region) => regions.has(region.id)) ) {
+                setups.add(setup.id);
+            }
+        });
+        //console.log('setups': setups);
+
+        this._matchingSetups = Array.from(setups).map((sid:string) => this._setups[sid]);
+
+        this._categorizedMatchingSetups = this._matchingSetups
+                .reduce((map:IdMap<ModelConfigurationSetup[]>, setup:ModelConfigurationSetup) => {
+            let cat : string = setup.hasModelCategory && setup.hasModelCategory.length > 0 ?
+                    setup.hasModelCategory[0] : 'Uncategorized'; 
+            if (!map[cat]) map[cat] = [setup];
+            else map[cat].push(setup)
+            return map;
+        }, {});
+        this._loadingSetups = false;
+
+        if (this._matchingSetups.length == 0) return;
+
         this._matchingModelDatasets = [];
         this._loadingDatasets = true;
-        Object.keys(this._geoShapes).map((geoId:string) => {
-            let bbox = this._geoShapes[geoId].bbox as BoundingBox;
-            let selbox = this._selectedRegion.bounding_box;
-            if (!bbox || !bbox.xmin) {
-                return;
-            }
-            if (this._doBoxesIntersect(bbox, selbox)) {
-                let region : any = Object.values(this._mregions).filter((r:any) => r.geo && r.geo.length > 0 && r.geo[0].id === geoId)[0];
-                let modelsInside = Object.values(this._setups)
-                    .filter((c:any) => (c.hasRegion||[]).some((r:any) => isSubregion(region.id, this._mregions[r.id])));
-                if (modelsInside) {
-                    this._matchingModelSetups = this._matchingModelSetups.concat(modelsInside);
-                }
-            }
-        });
-        this._categorizedMatchingSetups = this._matchingModelSetups.reduce((dic, setup) => {
-            let cat : string = setup.hasModelCategory && setup.hasModelCategory.length > 0 ?
-                    setup.hasModelCategory[0] : ''; 
-            if (cat) {
-                if (!dic[cat]) dic[cat] = [setup];
-                else dic[cat].push(setup)
-            }
-            return dic;
-        }, {})
 
-        let uniq = {}
-        Object.keys(this._categorizedMatchingSetups).forEach((key:string) => {
-            uniq[key] = Array.from(new Set(this._categorizedMatchingSetups[key]));
-        });
-        this._categorizedMatchingSetups = uniq;
-
-        Promise.all(this._matchingModelSetups.map(setup => setupGetAll(setup.id))).then((setups) => {
+        Promise.all(this._matchingSetups.map((setup:ModelConfigurationSetup) => setupGetAll(setup.id)))
+        .then((setups:ModelConfigurationSetup[]) => {
             let datasets = new Set();
-            setups.forEach((setup:any) => {
+            setups.forEach((setup:ModelConfigurationSetup) => {
                 (setup.hasInput||[]).forEach(input => {
                     (input.hasFixedResource||[]).forEach(sample => {
                         (sample.dataCatalogIdentifier||[]).forEach(dsid => {
@@ -180,89 +179,112 @@ export class RegionModels extends connect(store)(RegionQueryPage)  {
                     });
                 });
             });
-            datasets.forEach(ds => {
-                this._matchingModelDatasets.push(ds);
-                store.dispatch(queryDatasetResourcesAndSave(ds, this._selectedRegion, this.prefs.mint));
-            });
+
+            if (datasets.size > 0) {
+                Promise.all(
+                    Array.from(datasets).map(ds => queryDatasetResourcesRaw(ds, this._selectedRegion, this.prefs.mint))
+                ).then((results) => {
+                    let dss : Dataset[] = [];
+                    results.forEach((arr: Dataset[]) => {
+                        arr.forEach((ds: Dataset) => {
+                            dss.push(ds);
+                        });
+                    });
+                    this._matchingModelDatasets = dss;
+                    this._loadingDatasets = false;
+                }).catch((err) => {
+                    console.warn(err);
+                    this._loadingDatasets = false;
+                });
+            } else {
+                this._loadingDatasets = false;
+            }
+        }).catch((err) => {
+            console.warn(err);
             this._loadingDatasets = false;
         });
     }
 
     protected render() {
-        return html`
-            ${this._selectedRegion ? html`
+        if (!this._selectedRegion) return html``;
+
+        if (this._loading)
+            return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
+        else return html`
             <wl-title level="4" style="font-size: 17px; margin-top: 20px;">Models for ${this._selectedRegion.name}</wl-title>
-                ${this._fullyLoaded ? html`
-                    ${Object.keys(this._categorizedMatchingSetups).length == 0 ?  'No models for this region' : ''}
-                    ${Object.keys(this._categorizedMatchingSetups).map((category:string) => html`
+            ${this._loadingSetups ? 
+                html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
+                : (Object.keys(this._categorizedMatchingSetups).length == 0 ? 
+                    html`<div class="info-center">No models for this region</div>`
+                    : Object.keys(this._categorizedMatchingSetups).map((category:string) => html`
                         <wl-expansion name="models">
                             <span slot="title">${category} models</span>
                             <span slot="description">${this._categorizedMatchingSetups[category].length} setups found</span>
-                            ${this._categorizedMatchingSetups[category].map((setup) => html`
-                            <a href="${this._getModelURL(setup.id)}" class="no-decorator"><wl-list-item class="active">
+                            ${this._categorizedMatchingSetups[category].map((setup:ModelConfigurationSetup) => html`
+                            <a href="${this._getModelURL(setup.id)}" class="no-decorator">
+                            <wl-list-item class="active" 
+                                    @mouseover="${() => {console.log('123')}}"
+                                    @mouseout="${() => {console.log('321')}}">
                                 <wl-icon slot="before">web</wl-icon>
                                 <wl-title level="4" style="margin: 0;">${setup.label}</wl-title>
 
                                 <div>
                                     <b>Regions:</b>
-                                    ${setup.hasRegion.map(r => this._mregions[r.id].label).join(', ')}
+                                    ${setup.hasRegion.map(r => this._regions[r.id].label).join(', ')}
                                 </div>
 
-                            </wl-list-item></a>
-                            `)}
-                        </wl-expansion>
-                    `)}` 
-                    : html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`}`
-                : ""
-            }
-
-            ${this._selectedRegion && this._matchingModelSetups.length > 0?
-            html`
-                <wl-title level="4" style="font-size: 17px; margin-top: 20px;">Datasets used by models in ${this._selectedRegion.name}</wl-title>
-                ${this._loadingDatasets ? html`
-                <div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` 
-                : html`
-                    ${this._matchingModelDatasets.length === 0 ? html`
-                    <div class="info-center">
-                        No datasets for models in ${this._selectedRegion.name}
-                    </div>`
-                    : html`
-                        ${this._matchingModelDatasets.map(dsId => this._datasets && this._datasets[dsId] ? html`
-                            <wl-list-item class="active" @click="${() => goToPage('datasets/browse/'+dsId)}">
-                                <wl-icon slot="before">folder</wl-icon>
-                                <wl-title level="4" style="margin: 0">${this._datasets[dsId].name}</wl-title>
-                                <div>
-                                    ${this._datasets[dsId].is_cached ? 
-                                        html`<span style="color: green">Available on MINT servers</span>` :
-                                        html`<span style="color: lightsalmon">Available for download</span>`}
-                                    <span style="color: gray">-</span> ${this._datasets[dsId].resource_count} files
-                                </div>
                             </wl-list-item>
-                        `: '')}
-                    `}
-                `}
-            `: ''
+                            </a>`
+                            )}
+                        </wl-expansion>`
+                    ) 
+                )
             }
-        `;
+
+            ${this._matchingSetups.length > 0 ? 
+                html`
+                <wl-title level="4" style="font-size: 17px; margin-top: 20px;">
+                    Datasets used by models in ${this._selectedRegion.name}
+                </wl-title>
+                ${this._loadingDatasets ? 
+                    html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
+                    : (this._matchingModelDatasets.length == 0 ?
+                        html`<div class="info-center"> No datasets for models in ${this._selectedRegion.name} </div>`
+                        : this._matchingModelDatasets.map((ds:Dataset) => html`
+                            <wl-list-item class="active" @click="${() => goToPage('datasets/browse/'+ds.id)}">
+                                <wl-icon slot="before">folder</wl-icon>
+                                <wl-title level="4" style="margin: 0">${ds.name}</wl-title>
+                                <div>
+                                    ${ds.is_cached ? 
+                                        html`<span style="color: green">Available on MINT servers</span>`
+                                        : html`<span style="color: lightsalmon">Available for download</span>`}
+                                    <span style="color: gray">-</span> ${ds.resource_count} files
+                                </div>
+                            </wl-list-item>`
+                        )
+                    )
+                }`
+                : ''}`;
     }
 
     stateChanged(state: RootState) {
-        let curregion = this._selectedRegion;
-        super.setSelectedRegion(state);
+        super.setRegion(state);
         this.prefs = state.app.prefs;
 
-        if(this._selectedRegion) {
-            if(curregion != this._selectedRegion) {
-                this._getMatchingModels();
-            }
+        let curregion = this._selectedRegion;
+        if(state.regions && state.regions.regions) {
+            let regions = state.regions.regions;
+            this._selectedRegion = regions[state.ui.selected_sub_regionid];
         }
 
-        this._datasets = state.datasets ? state.datasets.datasets : state.datasets;
+        if (this._selectedRegion && this._selectedRegion != curregion) {
+            this._getMatchingModels();
+        }
 
         if (state && state.modelCatalog) {
             let db = state.modelCatalog;
             this._geoShapes = db.geoShapes;
-            this._mregions = db.regions;
+            this._regions = db.regions;
             this._models = db.models;
             this._versions = db.versions;
             this._configs = db.configurations;

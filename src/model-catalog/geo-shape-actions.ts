@@ -41,23 +41,15 @@ export const geoShapesGet: ActionThunk<Promise<IdMap<GeoShape>>, MCAGeoShapesAdd
             debug('Fetching all');
             let api : GeoShapeApi = new GeoShapeApi();
             let user : string = getUser();
-            //let req1 : Promise<GeoShape[]> = api.geoshapesGet({username: DEFAULT_GRAPH});
-            let req2 : Promise<GeoShape[]> = api.geoshapesGet({username: user});
 
-            let promises : Promise<GeoShape[]>[] = [req2];
-            promises.forEach((p:Promise<GeoShape[]>, i:number) => {
-                p.then((resp:GeoShape[]) => dispatch({ type: GEO_SHAPES_ADD, payload: resp.reduce(idReducer, {}) }));
-                p.catch((err) => console.error('Error on GET GeoShapes ' + (i==0?'System':'User'), err));
-            });
-
-            Promise.all(promises).then((values) => {
-                let data : IdMap<GeoShape> = {};
-                values.forEach((arr:GeoShape[]) => {
-                    data = arr.reduce(idReducer, data);
-                });
+            let req : Promise<GeoShape[]> = api.geoshapesGet({username: user});
+            req.then((resp:GeoShape[]) => {
+                let data : IdMap<GeoShape> = resp.map(parseBoundingBox).reduce(idReducer, {});
+                dispatch({ type: GEO_SHAPES_ADD, payload: data});
                 resolve(data);
-            }).catch((err) => {
-                console.error('Error on GET GeoShapes', err);
+            });
+            req.catch((err) => {
+                console.error('Error on GET GeoShapes', err)
                 reject(err);
             });
         });
@@ -74,6 +66,7 @@ export const geoShapeGet: ActionThunk<Promise<GeoShape>, MCAGeoShapesAdd> = ( ur
     let api : GeoShapeApi = new GeoShapeApi();
     let req : Promise<GeoShape> = api.geoshapesIdGet({username: user, id: id});
     req.then((resp:GeoShape) => {
+        //TODO: add bbox
         dispatch({
             type: GEO_SHAPES_ADD,
             payload: idReducer({}, resp)
