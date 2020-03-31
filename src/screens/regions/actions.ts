@@ -9,6 +9,7 @@ import { OFFLINE_DEMO_MODE } from "../../app/actions";
 export const REGIONS_LIST_TOP_REGIONS = 'REGIONS_LIST_TOP_REGIONS';
 export const REGIONS_LIST_SUB_REGIONS = 'REGIONS_LIST_SUB_REGIONS';
 //export const REGIONS_ADD = 'REGIONS_ADD';
+export const REGIONS_SET_PREVIEW = 'REGIONS_SET_PREVIEW';
 
 export interface RegionsActionListTopRegions extends Action<'REGIONS_LIST_TOP_REGIONS'> { 
     regions: RegionMap
@@ -18,8 +19,21 @@ export interface RegionsActionListSubRegions extends Action<'REGIONS_LIST_SUB_RE
     regions: RegionMap
 };
 //export interface RegionsActionAdd extends Action<'REGIONS_ADD'> { loading: boolean };
+export interface RegionsActionSetPreview extends Action<'REGIONS_SET_PREVIEW'> { 
+    payload: BoundingBox | null
+};
 
-export type RegionsAction =  RegionsActionListTopRegions | RegionsActionListSubRegions;
+export type RegionsAction =  RegionsActionListTopRegions | RegionsActionListSubRegions | RegionsActionSetPreview;
+
+// Set bbox preview
+type BBoxPreviewThunkResult = ThunkAction<void, RootState, undefined, RegionsActionSetPreview>;
+export const setPreview: ActionCreator<BBoxPreviewThunkResult> = (bbox: BoundingBox | null) => (dispatch) => {
+    dispatch({
+        type: REGIONS_SET_PREVIEW,
+        payload: bbox
+    });
+};
+
 
 // List Regions
 type ListRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListTopRegions>;

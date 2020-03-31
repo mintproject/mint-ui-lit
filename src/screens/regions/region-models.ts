@@ -10,6 +10,7 @@ import { SharedStyles } from 'styles/shared-styles';
 import { goToPage } from 'app/actions';
 import { UserPreferences, IdMap } from 'app/reducers';
 import { BoundingBox } from './reducers';
+import { setPreview } from './actions';
 
 import { modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet, regionsGet, geoShapesGet,
          datasetSpecificationGet, sampleResourceGet, sampleCollectionGet, setupGetAll } from 'model-catalog/actions';
@@ -49,6 +50,8 @@ export class RegionModels extends connect(store)(PageViewElement)  {
 
     @property({type: Boolean}) private _loadingDatasets : boolean = false;
     @property({type: Array}) private _matchingModelDatasets : Dataset[] = [];
+
+    private _bbox_preview = null;
 
     static get styles() {
         return [SharedStyles, css`
@@ -205,6 +208,23 @@ export class RegionModels extends connect(store)(PageViewElement)  {
         });
     }
 
+    private _setSetupPreview (setup:ModelConfigurationSetup) {
+        if (setup.hasRegion && setup.hasRegion.length > 0) {
+            let region = this._regions[setup.hasRegion[0].id];
+            if (region.geo && region.geo.length > 0) {
+                let geo = this._geoShapes[region.geo[0].id];
+                if (geo.bbox != this._bbox_preview)
+                    store.dispatch(setPreview(geo.bbox));
+            }
+        }
+    }
+
+    private _clearPreview () {
+        if (this._bbox_preview) {
+            store.dispatch(setPreview(null));
+        }
+    }
+
     protected render() {
         if (!this._selectedRegion) return html``;
 
@@ -217,14 +237,13 @@ export class RegionModels extends connect(store)(PageViewElement)  {
                 : (Object.keys(this._categorizedMatchingSetups).length == 0 ? 
                     html`<div class="info-center">No models for this region</div>`
                     : Object.keys(this._categorizedMatchingSetups).map((category:string) => html`
-                        <wl-expansion name="models">
+                        <wl-expansion name="models" @mouseleave="${this._clearPreview}">
                             <span slot="title">${category} models</span>
                             <span slot="description">${this._categorizedMatchingSetups[category].length} setups found</span>
                             ${this._categorizedMatchingSetups[category].map((setup:ModelConfigurationSetup) => html`
-                            <a href="${this._getModelURL(setup.id)}" class="no-decorator">
-                            <wl-list-item class="active" 
-                                    @mouseover="${() => {console.log('123')}}"
-                                    @mouseout="${() => {console.log('321')}}">
+                            <a href="${this._getModelURL(setup.id)}" class="no-decorator"
+                                    @mouseenter="${() => this._setSetupPreview(setup)}">
+                            <wl-list-item class="active">
                                 <wl-icon slot="before">web</wl-icon>
                                 <wl-title level="4" style="margin: 0;">${setup.label}</wl-title>
 
@@ -272,9 +291,12 @@ export class RegionModels extends connect(store)(PageViewElement)  {
         this.prefs = state.app.prefs;
 
         let curregion = this._selectedRegion;
-        if(state.regions && state.regions.regions) {
-            let regions = state.regions.regions;
-            this._selectedRegion = regions[state.ui.selected_sub_regionid];
+        if(state.regions) {
+            this._bbox_preview = state.regions.bbox_preview;
+            if (state.regions.regions) {
+                let regions = state.regions.regions;
+                this._selectedRegion = regions[state.ui.selected_sub_regionid];
+            }
         }
 
         if (this._selectedRegion && this._selectedRegion != curregion) {
