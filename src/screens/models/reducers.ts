@@ -22,11 +22,12 @@ export interface Model extends IdNameObject {
     parameter_assignment_details?: string,
     target_variable_for_parameter_assignment?: string,
     modeled_processes?: string[],
-    dimensionality?: number,
+    dimensionality?: number|string,
     spatial_grid_type?: string,
     spatial_grid_resolution?: string,
     minimum_output_time_interval?: string,
-    usage_notes?: string
+    usage_notes?: string,
+    hasRegion?: any
 };
 
 export interface ModelIO extends IdNameObject {

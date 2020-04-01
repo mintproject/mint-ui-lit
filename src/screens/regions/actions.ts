@@ -19,21 +19,20 @@ export interface RegionsActionListSubRegions extends Action<'REGIONS_LIST_SUB_RE
     regions: RegionMap
 };
 //export interface RegionsActionAdd extends Action<'REGIONS_ADD'> { loading: boolean };
-export interface RegionsActionSetPreview extends Action<'REGIONS_SET_PREVIEW'> { 
-    payload: BoundingBox | null
+export interface RegionsActionSetPreview extends Action<'REGIONS_SET_PREVIEW'> {
+    payload: BoundingBox[]
 };
 
 export type RegionsAction =  RegionsActionListTopRegions | RegionsActionListSubRegions | RegionsActionSetPreview;
 
 // Set bbox preview
 type BBoxPreviewThunkResult = ThunkAction<void, RootState, undefined, RegionsActionSetPreview>;
-export const setPreview: ActionCreator<BBoxPreviewThunkResult> = (bbox: BoundingBox | null) => (dispatch) => {
+export const setPreview: ActionCreator<BBoxPreviewThunkResult> = (bbox: BoundingBox[]) => (dispatch) => {
     dispatch({
         type: REGIONS_SET_PREVIEW,
         payload: bbox
     });
 };
-
 
 // List Regions
 type ListRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListTopRegions>;
