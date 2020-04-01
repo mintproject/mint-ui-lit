@@ -19,6 +19,7 @@ export interface RegionsActionListSubRegions extends Action<'REGIONS_LIST_SUB_RE
     regions: RegionMap
 };
 //export interface RegionsActionAdd extends Action<'REGIONS_ADD'> { loading: boolean };
+
 export interface RegionsActionSetPreview extends Action<'REGIONS_SET_PREVIEW'> {
     payload: BoundingBox[]
 };

@@ -51,7 +51,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
     @property({type: Boolean}) private _loadingDatasets : boolean = false;
     @property({type: Array}) private _matchingModelDatasets : Dataset[] = [];
 
-    private _bbox_preview = null;
+    private _bbox_preview = [];
 
     static get styles() {
         return [SharedStyles, css`
@@ -258,6 +258,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
             Array.from(selGeo).map((gid) => this._geoShapes[gid].bbox)
         ));
     }
+
 
     private _clearPreview () {
         if (this._bbox_preview && this._bbox_preview.length > 0) {
