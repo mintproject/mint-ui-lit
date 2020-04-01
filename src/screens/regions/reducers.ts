@@ -18,7 +18,7 @@ export interface RegionsState {
     regions?: RegionMap,
     top_region_ids?: string[],
     sub_region_ids?: IdMap<string[]>,
-    bbox_preview?: BoundingBox | null,
+    bbox_preview?: BoundingBox[]
 }
 
 export interface RegionCategory {

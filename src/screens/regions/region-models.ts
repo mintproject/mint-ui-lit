@@ -51,7 +51,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
     @property({type: Boolean}) private _loadingDatasets : boolean = false;
     @property({type: Array}) private _matchingModelDatasets : Dataset[] = [];
 
-    private _bbox_preview = null;
+    private _bbox_preview = [];
 
     static get styles() {
         return [SharedStyles, css`
@@ -120,11 +120,40 @@ export class RegionModels extends connect(store)(PageViewElement)  {
             box1.ymin <= box2.ymax && box1.ymax >= box2.ymin);
     }
 
+    private _pointInPolygon (point, polygon) {
+        let x = point[0];
+        let y = point[1];
+        let inside = false;
+
+        for (let i = 0, j = polygon.length -1; i < polygon.length; j = i++) {
+            let xi = polygon[i][0];
+            let yi = polygon[i][1];
+            let xj = polygon[j][0];
+            let yj = polygon[j][1];
+            
+            let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+    private _bboxInRegion (bbox: BoundingBox, region) {
+        let points = [
+            [bbox.xmin, bbox.ymin],
+            [bbox.xmin, bbox.ymax],
+            [bbox.xmax, bbox.ymin],
+            [bbox.xmax, bbox.ymax]
+        ];
+        let poly = JSON.parse(region.geojson_blob).geometry.coordinates[0][0];
+        return points.some((point) => this._pointInPolygon(point, poly));
+    }
+
     private _getMatchingModels() {
         /* Get setups */
         this._matchingSetups = [];
         this._loadingSetups = true;
         let selbox : BoundingBox = this._selectedRegion.bounding_box;
+        let selArea : number = (selbox.xmax - selbox.xmin) * (selbox.ymax - selbox.ymin);
         let regions : Set<string> = new Set();
         let parentRegion : string = this._region.model_catalog_uri;
 
@@ -134,7 +163,11 @@ export class RegionModels extends connect(store)(PageViewElement)  {
                 if (geoshape && geoshape.bbox) {
                     let bbox : BoundingBox = geoshape.bbox;
                     if (bbox && bbox.xmin && this._doBoxesIntersect(bbox, selbox) && isSubregion(parentRegion, region)) {
-                        regions.add(region.id);
+                        // A point inside the bbox does not mean that the point is inside the polygon
+                        let area : number = (bbox.xmax - bbox.xmin) * (bbox.ymax - bbox.ymin);
+                        if (area > selArea || this._bboxInRegion(bbox, this._selectedRegion) ) {
+                            regions.add(region.id);
+                        }
                     }
                 }
             });
@@ -168,7 +201,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
 
         Promise.all(this._matchingSetups.map((setup:ModelConfigurationSetup) => setupGetAll(setup.id)))
         .then((setups:ModelConfigurationSetup[]) => {
-            let datasets = new Set();
+            let datasets : Set<string> = new Set();
             setups.forEach((setup:ModelConfigurationSetup) => {
                 (setup.hasInput||[]).forEach(input => {
                     (input.hasFixedResource||[]).forEach(sample => {
@@ -176,16 +209,17 @@ export class RegionModels extends connect(store)(PageViewElement)  {
                             if (dsid[0] != 'F' && dsid[1] != 'F' && dsid[2] != 'F')
                                 datasets.add(dsid);
                         });
-                    });
-                    (input.hasPart||[]).forEach(sample => {
-                        console.log('!collection', sample)
+                        /*TODO: this can be a sampleCollection.
+                        if (sample.hasPart && sample.hasPart.length > 0) {
+                            console.log('is a collection!', sample.hasPart);
+                        }*/
                     });
                 });
             });
 
             if (datasets.size > 0) {
                 Promise.all(
-                    Array.from(datasets).map(ds => queryDatasetResourcesRaw(ds, this._selectedRegion, this.prefs.mint))
+                    Array.from(datasets).map((ds:string) => queryDatasetResourcesRaw(ds, this._selectedRegion, this.prefs.mint))
                 ).then((results) => {
                     let dss : Dataset[] = [];
                     results.forEach((arr: Dataset[]) => {
@@ -209,19 +243,26 @@ export class RegionModels extends connect(store)(PageViewElement)  {
     }
 
     private _setSetupPreview (setup:ModelConfigurationSetup) {
-        if (setup.hasRegion && setup.hasRegion.length > 0) {
-            let region = this._regions[setup.hasRegion[0].id];
-            if (region.geo && region.geo.length > 0) {
-                let geo = this._geoShapes[region.geo[0].id];
-                if (geo.bbox != this._bbox_preview)
-                    store.dispatch(setPreview(geo.bbox));
+        let parentRegion : string = this._region.model_catalog_uri;
+        let selGeo : Set<string> = new Set();
+        (setup.hasRegion || []).forEach((reg) => {
+            let region = this._regions[reg.id];
+            if (isSubregion(parentRegion, region)) {
+                (region.geo || []).forEach((g:any) => {
+                    selGeo.add(g.id);
+                });
             }
-        }
+        })
+
+        store.dispatch(setPreview(
+            Array.from(selGeo).map((gid) => this._geoShapes[gid].bbox)
+        ));
     }
 
+
     private _clearPreview () {
-        if (this._bbox_preview) {
-            store.dispatch(setPreview(null));
+        if (this._bbox_preview && this._bbox_preview.length > 0) {
+            store.dispatch(setPreview([]));
         }
     }
 

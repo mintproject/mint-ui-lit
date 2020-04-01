@@ -59,7 +59,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     private _mapReady: boolean = false;
 
     @property({type: Object})
-    private _bbox_preview: BoundingBox | null = null;
+    private _bbox_preview: BoundingBox[] = [];
 
     private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
 
@@ -244,7 +244,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 map.setRegions(this._regions.filter(
                     (region) => region.region_type == (this._selectedSubcategory ? this._selectedSubcategory : this.regionType)),
                     this._selectedSubregionId);
-                if (this._bbox_preview) map.addBoundingBox(this._bbox_preview);
+                (this._bbox_preview || []).forEach((bbox) => map.addBoundingBox(bbox));
                 this._mapReady = true;
             }
             catch {
@@ -252,7 +252,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 map.setRegions(this._regions.filter(
                     (region) => region.region_type == (this._selectedSubcategory ? this._selectedSubcategory : this.regionType)),
                     this._selectedSubregionId);
-                if (this._bbox_preview) map.addBoundingBox(this._bbox_preview);
+                (this._bbox_preview || []).forEach((bbox) => map.addBoundingBox(bbox));
                 this._mapReady = true;
               })
             }
@@ -529,9 +529,12 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             }
         }
 
-        if (state.regions && state.regions.bbox_preview != this._bbox_preview) {
-            this._bbox_preview = state.regions.bbox_preview;
-            this.addRegionsToMap();
+        if (state.regions && state.regions.bbox_preview) {
+            if (!this._bbox_preview || state.regions.bbox_preview.length != this._bbox_preview.length ||
+                state.regions.bbox_preview.some((bbox, i) => this._bbox_preview[i] != bbox)) {
+                this._bbox_preview = state.regions.bbox_preview;
+                this.addRegionsToMap();
+            }
         }
 
         if(this._regionid && this._region) {
