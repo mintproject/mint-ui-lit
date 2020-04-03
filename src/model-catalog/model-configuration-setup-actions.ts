@@ -173,6 +173,6 @@ export const modelConfigurationSetupDelete: ActionThunk<void, MCAModelConfigurat
 export function setupGetAll (uri:string) : Promise<ModelConfigurationSetup> {
     debug('Fetching setup (all info)', uri);
     let id = uri.split('/').pop();
-    let api = new ConfigurationSetupApi();
-    return api.customConfigurationsetupsIdGet({username: DEFAULT_GRAPH, id: id});
+    let api = new ModelConfigurationSetupApi();
+    return api.customModelconfigurationsetupsIdGet({username: DEFAULT_GRAPH, id: id});
 }

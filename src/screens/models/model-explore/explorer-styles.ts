@@ -88,6 +88,8 @@ th > span.tooltip > wl-icon {
 }
 
 span.resource {
+    display: inline-block;
+    line-height: 1em;
     margin-right: 4px;
     border-radius: 4px;
     padding: 1px 4px;

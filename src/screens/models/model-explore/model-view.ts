@@ -12,10 +12,12 @@ import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersio
         fetchMetadataForModelConfig, fetchMetadataNoioForModelConfig, fetchScreenshotsForModelConfig,
         fetchAuthorsForModelConfig, fetchDescriptionForVar } from '../../../util/model-catalog-actions';
 //
-import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Organization, FundingInformation, 
-         Image } from '@mintproject/modelcatalog_client';
-import { modelGet, versionGet, modelConfigurationGet,  imageGet, personGet, organizationGet, fundingInformationGet } from 'model-catalog/actions';
-import { capitalizeFirstLetter, getId, getLabel, getURL } from 'model-catalog/util';
+import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Organization, Region, FundingInformation, 
+         Image, Grid, TimeInterval, Process } from '@mintproject/modelcatalog_client';
+import { modelGet, versionGet, versionsGet, modelConfigurationGet, modelConfigurationsGet, modelConfigurationSetupsGet,
+         modelConfigurationSetupGet, imageGet, personGet, regionsGet, organizationGet, fundingInformationGet,
+         timeIntervalGet, gridGet, processGet, setupGetAll } from 'model-catalog/actions';
+import { capitalizeFirstLetter, getId, getLabel, getURL, isEmpty } from 'model-catalog/util';
 
 import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
@@ -48,17 +50,35 @@ export class ModelView extends connect(store)(PageViewElement) {
     @property({type:String}) private _selectedConfig  : string = '';
     @property({type:String}) private _selectedSetup   : string = '';
 
-    @property({type: Object}) private _loading : IdMap<boolean> = {} as IdMap<boolean>;
+    // All versions, configs and setups
+    @property({type: Object}) private _versions : IdMap<SoftwareVersion> = {} as IdMap<SoftwareVersion>;
+    @property({type: Object}) private _configs : IdMap<ModelConfiguration> = {} as IdMap<ModelConfiguration>;
+    @property({type: Object}) private _setups : IdMap<ModelConfigurationSetup> = {} as IdMap<ModelConfigurationSetup>;
+    @property({type: Object}) private _regions : IdMap<Region> = {} as IdMap<Region>;
+
+    // Direct data for this model
     @property({type: Object}) private _model! : Model;
+    @property({type: Object}) private _version! : SoftwareVersion | null = null;
+    @property({type: Object}) private _config! : ModelConfiguration | null = null;
+    @property({type: Object}) private _setup! : ModelConfigurationSetup | null = null;
     @property({type: Object}) private _logo! : Image;
     @property({type: Object}) private _authors : IdMap<Person> = {} as IdMap<Person>;
     @property({type: Object}) private _funding : IdMap<Funding> = {} as IdMap<Funding>;
     @property({type: Object}) private _organizations : IdMap<Organization> = {} as IdMap<Organization>;
-    @property({type: Object}) private _versions : IdMap<SoftwareVersion> = {} as IdMap<SoftwareVersion>;
-    @property({type: Object}) private _configs : IdMap<Configuration> = {} as IdMap<Configuration>;
+    @property({type: Object}) private _timeIntervals : IdMap<TimeInterval> = {} as IdMap<TimeInterval>;
+    @property({type: Object}) private _grids : IdMap<Grid> = {} as IdMap<Grid>;
+    @property({type: Object}) private _processes : IdMap<Process> = {} as IdMap<Process>;
 
+    // Computed data
+    @property({type: Array}) private _modelRegions : string[] | null = null;
+
+    // Booleans
+    @property({type: Object}) private _loading : IdMap<boolean> = {} as IdMap<boolean>;
     @property({type: Boolean}) private _shouldUpdateConfigs : boolean = false;
     @property({type: Boolean}) private _shouldUpdateSetups : boolean = false;
+    @property({type: Boolean}) private _loadingGlobals : boolean = false;
+    @property({type: Boolean}) private _loadingRegions : boolean = false;
+
     /***********/
     @property({type: Number})
     private _count : number = 0;
@@ -89,12 +109,12 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _allModels : any = null;
     private _uriToUrl : Map<string,string> | null = null;
 
-    @property({type: Object})
+    /*@property({type: Object})
     private _version : VersionDetail | null = null;
 
     @property({type: Object})
     private _config : ConfigDetail | null = null;
-
+*/
     @property({type: Object})
     private _calibration : CalibrationDetail | null = null;
 
@@ -268,13 +288,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                     margin: 0;
                 }
 
-                #desc-ext {
+                .desc-ext {
                     padding: 10px 5px 0px 5px;
+                    line-height: 1.5em;
                 }
 
-                #desc-ext > wl-text {
+                .desc-ext > wl-text {
                     display: block;
-                    margin-bottom: 5px;
                 }
                 
                 .row-tab-header {
@@ -458,7 +478,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         let configSelectorWl : Select = this.shadowRoot!.getElementById('config-selector');
         let configSelector : HTMLSelectElement | null = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
         if (configSelectorWl && configSelector) {
-            console.log('Updating Selector');
+            console.log('Updating Config Selector');
             this._shouldUpdateConfigs = false;
             while (configSelector.options.length > 0)
                 configSelector.remove(configSelector.options.length - 1);
@@ -478,7 +498,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                 configSelector.add(newOption, null);
 
                 if (ver.hasConfiguration) {
-                    ver.hasConfiguration.forEach((cfg:Configuration) => {
+                    ver.hasConfiguration
+                            .map((cfg:Configuration) => this._configs[cfg.id] ? this._configs[cfg.id] : cfg)
+                            .forEach((cfg:Configuration) => {
                         let newOption = document.createElement('option');
                         newOption.text = '\xA0\xA0' + getLabel(cfg);
                         newOption.value = cfg.id;
@@ -519,6 +541,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         let setupSelectorWl : Select = this.shadowRoot!.getElementById('setup-selector');
         let setupSelector : HTMLSelectElement | null = setupSelectorWl? setupSelectorWl.getElementsByTagName('select')[0] : null;
         if (setupSelectorWl && setupSelector && this._config) {
+            console.log('Updating Setup Selector', this._config);
             this._shouldUpdateSetups = false;
             while (setupSelector.options.length > 0) 
                 setupSelector.remove(setupSelector.options.length - 1);
@@ -527,7 +550,9 @@ export class ModelView extends connect(store)(PageViewElement) {
             unselect.text = '\xA0\xA0No setup selected'
             unselect.value = '';
             setupSelector.add(unselect, null);
-            (this._config.hasSetup || []).forEach((setup:ModelConfigurationSetup) => {
+            (this._config.hasSetup || [])
+                    .map((setup:ModelConfigurationSetup) => this._setups[setup.id] ? this._setups[setup.id] : setup)
+                    .forEach((setup:ModelConfigurationSetup) => {
                 let newOption = document.createElement('option');
                 newOption.text = '\xA0\xA0' + getLabel(setup);
                 newOption.value = setup.id;
@@ -541,6 +566,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                 arrowEl.style.pointerEvents = "none";
             }
             setupSelectorWl.refreshAttributes();
+        } else {
+            console.warn('Setup selector not found!');
         }
     }
 
@@ -560,11 +587,8 @@ export class ModelView extends connect(store)(PageViewElement) {
     _renderSelectors () {
         if (!this._model.hasVersion) {
             return html`<div class="info-center">- No version available -</div>`;
-            //return html`<wl-progress-bar></wl-progress-bar>`;
         }
         let hasVersions = (this._model.hasVersion.length > 0);
-        let hasSetups = !!(this._config && this._config.calibrations);
-
         return html`
             <div class="config-selector">
                 <span style="text-align: center;">
@@ -622,7 +646,12 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     protected render() {
-        if (!this._model) return html`NO MODEL`;
+        if (this._loading[this._selectedModel])
+            return html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`
+
+        if (!this._model)
+            return html`NO MODEL`;
+
         let modelType : string[] = this._model.type ?
                 this._model.type.map((t:string) => t.replace('Model', '')).filter(t => !!t)
                 : [];
@@ -653,39 +682,21 @@ export class ModelView extends connect(store)(PageViewElement) {
                       :''}
                     ${modelType.length > 0 ? html`<div><b>Model type:</b> ${modelType.join(', ')}</div>`:''}
                 </div>
-                <div class="col-desc" style="text-align: justify;">
+                <div class="col-desc">
                     <wl-divider style="margin-bottom: .5em;"></wl-divider>
-                    <wl-text >${this._model.description}</wl-text>
+                    <wl-text style="text-align: justify;">${this._model.description}</wl-text>
                     ${this._emulators[this._selectedModel] ?  html`
                     <div style="margin-top: 4px;">
                         You can see execution results for this model on
                         <a href="${'/'+this._regionid+this._emulators[this._selectedModel]}">the emulators page</a>.
                     </div>` 
                     : ''}
-                    <div id="desc-ext">
+                    <div class="desc-ext">
                         ${this._model.author?
-                          html`<wl-text><b>• Authors:</b>
-                            ${ this._model.author.map((author:Person) => this._loading[author.id] ? 
-                                html`${getId(author)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
-                                : html`
-                                    <span class="resource author">
-                                        ${getLabel(this._authors[author.id])}
-                                    </span>
-                            `) }
-                          </wl-text>` 
+                          html`<wl-text><b>• Authors:</b> ${this._renderAuthors(this._model.author)}</wl-text>` 
                           :''}
                         ${this._model.hasFunding?
-                          html`<wl-text><b>• Funding:</b> 
-                            ${this._model.hasFunding.map((fund:FundingInformation) => this._loading[fund.id] ?
-                            html`${getId(fund)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
-                            : (this._funding[fund.id].fundingSource || []).map((org:Organization) => 
-                                this._loading[org.id] ? 
-                                html`${getId(org)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
-                                : html`<span class="resource organization">
-                                    ${getLabel(this._organizations[org.id])}
-                                </span>`)
-                            )}
-                        </wl-text>` :''}
+                          html`<wl-text><b>• Funding:</b> ${this._renderFundings(this._model.hasFunding)}</wl-text>` :''}
 
                         ${this._model.publisher?
                           html`<wl-text><b>• Publisher:</b> 
@@ -695,8 +706,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                             </span>
                             `)}
                         </wl-text>` :''}
-
-    <!-- CONTINUE HERE-->
                         ${this._model.datePublished?
                           html`<wl-text><b>• Publication date:</b> ${ this._model.datePublished }</wl-text>`
                           :''}
@@ -710,6 +719,14 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 ${this._model.hasDocumentation[0].split('/').pop() || this._model.hasDocumentation}
                             </a>
                         </wl-text>` :''}
+                        ${!this._modelRegions || this._modelRegions.length > 0 ? html`<wl-text><b>• Regions:</b>
+                            ${!this._modelRegions ? 
+                                html`<loading-dots style="--width: 20px"></loading-dots>` 
+                                : this._modelRegions.map((rid:string) => this._regions[rid]).map((region:Region) =>
+                                html`<span class="resource region">${getLabel(region)}
+                                </span>`)}
+                        </wl-text>` :''}
+
                         ${this._model.keywords? html`<wl-text><b>• Keywords:</b>
                             ${ this._model.keywords.map((kws:string) => kws.split(/ *; */).map(capitalizeFirstLetter).join(', ') ).join(', ') }
                         </wl-text>` :''}
@@ -737,19 +754,39 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </div>
                 <div class="row-tab-content">
                     ${(this._tab === 'overview') ? this._renderTabOverview() : ''}
+                    ${(this._tab === 'tech') ? this._renderTabTechnical() : ''}
+                    ${(this._tab === 'io') ? this._renderTabIO() : ''}
+                    ${(this._tab === 'variables') ? this._renderTabVariables() : ''}
+                    ${(this._tab === 'example') ? this._renderTabExample() : ''}
                 </div>
             </div>
             ${this._renderCLIDialog()} `
     }
 
-    /*
-                    ${(this._tab === 'tech') ? this._renderTabTechnical() : ''}
-                    ${(this._tab === 'io') ? this._renderTabIO() : ''}
-                    ${(this._tab === 'variables') ? this._renderTabVariables() : ''}
-                    ${(this._tab === 'example') ? this._renderTabExample() : ''}
-    */
-
+    /* TODO: needs SourceCodeApi */
     _renderTabTechnical () {
+        return html`
+            <wl-title level="3"> Technical Information: </wl-title>
+            ${this._model ? html`
+            <table class="pure-table pure-table-striped">
+                <thead>
+                    <tr><th colspan="2">MODEL: 
+                        <span style="margin-left: 6px; font-size: 16px; font-weight: bold; color: black;">${this._model.label}</span>
+                    </th></tr>
+                </thead>
+                <tbody>
+                ${this._model.operatingSystems && this._model.operatingSystems.length > 0 ? html`
+                    <tr>
+                        <td><b>Operating systems:</b></td>
+                        <td>${this._model.operatingSystems[0].split(';').join(', ')}</td>
+                    </tr>
+                ` : ''}
+                </tbody>
+            </table>` : ''}
+        `
+    }
+
+    _renderTabTechnical2 () {
         let showModel = this._model.os || this._model.pl || this._model.memReq || this._model.procReq || this._model.softwareReq ||
                         this._model.downloadURL || this._model.sourceC || this._model.doc || this._model.installInstr;
         return html`
@@ -964,7 +1001,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 `)}
             </ul>` :''}
 
-            ${this._config ? this._renderMetadataResume() : ''}
+            ${this._config ? this._renderConfigResume() : ''}
             ${this._renderRelatedModels()}
             ${this._renderGallery()}`
     }
@@ -975,223 +1012,156 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </details>
                     */
 
-    _renderMetadataResume () {
-        if (this._config) {
-        let calProc = [];
-        if (this._config && this._calibration && this._configMetadata && this._calibrationMetadata) {
-            calProc = this._calibrationMetadata[0].processes ? this._calibrationMetadata[0].processes
-                .filter(p => (this._configMetadata[0].processes || []).indexOf(p) < 0) : [];
-        }
-        console.log('>>', this._config);
+    _renderConfigResume () {
         return html`
             <fieldset style="border-radius: 5px; padding: 0px 7px; border: 2px solid #D9D9D9; margin-bottom: 8px;">
                 <legend style="font-weight: bold; font-size: 12px; color: gray;">Selected configuration</legend>
                 <div class="metadata-top-buttons">
                     <div class="button-preview" @click=${() => this._changeTab('io')}>
                         <div>Parameters</div>
-                        <div>${!this._parameters ? html`
-                            <loading-dots style="--width: 20px"></loading-dots>`
-                            : this._parameters.length}
-                        </div>
+                        <div>${this._config.hasParameter ? this._config.hasParameter.length : 0}</div>
                     </div>
                     <div class="button-preview" @click=${() => this._changeTab('io')}>
                         <div>Input files</div>
-                        <div>${!this._inputs? html`
-                            <loading-dots style="--width: 20px"></loading-dots>`
-                            : this._inputs.length}
-                        </div>
+                        <div>${this._config.hasInput ? this._config.hasInput.length : 0}</div>
                     </div>
                     <div class="button-preview" @click=${() => this._changeTab('io')}>
                         <div>Output files</div>
-                        <div>${!this._outputs? html`
-                            <loading-dots style="--width: 20px"></loading-dots>`
-                            : this._outputs.length}
-                        </div>
+                        <div>${this._config.hasOutput ? this._config.hasOutput.length : 0}</div>
                     </div>
                 </div>
 
                 <wl-title level="2" style="font-size: 16px;">${this._config.label}</wl-title>
-                ${!this._configMetadata ? 
-                html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`
-                : (this._configMetadata.length==0 ?
-                    html`<div class="info-center">- No metadata available. -</div>`
-                    : html `
-                    <wl-text>${this._configMetadata[0].desc}</wl-text>
-                    ${(!this._configAuthors || this._configAuthors.length > 0) ? html`
-                    <br/>
-                    <wl-text>
-                        <b>Configuration creator:</b>
-                        ${this._configAuthors ? 
-                            (this._configAuthors || []).map(x => x.name).join(', ') 
-                            : html`<loading-dots style="--height: 8px"></loading-dots>`}
-                    </wl-text>
-                    `: '' }
-                    ${this._configMetadata[0].usageNotes ? html`
+                <wl-text>${this._config.description}</wl-text>
+                ${this._config.hasUsageNotes && this._config.hasUsageNotes.length > 0 ? html`
                     <br/>
                     <wl-text>
                         <b>Usage notes:</b>
-                        ${this._configMetadata[0].usageNotes}
+                        ${this._config.hasUsageNotes[0]}
                     </wl-text>
-                    ` : ''}
-                    <ul>
-                    ${this._configMetadata[0].fundS ? 
-                        html`<wl-text><b>Funding Source:</b> ${this._configMetadata[0].fundS} </wl-text>` : ''}
-                    ${this._configMetadata[0].regionName ?
-                        html`<li><b>Region:</b> ${this._configMetadata[0].regionName}</li>`: ''}
-                    ${this._configMetadata[0].tIValue && this._configMetadata[0].tIUnits ?
-                        html`<li><b>Time interval:</b> ${this._configMetadata[0].tIValue + ' ' + this._configMetadata[0].tIUnits}</li>` : ''}
-                    ${this._configMetadata[0].gridType && this._configMetadata[0].gridDim && this._configMetadata[0].gridSpatial ?
-                        html`
-                        <li><b>Grid details:</b> 
-                            <ul>
-                                <li><b>Type:</b> ${this._configMetadata[0].gridType}</li>
-                                <li>
-                                    <b>Dimentions:</b>
-                                    <span style="font-family: system-ui;">${this._configMetadata[0].gridDim}</span>
-                                </li>
-                                <li><b>Spatial resolution:</b> ${this._configMetadata[0].gridSpatial}</li>
-                            </ul>
-                        </li>
+                ` : ''}
+                <div class="desc-ext" style="padding:10px;">
+                    ${this._config.author && this._config.author.length > 0 ? html`
+                        <wl-text>
+                            <b>• Configuration creator:</b>
+                            ${this._renderAuthors(this._config.author)}
+                        </wl-text>
                     `: ''}
-                    ${this._configMetadata[0].processes ?
-                        html`<li><b>Processes:</b> ${this._configMetadata[0].processes.join(', ')}</li>`: ''}
-                    ${this._configMetadata[0].paramAssignMethod ?
-                        html`<li><b>Parameter assignment method:</b> ${this._configMetadata[0].paramAssignMethod}</li>`: ''}
-                    ${this._configMetadata[0].adjustableVariables ?
-                        html`<li><b>Adjustable parameters:</b>
-                        ${this._configMetadata[0].adjustableVariables.map((v,i) => {
-                            if (i === 0) return html`<code class="clickable" @click="${() => this._changeTab('io', 'parameters')}">${v}</code>`;
-                            else return html`, <code class="clickable" @click="${() => this._changeTab('io', 'parameters')}">${v}</code>`;
-                        })}</li>`: ''}
-                    ${this._configMetadata[0].targetVariables ?
-                        html`<li><b>Target variables:</b> ${this._configMetadata[0].targetVariables.map((v,i) => {
-                            if (i === 0) return html`<code>${v}</code>`;
-                            else return html`, <code>${v}</code>`;
-                        })}</li>`: ''}
-                    `
-                )}
 
-                ${this._calibration ? html`
-                <fieldset style="border-radius: 5px; padding: 0px 7px; border: 2px solid #D9D9D9; margin-bottom: 8px;">
-                    <legend style="font-weight: bold; font-size: 12px; color: gray;">Selected setup</legend>
-                    <div class="metadata-top-buttons">
-                        <div class="button-preview" @click=${() => this._changeTab('io')}>
-                            <div>Parameters</div>
-                            <div>${!this._parameters ? html`
-                                <loading-dots style="--width: 20px"></loading-dots>`
-                                : html`
-                                <span class="tooltip nm" style="text-align: center;"
-                                    tip="${this._parameters.filter(x => !!x.fixedValue).length} parameters have been pre-selected in this setup">
-                                ${ (this._parameters.length - this._parameters.filter(x => !!x.fixedValue).length) +
-                                   '/' + this._parameters.length }
-                                </span>`
-                                }
-                            </div>
-                        </div>
-                        <div class="button-preview" @click=${() => this._changeTab('io')}>
-                            <div>Input files</div>
-                            <div>${!this._inputs? html`
-                                <loading-dots style="--width: 20px"></loading-dots>`
-                                : html `
-                                <span class="tooltip nm" style="text-align: center;"
-                                    tip="${this._inputs.filter(x => !!x.fixedValueURL).length} inputs have been pre-selected in this setup">
-                                ${ (this._inputs.length - this._inputs.filter(x => !!x.fixedValueURL).length) +
-                                   '/' + this._inputs.length }
-                                </span>`}
-                            </div>
-                        </div>
-                    </div>
-
-                    <wl-title level="2" style="font-size: 16px;">${this._calibration.label}</wl-title>
-                    ${!this._calibrationMetadata ? 
-                    html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`
-                    : (this._calibrationMetadata.length==0 ?
-                        html`<div class="info-center">- No metadata available. -</div>`
-                        : html `
-                        <wl-text>${this._calibrationMetadata[0].desc}</wl-text>
-                        ${(!this._calibrationAuthors || this._calibrationAuthors.length > 0) ? html`
-                        <br/>
-                        <wl-text>
-                            <b>Setup creator:</b>
-                            ${this._calibrationAuthors ? 
-                                (this._calibrationAuthors || []).map(x => x.name).join(', ') 
-                                : html`<loading-dots style="--height: 8px"></loading-dots>`}
-                        </wl-text>
-                        `: '' }
-                        ${this._calibrationMetadata[0].usageNotes ? html`
-                        <br/>
-                        <wl-text>
-                            <b>Usage notes:</b>
-                            ${this._calibrationMetadata[0].usageNotes}
-                        </wl-text>
-                        ` : ''}
-                        <ul>
-                        ${this._calibrationMetadata[0].paramAssignMethod ?
-                            html`<li><b>Parameter assignment method:</b> ${this._calibrationMetadata[0].paramAssignMethod}</li>`: ''}
-                        ${this._calibrationMetadata[0].fundS && this._configMetadata[0].fundS != this._calibrationMetadata[0].fundS? 
-                            html`<wl-text><b>Funding Source:</b> ${this._configMetadata[0].fundS} </wl-text>` : ''}
-                        ${this._calibrationMetadata[0].regionName && (
-                          !this._configMetadata || this._configMetadata.length < 1 || !this._configMetadata[0].regionName ||
-                          this._calibrationMetadata[0].regionName != this._configMetadata[0].regionName) ?
-                            html`<li><b>Region:</b> ${this._calibrationMetadata[0].regionName}</li>`: ''}
-
-                        ${(this._calibrationMetadata[0].tIValue && this._calibrationMetadata[0].tIUnits && 
-                          (this._configMetadata[0].tIValue != this._calibrationMetadata[0].tIValue) && 
-                          (this._configMetadata[0].tIUnits != this._calibrationMetadata[0].tIUnits)) ?
-                            html`<li><b>Time interval:</b>
-                            ${this._calibrationMetadata[0].tIValue + ' ' + this._calibrationMetadata[0].tIUnits}</li>` : ''}
-
-                        ${this._calibrationMetadata[0].gridType &&
-                          this._calibrationMetadata[0].gridDim && 
-                          this._calibrationMetadata[0].gridSpatial &&
-                          ((this._configMetadata[0].gridType != this._calibrationMetadata[0].gridType) ||
-                          (this._calibrationMetadata[0].gridDim != this._configMetadata[0].gridDim) ||
-                          (this._configMetadata[0].gridSpatial != this._calibrationMetadata[0].gridSpatial)) ?
-                            html`
-                            <li><b>Grid details:</b> 
-                                <ul>
-                                    ${this._configMetadata[0].gridType != this._calibrationMetadata[0].gridType ?
-                                    html`
-                                        <li><b>Type:</b> ${this._calibrationMetadata[0].gridType}</li>
-                                    ` : ''}
-                                    ${this._calibrationMetadata[0].gridDim != this._configMetadata[0].gridDim ?
-                                    html`
-                                    <li>
-                                        <b>Dimentions:</b>
-                                        <span style="font-family: system-ui;">${this._calibrationMetadata[0].gridDim}</span>
-                                    </li>
-                                    `:''}
-                                    ${this._configMetadata[0].gridSpatial != this._calibrationMetadata[0].gridSpatial ?
-                                    html`
-                                    <li><b>Spatial resolution:</b> ${this._calibrationMetadata[0].gridSpatial}</li>
-                                    `: ''}
-                                </ul>
-                            </li>
-                        `: ''}
-
-                        ${calProc.length > 0 ? html`
-                            <li><b>Processes:</b> ${calProc.join(', ')}</li>
-                        `: '' }
-
-                        ${this._calibrationMetadata[0].adjustableVariables ?
-                            html`<li><b>Adjustable parameters:</b>
-                            ${this._calibrationMetadata[0].adjustableVariables.map((v,i) => {
-                                if (i === 0) return html`<code class="clickable" @click="${() => this._changeTab('io', 'parameters')}">${v}</code>`;
-                                else return html`, <code class="clickable" @click="${() => this._changeTab('io', 'parameters')}">${v}</code>`;
-                            })}</li>`: ''}
-                        ${this._calibrationMetadata[0].targetVariables ?
-                            html`<li><b>Target variables:</b> ${this._calibrationMetadata[0].targetVariables.map((v,i) => {
-                                if (i === 0) return html`<code>${v}</code>`;
-                                else return html`, <code>${v}</code>`;
-                            })}</li>`: ''}
-                        `
-                    )}
-                </fieldset>
-                `:''}
-
+                    ${this._config.hasFunding && this._config.hasFunding.length > 0 ?
+                        html`<wl-text><b>• Funding Source:</b> ${this._renderFundings(this._config.hasFunding)}</wl-text>` :''}
+                    ${this._config.hasRegion && this._config.hasRegion.length > 0 ? 
+                        html`<wl-text><b>• Regions:</b> ${this._config.hasRegion.map((region:Region) => this._loadingRegions ? 
+                            html`${getId(region)} <loading-dots style="--width: 20px"></loading-dots>`
+                            : html`<span class="resource region">${getLabel(region)}</span>`
+                        )}</wl-text>` :''}
+                    ${this._config.hasOutputTimeInterval && this._config.hasOutputTimeInterval.length > 0 ?
+                        html`<wl-text style="display: flex; align-items: center; padding: 1px 0px;">
+                            <b>• Time interval:</b> ${this._renderTimeInterval(this._config.hasOutputTimeInterval[0])}
+                        </wl-text>` :''}
+                    ${this._config.hasGrid && this._config.hasGrid.length > 0 ?
+                        html`<wl-text style="display: flex; align-items: center; padding: 1px 0px;">
+                            <b>• Grid:</b> ${this._renderGrid(this._config.hasGrid[0])}</wl-text>` :''}
+                    ${this._config.hasProcess && this._config.hasProcess.length > 0 ?
+                        html`<wl-text><b>• Processes:</b> ${this._renderProcesses(this._config.hasProcess)}</wl-text>` :''}
+                </div>
+                ${this._setup? this._renderSetupResume() : ''}
             </fieldset>
         `
-        }
+    }
+
+    _renderSetupResume () {
+        //console.log('here', this._setup);
+        let paramLen : number = this._setup.hasParameter ? this._setup.hasParameter.length : 0;
+        let inputLen : number = this._setup.hasInput ? this._setup.hasInput.length : 0;
+        let paramFixed : number = (this._setup.hasParameter || []).filter((p:Parameter) => !!p.hasFixedValue).length;
+        let inputFixed : number = (this._setup.hasInput || []).filter((i:DatasetSpecification) => !!i.hasFixedResource).length;
+        let configProcesses : string[] = (this._config.hasProcess || []).map((p:Process) => p.id);
+        let setupProcesses : Process[] = (this._setup.hasProcess || []).filter((p:Process) => !configProcesses.includes(p.id));
+        return html`
+            <fieldset style="border-radius: 5px; padding: 0px 7px; border: 2px solid #D9D9D9; margin-bottom: 8px;">
+                <legend style="font-weight: bold; font-size: 12px; color: gray;">Selected setup</legend>
+                <div class="metadata-top-buttons">
+                    <div class="button-preview" @click=${() => this._changeTab('io')}>
+                        <div>Parameters</div>
+                        <div>
+                            <span class="tooltip nm" style="text-align: center;"
+                                tip="${paramFixed} parameters have been pre-selected in this setup">
+                            ${ (paramLen - paramFixed) + '/' + paramLen }
+                            </span>
+                        </div>
+                    </div>
+                    <div class="button-preview" @click=${() => this._changeTab('io')}>
+                        <div>Input files</div>
+                        <div>
+                            <span class="tooltip nm" style="text-align: center;"
+                                tip="${inputFixed} inputs have been pre-selected in this setup">
+                            ${ (inputLen - inputFixed) + '/' + inputLen }
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <wl-title level="2" style="font-size: 16px;">${this._setup.label}</wl-title>
+                <wl-text>${this._setup.description}</wl-text>
+                ${this._setup.hasUsageNotes && this._setup.hasUsageNotes.length > 0 ? html`
+                    <br/>
+                    <wl-text>
+                        <b>Usage notes:</b>
+                        ${this._setup.hasUsageNotes[0]}
+                    </wl-text>
+                ` : ''}
+                <div class="desc-ext" style="padding:10px;">
+                    ${this._setup.parameterAssignmentMethod && this._setup.parameterAssignmentMethod.length > 0 ? 
+                        html`<wl-text>
+                            <b>• Parameter assignment method:</b> ${this._setup.parameterAssignmentMethod[0]}
+                        </wl-text>`
+                    :''}
+                    ${this._setup.author && this._setup.author.length > 0 ? html`
+                        <wl-text>
+                            <b>• Setup creator:</b>
+                            ${this._renderAuthors(this._setup.author, true)}
+                        </wl-text>
+                    `: ''}
+
+                    ${this._setup.hasFunding && this._setup.hasFunding.length > 0 ?
+                        html`<wl-text><b>• Funding Source:</b> ${this._renderFundings(this._setup.hasFunding)}</wl-text>` :''}
+                    ${this._setup.hasRegion && this._setup.hasRegion.length > 0 ? 
+                        html`<wl-text><b>• Regions:</b> ${this._setup.hasRegion.map((region:Region) => this._loadingRegions ? 
+                            html`${getId(region)} <loading-dots style="--width: 20px"></loading-dots>`
+                            : html`<span class="resource region">${getLabel(region)}</span>`
+                        )}</wl-text>` :''}
+                    ${this._setup.hasOutputTimeInterval && this._setup.hasOutputTimeInterval.length > 0 && 
+                      (!this._config.hasOutputTimeInterval || this._config.hasOutputTimeInterval.length == 0 || 
+                       this._config.hasOutputTimeInterval[0].id != this._setup.hasOutputTimeInterval[0].id)?
+                        html`<wl-text display: flex; align-items: center; padding: 1px 0px;>
+                            <b>• Time interval:</b> ${this._renderTimeInterval(this._setup.hasOutputTimeInterval[0])}
+                        </wl-text>` :''}
+                    ${this._setup.hasGrid && this._setup.hasGrid.length > 0 && (!this._config.hasGrid ||
+                    this._config.hasGrid.length === 0 || this._config.hasGrid[0].id != this._setup.hasGrid[0].id)?
+                        html`<wl-text style="display: flex; align-items: center; padding: 1px 0px;">
+                            <b>• Grid:</b> ${this._renderGrid(this._setup.hasGrid[0])}</wl-text>` :''}
+                    ${setupProcesses.length > 0 ?
+                        html`<wl-text><b>• Processes:</b> ${this._renderProcesses(setupProcesses)}</wl-text>` :''}
+                    ${this._setup.adjustableParameter && this._setup.adjustableParameter.length > 0 ? 
+                        html`<wl-text><b>• Adjustable parameters:</b> ${
+                            this._setup.adjustableParameter.map((p:Parameter, i:number) => (i === 0) ?
+                                html`<code class="clickable" @click="${() => this._changeTab('io','parameters')}">
+                                    ${getLabel(p)}
+                                </code>`
+                                : html`, <code class="clickable" @click="${() => this._changeTab('io','parameters')}">
+                                    ${getLabel(p)}
+                                </code>`)
+                        }` :''}
+                    ${this._setup.calibrationTargetVariable && this._setup.calibrationTargetVariable.length > 0 ? 
+                        html`<wl-text><b>• Target variables:</b> ${
+                            this._setup.calibrationTargetVariable.map((v:VariablePresentation, i:number) => (i === 0) ?
+                                html`<code>${getLabel(v)}</code>`
+                                : html`, <code>${getLabel(v)}</code>`)
+                        }` :''}
+                </div>
+            </fieldset>
+        `
     }
 
     _renderTabIO () {
@@ -1583,7 +1553,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
     }
 
-    updated () {
+    updated (a) {
         if (this._shouldUpdateConfigs) this._updateConfigSelector();
         if (this._shouldUpdateSetups) this._updateSetupSelector();
         /*if (this._model) {
@@ -1640,6 +1610,34 @@ export class ModelView extends connect(store)(PageViewElement) {
         return {}
     }
 
+    _clear () {
+        this._loading = {} as IdMap<boolean>;
+        this._logo! = null;
+        this._authors = {} as IdMap<Person>;
+        this._regions = {} as IdMap<Region>;
+        this._funding = {} as IdMap<Funding>;
+        this._organizations = {} as IdMap<Organization>;
+        this._modelRegions = null;
+    }
+
+    firstUpdated() {
+        this._loadingGlobals = true;
+        this._loadingRegions = true;
+        let rVer = store.dispatch(versionsGet());
+        let rCfg = store.dispatch(modelConfigurationsGet());
+        let rSet = store.dispatch(modelConfigurationSetupsGet());
+        let rReg = store.dispatch(regionsGet());
+        rVer.then((versions:SoftwareVersion[]) => this._shouldUpdateConfigs = true);
+        rCfg.then((cfg:ModelConfiguration[]) => this._shouldUpdateConfigs = true);
+        rSet.then((cfg:ModelConfigurationSetup[]) => this._shouldUpdateSetups = true);
+        rReg.then((region:Region[]) => this._loadingRegions = false);
+
+        Promise.all([rVer, rCfg, rSet, rReg]).then(() => {
+            this._loadingGlobals = false;
+            this.stateChanged(store.getState());
+        });
+    }
+
     stateChanged(state: RootState) {
         super.setRegion(state);
         let ui = state.explorerUI;
@@ -1649,132 +1647,363 @@ export class ModelView extends connect(store)(PageViewElement) {
         let modelChanged : boolean = ui && (ui.selectedModel !== this._selectedModel);
         let versionChanged : boolean = ui && (modelChanged || ui.selectedVersion !== this._selectedVersion);
         let configChanged : boolean = ui && (versionChanged || ui.selectedConfig !== this._selectedConfig);
-        let setupChanged : boolean = ui && (configChanged || ui.selectedCalibration !== this._selectedSetup);
+        let setupChanged : boolean = ui && (ui.selectedCalibration !== this._selectedSetup);
+        /*console.log('models', modelChanged,[ui.selectedModel, this._selectedModel]);
+        console.log('version', versionChanged, [ui.selectedVersion, this._selectedVersion]);
+        console.log('config', configChanged, [ui.selectedConfig, this._selectedConfig]);
+        console.log('setup', setupChanged, [ui.selectedCalibration, this._selectedSetup]);*/
+        if (db) {
+            this._versions = db.versions;
+            this._configs = db.configurations;
+            this._setups = db.setups;
+            this._regions = db.regions;
 
-        if (db && modelChanged) {
-            this._selectedModel = ui.selectedModel;
-            this._model = null;
-            this._loading[this._selectedModel] = true;
-            store.dispatch(modelGet(this._selectedModel)).then((model:Model) => {
-                this._loading[this._selectedModel] = false;
-                this._model = model;
-
-                // Logo
-                this._logo = null;
-                if (this._model.logo && this._model.logo.length > 0) {
-                    let logoId = (this._model.logo[0] as Image).id;
-                    if (db.images[logoId]) {
-                        this._logo = db.images[logoId];
-                    } else {
-                        this._loading[logoId] = true;
-                        store.dispatch(imageGet(logoId)).then((logo: Image) => {
-                            this._loading[logoId] = false;
-                            this._logo = logo;
-                        });
-                    }
+            if (modelChanged) {
+                this._selectedModel = ui.selectedModel;
+                this._model = null;
+                if (!this._selectedModel) {
+                    this._clear();
+                    return;
                 }
+                this._loading[this._selectedModel] = true;
+                store.dispatch(modelGet(this._selectedModel)).then((model:Model) => {
+                    this._loading[this._selectedModel] = false;
+                    this._model = model;
+                    this._modelRegions = null;
 
-                // Authors
-                if (this._model.author) {
-                    this._model.author.forEach((author:Person) => {
-                        if (db.persons[author.id]) {
-                            this._authors[author.id] = db.persons[author.id];
+                    // Logo
+                    this._logo = null;
+                    if (this._model.logo && this._model.logo.length > 0) {
+                        let logoId = (this._model.logo[0] as Image).id;
+                        if (db.images[logoId]) {
+                            this._logo = db.images[logoId];
                         } else {
-                            this._loading[author.id] = true;
-                            store.dispatch(personGet(author.id)).then((person:Person) => {
-                                this._loading[author.id] = false;
-                                this._authors[author.id] = person;
-                                this.requestUpdate();
+                            this._loading[logoId] = true;
+                            store.dispatch(imageGet(logoId)).then((logo: Image) => {
+                                this._loading[logoId] = false;
+                                this._logo = logo;
                             });
                         }
+                    }
+
+                    // Authors
+                    this._loadAuthors(this._model.author, db);
+                    //Funding and all its organizations
+                    this._loadFundings(this._model.hasFunding, db);
+                });
+            }
+
+            if (versionChanged) {
+                this._version = null;
+                if (ui.selectedVersion) {
+                    if (db.versions[ui.selectedVersion]) {
+                        this._selectedVersion = ui.selectedVersion;
+                        this._version = db.versions[ui.selectedVersion];
+                    }
+                } else {
+                    this._selectedVersion = ui.selectedVersion;
+                }
+            }
+
+            if (configChanged) {
+                this._config = null;
+                if (ui.selectedConfig) {
+                    if (db.configurations[ui.selectedConfig]) {
+                        this._selectedConfig = ui.selectedConfig;
+                        this._config = db.configurations[this._selectedConfig];
+                        this._shouldUpdateConfigs = true;
+                        //--
+                        this._loadAuthors(this._config.author, db);
+                        this._loadFundings(this._config.hasFunding, db);
+                        this._loadTimeIntervals(this._config.hasOutputTimeInterval, db);
+                        this._loadGrids(this._config.hasGrid, db);
+                        this._loadProcesses(this._config.hasProcess, db);
+                    } 
+                } else {
+                    this._selectedConfig = ui.selectedConfig;
+                }
+            }
+
+            if (setupChanged) {
+                //This part uses setupGetAll
+                this._setup = null;
+                this._selectedSetup = ui.selectedCalibration;
+                if (this._selectedSetup) {
+                    this._loading[this._selectedSetup];
+                    setupGetAll(this._selectedSetup).then((setup:ModelConfigurationSetup) => {
+                        // Save authors 
+                        (setup.author || []).forEach((author:Person|Organization) => {
+                            if (author.type === "Person") {
+                                this._authors[author.id] = author;
+                            } else if (author.type === "Organization") {
+                                this._organizations[author.id] = author;
+                            } else {
+                                console.warn("Cannot identify type of", author);
+                            }
+                        });
+                        // Save time interval
+                        (setup.hasOutputTimeInterval || []).forEach((ti:TimeInterval) => {
+                            this._timeIntervals[ti.id] = ti;
+                        });
+                        // Save grids 
+                        (setup.hasGrid || []).forEach((grid:Grid) => {
+                            this._grids[grid.id] = grid;
+                        });
+                        // Save processes
+                        (setup.hasProcess || []).forEach((process:Process) => {
+                            this._processes[process.id] = process;
+                        });
+                        this._setup = setup;
+                        console.log('all', setup);
                     })
                 }
 
-                //Funding
-                if (this._model.hasFunding) {
-                    this._model.hasFunding.forEach((fund:FundingInformation) => {
-                        if (db.fundingInformations[fund.id]) {
-                            this._funding[fund.id] = db.fundingInformations[fund.id];
-                        } else {
-                            this._loading[fund.id] = true;
-                            store.dispatch(fundingInformationGet(fund.id)).then((funding:FundingInformation) => {
-                                this._loading[fund.id] = false;
-                                this._funding[fund.id] = funding;
-                                if (funding.fundingSource) {
-                                    funding.fundingSource.forEach((org:Organization) => {
-                                        if (db.organizations[org.id]) {
-                                            this._organizations[org.id] = db.organizations[org.id];
-                                        } else {
-                                            this._loading[org.id] = true;
-                                            store.dispatch(organizationGet(org.id)).then((organization:Organization) => {
-                                                this._loading[org.id] = false;
-                                                this._organizations[org.id] = organization;
-                                                this.requestUpdate();
-                                            });
-                                        }
+                /*if (ui.selectedCalibration) {
+                    if (db.setups[ui.selectedCalibration]) {
+                        this._selectedSetup = ui.selectedCalibration;
+                        this._setup = db.setups[this._selectedSetup];
+                        this._shouldUpdateSetups = true;
+                        //--
+                        this._loadAuthors(this._setup.author, db);
+                        this._loadFundings(this._setup.hasFunding, db);
+                        this._loadTimeIntervals(this._setup.hasOutputTimeInterval, db);
+                        this._loadGrids(this._setup.hasGrid, db);
+                        this._loadProcesses(this._setup.hasProcess, db);
+                    }
+                } else {
+                    this._selectedSetup = ui.selectedCalibration;
+                }*/
+            }
+
+            if (this._model && !this._modelRegions && !this._loadingGlobals) {
+                let regions : Set<string> = new Set();
+                (this._model.hasVersion || [])
+                    .map((ver:SoftwareVersion) => this._versions[ver.id])
+                    .forEach((ver:SoftwareVersion) => {
+                        (ver.hasConfiguration || [])
+                            .map((cfg:ModelConfiguration) => this._configs[cfg.id])
+                            .forEach((cfg:ModelConfiguration) => {
+                                (cfg.hasRegion || [])
+                                    .map((region:Region) => db.regions[region.id])
+                                    .forEach((region:Region) => regions.add(region.id));
+                                (cfg.hasSetup || [])
+                                    .map((setup:ModelConfigurationSetup) => this._setups[setup.id])
+                                    .forEach((setup:ModelConfigurationSetup) => {
+                                        (setup.hasRegion || [])
+                                            .map((region:Region) => db.regions[region.id])
+                                            .forEach((region:Region) => regions.add(region.id));
                                     });
-                                }
+                            });
+                    });
+                this._modelRegions = Array.from(regions);
+            }
+        }
+    }
+
+    private _loadAuthors (authorArr: (Person|Organization)[], db: any) {
+        (authorArr || []).forEach((author:Person|Organization) => {
+            if (author.type === "Person") {
+                if (db.persons[author.id]) {
+                    this._authors[author.id] = db.persons[author.id];
+                } else {
+                    this._loading[author.id] = true;
+                    store.dispatch(personGet(author.id)).then((person:Person) => {
+                        this._loading[author.id] = false;
+                        this._authors[author.id] = person;
+                        this.requestUpdate();
+                    });
+                }
+            } else if (author.type === "Organization") {
+                if (db.organizations[author.id]) {
+                    this._organizations[author.id] = db.organizations[author.id];
+                } else {
+                    this._loading[author.id] = true;
+                    store.dispatch(organizationGet(author.id)).then((organization:Organization) => {
+                        this._loading[author.id] = false;
+                        this._organizations[author.id] = organization;
+                        this.requestUpdate();
+                    });
+                }
+            } else {
+                console.warn("Cannot identify type of", author);
+            }
+        })
+    }
+
+    private _renderAuthors (authorArray: (Person|Organization)[]) {
+        return (authorArray || []).map((author:Person|Organization) => {
+            if (this._loading[author.id]) {
+                return html`${getId(author)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
+            } else {
+                if (author.type === "Person") {
+                    return html`<span class="resource author">${getLabel(this._authors[author.id])}</span>`
+                } else if (author.type === "Organization") {
+                    return html`<span class="resource organization">${getLabel(this._organizations[author.id])}</span>`
+                } else {
+                    return html`<span class="resource">${getId(author)}</span>`
+                }
+            }
+        });
+    }
+
+    private _loadFundings (fundArray: FundingInformation[], db: any) {
+        if (fundArray && fundArray.length > 0) {
+            Promise.all(
+                fundArray.map((fund:FundingInformation) => {
+                    if (db.fundingInformations[fund.id]) {
+                        this._funding[fund.id] = db.fundingInformations[fund.id];
+                        (this._funding[fund.id].fundingSource || []).forEach((org:Organization) => {
+                            this._loading[org.id] = true;
+                        });
+                        return Promise.resolve(this._funding[fund.id]);
+                    } else {
+                        this._loading[fund.id] = true;
+                        let req = store.dispatch(fundingInformationGet(fund.id));
+                        req.then((funding:FundingInformation) => {
+                            this._loading[fund.id] = false;
+                            this._funding[fund.id] = funding;
+                            (this._funding[fund.id].fundingSource || []).forEach((org:Organization) => {
+                                this._loading[org.id] = true;
+                            });
+                            this.requestUpdate();
+                        });
+                        return req;
+                    }
+                })
+            ).then((fundings:FundingInformation[]) => {
+                fundings.forEach((fund: FundingInformation) => {
+                    (fund.fundingSource || []).forEach((org:Organization) => {
+                        if (db.organizations[org.id]) {
+                            this._organizations[org.id] = db.organizations[org.id];
+                            this._loading[org.id] = false;
+                        } else {
+                            store.dispatch(organizationGet(org.id)).then((organization:Organization) => {
+                                this._organizations[org.id] = organization;
+                                this._loading[org.id] = false;
                                 this.requestUpdate();
                             });
                         }
                     });
-                }
-
-
-                // Version
-                if (this._model.hasVersion) {
-                    this._model.hasVersion.forEach((ver:SoftwareVersion) => {
-                        if (db.versions[ver.id]) {
-                            this._versions[ver.id] = db.versions[ver.id];
-                        } else {
-                            this._loading[ver.id] = true;
-                            store.dispatch(versionGet(ver.id)).then((version:SoftwareVersion) => {
-                                this._loading[ver.id] = false;
-                                this._versions[ver.id] = version;
-                                this._shouldUpdateConfigs = true;
-                            });
-                        }
-                    });
-                }
+                });
             });
         }
+    }
 
+    private _renderFundings (fundArray: FundingInformation[]) {
+        return (fundArray || []).map((fund:FundingInformation) => this._loading[fund.id] ?
+            html`${getId(fund)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
+            : (this._funding[fund.id].fundingSource || []).map((org:Organization) => 
+                this._loading[org.id] ? 
+                html`${getId(org)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
+                : html`<span class="resource organization">
+                    ${getLabel(this._organizations[org.id])}
+                </span>`)
+            );
+    }
 
-        if (db && configChanged) {
-            this._selectedConfig = ui.selectedConfig;
-            this._config = null;
-            if (ui.selectedConfig) {
-                if (db.configurations[this._selectedConfig]) {
-                    this._config = db.configurations[this._selectedConfig];
-                    this._shouldUpdateSetups = true;
-                } else {
-                    this._loading[this._selectedConfig] = true;
-                    store.dispatch(modelConfigurationGet(this._selectedConfig)).then((cfg:ModelConfiguration) => {
-                        this._loading[this._selectedConfig] = false;
-                        this._config = cfg;
-                        this._shouldUpdateSetups = true;
-                    });
-                }
+    private _loadTimeIntervals (tiArr: TimeInterval[], db: any) {
+        (tiArr || []).forEach((ti:TimeInterval) => {
+            if (db.timeIntervals[ti.id]) {
+                this._timeIntervals[ti.id] = db.timeIntervals[ti.id];
+            } else {
+                this._loading[ti.id] = true;
+                store.dispatch(timeIntervalGet(ti.id)).then((ti:TimeInterval) => {
+                    this._loading[ti.id] = false;
+                    this._timeIntervals[ti.id] = ti;
+                    this.requestUpdate();
+                });
             }
-        }
+        })
+    }
 
-        if (db && setupChanged) {
-            this._selectedSetup = ui.selectedCalibration;
-            this._setup = null;
-            this._shouldUpdateSetups = true;
-            if (ui.selectedSetup) {
-                if (db.setups[this._selectedSetup]) {
-                    this._setup = db.setups[this._selectedSetup];
-                } else {
-                    this._loading[this._selectedSetup] = true;
-                    store.dispatch(modelConfigurationSetupGet(this._selectedSetup)).then((setup:ModelConfigurationSetup) => {
-                        this._loading[this._selectedSetup] = false;
-                        this._setup = setup;
-                    });
-                }
+    private _renderTimeInterval (ti: TimeInterval) {
+        return this._loading[ti.id] ? 
+            html`${getId(ti)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
+            : html`<span class="resource time-interval">
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="text-decoration: underline;">${getLabel(this._timeIntervals[ti.id])}</span>
+                    <span style="margin-left:20px;">
+                        ${this._timeIntervals[ti.id].intervalValue}
+                        ${this._timeIntervals[ti.id].intervalUnit && this._timeIntervals[ti.id].intervalUnit.length > 0 ? 
+                            getLabel(this._timeIntervals[ti.id].intervalUnit[0]) : ''}
+                    </span>
+                </div>
+                <div style="font-style: oblique; color: gray;">${this._timeIntervals[ti.id].description}</div>
+            </span>`
+    }
+
+    private _loadGrids (gridArr: Grid[], db: any) {
+        (gridArr || []).forEach((grid:Grid) => {
+            if (db.grids[grid.id]) {
+                this._grids[grid.id] = db.grids[grid.id];
+            } else {
+                this._loading[grid.id] = true;
+                store.dispatch(gridGet(grid.id)).then((grid:Grid) => {
+                    this._loading[grid.id] = false;
+                    this._grids[grid.id] = grid;
+                    this.requestUpdate();
+                });
             }
-        }
+        })
+    }
 
+    private _renderGrid (grid: Grid) {
+        return this._loading[grid.id] ? 
+            html`${getId(grid)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
+            : html`<span class="resource grid">
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="text-decoration: underline;">${getLabel(this._grids[grid.id])}</span>
+                    <span style="margin-left:20px; font-style: oblique; color: gray;">
+                        ${this._grids[grid.id].type.filter(t => t != 'Grid')}
+                    </span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>
+                        <span>Spatial resolution:</span>
+                        <span class="monospaced">
+                            ${this._grids[grid.id].hasSpatialResolution && this._grids[grid.id].hasSpatialResolution.length > 0 ?
+                                this._grids[grid.id].hasSpatialResolution[0] : '-'}
+                        </span>
+                    </span>
+                        <span>Dimensions:</span>
+                        <span class="number">
+                            ${this._grids[grid.id].hasDimension && this._grids[grid.id].hasDimension.length > 0 ?
+                                this._grids[grid.id].hasDimension[0] : '-'}
+                        </span>
+                    <span>
+                    </span>
+                    <span>
+                        <span>Shape:</span>
+                        <span class="monospaced">
+                            ${this._grids[grid.id].hasShape && this._grids[grid.id].hasShape.length > 0 ?
+                                this._grids[grid.id].hasShape[0] : '-'}
+                        </span>
+                    </span>
+                </div>
+            </span>`
+    }
+
+    private _loadProcesses (processArr: Process[], db: any) {
+        (processArr || []).forEach((process:Process) => {
+            if (db.processes[process.id]) {
+                this._processes[process.id] = db.processes[process.id];
+            } else {
+                this._loading[process.id] = true;
+                store.dispatch(processGet(process.id)).then((process:Process) => {
+                    this._loading[process.id] = false;
+                    this._processes[process.id] = process;
+                    this.requestUpdate();
+                });
+            }
+        })
+    }
+
+    private _renderProcesses (processes: Process[]) {
+        return (processes || []).map((process:Process) => this._loading[process.id] ? 
+            html`${getId(process)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
+            : html`<span class="resource process">
+                ${getLabel(this._processes[process.id])}
+            </span>`);
     }
 
 }
