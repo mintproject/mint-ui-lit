@@ -71,7 +71,7 @@ export const variablePresentationPost: ActionThunk<Promise<VariablePresentation>
         debug('Creating new', variablePresentation);
         let postProm = new Promise((resolve,reject) => {
             let api : VariablePresentationApi = new VariablePresentationApi(cfg);
-            let req = api.variablepresentationsPost({user: getUser(), variablePresentation: variablePresentation});
+            let req = api.variablepresentationsPost({user: user, variablePresentation: variablePresentation});
             req.then((resp:VariablePresentation) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -99,7 +99,7 @@ export const variablePresentationPut: ActionThunk<Promise<VariablePresentation>,
         debug('Updating', variablePresentation);
         let api : VariablePresentationApi = new VariablePresentationApi(cfg);
         let id : string = getIdFromUri(variablePresentation.id);
-        let req : Promise<VariablePresentation> = api.variablepresentationsIdPut({id: id, user: getUser(), variablePresentation: variablePresentation});
+        let req : Promise<VariablePresentation> = api.variablepresentationsIdPut({id: id, user: user, variablePresentation: variablePresentation});
         req.then((resp:VariablePresentation) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -124,7 +124,7 @@ export const variablePresentationDelete: ActionThunk<void, MCAVariablePresentati
         debug('Deleting', variablePresentation.id);
         let api : VariablePresentationApi = new VariablePresentationApi(cfg);
         let id : string = getIdFromUri(variablePresentation.id);
-        let req : Promise<void> = api.variablepresentationsIdDelete({id: id, user: getUser()});
+        let req : Promise<void> = api.variablepresentationsIdDelete({id: id, user: user});
         req.then(() => {
             dispatch({
                 type: VARIABLE_PRESENTATION_DELETE,

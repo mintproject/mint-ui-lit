@@ -1,8 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Process, ProcessApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
-         DEFAULT_GRAPH } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Process]', ...args); }
 
@@ -22,7 +21,6 @@ export const processesGet: ActionThunk<Promise<IdMap<Process>>, MCAProcessesAdd>
             debug('Fetching all');
             let user : string = getUser();
             let api : ProcessApi = new ProcessApi();
-            //let req1 : Promise<Process[]> = api.processsGet({username: DEFAULT_GRAPH});
             let req2 : Promise<Process[]> = api.processsGet({username: user});
 
             let promises : Promise<Process[]>[] = [req2];
@@ -73,7 +71,7 @@ export const processPost: ActionThunk<Promise<Process>, MCAProcessesAdd> = (proc
         debug('Creating new', process);
         let postProm = new Promise((resolve,reject) => {
             let api : ProcessApi = new ProcessApi(cfg);
-            let req = api.processsPost({user: DEFAULT_GRAPH, process: process}); // This should be my username on prod.
+            let req = api.processsPost({user: user, process: process}); // This should be my username on prod.
             req.then((resp:Process) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -101,7 +99,7 @@ export const processPut: ActionThunk<Promise<Process>, MCAProcessesAdd> = (proce
         debug('Updating', process);
         let api : ProcessApi = new ProcessApi(cfg);
         let id : string = getIdFromUri(process.id);
-        let req : Promise<Process> = api.processsIdPut({id: id, user: DEFAULT_GRAPH, process: process});
+        let req : Promise<Process> = api.processsIdPut({id: id, user: user, process: process});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -126,7 +124,7 @@ export const processDelete: ActionThunk<void, MCAProcessDelete> = (process:Proce
         debug('Deleting', process.id);
         let api : ProcessApi = new ProcessApi(cfg);
         let id : string = getIdFromUri(process.id);
-        let req : Promise<void> = api.processsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.processsIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: PROCESS_DELETE,

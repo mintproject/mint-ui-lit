@@ -1,8 +1,8 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, SourceCode, SourceCodeApi, GeoShape } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser,
-         DEFAULT_GRAPH, geoShapePost, geoShapeDelete } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
+         geoShapePost, geoShapeDelete } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC SourceCode]', ...args); }
 
@@ -21,7 +21,7 @@ export const sourceCodesGet: ActionThunk<Promise<IdMap<SourceCode>>, MCASourceCo
         debug('Fetching all');
         let api : SourceCodeApi = new SourceCodeApi();
         sourceCodesPromise = new Promise((resolve, reject) => {
-            let req : Promise<SourceCode[]> = api.sourcecodesGet({username: DEFAULT_GRAPH});
+            let req : Promise<SourceCode[]> = api.sourcecodesGet({username: getUser()});
             req.then((resp:SourceCode[]) => {
                 let data = resp.reduce(idReducer, {}) as IdMap<SourceCode>
                 dispatch({
@@ -45,7 +45,7 @@ export const sourceCodeGet: ActionThunk<Promise<SourceCode>, MCASourceCodesAdd> 
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
     let api : SourceCodeApi = new SourceCodeApi();
-    let req : Promise<SourceCode> = api.sourcecodesIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<SourceCode> = api.sourcecodesIdGet({username: getUser(), id: id});
     req.then((resp:SourceCode) => {
         dispatch({
             type: SOURCE_CODES_ADD,
@@ -65,7 +65,7 @@ export const sourceCodePost: ActionThunk<Promise<SourceCode>, MCASourceCodesAdd>
         debug('Creating new', sourceCode);
         let postProm = new Promise((resolve,reject) => {
             let api : SourceCodeApi = new SourceCodeApi(cfg);
-            let req = api.sourcecodesPost({user: DEFAULT_GRAPH, sourceCode: sourceCode});
+            let req = api.sourcecodesPost({user: user, sourceCode: sourceCode});
             req.then((resp:SourceCode) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -93,7 +93,7 @@ export const sourceCodePut: ActionThunk<Promise<SourceCode>, MCASourceCodesAdd> 
         debug('Updating', sourceCode);
         let api : SourceCodeApi = new SourceCodeApi(cfg);
         let id : string = getIdFromUri(sourceCode.id);
-        let req : Promise<SourceCode> = api.sourcecodesIdPut({id: id, user: DEFAULT_GRAPH, sourceCode: sourceCode});
+        let req : Promise<SourceCode> = api.sourcecodesIdPut({id: id, user: user, sourceCode: sourceCode});
         req.then((resp:SourceCode) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -118,7 +118,7 @@ export const sourceCodeDelete: ActionThunk<void, MCASourceCodeDelete> = (sourceC
         debug('Deleting', sourceCode);
         let api : SourceCodeApi = new SourceCodeApi(cfg);
         let id : string = getIdFromUri(sourceCode.id);
-        let req : Promise<void> = api.sourcecodesIdDelete({id: id, user: DEFAULT_GRAPH});
+        let req : Promise<void> = api.sourcecodesIdDelete({id: id, user: user});
         req.then(() => {
             dispatch({
                 type: SOURCE_CODE_DELETE,

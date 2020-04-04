@@ -1,8 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Organization, OrganizationApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
-         DEFAULT_GRAPH } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Organization]', ...args); }
 
@@ -21,7 +20,7 @@ export const organizationsGet: ActionThunk<Promise<IdMap<Organization>>, MCAOrga
         organizationsPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
             let api : OrganizationApi = new OrganizationApi();
-            let req : Promise<Organization[]> = api.organizationsGet({username: DEFAULT_GRAPH});
+            let req : Promise<Organization[]> = api.organizationsGet({username: getUser()});
             req.then((resp:Organization[]) => {
                 let data : IdMap<Organization> = resp.reduce(idReducer, {});
                 dispatch({
@@ -45,7 +44,7 @@ export const organizationGet: ActionThunk<Promise<Organization>, MCAOrganization
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
     let api : OrganizationApi = new OrganizationApi();
-    let req : Promise<Organization> = api.organizationsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<Organization> = api.organizationsIdGet({username: getUser(), id: id});
     req.then((resp:Organization) => {
         dispatch({
             type: ORGANIZATIONS_ADD,
@@ -65,7 +64,7 @@ export const organizationPost: ActionThunk<Promise<Organization>, MCAOrganizatio
         debug('Creating new', organization);
         let postProm = new Promise((resolve,reject) => {
             let api : OrganizationApi = new OrganizationApi(cfg);
-            let req = api.organizationsPost({user: DEFAULT_GRAPH, organization: organization}); // This should be my username on prod.
+            let req = api.organizationsPost({user: user, organization: organization}); // This should be my username on prod.
             req.then((resp:Organization) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -93,7 +92,7 @@ export const organizationPut: ActionThunk<Promise<Organization>, MCAOrganization
         debug('Updating', organization);
         let api : OrganizationApi = new OrganizationApi(cfg);
         let id : string = getIdFromUri(organization.id);
-        let req : Promise<Organization> = api.organizationsIdPut({id: id, user: DEFAULT_GRAPH, organization: organization});
+        let req : Promise<Organization> = api.organizationsIdPut({id: id, user: user, organization: organization});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -118,7 +117,7 @@ export const organizationDelete: ActionThunk<void, MCAOrganizationDelete> = (org
         debug('Deleting', organization.id);
         let api : OrganizationApi = new OrganizationApi(cfg);
         let id : string = getIdFromUri(organization.id);
-        let req : Promise<void> = api.organizationsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.organizationsIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: ORGANIZATION_DELETE,

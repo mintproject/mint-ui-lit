@@ -1,8 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Person, PersonApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
-         DEFAULT_GRAPH } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Person]', ...args); }
 
@@ -22,7 +21,6 @@ export const personsGet: ActionThunk<Promise<IdMap<Person>>, MCAPersonsAdd> = ()
             debug('Fetching all');
             let user : string = getUser();
             let api : PersonApi = new PersonApi();
-            //let req1 : Promise<Person[]> = api.personsGet({username: DEFAULT_GRAPH});
             let req2 : Promise<Person[]> = api.personsGet({username: user});
 
             let promises : Promise<Person[]>[] = [req2];
@@ -73,7 +71,7 @@ export const personPost: ActionThunk<Promise<Person>, MCAPersonsAdd> = (person:P
         debug('Creating new', person);
         let postProm = new Promise((resolve,reject) => {
             let api : PersonApi = new PersonApi(cfg);
-            let req = api.personsPost({user: DEFAULT_GRAPH, person: person}); // This should be my username on prod.
+            let req = api.personsPost({user: user, person: person}); // This should be my username on prod.
             req.then((resp:Person) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -101,7 +99,7 @@ export const personPut: ActionThunk<Promise<Person>, MCAPersonsAdd> = (person: P
         debug('Updating', person);
         let api : PersonApi = new PersonApi(cfg);
         let id : string = getIdFromUri(person.id);
-        let req : Promise<Person> = api.personsIdPut({id: id, user: DEFAULT_GRAPH, person: person});
+        let req : Promise<Person> = api.personsIdPut({id: id, user: user, person: person});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -126,7 +124,7 @@ export const personDelete: ActionThunk<void, MCAPersonDelete> = (person:Person) 
         debug('Deleting', person.id);
         let api : PersonApi = new PersonApi(cfg);
         let id : string = getIdFromUri(person.id);
-        let req : Promise<void> = api.personsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.personsIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: PERSON_DELETE,

@@ -1,8 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Model, ModelApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
-         DEFAULT_GRAPH } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
 function debug (...args: any[]) { console.log('[MC Model]', ...args); }
 
@@ -21,7 +20,7 @@ export const modelsGet: ActionThunk<Promise<IdMap<Model>>, MCAModelsAdd> = () =>
         debug('Fetching all');
         let api : ModelApi = new ModelApi();
         modelsPromise = new Promise((resolve, reject) => {
-            let req : Promise<Model[]> = api.modelsGet({username: DEFAULT_GRAPH});
+            let req : Promise<Model[]> = api.modelsGet({username: getUser()});
             req.then((resp:Model[]) => {
                 let data : IdMap<Model> = resp.reduce(idReducer, {});
                 dispatch({
@@ -45,7 +44,7 @@ export const modelGet: ActionThunk<Promise<Model>, MCAModelsAdd> = (uri:string) 
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
     let api : ModelApi = new ModelApi();
-    let req : Promise<Model> = api.modelsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<Model> = api.modelsIdGet({username: getUser(), id: id});
     req.then((resp:Model) => {
         dispatch({
             type: MODELS_ADD,
@@ -65,7 +64,7 @@ export const modelPost: ActionThunk<Promise<Model>, MCAModelsAdd> = (model:Model
         debug('Creating new', model);
         let postProm = new Promise((resolve,reject) => {
             let api : ModelApi = new ModelApi(cfg);
-            let req = api.modelsPost({user: DEFAULT_GRAPH, model: model}); // This should be my username on prod.
+            let req = api.modelsPost({user: user, model: model}); // This should be my username on prod.
             req.then((resp:Model) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -93,7 +92,7 @@ export const modelPut: ActionThunk<Promise<Model>, MCAModelsAdd> = (model: Model
         debug('Updating', model);
         let api : ModelApi = new ModelApi(cfg);
         let id : string = getIdFromUri(model.id);
-        let req : Promise<Model> = api.modelsIdPut({id: id, user: DEFAULT_GRAPH, model: model});
+        let req : Promise<Model> = api.modelsIdPut({id: id, user: user, model: model});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -118,7 +117,7 @@ export const modelDelete: ActionThunk<void, MCAModelDelete> = (model:Model) => (
         debug('Deleting', model.id);
         let api : ModelApi = new ModelApi(cfg);
         let id : string = getIdFromUri(model.id);
-        let req : Promise<void> = api.modelsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.modelsIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: MODEL_DELETE,

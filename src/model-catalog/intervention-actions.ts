@@ -1,8 +1,8 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Intervention, InterventionApi, GeoShape } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser,
-         DEFAULT_GRAPH, geoShapePost, geoShapeDelete } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
+         geoShapePost, geoShapeDelete } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Intervention]', ...args); }
 
@@ -21,7 +21,7 @@ export const interventionsGet: ActionThunk<Promise<IdMap<Intervention>>, MCAInte
         debug('Fetching all');
         let api : InterventionApi = new InterventionApi();
         interventionsPromise = new Promise((resolve, reject) => {
-            let req : Promise<Intervention[]> = api.interventionsGet({username: DEFAULT_GRAPH});
+            let req : Promise<Intervention[]> = api.interventionsGet({username: getUser()});
             req.then((resp:Intervention[]) => {
                 let data = resp.reduce(idReducer, {}) as IdMap<Intervention>
                 dispatch({
@@ -45,7 +45,7 @@ export const interventionGet: ActionThunk<Promise<Intervention>, MCAIntervention
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
     let api : InterventionApi = new InterventionApi();
-    let req : Promise<Intervention> = api.interventionsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<Intervention> = api.interventionsIdGet({username: getUser(), id: id});
     req.then((resp:Intervention) => {
         dispatch({
             type: INTERVENTIONS_ADD,
@@ -65,7 +65,7 @@ export const interventionPost: ActionThunk<Promise<Intervention>, MCAInterventio
         debug('Creating new', intervention);
         let postProm = new Promise((resolve,reject) => {
             let api : InterventionApi = new InterventionApi(cfg);
-            let req = api.interventionsPost({user: DEFAULT_GRAPH, intervention: intervention});
+            let req = api.interventionsPost({user: user, intervention: intervention});
             req.then((resp:Intervention) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -93,7 +93,7 @@ export const interventionPut: ActionThunk<Promise<Intervention>, MCAIntervention
         debug('Updating', intervention);
         let api : InterventionApi = new InterventionApi(cfg);
         let id : string = getIdFromUri(intervention.id);
-        let req : Promise<Intervention> = api.interventionsIdPut({id: id, user: DEFAULT_GRAPH, intervention: intervention});
+        let req : Promise<Intervention> = api.interventionsIdPut({id: id, user: user, intervention: intervention});
         req.then((resp:Intervention) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -118,7 +118,7 @@ export const interventionDelete: ActionThunk<void, MCAInterventionDelete> = (int
         debug('Deleting', intervention);
         let api : InterventionApi = new InterventionApi(cfg);
         let id : string = getIdFromUri(intervention.id);
-        let req : Promise<void> = api.interventionsIdDelete({id: id, user: DEFAULT_GRAPH});
+        let req : Promise<void> = api.interventionsIdDelete({id: id, user: user});
         req.then(() => {
             dispatch({
                 type: INTERVENTION_DELETE,

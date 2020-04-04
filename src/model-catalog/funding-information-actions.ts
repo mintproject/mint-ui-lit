@@ -1,8 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, FundingInformation, FundingInformationApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
-         DEFAULT_GRAPH } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC FundingInformation]', ...args); }
 
@@ -21,7 +20,7 @@ export const fundingInformationsGet: ActionThunk<Promise<IdMap<FundingInformatio
         fundingInformationsPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
             let api : FundingInformationApi = new FundingInformationApi();
-            let req : Promise<FundingInformation[]> = api.fundinginformationsGet({username: DEFAULT_GRAPH});
+            let req : Promise<FundingInformation[]> = api.fundinginformationsGet({username: getUser()});
             req.then((resp:FundingInformation[]) => {
                 let data : IdMap<FundingInformation> = resp.reduce(idReducer, {});
                 dispatch({
@@ -45,7 +44,7 @@ export const fundingInformationGet: ActionThunk<Promise<FundingInformation>, MCA
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
     let api : FundingInformationApi = new FundingInformationApi();
-    let req : Promise<FundingInformation> = api.fundinginformationsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<FundingInformation> = api.fundinginformationsIdGet({username: getUser(), id: id});
     req.then((resp:FundingInformation) => {
         dispatch({
             type: FUNDING_INFORMATIONS_ADD,
@@ -65,7 +64,7 @@ export const fundingInformationPost: ActionThunk<Promise<FundingInformation>, MC
         debug('Creating new', fundingInformation);
         let postProm = new Promise((resolve,reject) => {
             let api : FundingInformationApi = new FundingInformationApi(cfg);
-            let req = api.fundinginformationsPost({user: DEFAULT_GRAPH, fundingInformation: fundingInformation}); // This should be my username on prod.
+            let req = api.fundinginformationsPost({user: user, fundingInformation: fundingInformation}); // This should be my username on prod.
             req.then((resp:FundingInformation) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -93,7 +92,7 @@ export const fundingInformationPut: ActionThunk<Promise<FundingInformation>, MCA
         debug('Updating', fundingInformation);
         let api : FundingInformationApi = new FundingInformationApi(cfg);
         let id : string = getIdFromUri(fundingInformation.id);
-        let req : Promise<FundingInformation> = api.fundinginformationsIdPut({id: id, user: DEFAULT_GRAPH, fundingInformation: fundingInformation});
+        let req : Promise<FundingInformation> = api.fundinginformationsIdPut({id: id, user: user, fundingInformation: fundingInformation});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -118,7 +117,7 @@ export const fundingInformationDelete: ActionThunk<void, MCAFundingInformationDe
         debug('Deleting', fundingInformation.id);
         let api : FundingInformationApi = new FundingInformationApi(cfg);
         let id : string = getIdFromUri(fundingInformation.id);
-        let req : Promise<void> = api.fundinginformationsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.fundinginformationsIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: FUNDING_INFORMATION_DELETE,

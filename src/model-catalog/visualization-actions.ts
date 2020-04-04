@@ -1,8 +1,8 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Visualization, VisualizationApi, GeoShape } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser,
-         DEFAULT_GRAPH, geoShapePost, geoShapeDelete } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
+         geoShapePost, geoShapeDelete } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Visualization]', ...args); }
 
@@ -21,7 +21,7 @@ export const visualizationsGet: ActionThunk<Promise<IdMap<Visualization>>, MCAVi
         debug('Fetching all');
         let api : VisualizationApi = new VisualizationApi();
         visualizationsPromise = new Promise((resolve, reject) => {
-            let req : Promise<Visualization[]> = api.visualizationsGet({username: DEFAULT_GRAPH});
+            let req : Promise<Visualization[]> = api.visualizationsGet({username: getUser()});
             req.then((resp:Visualization[]) => {
                 let data = resp.reduce(idReducer, {}) as IdMap<Visualization>
                 dispatch({
@@ -45,7 +45,7 @@ export const visualizationGet: ActionThunk<Promise<Visualization>, MCAVisualizat
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
     let api : VisualizationApi = new VisualizationApi();
-    let req : Promise<Visualization> = api.visualizationsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<Visualization> = api.visualizationsIdGet({username: getUser(), id: id});
     req.then((resp:Visualization) => {
         dispatch({
             type: VISUALIZATIONS_ADD,
@@ -65,7 +65,7 @@ export const visualizationPost: ActionThunk<Promise<Visualization>, MCAVisualiza
         debug('Creating new', visualization);
         let postProm = new Promise((resolve,reject) => {
             let api : VisualizationApi = new VisualizationApi(cfg);
-            let req = api.visualizationsPost({user: DEFAULT_GRAPH, visualization: visualization});
+            let req = api.visualizationsPost({user: user, visualization: visualization});
             req.then((resp:Visualization) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -93,7 +93,7 @@ export const visualizationPut: ActionThunk<Promise<Visualization>, MCAVisualizat
         debug('Updating', visualization);
         let api : VisualizationApi = new VisualizationApi(cfg);
         let id : string = getIdFromUri(visualization.id);
-        let req : Promise<Visualization> = api.visualizationsIdPut({id: id, user: DEFAULT_GRAPH, visualization: visualization});
+        let req : Promise<Visualization> = api.visualizationsIdPut({id: id, user: user, visualization: visualization});
         req.then((resp:Visualization) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -118,7 +118,7 @@ export const visualizationDelete: ActionThunk<void, MCAVisualizationDelete> = (v
         debug('Deleting', visualization);
         let api : VisualizationApi = new VisualizationApi(cfg);
         let id : string = getIdFromUri(visualization.id);
-        let req : Promise<void> = api.visualizationsIdDelete({id: id, user: DEFAULT_GRAPH});
+        let req : Promise<void> = api.visualizationsIdDelete({id: id, user: user});
         req.then(() => {
             dispatch({
                 type: VISUALIZATION_DELETE,
