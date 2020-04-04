@@ -68,7 +68,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                     overflow: hidden;  
                 }
 
-                td.left div:nth-child(1) { height: 1.2em; }
+                td.left div:nth-child(1) { min-height: 1.2em; }
                 td.left div:nth-child(2) { height: calc(150px - 3.6em); text-align: center;}
                 td.left div:nth-child(3) { height: 2.4em; }
 
@@ -200,7 +200,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
             <table>
               <tr>
                 <td class="left"> 
-                  <div class="text-centered one-line">
+                  <div class="text-centered">
                   ${this._nLocalSetups < 0 ? html`<loading-dots></loading-dots>`
                     : (this._nLocalSetups > 0 ? html`<b style="color: darkgreen;">Executable in MINT</b>`
                       : (this._nSetups > 0 ? html`<b>Executable in MINT in another region</b>`
