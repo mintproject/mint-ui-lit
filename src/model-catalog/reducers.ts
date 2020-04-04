@@ -19,11 +19,12 @@ import { MODELS_ADD, MODEL_DELETE,
          ORGANIZATIONS_ADD, ORGANIZATION_DELETE,
          FUNDING_INFORMATIONS_ADD, FUNDING_INFORMATION_DELETE,
          VISUALIZATIONS_ADD, VISUALIZATION_DELETE,
+         SOURCE_CODES_ADD, SOURCE_CODE_DELETE,
          } from './actions'
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Region, GeoShape, Grid,
          Process, Parameter, TimeInterval, SoftwareImage, DatasetSpecification, SampleResource, Image,
-         SampleCollection, Organization, FundingInformation, Visualization } from '@mintproject/modelcatalog_client';
+         SampleCollection, Organization, FundingInformation, Visualization, SourceCode } from '@mintproject/modelcatalog_client';
 import { IdMap } from 'app/reducers'
 
 export interface ModelCatalogState {
@@ -46,6 +47,7 @@ export interface ModelCatalogState {
     organizations:          IdMap<Organization>;
     fundingInformations:    IdMap<FundingInformation>;
     visualizations:         IdMap<Visualization>;
+    sourceCodes:            IdMap<SourceCode>;
 }
 
 const INITIAL_STATE: ModelCatalogState = { 
@@ -68,6 +70,7 @@ const INITIAL_STATE: ModelCatalogState = {
     organizations:          {} as IdMap<Organization>,
     fundingInformations:    {} as IdMap<FundingInformation>,
     visualizations:         {} as IdMap<Visualization>,
+    sourceCodes:            {} as IdMap<SourceCode>,
 } as ModelCatalogState;
 
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -111,6 +114,8 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             return { ...state, fundingInformations: {...state.fundingInformations, ...action.payload} };
         case VISUALIZATIONS_ADD:
             return { ...state, visualizations: {...state.visualizations, ...action.payload} };
+        case SOURCE_CODES_ADD:
+            return { ...state, sourceCodes: {...state.sourceCodes, ...action.payload} };
 
         case MODEL_DELETE:
             tmp = { ...state.models };
@@ -184,6 +189,10 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             tmp = { ...state.visualizations };
             delete tmp[action.uri];
             return { ...state, visualizations: tmp };
+        case SOURCE_CODE_DELETE:
+            tmp = { ...state.sourceCodes };
+            delete tmp[action.uri];
+            return { ...state, sourceCodes: tmp };
 
         default:
             return state;

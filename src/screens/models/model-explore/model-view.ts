@@ -5,28 +5,23 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 
 // FIXME
-import { FetchedModel, IODetail, VersionDetail, ConfigDetail, CalibrationDetail, CompIODetail,
-         ExplanationDiagramDetail } from "../../../util/api-interfaces";
-import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersionsForModel, 
-        fetchIOAndVarsSNForConfig, fetchVarsSNAndUnitsForIO, fetchDiagramsForModelConfig,  fetchSampleVisForModelConfig,
-        fetchMetadataForModelConfig, fetchMetadataNoioForModelConfig, fetchScreenshotsForModelConfig,
-        fetchAuthorsForModelConfig, fetchDescriptionForVar } from '../../../util/model-catalog-actions';
-//
+import { IODetail, CalibrationDetail, CompIODetail } from "../../../util/api-interfaces";
+import { fetchVarsSNAndUnitsForIO } from '../../../util/model-catalog-actions';
+
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Organization, Region, FundingInformation, 
-         Image, Grid, TimeInterval, Process, Visualization } from '@mintproject/modelcatalog_client';
+         Image, Grid, TimeInterval, Process, Visualization, SourceCode, SoftwareImage } from '@mintproject/modelcatalog_client';
 import { modelGet, versionGet, versionsGet, modelConfigurationGet, modelConfigurationsGet, modelConfigurationSetupsGet,
          modelConfigurationSetupGet, imageGet, personGet, regionsGet, organizationGet, fundingInformationGet,
-         timeIntervalGet, gridGet, processGet, setupGetAll, visualizationGet } from 'model-catalog/actions';
-import { capitalizeFirstLetter, getId, getLabel, getURL, isEmpty, uriToId } from 'model-catalog/util';
+         timeIntervalGet, gridGet, processGet, setupGetAll, visualizationGet, sourceCodeGet, softwareImageGet } from 'model-catalog/actions';
+import { capitalizeFirstLetter, getId, getLabel, getURL, uriToId } from 'model-catalog/util';
 
-import { explorerSetMode } from './ui-actions';
-import { SharedStyles } from '../../../styles/shared-styles';
+import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
 import marked from 'marked';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
 
-import { goToPage } from '../../../app/actions';
+import { goToPage } from 'app/actions';
 import "weightless/expansion";
 import "weightless/tab";
 import "weightless/tab-group";
@@ -69,6 +64,8 @@ export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object}) private _processes : IdMap<Process> = {} as IdMap<Process>;
     @property({type: Object}) private _images : IdMap<Image> = {} as IdMap<Image>;
     @property({type: Object}) private _visualizations : IdMap<Visualization> = {} as IdMap<Visualization>;
+    @property({type: Object}) private _sourceCodes : IdMap<SourceCode> = {} as IdMap<SourceCode>;
+    @property({type: Object}) private _softwareImages : IdMap<SoftwareImage> = {} as IdMap<SoftwareImage>;
 
     // Computed data
     @property({type: Array}) private _modelRegions : string[] | null = null;
@@ -111,12 +108,6 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _allModels : any = null;
     private _uriToUrl : Map<string,string> | null = null;
 
-    /*@property({type: Object})
-    private _version : VersionDetail | null = null;
-
-    @property({type: Object})
-    private _config : ConfigDetail | null = null;
-*/
     @property({type: Object})
     private _calibration : CalibrationDetail | null = null;
 
@@ -131,12 +122,6 @@ export class ModelView extends connect(store)(PageViewElement) {
     
     @property({type: Object})
     private _compOutput : CompIODetail[] | null = null;
-
-    @property({type: Object})
-    private _compModels : FetchedModel[] | null = null;
-
-    @property({type: Object})
-    private _explDiagrams : ExplanationDiagramDetail[] | null = null;
 
     @property({type: Object})
     private _sampleVis : any = null;
@@ -490,16 +475,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _addConfig () {
-        if (this._model && this._version && this._config) {
-            let url = 'models/configure/' + this._model.uri.split('/').pop() + '/' + this._version.uri.split('/').pop() + '/'
-                    + this._config.uri.split('/').pop() + '/new';
-            goToPage(url)
-        }
-    }
-
-    _setEditMode () {
-        //TODO: this is work in progress!
-        store.dispatch(explorerSetMode('edit')); 
+        goToPage('models/configure/' + getURL(this._selectedModel, this._selectedVersion, this._selectedConfig) + '/new');
     }
 
     _updateConfigSelector () {
@@ -558,7 +534,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         let configSelector : HTMLSelectElement | null = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
         if (configSelectorWl && configSelector) {
             let cfgURL : string = configSelector.value;
-            let ver = Object.values(this._versions).filter((ver:SoftwareVersion) => 
+            let ver = Object.values(this._versions).filter((ver:SoftwareVersion) =>
                 (ver.hasConfiguration||[]).some((cfg:ModelConfiguration) => cfg.id === cfgURL)
             ).pop();
             goToPage(this.PREFIX + getURL(this._model, ver, cfgURL));
@@ -604,11 +580,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         let setupSelector : HTMLSelectElement | null = setupSelectorWl? setupSelectorWl.getElementsByTagName('select')[0] : null;
         if (setupSelectorWl && setupSelector) {
             let setupURL : string = setupSelector.value;
-
-            let ver = Object.values(this._versions).filter((ver:SoftwareVersion) => 
-                (ver.hasConfiguration||[]).some((cfg:ModelConfiguration) => cfg.id === this._config.id)
-            ).pop();
-            goToPage(this.PREFIX + getURL(this._model, ver, this._config, setupURL));
+            goToPage(this.PREFIX + getURL(this._model, this._version, this._config, setupURL));
         }
     }
 
@@ -708,13 +680,12 @@ export class ModelView extends connect(store)(PageViewElement) {
             <div class="wrapper">
                 <div class="col-title">
                     <wl-title level="2">
-                <a class="no-decoration" style="" target="_blank" href="${this._selectedModel}">
-                    <wl-button flat inverted>
-                        <span class="rdf-icon">
-                    </wl-button>
-                </a>
+                        <a class="no-decoration" style="" target="_blank" href="${this._selectedModel}">
+                            <wl-button flat inverted>
+                                <span class="rdf-icon">
+                            </wl-button>
+                        </a>
                         ${this._model.label}
-                        <a style="display:none" @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
                     </wl-title>
                 </div>
                 <div class="col-img text-centered">
@@ -795,7 +766,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => {this._tab = 'variables'}}"
                             >Variables</wl-tab>
 
-                        ${this._model.example? html`
+                        ${this._getExample() ? html`
                         <wl-tab id="tab-example" @click="${() => {this._tab = 'example'}}">
                             Example
                         </wl-tab>` : ''}
@@ -815,27 +786,100 @@ export class ModelView extends connect(store)(PageViewElement) {
             ${this._renderCLIDialog()} `
     }
 
-    /* TODO: needs SourceCodeApi */
-    _renderTabTechnical () {
+    private _renderTabTechnical () {
         return html`
             <wl-title level="3"> Technical Information: </wl-title>
-            ${this._model ? html`
+            ${this._model ? this._renderTableTechnical(this._model, "MODEL") : ''}
+            <br/>
+            ${this._config ? this._renderTableTechnical(this._config, "CONFIGURATION") : ''}
+            <br/>
+            ${this._selectedSetup && this._loading[this._selectedSetup] ? html`
+                <div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>
+            ` : ''}
+            ${this._setup ? this._renderTableTechnical(this._setup, "SETUP") : ''}
+        `
+    }
+
+    private _renderTableTechnical (resource:Model|ModelConfiguration|ModelConfigurationSetup, titlePrefix:string) {
+        return html`
             <table class="pure-table pure-table-striped">
                 <thead>
-                    <tr><th colspan="2">MODEL: 
-                        <span style="margin-left: 6px; font-size: 16px; font-weight: bold; color: black;">${this._model.label}</span>
+                    <tr><th colspan="2">${titlePrefix}: 
+                        <span style="margin-left: 6px; font-size: 16px; font-weight: bold; color: black;">
+                            ${getLabel(resource)}
+                        </span>
                     </th></tr>
                 </thead>
                 <tbody>
-                ${this._model.operatingSystems && this._model.operatingSystems.length > 0 ? html`
+                ${resource.hasSoftwareImage && resource.hasSoftwareImage.length > 0 ? html`
+                    <tr>
+                        <td><b>Software image:</b></td>
+                        <td>${this._loading[resource.hasSoftwareImage[0].id] ? 
+                            html`${resource.hasSoftwareImage[0].id} <loading-dots style="--width: 20px"></loading-dots>`
+                            : html`<a target="_blank"
+        href="https://hub.docker.com/r/${getLabel(this._softwareImages[resource.hasSoftwareImage[0].id]).split(':')[0]}/tags">
+                                <span class="resource software-image">
+                                    ${getLabel(this._softwareImages[resource.hasSoftwareImage[0].id])}
+                                </span>
+                            </a>`
+                        }
+                        </td>
+                    </tr>`: ''}
+                ${resource.operatingSystems && resource.operatingSystems.length > 0 ? html`
                     <tr>
                         <td><b>Operating systems:</b></td>
-                        <td>${this._model.operatingSystems[0].split(';').join(', ')}</td>
-                    </tr>
-                ` : ''}
+                        <td>${resource.operatingSystems[0].split(';').join(', ')}</td>
+                    </tr>` : ''}
+                ${resource.memoryRequirements && resource.memoryRequirements.length > 0 ? html`
+                    <tr>
+                        <td><b>Memory requirements:</b></td>
+                        <td>${resource.memoryRequirements[0]}</td>
+                    </tr>`: ''}
+                ${resource.processorRequirements && resource.processorRequirements.length > 0 ? html`
+                    <tr>
+                        <td><b>Processor requirements:</b></td>
+                        <td>${resource.processorRequirements[0]}</td>
+                    </tr>`: ''}
+                ${resource.softwareRequirements && resource.softwareRequirements.length > 0 ? html`
+                    <tr>
+                        <td><b>Software requirements:</b></td>
+                        <td>${resource.softwareRequirements[0]}</td>
+                    </tr>`: ''}
+                ${resource.hasDownloadURL && resource.hasDownloadURL.length > 0 ? html`
+                    <tr>
+                        <td><b>Download:</b></td>
+                        <td><a target="_blank" href="${resource.hasDownloadURL[0]}">${resource.hasDownloadURL[0]}</a></td>
+                    </tr>`: ''}
+                ${resource.hasInstallationInstructions && resource.hasInstallationInstructions.length > 0 ? html`
+                    <tr>
+                        <td><b>Installation instructions:</b></td>
+                        <td><a target="_blank" href="${resource.hasInstallationInstructions[0]}">${resource.hasInstallationInstructions[0]}</a></td>
+                    </tr>`: ''}
+                ${resource.hasComponentLocation && resource.hasComponentLocation.length > 0 ? html`
+                    <tr>
+                        <td><b>Component location:</b></td>
+                        <td><a target="_blank" href="${resource.hasComponentLocation[0]}">${resource.hasComponentLocation[0]}</a></td>
+                    </tr>`: ''}
+                ${resource.hasSourceCode && resource.hasSourceCode.length > 0 ? html`
+                    <tr>
+                        <td><b>Source code:</b></td>
+                        <td>${this._loading[resource.hasSourceCode[0].id] ? 
+                            html`${resource.hasSourceCode[0].id} <loading-dots style="--width: 20px"></loading-dots>`
+                            : html`<a target="_blank" href="${this._sourceCodes[resource.hasSourceCode[0].id].codeRepository}">
+                                ${this._sourceCodes[resource.hasSourceCode[0].id].codeRepository}
+                            </a>`
+                        }</td>
+                    </tr>`: ''}
+                ${resource.hasSourceCode && resource.hasSourceCode.length > 0 ? html`
+                    <tr>
+                        <td><b>Programing languages:</b></td>
+                        <td>${this._loading[resource.hasSourceCode[0].id] ? 
+                            html`${resource.hasSourceCode[0].id} <loading-dots style="--width: 20px"></loading-dots>`
+                            : this._sourceCodes[resource.hasSourceCode[0].id].programmingLanguage
+                        }</td>
+                    </tr>`: ''}
                 </tbody>
-            </table>` : ''}
-        `
+            </table>`;
     }
 
     _renderTabTechnical2 () {
@@ -1484,45 +1528,6 @@ export class ModelView extends connect(store)(PageViewElement) {
             : html``}`;
     }
 
-    _renderCompatibleVariableTable (compatibleVariables) {
-        let cInput = (compatibleVariables || []).reduce((acc, ci) => {
-            let verTree = this._getVersionTree(ci.uri);
-            if (!verTree.model) {
-                if (!acc['Software Script']) acc['Software Script'] = {configs: [], variables: new Set()};
-                acc['Software Script'].configs.push(ci.uri);
-                ci.vars.forEach(v => acc['Software Script'].variables.add(v));
-                return acc;
-            }
-            if (!acc[verTree.model.label]) acc[verTree.model.label] = {configs: [], variables: new Set()}
-            if (verTree.config.uri === ci.uri) acc[verTree.model.label].configs.push(verTree.config.label);
-            else if (verTree.calibration.uri === ci.uri) acc[verTree.model.label].configs.push(verTree.calibration.label);
-            ci.vars.forEach(v => acc[verTree.model.label].variables.add(v));
-            return acc;
-        }, {})
-        return html`
-            <table class="pure-table pure-table-bordered">
-                <thead>
-                    <th>Model</th>
-                    <th>Configuration</th>
-                    <th>Standard Variables</th>
-                </thead>
-                <tbody>
-                    ${Object.keys(cInput).map(model => html`
-                    <tr>
-                        <td>${model}</td>
-                        <td>${cInput[model].configs.join(', ')}</td>
-                        <td>
-                            ${Array.from(cInput[model].variables).map((v, i) => {
-                            if (i===0) return html`<code>${v}</code>`
-                            else return html`, <code>${v}</code>`})}
-                        </td>
-                    </tr>
-                    `)}
-                </tbody>
-            </table>
-        `;
-    }
-
     _renderRelatedModels () {
         //TODO
         return ''
@@ -1554,8 +1559,6 @@ export class ModelView extends connect(store)(PageViewElement) {
             (this._config.hasSampleVisualization || []).forEach((viz:Visualization) => allVisualizations.add(viz.id));
         }
 
-        //let stillLoading : boolean = Array.from(allImages).some((id:string) => this._loading[id]) || 
-        //                             Array.from(allVisualizations).some((id:string) => this._loading[id]);
         let allRes : (Image|Visualization)[] = Array.from(allImages)
                 .filter((id:string) => !this._loading[id])
                 .map((id:string) => this._images[id])
@@ -1604,58 +1607,27 @@ export class ModelView extends connect(store)(PageViewElement) {
     updated () {
         if (this._shouldUpdateConfigs) this._updateConfigSelector();
         if (this._shouldUpdateSetups) this._updateSetupSelector();
-        /*if (this._model) {
-            if (this._versions) {
-                this._updateConfigSelector();
-                //this._updateCalibrationSelector();
-            }
-            /*if (this._tab == 'example' && this._model.example) {
+        if (this._tab == 'example') {
+            let ex : string = this._getExample();
+            if (ex) {
                 let example = this.shadowRoot.getElementById('mk-example');
                 if (example) {
-                    example.innerHTML = marked(this._model.example);
+                    example.innerHTML = marked(ex);
                 }
-            }*
-        }
-        /* HTML description are not working
-        if (this._tab == 'overview' && this._model && this._model.indices && this._indices && this._indices.length > 0) {
-            let indiceDesc = this.shadowRoot.getElementById('indice-description');
-            if (indiceDesc) {
-                indiceDesc.innerHTML = this._indices[0].description;
             }
-        }*/
+        }
     }
 
-    _getVersionTree (uri:string) {
-        if (this._allModels[uri]) {
-            return {model: this._allModels[uri], version: this._allVersions[uri]};
-        }
-
-        let modelUris = Object.keys(this._allModels);
-        for (let i = 0; i < modelUris.length; i++) {
-            let model = this._allModels[modelUris[i]];
-            if (model) {
-                let versions = (this._allVersions[model.uri] || []);
-                let vf = versions.filter(v => v.uri === uri);
-                if (vf.length > 0) {
-                    return {model: model, version: vf[0], config: vf[0].configs};
-                }
-                for (let j = 0; j < versions.length; j++) {
-                    let configs = (versions[j].configs || []);
-                    let cf = configs.filter(c => c.uri === uri);
-                    if (cf.length > 0) {
-                        return {model: model, version: versions[j], config: cf[0], calibration: cf[0].calibrations};
-                    }
-                    for (let k = 0; k < configs.length; k++) {
-                        let ccf = (configs[k].calibrations || []).filter(cc => cc.uri === uri);
-                        if (ccf.length > 0) {
-                            return {model: model, version: versions[j], config: configs[k], calibration: ccf[0]};
-                        }
-                    }
-                }
-            }
-        }
-
-        return {}
+    private _getExample () {
+        if (this._setup && this._setup.hasExample && this._setup.hasExample.length > 0)
+            return this._setup.hasExample[0];
+        if (this._config && this._config.hasExample && this._config.hasExample.length > 0)
+            return this._config.hasExample[0];
+        if (this._version && this._version.hasExample && this._version.hasExample.length > 0)
+            return this._version.hasExample[0];
+        if (this._model && this._model.hasExample && this._model.hasExample.length > 0)
+            return this._model.hasExample[0];
+        return '';
     }
 
     _clear () {
@@ -1738,7 +1710,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                     this._loadAuthors(this._model.author, db);
                     //Funding and all its organizations
                     this._loadFundings(this._model.hasFunding, db);
-
+                    //Source Code
+                    this._loadSourceCodes(this._model.hasSourceCode, db);
+                    // Software Images
+                    this._loadSoftwareImages(this._model.hasSoftwareImage, db);
                     //Gallery (Image, Visualization)
                     this._loadImages(
                         (this._model.screenshot || []).concat(this._model.hasExplanationDiagram || [])
@@ -1778,6 +1753,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                             (this._config.screenshot || []).concat(this._config.hasExplanationDiagram || [])
                         , db);
                         this._loadVisualizations(this._config.hasSampleVisualization, db);
+                        this._loadSourceCodes(this._config.hasSourceCode, db);
+                        this._loadSoftwareImages(this._config.hasSoftwareImage, db);
                     } 
                 } else {
                     this._selectedConfig = ui.selectedConfig;
@@ -1788,6 +1765,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 //This part uses setupGetAll
                 this._setup = null;
                 this._selectedSetup = ui.selectedCalibration;
+                this._shouldUpdateSetups = true;
                 if (this._selectedSetup) {
                     this._loading[this._selectedSetup];
                     setupGetAll(this._selectedSetup).then((setup:ModelConfigurationSetup) => {
@@ -1813,26 +1791,19 @@ export class ModelView extends connect(store)(PageViewElement) {
                         (setup.hasProcess || []).forEach((process:Process) => {
                             this._processes[process.id] = process;
                         });
+                        // Save source code
+                        (setup.hasSourceCode || []).forEach((sourceCode:SourceCode) => {
+                            this._sourceCodes[sourceCode.id] = sourceCode;
+                        });
+                        // Save softwareImage
+                        (setup.hasSoftwareImage || []).forEach((si:SoftwareImage) => {
+                            this._softwareImages[si.id] = si;
+                        });
+                        
                         this._setup = setup;
                         console.log('all', setup);
                     })
                 }
-
-                /*if (ui.selectedCalibration) {
-                    if (db.setups[ui.selectedCalibration]) {
-                        this._selectedSetup = ui.selectedCalibration;
-                        this._setup = db.setups[this._selectedSetup];
-                        this._shouldUpdateSetups = true;
-                        //--
-                        this._loadAuthors(this._setup.author, db);
-                        this._loadFundings(this._setup.hasFunding, db);
-                        this._loadTimeIntervals(this._setup.hasOutputTimeInterval, db);
-                        this._loadGrids(this._setup.hasGrid, db);
-                        this._loadProcesses(this._setup.hasProcess, db);
-                    }
-                } else {
-                    this._selectedSetup = ui.selectedCalibration;
-                }*/
             }
 
             if (this._model && !this._modelRegions && !this._loadingGlobals) {
@@ -2067,7 +2038,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     private _loadImages (imagesArr: Image[], db: any) {
-        (imagesArr || []).forEach((image:Images) => {
+        (imagesArr || []).forEach((image:Image) => {
             if (db.images[image.id]) {
                 this._images[image.id] = db.images[image.id];
             } else if (!this._loading[image.id]) {
@@ -2082,7 +2053,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     private _loadVisualizations (visualizationsArr: Visualization[], db: any) {
-        (visualizationsArr || []).forEach((visualization:Visualizations) => {
+        (visualizationsArr || []).forEach((visualization:Visualization) => {
             if (db.visualizations[visualization.id]) {
                 this._visualizations[visualization.id] = db.visualizations[visualization.id];
             } else if (!this._loading[visualization.id]) {
@@ -2090,6 +2061,36 @@ export class ModelView extends connect(store)(PageViewElement) {
                 store.dispatch(visualizationGet(visualization.id)).then((visualization:Visualization) => {
                     this._loading[visualization.id] = false;
                     this._visualizations[visualization.id] = visualization;
+                    this.requestUpdate();
+                });
+            }
+        })
+    }
+
+    private _loadSourceCodes (sourceArr: SourceCode[], db: any) {
+        (sourceArr || []).forEach((sourceCode:SourceCode) => {
+            if (db.sourceCodes[sourceCode.id]) {
+                this._sourceCodes[sourceCode.id] = db.sourceCodes[sourceCode.id];
+            } else if (!this._loading[sourceCode.id]) {
+                this._loading[sourceCode.id] = true;
+                store.dispatch(sourceCodeGet(sourceCode.id)).then((sourceCode:SourceCode) => {
+                    this._loading[sourceCode.id] = false;
+                    this._sourceCodes[sourceCode.id] = sourceCode;
+                    this.requestUpdate();
+                });
+            }
+        })
+    }
+
+    private _loadSoftwareImages (siArr: SoftwareImage[], db: any) {
+        (siArr || []).forEach((softwareImage:SoftwareImage) => {
+            if (db.softwareImages[softwareImage.id]) {
+                this._softwareImages[softwareImage.id] = db.softwareImages[softwareImage.id];
+            } else if (!this._loading[softwareImage.id]) {
+                this._loading[softwareImage.id] = true;
+                store.dispatch(softwareImageGet(softwareImage.id)).then((softwareImage:SoftwareImage) => {
+                    this._loading[softwareImage.id] = false;
+                    this._softwareImages[softwareImage.id] = softwareImage;
                     this.requestUpdate();
                 });
             }
