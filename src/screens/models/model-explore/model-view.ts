@@ -13,11 +13,11 @@ import { fetchCompatibleSoftwareForConfig, fetchParametersForConfig, fetchVersio
         fetchAuthorsForModelConfig, fetchDescriptionForVar } from '../../../util/model-catalog-actions';
 //
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Organization, Region, FundingInformation, 
-         Image, Grid, TimeInterval, Process } from '@mintproject/modelcatalog_client';
+         Image, Grid, TimeInterval, Process, Visualization } from '@mintproject/modelcatalog_client';
 import { modelGet, versionGet, versionsGet, modelConfigurationGet, modelConfigurationsGet, modelConfigurationSetupsGet,
          modelConfigurationSetupGet, imageGet, personGet, regionsGet, organizationGet, fundingInformationGet,
-         timeIntervalGet, gridGet, processGet, setupGetAll } from 'model-catalog/actions';
-import { capitalizeFirstLetter, getId, getLabel, getURL, isEmpty } from 'model-catalog/util';
+         timeIntervalGet, gridGet, processGet, setupGetAll, visualizationGet } from 'model-catalog/actions';
+import { capitalizeFirstLetter, getId, getLabel, getURL, isEmpty, uriToId } from 'model-catalog/util';
 
 import { explorerSetMode } from './ui-actions';
 import { SharedStyles } from '../../../styles/shared-styles';
@@ -35,11 +35,10 @@ import "weightless/icon";
 import "weightless/progress-spinner";
 import "weightless/progress-bar";
 import "weightless/select";
-import '../../../components/image-gallery'
-import '../../../components/loading-dots'
+import 'components/image-gallery'
+import 'components/loading-dots'
 
 import { Select } from "weightless/select";
-
 
 @customElement('model-view')
 export class ModelView extends connect(store)(PageViewElement) {
@@ -68,9 +67,12 @@ export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object}) private _timeIntervals : IdMap<TimeInterval> = {} as IdMap<TimeInterval>;
     @property({type: Object}) private _grids : IdMap<Grid> = {} as IdMap<Grid>;
     @property({type: Object}) private _processes : IdMap<Process> = {} as IdMap<Process>;
+    @property({type: Object}) private _images : IdMap<Image> = {} as IdMap<Image>;
+    @property({type: Object}) private _visualizations : IdMap<Visualization> = {} as IdMap<Visualization>;
 
     // Computed data
     @property({type: Array}) private _modelRegions : string[] | null = null;
+    @property({type: String}) private _runArgs : string = '';
 
     // Booleans
     @property({type: Object}) private _loading : IdMap<boolean> = {} as IdMap<boolean>;
@@ -422,6 +424,17 @@ export class ModelView extends connect(store)(PageViewElement) {
                     border-radius: 8px;
                     margin: 10px;
                 }
+
+                .small-tooltip:hover::after {
+                    bottom: 38px;
+                    right: 10%;
+                    width: 130px;
+                }
+
+                .small-tooltip:hover::before {
+                    bottom: 32px;
+                    right: 35%;
+                }
                 `
         ];
     }
@@ -430,15 +443,16 @@ export class ModelView extends connect(store)(PageViewElement) {
     _renderCLIDialog () {
         return html`
         <wl-dialog class="larger" id="CLIDialog" fixed backdrop blockscrolling>
-            <h3 slot="header">Execute on Desktop</h3>
+            <h3 slot="header">Execute on Desktop/Server</h3>
             <div slot="content">
                 <wl-text> You can run this model with the following command: </wl-text>
                 <div class="monospaced code-example">
                     <div style="font-size: 14px">
-                        <span style="color: darkgray;">$</span> mint run ${getId(this._model)}
+                        <span style="color: darkgray;">$</span> dame run ${this._runArgs}
                     </div>
                     <div>
-                        <wl-button inverted flat>
+                        <!-- TODO: Notify copy! -->
+                        <wl-button inverted flat @click="${this._copyRun}">
                             <wl-icon>link</wl-icon>
                         </wl-button>
                     </div>
@@ -446,7 +460,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <wl-text> 
                     Visit the
                     <a target="_blank" href="https://mint-cli.readthedocs.io/en/latest/">
-                        MINT CLI website
+                        DAME website
                     </a>
                     for documentation and installation instructions.
                 </wl-text>
@@ -457,8 +471,22 @@ export class ModelView extends connect(store)(PageViewElement) {
         </wl-dialog>`
     }
 
-    _openCLIDialog () {
+    _openCLIDialog (uri:string) {
+        this._runArgs = uriToId(uri);
         showDialog("CLIDialog", this.shadowRoot);
+    }
+
+    _copyRun () {
+        let text : string = 'dame run ' + this._runArgs;
+        navigator.clipboard.writeText(text).then(() => {
+            console.log('Text copied!');
+        }, (err) => {
+            console.warn('Could no copy text', err);
+        })
+    }
+
+    _goToEdit (configUri: string, setupUri?:string) {
+        goToPage('models/configure/' + getURL(this._selectedModel, this._selectedVersion, configUri, setupUri));
     }
 
     _addConfig () {
@@ -591,22 +619,32 @@ export class ModelView extends connect(store)(PageViewElement) {
         let hasVersions = (this._model.hasVersion.length > 0);
         return html`
             <div class="config-selector">
-                <span style="text-align: center;">
-                    <wl-button flat inverted @click="">
+                ${this._selectedConfig ? html`
+                <a class="no-decoration" style="text-align: center;" target="_blank" href="${this._selectedConfig}">
+                    <wl-button flat inverted>
+                        <span class="rdf-icon">
+                    </wl-button>
+                </a>`
+                : html `
+                <span>
+                    <wl-button flat inverted disabled>
                         <span class="rdf-icon">
                     </wl-button>
                 </span>
+                `}
                 <span>
                     <wl-select label="Select a configuration" id="config-selector" @input="${this._onConfigChange}">
                     </wl-select>
                 </span>
                 <span>
-                    <wl-button flat inverted @click="">
+                    <wl-button flat inverted @click="${() => this._goToEdit(this._selectedConfig)}" ?disabled="${!this._selectedConfig}">
                         <wl-icon>edit</wl-icon>
                     </wl-button>
-                    <wl-button flat inverted @click=${this._openCLIDialog}>
-                        <wl-icon>code</wl-icon>
-                    </wl-button>
+                    <span class="tooltip small-tooltip" tip="Download and Run">
+                        <wl-button flat inverted @click=${() => this._openCLIDialog(this._selectedConfig)} ?disabled="${!this._selectedConfig}">
+                            <wl-icon>get_app</wl-icon>
+                        </wl-button>
+                    </span>
                     <span tip="A model configuration is a unique way of running a model, exposing concrete inputs and outputs" 
                          class="tooltip" style="top: 4px;">
                         <wl-icon style="--icon-size: 24px;">help_outline</wl-icon>
@@ -616,22 +654,32 @@ export class ModelView extends connect(store)(PageViewElement) {
 
             <div class="config-selector 
                 ${this._selectedConfig && this._config && this._config.hasSetup && this._config.hasSetup.length > 0? '' : 'hidden'}">
-                <span style="text-align: center;">
-                    <wl-button flat inverted @click="">
-                        <span class="rdf-icon">
-                    </wl-button>
-                </span>
+                ${this._selectedSetup ? html`
+                    <a class="no-decoration" style="text-align: center;" target="_blank" href="${this._selectedSetup}">
+                        <wl-button flat inverted>
+                            <span class="rdf-icon">
+                        </wl-button>
+                    </a>`
+                    : html`
+                    <span>
+                        <wl-button flat inverted disabled>
+                            <span class="rdf-icon">
+                        </wl-button>
+                    </span>`
+                }
                 <span>
                     <wl-select label="Select a configuration setup" id="setup-selector" @input="${this._onSetupChange}">
                     </wl-select>
                 </span>
                 <span>
-                    <wl-button flat inverted @click="">
+                    <wl-button flat inverted @click="${() => this._goToEdit(this._selectedConfig, this._selectedSetup)}" ?disabled="${!this._selectedSetup}">
                         <wl-icon>edit</wl-icon>
                     </wl-button>
-                    <wl-button flat inverted @click=${this._openCLIDialog}>
-                        <wl-icon>code</wl-icon>
-                    </wl-button>
+                    <span class="tooltip small-tooltip" tip="Download and Run">
+                        <wl-button flat inverted @click=${() => this._openCLIDialog(this._selectedSetup)} ?disabled="${!this._selectedSetup}">
+                            <wl-icon>get_app</wl-icon>
+                        </wl-button>
+                    </span>
                     <span tip="A model configuration setup represents a model with parameters that have been adjusted (manually or automatically) to be run in a specific region" 
                          class="tooltip" style="top: 4px;">
                         <wl-icon style="--icon-size: 24px;">help_outline</wl-icon>
@@ -660,7 +708,11 @@ export class ModelView extends connect(store)(PageViewElement) {
             <div class="wrapper">
                 <div class="col-title">
                     <wl-title level="2">
-                        <a target="_blank" href="${this._model.id}" class="rdf-icon"></a>
+                <a class="no-decoration" style="" target="_blank" href="${this._selectedModel}">
+                    <wl-button flat inverted>
+                        <span class="rdf-icon">
+                    </wl-button>
+                </a>
                         ${this._model.label}
                         <a style="display:none" @click="${this._setEditMode}"><wl-icon id="edit-model-icon">edit</wl-icon></a>
                     </wl-title>
@@ -984,7 +1036,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             ${this._model.hasAssumption && this._model.hasAssumption.length > 0 ? html`
             <wl-title level="2" style="font-size: 16px;">Assumptions:</wl-title>
             <ul style="margin-top: 5px">
-                ${this._model.hasAssumption.map((a:string) => a.split('.').map((txt:string) => 
+                ${this._model.hasAssumption.map((a:string) => a.split('.').filter((txt:string) => !!txt).map((txt:string) => 
                 html`<li>${txt}.</li>`
                 ))}
             </ul>`
@@ -1065,7 +1117,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${this._config.hasProcess && this._config.hasProcess.length > 0 ?
                         html`<wl-text><b>• Processes:</b> ${this._renderProcesses(this._config.hasProcess)}</wl-text>` :''}
                 </div>
-                ${this._setup? this._renderSetupResume() : ''}
+                ${this._selectedSetup ?
+                    this._loading[this._selectedSetup] ? 
+                        html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`
+                        : (this._setup ? this._renderSetupResume() : '')
+                : ''}
             </fieldset>
         `
     }
@@ -1468,24 +1524,8 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _renderRelatedModels () {
-        return html`
-        ${(this._compModels && this._compModels.length > 0)? html`
-        <wl-title level="2" style="font-size: 16px;">Related models:</wl-title>
-        <table class="pure-table pure-table-bordered">
-            <thead>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Description</th>
-            </thead>
-            <tbody>
-            ${this._compModels.map( (m:any) => html`
-                <tr>
-                    <td><a @click="${() => {this._goToModel(m)}}">${m.label}</a></td>
-                    <td>${m.categories.join(', ')}</td>
-                    <td>${m.desc}</td>
-                </tr>`)}
-            </tbody>
-        </table>`:''}`
+        //TODO
+        return ''
     }
 
     _goToModel (model:any) {
@@ -1497,39 +1537,47 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _renderGallery () {
-        if (!this._explDiagrams && !this._sampleVis && !this._screenshots) {
-            return html`<div class="text-centered">
-                LOADING GALLERY
-                <loading-dots class="text-helper"></loading-dots>
-            </div>`
-        }
-        let items = [];
-        if (this._explDiagrams) {
-            this._explDiagrams.forEach((ed) => {
-                let newItem = {label: ed.label, src: ed.url, desc: ed.desc};
-                if (ed.source) {
-                    newItem['source'] = {label: ed.source.split('/').pop(), url: ed.source}
-                }
-                items.push(newItem);
-            })
-        }
-        if (this._sampleVis) {
-            this._sampleVis.forEach((sv, i) => {
-                let newItem = {label: 'Sample visualization ' + (i>0? i+1 : ''), src: sv.url, desc: sv.desc};
-                if (sv.source) newItem['source'] = {label: sv.source.split('/').pop(), url: sv.source};
-                items.push(newItem);
-            });
-        }
-        if (this._screenshots) {
-            this._screenshots.forEach((s) => {
-                let newItem = {label: s.label, src: s.url};
-                if (s.desc) newItem['desc'] = s.desc;
-                if (s.source) newItem['source'] = {label: s.source, url: s.source};
-                items.push(newItem);
-            });
+        let allImages : Set<string> = new Set();
+        let allVisualizations : Set<string> = new Set();
+
+        (this._model.hasExplanationDiagram || []).forEach((image:Image) => allImages.add(image.id));
+        (this._model.screenshot || []).forEach((image:Image) => allImages.add(image.id));
+        (this._model.hasSampleVisualization || []).forEach((viz:Visualization) => allVisualizations.add(viz.id));
+
+        if (this._version) {
+            (this._version.screenshot || []).forEach((image:Image) => allImages.add(image.id));
+            (this._version.hasSampleVisualization || []).forEach((viz:Visualization) => allVisualizations.add(viz.id));
         }
 
-        let stillLoading = (!this._explDiagrams || !this._sampleVis || !this._screenshots);
+        if (this._config) {
+            (this._config.screenshot || []).forEach((image:Image) => allImages.add(image.id));
+            (this._config.hasSampleVisualization || []).forEach((viz:Visualization) => allVisualizations.add(viz.id));
+        }
+
+        //let stillLoading : boolean = Array.from(allImages).some((id:string) => this._loading[id]) || 
+        //                             Array.from(allVisualizations).some((id:string) => this._loading[id]);
+        let allRes : (Image|Visualization)[] = Array.from(allImages)
+                .filter((id:string) => !this._loading[id])
+                .map((id:string) => this._images[id])
+                .filter((img:Image) => img.label && img.label.length > 0 && img.value && img.value.length > 0)
+                .concat(
+                    Array.from(allVisualizations)
+                            .filter((id:string) => !this._loading[id])
+                            .map((id:string) => this._visualizations[id])
+                            .filter((viz:Visualization) => viz.label && viz.label.length > 0 && viz.value && viz.value.length > 0)
+                );
+        let stillLoading : boolean = (allImages.size + allVisualizations.size) != allRes.length;
+
+        let items = allRes.map((res:Image|Visualization) => {
+            let item = {
+                label: getLabel(res),
+                src: res.value[0]
+            };
+            if (res.description && res.description.length > 0) item.desc = res.description[0];
+            if (res.hadPrimarySource && res.hadPrimarySource.length > 0 && res.hadPrimarySource[0].id)
+                item.source = {url: res.hadPrimarySource[0].id, label: uriToId(res.hadPrimarySource[0].id)};
+            return item;
+        })
 
         if (items.length > 0) {
             return html`
@@ -1541,7 +1589,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <image-gallery style="--width: 300px; --height: 160px;" .items="${items}"></image-gallery>`;
         } else {
             // Shows nothing when no gallery
-            return html``;
+            return '';
         }
     }
 
@@ -1553,7 +1601,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
     }
 
-    updated (a) {
+    updated () {
         if (this._shouldUpdateConfigs) this._updateConfigSelector();
         if (this._shouldUpdateSetups) this._updateSetupSelector();
         /*if (this._model) {
@@ -1690,6 +1738,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                     this._loadAuthors(this._model.author, db);
                     //Funding and all its organizations
                     this._loadFundings(this._model.hasFunding, db);
+
+                    //Gallery (Image, Visualization)
+                    this._loadImages(
+                        (this._model.screenshot || []).concat(this._model.hasExplanationDiagram || [])
+                    , db);
+                    this._loadVisualizations(this._model.hasSampleVisualization, db);
                 });
             }
 
@@ -1699,6 +1753,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                     if (db.versions[ui.selectedVersion]) {
                         this._selectedVersion = ui.selectedVersion;
                         this._version = db.versions[ui.selectedVersion];
+                        this._loadImages(this._version.screenshot, db);
+                        this._loadVisualizations(this._version.hasSampleVisualization, db);
                     }
                 } else {
                     this._selectedVersion = ui.selectedVersion;
@@ -1718,6 +1774,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                         this._loadTimeIntervals(this._config.hasOutputTimeInterval, db);
                         this._loadGrids(this._config.hasGrid, db);
                         this._loadProcesses(this._config.hasProcess, db);
+                        this._loadImages(
+                            (this._config.screenshot || []).concat(this._config.hasExplanationDiagram || [])
+                        , db);
+                        this._loadVisualizations(this._config.hasSampleVisualization, db);
                     } 
                 } else {
                     this._selectedConfig = ui.selectedConfig;
@@ -2004,6 +2064,36 @@ export class ModelView extends connect(store)(PageViewElement) {
             : html`<span class="resource process">
                 ${getLabel(this._processes[process.id])}
             </span>`);
+    }
+
+    private _loadImages (imagesArr: Image[], db: any) {
+        (imagesArr || []).forEach((image:Images) => {
+            if (db.images[image.id]) {
+                this._images[image.id] = db.images[image.id];
+            } else if (!this._loading[image.id]) {
+                this._loading[image.id] = true;
+                store.dispatch(imageGet(image.id)).then((image:Image) => {
+                    this._loading[image.id] = false;
+                    this._images[image.id] = image;
+                    this.requestUpdate();
+                });
+            }
+        })
+    }
+
+    private _loadVisualizations (visualizationsArr: Visualization[], db: any) {
+        (visualizationsArr || []).forEach((visualization:Visualizations) => {
+            if (db.visualizations[visualization.id]) {
+                this._visualizations[visualization.id] = db.visualizations[visualization.id];
+            } else if (!this._loading[visualization.id]) {
+                this._loading[visualization.id] = true;
+                store.dispatch(visualizationGet(visualization.id)).then((visualization:Visualization) => {
+                    this._loading[visualization.id] = false;
+                    this._visualizations[visualization.id] = visualization;
+                    this.requestUpdate();
+                });
+            }
+        })
     }
 
 }

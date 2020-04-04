@@ -10,6 +10,11 @@ pre {
     font:12px Monaco,Consolas,"Andale  Mono","DejaVu Sans Mono",monospace
 }
 
+.no-decoration, .no-decoration:hover {
+    text-decoration: none;
+    background-color: unset;
+}
+
 code {
     border-radius: 5px;
     -moz-border-radius: 5px;
