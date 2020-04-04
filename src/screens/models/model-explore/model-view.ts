@@ -382,7 +382,6 @@ export class ModelView extends connect(store)(PageViewElement) {
         ];
     }
 
-
     _renderCLIDialog () {
         return html`
         <wl-dialog class="larger" id="CLIDialog" fixed backdrop blockscrolling>
@@ -403,8 +402,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <wl-text> 
                     Visit the
                     <a target="_blank" href="https://mint-cli.readthedocs.io/en/latest/">
-                        DAME website
+                        <b>DAME</b> website
                     </a>
+                    (Desktop Application for Model Execution) 
                     for documentation and installation instructions.
                 </wl-text>
             </div>
@@ -607,7 +607,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </span>
                 </span>
             </div>
-
             <div class="info-center ${hasVersions? 'hidden' : ''}">- No version available -</div>
             <div class="info-center ${this._config && (!this._config.hasSetup || this._config.hasSetup.length === 0) ? '': 'hidden'}"
                 >- No configuration setup available <a class="clickable" @click="${this._addConfig}">add one</a> -</div>

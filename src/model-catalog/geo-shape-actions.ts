@@ -2,7 +2,7 @@ import { Action } from "redux";
 import { IdMap } from 'app/reducers';
 import { BoundingBox } from 'screens/regions/reducers';
 import { Configuration, GeoShape, GeoShapeApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer,
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getUser,
          getStatusConfigAndUser, DEFAULT_GRAPH } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC GeoShape]', ...args); }
@@ -40,17 +40,16 @@ export const geoShapesGet: ActionThunk<Promise<IdMap<GeoShape>>, MCAGeoShapesAdd
         geoShapesPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
             let api : GeoShapeApi = new GeoShapeApi();
-            let req : Promise<GeoShape[]> = api.geoshapesGet({username: DEFAULT_GRAPH});
+            let user : string = getUser();
+
+            let req : Promise<GeoShape[]> = api.geoshapesGet({username: user});
             req.then((resp:GeoShape[]) => {
                 let data : IdMap<GeoShape> = resp.map(parseBoundingBox).reduce(idReducer, {});
-                dispatch({
-                    type: GEO_SHAPES_ADD,
-                    payload: data
-                });
+                dispatch({ type: GEO_SHAPES_ADD, payload: data});
                 resolve(data);
             });
             req.catch((err) => {
-                console.error('Error on GET GeoShapes', err);
+                console.error('Error on GET GeoShapes', err)
                 reject(err);
             });
         });
@@ -63,9 +62,11 @@ export const geoShapesGet: ActionThunk<Promise<IdMap<GeoShape>>, MCAGeoShapesAdd
 export const geoShapeGet: ActionThunk<Promise<GeoShape>, MCAGeoShapesAdd> = ( uri:string ) => (dispatch) => {
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
+    let user : string = getUser();
     let api : GeoShapeApi = new GeoShapeApi();
-    let req : Promise<GeoShape> = api.geoshapesIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<GeoShape> = api.geoshapesIdGet({username: user, id: id});
     req.then((resp:GeoShape) => {
+        //TODO: add bbox
         dispatch({
             type: GEO_SHAPES_ADD,
             payload: idReducer({}, resp)

@@ -162,47 +162,47 @@ export class MintApp extends connect(store)(LitElement) {
       <!-- Navigation Bar -->
       <wl-nav>
         <div slot="title">
-        
-          ${this.user ? 
-            html `
-            <ul class="breadcrumbs">
-              <a href="${this._selectedRegion ? this._selectedRegion.id : ""}/home"
-                  class=${(this._page == 'home' ? 'active' : '')}>
-                  <div style="vertical-align:middle">
-                    ▶
-                    ${this._selectedRegion ? 
-                      this._selectedRegion.name.toUpperCase() : "Select Region"}
-                  </div>
-              </a>
-              ${!this._selectedRegion ? 
-                "" : 
-                html`
-                <a href='${this._selectedRegion.id}/regions'
-                    class=${(this._page == 'regions'? 'active': '')}
-                  >Explore Areas</a>                
-                <a href='${this._selectedRegion.id}/models'
-                    class=${(this._page == 'models'? 'active': '')}
-                  >Prepare Models</a>
-                <a href='${this._selectedRegion.id}/datasets'
-                    class=${(this._page == 'datasets'? 'active': '')}
-                  >Browse Datasets</a>                  
-                <a href='${this._selectedRegion.id}/modeling'
-                    class=${(this._page == 'modeling') ? 'active': ''}
-                  class="active">Use Models</a>
-                <a href='${this._selectedRegion.id}/analysis/report'
-                    class=${(this._page == 'analysis'? 'active': '')}
-                  >Prepare Reports</a>
-                `
-              }
-            </ul>
-            `
-            : html ``
-          }
-
+          <ul class="breadcrumbs">
+            <a href="${this._selectedRegion ? this._selectedRegion.id : ""}/home"
+                class=${(this._page == 'home' ? 'active' : '')}>
+                <div style="vertical-align:middle">
+                  ▶
+                  ${this._selectedRegion ? 
+                    this._selectedRegion.name.toUpperCase() : "Select Region"}
+                </div>
+            </a>
+            ${!this.user || !this._selectedRegion ? 
+              "" : 
+              html`
+              <a href='${this._selectedRegion.id}/regions'
+                  class=${(this._page == 'regions'? 'active': '')}
+                >Explore Areas</a>                
+              <a href='${this._selectedRegion.id}/models'
+                  class=${(this._page == 'models'? 'active': '')}
+                >Prepare Models</a>
+              <a href='${this._selectedRegion.id}/datasets'
+                  class=${(this._page == 'datasets'? 'active': '')}
+                >Browse Datasets</a>                  
+              <a href='${this._selectedRegion.id}/modeling'
+                  class=${(this._page == 'modeling') ? 'active': ''}
+                class="active">Use Models</a>
+              <a href='${this._selectedRegion.id}/analysis/report'
+                  class=${(this._page == 'analysis'? 'active': '')}
+                >Prepare Reports</a>
+              `
+            }
+          </ul>
         </div>
         <div slot="right">
           ${this.user == null ? 
             html`
+            ${this._selectedRegion ? 
+              html`
+              <wl-button flat inverted class="message-button ${this._page == 'emulators' ? 'selected' : ''}" @click="${() => goToPage('emulators')}">
+                Emulators <wl-icon style="margin-left: 4px;">settings</wl-icon>
+              </wl-button>
+              ` : ""
+            }
             <wl-button flat inverted @click="${this._showLoginWindow}">
               LOGIN &nbsp;
               <wl-icon alt="account">account_circle</wl-icon>
@@ -251,7 +251,15 @@ export class MintApp extends connect(store)(LitElement) {
         `
         :
         html `
-          <center><wl-title level="3"><br /><br />Please Login to Continue</wl-title></center>
+          <div class="sectionframe">
+            <div id="right">
+              <div class="card">
+                <!-- Main Pages -->
+                <app-home class="page fullpage" ?active="${this._page == 'home'}"></app-home>
+                <emulators-home class="page fullpage" ?active="${this._page == 'emulators'}"></emulators-home>
+              </div>
+            </div>
+          </div>
         `
       }
     </div>
@@ -340,23 +348,21 @@ export class MintApp extends connect(store)(LitElement) {
       }
     }
     
-    if(this.user) {
-      if(!state.regions || !state.regions.top_region_ids) {
-        // Fetch top regions
-        store.dispatch(listTopRegions());
+    if(!state.regions || !state.regions.top_region_ids) {
+      // Fetch top regions
+      store.dispatch(listTopRegions());
+    }
+    else if (state.regions && state.regions.regions) {
+      let regionid = state.ui.selected_top_regionid;
+      // If a region is selected, then fetch it's subregions
+      this._selectedRegion = state.regions.regions[regionid];
+      if(regionid && !this._dispatchedSubRegionsQuery
+          && (!state.regions.sub_region_ids || !state.regions.sub_region_ids[regionid])) {
+        this._dispatchedSubRegionsQuery = true;
+        store.dispatch(listSubRegions(regionid));
       }
-      else if (state.regions && state.regions.regions) {
-        let regionid = state.ui.selected_top_regionid;
-        // If a region is selected, then fetch it's subregions
-        this._selectedRegion = state.regions.regions[regionid];
-        if(regionid && !this._dispatchedSubRegionsQuery
-            && (!state.regions.sub_region_ids || !state.regions.sub_region_ids[regionid])) {
-          this._dispatchedSubRegionsQuery = true;
-          store.dispatch(listSubRegions(regionid));
-        }
-        else if(state.regions.sub_region_ids && state.regions.sub_region_ids[regionid]) {
-          this._dispatchedSubRegionsQuery = false;
-        }
+      else if(state.regions.sub_region_ids && state.regions.sub_region_ids[regionid]) {
+        this._dispatchedSubRegionsQuery = false;
       }
     }
   }

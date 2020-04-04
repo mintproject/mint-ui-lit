@@ -1,7 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, TimeInterval, TimeIntervalApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
          DEFAULT_GRAPH } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC TimeInterval]', ...args); }
@@ -20,17 +20,24 @@ export const timeIntervalsGet: ActionThunk<Promise<IdMap<TimeInterval>>, MCATime
     if (!timeIntervalsPromise) {
         timeIntervalsPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
+            let user : string = getUser();
             let api : TimeIntervalApi = new TimeIntervalApi();
-            let req : Promise<TimeInterval[]> = api.timeintervalsGet({username: DEFAULT_GRAPH});
-            req.then((resp:TimeInterval[]) => {
-                let data : IdMap<TimeInterval> = resp.reduce(idReducer, {});
-                dispatch({
-                    type: TIME_INTERVALS_ADD,
-                    payload: data
+            //let req1 : Promise<TimeInterval[]> = api.timeintervalsGet({username: DEFAULT_GRAPH});
+            let req2 : Promise<TimeInterval[]> = api.timeintervalsGet({username: user});
+
+            let promises : Promise<TimeInterval[]>[] = [req2];
+            promises.forEach((p:Promise<TimeInterval[]>, i:number) => {
+                p.then((resp:TimeInterval[]) => dispatch({ type: TIME_INTERVALS_ADD, payload: resp.reduce(idReducer, {}) }));
+                p.catch((err) => console.error('Error on GET TimeIntervals ' + (i==0?'System':'User'), err));
+            });
+
+            Promise.all(promises).then((values) => {
+                let data : IdMap<TimeInterval> = {};
+                values.forEach((tis:TimeInterval[]) => {
+                    data = tis.reduce(idReducer, data);
                 });
                 resolve(data);
-            });
-            req.catch((err) => {
+            }).catch((err) => {
                 console.error('Error on GET TimeIntervals', err);
                 reject(err);
             });
@@ -44,8 +51,9 @@ export const timeIntervalsGet: ActionThunk<Promise<IdMap<TimeInterval>>, MCATime
 export const timeIntervalGet: ActionThunk<Promise<TimeInterval>, MCATimeIntervalsAdd> = (uri:string) => (dispatch) => {
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
+    let user : string = getUser();
     let api : TimeIntervalApi = new TimeIntervalApi();
-    let req : Promise<TimeInterval> = api.timeintervalsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<TimeInterval> = api.timeintervalsIdGet({username: user, id: id});
     req.then((resp:TimeInterval) => {
         dispatch({
             type: TIME_INTERVALS_ADD,

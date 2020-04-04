@@ -1,7 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, SampleResource, SampleResourceApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
          DEFAULT_GRAPH } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC SampleResource]', ...args); }
@@ -21,16 +21,23 @@ export const sampleResourcesGet: ActionThunk<Promise<IdMap<SampleResource>>, MCA
         sampleResourcesPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
             let api : SampleResourceApi = new SampleResourceApi();
-            let req : Promise<SampleResource[]> = api.sampleresourcesGet({username: DEFAULT_GRAPH});
-            req.then((resp:SampleResource[]) => {
-                let data : IdMap<SampleResource> = resp.reduce(idReducer, {});
-                dispatch({
-                    type: SAMPLE_RESOURCES_ADD,
-                    payload: data
+            let user : string = getUser();
+            //let req1 : Promise<SampleResource[]> = api.sampleresourcesGet({username: DEFAULT_GRAPH});
+            let req2 : Promise<SampleResource[]> = api.sampleresourcesGet({username: user});
+
+            let promises : Promise<SampleResource[]>[] = [req2];
+            promises.forEach((p:Promise<SampleResource[]>, i:number) => {
+                p.then((resp:SampleResource[]) => dispatch({ type: SAMPLE_RESOURCES_ADD, payload: resp.reduce(idReducer, {}) }));
+                p.catch((err) => console.error('Error on GET SampleResources ' + (i==0?'System':'User'), err));
+            });
+
+            Promise.all(promises).then((values) => {
+                let data : IdMap<SampleResource> = {};
+                values.forEach((arr:SampleResource[]) => {
+                    data = arr.reduce(idReducer, data);
                 });
                 resolve(data);
-            });
-            req.catch((err) => {
+            }).catch((err) => {
                 console.error('Error on GET SampleResources', err);
                 reject(err);
             });
@@ -44,8 +51,9 @@ export const sampleResourcesGet: ActionThunk<Promise<IdMap<SampleResource>>, MCA
 export const sampleResourceGet: ActionThunk<Promise<SampleResource>, MCASampleResourcesAdd> = (uri:string) => (dispatch) => {
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
+    let user : string = getUser();
     let api : SampleResourceApi = new SampleResourceApi();
-    let req : Promise<SampleResource> = api.sampleresourcesIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<SampleResource> = api.sampleresourcesIdGet({username: user, id: id});
     req.then((resp:SampleResource) => {
         dispatch({
             type: SAMPLE_RESOURCES_ADD,

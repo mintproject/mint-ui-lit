@@ -1,8 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
-import { Configuration, VariablePresentation, VariablePresentationApi, GeoShape } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser,
-         DEFAULT_GRAPH, geoShapePost, geoShapeDelete } from './actions';
+import { Configuration, VariablePresentation, VariablePresentationApi } from '@mintproject/modelcatalog_client';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC VariablePresentation]', ...args); }
 
@@ -16,12 +15,19 @@ export type ModelCatalogVariablePresentationAction =  MCAVariablePresentationsAd
 
 let variablePresentationsPromise : Promise<IdMap<VariablePresentation>> | null = null;
 
+export const variablePresentationGetProm = (uri:string) => {
+    let user : string = getUser();
+    let id : string = getIdFromUri(uri);
+    let api : VariablePresentationApi = new VariablePresentationApi();
+    return api.variablepresentationsIdGet({username: user, id: id});
+}
+
 export const variablePresentationsGet: ActionThunk<Promise<IdMap<VariablePresentation>>, MCAVariablePresentationsAdd> = () => (dispatch) => {
     if (!variablePresentationsPromise) {
         debug('Fetching all');
         let api : VariablePresentationApi = new VariablePresentationApi();
         variablePresentationsPromise = new Promise((resolve, reject) => {
-            let req : Promise<VariablePresentation[]> = api.variablepresentationsGet({username: DEFAULT_GRAPH});
+            let req : Promise<VariablePresentation[]> = api.variablepresentationsGet({username: getUser()});
             req.then((resp:VariablePresentation[]) => {
                 let data = resp.reduce(idReducer, {}) as IdMap<VariablePresentation>
                 dispatch({
@@ -45,7 +51,7 @@ export const variablePresentationGet: ActionThunk<Promise<VariablePresentation>,
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
     let api : VariablePresentationApi = new VariablePresentationApi();
-    let req : Promise<VariablePresentation> = api.variablepresentationsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<VariablePresentation> = api.variablepresentationsIdGet({username: getUser(), id: id});
     req.then((resp:VariablePresentation) => {
         dispatch({
             type: VARIABLE_PRESENTATIONS_ADD,
@@ -53,7 +59,7 @@ export const variablePresentationGet: ActionThunk<Promise<VariablePresentation>,
         });
     });
     req.catch((err) => {
-        console.error('Error on GET VariablePresentation', err)
+        console.error('Error on GET VariablePresentation', err);
     });
     return req;
 }
@@ -65,7 +71,7 @@ export const variablePresentationPost: ActionThunk<Promise<VariablePresentation>
         debug('Creating new', variablePresentation);
         let postProm = new Promise((resolve,reject) => {
             let api : VariablePresentationApi = new VariablePresentationApi(cfg);
-            let req = api.variablepresentationsPost({user: DEFAULT_GRAPH, variablePresentation: variablePresentation});
+            let req = api.variablepresentationsPost({user: getUser(), variablePresentation: variablePresentation});
             req.then((resp:VariablePresentation) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -86,14 +92,14 @@ export const variablePresentationPost: ActionThunk<Promise<VariablePresentation>
     }
 }
 
-export const variablePresentationPut: ActionThunk<Promise<VariablePresentation>, MCAVariablePresentationsAdd> = (variablePresentation:VariablePresentation) => (dispatch) => {
+export const variablePresentationPut: ActionThunk<Promise<VariablePresentation>, MCAVariablePresentationsAdd> = (variablePresentation: VariablePresentation) => (dispatch) => {
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {
         debug('Updating', variablePresentation);
         let api : VariablePresentationApi = new VariablePresentationApi(cfg);
         let id : string = getIdFromUri(variablePresentation.id);
-        let req : Promise<VariablePresentation> = api.variablepresentationsIdPut({id: id, user: DEFAULT_GRAPH, variablePresentation: variablePresentation});
+        let req : Promise<VariablePresentation> = api.variablepresentationsIdPut({id: id, user: getUser(), variablePresentation: variablePresentation});
         req.then((resp:VariablePresentation) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -115,10 +121,10 @@ export const variablePresentationDelete: ActionThunk<void, MCAVariablePresentati
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {
-        debug('Deleting', variablePresentation);
+        debug('Deleting', variablePresentation.id);
         let api : VariablePresentationApi = new VariablePresentationApi(cfg);
         let id : string = getIdFromUri(variablePresentation.id);
-        let req : Promise<void> = api.variablepresentationsIdDelete({id: id, user: DEFAULT_GRAPH});
+        let req : Promise<void> = api.variablepresentationsIdDelete({id: id, user: getUser()});
         req.then(() => {
             dispatch({
                 type: VARIABLE_PRESENTATION_DELETE,

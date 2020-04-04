@@ -16,6 +16,7 @@ import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 import { RegionCategory } from "screens/regions/reducers";
 
 import { regionsGet, regionPost, regionDelete } from 'model-catalog/actions';
+import { isSubregion } from 'model-catalog/util';
 
 import { renderExternalLink } from './util';
 
@@ -187,10 +188,7 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
 
     _renderSelectTab () {
         let subregions : Region[] = Object.values(this._regions || {}).filter((region:Region) => 
-            region.partOf &&
-            region.partOf.length > 0 &&
-            region.partOf.some((obj:Region) => obj.id === this._region.model_catalog_uri) &&
-            region.label.join().toLowerCase().includes(this._filter.toLowerCase())
+            isSubregion(this._region.model_catalog_uri, region)
         );
 
         return html`

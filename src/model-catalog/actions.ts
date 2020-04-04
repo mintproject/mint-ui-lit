@@ -88,6 +88,11 @@ export const getStatusConfigAndUser = () => {
     return [status, cfg, user];
 }
 
+export const getUser = () => {
+    let state: any = store.getState();
+    return state.app.user ? state.app.user.email : DEFAULT_GRAPH;
+}
+
 export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAction | 
         ModelCatalogModelConfigurationAction | ModelCatalogModelConfigurationSetupAction | ModelCatalogPersonAction |
         ModelCatalogRegionAction | ModelCatalogGeoShapeAction | ModelCatalogGridAction | ModelCatalogProcessAction |
@@ -158,16 +163,6 @@ export const modelsSearchStandardVariable = (term:string) => {
     return req;*/
     return new Promise((resolve, reject) => {
         let req = fetch(CUSTOM_URI + "models/standard_variable?username=mint%40isi.edu&custom_query_name=custom_model_standard_variable&label=" + term);
-        req.then((response) => {
-            response.json().then(resolve);
-        });
-        req.catch(reject);
-    });
-}
-
-export const setupsSearchVariable = (term:string) => {
-    return new Promise((resolve, reject) => {
-        let req = fetch(CUSTOM_URI + "modelconfigurationsetups/variable?username=mint%40isi.edu&custom_query_name=custom_modelconfigurationsetups_variable&label=" + term);
         req.then((response) => {
             response.json().then(resolve);
         });

@@ -2,7 +2,7 @@ import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, DatasetSpecification, DatasetSpecificationApi, SampleResource,
          SampleCollection } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
          DEFAULT_GRAPH, sampleCollectionPost, sampleResourcePost } from './actions';
 
 function debug (...args: any[]) { }//console.log('[MC DatasetSpecification]', ...args); }
@@ -19,19 +19,26 @@ let datasetSpecificationsPromise : Promise<IdMap<DatasetSpecification>> | null =
 
 export const datasetSpecificationsGet: ActionThunk<Promise<IdMap<DatasetSpecification>>, MCADatasetSpecificationsAdd> = () => (dispatch) => {
     if (!datasetSpecificationsPromise) {
-        debug('Fetching all');
-        let api : DatasetSpecificationApi = new DatasetSpecificationApi();
         datasetSpecificationsPromise = new Promise((resolve, reject) => {
-            let req : Promise<DatasetSpecification[]> = api.datasetspecificationsGet({username: DEFAULT_GRAPH});
-            req.then((resp:DatasetSpecification[]) => {
-                let data : IdMap<DatasetSpecification> = resp.reduce(idReducer, {});
-                dispatch({
-                    type: DATASET_SPECIFICATIONS_ADD,
-                    payload: data
+            debug('Fetching all');
+            let api : DatasetSpecificationApi = new DatasetSpecificationApi();
+            let user : string = getUser();
+            //let req1 : Promise<DatasetSpecification[]> = api.datasetspecificationsGet({username: DEFAULT_GRAPH});
+            let req2 : Promise<DatasetSpecification[]> = api.datasetspecificationsGet({username: user});
+
+            let promises : Promise<DatasetSpecification[]>[] = [req2];
+            promises.forEach((p:Promise<DatasetSpecification[]>, i:number) => {
+                p.then((resp:DatasetSpecification[]) => dispatch({ type: DATASET_SPECIFICATIONS_ADD, payload: resp.reduce(idReducer, {}) }));
+                p.catch((err) => console.error('Error on GET DatasetSpecifications ' + (i==0?'System':'User'), err));
+            });
+
+            Promise.all(promises).then((values) => {
+                let data : IdMap<DatasetSpecification> = {};
+                values.forEach((arr:DatasetSpecification[]) => {
+                    data = arr.reduce(idReducer, data);
                 });
                 resolve(data);
-            });
-            req.catch((err) => {
+            }).catch((err) => {
                 console.error('Error on GET DatasetSpecifications', err);
                 reject(err);
             });
@@ -45,8 +52,9 @@ export const datasetSpecificationsGet: ActionThunk<Promise<IdMap<DatasetSpecific
 export const datasetSpecificationGet: ActionThunk<Promise<DatasetSpecification>, MCADatasetSpecificationsAdd> = (uri:string) => (dispatch) => {
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
+    let user : string = getUser();
     let api : DatasetSpecificationApi = new DatasetSpecificationApi();
-    let req : Promise<DatasetSpecification> = api.datasetspecificationsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<DatasetSpecification> = api.datasetspecificationsIdGet({username: user, id: id});
     req.then((resp:DatasetSpecification) => {
         dispatch({
             type: DATASET_SPECIFICATIONS_ADD,

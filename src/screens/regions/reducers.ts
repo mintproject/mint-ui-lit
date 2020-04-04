@@ -1,7 +1,7 @@
 import { IdMap, IdNameObject } from "../../app/reducers";
 import { RootAction } from "../../app/store";
 import { Reducer } from "redux";
-import { REGIONS_LIST_TOP_REGIONS, REGIONS_LIST_SUB_REGIONS } from "./actions";
+import { REGIONS_LIST_TOP_REGIONS, REGIONS_LIST_SUB_REGIONS, REGIONS_SET_PREVIEW } from "./actions";
 
 export type RegionMap = IdMap<Region>;
 
@@ -17,7 +17,8 @@ export interface Region extends IdNameObject {
 export interface RegionsState {
     regions?: RegionMap,
     top_region_ids?: string[],
-    sub_region_ids?: IdMap<string[]>
+    sub_region_ids?: IdMap<string[]>,
+    bbox_preview?: BoundingBox[]
 }
 
 export interface RegionCategory {
@@ -62,6 +63,11 @@ const regions: Reducer<RegionsState, RootAction> = (state = INITIAL_STATE, actio
             state.sub_region_ids[action.parentid] = Object.keys(action.regions)
             return {
                 ...state
+            };
+        case REGIONS_SET_PREVIEW:
+            return {
+                ...state,
+                bbox_preview: action.payload
             };
     }
     return state;

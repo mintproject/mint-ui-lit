@@ -104,7 +104,7 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
                               value="${this._sampleResources[part.id] ? this._sampleResources[part.id].label : ''}"></wl-textfield>
                 <wl-textarea  id="col-${i}-description" style="font-size: 15px;" label="Description" 
                               value="${this._sampleResources[part.id] ? this._sampleResources[part.id].description : ''}"></wl-textarea>
-                <wl-textfield id="col-${i}-data-catalog-id" type="text" label="Data catalog identifier"
+                <wl-textfield id="col-${i}-data-catalog-id" type="text" label="Data catalog identifier (optional)"
                               value="${this._sampleResources[part.id] ? this._sampleResources[part.id].dataCatalogIdentifier : ''}"></wl-textfield>
                 <wl-textfield id="col-${i}-url" type="url" label="URL" 
                               value="${this._sampleResources[part.id] ? this._sampleResources[part.id].value : ''}"></wl-textfield>
@@ -144,7 +144,7 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
                 <legend style="font-weight: 700; font-size: 12px; color: gray;"> New file </legend>
                 <wl-textfield id="col-new-label" type="text" label="Label" value=""></wl-textfield>
                 <wl-textarea  id="col-new-description" style="font-size: 15px;" label="Description" value=""></wl-textarea>
-                <wl-textfield id="col-new-data-catalog-id" type="text" label="Data catalog identifier" value=""></wl-textfield>
+                <wl-textfield id="col-new-data-catalog-id" type="text" label="Data catalog identifier (optional)" value=""></wl-textfield>
                 <wl-textfield id="col-new-url" type="url" label="URL" value=""></wl-textfield>
                 <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
                     <wl-button type="button" @click="${this._addValueToCollection}" ?disabled="${this._waiting}"> 
@@ -153,7 +153,7 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
                 </div>
             </fieldset>`}` 
             : ''}
-            <wl-textfield id="input-data-catalog-id" type="text" label="Data catalog identifier" value="${this._input.dataCatalogIdentifier}"
+            <wl-textfield id="input-data-catalog-id" type="text" label="Data catalog identifier (optional)" value="${this._input.dataCatalogIdentifier}"
                           style="${this._collection ? 'display: none;' : ''}"></wl-textfield>
             <wl-textfield id="input-url" type="url" label="URL" value="${this._input.value}"
                           style="${this._collection ? 'display: none;' : ''}"></wl-textfield>
@@ -259,10 +259,9 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
             let dataCatalogId = dataCatalogIdEl.value;
             let url = urlEl.value;
             let editedSample = { ...sample };
-            if (!label || !description || !url) {
+            if (!label || !url) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>labelEl).refreshAttributes();
-                (<any>descriptionEl).refreshAttributes();
                 (<any>urlEl).refreshAttributes();
                 return;
             }
@@ -286,10 +285,9 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
             let description = descriptionEl.value;
             let dataCatalogId = dataCatalogIdEl.value;
             let url = urlEl.value;
-            if (!label || !description || !url) {
+            if (!label || !url) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>labelEl).refreshAttributes();
-                (<any>descriptionEl).refreshAttributes();
                 (<any>urlEl).refreshAttributes();
                 return;
             }
@@ -334,10 +332,9 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
         if (labelEl && descriptionEl) {
             let label = labelEl.value;
             let description = descriptionEl.value;
-            if (!label || !description || (this._collection && (this._input as SampleCollection).hasPart.length == 0)) {
+            if (!label || (this._collection && (this._input as SampleCollection).hasPart.length == 0)) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>labelEl).refreshAttributes();
-                (<any>descriptionEl).refreshAttributes();
                 return;
             }
 
@@ -385,10 +382,9 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
             let description = descriptionEl.value;
             let dataCatalogId = dataCatalogIdEl.value;
             let url = urlEl.value;
-            if (!label || !description || !url) {
+            if (!label || !url) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>labelEl).refreshAttributes();
-                (<any>descriptionEl).refreshAttributes();
                 (<any>urlEl).refreshAttributes();
                 return;
             }
@@ -415,10 +411,9 @@ export class ModelsConfigureInput extends connect(store)(PageViewElement) {
         if (labelEl && descriptionEl) {
             let label = labelEl.value;
             let description = descriptionEl.value;
-            if (!label || !description || (this._collection && (this._input as SampleCollection).hasPart.length > 0)) {
+            if (!label || (this._collection && (this._input as SampleCollection).hasPart.length > 0)) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>labelEl).refreshAttributes();
-                (<any>descriptionEl).refreshAttributes();
                 return;
             }
 

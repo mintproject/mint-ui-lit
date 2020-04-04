@@ -434,7 +434,7 @@ export class AppHome extends connect(store)(PageViewElement) {
                     sorghum, groundnuts, and sesame seed crops.
                 </p>
 
-                <wl-title level="3">Agriculture Indicators</wl-title>
+                <wl-title level="3">Hydrology Indicators</wl-title>
                 <p>
                     We use the PIHM and TopoFlow models to generate hydrology indicators.
                     These models require a large number of spatially-distributed input variables that describe various

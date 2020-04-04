@@ -6,6 +6,10 @@ import { matchVariables } from "../../util/state_functions";
 import { EXAMPLE_MODEL_QUERY } from "../../offline_data/sample_models";
 import { OFFLINE_DEMO_MODE } from "../../app/actions";
 
+import { setupsSearchVariable, setupGetAll, variablePresentationGetProm } from 'model-catalog/actions';
+import { ModelConfigurationSetup, DatasetSpecification } from '@mintproject/modelcatalog_client';
+import { sortByPosition } from './configure/util';
+
 export const MODELS_VARIABLES_QUERY = 'MODELS_VARIABLES_QUERY';
 export const MODELS_LIST = 'MODELS_LIST';
 export const MODELS_DETAIL = 'MODELS_DETAIL';
@@ -59,30 +63,146 @@ export const listAllModels: ActionCreator<ListModelsThunkResult> = (prefs: MintP
 
 };
 
+const parameterToParam = (parameter) => {
+    let param: ModelParameter =  {
+        id: parameter.id,
+        name: parameter.label ? parameter.label[0] : "",
+        type: parameter.hasDataType ? parameter.hasDataType[0] : "",
+        min: parameter.hasMinimumAcceptedValue ? parameter.hasMinimumAcceptedValue[0] : "",
+        max: parameter.hasMaximumAcceptedValue ? parameter.hasMaximumAcceptedValue[0] : "",
+        unit: "", //FIXME is not being returned
+        default: parameter.hasDefaultValue ? parameter.hasDefaultValue[0] : "",
+        description: parameter.description ? parameter.description[0] : "",
+        adjustment_variable: parameter.adjustsVariable ? parameter.adjustsVariable[0] : "",
+        position: parameter.position ? parameter.position[0] : 0,
+        accepted_values: parameter.hasAcceptedValues ? parameter.hasAcceptedValues[0] : null,
+    };
+    if (parameter.hasFixedValue)
+        param.value = parameter.hasFixedValue[0];
+    // Hack to fix FALSE to false
+    if(param.value == "FALSE")
+        param.value = "false";
+
+    return param;
+}
+
+const fixedToValue = (fx) => {
+    let dataCatalogIdentifier = fx.dataCatalogIdentifier ? fx.dataCatalogIdentifier[0] : "";
+    let resources = [];
+    if (fx.value) {
+        let url = fx.value[0];
+        let fname = url.replace(/.*[#\/]/, '');
+        resources.push({
+            url: url,
+            id: fname,
+            name: fname,
+            selected: true
+        });
+    }
+
+    if (fx.hasPart) {
+        fx.hasPart.forEach((part:any) => {
+            let partVal = fixedToValue(part)
+            if (!dataCatalogIdentifier)
+                dataCatalogIdentifier = partVal.id;
+            if (partVal.resources.length > 0)
+                resources = resources.concat(partVal.resources);
+        })
+    }
+
+    return {
+        id: dataCatalogIdentifier,
+        resources: resources
+    }
+}
+
+const dsSpecToIO = (ds: DatasetSpecification) => {
+    let types = ds.type.filter((t:string) => t != 'DatasetSpecification');
+    let io = {
+        id: ds.id,
+        name: ds.label ? ds.label[0] : ds.id,
+        type: types.join(),
+        position: ds.position ? ds.position[0] : 0,
+        variables: [], //TODO does not return hasInput -> hasPresentation -> hasStandarVariable
+    }
+
+    if (ds.hasPresentation) {
+        let vars : Set<string> = new Set();
+        ds.hasPresentation.map(vp => {
+            (vp.hasStandardVariable||[]).forEach((sv) => 
+                vars.add(sv.label ? sv.label[0] : "")
+            )
+        })
+        io.variables = Array.from(vars);
+    }
+
+    if (ds.hasFixedResource) {
+        io["value"] = fixedToValue(ds.hasFixedResource[0]);
+    }
+    return io;
+}
+
+const setupToOldModel = (setup: ModelConfigurationSetup) :  Model => {
+    let model: Model = {
+        id: setup.id,
+        localname: setup.id.substr(setup.id.lastIndexOf("/") + 1),
+        name: setup.label ? setup.label[0] : "",
+        calibrated_region: setup.hasRegion ?
+                setup.hasRegion.map((r:any) => r.label[0]).join(', ') : "",
+        description: setup.description ? setup.description[0] : "",
+        category: setup.hasModelCategory ? setup.hasModelCategory[0] : "",
+        wcm_uri: setup.hasComponentLocation ? setup.hasComponentLocation[0] : "",
+        input_files: [],
+        input_parameters: [],
+        output_files: [],
+        original_model: "", //FIXME row["modelName"] || "",
+        model_version: "", //FIXME row["versionName"] || "",
+        model_configuration: "", //FIXME row["configurationName"] || "",
+        model_type: "",
+        parameter_assignment: setup.parameterAssignmentMethod ? setup.parameterAssignmentMethod[0] : "",
+        parameter_assignment_details: "",
+        target_variable_for_parameter_assignment: setup.calibrationTargetVariable ?
+                setup.calibrationTargetVariable
+                        .map((tv:any) => tv.label? tv.label[0] : '')
+                        .filter((l:string) => !!l)
+                        .join(', ') : "",
+        modeled_processes: [""], //TODO the API is not returning this.
+        dimensionality: "",
+        spatial_grid_type: "",
+        spatial_grid_resolution: "",
+        minimum_output_time_interval: "",
+        usage_notes: setup.hasUsageNotes ? setup.hasUsageNotes[0] : ""
+    };
+
+    if (setup.hasGrid && setup.hasGrid.length > 0) {
+        let grid = setup.hasGrid[0];
+        let types = grid.type.filter((t:string) => t!="Grid");
+        model.dimensionality =  grid.hasDimension ? grid.hasDimension[0] : "";
+        model.spatial_grid_type = types.join(),
+        model.spatial_grid_resolution = grid.hasSpatialResolution ? grid.hasSpatialResolution[0] : "";
+    }
+
+    if (setup.hasInput)
+        model.input_files = setup.hasInput.map(dsSpecToIO).sort(sortByPosition);
+
+    if (setup.hasOutput)
+        model.output_files = setup.hasOutput.map(dsSpecToIO).sort(sortByPosition);
+
+    if (setup.hasParameter)
+        model.input_parameters = setup.hasParameter.map(parameterToParam).sort(sortByPosition);
+
+    if (setup.hasRegion)
+        model.hasRegion = setup.hasRegion;
+
+    return model;
+}
+
 // Query Model Catalog By Output? Variables
 type QueryModelsThunkResult = ThunkAction<void, RootState, undefined, ModelsActionVariablesQuery>;
 export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (response_variables: string[],
         driving_variables: string[]) => (dispatch) => {
     let models = [] as Model[];
-
-    if(OFFLINE_DEMO_MODE) {
-        // Offline mode example query
-        EXAMPLE_MODEL_QUERY.map((model) => {
-            let i=0;
-            for(;i<model.output_files.length; i++) {
-                let output = model.output_files[i];
-                if(matchVariables(output.variables, response_variables, true)) // Do a full match
-                    models.push(model as Model);
-            }
-        });
-        dispatch({
-            type: MODELS_VARIABLES_QUERY,
-            variables: response_variables,
-            models: models,
-            loading: false
-        });
-        return;
-    }
+    //console.log('queryModelsByVariables(', response_variables, ',', driving_variables, ')');
 
     dispatch({
         type: MODELS_VARIABLES_QUERY,
@@ -91,216 +211,33 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
         loading: true
     });
 
-    let variables = response_variables[0].split(/\s*,\s/);
+    let variables : string[] = response_variables[0].split(/\s*,\s/);
+
+    let setups : ModelConfigurationSetup[] = [];
+    //console.log('let variables =', variables);
     Promise.all(
-        variables.map((variable) => {
-            let fromvar = getVariableProperty(variable, "created_from");
+        variables.map((variable:string) => {
+            let fromvar : string = getVariableProperty(variable, "created_from");
             if(fromvar) {
                 variable = fromvar;
             }
-            return apiFetch({
-                type: CALIBRATIONS_FOR_VAR_SN,
-                std: variable,
-                rules: {
-                    'model': { 
-                        newKey: 'modelName',
-                        newValue: (value: string) => value.substr(value.lastIndexOf('/')+1) 
-                    },
-                    'version': { 
-                        newKey: 'versionName',
-                        newValue: (value: string) => value.substr(value.lastIndexOf('/')+1) 
-                    },
-                    'configuration': { 
-                        newKey: 'configurationName',
-                        newValue: (value: string) => value.substr(value.lastIndexOf('/')+1) 
-                    }
-                }
-            });
+            return setupsSearchVariable(variable);
         })
-    ).then((callist: Array<Array<Object>>) => {
-        let modelrows: Array<Object> = [];
-        callist.map((cal) => {
-            modelrows = modelrows.concat(cal);
-        });
-        //console.log(modelrows);
-        let calibrationPromises = 
-            modelrows.map((row: Object) => {
-                let modelid = row['calibration'] || row['configuration'];
-                //console.log(modelid);
-                return Promise.all([
-                    apiFetch({
-                        type: METADATA_NOIO_FOR_MODEL_CONFIG,
-                        modelConfig: modelid,
-                        rules: {
-                            'targetVariables': {
-                                newValue: (value: string) => value.split(/\s*,\s*/).map((val) => {
-                                    return val.substr(val.lastIndexOf("/") + 1)
-                                })
-                            }
-                        }
-                    }),
-                    apiFetch({
-                        type: IO_AND_VARS_SN_FOR_CONFIG,
-                        config: modelid
-                    }),
-                    apiFetch({
-                        type: PARAMETERS_FOR_CONFIG,
-                        config: modelid
-                    }),
-                ]).then((values) => {
-                    // Get model config metadata
-                    let meta:Object = values[0][0];
-
-                    // Get model config input and output files
-                    let fileio: any = {};
-                    let inputs:ModelIO[] = [];
-                    let outputs:ModelIO[] = [];
-                    values[1].map((value: any) => {
-                        let io: ModelIO = fileio[value.io];
-                        if(!io) {
-                            io = {
-                                id: value.io,
-                                name: value.iolabel,
-                                type: value.type,
-                                position: value.position ? parseInt(value.position) : 0,
-                                variables: []
-                            };
-                            if(value.fixedValueURL) {
-                                let dcids = value.fixedValueDCId.split(/\s*,\s*/);
-                                let urls = value.fixedValueURL.split(/\s*,\s*/);
-                                let resources = urls.map((url) => {
-                                    let fname = url.replace(/.*[#\/]/, '');
-                                    return { 
-                                        url: url,
-                                        id: fname,
-                                        name: fname,
-                                        selected: true
-                                    };
-                                });
-                                io.value = {
-                                    id: dcids[0],
-                                    resources: resources
-                                } as Dataset;
-                            }
-                            fileio[value.io] = io;
-                            if(value.prop) {
-                                if(value.prop.match(/#hasInput$/)) {
-                                    inputs.push(io);
-                                } else {
-                                    outputs.push(io);
-                                }
-                            }
-                        }
-                        if(value.st) {
-                            io.variables.push(value.st);
-                        }
-                    });
-                    
-                    // Get model config input/output parameters
-                    let params: any = {};
-                    let parameters:ModelParameter[] = [];
-                    let matched_driving_variable = false;
-                    values[2].map((value: any) => {
-                        if(params[value.p]) {
-                            // Do not add duplicate parameters
-                            return;
-                        }
-                        let adjustment_variable = value.standardV || "";
-                        let accepted_values = value.acceptedValues ? value.acceptedValues.split(/\s*;\s*/) : null
-                        let param: ModelParameter =  {
-                            id: value.p,
-                            name: value.paramlabel,
-                            type: value.pdatatype,
-                            min: value.minVal || "",
-                            max: value.maxVal || "",
-                            unit: value.unit || "",
-                            default: value.defaultvalue || "",
-                            description: value.description || "",
-                            adjustment_variable: adjustment_variable,
-                            position: value.position ? parseInt(value.position) : 0,
-                            accepted_values: accepted_values
-                        };
-                        if(value.fixedValue)
-                            param.value = value.fixedValue;
-                        // Hack to fix FALSE to false
-                        if(param.value == "FALSE")
-                            param.value = "false";
-                        params[value.p] = param;
-                        parameters.push(param);
-
-                        // If some driving/adjustment variables are passed, make sure they are matched
-                        if (!param.value && driving_variables && driving_variables.indexOf(adjustment_variable) >= 0) {
-                            matched_driving_variable = true;
-                        }
-                    });
-
-                    if(!driving_variables || !driving_variables.length || matched_driving_variable) {
-                        // If this model matches the adjustment/driving variable
-
-                        let input_parameters = parameters
-                            .sort((a, b) => a.name.localeCompare(b.name));
-                        let input_files = inputs
-                            .sort((a, b) => a.name.localeCompare(b.name));
-
-                        let model: Model = {
-                            id: modelid,
-                            localname: modelid.substr(modelid.lastIndexOf("/") + 1),
-                            name: meta['label'],
-                            calibrated_region: meta["regionName"] || "",
-                            description: row["desc"] || "",
-                            category: row["category"] || "",
-                            wcm_uri: row["compLoc"] || "",
-                            input_files: input_files,
-                            input_parameters: input_parameters,
-                            output_files: outputs,
-                            original_model: row["modelName"] || "",
-                            model_version: row["versionName"] || "",
-                            model_configuration: row["configurationName"] || "",
-                            model_type: "",
-                            parameter_assignment: meta["paramAssignMethod"] || "",
-                            parameter_assignment_details: "",
-                            target_variable_for_parameter_assignment: (meta["targetVariables"] || []).join(", "),
-                            modeled_processes: meta["processes"] || "",
-                            dimensionality: meta['gridDim'] || "",
-                            spatial_grid_type: (meta['gridType'] || "").replace(/.*#/, ''),
-                            spatial_grid_resolution: meta['gridSpatial'] || "",
-                            minimum_output_time_interval: "",
-                            usage_notes: meta['usageNotes'] || ""
-                        };
-                        //console.log(model);
-                        return model;
-                    }
-                });
-            });
-        Promise.all(calibrationPromises).then(function(models) {
-            //console.log(models)
-            models = models.filter((m) => m);
+    ).then((resp) => {
+        setups = resp.reduce((arr:ModelConfigurationSetup[], r:ModelConfigurationSetup[]) => arr.concat(r), []);
+        //let models = setups.map(setupToOldModel);
+        //console.log('>>', models);
+        Promise.all(
+            setups.map((s:ModelConfigurationSetup) => setupGetAll(s.id))
+        ).then((setups) => {
             dispatch({
                 type: MODELS_VARIABLES_QUERY,
                 variables: response_variables,
-                models: models,
+                models: setups.map(setupToOldModel),
                 loading: false
-            });            
+            });
         })
-    });
-
-    /*
-    fetch(MODEL_CATALOG_URI + "/getCalibratedModelConfigurationsForVariable?std=" + response_variables).then((response) => {
-        response.json().then((json) => {
-            json.results.bindings.map((binding: Object) => {
-                let model = {} as Model;
-                model.id = binding["calibration"]["value"];
-                model.description = binding["desc"]["value"];
-                model.original_model = binding["model"]["value"];
-                fetch(MODEL_CATALOG_URI + "/getModelConfigurationMetadata?modelConfig=" + model.id).then((mresponse) => {
-                    mresponse.json().then((mjson) => {
-                        console.log(mjson);
-                    });
-                });
-            })
-        });
-    });
-    */
+    })
 };
 
 // Query Model Details
