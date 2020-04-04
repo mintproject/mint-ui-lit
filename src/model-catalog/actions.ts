@@ -24,6 +24,8 @@ import { ModelCatalogOrganizationAction } from './organization-actions';
 import { ModelCatalogFundingInformationAction } from './funding-information-actions';
 import { ModelCatalogVisualizationAction } from './visualization-actions';
 import { ModelCatalogSourceCodeAction } from './source-code-actions';
+import { ModelCatalogInterventionAction } from './intervention-actions';
+import { ModelCatalogVariablePresentationAction } from './variable-presentation-actions';
 
 export const DEFAULT_GRAPH = 'mint@isi.edu';
 export const PREFIX_URI = 'https://w3id.org/okn/i/mint/'
@@ -92,7 +94,8 @@ export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAc
         ModelCatalogParameterAction | ModelCatalogTimeIntervalAction | ModelCatalogSoftwareImageAction |
         ModelCatalogDatasetSpecificationAction | ModelCatalogSampleResourceAction | ModelCatalogSampleCollectionAction |
         ModelCatalogImageAction | ModelCatalogVisualizationAction | ModelCatalogOrganizationAction | 
-        ModelCatalogFundingInformationAction | ModelCatalogSourceCodeAction;
+        ModelCatalogFundingInformationAction | ModelCatalogSourceCodeAction | ModelCatalogInterventionAction |
+        ModelCatalogVariablePresentationAction;
 
 //FIXME: The API is returning only one model (void), doing the fetch instead.
 const CUSTOM_URI = "https://api.models.mint.isi.edu/v1.4.0/custom/";
@@ -192,3 +195,5 @@ export * from './organization-actions';
 export * from './funding-information-actions';
 export * from './visualization-actions';
 export * from './source-code-actions';
+export * from './intervention-actions';
+export * from './variable-presentation-actions';
