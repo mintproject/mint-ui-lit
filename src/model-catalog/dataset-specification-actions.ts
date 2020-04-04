@@ -3,7 +3,7 @@ import { IdMap } from 'app/reducers'
 import { Configuration, DatasetSpecification, DatasetSpecificationApi, SampleResource,
          SampleCollection } from '@mintproject/modelcatalog_client';
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
-         DEFAULT_GRAPH, sampleCollectionPost, sampleResourcePost } from './actions';
+         sampleCollectionPost, sampleResourcePost } from './actions';
 
 function debug (...args: any[]) { }//console.log('[MC DatasetSpecification]', ...args); }
 
@@ -23,7 +23,6 @@ export const datasetSpecificationsGet: ActionThunk<Promise<IdMap<DatasetSpecific
             debug('Fetching all');
             let api : DatasetSpecificationApi = new DatasetSpecificationApi();
             let user : string = getUser();
-            //let req1 : Promise<DatasetSpecification[]> = api.datasetspecificationsGet({username: DEFAULT_GRAPH});
             let req2 : Promise<DatasetSpecification[]> = api.datasetspecificationsGet({username: user});
 
             let promises : Promise<DatasetSpecification[]>[] = [req2];
@@ -83,7 +82,7 @@ export const datasetSpecificationPost: ActionThunk<Promise<DatasetSpecification>
                 })).then((samples) => {
                     datasetSpecification.hasFixedResource = samples;
                     let api : DatasetSpecificationApi = new DatasetSpecificationApi(cfg);
-                    let req = api.datasetspecificationsPost({user: DEFAULT_GRAPH, datasetSpecification: datasetSpecification}); // This should be my username on prod.
+                    let req = api.datasetspecificationsPost({user: user, datasetSpecification: datasetSpecification}); // This should be my username on prod.
                     req.then((resp:DatasetSpecification) => {
                         debug('Response for POST', resp);
                         dispatch({
@@ -112,7 +111,7 @@ export const datasetSpecificationPut: ActionThunk<Promise<DatasetSpecification>,
         debug('Updating', datasetSpecification);
         let api : DatasetSpecificationApi = new DatasetSpecificationApi(cfg);
         let id : string = getIdFromUri(datasetSpecification.id);
-        let req : Promise<DatasetSpecification> = api.datasetspecificationsIdPut({id: id, user: DEFAULT_GRAPH, datasetSpecification: datasetSpecification});
+        let req : Promise<DatasetSpecification> = api.datasetspecificationsIdPut({id: id, user: user, datasetSpecification: datasetSpecification});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -137,7 +136,7 @@ export const datasetSpecificationDelete: ActionThunk<void, MCADatasetSpecificati
         debug('Deleting', datasetSpecification.id);
         let api : DatasetSpecificationApi = new DatasetSpecificationApi(cfg);
         let id : string = getIdFromUri(datasetSpecification.id);
-        let req : Promise<void> = api.datasetspecificationsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.datasetspecificationsIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: DATASET_SPECIFICATION_DELETE,

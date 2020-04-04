@@ -1,7 +1,7 @@
 import { Action, ActionCreator } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "../../../app/store";
-import { RESOURCE_PREFIX } from '../../../util/model-catalog-requests';
+import { PREFIX_URI } from 'model-catalog/actions';
 import { ComparisonEntry } from './ui-reducers'
 
 export const EXPLORER_SELECT_MODEL = 'EXPLORER_SELECT_MODEL'
@@ -37,7 +37,7 @@ export type ExplorerUIAction = ExplorerActionSelectModel | ExplorerActionSelectV
 type ExplorerThunkResult = ThunkAction<void, RootState, undefined, ExplorerUIAction>;
 
 export const explorerSetModel: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
-    let uri : string = id ? RESOURCE_PREFIX + id : '';
+    let uri : string = id ? PREFIX_URI + id : '';
     dispatch({ type: EXPLORER_SELECT_MODEL, uri: uri })
 };
 
@@ -46,7 +46,7 @@ export const explorerClearModel: ActionCreator<ExplorerThunkResult> = () => (dis
 };
 
 export const explorerSetVersion: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
-    let uri : string = id ? RESOURCE_PREFIX + id : '';
+    let uri : string = id ? PREFIX_URI + id : '';
     dispatch({ type: EXPLORER_SELECT_VERSION, uri: uri})
 };
 
@@ -55,7 +55,7 @@ export const explorerClearVersion: ActionCreator<ExplorerThunkResult> = () => (d
 };
 
 export const explorerSetConfig: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
-    let uri : string = id ? RESOURCE_PREFIX + id : '';
+    let uri : string = id ? PREFIX_URI + id : '';
     dispatch({ type: EXPLORER_SELECT_CONFIG, uri: uri})
 };
 
@@ -64,7 +64,7 @@ export const explorerClearConfig: ActionCreator<ExplorerThunkResult> = () => (di
 };
 
 export const explorerSetCalibration: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
-    let uri : string = id ? RESOURCE_PREFIX + id : '';
+    let uri : string = id ? PREFIX_URI + id : '';
     dispatch({ type: EXPLORER_SELECT_CALIBRATION, uri: uri})
 };
 

@@ -1,8 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, SampleResource, SampleResourceApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
-         DEFAULT_GRAPH } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC SampleResource]', ...args); }
 
@@ -22,7 +21,6 @@ export const sampleResourcesGet: ActionThunk<Promise<IdMap<SampleResource>>, MCA
             debug('Fetching all');
             let api : SampleResourceApi = new SampleResourceApi();
             let user : string = getUser();
-            //let req1 : Promise<SampleResource[]> = api.sampleresourcesGet({username: DEFAULT_GRAPH});
             let req2 : Promise<SampleResource[]> = api.sampleresourcesGet({username: user});
 
             let promises : Promise<SampleResource[]>[] = [req2];
@@ -76,7 +74,7 @@ export const sampleResourcePost: ActionThunk<Promise<SampleResource>, MCASampleR
         } else {
             return new Promise((resolve,reject) => {
                 let api : SampleResourceApi = new SampleResourceApi(cfg);
-                let req = api.sampleresourcesPost({user: DEFAULT_GRAPH, sampleResource: sampleResource}); // This should be my username on prod.
+                let req = api.sampleresourcesPost({user: user, sampleResource: sampleResource}); // This should be my username on prod.
                 req.then((resp:SampleResource) => {
                     debug('Response for POST', resp);
                     dispatch({
@@ -104,7 +102,7 @@ export const sampleResourcePut: ActionThunk<Promise<SampleResource>, MCASampleRe
         debug('Updating', sampleResource);
         let api : SampleResourceApi = new SampleResourceApi(cfg);
         let id : string = getIdFromUri(sampleResource.id);
-        let req : Promise<SampleResource> = api.sampleresourcesIdPut({id: id, user: DEFAULT_GRAPH, sampleResource: sampleResource});
+        let req : Promise<SampleResource> = api.sampleresourcesIdPut({id: id, user: user, sampleResource: sampleResource});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -129,7 +127,7 @@ export const sampleResourceDelete: ActionThunk<void, MCASampleResourceDelete> = 
         debug('Deleting', sampleResource.id);
         let api : SampleResourceApi = new SampleResourceApi(cfg);
         let id : string = getIdFromUri(sampleResource.id);
-        let req : Promise<void> = api.sampleresourcesIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.sampleresourcesIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: SAMPLE_RESOURCE_DELETE,

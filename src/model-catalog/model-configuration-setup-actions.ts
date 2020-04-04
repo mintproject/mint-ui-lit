@@ -3,7 +3,7 @@ import { IdMap } from 'app/reducers'
 import { Configuration, ModelConfigurationSetup, ModelConfigurationSetupApi, ModelConfiguration,
          ConfigurationSetupApi, Parameter, DatasetSpecification } from '@mintproject/modelcatalog_client';
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, fixObjects, getUser,
-         DEFAULT_GRAPH, parameterPost, datasetSpecificationPost, modelConfigurationPut } from './actions';
+         parameterPost, datasetSpecificationPost, modelConfigurationPut } from './actions';
 
 function debug (...args: any[]) { }// console.log('[MC ModelConfigurationSetup]', ...args); }
 
@@ -23,7 +23,6 @@ export const modelConfigurationSetupsGet: ActionThunk<Promise<IdMap<ModelConfigu
             debug('Fetching all');
             let user : string = getUser();
             let api : ModelConfigurationSetupApi = new ModelConfigurationSetupApi();
-            //let req1 : Promise<ModelConfigurationSetup[]> = api.modelconfigurationsetupsGet({username: DEFAULT_GRAPH});
             let req2 : Promise<ModelConfigurationSetup[]> = api.modelconfigurationsetupsGet({username: user});
 
             let promises : Promise<ModelConfigurationSetup[]>[] = [req2];
@@ -96,7 +95,7 @@ export const modelConfigurationSetupPost: ActionThunk<Promise<ModelConfiguration
                     modelConfigurationSetup.hasOutput = fixObjects(modelConfigurationSetup.hasOutput);
                     //Create setup and update config
                     let api : ModelConfigurationSetupApi = new ModelConfigurationSetupApi(cfg);
-                    let req = api.modelconfigurationsetupsPost({user: DEFAULT_GRAPH, modelConfigurationSetup: modelConfigurationSetup});
+                    let req = api.modelconfigurationsetupsPost({user: user, modelConfigurationSetup: modelConfigurationSetup});
                     req.then((resp:ModelConfigurationSetup) => {
                         debug('Response for POST', resp);
                         dispatch({
@@ -136,7 +135,7 @@ export const modelConfigurationSetupPut: ActionThunk<Promise<ModelConfigurationS
         debug('Updating', modelConfigurationSetup);
         let api : ModelConfigurationSetupApi = new ModelConfigurationSetupApi(cfg);
         let id : string = getIdFromUri(modelConfigurationSetup.id);
-        let req : Promise<ModelConfigurationSetup> = api.modelconfigurationsetupsIdPut({id: id, user: DEFAULT_GRAPH, modelConfigurationSetup: modelConfigurationSetup});
+        let req : Promise<ModelConfigurationSetup> = api.modelconfigurationsetupsIdPut({id: id, user: user, modelConfigurationSetup: modelConfigurationSetup});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -161,7 +160,7 @@ export const modelConfigurationSetupDelete: ActionThunk<void, MCAModelConfigurat
         debug('Deleting', modelConfigurationSetup.id);
         let api : ModelConfigurationSetupApi = new ModelConfigurationSetupApi(cfg);
         let id : string = getIdFromUri(modelConfigurationSetup.id);
-        let req : Promise<void> = api.modelconfigurationsetupsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.modelconfigurationsetupsIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: MODEL_CONFIGURATION_SETUP_DELETE,

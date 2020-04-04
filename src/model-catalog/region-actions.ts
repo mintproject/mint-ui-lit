@@ -2,7 +2,7 @@ import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Region, RegionApi, GeoShape } from '@mintproject/modelcatalog_client';
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
-         DEFAULT_GRAPH, geoShapePost, geoShapeDelete } from './actions';
+         geoShapePost, geoShapeDelete } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Region]', ...args); }
 
@@ -22,7 +22,6 @@ export const regionsGet: ActionThunk<Promise<IdMap<Region>>, MCARegionsAdd> = ()
             debug('Fetching all');
             let user : string = getUser();
             let api : RegionApi = new RegionApi();
-            //let req1 : Promise<Region[]> = api.regionsGet({username: DEFAULT_GRAPH});
             let req2 : Promise<Region[]> = api.regionsGet({username: user});
 
             let promises : Promise<Region[]>[] = [req2];
@@ -83,7 +82,7 @@ export const regionPost: ActionThunk<Promise<Region>, MCARegionsAdd> = (region:R
                 geoReq.then((geo:GeoShape) => {
                     region.geo = [geo];
                     let api : RegionApi = new RegionApi(cfg);
-                    let req = api.regionsPost({user: DEFAULT_GRAPH, region: region});
+                    let req = api.regionsPost({user: user, region: region});
                     req.then((resp:Region) => {
                         debug('Response for POST', resp);
                         dispatch({
@@ -112,7 +111,7 @@ export const regionPut: ActionThunk<Promise<Region>, MCARegionsAdd> = (region:Re
         debug('Updating', region);
         let api : RegionApi = new RegionApi(cfg);
         let id : string = getIdFromUri(region.id);
-        let req : Promise<Region> = api.regionsIdPut({id: id, user: DEFAULT_GRAPH, region: region});
+        let req : Promise<Region> = api.regionsIdPut({id: id, user: user, region: region});
         req.then((resp:Region) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -140,7 +139,7 @@ export const regionDelete: ActionThunk<void, MCARegionDelete> = (region:Region) 
         }
         let api : RegionApi = new RegionApi(cfg);
         let id : string = getIdFromUri(region.id);
-        let req : Promise<void> = api.regionsIdDelete({id: id, user: DEFAULT_GRAPH});
+        let req : Promise<void> = api.regionsIdDelete({id: id, user: user});
         req.then(() => {
             dispatch({
                 type: REGION_DELETE,

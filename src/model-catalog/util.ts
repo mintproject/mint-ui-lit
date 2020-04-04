@@ -1,20 +1,49 @@
-import { Region, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
+import { Region, SoftwareVersion, Model, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
 
 const TAG_LATEST = "latest";
 const TAG_DEPRECATED = "deprecated";
 
-export const getId = (obj: any) => {
-    return obj.id.split('/').pop();
+export const capitalizeFirstLetter = (s:string) : string => {
+    return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export const isSubregion = (parentRegionId:string, region:Region) => {
+export const getURL = (model:Model|string, ver:SoftwareVersion|string, cfg:ModelConfiguration|string,
+        setup?:ModelConfigurationSetup|string) : string => {
+    let modelid : string = typeof model === 'object' ? model.id : model;
+    let verid : string = typeof ver === 'object' ? ver.id : ver;
+    let cfgid : string = typeof cfg === 'object' ? cfg.id : cfg;
+    let setupid : string = typeof setup === 'object' ? setup.id : setup;
+    let url = uriToId(modelid);
+    if (verid) {
+        url += '/' + uriToId(verid);
+        if (cfgid) {
+            url += '/' + uriToId(cfgid);
+            if (setupid) url += '/' + uriToId(setupid);
+        }
+    }
+    return url;
+};
+
+export const uriToId = (uri:string) : string => {
+    return typeof uri === 'string' ? uri.split('/').pop() : '';
+}
+
+export const getId = (obj: any) : string => {
+    return uriToId(obj.id);
+}
+
+export const getLabel = (obj: any) : string => {
+    return obj.label && obj.label.length > 0 ? obj.label[0] : getId(obj);
+}
+
+export const isSubregion = (parentRegionId:string, region:Region) : boolean => {
     return region && (
         (region.id === parentRegionId) || 
         (region.partOf||[]).some((r:Region) => isSubregion(parentRegionId, r))
     );
 }
 
-export const isEmpty = (obj:object) => Object.keys(obj).length === 0;
+export const isEmpty = (obj:object) : boolean => Object.keys(obj).length === 0;
 
 export const taggedAs = (obj:object, tag:string) => {
     return obj && obj['tag'] && obj['tag'].length > 0 && obj['tag'][0] === tag;
@@ -35,7 +64,7 @@ export const sortSetups = (setup1:ModelConfigurationSetup, setup2:ModelConfigura
     return setup1 === latest? 1 : -1;
 }
 
-export const getLatestVersion = (ver1:SoftwareVersion, ver2:SoftwareVersion) => {
+export const getLatestVersion = (ver1:SoftwareVersion, ver2:SoftwareVersion) : SoftwareVersion => {
     if (!ver1) return ver2;
     if (!ver2) return ver1;
 
@@ -64,7 +93,7 @@ export const getLatestVersion = (ver1:SoftwareVersion, ver2:SoftwareVersion) => 
     return ver2
 }
 
-export const getLatestConfiguration = (cfg1:ModelConfiguration, cfg2:ModelConfiguration) => {
+export const getLatestConfiguration = (cfg1:ModelConfiguration, cfg2:ModelConfiguration) : ModelConfiguration => {
     if (!cfg1) return cfg2;
     if (!cfg2) return cfg1;
 
@@ -74,7 +103,7 @@ export const getLatestConfiguration = (cfg1:ModelConfiguration, cfg2:ModelConfig
     return cfg2;
 }
 
-export const getLatestSetup = (setup1:ModelConfigurationSetup, setup2:ModelConfigurationSetup) => {
+export const getLatestSetup = (setup1:ModelConfigurationSetup, setup2:ModelConfigurationSetup) : ModelConfigurationSetup => {
     if (!setup1) return setup2;
     if (!setup2) return setup1;
 
@@ -82,4 +111,10 @@ export const getLatestSetup = (setup1:ModelConfigurationSetup, setup2:ModelConfi
     if (taggedAs(setup2, TAG_LATEST) || taggedAs(setup1, TAG_DEPRECATED)) return setup2;
 
     return setup2;
+}
+
+export const sortByPosition = (a,b) => {
+    let intA = Number(a.position);
+    let intB = Number(b.position);
+    return (intA < intB) ? -1 : (intA > intB? 1 : 0);
 }

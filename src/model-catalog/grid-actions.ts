@@ -1,8 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Grid, GridApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
-         DEFAULT_GRAPH } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Grid]', ...args); }
 
@@ -22,7 +21,6 @@ export const gridsGet: ActionThunk<Promise<IdMap<Grid>>, MCAGridsAdd> = () => (d
             debug('Fetching all');
             let user : string = getUser();
             let api : GridApi = new GridApi();
-            //let req1 : Promise<Grid[]> = api.gridsGet({username: DEFAULT_GRAPH});
             let req2 : Promise<Grid[]> = api.gridsGet({username: user});
 
             let promises : Promise<Grid[]>[] = [req2];
@@ -73,7 +71,7 @@ export const gridPost: ActionThunk<Promise<Grid>, MCAGridsAdd> = (grid:Grid) => 
         debug('Creating new', grid);
         let postProm = new Promise((resolve,reject) => {
             let api : GridApi = new GridApi(cfg);
-            let req = api.gridsPost({user: DEFAULT_GRAPH, grid: grid}); // This should be my username on prod.
+            let req = api.gridsPost({user: user, grid: grid}); // This should be my username on prod.
             req.then((resp:Grid) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -101,7 +99,7 @@ export const gridPut: ActionThunk<Promise<Grid>, MCAGridsAdd> = (grid: Grid) => 
         debug('Updating', grid);
         let api : GridApi = new GridApi(cfg);
         let id : string = getIdFromUri(grid.id);
-        let req : Promise<Grid> = api.gridsIdPut({id: id, user: DEFAULT_GRAPH, grid: grid});
+        let req : Promise<Grid> = api.gridsIdPut({id: id, user: user, grid: grid});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -126,7 +124,7 @@ export const gridDelete: ActionThunk<void, MCAGridDelete> = (grid:Grid) => (disp
         debug('Deleting', grid.id);
         let api : GridApi = new GridApi(cfg);
         let id : string = getIdFromUri(grid.id);
-        let req : Promise<void> = api.gridsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.gridsIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: GRID_DELETE,

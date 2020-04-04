@@ -1,8 +1,8 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Image, ImageApi, GeoShape } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser,
-         DEFAULT_GRAPH, geoShapePost, geoShapeDelete } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
+         geoShapePost, geoShapeDelete } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Image]', ...args); }
 
@@ -21,7 +21,7 @@ export const imagesGet: ActionThunk<Promise<IdMap<Image>>, MCAImagesAdd> = () =>
         debug('Fetching all');
         let api : ImageApi = new ImageApi();
         imagesPromise = new Promise((resolve, reject) => {
-            let req : Promise<Image[]> = api.imagesGet({username: DEFAULT_GRAPH});
+            let req : Promise<Image[]> = api.imagesGet({username: getUser()});
             req.then((resp:Image[]) => {
                 let data = resp.reduce(idReducer, {}) as IdMap<Image>
                 dispatch({
@@ -45,7 +45,7 @@ export const imageGet: ActionThunk<Promise<Image>, MCAImagesAdd> = ( uri:string 
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
     let api : ImageApi = new ImageApi();
-    let req : Promise<Image> = api.imagesIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<Image> = api.imagesIdGet({username: getUser(), id: id});
     req.then((resp:Image) => {
         dispatch({
             type: IMAGES_ADD,
@@ -65,7 +65,7 @@ export const imagePost: ActionThunk<Promise<Image>, MCAImagesAdd> = (image:Image
         debug('Creating new', image);
         let postProm = new Promise((resolve,reject) => {
             let api : ImageApi = new ImageApi(cfg);
-            let req = api.imagesPost({user: DEFAULT_GRAPH, image: image});
+            let req = api.imagesPost({user: user, image: image});
             req.then((resp:Image) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -93,7 +93,7 @@ export const imagePut: ActionThunk<Promise<Image>, MCAImagesAdd> = (image:Image)
         debug('Updating', image);
         let api : ImageApi = new ImageApi(cfg);
         let id : string = getIdFromUri(image.id);
-        let req : Promise<Image> = api.imagesIdPut({id: id, user: DEFAULT_GRAPH, image: image});
+        let req : Promise<Image> = api.imagesIdPut({id: id, user: user, image: image});
         req.then((resp:Image) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -118,7 +118,7 @@ export const imageDelete: ActionThunk<void, MCAImageDelete> = (image:Image) => (
         debug('Deleting', image);
         let api : ImageApi = new ImageApi(cfg);
         let id : string = getIdFromUri(image.id);
-        let req : Promise<void> = api.imagesIdDelete({id: id, user: DEFAULT_GRAPH});
+        let req : Promise<void> = api.imagesIdDelete({id: id, user: user});
         req.then(() => {
             dispatch({
                 type: IMAGE_DELETE,

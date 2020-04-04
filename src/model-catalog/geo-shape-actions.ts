@@ -2,8 +2,7 @@ import { Action } from "redux";
 import { IdMap } from 'app/reducers';
 import { BoundingBox } from 'screens/regions/reducers';
 import { Configuration, GeoShape, GeoShapeApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getUser,
-         getStatusConfigAndUser, DEFAULT_GRAPH } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getUser, getStatusConfigAndUser } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC GeoShape]', ...args); }
 
@@ -84,7 +83,7 @@ export const geoShapePost: ActionThunk<Promise<GeoShape>, MCAGeoShapesAdd> = (ge
     if (status === 'DONE') {
         debug('Creating new', geoShape);
         let api : GeoShapeApi = new GeoShapeApi(cfg);
-        let req = api.geoshapesPost({user: DEFAULT_GRAPH, geoShape: geoShape})
+        let req = api.geoshapesPost({user: user, geoShape: geoShape})
         req.then((resp:GeoShape) => {
             debug('Response for POST:', resp);
             dispatch({
@@ -109,7 +108,7 @@ export const geoShapePut: ActionThunk<Promise<GeoShape>, MCAGeoShapesAdd> = ( ge
         debug('Updating', geoShape);
         let api : GeoShapeApi = new GeoShapeApi(cfg);
         let id : string = getIdFromUri(geoShape.id);
-        let req : Promise<GeoShape> = api.geoshapesIdPut({id: id, user: DEFAULT_GRAPH, geoShape: geoShape});
+        let req : Promise<GeoShape> = api.geoshapesIdPut({id: id, user: user, geoShape: geoShape});
         req.then((resp:GeoShape) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -134,7 +133,7 @@ export const geoShapeDelete: ActionThunk<void, MCAGeoShapeDelete> = ( geoShape: 
         debug('Deleting', geoShape);
         let api : GeoShapeApi = new GeoShapeApi(cfg);
         let id : string = getIdFromUri(geoShape.id);
-        let req : Promise<void> = api.geoshapesIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.geoshapesIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: GEO_SHAPE_DELETE,

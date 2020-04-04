@@ -2,7 +2,7 @@ import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, SampleCollection, SampleCollectionApi, SampleResource } from '@mintproject/modelcatalog_client';
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
-         DEFAULT_GRAPH, sampleResourcePost } from './actions';
+         sampleResourcePost } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC SampleCollection]', ...args); }
 
@@ -22,7 +22,6 @@ export const sampleCollectionsGet: ActionThunk<Promise<IdMap<SampleCollection>>,
             debug('Fetching all');
             let api : SampleCollectionApi = new SampleCollectionApi();
             let user : string = getUser();
-            //let req1 : Promise<SampleCollection[]> = api.samplecollectionsGet({username: DEFAULT_GRAPH});
             let req2 : Promise<SampleCollection[]> = api.samplecollectionsGet({username: user});
 
             let promises : Promise<SampleCollection[]>[] = [req2];
@@ -80,7 +79,7 @@ export const sampleCollectionPost: ActionThunk<Promise<SampleCollection>, MCASam
                 ).then((samples: SampleResource[]) => {
                     sampleCollection.hasPart = samples;
                     let api : SampleCollectionApi = new SampleCollectionApi(cfg);
-                    let req = api.samplecollectionsPost({user: DEFAULT_GRAPH, sampleCollection: sampleCollection}); // This should be my username on prod.
+                    let req = api.samplecollectionsPost({user: user, sampleCollection: sampleCollection}); // This should be my username on prod.
                     req.then((resp:SampleCollection) => {
                         debug('Response for POST', resp);
                         dispatch({
@@ -109,7 +108,7 @@ export const sampleCollectionPut: ActionThunk<Promise<SampleCollection>, MCASamp
         debug('Updating', sampleCollection);
         let api : SampleCollectionApi = new SampleCollectionApi(cfg);
         let id : string = getIdFromUri(sampleCollection.id);
-        let req : Promise<SampleCollection> = api.samplecollectionsIdPut({id: id, user: DEFAULT_GRAPH, sampleCollection: sampleCollection});
+        let req : Promise<SampleCollection> = api.samplecollectionsIdPut({id: id, user: user, sampleCollection: sampleCollection});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -134,7 +133,7 @@ export const sampleCollectionDelete: ActionThunk<void, MCASampleCollectionDelete
         debug('Deleting', sampleCollection.id);
         let api : SampleCollectionApi = new SampleCollectionApi(cfg);
         let id : string = getIdFromUri(sampleCollection.id);
-        let req : Promise<void> = api.samplecollectionsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.samplecollectionsIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: SAMPLE_COLLECTION_DELETE,

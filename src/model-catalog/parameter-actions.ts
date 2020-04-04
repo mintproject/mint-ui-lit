@@ -1,10 +1,9 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Parameter, ParameterApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
-         DEFAULT_GRAPH } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
-function debug (...args: any[]) { console.log('[MC Parameter]', ...args); }
+function debug (...args: any[]) {}// console.log('[MC Parameter]', ...args); }
 
 export const PARAMETERS_ADD = "PARAMETERS_ADD";
 export const PARAMETER_DELETE = "PARAMETER_DELETE";
@@ -22,7 +21,6 @@ export const parametersGet: ActionThunk<Promise<IdMap<Parameter>>, MCAParameters
             debug('Fetching all');
             let api : ParameterApi = new ParameterApi();
             let user : string = getUser();
-            //let req1 : Promise<Parameter[]> = api.parametersGet({username: DEFAULT_GRAPH});
             let req2 : Promise<Parameter[]> = api.parametersGet({username: user});
 
             let promises : Promise<Parameter[]>[] = [req2];
@@ -76,7 +74,7 @@ export const parameterPost: ActionThunk<Promise<Parameter>, MCAParametersAdd> = 
         } else {
             return new Promise((resolve,reject) => {
                 let api : ParameterApi = new ParameterApi(cfg);
-                let req = api.parametersPost({user: DEFAULT_GRAPH, parameter: parameter}); // This should be my username on prod.
+                let req = api.parametersPost({user: user, parameter: parameter}); // This should be my username on prod.
                 req.then((resp:Parameter) => {
                     debug('Response for POST', resp);
                     //Parameter can have a flag 'isAdjustable'
@@ -106,7 +104,7 @@ export const parameterPut: ActionThunk<Promise<Parameter>, MCAParametersAdd> = (
         debug('Updating', parameter);
         let api : ParameterApi = new ParameterApi(cfg);
         let id : string = getIdFromUri(parameter.id);
-        let req : Promise<Parameter> = api.parametersIdPut({id: id, user: DEFAULT_GRAPH, parameter: parameter});
+        let req : Promise<Parameter> = api.parametersIdPut({id: id, user: user, parameter: parameter});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -131,7 +129,7 @@ export const parameterDelete: ActionThunk<void, MCAParameterDelete> = (parameter
         debug('Deleting', parameter.id);
         let api : ParameterApi = new ParameterApi(cfg);
         let id : string = getIdFromUri(parameter.id);
-        let req : Promise<void> = api.parametersIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.parametersIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: PARAMETER_DELETE,
