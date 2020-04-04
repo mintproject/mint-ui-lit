@@ -9,11 +9,12 @@ import { IODetail, CalibrationDetail, CompIODetail } from "../../../util/api-int
 import { fetchVarsSNAndUnitsForIO } from '../../../util/model-catalog-actions';
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Organization, Region, FundingInformation, 
-         Image, Grid, TimeInterval, Process, Visualization, SourceCode, SoftwareImage, Parameter } from '@mintproject/modelcatalog_client';
+         Image, Grid, TimeInterval, Process, Visualization, SourceCode, SoftwareImage, Parameter, DatasetSpecification 
+         } from '@mintproject/modelcatalog_client';
 import { modelGet, versionGet, versionsGet, modelConfigurationGet, modelConfigurationsGet, modelConfigurationSetupsGet,
          modelConfigurationSetupGet, imageGet, personGet, regionsGet, organizationGet, fundingInformationGet,
          timeIntervalGet, gridGet, processGet, setupGetAll, visualizationGet, sourceCodeGet, softwareImageGet,
-         parameterGet } from 'model-catalog/actions';
+         parameterGet, datasetSpecificationGet } from 'model-catalog/actions';
 import { capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition } from 'model-catalog/util';
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -53,7 +54,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object}) private _setups : IdMap<ModelConfigurationSetup> = {} as IdMap<ModelConfigurationSetup>;
     @property({type: Object}) private _regions : IdMap<Region> = {} as IdMap<Region>;
 
-    // Direct data for this model, loaded from store
+    // Direct data for this model, selected config and setup, loaded from store
     @property({type: Object}) private _model! : Model;
     @property({type: Object}) private _version! : SoftwareVersion | null = null;
     @property({type: Object}) private _config! : ModelConfiguration | null = null;
@@ -70,6 +71,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object}) private _sourceCodes : IdMap<SourceCode> = {} as IdMap<SourceCode>;
     @property({type: Object}) private _softwareImages : IdMap<SoftwareImage> = {} as IdMap<SoftwareImage>;
     @property({type: Object}) private _parameters : IdMap<Parameter> = {} as IdMap<Parameter>;
+    @property({type: Object}) private _datasetSpecifications : IdMap<DatasetSpecification> = {} as IdMap<DatasetSpecification>;
 
     // Computed data
     @property({type: Array}) private _modelRegions : string[] | null = null;
@@ -758,18 +760,17 @@ export class ModelView extends connect(store)(PageViewElement) {
 
                 <div class="row-tab-header">
                     <wl-tab-group>
-                        <wl-tab id="tab-overview" ?checked=${this._tab=='overview'} @click="${() => {this._tab = 'overview'}}"
+                        <wl-tab id="tab-overview" ?checked=${this._tab=='overview'} @click="${() => this._goToTab('overview')}"
                             >Overview</wl-tab>
-                        <wl-tab id="tab-io" ?checked=${this._tab=='io'} @click="${() => {this._goToTab('io')}}"
+                        <wl-tab id="tab-io" ?checked=${this._tab=='io'} @click="${() => this._goToTab('io')}"
                             >Parameters and Files</wl-tab>
-                        <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => {this._tab = 'variables'}}"
+                        <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => this._goToTab('variables')}"
                             >Variables</wl-tab>
                         ${this._getExample() ? html`
-                        <wl-tab id="tab-example" @click="${() => {this._tab = 'example'}}">
+                        <wl-tab id="tab-example" @click="${() => this._goToTab('example')}">
                             Example
                         </wl-tab>` : ''}
-
-                        <wl-tab id="tab-overview" ?checked=${this._tab=='tech'} @click="${() => {this._goToTab('tech')}}"
+                        <wl-tab id="tab-overview" ?checked=${this._tab=='tech'} @click="${() => this._goToTab('tech')}"
                             >Technical Information</wl-tab>
                     </wl-tab-group>
                 </div>
@@ -799,6 +800,13 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (tabid === 'io' && this._config) {
             let db = store.getState().modelCatalog;
             this._loadParameters(this._config.hasParameter, db);
+            this._loadDatasetSpecifications(this._config.hasInput, db);
+            this._loadDatasetSpecifications(this._config.hasOutput, db);
+        }
+        if (tabid === 'variables' && this._config) {
+            let db = store.getState().modelCatalog;
+            this._loadDatasetSpecifications(this._config.hasInput, db);
+            this._loadDatasetSpecifications(this._config.hasOutput, db);
         }
     }
 
@@ -1152,6 +1160,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             <wl-text style="font-style: italic; padding-left: 20px;">
                 Look at the Variables tab to see more information about the contents of the inputs and outputs.
             </wl-text>
+            ${this._renderIOTable(this._setup ? this._setup : this._config)}
         `
     }
 
@@ -1180,7 +1189,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${!resource.hasParameter || resource.hasParameter.length === 0 ?  html`
                     <tr>
                         <td colspan="4">
-                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no parameter.</div>
+                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no parameters.</div>
                         </td>
                     </tr>` : html`
                     ${resource.hasParameter.filter((p:Parameter) => !this._loading[p.id])
@@ -1201,7 +1210,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         </td>
                         <td>
                             ${p.relevantForIntervention && p.relevantForIntervention.length > 0 ? html`
-                                <span class="tooltip tooltip-text" tip="TODO FIXME">
+                                <span class="tooltip tooltip-text" tip=""><!--FIXME -->
                                     ${getLabel(p.relevantForIntervention[0])}
                                 </span>
                                 `: ''}
@@ -1228,41 +1237,26 @@ export class ModelView extends connect(store)(PageViewElement) {
             </table>`
     }
 
-
-
-    _renderTabIO2 () {
-        if (!this._config) {
-            return html`
-            <br/>
-            <h3 style="margin-left:30px">
-                You must select a configuration or setup to see its files and parameters.
-            </h3>`
-        }
+    _renderIOTable (resource:ModelConfiguration|ModelConfigurationSetup) {
+        let isSetup = resource.type.includes('ModelConfigurationSetup');
         return html`
-            ${(this._parameters)? this._renderParametersTable() : html``}
-            ${(!this._inputs || this._inputs.length > 0 || !this._outputs || this._outputs.length > 0) ? html`
-            <wl-title level="3"> Files: </wl-title> 
-            <wl-text style="font-style: italic; padding-left: 20px;">
-                Look at the Variables tab to see more information about the contents of the inputs and outputs.
-            </wl-text>
             <table class="pure-table pure-table-striped" style="overflow: visible;">
                 <colgroup>
                     <col span="1" style="width: 10px;">
                     <col span="1" style="width: 20%;">
                     <col span="1">
-                    ${this._calibration? html`<col span="1">` : ''}
+                    ${isSetup? html`<col span="1">` : ''}
                     <col span="1" style="max-width: 140px;">
                 </colgroup>
-                ${!this._inputs || this._inputs.length > 0 ? html`
                 <thead>
                     <tr>
-                        <th colspan="${this._calibration? 5 : 4}" class="table-title">Input files</th>
+                        <th colspan="${isSetup? 5 : 4}" class="table-title">Input files</th>
                     </tr>
                     <tr>
                         <th></th>
                         <th>Name</th>
                         <th>Description</th>
-                        ${this._calibration? html`
+                        ${isSetup? html`
                         <th style="text-align: right;">
                             Value on setup
                             <span class="tooltip" tip="If a value is not set up in this field, the configuration default value will be used.">
@@ -1273,134 +1267,136 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </tr>
                 </thead>
                 <tbody>
-                ${!this._inputs ? html`
+
+                ${!resource.hasInput || resource.hasInput.length === 0 ?  html`
                     <tr>
-                        <td colspan="${this._calibration? 5 : 4}"><div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div></td>
-                    <tr>`
-                    : this._inputs.map(io => html`
+                        <td colspan="4">
+                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no inputs.</div>
+                        </td>
+                    </tr>` : html`
+                    ${resource.hasInput.filter((ds:DatasetSpeficiation) => !this._loading[ds.id])
+                            .map((ds:DatasetSpeficiation) => this._datasetSpecifications[ds.id])
+                            .sort(sortByPosition).map((ds:DatasetSpeficiation) => html`
                     <tr>
                         <td></td>
-                        <td><span class="monospaced"> 
-                            ${io.label}
-                        </span></td>
-                        <td>${io.desc}</td>
-                        ${this._calibration? html`
-                        <td style="text-align: right;">${io.fixedValueURL ? 
-                            io.fixedValueURL.split(/ *, */).map((url, i) => (i != 0) ? html`
-                            <br/>
-                            <a target="_blank" href="${url}">${url.split('/').pop()}</a>
-                            ` : html`
-                            <a target="_blank" href="${url}">${url.split('/').pop()}</a>
-                            `)
-                            : html`<span style="color:#999999;">-</span>`}</td>
-                        ` : html``}
-                        <td style="text-align: right;" class="number">${io.format}</td>
-                    </tr>`)}
-                </tbody>`
-                : ''}
+                        <td><span class="monospaced">${getLabel(ds)}</span></td>
+                        <td>${ds.description && ds.description.length > 0 ? ds.description : ''}</td>
+                        ${isSetup? html`
+                        <td style="text-align: right;">
+                            ${ds.hasFixedResource && ds.hasFixedResource.length > 0 &&
+                              ds.hasFixedResource[0].value && ds.hasFixedResource[0].value.length > 0 ? html`
+                                <a target="_blank" href="${ds.hasFixedResource[0].value[0]}">
+                                    ${ds.hasFixedResource[0].value[0].split('/').pop()}
+                                </a>
+                            `: html`<span style="color:#999999;">-</span>`}
+                        </td>` : ''}
+                        <td style="text-align: right;" class="number">
+                            ${ds.hasFormat && ds.hasFormat.length > 0 ? ds.hasFormat[0] : ''}
+                        </td>
+                    </tr>
+                    `)}
+                    ${resource.hasInput.filter((ds:DatasetSpecification) => this._loading[ds.id]).map((ds:DatasetSpecification) => html`
+                    <tr>
+                        <td colspan="4">
+                            <div class="text-centered">${getId(ds)} <loading-dots style="--height: 10px; margin-left:10px"></loading-dots></div>
+                        </td>
+                    </tr>
+                    `)}`
+                }
 
-                ${!this._outputs || this._outputs.length > 0 ? html`
+                </tbody>
+
                 <thead>
                     <tr>
-                        <th colspan="${this._calibration? 5 : 4}" class="table-title">Output files</th>
+                        <th colspan="${isSetup? 5 : 4}" class="table-title">Output files</th>
                     </tr>
                     <tr>
                         <th></th>
                         <th>Name</th>
-                        <th colspan="${this._calibration? 2 : 1}">Description</th>
+                        <th colspan="${isSetup? 2 : 1}">Description</th>
                         <th style="text-align: right;">Format</th>
                     </tr>
                 </thead>
                 <tbody>
-                ${!this._inputs ? html`
+                ${!resource.hasOutput || resource.hasOutput.length === 0 ?  html`
                     <tr>
-                        <td colspan="${this._calibration? 5 : 4}"><div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div></td>
-                    <tr>`
-                    : this._outputs.map(io => html`
+                        <td colspan="4">
+                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no outputs.</div>
+                        </td>
+                    </tr>` : html`
+                    ${resource.hasOutput.filter((ds:DatasetSpeficiation) => !this._loading[ds.id])
+                            .map((ds:DatasetSpeficiation) => this._datasetSpecifications[ds.id])
+                            .sort(sortByPosition).map((ds:DatasetSpeficiation) => html`
                     <tr>
                         <td></td>
-                        <td><span class="monospaced">
-                            ${io.label}
-                        </span></td>
-                        <td colspan="${this._calibration? 2 : 1}">${io.desc}</td>
-                        <td style="text-align: right;" class="number">${io.format}</td>
+                        <td><span class="monospaced">${getLabel(ds)}</span></td>
+                        <td colspan="${isSetup? 2 : 1}">${ds.description && ds.description.length > 0 ? ds.description : ''}</td>
+                        <td style="text-align: right;" class="number">
+                            ${ds.hasFormat && ds.hasFormat.length > 0 ? ds.hasFormat[0] : ''}
+                        </td>
                     </tr>`)}
-                </tbody>`
-                :''}
-            </table>` : ''}
-
-            ${(!this._inputs && !this._outputs && !this._parameters)? html`
-            <br/>
-            <h3 style="margin-left:30px">
-                This information has not been specified yet.
-            </h3>`
-            :html ``}
-            `;
+                    ${resource.hasOutput.filter((ds:DatasetSpecification) => this._loading[ds.id]).map((ds:DatasetSpecification) => html`
+                    <tr>
+                        <td colspan="4">
+                            <div class="text-centered">${getId(ds)} <loading-dots style="--height: 10px; margin-left:10px"></loading-dots></div>
+                        </td>
+                    </tr>
+                    `)}`
+                }
+                </tbody>
+            </table>`
     }
 
-    _renderParametersTable2 () {
-        if (!this._parameters) { 
-            return html`<div class="text-centered">
-                LOADING PARAMETERS
-                <loading-dots class="text-helper"></loading-dots>
-            </div>`
-        }
-        if (this._parameters.length > 0) {
-            return html`
-                <wl-title level="3"> Parameters: </wl-title> 
-                <table class="pure-table pure-table-striped" style="overflow: visible;" id="parameters-table">
-                    <col span="1" style="width: 180;">
-                    <col span="1">
-                    <col span="1">
-                    <col span="1" style="width: 130px;">
-                    <thead>
-                        <th>Parameter</th>
-                        <th>Description</th>
-                        <th style="text-align: right;">Relevant for intervention</th>
-                        <th style="text-align: right;">
-                            ${this._calibration? html`
-                            Value on setup 
-                            <span class="tooltip" tip="If a value is not set up in this field configuration default value will be used.">
-                                <wl-icon>help</wl-icon>
-                            </span>`
-                            : 'Default value'}
-                        </th>
-                    </thead>
-                    <tbody>
-                    ${this._parameters.sort((a,b) => (a.position < b.position) ? -1 : (a.position > b.position? 1 : 0)).map( (p:any) => html`
-                        <tr>
-                            <td>
-                                <code>${p.paramlabel}</code><br/>
-                                ${p.minVal && p.maxVal ? html`
-                                The range is from ${p.minVal} to ${p.maxVal}
-                                ` : ''}
-                            </td>
-                            <td>
-                                ${p.description ? html`<b style="font-size: 14px;">${capitalizeFirstLetter(p.description)}</b><br/>`: ''}
-                            </td>
-                            <td>
-                                ${ p.intervention ? html`<span class="tooltip tooltip-text" tip="${p.interventionDesc}">
-                                    ${p.intervention}
-                                </span>` : ''}
-                            </td>
-                            <td class="font-numbers" style="text-align: right;">
-                            ${this._calibration ? (p.fixedValue ? p.fixedValue : p.defaultvalue + ' (default)')
-                            : p.defaultvalue}
-                            </td>
-                        </tr>`)}
-                    </tbody>
-                </table>`
-        } else {
-            //Shows nothing when no parameters
-            return '';
-        }
-    }
-
-    _renderTabExample () {
+    private _renderTabExample () {
         return html`<div id="mk-example"></div>`
     }
 
-    _renderTabVariables () {
+    private _renderTabVariables () {
+        if (!this._config) {
+            return html`
+            <br/>
+            <h3 style="margin-left:30px">
+                You must select a configuration or setup to see its variables.
+            </h3>`
+        }
+        let resource : ModelConfiguration | ModelConfigurationSetup = this._setup ? this._setup : this._config;
+        return html`
+            ${this._renderExpansionVariables(resource.hasInput, 'Inputs')}
+            ${this._renderExpansionVariables(resource.hasOutput, 'Outputs')}
+
+            ${((!resource.hasInput || resource.hasInput.length === 0) &&
+               (!resource.hasOutput || resource.hasOutput.length === 0)) ? html`
+            <br/>
+            <h3 style="margin-left:30px">
+                This information has not been specified yet.
+            </h3>` : ''}
+        `
+    }
+
+    private _renderExpansionVariables (dsArr: DatasetSpecification[], title: string) {
+        if (!dsArr || dsArr.length === 0) return '';
+        /* id=title
+    width: calc(100% - 30px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+        */
+        return html`
+            <wl-title level="3">${title}:</wl-title>
+            ${dsArr.map((ds:DatasetSpecification) => html`
+            <wl-expansion id="${getLabel(ds)}" name="${title}" @click="" style="overflow-y: hidden;">
+                <span slot="title">
+                    ${getLabel(ds)}
+                </span>
+                <span slot="description">
+                    ${this._loading[ds.id] ? '' : this._datasetSpecifications[ds.id].description}
+                </span>
+            </wl-expansion>
+            `)}
+        `
+    }
+
+    _renderTabVariables2 () {
         return html`<div id="hack">${this._count}</div>
             ${(this._inputs && this._inputs.length > 0) ? html`
             <wl-title level="3">Inputs:</wl-title>
@@ -1499,14 +1495,6 @@ export class ModelView extends connect(store)(PageViewElement) {
         return ''
     }
 
-    _goToModel (model:any) {
-        if (this._uriToUrl[model.uri]) {
-            goToPage(PAGE_PREFIX + this._uriToUrl[model.uri]);
-        } else {
-            console.error('Theres no URL for selected model URI, please report this issue!');
-        }
-    }
-
     _renderGallery () {
         let allImages : Set<string> = new Set();
         let allVisualizations : Set<string> = new Set();
@@ -1596,7 +1584,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         return '';
     }
 
-    _clear () {
+    private_clear () {
         this._loading = {} as IdMap<boolean>;
         this._logo! = null;
         this._authors = {} as IdMap<Person>;
@@ -1720,13 +1708,18 @@ export class ModelView extends connect(store)(PageViewElement) {
                             (this._config.screenshot || []).concat(this._config.hasExplanationDiagram || [])
                         , db);
                         this._loadVisualizations(this._config.hasSampleVisualization, db);
+                        // FIXME: This logic for tabs is being loaded even when a setup is selected
                         if (this._tab === 'tech') {
                             this._loadSourceCodes(this._config.hasSourceCode, db);
                             this._loadSoftwareImages(this._config.hasSoftwareImage, db);
-                        }
-                        // Parameters and DatasetSpecification only on io
-                        if (this._tab === 'io') {
+                        } else if (this._tab === 'io') {
+                            // Parameters and DatasetSpecification only on io
                             this._loadParameters(this._config.hasParameter, db);
+                            this._loadDatasetSpecifications(this._config.hasInput, db);
+                            this._loadDatasetSpecifications(this._config.hasOutput, db);
+                        } else if (this._tab === 'variables') {
+                            this._loadDatasetSpecifications(this._config.hasInput, db);
+                            this._loadDatasetSpecifications(this._config.hasOutput, db);
                         }
                     } 
                 } else {
@@ -1774,11 +1767,17 @@ export class ModelView extends connect(store)(PageViewElement) {
                         });
                         // Save parameters
                         (setup.hasParameter || []).forEach((parameter:Parameter) => {
-                            //FIXME: this does not return relevantForIntervention
+                            //FIXME: this does not return relevantForIntervention (id=undefined)
                             if (!this._parameters[parameter.id]) this._parameters[parameter.id] = parameter;
+                        });
+                        // Save IO
+                        (setup.hasInput || []).concat(setup.hasOutput || []).forEach((ds:DatasetSpecification) => {
+                            //FIXME: this does not return hasFixedValue -> hasPart
+                            this._datasetSpecifications[ds.id] = ds;
                         });
                         
                         this._setup = setup;
+                        console.log('setup', setup);
                         this._loading[this._selectedSetup] = false;
                     })
                 }
@@ -2084,6 +2083,21 @@ export class ModelView extends connect(store)(PageViewElement) {
                 store.dispatch(parameterGet(parameter.id)).then((parameter:Parameter) => {
                     this._loading[parameter.id] = false;
                     this._parameters[parameter.id] = parameter;
+                    this.requestUpdate();
+                });
+            }
+        })
+    }
+
+    private _loadDatasetSpecifications (dsArr: DatasetSpecification[], db: any) {
+        (dsArr || []).forEach((ds:DatasetSpecification) => {
+            if (db.datasetSpecifications[ds.id]) {
+                this._datasetSpecifications[ds.id] = db.datasetSpecifications[ds.id];
+            } else if (!this._loading[ds.id]) {
+                this._loading[ds.id] = true;
+                store.dispatch(datasetSpecificationGet(ds.id)).then((datasetSpecification:DatasetSpecification) => {
+                    this._loading[datasetSpecification.id] = false;
+                    this._datasetSpecifications[datasetSpecification.id] = datasetSpecification;
                     this.requestUpdate();
                 });
             }
