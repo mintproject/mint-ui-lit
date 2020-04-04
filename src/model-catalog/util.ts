@@ -1,4 +1,4 @@
-import { Region, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
+import { Region, SoftwareVersion, Model, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
 
 const TAG_LATEST = "latest";
 const TAG_DEPRECATED = "deprecated";
@@ -8,11 +8,11 @@ export const capitalizeFirstLetter = (s:string) : string => {
 }
 
 export const getURL = (model:Model|string, ver:SoftwareVersion|string, cfg:ModelConfiguration|string,
-        setup:ModelConfigurationSetup|string) : string => {
-    let modelid : object = typeof model === 'object' ? model.id : model;
-    let verid : object = typeof ver === 'object' ? ver.id : ver;
-    let cfgid : object = typeof cfg === 'object' ? cfg.id : cfg;
-    let setupid : object = typeof setup === 'object' ? setup.id : setup;
+        setup?:ModelConfigurationSetup|string) : string => {
+    let modelid : string = typeof model === 'object' ? model.id : model;
+    let verid : string = typeof ver === 'object' ? ver.id : ver;
+    let cfgid : string = typeof cfg === 'object' ? cfg.id : cfg;
+    let setupid : string = typeof setup === 'object' ? setup.id : setup;
     let url = uriToId(modelid);
     if (verid) {
         url += '/' + uriToId(verid);

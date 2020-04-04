@@ -3,10 +3,7 @@ import { html, property, customElement, css } from 'lit-element';
 import { PageViewElement } from 'components/page-view-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
-
-// FIXME
-import { IODetail, CalibrationDetail, CompIODetail } from "../../../util/api-interfaces";
-import { fetchVarsSNAndUnitsForIO } from '../../../util/model-catalog-actions';
+import { IdMap } from 'app/reducers'
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Organization, Region, FundingInformation, 
          Image, Grid, TimeInterval, Process, Visualization, SourceCode, SoftwareImage, Parameter, DatasetSpecification,
@@ -16,6 +13,7 @@ import { modelGet, versionGet, versionsGet, modelConfigurationGet, modelConfigur
          timeIntervalGet, gridGet, processGet, setupGetAll, visualizationGet, sourceCodeGet, softwareImageGet,
          parameterGet, datasetSpecificationGet, interventionGet, variablePresentationGet } from 'model-catalog/actions';
 import { capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition } from 'model-catalog/util';
+import { GalleryEntry } from 'components/image-gallery';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
@@ -32,8 +30,8 @@ import "weightless/icon";
 import "weightless/progress-spinner";
 import "weightless/progress-bar";
 import "weightless/select";
-import 'components/image-gallery'
-import 'components/loading-dots'
+import 'components/image-gallery';
+import 'components/loading-dots';
 
 import { Select } from "weightless/select";
 
@@ -56,12 +54,12 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     // Direct data for this model, selected config and setup, loaded from store
     @property({type: Object}) private _model! : Model;
-    @property({type: Object}) private _version! : SoftwareVersion | null = null;
-    @property({type: Object}) private _config! : ModelConfiguration | null = null;
-    @property({type: Object}) private _setup! : ModelConfigurationSetup | null = null;
+    @property({type: Object}) private _version : SoftwareVersion | null = null;
+    @property({type: Object}) private _config : ModelConfiguration | null = null;
+    @property({type: Object}) private _setup : ModelConfigurationSetup | null = null;
     @property({type: Object}) private _logo! : Image;
     @property({type: Object}) private _authors : IdMap<Person> = {} as IdMap<Person>;
-    @property({type: Object}) private _funding : IdMap<Funding> = {} as IdMap<Funding>;
+    @property({type: Object}) private _funding : IdMap<FundingInformation> = {} as IdMap<FundingInformation>;
     @property({type: Object}) private _organizations : IdMap<Organization> = {} as IdMap<Organization>;
     @property({type: Object}) private _timeIntervals : IdMap<TimeInterval> = {} as IdMap<TimeInterval>;
     @property({type: Object}) private _grids : IdMap<Grid> = {} as IdMap<Grid>;
@@ -88,54 +86,6 @@ export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Boolean}) private _loadingRegions : boolean = false;
     @property({type: String}) private _tab : tabType = 'overview';
 
-    /***********/
-    @property({type: Number})
-    private _count : number = 0;
-
-    @property({type: Object})
-    private _configMetadata: any = null;
-
-    @property({type: Object})
-    private _indices: any = null;
-
-    @property({type: Object})
-    private _calibrationMetadata: any = null;
-
-    @property({type: Object})
-    private _inputs : IODetail[] | null = null;
-
-    @property({type: Object})
-    private _outputs : IODetail[] | null = null;
-
-    @property({type: Object}) //map IO_URI -> [Variables...]
-    private _variables : any = {};
-
-    private _IOStatus : Set<string> = new Set();
-    private _allVersions : any = null;
-    private _allModels : any = null;
-    private _uriToUrl : Map<string,string> | null = null;
-
-    @property({type: Object})
-    private _calibration : CalibrationDetail | null = null;
-
-    @property({type: Object})
-    private _configAuthors : any  = null;
-
-    @property({type: Object})
-    private _calibrationAuthors : any = null;
-
-    @property({type: Object})
-    private _compInput : CompIODetail[] | null = null;
-    
-    @property({type: Object})
-    private _compOutput : CompIODetail[] | null = null;
-
-    @property({type: Object})
-    private _sampleVis : any = null;
-
-    @property({type: Object})
-    private _screenshots : any = null;
-
     private _emulators = {
         'https://w3id.org/okn/i/mint/CYCLES' : '/emulators/cycles',
         'https://w3id.org/okn/i/mint/TOPOFLOW': '/emulators/topoflow',
@@ -146,15 +96,15 @@ export class ModelView extends connect(store)(PageViewElement) {
     static get styles() {
         return [SharedStyles, ExplorerStyles,
             css `
+                .hidden {
+                    display: none !important;
+                }
+
                 .config-selector {
                     display: grid;
                     grid-template-columns: 50px auto 114px;
                     align-items: center;
                     height: 50px;
-                }
-
-                #hack {
-                    display: none;
                 }
 
                 ul {
@@ -212,12 +162,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                   text-align: justify;
                 }
 
-                #edit-model-icon {
-                    float: right;
-                    --icon-size: 26px;
-                    padding-top: 4px;
-                }
-
                 a[disabled] {
                     cursor: not-allowed;
                 }
@@ -226,13 +170,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                     display:grid;
                     grid-gap:4px;
                     grid-template-columns: 1fr 1fr 1fr 1fr;
-                }
-
-                .small-wrapper {
-                    display:grid;
-                    grid-gap:5px;
-                    grid-template-columns: 1fr 1fr;
-                    margin-bottom: 5px;
                 }
 
                 .col-img {
@@ -287,7 +224,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 .desc-ext > wl-text {
                     display: block;
                 }
-                
+
                 .row-tab-header {
                     grid-column: 1 / 5;
                     grid-row: 3;
@@ -304,24 +241,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                     height: 32px;
                     line-height:32px;
                     color: #999;
-                }
-
-                .inline-info {
-                    padding-top:4px;
-                    padding-left:5px;
-                }
-
-                .inline-info > span {
-                    display: inline-block;
-                    width: 33%;
-                }
-
-                .inline-info > span:before {
-                    content:"• ";
-                }
-
-                .hidden {
-                    display: none !important;
                 }
 
                 .metadata-top-buttons {
@@ -385,16 +304,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                     background: url(images/rdf-disabled.png) no-repeat 0px 0px;
                     background-size: 20px 22px;
                     cursor: not-allowed;
-                }
-
-                .text-helper {
-                    --height: 10px;
-                    margin-left: 6px;
-                }
-
-                #img-placeholder {
-                    vertical-align: middle;
-                    --icon-size: 200px;
                 }
 
                 .table-title {
@@ -528,7 +437,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _updateConfigSelector () {
-        let configSelectorWl : Select = this.shadowRoot!.getElementById('config-selector');
+        let configSelectorWl : Select = this.shadowRoot!.getElementById('config-selector') as Select;
         let configSelector : HTMLSelectElement | null = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
         if (configSelectorWl && configSelector) {
             //console.log('Updating Config Selector');
@@ -552,8 +461,8 @@ export class ModelView extends connect(store)(PageViewElement) {
 
                 if (ver.hasConfiguration) {
                     ver.hasConfiguration
-                            .map((cfg:Configuration) => this._configs[cfg.id] ? this._configs[cfg.id] : cfg)
-                            .forEach((cfg:Configuration) => {
+                            .map((cfg:ModelConfiguration) => this._configs[cfg.id] ? this._configs[cfg.id] : cfg)
+                            .forEach((cfg:ModelConfiguration) => {
                         let newOption = document.createElement('option');
                         newOption.text = '\xA0\xA0' + getLabel(cfg);
                         newOption.value = cfg.id;
@@ -567,12 +476,12 @@ export class ModelView extends connect(store)(PageViewElement) {
             // FIX ARROW
             let arrowEl = configSelectorWl.shadowRoot.getElementById('arrow');
             if (arrowEl) arrowEl.style.pointerEvents = "none";
-            configSelectorWl.refreshAttributes();
+            (<any>configSelectorWl).refreshAttributes();
         } 
     }
 
     _onConfigChange () {
-        let configSelectorWl : Select = this.shadowRoot!.getElementById('config-selector');
+        let configSelectorWl : Select = this.shadowRoot!.getElementById('config-selector') as Select;
         let configSelector : HTMLSelectElement | null = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
         if (configSelectorWl && configSelector) {
             let cfgURL : string = configSelector.value;
@@ -584,7 +493,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _updateSetupSelector () {
-        let setupSelectorWl : Select = this.shadowRoot!.getElementById('setup-selector');
+        let setupSelectorWl : Select = this.shadowRoot!.getElementById('setup-selector') as Select;
         let setupSelector : HTMLSelectElement | null = setupSelectorWl? setupSelectorWl.getElementsByTagName('select')[0] : null;
         if (setupSelectorWl && setupSelector && this._config) {
             //console.log('Updating Setup Selector', this._config);
@@ -611,12 +520,12 @@ export class ModelView extends connect(store)(PageViewElement) {
             if (arrowEl) {
                 arrowEl.style.pointerEvents = "none";
             }
-            setupSelectorWl.refreshAttributes();
+            (<any>setupSelectorWl).refreshAttributes();
         }
     }
 
     _onSetupChange () {
-        let setupSelectorWl : Select = this.shadowRoot!.getElementById('setup-selector');
+        let setupSelectorWl : Select = this.shadowRoot!.getElementById('setup-selector') as Select;
         let setupSelector : HTMLSelectElement | null = setupSelectorWl? setupSelectorWl.getElementsByTagName('select')[0] : null;
         if (setupSelectorWl && setupSelector) {
             let setupURL : string = setupSelector.value;
@@ -828,22 +737,21 @@ export class ModelView extends connect(store)(PageViewElement) {
         //console.log('GoToTab:', tabid);
         this._tab = tabid;
         if (tabid === 'tech') {
-            let db = store.getState().modelCatalog;
+            let db = (store.getState() as RootState).modelCatalog;
             this._loadSourceCodes(this._model.hasSourceCode, db);
-            this._loadSoftwareImages(this._model.hasSoftwareImage, db);
             if (this._config) {
                 this._loadSourceCodes(this._config.hasSourceCode, db);
                 this._loadSoftwareImages(this._config.hasSoftwareImage, db);
             }
         } 
         if (tabid === 'io' && this._config) {
-            let db = store.getState().modelCatalog;
+            let db = (store.getState() as RootState).modelCatalog;
             this._loadParameters(this._config.hasParameter, db);
             this._loadDatasetSpecifications(this._config.hasInput, db);
             this._loadDatasetSpecifications(this._config.hasOutput, db);
         }
         if (tabid === 'variables' && this._config) {
-            let db = store.getState().modelCatalog;
+            let db = (store.getState() as RootState).modelCatalog;
             this._loadDatasetSpecifications(this._config.hasInput, db);
             this._loadDatasetSpecifications(this._config.hasOutput, db);
         }
@@ -852,7 +760,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _renderTabTechnical () {
         return html`
             <wl-title level="3"> Technical Information: </wl-title>
-            ${this._model ? this._renderTableTechnical(this._model, "MODEL") : ''}
+            ${this._model ? this._renderTableTechnical(this._model as ModelConfiguration, "MODEL") : ''}
             <br/>
             ${this._config ? this._renderTableTechnical(this._config, "CONFIGURATION") : ''}
             <br/>
@@ -863,7 +771,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         `
     }
 
-    private _renderTableTechnical (resource:Model|ModelConfiguration|ModelConfigurationSetup, titlePrefix:string) {
+    private _renderTableTechnical (resource:ModelConfiguration|ModelConfigurationSetup, titlePrefix:string) {
         return html`
             <table class="pure-table pure-table-striped">
                 <thead>
@@ -977,7 +885,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
     }
 
-    _expandVariable (varLabel:string) {
+    /*_expandVariable (varLabel:string) {
         if (varLabel) {
             this._changeTab('variable');
             setTimeout(() => {
@@ -988,12 +896,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
                 }, 200)
         }
-    }
-
-    _renderLink (url) {
-        let sp = url.split('/')
-        return html`<a target="_blank" href="${url}">${sp[sp.length-1] || sp[sp.length-2]}</a>`
-    }
+    }*/
 
     _renderTabOverview () {
         return html`
@@ -1140,7 +1043,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${this._setup.author && this._setup.author.length > 0 ? html`
                         <wl-text>
                             <b>• Setup creator:</b>
-                            ${this._renderAuthors(this._setup.author, true)}
+                            ${this._renderAuthors(this._setup.author)}
                         </wl-text>
                     `: ''}
 
@@ -1228,7 +1131,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${!resource.hasParameter || resource.hasParameter.length === 0 ?  html`
                     <tr>
                         <td colspan="4">
-                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no parameters.</div>
+                            <div class="info-center">This ${isSetup? 'setup' : 'configuration'} has no parameters.</div>
                         </td>
                     </tr>` : html`
                     ${resource.hasParameter.filter((p:Parameter) => !this._loading[p.id])
@@ -1257,7 +1160,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 `: ''}
                         </td>
                         <td class="font-numbers" style="text-align: right;">
-                            ${this.isSetup ? 
+                            ${isSetup ? 
                                 (p.hasFixedValue && p.hasFixedValue.length > 0 ? 
                                     p.hasFixedValue :
                                     p.hasDefaultValue + " (default)") 
@@ -1315,9 +1218,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                             <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no inputs.</div>
                         </td>
                     </tr>` : html`
-                    ${resource.hasInput.filter((ds:DatasetSpeficiation) => !this._loading[ds.id])
-                            .map((ds:DatasetSpeficiation) => this._datasetSpecifications[ds.id])
-                            .sort(sortByPosition).map((ds:DatasetSpeficiation) => html`
+                    ${resource.hasInput.filter((ds:DatasetSpecification) => !this._loading[ds.id])
+                            .map((ds:DatasetSpecification) => this._datasetSpecifications[ds.id])
+                            .sort(sortByPosition).map((ds:DatasetSpecification) => html`
                     <tr>
                         <td></td>
                         <td><span class="monospaced">${getLabel(ds)}</span></td>
@@ -1327,7 +1230,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                             ${ds.hasFixedResource && ds.hasFixedResource.length > 0 &&
                               ds.hasFixedResource[0].value && ds.hasFixedResource[0].value.length > 0 ? html`
                                 <a target="_blank" href="${ds.hasFixedResource[0].value[0]}">
-                                    ${ds.hasFixedResource[0].value[0].split('/').pop()}
+                                    ${(<unknown>ds.hasFixedResource[0].value[0] as string).split('/').pop()}
+                                    <!-- FIXME: The model catalog defines hasFixedResource as Object -->
                                 </a>
                             `: html`<span style="color:#999999;">-</span>`}
                         </td>` : ''}
@@ -1365,9 +1269,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                             <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no outputs.</div>
                         </td>
                     </tr>` : html`
-                    ${resource.hasOutput.filter((ds:DatasetSpeficiation) => !this._loading[ds.id])
-                            .map((ds:DatasetSpeficiation) => this._datasetSpecifications[ds.id])
-                            .sort(sortByPosition).map((ds:DatasetSpeficiation) => html`
+                    ${resource.hasOutput.filter((ds:DatasetSpecification) => !this._loading[ds.id])
+                            .map((ds:DatasetSpecification) => this._datasetSpecifications[ds.id])
+                            .sort(sortByPosition).map((ds:DatasetSpecification) => html`
                     <tr>
                         <td></td>
                         <td><span class="monospaced">${getLabel(ds)}</span></td>
@@ -1451,7 +1355,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                                     .map((vp:VariablePresentation) => html`
                                 <tr>
                                     <td>${getLabel(vp)}</td>
-                                    <td>${vp.longName}</td>
+                                    <td>${vp.hasLongName}</td>
                                     <td>${vp.description}</td>
                                     <td style="word-wrap: break-word;">
                                     ${vp.hasStandardVariable && vp.hasStandardVariable.length > 0 ? html`
@@ -1487,7 +1391,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _expandDS (ds: DatasetSpecification) {
         if (!this._loading[ds.id]) {
             if (!this._loadedPresentations[ds.id]) {
-                let db = store.getState().modelCatalog;
+                let db = (store.getState() as RootState).modelCatalog;
                 this._loadedPresentations[ds.id] = true;
                 let dataset = this._datasetSpecifications[ds.id];
                 if (dataset.hasPresentation && dataset.hasPresentation.length > 0)
@@ -1495,107 +1399,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                 else
                     this.requestUpdate();
             }
-            let dataset = this._datasetSpecifications[ds.id];
-            this._loadVariablePresentations()
         } else {
             setTimeout(() => {
                 this._expandDS(ds);
             }, 500);
         }
-    }
-
-    _renderTabVariables2 () {
-        return html`<div id="hack">${this._count}</div>
-            ${(this._inputs && this._inputs.length > 0) ? html`
-            <wl-title level="3">Inputs:</wl-title>
-            ${this._inputs.map(input => html`
-            <wl-expansion id="${input.label}" name="groupInput" @click="${()=>{this.expandIO(input.uri)}}" style="overflow-y: hidden;">
-                <span slot="title">
-                    ${input.label}
-                </span>
-                <span slot="description">
-                    ${input.desc}
-                </span>
-                ${this._variables[input.uri] ? 
-                html`${this._variables[input.uri].length>0?
-                    html`
-                    <table class="pure-table pure-table-bordered">
-                        <thead>
-                            <th>Label</th>
-                            <th>Long Name</th>
-                            <th>Description</th>
-                            <th>Standard Name</th>
-                            <th>Units</th>
-                        </thead>
-                        <tbody>
-                        ${this._variables[input.uri].map((v:any) => 
-                            html`
-                            <tr>
-                                <td>${v.label}</td>
-                                <td>${v.longName}</td>
-                                <td>${v.desc}</td>
-                                <td style="word-wrap: break-word;">
-                                    <a class="monospaced link" target="_blank" href="${v.snURI}">${v.sn}</a>
-                                </td>
-                                <td style="min-width: 80px;">${v.unit}</td>
-                            </tr>`)}
-                        </tbody>
-                    </table>`
-                    : html`
-                    <div class="text-centered"><h4>
-                        There is no description available for the variables in this file.
-                    </h4></div>
-                    `
-                }`
-                : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
-            </wl-expansion>`)}`
-            : html``}
-
-            ${(this._outputs && this._outputs.length > 0) ? html`
-            <wl-title level="3">Outputs:</wl-title>
-            ${this._outputs.map(output => html`
-            <wl-expansion id="${output.label}" name="groupOutput" @click="${()=>{this.expandIO(output.uri)}}" style="overflow-y: hidden;">
-                <span slot="title">${output.label}</span>
-                <span slot="description">${output.desc}</span>
-                ${this._variables[output.uri] ? 
-                html`${this._variables[output.uri].length>0?
-                    html`
-                    <table class="pure-table pure-table-bordered">
-                        <thead>
-                            <th>Label</th>
-                            <th>Long Name</th>
-                            <th>Description</th>
-                            <th>Standard Name</th>
-                            <th>Units</th>
-                        </thead>
-                        <tbody>
-                        ${this._variables[output.uri].map((v:any) => 
-                            html`
-                            <tr>
-                                <td>${v.label}</td>
-                                <td>${v.longName}</td>
-                                <td>${v.desc}</td>
-                                <td style="word-wrap: break-word;">
-                                    <a class="monospaced link" target="_blank" href="${v.snURI}">${v.sn}</a>
-                                </td>
-                                <td style="min-width: 80px;">${v.unit}</td>
-                            </tr>`)}
-                        </tbody>
-                    </table>`
-                    : html`
-                    <div class="text-centered"><h4>
-                        There is no description available for the variables in this file.
-                    </h4></div>
-                    `
-                }`
-                : html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`}
-            </wl-expansion>`)}`
-            : html``}
-
-            ${(!this._inputs && !this._outputs) ? html`<br/><h3 style="margin-left:30px">
-                This information has not been specified yet
-            </h3>`
-            : html``}`;
     }
 
     _renderRelatedModels () {
@@ -1633,14 +1441,18 @@ export class ModelView extends connect(store)(PageViewElement) {
                 );
         let stillLoading : boolean = (allImages.size + allVisualizations.size) != allRes.length;
 
-        let items = allRes.map((res:Image|Visualization) => {
-            let item = {
+        let items : GalleryEntry[] = allRes.map((res:Image|Visualization) => {
+            let item : GalleryEntry = {
                 label: getLabel(res),
-                src: res.value[0]
+                desc: res.description && res.description.length > 0 ? res.description[0] : '',
+                src: (<unknown>res.value[0]) as string
             };
-            if (res.description && res.description.length > 0) item.desc = res.description[0];
-            if (res.hadPrimarySource && res.hadPrimarySource.length > 0 && res.hadPrimarySource[0].id)
-                item.source = {url: res.hadPrimarySource[0].id, label: uriToId(res.hadPrimarySource[0].id)};
+            //FIXME: The model-catalog defines Image.value as object.
+            if (res.hadPrimarySource && res.hadPrimarySource.length > 0 && res.hadPrimarySource[0]['id'])
+                item.source = {
+                    url: res.hadPrimarySource[0]['id'],
+                    label: uriToId(res.hadPrimarySource[0]['id'])
+                };
             return item;
         })
 
@@ -1655,14 +1467,6 @@ export class ModelView extends connect(store)(PageViewElement) {
         } else {
             // Shows nothing when no gallery
             return '';
-        }
-    }
-
-    expandIO (uri:string) {
-        if (!this._variables[uri]) {
-            //Dont call this on click! FIXME
-            store.dispatch(fetchVarsSNAndUnitsForIO(uri)); 
-            this._IOStatus.add(uri);
         }
     }
 
@@ -1707,7 +1511,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         this._logo! = null;
         this._authors = {} as IdMap<Person>;
         this._regions = {} as IdMap<Region>;
-        this._funding = {} as IdMap<Funding>;
+        this._funding = {} as IdMap<FundingInformation>;
         this._organizations = {} as IdMap<Organization>;
         this._modelRegions = null;
     }
@@ -1719,14 +1523,14 @@ export class ModelView extends connect(store)(PageViewElement) {
         let rCfg = store.dispatch(modelConfigurationsGet());
         let rSet = store.dispatch(modelConfigurationSetupsGet());
         let rReg = store.dispatch(regionsGet());
-        rVer.then((versions:SoftwareVersion[]) => this._shouldUpdateConfigs = true);
-        rCfg.then((cfg:ModelConfiguration[]) => this._shouldUpdateConfigs = true);
-        rSet.then((cfg:ModelConfigurationSetup[]) => this._shouldUpdateSetups = true);
-        rReg.then((region:Region[]) => this._loadingRegions = false);
+        rVer.then(() => this._shouldUpdateConfigs = true);
+        rCfg.then(() => this._shouldUpdateConfigs = true);
+        rSet.then(() => this._shouldUpdateSetups = true);
+        rReg.then(() => this._loadingRegions = false);
 
         Promise.all([rVer, rCfg, rSet, rReg]).then(() => {
             this._loadingGlobals = false;
-            this.stateChanged(store.getState());
+            this.stateChanged(store.getState() as RootState);
         });
     }
 
@@ -1785,7 +1589,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                     this._loadVisualizations(this._model.hasSampleVisualization, db);
                     // Software Images and Source Code only on tech tab
                     if (this._tab === 'tech') {
-                        this._loadSoftwareImages(this._model.hasSoftwareImage, db);
                         this._loadSourceCodes(this._model.hasSourceCode, db);
                     }
                 });
@@ -1852,9 +1655,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                     setupGetAll(this._selectedSetup).then((setup:ModelConfigurationSetup) => {
                         // Save authors 
                         (setup.author || []).forEach((author:Person|Organization) => {
-                            if (author.type === "Person") {
+                            if (author.type && author.type.includes("Person")) {
                                 this._authors[author.id] = author;
-                            } else if (author.type === "Organization") {
+                            } else if (author.type && author.type.includes("Organization")) {
                                 this._organizations[author.id] = author;
                             } else {
                                 console.warn("Cannot identify type of", author);
@@ -1925,7 +1728,7 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     private _loadAuthors (authorArr: (Person|Organization)[], db: any) {
         (authorArr || []).forEach((author:Person|Organization) => {
-            if (author.type === "Person") {
+            if (author.type && author.type.includes("Person")) {
                 if (db.persons[author.id]) {
                     this._authors[author.id] = db.persons[author.id];
                 } else {
@@ -1936,7 +1739,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         this.requestUpdate();
                     });
                 }
-            } else if (author.type === "Organization") {
+            } else if (author.type && author.type.includes("Organization")) {
                 if (db.organizations[author.id]) {
                     this._organizations[author.id] = db.organizations[author.id];
                 } else {
@@ -1958,9 +1761,9 @@ export class ModelView extends connect(store)(PageViewElement) {
             if (this._loading[author.id]) {
                 return html`${getId(author)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
             } else {
-                if (author.type === "Person") {
+                if (author.type && author.type.includes("Person")) {
                     return html`<span class="resource author">${getLabel(this._authors[author.id])}</span>`
-                } else if (author.type === "Organization") {
+                } else if (author.type && author.type.includes("Organization")) {
                     return html`<span class="resource organization">${getLabel(this._organizations[author.id])}</span>`
                 } else {
                     return html`<span class="resource">${getId(author)}</span>`
