@@ -8,7 +8,7 @@ import { html, property, customElement, css } from 'lit-element';
 import { goToPage } from '../../../app/actions';
 
 import { ExplorerStyles } from './explorer-styles'
-import { explorerCompareModel } from './ui-actions'
+//import { explorerCompareModel } from './ui-actions'
 
 import { getId, isEmpty, isSubregion, getLatestVersion, getLatestConfiguration, getLatestSetup } from 'model-catalog/util';
 import { IdMap } from 'app/reducers';
@@ -263,7 +263,8 @@ export class ModelPreview extends connect(store)(PageViewElement) {
     }
 
     _compare (uri:string) {
-        store.dispatch(explorerCompareModel(uri));
+        //FIXME
+        //store.dispatch(explorerCompareModel(uri));
     }
 
     stateChanged(state: RootState) {
