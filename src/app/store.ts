@@ -40,9 +40,6 @@ import ui, { UIState } from './ui-reducers';
 import { UIAction } from './ui-actions';
 import { RegionsState } from '../screens/regions/reducers';
 
-import { ApiAction } from '../util/model-catalog-actions';
-import { ExplorerState } from '../util/model-catalog-reducers';
-
 import { DExplorerUIState } from '../screens/datasets/ui-reducers';
 
 import { ExplorerUIAction } from '../screens/models/model-explore/ui-actions';
@@ -64,7 +61,6 @@ export interface RootState {
   datasets?: DatasetsState;
   regions?: RegionsState;
   emulators?: EmulatorsState;
-  explorer?: ExplorerState;
   messages?: MessagesState;
   explorerUI?: ExplorerUIState;
   dataExplorerUI?: DExplorerUIState;
@@ -73,7 +69,7 @@ export interface RootState {
 }
 
 export type RootAction = AppAction | ModelingAction | ModelsAction | DatasetsAction | EmulatorsAction |
-                         RegionsAction | UIAction | ApiAction | ExplorerUIAction |
+                         RegionsAction | UIAction | ExplorerUIAction |
                          MessagesAction | ModelCatalogAction | DExplorerUIAction;
 
 // Sets up a Chrome extension for time travel debugging.

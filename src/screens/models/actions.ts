@@ -1,67 +1,24 @@
 import { Action, ActionCreator } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "../../app/store";
-import { Model, ModelDetail, ModelIO, ModelParameter } from "./reducers";
-import { matchVariables } from "../../util/state_functions";
-import { EXAMPLE_MODEL_QUERY } from "../../offline_data/sample_models";
-import { OFFLINE_DEMO_MODE } from "../../app/actions";
+import { Model, ModelParameter } from "./reducers";
+import { Dataset } from "../datasets/reducers";
 
 import { setupsSearchVariable, setupGetAll, variablePresentationGetProm } from 'model-catalog/actions';
 import { ModelConfigurationSetup, DatasetSpecification } from '@mintproject/modelcatalog_client';
 import { sortByPosition } from './configure/util';
 
-export const MODELS_VARIABLES_QUERY = 'MODELS_VARIABLES_QUERY';
-export const MODELS_LIST = 'MODELS_LIST';
-export const MODELS_DETAIL = 'MODELS_DETAIL';
-
-import { apiFetch,  CALIBRATIONS_FOR_VAR_SN, METADATA_NOIO_FOR_MODEL_CONFIG, PARAMETERS_FOR_CONFIG,
-IO_AND_VARS_SN_FOR_CONFIG } from '../../util/model-catalog-requests';
-import { Dataset } from "../datasets/reducers";
 import { getVariableProperty } from "offline_data/variable_list";
-import { MintPreferences } from "app/reducers";
 
-export interface ModelsActionList extends Action<'MODELS_LIST'> { models: Model[] };
+export const MODELS_VARIABLES_QUERY = 'MODELS_VARIABLES_QUERY';
+
 export interface ModelsActionVariablesQuery extends Action<'MODELS_VARIABLES_QUERY'> { 
     variables: string[], 
     models: Model[] | null,
     loading: boolean
 };
-export interface ModelsActionDetail extends Action<'MODELS_DETAIL'> { model: ModelDetail };
 
-export type ModelsAction = ModelsActionList | ModelsActionVariablesQuery |  ModelsActionDetail ;
-
-// List all Model Configurations
-type ListModelsThunkResult = ThunkAction<void, RootState, undefined, ModelsActionList>;
-export const listAllModels: ActionCreator<ListModelsThunkResult> = (prefs: MintPreferences) => (dispatch) => {
-    
-    // Offline mode example query
-    if(OFFLINE_DEMO_MODE) {
-        dispatch({
-            type: MODELS_LIST,
-            models: EXAMPLE_MODEL_QUERY as Model[]
-        });
-        return;
-    }
-
-    fetch(prefs.model_catalog_api + "/getModelConfigurations").then((response) => {
-        response.json().then((obj) => {
-            let models = [] as Model[];
-            let bindings = obj["results"]["bindings"];
-            bindings.map((binding: Object) => {
-                models.push({
-                    name: binding["label"]["value"],
-                    description: binding["desc"]["value"],
-                    original_model: binding["model"]["value"]
-                } as Model);
-            });
-            dispatch({
-                type: MODELS_LIST,
-                models
-            });            
-        })
-    });
-
-};
+export type ModelsAction = ModelsActionVariablesQuery;
 
 const parameterToParam = (parameter) => {
     let param: ModelParameter =  {
@@ -238,19 +195,4 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
             });
         })
     })
-};
-
-// Query Model Details
-type QueryModelDetailThunkResult = ThunkAction<void, RootState, undefined, ModelsActionDetail>;
-export const queryModelDetail: ActionCreator<QueryModelDetailThunkResult> = (modelid: string) => (dispatch) => {
-    if(modelid) {
-        let model = {
-            id: modelid,
-            name: modelid
-        } as ModelDetail;
-        dispatch({
-            type: MODELS_DETAIL,
-            model: model
-        });        
-    }
 };
