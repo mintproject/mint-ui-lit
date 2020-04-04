@@ -9,11 +9,12 @@ import { IODetail, CalibrationDetail, CompIODetail } from "../../../util/api-int
 import { fetchVarsSNAndUnitsForIO } from '../../../util/model-catalog-actions';
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Organization, Region, FundingInformation, 
-         Image, Grid, TimeInterval, Process, Visualization, SourceCode, SoftwareImage } from '@mintproject/modelcatalog_client';
+         Image, Grid, TimeInterval, Process, Visualization, SourceCode, SoftwareImage, Parameter } from '@mintproject/modelcatalog_client';
 import { modelGet, versionGet, versionsGet, modelConfigurationGet, modelConfigurationsGet, modelConfigurationSetupsGet,
          modelConfigurationSetupGet, imageGet, personGet, regionsGet, organizationGet, fundingInformationGet,
-         timeIntervalGet, gridGet, processGet, setupGetAll, visualizationGet, sourceCodeGet, softwareImageGet } from 'model-catalog/actions';
-import { capitalizeFirstLetter, getId, getLabel, getURL, uriToId } from 'model-catalog/util';
+         timeIntervalGet, gridGet, processGet, setupGetAll, visualizationGet, sourceCodeGet, softwareImageGet,
+         parameterGet } from 'model-catalog/actions';
+import { capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition } from 'model-catalog/util';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
@@ -35,6 +36,8 @@ import 'components/loading-dots'
 
 import { Select } from "weightless/select";
 
+type tabType = 'overview'|'io'|'variables'|'tech'|'example';
+
 @customElement('model-view')
 export class ModelView extends connect(store)(PageViewElement) {
     private PREFIX : string = 'models/explore/';
@@ -50,7 +53,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object}) private _setups : IdMap<ModelConfigurationSetup> = {} as IdMap<ModelConfigurationSetup>;
     @property({type: Object}) private _regions : IdMap<Region> = {} as IdMap<Region>;
 
-    // Direct data for this model
+    // Direct data for this model, loaded from store
     @property({type: Object}) private _model! : Model;
     @property({type: Object}) private _version! : SoftwareVersion | null = null;
     @property({type: Object}) private _config! : ModelConfiguration | null = null;
@@ -66,17 +69,19 @@ export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object}) private _visualizations : IdMap<Visualization> = {} as IdMap<Visualization>;
     @property({type: Object}) private _sourceCodes : IdMap<SourceCode> = {} as IdMap<SourceCode>;
     @property({type: Object}) private _softwareImages : IdMap<SoftwareImage> = {} as IdMap<SoftwareImage>;
+    @property({type: Object}) private _parameters : IdMap<Parameter> = {} as IdMap<Parameter>;
 
     // Computed data
     @property({type: Array}) private _modelRegions : string[] | null = null;
     @property({type: String}) private _runArgs : string = '';
 
-    // Booleans
+    // View controls
     @property({type: Object}) private _loading : IdMap<boolean> = {} as IdMap<boolean>;
     @property({type: Boolean}) private _shouldUpdateConfigs : boolean = false;
     @property({type: Boolean}) private _shouldUpdateSetups : boolean = false;
     @property({type: Boolean}) private _loadingGlobals : boolean = false;
     @property({type: Boolean}) private _loadingRegions : boolean = false;
+    @property({type: String}) private _tab : tabType = 'overview';
 
     /***********/
     @property({type: Number})
@@ -90,9 +95,6 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _calibrationMetadata: any = null;
-
-    @property({type: Object})
-    private _parameters: any = null;
 
     @property({type: Object})
     private _inputs : IODetail[] | null = null;
@@ -128,9 +130,6 @@ export class ModelView extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _screenshots : any = null;
-
-    @property({type: String})
-    private _tab : 'overview'|'io'|'variables'|'tech'|'example' = 'overview';
 
     private _emulators = {
         'https://w3id.org/okn/i/mint/CYCLES' : '/emulators/cycles',
@@ -761,17 +760,16 @@ export class ModelView extends connect(store)(PageViewElement) {
                     <wl-tab-group>
                         <wl-tab id="tab-overview" ?checked=${this._tab=='overview'} @click="${() => {this._tab = 'overview'}}"
                             >Overview</wl-tab>
-                        <wl-tab id="tab-io" ?checked=${this._tab=='io'} @click="${() => {this._tab = 'io'}}"
+                        <wl-tab id="tab-io" ?checked=${this._tab=='io'} @click="${() => {this._goToTab('io')}}"
                             >Parameters and Files</wl-tab>
                         <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => {this._tab = 'variables'}}"
                             >Variables</wl-tab>
-
                         ${this._getExample() ? html`
                         <wl-tab id="tab-example" @click="${() => {this._tab = 'example'}}">
                             Example
                         </wl-tab>` : ''}
 
-                        <wl-tab id="tab-overview" ?checked=${this._tab=='tech'} @click="${() => {this._tab = 'tech'}}"
+                        <wl-tab id="tab-overview" ?checked=${this._tab=='tech'} @click="${() => {this._goToTab('tech')}}"
                             >Technical Information</wl-tab>
                     </wl-tab-group>
                 </div>
@@ -784,6 +782,24 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </div>
             </div>
             ${this._renderCLIDialog()} `
+    }
+
+    private _goToTab (tabid:tabType) {
+        console.log('GoToTab:', tabid);
+        this._tab = tabid;
+        if (tabid === 'tech') {
+            let db = store.getState().modelCatalog;
+            this._loadSourceCodes(this._model.hasSourceCode, db);
+            this._loadSoftwareImages(this._model.hasSoftwareImage, db);
+            if (this._config) {
+                this._loadSourceCodes(this._config.hasSourceCode, db);
+                this._loadSoftwareImages(this._config.hasSoftwareImage, db);
+            }
+        } 
+        if (tabid === 'io' && this._config) {
+            let db = store.getState().modelCatalog;
+            this._loadParameters(this._config.hasParameter, db);
+        }
     }
 
     private _renderTabTechnical () {
@@ -882,143 +898,6 @@ export class ModelView extends connect(store)(PageViewElement) {
             </table>`;
     }
 
-    _renderTabTechnical2 () {
-        let showModel = this._model.os || this._model.pl || this._model.memReq || this._model.procReq || this._model.softwareReq ||
-                        this._model.downloadURL || this._model.sourceC || this._model.doc || this._model.installInstr;
-        return html`
-            ${showModel ? html`
-            <wl-title level="3"> Technical Information: </wl-title>
-            <table class="pure-table pure-table-striped">
-                <thead>
-                    <tr><th colspan="2">MODEL: 
-                        <span style="margin-left: 6px; font-size: 16px; font-weight: bold; color: black;">${this._model.label}</span>
-                    </th></tr>
-                </thead>
-                <tbody>
-                    ${this._model.os? html`
-                    <tr>
-                        <td><b>Operating systems:</b></td>
-                        <td>${this._model.os.join(', ')}</td>
-                    </tr>`
-                    : ''}
-                    ${this._model.pl? html`
-                    <tr>
-                        <td><b>Programing languages:</b></td>
-                        <td>${this._model.pl.join(', ')}</td>
-                    </tr>`
-                    : ''}
-                    ${this._model.memReq? html`
-                    <tr>
-                        <td><b>Memory requirements:</b></td>
-                        <td>${this._model.memReq}</td>
-                    </tr>` : ''}
-                    ${this._model.procReq? html`
-                    <tr>
-                        <td><b>Processor requirements:</b></td>
-                        <td>${this._model.procReq}</td>
-                    </tr>` : ''}
-                    ${this._model.softwareReq? html`
-                    <tr>
-                        <td><b>Software requirements:</b></td>
-                        <td>${this._model.softwareReq}</td>
-                    </tr>` : ''}
-                    ${this._model.downloadURL? html`
-                    <tr>
-                        <td><b>Download:</b></td>
-                        <td><a target="_blank" href="${this._model.downloadURL}">${this._model.downloadURL}</a></td>
-                    </tr>` : ''}
-                    ${this._model.sourceC? html`
-                    <tr>
-                        <td><b>Source code:</b></td>
-                        <td><a target="_blank" href="${this._model.sourceC}">${this._model.sourceC}</a></td>
-                    </tr>` : ''}
-                    ${this._model.installInstr? html`
-                    <tr>
-                        <td><b>Installation instructions:</b></td>
-                        <td><a target="_blank" href="${this._model.installInstr}">${this._model.installInstr}</a></td>
-                    </tr>` : ''}
-                </tbody>
-            </table>
-            `: ''}
-            <br/>
-
-            ${this._config && this._configMetadata ? html`
-            <table class="pure-table pure-table-striped">
-                <thead>
-                    <tr><th colspan="2">CONFIGURATION: 
-                        <span style="margin-left: 6px; font-size: 16px; font-weight: bold; color: black;">${this._config.label}</span>
-                    </th></tr>
-                </thead>
-                <tbody>
-                    ${this._configMetadata[0].dImg ? html`
-                    <tr>
-                        <td><b>Software Image:</b></td>
-                        <td>
-                            <a target="_blank"
-                               href="https://hub.docker.com/r/${this._configMetadata[0].dImg.split(':')[0]}/tags">
-                                <code>${this._configMetadata[0].dImg}</code>
-                            </a>
-                        </td>
-                    </tr>` : '' }
-                    ${this._configMetadata[0].repo ? html`
-                    <tr>
-                        <td><b>Repository:</b></td>
-                        <td><a target="_blank" href="${this._configMetadata[0].repo}">${this._configMetadata[0].repo}</td>
-                    </tr>` : '' }
-                    ${this._configMetadata[0].compLoc ? html`
-                    <tr>
-                        <td><b>Component Location:</b></td>
-                        <td><a target="_blank" href="${this._configMetadata[0].compLoc}">${this._configMetadata[0].compLoc}</td>
-                    </tr>` : '' }
-                    ${this._configMetadata[0].pLanguage ? html`
-                    <tr>
-                        <td><b>Language:</b></td>
-                        <td>${this._configMetadata[0].pLanguage}</td>
-                    </tr>` : '' }
-                </tbody>
-            </table>` : ''} 
-
-            <br/>
-            ${this._calibration && this._calibrationMetadata ? html`
-            <table class="pure-table pure-table-striped">
-                <thead>
-                    <tr><th colspan="2">SETUP:
-                        <span style="margin-left: 6px; font-size: 16px; font-weight: bold; color:
-                        black;">${this._calibration.label}</span>
-                    </th></tr>
-                </thead>
-                <tbody>
-                    ${this._calibrationMetadata[0].dImg ? html`
-                    <tr>
-                        <td><b>Software Image:</b></td>
-                        <td>
-                            <a target="_blank"
-                               href="https://hub.docker.com/r/${this._configMetadata[0].dImg.split(':')[0]}/tags">
-                                <code>${this._calibrationMetadata[0].dImg}</code>
-                            </a>
-                        </td>
-                    </tr>` : '' }
-                    ${this._calibrationMetadata[0].repo ? html`
-                    <tr>
-                        <td><b>Repository:</b></td>
-                        <td><a target="_blank" href="${this._calibrationMetadata[0].repo}">${this._calibrationMetadata[0].repo}</td>
-                    </tr>` : '' }
-                    ${this._calibrationMetadata[0].compLoc ? html`
-                    <tr>
-                        <td><b>Component Location:</b></td>
-                        <td><a target="_blank" href="${this._calibrationMetadata[0].compLoc}">${this._calibrationMetadata[0].compLoc}</td>
-                    </tr>` : '' }
-                    ${this._calibrationMetadata[0].pLanguage ? html`
-                    <tr>
-                        <td><b>Language:</b></td>
-                        <td>${this._calibrationMetadata[0].pLanguage}</td>
-                    </tr>` : '' }
-            </table>
-            <br/>
-            ` : ''}
-        `
-    }
-
     /* Change to tabName and scroll to fragmentId */
     _changeTab (tabName: string, fragment?: string) {
         let tabId : string = '';
@@ -1101,12 +980,6 @@ export class ModelView extends connect(store)(PageViewElement) {
             ${this._renderRelatedModels()}
             ${this._renderGallery()}`
     }
-    /* HTML description are not working 
-                    <details>
-                        <summary>${this._indices[0].label}</summary>
-                        <div id="indice-description"></div>
-                    </details>
-                    */
 
     _renderConfigResume () {
         return html`
@@ -1273,6 +1146,99 @@ export class ModelView extends connect(store)(PageViewElement) {
             </h3>`
         }
         return html`
+            <wl-title level="3"> Parameters: </wl-title> 
+            ${this._renderParametersTable(this._setup ? this._setup : this._config)}
+            <wl-title level="3"> Files: </wl-title> 
+            <wl-text style="font-style: italic; padding-left: 20px;">
+                Look at the Variables tab to see more information about the contents of the inputs and outputs.
+            </wl-text>
+        `
+    }
+
+    _renderParametersTable (resource:ModelConfiguration|ModelConfigurationSetup) {
+        let isSetup = resource.type.includes('ModelConfigurationSetup');
+        return html`
+            <table class="pure-table pure-table-striped" style="overflow: visible;" id="parameters-table">
+                <col span="1" style="width: 180;">
+                <col span="1">
+                <col span="1">
+                <col span="1" style="width: 130px;">
+                <thead>
+                    <th>Parameter</th>
+                    <th>Description</th>
+                    <th style="text-align: right;">Relevant for intervention</th>
+                    <th style="text-align: right;">
+                        ${isSetup? html`
+                        Value on setup 
+                        <span class="tooltip" tip="If a value is not set up in this field configuration default value will be used.">
+                            <wl-icon>help</wl-icon>
+                        </span>`
+                        : 'Default value'}
+                    </th>
+                </thead>
+                <tbody>
+                ${!resource.hasParameter || resource.hasParameter.length === 0 ?  html`
+                    <tr>
+                        <td colspan="4">
+                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no parameter.</div>
+                        </td>
+                    </tr>` : html`
+                    ${resource.hasParameter.filter((p:Parameter) => !this._loading[p.id])
+                            .map((p:Parameter) => this._parameters[p.id]).sort(sortByPosition).map((p:Parameter) => html`
+                    <tr>
+                        <td>
+                            <code>${getLabel(p)}</code>
+                            ${p.hasMinimumAcceptedValue && p.hasMinimumAcceptedValue.length > 0 ? html`
+                                <br/>The range is from ${p.hasMinimumAcceptedValue[0]} 
+                                    ${p.hasMaximumAcceptedValue && p.hasMaximumAcceptedValue.length > 0 ? 
+                                    html`to ${p.hasMaximumAcceptedValue[0]}` :''}
+                                `:''}
+                        </td>
+                        <td>
+                            ${p.description && p.description.length > 0 ? html`
+                                <b style="font-size: 14px;">${capitalizeFirstLetter(p.description[0])}</b>
+                                `: ''}
+                        </td>
+                        <td>
+                            ${p.relevantForIntervention && p.relevantForIntervention.length > 0 ? html`
+                                <span class="tooltip tooltip-text" tip="TODO FIXME">
+                                    ${getLabel(p.relevantForIntervention[0])}
+                                </span>
+                                `: ''}
+                        </td>
+                        <td class="font-numbers" style="text-align: right;">
+                            ${this.isSetup ? 
+                                (p.hasFixedValue && p.hasFixedValue.length > 0 ? 
+                                    p.hasFixedValue :
+                                    p.hasDefaultValue + " (default)") 
+                                : p.hasDefaultValue}
+                            ${p.usesUnit && p.usesUnit.length > 0 ? getLabel(p.usesUnit[0]) : ''}
+                        </td>
+                    </tr>
+                    `)}
+                    ${resource.hasParameter.filter((p:Parameter) => this._loading[p.id]).map((p:Parameter) => html`
+                    <tr>
+                        <td colspan="4">
+                            <div class="text-centered">${getId(p)} <loading-dots style="--height: 10px; margin-left:10px"></loading-dots></div>
+                        </td>
+                    </tr>
+                    `)}`
+                }
+                </tbody>
+            </table>`
+    }
+
+
+
+    _renderTabIO2 () {
+        if (!this._config) {
+            return html`
+            <br/>
+            <h3 style="margin-left:30px">
+                You must select a configuration or setup to see its files and parameters.
+            </h3>`
+        }
+        return html`
             ${(this._parameters)? this._renderParametersTable() : html``}
             ${(!this._inputs || this._inputs.length > 0 || !this._outputs || this._outputs.length > 0) ? html`
             <wl-title level="3"> Files: </wl-title> 
@@ -1372,7 +1338,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             `;
     }
 
-    _renderParametersTable () {
+    _renderParametersTable2 () {
         if (!this._parameters) { 
             return html`<div class="text-centered">
                 LOADING PARAMETERS
@@ -1710,15 +1676,16 @@ export class ModelView extends connect(store)(PageViewElement) {
                     this._loadAuthors(this._model.author, db);
                     //Funding and all its organizations
                     this._loadFundings(this._model.hasFunding, db);
-                    //Source Code
-                    this._loadSourceCodes(this._model.hasSourceCode, db);
-                    // Software Images
-                    this._loadSoftwareImages(this._model.hasSoftwareImage, db);
                     //Gallery (Image, Visualization)
                     this._loadImages(
                         (this._model.screenshot || []).concat(this._model.hasExplanationDiagram || [])
                     , db);
                     this._loadVisualizations(this._model.hasSampleVisualization, db);
+                    // Software Images and Source Code only on tech tab
+                    if (this._tab === 'tech') {
+                        this._loadSoftwareImages(this._model.hasSoftwareImage, db);
+                        this._loadSourceCodes(this._model.hasSourceCode, db);
+                    }
                 });
             }
 
@@ -1753,8 +1720,14 @@ export class ModelView extends connect(store)(PageViewElement) {
                             (this._config.screenshot || []).concat(this._config.hasExplanationDiagram || [])
                         , db);
                         this._loadVisualizations(this._config.hasSampleVisualization, db);
-                        this._loadSourceCodes(this._config.hasSourceCode, db);
-                        this._loadSoftwareImages(this._config.hasSoftwareImage, db);
+                        if (this._tab === 'tech') {
+                            this._loadSourceCodes(this._config.hasSourceCode, db);
+                            this._loadSoftwareImages(this._config.hasSoftwareImage, db);
+                        }
+                        // Parameters and DatasetSpecification only on io
+                        if (this._tab === 'io') {
+                            this._loadParameters(this._config.hasParameter, db);
+                        }
                     } 
                 } else {
                     this._selectedConfig = ui.selectedConfig;
@@ -1765,9 +1738,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                 //This part uses setupGetAll
                 this._setup = null;
                 this._selectedSetup = ui.selectedCalibration;
+                if (this._selectedSetup) this._loading[this._selectedSetup] = true;
                 this._shouldUpdateSetups = true;
                 if (this._selectedSetup) {
-                    this._loading[this._selectedSetup];
                     setupGetAll(this._selectedSetup).then((setup:ModelConfigurationSetup) => {
                         // Save authors 
                         (setup.author || []).forEach((author:Person|Organization) => {
@@ -1799,9 +1772,14 @@ export class ModelView extends connect(store)(PageViewElement) {
                         (setup.hasSoftwareImage || []).forEach((si:SoftwareImage) => {
                             this._softwareImages[si.id] = si;
                         });
+                        // Save parameters
+                        (setup.hasParameter || []).forEach((parameter:Parameter) => {
+                            //FIXME: this does not return relevantForIntervention
+                            if (!this._parameters[parameter.id]) this._parameters[parameter.id] = parameter;
+                        });
                         
                         this._setup = setup;
-                        console.log('all', setup);
+                        this._loading[this._selectedSetup] = false;
                     })
                 }
             }
@@ -2091,6 +2069,21 @@ export class ModelView extends connect(store)(PageViewElement) {
                 store.dispatch(softwareImageGet(softwareImage.id)).then((softwareImage:SoftwareImage) => {
                     this._loading[softwareImage.id] = false;
                     this._softwareImages[softwareImage.id] = softwareImage;
+                    this.requestUpdate();
+                });
+            }
+        })
+    }
+
+    private _loadParameters (parametersArr: Parameter[], db: any) {
+        (parametersArr || []).forEach((parameter:Parameter) => {
+            if (db.parameters[parameter.id]) {
+                this._parameters[parameter.id] = db.parameters[parameter.id];
+            } else if (!this._loading[parameter.id]) {
+                this._loading[parameter.id] = true;
+                store.dispatch(parameterGet(parameter.id)).then((parameter:Parameter) => {
+                    this._loading[parameter.id] = false;
+                    this._parameters[parameter.id] = parameter;
                     this.requestUpdate();
                 });
             }

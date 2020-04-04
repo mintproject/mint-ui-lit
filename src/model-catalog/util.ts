@@ -112,3 +112,9 @@ export const getLatestSetup = (setup1:ModelConfigurationSetup, setup2:ModelConfi
 
     return setup2;
 }
+
+export const sortByPosition = (a,b) => {
+    let intA = Number(a.position);
+    let intB = Number(b.position);
+    return (intA < intB) ? -1 : (intA > intB? 1 : 0);
+}
