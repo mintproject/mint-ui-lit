@@ -220,7 +220,21 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 margin-right: 5px;
                 --button-padding: 4px;
             }
-            `,
+
+            #pam.tooltip:hover::after {
+                bottom: 26px;
+                color: rgb(255, 255, 255);
+                right: 20%;
+                position: absolute;
+                z-index: 98;
+                background: rgba(0, 0, 0, 0.8);
+                border-radius: 5px;
+                padding: 5px 15px;
+                width: 610px;
+                content: attr(tip);
+                white-space: pre;
+                word-wrap: break-word;
+            }`,
         ];
     }
 
@@ -396,11 +410,17 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Parameter assignment method:</td>
                 <td>
-                    <wl-select id="new-setup-assign-method" label="Parameter assignment method" placeholder="Select a parameter assignament method" required>
-                        <option value="" disabled selected>Please select a parameter assignment method</option>
-                        <option value="Calibration">Calibration</option>
-                        <option value="Expert-configured">Expert tuned</option>
-                    </wl-select>
+                    <div style="display: grid; grid-template-columns: auto 36px;">
+                        <wl-select id="new-setup-assign-method" label="Parameter assignment method" placeholder="Select a parameter assignament method" required>
+                            <option value="" disabled selected>Please select a parameter assignment method</option>
+                            <option value="Calibration">Calibration</option>
+                            <option value="Expert-configured">Expert tuned</option>
+                        </wl-select>
+                        <span tip="Calibrated: The model was calibrated (either manually or automatically) against baseline data.&#10;Expert configured: A modeler did an expert guess of the parameters based on available data." 
+                              id="pam" class="tooltip" style="top: 8px;">
+                            <wl-icon style="--icon-size: 24px;">help_outline</wl-icon>
+                        </span>
+                    </div>
                 </td>
             </tr>
 

@@ -1,8 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, ModelConfiguration, ModelConfigurationApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, fixObjects,
-         DEFAULT_GRAPH } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, fixObjects, getUser } from './actions';
 
 function debug (...args: any[]) { console.log('[MC ModelConfiguration]', ...args); }
 
@@ -20,9 +19,29 @@ export const modelConfigurationsGet: ActionThunk<Promise<IdMap<ModelConfiguratio
     if (!modelConfigurationsPromise) {
         modelConfigurationsPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
+            let user : string = getUser();
             let api : ModelConfigurationApi = new ModelConfigurationApi();
-            let req : Promise<ModelConfiguration[]> = api.modelconfigurationsGet({username: DEFAULT_GRAPH});
-            req.then((resp:ModelConfiguration[]) => {
+            let req2 : Promise<ModelConfiguration[]> = api.modelconfigurationsGet({username: user});
+
+            let promises : Promise<ModelConfiguration[]>[] = [req2];
+            promises.forEach((p:Promise<ModelConfiguration[]>, i:number) => {
+                p.then((resp:ModelConfiguration[]) => dispatch({ type: MODEL_CONFIGURATIONS_ADD, payload: resp.reduce(idReducer, {}) }));
+                p.catch((err) => console.error('Error on GET ModelConfigurations ' + (i==0?'System':'User'), err));
+            });
+
+            Promise.all(promises).then((values) => {
+                let data : IdMap<ModelConfiguration> = {};
+                values.forEach((arr:ModelConfiguration[]) => {
+                    data = arr.reduce(idReducer, data);
+                });
+                resolve(data);
+            }).catch((err) => {
+                console.error('Error on GET ModelConfigurations', err);
+                reject(err);
+            });
+
+
+            /*req.then((resp:ModelConfiguration[]) => {
                 let data : IdMap<ModelConfiguration> = resp
                     .map((config:ModelConfiguration) => { return { ...config, 
                         contributor:    fixObjects(config.contributor),
@@ -41,7 +60,8 @@ export const modelConfigurationsGet: ActionThunk<Promise<IdMap<ModelConfiguratio
             req.catch((err) => {
                 console.error('Error on GET ModelConfigurations', err);
                 reject(err);
-            });
+            });*/
+
         });
     } else {
         debug('All modelConfigurations are already in memory or loading');
@@ -52,8 +72,9 @@ export const modelConfigurationsGet: ActionThunk<Promise<IdMap<ModelConfiguratio
 export const modelConfigurationGet: ActionThunk<Promise<ModelConfiguration>, MCAModelConfigurationsAdd> = (uri:string) => (dispatch) => {
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
+    let user : string = getUser();
     let api : ModelConfigurationApi = new ModelConfigurationApi();
-    let req : Promise<ModelConfiguration> = api.modelconfigurationsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<ModelConfiguration> = api.modelconfigurationsIdGet({username: user, id: id});
     req.then((resp:ModelConfiguration) => {
         dispatch({
             type: MODEL_CONFIGURATIONS_ADD,
@@ -73,7 +94,7 @@ export const modelConfigurationPost: ActionThunk<Promise<ModelConfiguration>, MC
         debug('Creating new', modelConfiguration);
         let postProm = new Promise((resolve,reject) => {
             let api : ModelConfigurationApi = new ModelConfigurationApi(cfg);
-            let req = api.modelconfigurationsPost({user: DEFAULT_GRAPH, modelConfiguration: modelConfiguration}); // This should be my username on prod.
+            let req = api.modelconfigurationsPost({user: user, modelConfiguration: modelConfiguration}); // This should be my username on prod.
             req.then((resp:ModelConfiguration) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -101,7 +122,7 @@ export const modelConfigurationPut: ActionThunk<Promise<ModelConfiguration>, MCA
         debug('Updating', modelConfiguration);
         let api : ModelConfigurationApi = new ModelConfigurationApi(cfg);
         let id : string = getIdFromUri(modelConfiguration.id);
-        let req : Promise<ModelConfiguration> = api.modelconfigurationsIdPut({id: id, user: DEFAULT_GRAPH, modelConfiguration: modelConfiguration});
+        let req : Promise<ModelConfiguration> = api.modelconfigurationsIdPut({id: id, user: user, modelConfiguration: modelConfiguration});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -126,7 +147,7 @@ export const modelConfigurationDelete: ActionThunk<void, MCAModelConfigurationDe
         debug('Deleting', modelConfiguration.id);
         let api : ModelConfigurationApi = new ModelConfigurationApi(cfg);
         let id : string = getIdFromUri(modelConfiguration.id);
-        let req : Promise<void> = api.modelconfigurationsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.modelconfigurationsIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: MODEL_CONFIGURATION_DELETE,

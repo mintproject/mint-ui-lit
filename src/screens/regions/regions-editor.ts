@@ -17,6 +17,7 @@ import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog, downloadFile } from 'util/ui_functions';
 import { GoogleMapCustom } from 'components/google-map-custom';
 import { selectSubRegion } from 'app/ui-actions';
+import { BoundingBox } from './reducers';
 
 import "./region-models";
 import "./region-datasets";
@@ -26,6 +27,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     @property({type: String})
     public regionType: string;
+
+    @property({type: String})
+    private _selectedSubregionId: string;
 
     @property({type: Object})
     private _regions: Region[];
@@ -54,6 +58,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     @property({type: Boolean})
     private _mapReady: boolean = false;
 
+    @property({type: Object})
+    private _bbox_preview: BoundingBox[] = [];
+
     private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
 
     static get styles() {
@@ -70,6 +77,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
             .map {
                 height: var(--map-height, calc(100% - 45px));
+                z-index: 10;
+                top: -10px;
+                position: sticky;
                 width: 100%;
             }
 
@@ -232,18 +242,20 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     public addRegionsToMap() {   
         let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
-        if(map && this._regions) {
+        if (map && this._regions) {
             try {
                 map.setRegions(this._regions.filter(
                     (region) => region.region_type == (this._selectedSubcategory ? this._selectedSubcategory : this.regionType)),
-                    this._regionid);
-              this._mapReady = true;
+                    this._selectedSubregionId);
+                (this._bbox_preview || []).forEach((bbox) => map.addBoundingBox(bbox));
+                this._mapReady = true;
             }
             catch {
               map.addEventListener("google-map-ready", (e) => {
                 map.setRegions(this._regions.filter(
                     (region) => region.region_type == (this._selectedSubcategory ? this._selectedSubcategory : this.regionType)),
-                    this._regionid);
+                    this._selectedSubregionId);
+                (this._bbox_preview || []).forEach((bbox) => map.addBoundingBox(bbox));
                 this._mapReady = true;
               })
             }
@@ -253,7 +265,6 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     private _handleMapClick(ev: any) {
         if(ev.detail && ev.detail.id) {
             store.dispatch(selectSubRegion(ev.detail.id));
-            this._selectedRegion = this._regions.filter(r => r.id === ev.detail.id)[0];
         }
     }
 
@@ -501,15 +512,32 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     }
 
     stateChanged(state: RootState) {
-        let cur_region = this._regionid;
+        let lastRegion = this._regionid;
+        let lastSubregion = this._selectedSubregionId;
         super.setRegion(state);
-        if (this._regionid != cur_region) {
+        if (this._regionid != lastRegion) {
             this._selectedSubcategory = '';
             store.dispatch(selectSubRegion(""));
             this._selectedRegion = null;
         }
+
         if (this._region && this._region.subcategories && this._region.subcategories[this.regionType]) {
             this._subcategories = this._region.subcategories[this.regionType];
+        }
+
+        if (state.ui && state.ui.selected_sub_regionid != this._selectedSubregionId) {
+            this._selectedSubregionId = state.ui.selected_sub_regionid;
+            if (this._regions) {
+                this._selectedRegion = this._regions.filter(r => r.id === this._selectedSubregionId)[0];
+            }
+        }
+
+        if (state.regions && state.regions.bbox_preview) {
+            if (!this._bbox_preview || state.regions.bbox_preview.length != this._bbox_preview.length ||
+                state.regions.bbox_preview.some((bbox, i) => this._bbox_preview[i] != bbox)) {
+                this._bbox_preview = state.regions.bbox_preview;
+                this.addRegionsToMap();
+            }
         }
 
         if(this._regionid && this._region) {

@@ -1,8 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Process, ProcessApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
-         DEFAULT_GRAPH } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Process]', ...args); }
 
@@ -20,17 +19,23 @@ export const processesGet: ActionThunk<Promise<IdMap<Process>>, MCAProcessesAdd>
     if (!processesPromise) {
         processesPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
+            let user : string = getUser();
             let api : ProcessApi = new ProcessApi();
-            let req : Promise<Process[]> = api.processsGet({username: DEFAULT_GRAPH});
-            req.then((resp:Process[]) => {
-                let data : IdMap<Process> = resp.reduce(idReducer, {});
-                dispatch({
-                    type: PROCESSES_ADD,
-                    payload: data
+            let req2 : Promise<Process[]> = api.processsGet({username: user});
+
+            let promises : Promise<Process[]>[] = [req2];
+            promises.forEach((p:Promise<Process[]>, i:number) => {
+                p.then((resp:Process[]) => dispatch({ type: PROCESSES_ADD, payload: resp.reduce(idReducer, {}) }));
+                p.catch((err) => console.error('Error on GET Processes ' + (i==0?'System':'User'), err));
+            });
+
+            Promise.all(promises).then((values) => {
+                let data : IdMap<Process> = {};
+                values.forEach((ps:Process[]) => {
+                    data = ps.reduce(idReducer, data);
                 });
                 resolve(data);
-            });
-            req.catch((err) => {
+            }).catch((err) => {
                 console.error('Error on GET Processes', err);
                 reject(err);
             });
@@ -44,8 +49,9 @@ export const processesGet: ActionThunk<Promise<IdMap<Process>>, MCAProcessesAdd>
 export const processGet: ActionThunk<Promise<Process>, MCAProcessesAdd> = (uri:string) => (dispatch) => {
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
+    let user : string = getUser();
     let api : ProcessApi = new ProcessApi();
-    let req : Promise<Process> = api.processsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<Process> = api.processsIdGet({username: user, id: id});
     req.then((resp:Process) => {
         dispatch({
             type: PROCESSES_ADD,
@@ -65,7 +71,7 @@ export const processPost: ActionThunk<Promise<Process>, MCAProcessesAdd> = (proc
         debug('Creating new', process);
         let postProm = new Promise((resolve,reject) => {
             let api : ProcessApi = new ProcessApi(cfg);
-            let req = api.processsPost({user: DEFAULT_GRAPH, process: process}); // This should be my username on prod.
+            let req = api.processsPost({user: user, process: process}); // This should be my username on prod.
             req.then((resp:Process) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -93,7 +99,7 @@ export const processPut: ActionThunk<Promise<Process>, MCAProcessesAdd> = (proce
         debug('Updating', process);
         let api : ProcessApi = new ProcessApi(cfg);
         let id : string = getIdFromUri(process.id);
-        let req : Promise<Process> = api.processsIdPut({id: id, user: DEFAULT_GRAPH, process: process});
+        let req : Promise<Process> = api.processsIdPut({id: id, user: user, process: process});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -118,7 +124,7 @@ export const processDelete: ActionThunk<void, MCAProcessDelete> = (process:Proce
         debug('Deleting', process.id);
         let api : ProcessApi = new ProcessApi(cfg);
         let id : string = getIdFromUri(process.id);
-        let req : Promise<void> = api.processsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.processsIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: PROCESS_DELETE,

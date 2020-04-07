@@ -1,8 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Parameter, ParameterApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
-         DEFAULT_GRAPH } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Parameter]', ...args); }
 
@@ -21,16 +20,22 @@ export const parametersGet: ActionThunk<Promise<IdMap<Parameter>>, MCAParameters
         parametersPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
             let api : ParameterApi = new ParameterApi();
-            let req : Promise<Parameter[]> = api.parametersGet({username: DEFAULT_GRAPH});
-            req.then((resp:Parameter[]) => {
-                let data : IdMap<Parameter> = resp.reduce(idReducer, {});
-                dispatch({
-                    type: PARAMETERS_ADD,
-                    payload: data
+            let user : string = getUser();
+            let req2 : Promise<Parameter[]> = api.parametersGet({username: user});
+
+            let promises : Promise<Parameter[]>[] = [req2];
+            promises.forEach((p:Promise<Parameter[]>, i:number) => {
+                p.then((resp:Parameter[]) => dispatch({ type: PARAMETERS_ADD, payload: resp.reduce(idReducer, {}) }));
+                p.catch((err) => console.error('Error on GET Parameters ' + (i==0?'System':'User'), err));
+            });
+
+            Promise.all(promises).then((values) => {
+                let data : IdMap<Parameter> = {};
+                values.forEach((params:Parameter[]) => {
+                    data = params.reduce(idReducer, data);
                 });
                 resolve(data);
-            });
-            req.catch((err) => {
+            }).catch((err) => {
                 console.error('Error on GET Parameters', err);
                 reject(err);
             });
@@ -44,8 +49,9 @@ export const parametersGet: ActionThunk<Promise<IdMap<Parameter>>, MCAParameters
 export const parameterGet: ActionThunk<Promise<Parameter>, MCAParametersAdd> = (uri:string) => (dispatch) => {
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
+    let user : string = getUser();
     let api : ParameterApi = new ParameterApi();
-    let req : Promise<Parameter> = api.parametersIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<Parameter> = api.parametersIdGet({username: user, id: id});
     req.then((resp:Parameter) => {
         dispatch({
             type: PARAMETERS_ADD,
@@ -68,7 +74,7 @@ export const parameterPost: ActionThunk<Promise<Parameter>, MCAParametersAdd> = 
         } else {
             return new Promise((resolve,reject) => {
                 let api : ParameterApi = new ParameterApi(cfg);
-                let req = api.parametersPost({user: DEFAULT_GRAPH, parameter: parameter}); // This should be my username on prod.
+                let req = api.parametersPost({user: user, parameter: parameter}); // This should be my username on prod.
                 req.then((resp:Parameter) => {
                     debug('Response for POST', resp);
                     //Parameter can have a flag 'isAdjustable'
@@ -98,7 +104,7 @@ export const parameterPut: ActionThunk<Promise<Parameter>, MCAParametersAdd> = (
         debug('Updating', parameter);
         let api : ParameterApi = new ParameterApi(cfg);
         let id : string = getIdFromUri(parameter.id);
-        let req : Promise<Parameter> = api.parametersIdPut({id: id, user: DEFAULT_GRAPH, parameter: parameter});
+        let req : Promise<Parameter> = api.parametersIdPut({id: id, user: user, parameter: parameter});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -123,7 +129,7 @@ export const parameterDelete: ActionThunk<void, MCAParameterDelete> = (parameter
         debug('Deleting', parameter.id);
         let api : ParameterApi = new ParameterApi(cfg);
         let id : string = getIdFromUri(parameter.id);
-        let req : Promise<void> = api.parametersIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.parametersIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: PARAMETER_DELETE,

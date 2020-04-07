@@ -10,6 +10,11 @@ pre {
     font:12px Monaco,Consolas,"Andale  Mono","DejaVu Sans Mono",monospace
 }
 
+.no-decoration, .no-decoration:hover {
+    text-decoration: none;
+    background-color: unset;
+}
+
 code {
     border-radius: 5px;
     -moz-border-radius: 5px;
@@ -50,7 +55,6 @@ b.clickable, span.clickable {
     cursor: help;
     display: inline-block;
     position: relative;
-    margin: 5px 5px 0px 5px;
 }
 
 .tooltip:hover:after {
@@ -88,8 +92,20 @@ th > span.tooltip > wl-icon {
     vertical-align: bottom;
 }
 
+span.resource {
+    display: inline-block;
+    line-height: 1em;
+    margin-right: 4px;
+    border-radius: 4px;
+    padding: 1px 4px;
+}
+
 span.author {
     border: 2px solid cadetblue;
+}
+
+span.organization {
+    border: 2px solid lightseagreen;
 }
 
 span.region {
