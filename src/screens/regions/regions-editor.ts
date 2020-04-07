@@ -150,7 +150,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                     ${this.regionType ? this.regionType : 'Base regions'}
                 </wl-tab>
                 ${this._subcategories.map(((sc:RegionCategory) => html`
-                <wl-tab @click="${() => this._selectSubcategory(sc.id)}" ?checked=${!this._selectedSubcategory == sc.id}>
+                <wl-tab @click="${() => this._selectSubcategory(sc.id)}" ?checked=${this._selectedSubcategory == sc.id}>
                     ${sc.id}
                 </wl-tab>
                 `))}
