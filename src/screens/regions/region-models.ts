@@ -173,7 +173,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
                     if (bbox && bbox.xmin && this._doBoxesIntersect(bbox, selbox) && isSubregion(parentRegion, region)) {
                         // A point inside the bbox does not mean that the point is inside the polygon
                         let area : number = (bbox.xmax - bbox.xmin) * (bbox.ymax - bbox.ymin);
-                        if (area > selArea || this._bboxInRegion(bbox, this._selectedRegion) ) {
+                        if (area >= selArea || this._bboxInRegion(bbox, this._selectedRegion) ) {
                             regions.add(region.id);
                         }
                     }
