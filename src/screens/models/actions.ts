@@ -30,7 +30,8 @@ const parameterToParam = (parameter) => {
         unit: "", //FIXME is not being returned
         default: parameter.hasDefaultValue ? parameter.hasDefaultValue[0] : "",
         description: parameter.description ? parameter.description[0] : "",
-        adjustment_variable: parameter.adjustsVariable ? parameter.adjustsVariable[0] : "",
+        //FIXME: This is not returned right now.
+        adjustment_variable: "",//parameter.adjustsVariable ? parameter.adjustsVariable[0] : "",
         position: parameter.position ? parameter.position[0] : 0,
         accepted_values: parameter.hasAcceptedValues ? parameter.hasAcceptedValues[0] : null,
     };
