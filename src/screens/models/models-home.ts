@@ -7,8 +7,6 @@ import { store, RootState } from '../../app/store';
 import models from './reducers';
 import { connect } from 'pwa-helpers/connect-mixin';
 
-import { fetchVersionsAndConfigs, fetchModels } from '../../util/model-catalog-actions';
-
 import './model-explore/model-explore';
 import './models-register';
 import './models-calibrate';
@@ -146,9 +144,6 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     }
 
     firstUpdated() {
-        store.dispatch(fetchModels());
-        store.dispatch(fetchVersionsAndConfigs());
-
         store.dispatch(modelsGet());
         store.dispatch(versionsGet());
         store.dispatch(modelConfigurationsGet());

@@ -3,6 +3,7 @@ import { ThunkAction } from "redux-thunk";
 import { RootState, store } from 'app/store';
 import { IdMap } from 'app/reducers'
 import { Configuration, DefaultApi } from '@mintproject/modelcatalog_client';
+import { DEFAULT_GRAPH, PREFIX_URI } from 'config/default-graph';
 
 import { ModelCatalogModelAction } from './model-actions';
 import { ModelCatalogVersionAction } from './version-actions';
@@ -20,9 +21,12 @@ import { ModelCatalogDatasetSpecificationAction } from './dataset-specification-
 import { ModelCatalogSampleResourceAction } from './sample-resource-actions';
 import { ModelCatalogSampleCollectionAction } from './sample-collection-actions';
 import { ModelCatalogImageAction } from './image-actions';
-
-export const DEFAULT_GRAPH = 'mint@isi.edu';
-export const PREFIX_URI = 'https://w3id.org/okn/i/mint/'
+import { ModelCatalogOrganizationAction } from './organization-actions';
+import { ModelCatalogFundingInformationAction } from './funding-information-actions';
+import { ModelCatalogVisualizationAction } from './visualization-actions';
+import { ModelCatalogSourceCodeAction } from './source-code-actions';
+import { ModelCatalogInterventionAction } from './intervention-actions';
+import { ModelCatalogVariablePresentationAction } from './variable-presentation-actions';
 
 export type ActionThunk<R,A extends Action> = ActionCreator<ThunkAction<R, RootState, undefined, A>>
 interface IdObject { id?: string };
@@ -39,6 +43,7 @@ export function createIdMap<T extends IdObject> (item:T) : IdMap<T> {
     return map;
 }
 
+//FIXME: the tests is not necesary now
 export const idReducer = (dic:any, elem:any) => {
     /* Checking for non objects on arrays */
     Object.keys(elem).forEach((key:string) => {
@@ -77,9 +82,14 @@ export const getStatusConfigAndUser = () => {
     let state: any = store.getState();
     let status = state.app.prefs.modelCatalog.status;
     let token = state.app.prefs.modelCatalog.accessToken;
-    let user = state.app.user ? state.app.user.email : null;
+    let user = state.app.user ? state.app.user.email : DEFAULT_GRAPH;
     let cfg : Configuration = new Configuration({accessToken: token});
     return [status, cfg, user];
+}
+
+export const getUser = () => {
+    let state: any = store.getState();
+    return state.app.user ? state.app.user.email : DEFAULT_GRAPH;
 }
 
 export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAction | 
@@ -87,7 +97,9 @@ export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAc
         ModelCatalogRegionAction | ModelCatalogGeoShapeAction | ModelCatalogGridAction | ModelCatalogProcessAction |
         ModelCatalogParameterAction | ModelCatalogTimeIntervalAction | ModelCatalogSoftwareImageAction |
         ModelCatalogDatasetSpecificationAction | ModelCatalogSampleResourceAction | ModelCatalogSampleCollectionAction |
-        ModelCatalogImageAction;
+        ModelCatalogImageAction | ModelCatalogVisualizationAction | ModelCatalogOrganizationAction | 
+        ModelCatalogFundingInformationAction | ModelCatalogSourceCodeAction | ModelCatalogInterventionAction |
+        ModelCatalogVariablePresentationAction;
 
 //FIXME: The API is returning only one model (void), doing the fetch instead.
 const CUSTOM_URI = "https://api.models.mint.isi.edu/v1.4.0/custom/";
@@ -97,7 +109,7 @@ export const modelsSearchIndex = (term:string) => {
     return req;*/
     
     return new Promise((resolve, reject) => {
-        let req = fetch(CUSTOM_URI + "model/index?custom_query_name=custom_model_index&username=mint%40isi.edu&label=" + term);
+        let req = fetch(CUSTOM_URI + "model/index?custom_query_name=custom_model_index&username=" + getUser().replace('@', '%40') + "&label=" + term);
         req.then((response) => {
             response.json().then(resolve);
         });
@@ -110,7 +122,7 @@ export const modelsSearchIntervention = (term:string) => {
     let req = MApi.customModelInterventionGet({label:term, username: DEFAULT_GRAPH, customQueryName: 'custom_model_intervetion'});
     return req;*/
     return new Promise((resolve, reject) => {
-        let req = fetch(CUSTOM_URI + "model/intervention?custom_query_name=custom_model_intervetion&username=mint%40isi.edu&label=" + term);
+        let req = fetch(CUSTOM_URI + "model/intervention?custom_query_name=custom_model_intervetion&username=" + getUser().replace('@', '%40') + "&label=" + term);
         req.then((response) => {
             response.json().then(resolve);
         });
@@ -123,7 +135,7 @@ export const modelsSearchRegion = (term:string) => {
     let req = MApi.customModelRegion({label:term, username: DEFAULT_GRAPH, customQueryName: 'custom_model_region'});
     return req;*/
     return new Promise((resolve, reject) => {
-        let req = fetch(CUSTOM_URI + "model/region?custom_query_name=custom_model_region&username=mint%40isi.edu&label=" + term);
+        let req = fetch(CUSTOM_URI + "model/region?custom_query_name=custom_model_region&username=" + getUser().replace('@', '%40') + "&label=" + term);
         req.then((response) => {
             response.json().then(resolve);
         });
@@ -136,7 +148,7 @@ export const modelsSearchVariable = (term:string) => {
     let req = MApi.customModelsVariable({label:term, username: DEFAULT_GRAPH, customQueryName: 'custom_models_variable'});
     return req;*/
     return new Promise((resolve, reject) => {
-        let req = fetch(CUSTOM_URI + "models/variable?username=mint%40isi.edu&custom_query_name=custom_models_variable&label=" + term);
+        let req = fetch(CUSTOM_URI + "models/variable?username=" + getUser().replace('@', '%40') + "&custom_query_name=custom_models_variable&label=" + term);
         req.then((response) => {
             response.json().then(resolve);
         });
@@ -149,7 +161,7 @@ export const modelsSearchStandardVariable = (term:string) => {
     let req = MApi.customModelsStandardVariable({label:term, username: DEFAULT_GRAPH, customQueryName: ''});
     return req;*/
     return new Promise((resolve, reject) => {
-        let req = fetch(CUSTOM_URI + "models/standard_variable?username=mint%40isi.edu&custom_query_name=custom_model_standard_variable&label=" + term);
+        let req = fetch(CUSTOM_URI + "models/standard_variable?username=" + getUser().replace('@', '%40') + "&custom_query_name=custom_model_standard_variable&label=" + term);
         req.then((response) => {
             response.json().then(resolve);
         });
@@ -157,16 +169,7 @@ export const modelsSearchStandardVariable = (term:string) => {
     });
 }
 
-export const setupsSearchVariable = (term:string) => {
-    return new Promise((resolve, reject) => {
-        let req = fetch(CUSTOM_URI + "modelconfigurationsetups/variable?username=mint%40isi.edu&custom_query_name=custom_modelconfigurationsetups_variable&label=" + term);
-        req.then((response) => {
-            response.json().then(resolve);
-        });
-        req.catch(reject);
-    });
-}
-
+export * from 'config/default-graph';
 export * from './model-actions';
 export * from './version-actions';
 export * from './model-configuration-actions';
@@ -183,3 +186,9 @@ export * from './dataset-specification-actions';
 export * from './sample-resource-actions';
 export * from './sample-collection-actions';
 export * from './image-actions';
+export * from './organization-actions';
+export * from './funding-information-actions';
+export * from './visualization-actions';
+export * from './source-code-actions';
+export * from './intervention-actions';
+export * from './variable-presentation-actions';

@@ -1,8 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, SoftwareImage, SoftwareImageApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
-         DEFAULT_GRAPH } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC SoftwareImage]', ...args); }
 
@@ -21,7 +20,7 @@ export const softwareImagesGet: ActionThunk<Promise<IdMap<SoftwareImage>>, MCASo
         softwareImagesPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
             let api : SoftwareImageApi = new SoftwareImageApi();
-            let req : Promise<SoftwareImage[]> = api.softwareimagesGet({username: DEFAULT_GRAPH});
+            let req : Promise<SoftwareImage[]> = api.softwareimagesGet({username: getUser()});
             req.then((resp:SoftwareImage[]) => {
                 let data : IdMap<SoftwareImage> = resp.reduce(idReducer, {});
                 dispatch({
@@ -45,7 +44,7 @@ export const softwareImageGet: ActionThunk<Promise<SoftwareImage>, MCASoftwareIm
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
     let api : SoftwareImageApi = new SoftwareImageApi();
-    let req : Promise<SoftwareImage> = api.softwareimagesIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<SoftwareImage> = api.softwareimagesIdGet({username: getUser(), id: id});
     req.then((resp:SoftwareImage) => {
         dispatch({
             type: SOFTWARE_IMAGES_ADD,
@@ -65,7 +64,7 @@ export const softwareImagePost: ActionThunk<Promise<SoftwareImage>, MCASoftwareI
         debug('Creating new', softwareImage);
         let postProm = new Promise((resolve,reject) => {
             let api : SoftwareImageApi = new SoftwareImageApi(cfg);
-            let req = api.softwareimagesPost({user: DEFAULT_GRAPH, softwareImage: softwareImage}); // This should be my username on prod.
+            let req = api.softwareimagesPost({user: user, softwareImage: softwareImage}); // This should be my username on prod.
             req.then((resp:SoftwareImage) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -93,7 +92,7 @@ export const softwareImagePut: ActionThunk<Promise<SoftwareImage>, MCASoftwareIm
         debug('Updating', softwareImage);
         let api : SoftwareImageApi = new SoftwareImageApi(cfg);
         let id : string = getIdFromUri(softwareImage.id);
-        let req : Promise<SoftwareImage> = api.softwareimagesIdPut({id: id, user: DEFAULT_GRAPH, softwareImage: softwareImage});
+        let req : Promise<SoftwareImage> = api.softwareimagesIdPut({id: id, user: user, softwareImage: softwareImage});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -118,7 +117,7 @@ export const softwareImageDelete: ActionThunk<void, MCASoftwareImageDelete> = (s
         debug('Deleting', softwareImage.id);
         let api : SoftwareImageApi = new SoftwareImageApi(cfg);
         let id : string = getIdFromUri(softwareImage.id);
-        let req : Promise<void> = api.softwareimagesIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.softwareimagesIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: SOFTWARE_IMAGE_DELETE,

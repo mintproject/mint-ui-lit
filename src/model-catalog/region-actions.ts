@@ -1,8 +1,8 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, Region, RegionApi, GeoShape } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser,
-         DEFAULT_GRAPH, geoShapePost, geoShapeDelete } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser,
+         geoShapePost, geoShapeDelete } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Region]', ...args); }
 
@@ -18,19 +18,25 @@ let regionsPromise : Promise<IdMap<Region>> | null = null;
 
 export const regionsGet: ActionThunk<Promise<IdMap<Region>>, MCARegionsAdd> = () => (dispatch) => {
     if (!regionsPromise) {
-        debug('Fetching all');
-        let api : RegionApi = new RegionApi();
         regionsPromise = new Promise((resolve, reject) => {
-            let req : Promise<Region[]> = api.regionsGet({username: DEFAULT_GRAPH});
-            req.then((resp:Region[]) => {
-                let data = resp.reduce(idReducer, {}) as IdMap<Region>
-                dispatch({
-                    type: REGIONS_ADD,
-                    payload: data
+            debug('Fetching all');
+            let user : string = getUser();
+            let api : RegionApi = new RegionApi();
+            let req2 : Promise<Region[]> = api.regionsGet({username: user});
+
+            let promises : Promise<Region[]>[] = [req2];
+            promises.forEach((p:Promise<Region[]>, i:number) => {
+                p.then((resp:Region[]) => dispatch({ type: REGIONS_ADD, payload: resp.reduce(idReducer, {}) as IdMap<Region> }));
+                p.catch((err) => console.error('Error on GET Regions' + (i==0?'System':'User'), err) );
+            });
+
+            Promise.all(promises).then((values) => {
+                let data : IdMap<Region> = {};
+                values.forEach((regions:Region[]) => {
+                    data = regions.reduce(idReducer, data);
                 });
                 resolve(data);
-            });
-            req.catch((err) => {
+            }).catch((err) => {
                 console.error('Error on GET Regions', err);
                 reject(err);
             });
@@ -43,9 +49,10 @@ export const regionsGet: ActionThunk<Promise<IdMap<Region>>, MCARegionsAdd> = ()
 
 export const regionGet: ActionThunk<Promise<Region>, MCARegionsAdd> = ( uri:string ) => (dispatch) => {
     debug('Fetching', uri);
+    let user : string = getUser();
     let id : string = getIdFromUri(uri);
     let api : RegionApi = new RegionApi();
-    let req : Promise<Region> = api.regionsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<Region> = api.regionsIdGet({username: user, id: id});
     req.then((resp:Region) => {
         dispatch({
             type: REGIONS_ADD,
@@ -75,7 +82,7 @@ export const regionPost: ActionThunk<Promise<Region>, MCARegionsAdd> = (region:R
                 geoReq.then((geo:GeoShape) => {
                     region.geo = [geo];
                     let api : RegionApi = new RegionApi(cfg);
-                    let req = api.regionsPost({user: DEFAULT_GRAPH, region: region});
+                    let req = api.regionsPost({user: user, region: region});
                     req.then((resp:Region) => {
                         debug('Response for POST', resp);
                         dispatch({
@@ -104,7 +111,7 @@ export const regionPut: ActionThunk<Promise<Region>, MCARegionsAdd> = (region:Re
         debug('Updating', region);
         let api : RegionApi = new RegionApi(cfg);
         let id : string = getIdFromUri(region.id);
-        let req : Promise<Region> = api.regionsIdPut({id: id, user: DEFAULT_GRAPH, region: region});
+        let req : Promise<Region> = api.regionsIdPut({id: id, user: user, region: region});
         req.then((resp:Region) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -132,7 +139,7 @@ export const regionDelete: ActionThunk<void, MCARegionDelete> = (region:Region) 
         }
         let api : RegionApi = new RegionApi(cfg);
         let id : string = getIdFromUri(region.id);
-        let req : Promise<void> = api.regionsIdDelete({id: id, user: DEFAULT_GRAPH});
+        let req : Promise<void> = api.regionsIdDelete({id: id, user: user});
         req.then(() => {
             dispatch({
                 type: REGION_DELETE,

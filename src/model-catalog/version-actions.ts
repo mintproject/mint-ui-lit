@@ -1,8 +1,7 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
 import { Configuration, SoftwareVersion, SoftwareVersionApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
-         DEFAULT_GRAPH } from './actions';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
 function debug (...args: any[]) { console.log('[MC SoftwareVersion]', ...args); }
 
@@ -21,7 +20,7 @@ export const versionsGet: ActionThunk<Promise<IdMap<SoftwareVersion>>, MCAVersio
         versionsPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
             let api : SoftwareVersionApi = new SoftwareVersionApi();
-            let req : Promise<SoftwareVersion[]> = api.softwareversionsGet({username: DEFAULT_GRAPH});
+            let req : Promise<SoftwareVersion[]> = api.softwareversionsGet({username: getUser()});
             req.then((resp:SoftwareVersion[]) => {
                 let data : IdMap<SoftwareVersion> = resp.reduce(idReducer, {});
                 dispatch({
@@ -45,7 +44,7 @@ export const versionGet: ActionThunk<Promise<SoftwareVersion>, MCAVersionsAdd> =
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
     let api : SoftwareVersionApi = new SoftwareVersionApi();
-    let req : Promise<SoftwareVersion> = api.softwareversionsIdGet({username: DEFAULT_GRAPH, id: id});
+    let req : Promise<SoftwareVersion> = api.softwareversionsIdGet({username: getUser(), id: id});
     req.then((resp:SoftwareVersion) => {
         dispatch({
             type: VERSIONS_ADD,
@@ -65,7 +64,7 @@ export const versionPost: ActionThunk<Promise<SoftwareVersion>, MCAVersionsAdd> 
         debug('Creating new', version);
         let postProm = new Promise((resolve,reject) => {
             let api : SoftwareVersionApi = new SoftwareVersionApi(cfg);
-            let req = api.softwareversionsPost({user: DEFAULT_GRAPH, softwareVersion: version}); // This should be my username on prod.
+            let req = api.softwareversionsPost({user: user, softwareVersion: version}); // This should be my username on prod.
             req.then((resp:SoftwareVersion) => {
                 debug('Response for POST', resp);
                 dispatch({
@@ -93,7 +92,7 @@ export const versionPut: ActionThunk<Promise<SoftwareVersion>, MCAVersionsAdd> =
         debug('Updating', version);
         let api : SoftwareVersionApi = new SoftwareVersionApi(cfg);
         let id : string = getIdFromUri(version.id);
-        let req : Promise<SoftwareVersion> = api.softwareversionsIdPut({id: id, user: DEFAULT_GRAPH, softwareVersion: version});
+        let req : Promise<SoftwareVersion> = api.softwareversionsIdPut({id: id, user: user, softwareVersion: version});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -118,7 +117,7 @@ export const versionDelete: ActionThunk<void, MCAVersionDelete> = (version:Softw
         debug('Deleting', version.id);
         let api : SoftwareVersionApi = new SoftwareVersionApi(cfg);
         let id : string = getIdFromUri(version.id);
-        let req : Promise<void> = api.softwareversionsIdDelete({id: id, user: DEFAULT_GRAPH}); // This should be my username on prod.
+        let req : Promise<void> = api.softwareversionsIdDelete({id: id, user: user}); // This should be my username on prod.
         req.then(() => {
             dispatch({
                 type: VERSION_DELETE,

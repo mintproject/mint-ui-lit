@@ -1,7 +1,7 @@
 import { IdNameObject } from "../../app/reducers";
 import { Reducer } from "redux";
 import { RootAction } from "../../app/store";
-import { MODELS_DETAIL, MODELS_VARIABLES_QUERY, MODELS_LIST } from "./actions";
+import { MODELS_VARIABLES_QUERY } from "./actions";
 import { Dataset } from "../datasets/reducers";
 
 
@@ -22,11 +22,12 @@ export interface Model extends IdNameObject {
     parameter_assignment_details?: string,
     target_variable_for_parameter_assignment?: string,
     modeled_processes?: string[],
-    dimensionality?: number,
+    dimensionality?: number|string,
     spatial_grid_type?: string,
     spatial_grid_resolution?: string,
     minimum_output_time_interval?: string,
-    usage_notes?: string
+    usage_notes?: string,
+    hasRegion?: any
 };
 
 export interface ModelIO extends IdNameObject {
@@ -70,9 +71,6 @@ const INITIAL_STATE: ModelsState = {
 };
 
 const models: Reducer<ModelsState, RootAction> = (state = INITIAL_STATE, action) => {
-    //let scenario:ScenarioDetails = { ...state.scenario } as ScenarioDetails;
-    //let scenarios:ScenarioList = { ...state.scenarios } as ScenarioList;
-
     switch (action.type) {
         case MODELS_VARIABLES_QUERY:
             // Return models list
@@ -81,19 +79,6 @@ const models: Reducer<ModelsState, RootAction> = (state = INITIAL_STATE, action)
             state.loading = action.loading;
             return {
                 ...state
-            };
-        case MODELS_LIST:
-            // Return models list
-            state.models = { ...state.models };
-            state.models["*"] = action.models;
-            return {
-                ...state
-            };
-        case MODELS_DETAIL:
-            // Return model details
-            return {
-                ...state,
-                model: action.model
             };
         default:
             return state;
