@@ -55,7 +55,7 @@ export class RegionsHydrology extends connect(store)(PageViewElement)  {
         return html`
         <div class="content">
             <regions-editor active
-                style="--map-height: 450px;"
+                style="--map-height: 320px;"
                 regionType="Hydrology"
             ></regions-editor>
 
