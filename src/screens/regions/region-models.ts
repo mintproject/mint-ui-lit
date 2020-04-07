@@ -155,7 +155,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
     private _getMatchingModels() {
         /* Get setups */
         this._matchingSetups = [];
-        if (!this._selectedRegion || this._selectedRegion.region_type != this.regionType) {
+        if (!this._selectedRegion) {
             this._loadingSetups = false;
             return;
         }
@@ -275,13 +275,10 @@ export class RegionModels extends connect(store)(PageViewElement)  {
     }
 
     protected render() {
-        if (!this._selectedRegion || this._selectedRegion.region_type != this.regionType) return '';
-
-        if (this._loading)
-            return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
+        if (!this._selectedRegion) return html``;
         else return html`
             <wl-title level="4" style="font-size: 17px; margin-top: 20px;">Models for ${this._selectedRegion.name}</wl-title>
-            ${this._loadingSetups ? 
+            ${this._loadingSetups || this._loading ? 
                 html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
                 : (Object.keys(this._categorizedMatchingSetups).length == 0 ? 
                     html`<div class="info-center">No models for this region</div>`
@@ -348,7 +345,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
             }
         }
 
-        if (this._selectedRegion && this._selectedRegion != curregion) {
+        if (this._selectedRegion != curregion) {
             this._getMatchingModels();
         }
 
