@@ -77,6 +77,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
             .map {
                 height: var(--map-height, calc(100% - 45px));
+                z-index: 10;
+                top: -10px;
+                position: sticky;
                 width: 100%;
             }
 
@@ -509,9 +512,10 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     }
 
     stateChanged(state: RootState) {
-        let cur_region = this._regionid;
+        let lastRegion = this._regionid;
+        let lastSubregion = this._selectedSubregionId;
         super.setRegion(state);
-        if (this._regionid != cur_region) {
+        if (this._regionid != lastRegion) {
             this._selectedSubcategory = '';
             store.dispatch(selectSubRegion(""));
             this._selectedRegion = null;
@@ -521,7 +525,6 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             this._subcategories = this._region.subcategories[this.regionType];
         }
 
-        let lastSubregion = this._selectedSubregionId;
         if (state.ui && state.ui.selected_sub_regionid != this._selectedSubregionId) {
             this._selectedSubregionId = state.ui.selected_sub_regionid;
             if (this._regions) {

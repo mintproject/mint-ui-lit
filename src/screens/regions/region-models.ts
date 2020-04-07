@@ -11,6 +11,7 @@ import { goToPage } from 'app/actions';
 import { UserPreferences, IdMap } from 'app/reducers';
 import { BoundingBox } from './reducers';
 import { setPreview } from './actions';
+import { selectSubRegion } from 'app/ui-actions';
 
 import { modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet, regionsGet, geoShapesGet,
          datasetSpecificationGet, sampleResourceGet, sampleCollectionGet, setupGetAll } from 'model-catalog/actions';
@@ -35,6 +36,9 @@ export class RegionModels extends connect(store)(PageViewElement)  {
 
     @property({type: Boolean})
     private _loading : boolean = false;
+
+    @property({type: String})
+    public regionType : string = '';
 
     /* Model catalog data */
     @property({type: Object}) private _geoShapes : IdMap<GeoShapeBBox> = {};
@@ -151,6 +155,10 @@ export class RegionModels extends connect(store)(PageViewElement)  {
     private _getMatchingModels() {
         /* Get setups */
         this._matchingSetups = [];
+        if (!this._selectedRegion || this._selectedRegion.region_type != this.regionType) {
+            this._loadingSetups = false;
+            return;
+        }
         this._loadingSetups = true;
         let selbox : BoundingBox = this._selectedRegion.bounding_box;
         let selArea : number = (selbox.xmax - selbox.xmin) * (selbox.ymax - selbox.ymin);
@@ -267,7 +275,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
     }
 
     protected render() {
-        if (!this._selectedRegion) return html``;
+        if (!this._selectedRegion || this._selectedRegion.region_type != this.regionType) return '';
 
         if (this._loading)
             return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
