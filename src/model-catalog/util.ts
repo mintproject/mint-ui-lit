@@ -118,3 +118,13 @@ export const sortByPosition = (a,b) => {
     let intB = Number(b.position);
     return (intA < intB) ? -1 : (intA > intB? 1 : 0);
 }
+
+export const isExecutable = (config: ModelConfiguration|ModelConfigurationSetup) : boolean => {
+    return  !!config &&
+            config.hasOutput &&
+            config.hasOutput.length > 0 &&
+            config.hasComponentLocation &&
+            config.hasComponentLocation.length > 0 &&
+            config.hasSoftwareImage &&
+            config.hasSoftwareImage.length > 0;
+}
