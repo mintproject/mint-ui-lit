@@ -4,6 +4,8 @@ import { store, RootState } from "../../../app/store";
 
 import { ModelMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, ExecutableEnsembleSummary } from "../reducers";
 import models, { VariableModels, Model } from "../../models/reducers";
+import { queryModelsByVariables, setupToOldModel } from "../../models/actions";
+import { setupGetAll, regionsGet } from 'model-catalog/actions';
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { updatePathway, deleteAllPathwayEnsembleIds } from "../actions";
@@ -15,11 +17,12 @@ import "weightless/popover-card";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
 import { showNotification, showDialog } from "../../../util/ui_functions";
 import { selectPathwaySection } from "../../../app/ui-actions";
-import { queryModelsByVariables } from "../../models/actions";
 import { getVariableLongName } from "../../../offline_data/variable_list";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { Region } from "screens/regions/reducers";
 import { IdMap } from "app/reducers";
+
+import 'components/loading-dots';
 
 store.addReducers({
     models
@@ -42,6 +45,11 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     
     @property({type:Boolean})
     private _showAllModels: boolean = false;
+
+    @property({type: Object})
+    private _allRegions : any = {};
+    @property({type:Boolean})
+    private _waiting: boolean = false;
 
     private _dispatched: Boolean = false;
 
@@ -215,7 +223,6 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                         `
                         : ""
                     }
-                    The column "Relevant Output File" shows the output file that contains the response variable.
                 </p>
                 <ul>
                     <li>
@@ -230,7 +237,6 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                                     <th><b>Model</b></th>
                                     <th>Category</th>
                                     <th>Calibration Region</th>
-                                    <th>Relevant Output File</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -245,13 +251,12 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                                                     ?checked="${modelids.indexOf(model.id!) >= 0}"></input></td>
                                                 <td><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></td> 
                                                 <td>${model.category}</td>
-                                                <td>${model.calibrated_region}</td>
                                                 <td>
-                                                ${Object.keys(model.output_files).filter((ioid) => {
-                                                    return matchVariables(this.pathway.response_variables, model.output_files[ioid].variables, false); // Partial match
-                                                })
-                                                .map((ioid) => { return model.output_files[ioid].name })
-                                                .join(", ")}
+                                                ${model.hasRegion ?
+                                                    model.hasRegion.map((region:any) => 
+                                                    this._allRegions[region.id] ? 
+                                                    html`${this._allRegions[region.id].label[0]}` : ''
+                                                ) : ''}
                                                 </td>
                                             </tr>
                                             `;
@@ -287,7 +292,10 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                             <wl-button type="button" flat inverted outlined @click="${this._compareModels}">Compare Selected Models</wl-button>
                             <div style="flex-grow: 1">&nbsp;</div>
                             ${this._editMode ? html `<wl-button @click="${()=>{this._editMode=false}}" flat inverted>CANCEL</wl-button>`: html``}
-                            <wl-button type="button" class="submit" @click="${this._selectPathwayModels}">Select &amp; Continue</wl-button>
+                            <wl-button type="button" class="submit" @click="${this._selectPathwayModels}" ?disabled=${this._waiting}>
+                                Select &amp; Continue
+                                ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`: ''}
+                            </wl-button>
                         </div>
                         `
                     }
@@ -409,6 +417,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
 
     _selectPathwayModels() {
         let models = this._getSelectedModels();
+        //FIXME this is not necesary now.
         Object.values(models).forEach((model) => {
             if (model.hasRegion)
                 delete model.hasRegion;
@@ -450,33 +459,46 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             }
         });
 
-
-        let newpathway = {
-            ...this.pathway,
-            models: models,
-            model_ensembles: model_ensembles
-        }
-
-        // Update notes
-        let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        newpathway.notes = {
-            ...newpathway.notes!,
-            models: notes
-        };
-        newpathway.last_update = {
-            ...newpathway.last_update!,
-            parameters: null,
-            datasets: null,
-            models: {
-                time: Date.now(),
-                user: this.user!.email
-            } as StepUpdateInformation
-        };        
-
-        updatePathway(this.scenario, newpathway); 
-        
-        this._editMode = false;
         showNotification("saveNotification", this.shadowRoot!);
+        this._waiting = true;
+        // GET all data for the selected models.
+        console.log("getting all info")
+        Promise.all(
+            Object.keys(models || {}).map((modelid) => setupGetAll(modelid))
+        ).then((setups) => {
+            let fixedModels = setups.map(setupToOldModel);
+            Object.values(fixedModels).forEach((model) => {
+                if (model.hasRegion)
+                    delete model.hasRegion;
+            });
+            console.log('fixed models', fixedModels);
+            let newpathway = {
+                ...this.pathway,
+                models: fixedModels,
+                model_ensembles: model_ensembles
+            }
+
+            // Update notes
+            let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
+            newpathway.notes = {
+                ...newpathway.notes!,
+                models: notes
+            };
+            newpathway.last_update = {
+                ...newpathway.last_update!,
+                parameters: null,
+                datasets: null,
+                models: {
+                    time: Date.now(),
+                    user: this.user!.email
+                } as StepUpdateInformation
+            };        
+
+            this._waiting = false;
+            updatePathway(this.scenario, newpathway); 
+            
+            this._editMode = false;
+        })
     }
 
     _removePathwayModel(modelid:string) {
@@ -517,6 +539,13 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                 store.dispatch(queryModelsByVariables(this._responseVariables, this._drivingVariables));
             }
         }       
+    }
+
+    protected firstUpdated () {
+        store.dispatch(regionsGet()).then((regions) => {
+            //FIXME: this until the api return the region label.
+            this._allRegions = regions;
+        })
     }
 
     stateChanged(state: RootState) {
