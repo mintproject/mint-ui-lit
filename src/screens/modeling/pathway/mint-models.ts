@@ -462,7 +462,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         showNotification("saveNotification", this.shadowRoot!);
         this._waiting = true;
         // GET all data for the selected models.
-        console.log("getting all info")
+        console.log("getting all info", models);
         Promise.all(
             Object.keys(models || {}).map((modelid) => setupGetAll(modelid))
         ).then((setups) => {
@@ -471,10 +471,13 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                 if (model.hasRegion)
                     delete model.hasRegion;
             });
-            console.log('fixed models', fixedModels);
+            let mapModels = {}
+            fixedModels.forEach(model => mapModels[model.id] = model);
+            console.log('fixed models', mapModels);
+
             let newpathway = {
                 ...this.pathway,
-                models: fixedModels,
+                models: mapModels,
                 model_ensembles: model_ensembles
             }
 
