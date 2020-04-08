@@ -146,11 +146,13 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         return html`
         <div style="display: flex; margin-bottom: 10px;">
             <wl-tab-group align="center" style="width: 100%;">
-                <wl-tab @click="${() => this._selectSubcategory('')}" checked>
+                <wl-tab @click="${() => this._selectSubcategory('')}" ?checked=${!this._selectedSubcategory}>
                     ${this.regionType ? this.regionType : 'Base regions'}
                 </wl-tab>
                 ${this._subcategories.map(((sc:RegionCategory) => html`
-                <wl-tab @click="${() => this._selectSubcategory(sc.id)}">${sc.id}</wl-tab>
+                <wl-tab @click="${() => this._selectSubcategory(sc.id)}" ?checked=${this._selectedSubcategory == sc.id}>
+                    ${sc.id}
+                </wl-tab>
                 `))}
             </wl-tab-group>
             <div class="tab-add-icon" @click="${this._showAddSubcategoryDialog}">
@@ -226,10 +228,11 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     private _selectSubcategory (category:string) {
         if (this._selectedSubcategory != category) {
+            this.clear();
             this._selectedSubcategory = category
             this.addRegionsToMap();
-            store.dispatch(selectSubRegion(""));
-            this._selectedRegion = null;
+            //store.dispatch(selectSubRegion(""));
+            //this._selectedRegion = null;
         }
     }
 
@@ -511,14 +514,22 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         this.addRegionsToMap();
     }
 
+    public clear () {
+        this._selectedRegion = null;
+        this._selectedSubcategory = '';
+        store.dispatch(selectSubRegion(""));
+    }
+
     stateChanged(state: RootState) {
         let lastRegion = this._regionid;
         let lastSubregion = this._selectedSubregionId;
+        let shouldUpdateRegions = false;
         super.setRegion(state);
-        if (this._regionid != lastRegion) {
-            this._selectedSubcategory = '';
-            store.dispatch(selectSubRegion(""));
-            this._selectedRegion = null;
+
+        if ((lastRegion && this._regionid != lastRegion) ||
+            (state.app && state.app.subpage === 'home' && this._selectedRegion)) {
+            this.clear();
+            shouldUpdateRegions = true;
         }
 
         if (this._region && this._region.subcategories && this._region.subcategories[this.regionType]) {
@@ -528,7 +539,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         if (state.ui && state.ui.selected_sub_regionid != this._selectedSubregionId) {
             this._selectedSubregionId = state.ui.selected_sub_regionid;
             if (this._regions) {
-                this._selectedRegion = this._regions.filter(r => r.id === this._selectedSubregionId)[0];
+                let rcand = this._regions.filter(r => r.id === this._selectedSubregionId)
+                if (rcand.length > 0)
+                    this._selectedRegion = rcand[0];
             }
         }
 
@@ -536,11 +549,11 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             if (!this._bbox_preview || state.regions.bbox_preview.length != this._bbox_preview.length ||
                 state.regions.bbox_preview.some((bbox, i) => this._bbox_preview[i] != bbox)) {
                 this._bbox_preview = state.regions.bbox_preview;
-                this.addRegionsToMap();
+                shouldUpdateRegions = true;
             }
         }
 
-        if(this._regionid && this._region) {
+        if (this._regionid && this._region) {
             let sr = state.regions.sub_region_ids;
             if (sr && sr[this._regionid] && 
                     (this._cur_topregionid != this._regionid || sr[this._regionid].length != this._cur_region_length)) {
@@ -548,8 +561,12 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 this._cur_region_length = sr[this._regionid].length;
                 //console.log("Adding regions to map");
                 this._regions = sr[this._regionid].map((regionid) => state.regions.regions[regionid]);
-                this.addRegionsToMap();
+                shouldUpdateRegions = true;
             }
+        }
+
+        if (shouldUpdateRegions) {
+            this.addRegionsToMap();
         }
     }
 }

@@ -4,7 +4,7 @@ import { RootState } from "../../app/store";
 import { Model, ModelParameter } from "./reducers";
 import { Dataset } from "../datasets/reducers";
 
-import { setupsSearchVariable, setupGetAll, variablePresentationGetProm } from 'model-catalog/actions';
+import { setupsSearchVariable } from 'model-catalog/actions';
 import { ModelConfigurationSetup, DatasetSpecification } from '@mintproject/modelcatalog_client';
 import { sortByPosition } from './configure/util';
 
@@ -30,7 +30,8 @@ const parameterToParam = (parameter) => {
         unit: "", //FIXME is not being returned
         default: parameter.hasDefaultValue ? parameter.hasDefaultValue[0] : "",
         description: parameter.description ? parameter.description[0] : "",
-        adjustment_variable: parameter.adjustsVariable ? parameter.adjustsVariable[0] : "",
+        //FIXME: This is not returned right now.
+        adjustment_variable: "",//parameter.adjustsVariable ? parameter.adjustsVariable[0] : "",
         position: parameter.position ? parameter.position[0] : 0,
         accepted_values: parameter.hasAcceptedValues ? parameter.hasAcceptedValues[0] : null,
     };
@@ -99,12 +100,12 @@ const dsSpecToIO = (ds: DatasetSpecification) => {
     return io;
 }
 
-const setupToOldModel = (setup: ModelConfigurationSetup) :  Model => {
+export const setupToOldModel = (setup: ModelConfigurationSetup) :  Model => {
     let model: Model = {
         id: setup.id,
         localname: setup.id.substr(setup.id.lastIndexOf("/") + 1),
         name: setup.label ? setup.label[0] : "",
-        calibrated_region: setup.hasRegion ?
+        calibrated_region: setup.hasRegion && false ?
                 setup.hasRegion.map((r:any) => r.label[0]).join(', ') : "",
         description: setup.description ? setup.description[0] : "",
         category: setup.hasModelCategory ? setup.hasModelCategory[0] : "",
@@ -123,7 +124,7 @@ const setupToOldModel = (setup: ModelConfigurationSetup) :  Model => {
                         .map((tv:any) => tv.label? tv.label[0] : '')
                         .filter((l:string) => !!l)
                         .join(', ') : "",
-        modeled_processes: [""], //TODO the API is not returning this.
+        modeled_processes: [""], //TODO the API is not returning this. <-----
         dimensionality: "",
         spatial_grid_type: "",
         spatial_grid_resolution: "",
@@ -182,17 +183,12 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
         })
     ).then((resp) => {
         setups = resp.reduce((arr:ModelConfigurationSetup[], r:ModelConfigurationSetup[]) => arr.concat(r), []);
-        //let models = setups.map(setupToOldModel);
-        //console.log('>>', models);
-        Promise.all(
-            setups.map((s:ModelConfigurationSetup) => setupGetAll(s.id))
-        ).then((setups) => {
-            dispatch({
-                type: MODELS_VARIABLES_QUERY,
-                variables: response_variables,
-                models: setups.map(setupToOldModel),
-                loading: false
-            });
-        })
+        console.log('preview:', setups);
+        dispatch({
+            type: MODELS_VARIABLES_QUERY,
+            variables: response_variables,
+            models: setups.map(setupToOldModel),
+            loading: false
+        });
     })
 };
