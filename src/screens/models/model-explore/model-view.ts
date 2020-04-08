@@ -905,14 +905,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${this._model.hasPurpose.map((p:string) => html`<li>${capitalizeFirstLetter(p)}.</li>`)}
             </ul>`:''}
 
-            ${this._model.hasAssumption && this._model.hasAssumption.length > 0 ? html`
-            <wl-title level="2" style="font-size: 16px;">Assumptions:</wl-title>
-            <ul style="margin-top: 5px">
-                ${this._model.hasAssumption.map((a:string) => a.split('.').filter((txt:string) => !!txt).map((txt:string) => 
-                html`<li>${txt}.</li>`
-                ))}
-            </ul>`
-            :''}
             ${this._model.usefulForCalculatingIndex && this._model.usefulForCalculatingIndex.length > 0 ? html`
             <wl-title level="2" style="font-size: 16px;">Relevant for calculating index:</wl-title>
             <ul style="margin-top: 5px">
@@ -924,6 +916,15 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </li>
                 `)}
             </ul>` :''}
+
+            ${this._model.hasAssumption && this._model.hasAssumption.length > 0 ? html`
+            <wl-title level="2" style="font-size: 16px;">Assumptions:</wl-title>
+            <ul style="margin-top: 5px">
+                ${this._model.hasAssumption.map((a:string) => a.split('.').filter((txt:string) => !!txt).map((txt:string) => 
+                html`<li>${txt}.</li>`
+                ))}
+            </ul>`
+            :''}
 
             ${this._config ? this._renderConfigResume() : ''}
             ${this._renderRelatedModels()}
