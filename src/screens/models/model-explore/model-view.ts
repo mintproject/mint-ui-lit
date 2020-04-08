@@ -12,7 +12,7 @@ import { modelGet, versionGet, versionsGet, modelConfigurationGet, modelConfigur
          modelConfigurationSetupGet, imageGet, personGet, regionsGet, organizationGet, fundingInformationGet,
          timeIntervalGet, gridGet, processGet, setupGetAll, visualizationGet, sourceCodeGet, softwareImageGet,
          parameterGet, datasetSpecificationGet, interventionGet, variablePresentationGet } from 'model-catalog/actions';
-import { capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition } from 'model-catalog/util';
+import { capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition, isExecutable } from 'model-catalog/util';
 import { GalleryEntry } from 'components/image-gallery';
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -562,7 +562,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <wl-icon>edit</wl-icon>
                     </wl-button>
                     <span class="tooltip small-tooltip" tip="Download and Run">
-                        <wl-button flat inverted @click=${() => this._openCLIDialog(this._selectedConfig)} ?disabled="${!this._selectedConfig}">
+                        <wl-button flat inverted @click=${() => this._openCLIDialog(this._selectedConfig)} ?disabled="${!isExecutable(this._config)}">
                             <wl-icon>get_app</wl-icon>
                         </wl-button>
                     </span>
@@ -597,7 +597,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <wl-icon>edit</wl-icon>
                     </wl-button>
                     <span class="tooltip small-tooltip" tip="Download and Run">
-                        <wl-button flat inverted @click=${() => this._openCLIDialog(this._selectedSetup)} ?disabled="${!this._selectedSetup}">
+                        <wl-button flat inverted @click=${() => this._openCLIDialog(this._selectedSetup)} ?disabled="${!isExecutable(this._setup)}">
                             <wl-icon>get_app</wl-icon>
                         </wl-button>
                     </span>
