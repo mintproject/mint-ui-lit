@@ -1332,6 +1332,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                         html`<loading-dots style="--height: 10px; margin-left:10px"></loading-dots>`
                         : this._datasetSpecifications[ds.id].description}
                 </span>
+                ${this._loading[ds.id]? '' : html`
+                <div>
+                    ${this._datasetSpecifications[ds.id].description}
+                </div>
+                `}
                 ${this._loading[ds.id] || (!this._loading[ds.id] && !this._loadedPresentations[ds.id])? 
                     html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`
                     : (!this._datasetSpecifications[ds.id].hasPresentation ||
