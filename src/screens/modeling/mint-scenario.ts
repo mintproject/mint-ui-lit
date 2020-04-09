@@ -144,19 +144,25 @@ export class MintScenario extends connect(store)(PageViewElement) {
             return html``;
         }
 
-        let pathways  = []
-        let totalPathways = 0;
+        let pathways : string[] = []; //Pathways id to show
+        let totalPathways : number = 0;
         if (this._selectedSubgoal && this._selectedSubgoal.pathways) {
-            let orderedKeys = Object.values(this._selectedSubgoal.pathways)
+            let orderedKeys : string[] = Object.values(this._selectedSubgoal.pathways)
                     .sort((a,b) => a.name.localeCompare(b.name))
                     .map(pw => pw.id);
             totalPathways = orderedKeys.length;
-            if (totalPathways > 2 && !this._pathwayListExpanded) {
+            if (totalPathways > 3 && !this._pathwayListExpanded) {
                 let index = orderedKeys.indexOf(this._selectedPathwayId as string);
-                if (index === (orderedKeys.length-1)) {
+                if (index == 0) {
+                    pathways.push(orderedKeys[index]);
+                    pathways.push(orderedKeys[index+1]);
+                    pathways.push(orderedKeys[index+2]);
+                } else if (index + 1 == totalPathways) {
+                    pathways.push(orderedKeys[index-2]);
                     pathways.push(orderedKeys[index-1]);
                     pathways.push(orderedKeys[index]);
                 } else {
+                    pathways.push(orderedKeys[index-1]);
                     pathways.push(orderedKeys[index]);
                     pathways.push(orderedKeys[index+1]);
                 }
@@ -271,7 +277,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                                     html`<div style="color:#888">Default thread</div>`
                                                 }
                                             </div>
-                                            ${i != (pathways.length-1) || totalPathways < 3 ? html`
+                                            ${i != (pathways.length-1) || totalPathways < 4 || this._pathwayListExpanded ? html`
                                             <wl-icon @click="${this._editPathwayDialog}" 
                                                 data-pathwayid="${pathway.id}"
                                                 class="actionIcon editIcon">edit</wl-icon>
@@ -279,14 +285,22 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                                 data-pathwayid="${pathway.id}"
                                                 class="actionIcon deleteIcon">delete</wl-icon>`
                                             : html`
-                                            <a @click="${(e) => {this._pathwayListExpanded = !this._pathwayListExpanded}}">
-                                                (Show ${this._pathwayListExpanded ? 'less' : (totalPathways - 2) + ' more'})
+                                            <a @click="${(e) => {e.stopPropagation(); this._pathwayListExpanded = true}}">
+                                                <b>(Show more)</b>
                                             </a>
                                             `}
                                         </div>
                                     </li>
                                 `;
                             })}
+                            ${this._pathwayListExpanded ? html`
+                                <li class="active">
+                                    <div class="" @click="${() => {this._pathwayListExpanded = false}}"
+                                         style="text-align: right;">
+                                        <b>(Show less)</b>
+                                    </div>
+                                </li>
+                            ` : ''}
                             </ul>
                         </div>
 
