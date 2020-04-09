@@ -17,6 +17,7 @@ import { renderExternalLink } from './util';
 
 import "weightless/progress-spinner";
 import "weightless/textfield";
+import "weightless/textarea";
 import "weightless/dialog";
 import "weightless/tab";
 import "weightless/tab-group";

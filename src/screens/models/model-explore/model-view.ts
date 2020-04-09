@@ -1333,7 +1333,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         : this._datasetSpecifications[ds.id].description}
                 </span>
                 ${this._loading[ds.id]? '' : html`
-                <div>
+                <div style="font-style: oblique; margin-bottom: 1em; text-align: justify; font-size: 0.9em;">
                     ${this._datasetSpecifications[ds.id].description}
                 </div>
                 `}
