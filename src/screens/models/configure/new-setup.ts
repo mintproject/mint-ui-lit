@@ -13,6 +13,7 @@ import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
 import { personGet, modelConfigurationSetupPost, parameterGet, datasetSpecificationGet, gridGet,
          timeIntervalGet,  processGet, softwareImageGet, } from 'model-catalog/actions';
+import { getLabel } from 'model-catalog/util';
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
 import { IdMap } from 'app/reducers';
@@ -427,7 +428,14 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Software Image:</td>
                 <td>
-                    <span class="software-image">${this._softwareImage ? this._softwareImage.label : 'No software image'}</span>
+                    ${this._softwareImage ? html`
+                    <span class="software-image">
+                        <a target="_blank"
+                           href="https://hub.docker.com/r/${getLabel(this._softwareImage).split(':')[0]}/tags">
+                            ${this._softwareImage.label}
+                        </a>
+                    </span>
+                    ` : 'No software image'}
                 </td>
             </tr>
 

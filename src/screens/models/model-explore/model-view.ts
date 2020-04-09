@@ -12,7 +12,7 @@ import { modelGet, versionGet, versionsGet, modelConfigurationGet, modelConfigur
          modelConfigurationSetupGet, imageGet, personGet, regionsGet, organizationGet, fundingInformationGet,
          timeIntervalGet, gridGet, processGet, setupGetAll, visualizationGet, sourceCodeGet, softwareImageGet,
          parameterGet, datasetSpecificationGet, interventionGet, variablePresentationGet } from 'model-catalog/actions';
-import { capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition } from 'model-catalog/util';
+import { capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition, isExecutable } from 'model-catalog/util';
 import { GalleryEntry } from 'components/image-gallery';
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -562,7 +562,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <wl-icon>edit</wl-icon>
                     </wl-button>
                     <span class="tooltip small-tooltip" tip="Download and Run">
-                        <wl-button flat inverted @click=${() => this._openCLIDialog(this._selectedConfig)} ?disabled="${!this._selectedConfig}">
+                        <wl-button flat inverted @click=${() => this._openCLIDialog(this._selectedConfig)} ?disabled="${!isExecutable(this._config)}">
                             <wl-icon>get_app</wl-icon>
                         </wl-button>
                     </span>
@@ -597,7 +597,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <wl-icon>edit</wl-icon>
                     </wl-button>
                     <span class="tooltip small-tooltip" tip="Download and Run">
-                        <wl-button flat inverted @click=${() => this._openCLIDialog(this._selectedSetup)} ?disabled="${!this._selectedSetup}">
+                        <wl-button flat inverted @click=${() => this._openCLIDialog(this._selectedSetup)} ?disabled="${!isExecutable(this._setup)}">
                             <wl-icon>get_app</wl-icon>
                         </wl-button>
                     </span>
@@ -905,14 +905,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${this._model.hasPurpose.map((p:string) => html`<li>${capitalizeFirstLetter(p)}.</li>`)}
             </ul>`:''}
 
-            ${this._model.hasAssumption && this._model.hasAssumption.length > 0 ? html`
-            <wl-title level="2" style="font-size: 16px;">Assumptions:</wl-title>
-            <ul style="margin-top: 5px">
-                ${this._model.hasAssumption.map((a:string) => a.split('.').filter((txt:string) => !!txt).map((txt:string) => 
-                html`<li>${txt}.</li>`
-                ))}
-            </ul>`
-            :''}
             ${this._model.usefulForCalculatingIndex && this._model.usefulForCalculatingIndex.length > 0 ? html`
             <wl-title level="2" style="font-size: 16px;">Relevant for calculating index:</wl-title>
             <ul style="margin-top: 5px">
@@ -924,6 +916,15 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </li>
                 `)}
             </ul>` :''}
+
+            ${this._model.hasAssumption && this._model.hasAssumption.length > 0 ? html`
+            <wl-title level="2" style="font-size: 16px;">Assumptions:</wl-title>
+            <ul style="margin-top: 5px">
+                ${this._model.hasAssumption.map((a:string) => a.split('.').filter((txt:string) => !!txt).map((txt:string) => 
+                html`<li>${txt}.</li>`
+                ))}
+            </ul>`
+            :''}
 
             ${this._config ? this._renderConfigResume() : ''}
             ${this._renderRelatedModels()}
@@ -1331,6 +1332,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                         html`<loading-dots style="--height: 10px; margin-left:10px"></loading-dots>`
                         : this._datasetSpecifications[ds.id].description}
                 </span>
+                ${this._loading[ds.id]? '' : html`
+                <div style="font-style: oblique; margin-bottom: 1em; text-align: justify; font-size: 0.9em;">
+                    ${this._datasetSpecifications[ds.id].description}
+                </div>
+                `}
                 ${this._loading[ds.id] || (!this._loading[ds.id] && !this._loadedPresentations[ds.id])? 
                     html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`
                     : (!this._datasetSpecifications[ds.id].hasPresentation ||
