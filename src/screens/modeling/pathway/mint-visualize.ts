@@ -13,7 +13,6 @@ import { getVariableLongName } from "../../../offline_data/variable_list";
 
 @customElement('mint-visualize')
 export class MintVisualize extends connect(store)(MintPathwayPage) {
-
     @property({type: Object})
     private _goal!: Goal;
 
@@ -46,7 +45,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
         if(!this.pathway) {
             return html ``;
         }
-        let vizurls = getVisualizationURLs(this.pathway, this.prefs.mint)
+        let vizurls = getVisualizationURLs(this.pathway, this._subgoal, this.scenario, this.prefs.mint)
         let responseV = this.pathway.response_variables.length > 0?
             getVariableLongName(this.pathway.response_variables[0]) : '';
 
