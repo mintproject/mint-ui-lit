@@ -12,10 +12,9 @@ import { IdMap } from 'app/reducers';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { personGet, modelConfigurationSetupPut, regionGet, modelConfigurationSetupDelete,
-         parameterGet, datasetSpecificationGet, gridGet,
-         timeIntervalGet, processGet, softwareImageGet,
-         sampleResourceGet, sampleCollectionGet } from 'model-catalog/actions';
+import { personGet, modelConfigurationSetupPut, regionGet, modelConfigurationSetupDelete, parameterGet, 
+         datasetSpecificationGet, gridGet, timeIntervalGet, processGet, softwareImageGet, sampleResourceGet,
+         sampleCollectionGet, parameterPut, sampleResourcePut, sampleCollectionPut } from 'model-catalog/actions';
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Parameter, SoftwareImage,
@@ -62,6 +61,9 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     private _parameters : any = {};
 
     @property({type: Object})
+    private _editedParameters : IdMap<Parameter> = {};
+
+    @property({type: Object})
     private _inputs : any = {};
 
     @property({type: Object})
@@ -69,6 +71,12 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _sampleCollections : IdMap<SampleCollection> = {} as IdMap<SampleCollection>;
+
+    @property({type: Object})
+    private _editedSampleResources : IdMap<SampleResource> = {};
+
+    @property({type: Object})
+    private _editedSampleCollections : IdMap<SampleCollection> = {};
 
     @property({type: Object})
     private _authors : any = {};
@@ -299,10 +307,22 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             editedSetup.hasOutputTimeInterval = this._timeInterval ? [this._timeInterval] : undefined;
 
             console.log('saving', editedSetup);
-            store.dispatch(modelConfigurationSetupPut(editedSetup)).then((setup) => {
-                goToPage(createUrl(this._model, this._version, this._config, setup));
-            });
             showNotification("saveNotification", this.shadowRoot!);
+
+            let paramProms : Promise<Parameter>[] = Object.values(this._editedParameters)
+                    .map((p:Parameter) => store.dispatch(parameterPut(p)));
+            
+            let sampleResProms : Promise<SampleResource>[] = Object.values(this._editedSampleResources)
+                    .map((s:SampleResource) => store.dispatch(sampleResourcePut(s)));
+            
+            let sampleColProms : Promise<SampleCollection>[] = Object.values(this._editedSampleCollections)
+                    .map((s:SampleCollection) => store.dispatch(sampleCollectionPut(s)));
+
+            Promise.all( paramProms.concat(sampleResProms).concat(sampleColProms) ).then((results:any) => {
+                store.dispatch(modelConfigurationSetupPut(editedSetup)).then((setup) => {
+                    goToPage(createUrl(this._model, this._version, this._config, setup));
+                });
+            });
         }
     }
 
@@ -802,6 +822,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     _onParameterEdited (ev) {
         let editedParameter = ev.detail;
         this._parameters[editedParameter.id] = editedParameter;
+        this._editedParameters[editedParameter.id] = editedParameter;
         this.requestUpdate();
     }
 
@@ -810,11 +831,14 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         let datasetSpecId = ev.detail.datasetSpecificationUri;
         if (editedInput.type.indexOf('SampleCollection') >= 0) {
             this._sampleCollections[editedInput.id] = editedInput;
+            this._editedSampleCollections[editedInput.id] = editedInput;
             editedInput.hasPart.forEach((sample) => {
                 this._sampleResources[sample.id] = sample;
+                this._editedSampleResources[sample.id] = sample;
             });
         } else {
             this._sampleResources[editedInput.id] = editedInput;
+            this._editedSampleResources[editedInput.id] = editedInput;
         }
         this.requestUpdate();
     }
