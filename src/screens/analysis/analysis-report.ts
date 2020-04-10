@@ -131,7 +131,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
       let drivingV = pathway.driving_variables && pathway.driving_variables.length > 0?
           getVariableLongName(pathway.driving_variables[0]) : '';
 
-      let vizurls = getVisualizationURLs(pathway, this.prefs.mint)
+      let vizurls = getVisualizationURLs(pathway, task, scenario, this.prefs.mint)
 
       return html`
         ${task ? html `

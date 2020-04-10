@@ -690,7 +690,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 ${this._model.hasDocumentation[0].split('/').pop() || this._model.hasDocumentation}
                             </a>
                         </wl-text>` :''}
-                        ${console.log('>>', this._modelRegions)}
                         ${!this._modelRegions || this._modelRegions.length > 0 ? html`<wl-text><b>• Regions:</b>
                             ${!this._modelRegions ? 
                                 html`<loading-dots style="--width: 20px"></loading-dots>` 
@@ -1731,8 +1730,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                     })
                 }
             }
-
-            console.log (this._model , !this._modelRegions , !this._loadingGlobals) ;
 
             if (this._model && !this._modelRegions && !this._loadingGlobals) {
                 let regions : Set<string> = new Set();
