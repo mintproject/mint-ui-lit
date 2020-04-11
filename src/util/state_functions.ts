@@ -1,4 +1,4 @@
-import { Pathway, DatasetMap, ModelEnsembleMap, DataEnsembleMap, InputBindings, ExecutableEnsemble, SubGoal } from "../screens/modeling/reducers";
+import { Pathway, DatasetMap, ModelEnsembleMap, DataEnsembleMap, InputBindings, ExecutableEnsemble, SubGoal, Scenario } from "../screens/modeling/reducers";
 import { RootState } from "../app/store";
 import { UserPreferences, MintPreferences } from "app/reducers";
 import { DataResource } from "screens/datasets/reducers";
