@@ -172,7 +172,9 @@ export class MintApp extends connect(store)(LitElement) {
                 </div>
             </a>
             ${!this.user || !this._selectedRegion ? 
-              "" : 
+              (!this.user ? html`
+              <a @click="${this._showLoginWindow}">Log in to see more</a>                
+              ` : "") : 
               html`
               <a href='${this._selectedRegion.id}/regions'
                   class=${(this._page == 'regions'? 'active': '')}

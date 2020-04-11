@@ -1520,6 +1520,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         this._funding = {} as IdMap<FundingInformation>;
         this._organizations = {} as IdMap<Organization>;
         this._modelRegions = null;
+        console.log('CLEAR');
     }
 
     firstUpdated() {
@@ -1596,6 +1597,30 @@ export class ModelView extends connect(store)(PageViewElement) {
                     // Software Images and Source Code only on tech tab
                     if (this._tab === 'tech') {
                         this._loadSourceCodes(this._model.hasSourceCode, db);
+                    }
+
+                    //FIXME: this is duplicated
+                    if (this._model && !this._modelRegions && !this._loadingGlobals) {
+                        let regions : Set<string> = new Set();
+                        (this._model.hasVersion || [])
+                            .map((ver:SoftwareVersion) => this._versions[ver.id])
+                            .forEach((ver:SoftwareVersion) => {
+                                (ver.hasConfiguration || [])
+                                    .map((cfg:ModelConfiguration) => this._configs[cfg.id])
+                                    .forEach((cfg:ModelConfiguration) => {
+                                        (cfg.hasRegion || [])
+                                            .map((region:Region) => db.regions[region.id])
+                                            .forEach((region:Region) => regions.add(region.id));
+                                        (cfg.hasSetup || [])
+                                            .map((setup:ModelConfigurationSetup) => this._setups[setup.id])
+                                            .forEach((setup:ModelConfigurationSetup) => {
+                                                (setup.hasRegion || [])
+                                                    .map((region:Region) => db.regions[region.id])
+                                                    .forEach((region:Region) => regions.add(region.id));
+                                            });
+                                    });
+                            });
+                        this._modelRegions = Array.from(regions);
                     }
                 });
             }
