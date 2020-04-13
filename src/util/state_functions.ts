@@ -284,7 +284,13 @@ export const getVisualizationURLs = (pathway: Pathway, subgoal: SubGoal, scenari
             getVariableLongName(pathway.driving_variables[0]) : '';
 
         let visualizations = [];
-        let query : string = "thread_id=" + pathway.id + "&subgoal_id=" + subgoal.id + "&scenario_id=" + scenario.id;
+        let data = {
+            thread_id: pathway.id,
+            subgoal_id: subgoal.id,
+            scenario_id: scenario.id
+        };
+        let qs = new URLSearchParams(data);
+        let query : string = qs.toString();
         // FIXME: Hack
         if(responseV == "Streamflow Duration Index" || 
             responseV == "Flood Severity Index" || 
