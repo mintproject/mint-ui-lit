@@ -139,21 +139,9 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         let modelids = Object.keys((this.pathway.models || {})) || [];
         let done = (this.pathway.models && modelids.length > 0);
         let availableModels = this._queriedModels[this._responseVariables.join(",")] || [];
-        let regionModels = availableModels.filter((model: Model) => {
-            if (!!model.hasRegion && 
-                model.hasRegion.some((region) => isSubregion(this._region.model_catalog_uri, region)))
-                return true;
-            let model_region_name = model.calibrated_region.toLowerCase();
-            let top_region_name = this._region.name.toLowerCase();
-            let task_region_name = this._subregion ? this._subregion.name.toLowerCase() : null;
-            if(model_region_name.indexOf(top_region_name) >=0) return true;
-            if(top_region_name.indexOf(model_region_name) >=0) return true;
-            if(task_region_name) {
-                if(model_region_name.indexOf(task_region_name) >=0) return true;
-                if(task_region_name.indexOf(model_region_name) >=0) return true;
-            }
-            return false;
-        })
+        let regionModels = availableModels.filter((model: Model) =>
+            (model.hasRegion||[]).some((region) => isSubregion(this._region.model_catalog_uri, region))
+        );
         return html`
         <p>
             The models below are appropriate for the indicators of interest. You can select multiple calibrated models and compare them.  
