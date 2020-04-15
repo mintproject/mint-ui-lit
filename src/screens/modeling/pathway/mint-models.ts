@@ -461,7 +461,6 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             });
             let mapModels = {}
             fixedModels.forEach(model => mapModels[model.id] = model);
-            console.log('fixed models', mapModels);
 
             let newpathway = {
                 ...this.pathway,
