@@ -6,7 +6,7 @@ import { Dataset } from "../datasets/reducers";
 
 import { setupsSearchVariable } from 'model-catalog/actions';
 import { ModelConfigurationSetup, DatasetSpecification } from '@mintproject/modelcatalog_client';
-import { sortByPosition } from './configure/util';
+import { sortByPosition, getLabel } from 'model-catalog/util';
 
 import { getVariableProperty } from "offline_data/variable_list";
 
@@ -101,12 +101,13 @@ const dsSpecToIO = (ds: DatasetSpecification) => {
 }
 
 export const setupToOldModel = (setup: ModelConfigurationSetup) :  Model => {
+    console.log('>', setup);
     let model: Model = {
         id: setup.id,
         localname: setup.id.substr(setup.id.lastIndexOf("/") + 1),
         name: setup.label ? setup.label[0] : "",
-        calibrated_region: setup.hasRegion && false ?
-                setup.hasRegion.map((r:any) => r.label[0]).join(', ') : "",
+        calibrated_region: setup.hasRegion && setup.hasRegion.length > 0 ?
+                setup.hasRegion.map(getLabel).join(', ') : "",
         description: setup.description ? setup.description[0] : "",
         category: setup.hasModelCategory ? setup.hasModelCategory[0] : "",
         wcm_uri: setup.hasComponentLocation ? setup.hasComponentLocation[0] : "",
