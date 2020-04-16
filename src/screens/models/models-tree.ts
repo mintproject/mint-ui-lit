@@ -154,9 +154,9 @@ export class ModelsTree extends connect(store)(PageViewElement) {
         if (!this._models || !this._region || !this._regions) 
             return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
 
-        const visibleSetup = (setup: ModelConfigurationSetup) => ((setup||{}).hasRegion||[]).map((region:Region) =>
-            isSubregion(this._region.model_catalog_uri, this._regions[region.id])
-        ).some(x=>x);
+        const visibleSetup = (setup: ModelConfigurationSetup) =>
+            !!setup && (!setup.hasRegion || (setup.hasRegion||[]).some((region:Region) =>
+                    isSubregion(this._region.model_catalog_uri, this._regions[region.id])));
 
         return html`
         <ul style="padding-left: 10px; margin-top: 4px;">

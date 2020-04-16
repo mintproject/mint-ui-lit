@@ -276,7 +276,6 @@ export const sendDataForIngestion = (scenarioid: string, subgoalid: string, thre
 }
 
 export const getVisualizationURLs = (pathway: Pathway, subgoal: SubGoal, scenario: Scenario, prefs: MintPreferences) => {
-    console.log(pathway.id, subgoal.id, scenario.id);
     if(getPathwayResultsStatus(pathway) == "TASK_DONE") {
         let responseV = pathway.response_variables.length > 0?
             getVariableLongName(pathway.response_variables[0]) : '';
@@ -284,15 +283,21 @@ export const getVisualizationURLs = (pathway: Pathway, subgoal: SubGoal, scenari
             getVariableLongName(pathway.driving_variables[0]) : '';
 
         let visualizations = [];
-        let query : string = "thread_id=" + pathway.id + "&subgoal_id=" + subgoal.id + "&scenario_id=" + scenario.id;
+        let data = {
+            thread_id: pathway.id,
+            subgoal_id: subgoal.id,
+            scenario_id: scenario.id
+        };
+        let qs = new URLSearchParams(data);
+        let query : string = qs.toString();
         // FIXME: Hack
-        if(responseV == "Streamflow Duration Index" || 
+        if (responseV == "Flooding Contour") {
+            visualizations.push(prefs.visualization_url + "/hand?" + query);
+        } else if(responseV == "Streamflow Duration Index" || 
             responseV == "Flood Severity Index" || 
-            responseV == "River Discharge" || 
-            responseV == "Flooding Contour") {
+            responseV == "River Discharge") {
             visualizations.push(prefs.visualization_url + "/images?" + query);
-        }
-        else {
+        } else {
             if(responseV == "Potential Crop Production")
                 visualizations.push(prefs.visualization_url + "/cycles?" + query);
             visualizations.push(prefs.visualization_url + "/upload?" + query);
