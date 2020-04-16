@@ -197,7 +197,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
 
                 .col-desc > wl-select {
-                    width: calc(100% - 55px);
+                    width: calc(100% - 100px);
                     margin-left:25px;
                 }
 
@@ -625,6 +625,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 : [];
 
         return html`
+            ${this._renderCLIDialog()}
             <div class="wrapper">
                 <div class="col-title">
                     <wl-title level="2">

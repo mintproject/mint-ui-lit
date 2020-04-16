@@ -101,7 +101,6 @@ const dsSpecToIO = (ds: DatasetSpecification) => {
 }
 
 export const setupToOldModel = (setup: ModelConfigurationSetup) :  Model => {
-    console.log('>', setup);
     let model: Model = {
         id: setup.id,
         localname: setup.id.substr(setup.id.lastIndexOf("/") + 1),

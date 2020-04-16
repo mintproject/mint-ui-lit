@@ -276,7 +276,6 @@ export const sendDataForIngestion = (scenarioid: string, subgoalid: string, thre
 }
 
 export const getVisualizationURLs = (pathway: Pathway, subgoal: SubGoal, scenario: Scenario, prefs: MintPreferences) => {
-    //console.log(pathway, subgoal, scenario);
     if(getPathwayResultsStatus(pathway) == "TASK_DONE") {
         let responseV = pathway.response_variables.length > 0?
             getVariableLongName(pathway.response_variables[0]) : '';
