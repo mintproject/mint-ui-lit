@@ -11,6 +11,8 @@ import { getUISelectedSubgoal, getUISelectedGoal, getVisualizationURLs } from ".
 import { MintPathwayPage } from "./mint-pathway-page";
 import { getVariableLongName } from "../../../offline_data/variable_list";
 
+import "weightless/button";
+
 @customElement('mint-visualize')
 export class MintVisualize extends connect(store)(MintPathwayPage) {
     @property({type: Object})
@@ -18,6 +20,12 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
 
     @property({type: Object})
     private _subgoal!: SubGoal;
+
+    @property({type: String})
+    private _bigViz : boolean = false;
+
+    @property({type: Object})
+    private _lastLinks : string[] = [];
 
     static get styles() {
         return [
@@ -49,6 +57,12 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
         let responseV = this.pathway.response_variables.length > 0?
             getVariableLongName(this.pathway.response_variables[0]) : '';
 
+        if (this._lastLinks.length != vizurls.length ||
+            this._lastLinks.some((vizurl:string, i:number) => vizurl != vizurls[i])) {
+            this._lastLinks = vizurls;
+            this._bigViz = (responseV == "Flooding Contour");
+        }
+        
         return html`
         <style>
         i {
@@ -61,9 +75,15 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
             <h2>Visualization
                 ${responseV? 'of indicator ' + responseV : ''}
             </h2>
-            ${vizurls.map((vizurl) => {
-                return html`<iframe src="${vizurl}"></iframe>`;
-            })}
+            ${this._bigViz ? html`
+            <div style="display: table; height: 30px;">
+                <wl-icon style="line-height: 30px">report</wl-icon>
+                <span style="display: table-cell; vertical-align: middle;">This visualization can take a while to load.</span>
+            </div>
+            <wl-button @click="${() => {this._bigViz = !this._bigViz}}">Load Visualization</wl-button>` 
+            : vizurls.map((vizurl) => html`<iframe src="${vizurl}"></iframe>`)
+            }
+
             <fieldset class="notes">
                 <legend>Notes</legend>
                 <textarea id="notes">${this.pathway.notes ? this.pathway.notes.visualization : ""}</textarea>
