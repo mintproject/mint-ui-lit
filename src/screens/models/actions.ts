@@ -116,7 +116,9 @@ export const setupToOldModel = (setup: ModelConfigurationSetup) :  Model => {
         original_model: "", //FIXME row["modelName"] || "",
         model_version: "", //FIXME row["versionName"] || "",
         model_configuration: "", //FIXME row["configurationName"] || "",
-        model_type: "",
+        model_type: (setup.type || [])
+            .filter(m => m != "ConfigurationSetup" && m != "ModelConfigurationSetup").join(', ')
+            .replace('Model', ' Model'),
         parameter_assignment: setup.parameterAssignmentMethod ? setup.parameterAssignmentMethod[0] : "",
         parameter_assignment_details: "",
         target_variable_for_parameter_assignment: setup.calibrationTargetVariable ?
@@ -124,7 +126,7 @@ export const setupToOldModel = (setup: ModelConfigurationSetup) :  Model => {
                         .map((tv:any) => tv.label? tv.label[0] : '')
                         .filter((l:string) => !!l)
                         .join(', ') : "",
-        modeled_processes: [""], //TODO the API is not returning this. <-----
+        modeled_processes: [], //TODO the API is not returning this. <-----
         dimensionality: "",
         spatial_grid_type: "",
         spatial_grid_resolution: "",
