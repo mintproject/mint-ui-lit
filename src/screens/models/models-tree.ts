@@ -187,7 +187,6 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                              this.requestUpdate();
                         }}>
                             <wl-icon>${this._visible[version.id] ? 'expand_more' : 'expand_less'}</wl-icon>
-                            <!-- FIXME tag is not on the npm package right now -->
                             ${version['tag'] ? version['tag'].map((tag:string) => html`<span class="tag ${tag}">${tag}</span>`) : ''}
                             <span ?selected="${this._selectedVersion === version.id}">
                                 ${version.label ? version.label : this._getId(version)}
@@ -232,12 +231,12 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                                 </ul>
                             </li>
                             `)}
-                            <!--li>
-                                <a class="inline-new-button config" @click="">
+                            <li>
+                                <a class="inline-new-button config" @click="${() => {this._selectNew(model, version)}}">
                                     <wl-icon>add_circle_outline</wl-icon>
                                     Add new configuration
                                 </a>
-                            </li-->
+                            </li>
                         </ul>`}
                         ` : ''}
                     </li>`)}

@@ -25,6 +25,10 @@ import './person';
 import './process';
 import './parameter';
 import './dataset-specification';
+import './resources/time-interval';
+
+import { ModelCatalogTimeInterval } from './resources/time-interval';
+import { Action } from './resources/resource';
 
 import { ModelsConfigureGrid } from './grid';
 import { ModelsConfigureTimeInterval } from './time-interval';
@@ -404,26 +408,8 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             <tr>
                 <td>Time interval:</td>
                 <td>
-                    ${this._timeIntervalLoading ? 
-                        html`${this._config.hasOutputTimeInterval[0].id} <loading-dots style="--width: 20px"></loading-dots>`
-                        : (this._timeInterval ? html`
-                        <span class="time-interval">
-                            <span style="display: flex; justify-content: space-between;">
-                                <span style="margin-right: 30px; text-decoration: underline;">
-                                    ${this._timeInterval.label ? this._timeInterval.label : this._timeInterval.id}
-                                </span>
-                                <span> 
-                                    ${this._timeInterval.intervalValue}
-                                    ${this._timeInterval.intervalUnit ? this._timeInterval.intervalUnit[0].label : ''}
-                                </span>
-                            </span>
-                            <span style="font-style: oblique; color: gray;"> ${this._timeInterval.description} </span>
-                        </span>` : 'No time interval'
-                    )}
-                    ${this._editing ? html`
-                    <wl-button style="float:right;" class="small" flat inverted
-                        @click="${this._showTimeIntervalDialog}"><wl-icon>edit</wl-icon></wl-button>
-                    ` : ''}
+                    <model-catalog-time-interval id="mcti" .action=${Action.SELECT}>
+                    </model-catalog-time-interval>
                 </td>
             </tr>
 
@@ -560,8 +546,11 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     _showTimeIntervalDialog () {
         this._dialog = 'timeInterval';
         let timeIntervalConfigurator = this.shadowRoot.getElementById('time-interval-configurator') as ModelsConfigureTimeInterval;
-        if (this._timeInterval)
+        let ti = this.shadowRoot.getElementById('mcti') as ModelCatalogTimeInterval;
+        if (this._timeInterval) {
             timeIntervalConfigurator.setSelected(this._timeInterval);
+            ti.setResources([this._timeInterval]);
+        }
         timeIntervalConfigurator.open();
     }
 
@@ -774,14 +763,25 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                         }
 
                         // Fetching ONE time interval
-                        if (!this._timeInterval && this._config.hasOutputTimeInterval) {
+                        if (this._config.hasOutputTimeInterval) {
+                            let ti = this.shadowRoot.getElementById('mcti') as ModelCatalogTimeInterval;
+                            if (!ti) {
+                                setTimeout(() => {
+                                    let ti = this.shadowRoot.getElementById('mcti') as ModelCatalogTimeInterval;
+                                    ti.setResources( this._config.hasOutputTimeInterval );
+                                }, 1000);
+                            } else {
+                                ti.setResources( this._config.hasOutputTimeInterval );
+                            }
+                        }
+                        /*if (!this._timeInterval && this._config.hasOutputTimeInterval) {
                             let ti = this._config.hasOutputTimeInterval[0];
                             let tiId = typeof ti === 'object' ? ti.id : ti;
                             if (!db.timeIntervals || !db.timeIntervals[tiId]) {
                                 store.dispatch(timeIntervalGet(tiId));
                                 this._timeIntervalLoading = true;
                             }
-                        }
+                        }*/
 
                         // Fetching ONE softwareImage FIXME
                         if (!this._softwareImage && this._config.hasSoftwareImage) {
