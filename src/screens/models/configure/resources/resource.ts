@@ -62,40 +62,61 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: Boolean}) public addbutton : boolean = false;
     @property({type: Boolean}) public editbutton : boolean = false;
 
+    @property({type: Boolean}) private _dialogOpen : boolean = false;
     @property({type: String}) public name : string = "resource";
 
     @property({type: Object}) protected _resources : T[] = [] as T[];
     protected _loadedResources : IdMap<T> = {} as IdMap<T>;
-
+    
     protected render() {
         console.log('Render resources: ', this._resources);
         return html`
             ${this.inline ? this._renderInline() : this._renderTable()}
-            ${this._renderDialog()}
-        `
+            ${this._dialogOpen? this._renderDialog() : ''}
+        `;
     }
 
     private _renderInline () {
         return html`
-            ${this._resources.length == 0 ? 
+        <div style="position: relative">
+            ${(this.action === Action.SELECT || this.action === Action.MULTISELECT) ? html`
+                <wl-button @click="${this._showEditSelectionDialog}" id="select-button" flat inverted>
+                    <wl-icon>edit</wl-icon>
+                </wl-button>`
+                : ''
+            }
+            ${this._resources.length == 0 ?
                 this._renderEmpty()
-                : html`<div style="position: relative">
-                    ${this.action === Action.SELECT || this.action === Action.MULTISELECT ? html`
-                    <wl-button style="position: absolute; right: 0;" class="small" flat inverted
-                        @click="${this._showEditSelectionDialog()}"><wl-icon>edit</wl-icon></wl-button>
-                    ` : ''}
-                    ${this._resources.map((r:T) => this._renderStatus(r))}
-                </div>`
-                }
-        `;
+                : this._resources.map((r:T) => this._renderStatus(r))
+            }
+        </div>`;
     }
 
     private _renderTable () {
     }
 
     private _renderDialog () {
+        console.log('DialogRendered!');
+        return html`
+        <wl-dialog class="larger" id="resource-dialog" fixed backdrop blockscrolling persistent>
+            <h3 slot="header">
+                Select resources
+            </h3>
+            <div slot="content">
+                CONTENT!
+            </div>
+            <div slot="footer">
+                <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat ?disabled="">
+                    Cancel
+                </wl-button>
+                <wl-button class="submit" ?disabled="" @click="">
+                    SELECT
+                    <loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>
+                </wl-button>
+            </div>
+        </wl-dialog>`
     }
-    
+
     protected _renderEmpty () {
         return 'No resource'
     }
@@ -112,42 +133,32 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         return html`<span class="resource">${getLabel(r)}</span>`;
     }
 
-    private _showEditSelectionDialog () {
+    private _closeDialog () {
+        hideDialog("timeIntervalDialog", this.shadowRoot);
+        this._dialogOpen = false;
     }
 
+    private async _showEditSelectionDialog () {
+        console.log('showEditSelectionDialog');
+        this._dialogOpen = true; //This will triger the dialog render;
+        await this.updateComplete;
+        showDialog("resource-dialog", this.shadowRoot);
+    }
+
+    private _loadResources (r: T[]) {
+    }
 
     public setResources (r:T[]) {
         // This asumes that all resources are loaded
         let resources : T[] = [...r];
     }
 
-
 /*
-*/
-
-/*
-        <wl-dialog class="larger" id="timeIntervalDialog" fixed backdrop blockscrolling persistent>
-            <h3 slot="header">
-                ${this._editing ? (sTimeInterval ? 'Editing time interval' : 'Register a new time interval') : 'Selecting time intervals'}
-            </h3>
-            <div slot="content">
-                ${this._editing ? (sTimeInterval ? this._renderEdit() : this._renderNew()) : this._renderSelect()}
-            </div>
-            <div slot="footer">
-                <wl-button @click="${this.cancel}" style="margin-right: 5px;" inverted flat ?disabled="${this._waiting}">Cancel</wl-button>
-                <wl-button class="submit" ?disabled="${this._waiting}"
-                        @click="${() => this._editing ? (sTimeInterval ? this._onEditTimeInterval() : this._onCreateTimeInterval()) : this._onSubmitTimeInterval()}">
-                    ${this._editing ? 'Save & Select' : 'Set selected time interval'}
-                    ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
-                </wl-button>
-            </div>
-        </wl-dialog>
         ${renderNotifications()}*/
 
     /*
     public open () {
         if (this.active) {
-            showDialog("timeIntervalDialog", this.shadowRoot);
             this._filter = '';
         } else {
             setTimeout(() => {this.open()}, 300);
@@ -388,6 +399,13 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     static get styles() {
         return [ExplorerStyles, SharedStyles, css`
+        #select-button {
+            border: 1px solid gray;
+            margin-right: 5px;
+            --button-padding: 4px;
+            float: right;
+        }
+
         .time-interval-container {
             display: grid;
             grid-template-columns: auto 58px;

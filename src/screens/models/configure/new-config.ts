@@ -9,36 +9,22 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from 'app/actions';
 
 import { renderNotifications } from "util/ui_renders";
-import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
+import { showNotification } from 'util/ui_functions';
 
-import { personGet, modelConfigurationSetupPost, parameterGet, datasetSpecificationGet, gridGet,
-         timeIntervalGet,  processGet, softwareImageGet, } from 'model-catalog/actions';
+import { modelConfigurationPost } from 'model-catalog/actions';
 import { getLabel } from 'model-catalog/util';
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
 
 import { IdMap } from 'app/reducers';
-import { Person, Parameter, DatasetSpecification, Process, SampleResource, SampleCollection,
-         Region, Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
+import { ModelConfiguration } from '@mintproject/modelcatalog_client';
+import { ModelCatalogTimeInterval } from './resources/time-interval';
+import { Action } from './resources/resource';
+
+import "./resources/time-interval";
 
 import "weightless/slider";
 import "weightless/progress-spinner";
 import 'components/loading-dots'
-
-import './grid';
-import './time-interval';
-import './person';
-import './process';
-import './parameter';
-import './input';
-import './region';
-
-import { ModelsConfigureGrid } from './grid';
-import { ModelsConfigureTimeInterval } from './time-interval';
-import { ModelsConfigurePerson } from './person';
-import { ModelsConfigureProcess } from './process';
-import { ModelsConfigureParameter } from './parameter';
-import { ModelsConfigureInput } from './input';
-import { ModelsConfigureRegion } from './region';
 
 @customElement('models-new-config')
 export class ModelsNewConfig extends connect(store)(PageViewElement) {
@@ -125,47 +111,9 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
     }
 
     protected render() {
-        if (!this._config) {
-            return html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
-        }
-        // Sort parameters by order
-        let paramOrder = []
-        if (this._setup.hasParameter) {
-            Object.values(this._parameters).sort(sortByPosition).forEach((id: any) => {
-                if (typeof id === 'object') id = id.id;
-                if (id) paramOrder.push(id);
-            });
-            this._setup.hasParameter.forEach((id: any) => {
-                if (typeof id === 'object') id = id.id;
-                if (paramOrder.indexOf(id) < 0) {
-                    paramOrder.push(id)
-                }
-            })
-        }
-
-        // Sort inputs by order
-        let inputOrder = []
-        if (this._setup.hasInput) {
-            Object.values(this._inputs).sort(sortByPosition).forEach((id: any) => {
-                if (typeof id === 'object') id = id.id;
-                if (id) inputOrder.push(id);
-            });
-            this._setup.hasInput.forEach((id: any) => {
-                if (typeof id === 'object') id = id.id;
-                if (inputOrder.indexOf(id) < 0) {
-                    inputOrder.push(id)
-                }
-            })
-        }
-        let keywords = ''
-        if (this._setup.keywords) {
-            keywords = this._setup.keywords[0].split(/ *; */).join(', ');
-        }
-
         return html`
         <table class="details-table" id="start">
             <colgroup width="150px">
-
             <tr>
                 <td colspan="2" style="padding: 5px 20px;">
                     <wl-textfield id="new-setup-name" label="New setup name" value="" required></wl-textfield>
@@ -182,37 +130,19 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
             <tr>
                 <td>Keywords:</td>
                 <td>
-                    <input id="new-setup-keywords" type="text" value="${keywords}"/>
+                    <input id="new-setup-keywords" type="text" value=""/>
                 </td>
             </tr>
 
             <tr>
                 <td>Region:</td>
                 <td>
-                    ${this._setup.hasRegion.map((r:Region) => this._regions[r.id] ?
-                        html`<span class="region">${this._regions[r.id].label}</span>`
-                        : html`${r.id} <loading-dots style="--width: 20px"></loading-dots>`
-                    )}
-                    <wl-button style="float:right;" class="small" flat inverted
-                        @click="${this._showRegionDialog}"><wl-icon>edit</wl-icon></wl-button>
                 </td>
             </tr>
 
             <tr>
                 <td>Setup creator:</td>
                 <td>
-                    ${this._setup.author && this._setup.author.length > 0? 
-                    html`${this._setup.author.map(a => typeof a === 'object' ? a['id'] : a).map((authorUri:string) => 
-                        (this._authors[authorUri] ? html`
-                        <span class="author">
-                            ${this._authors[authorUri].label ? this._authors[authorUri].label : authorUri}
-                        </span>`
-                        : authorUri + ' ')
-                    )}
-                    ${this._authorsLoading.size > 0 ? html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`
-                    : 'No authors'}
-                    <wl-button style="float:right;" class="small" flat inverted
-                        @click="${this._showAuthorDialog}"><wl-icon>edit</wl-icon></wl-button>
                 </td>
             </tr>
 
@@ -236,101 +166,40 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
             <tr>
                 <td>Software Image:</td>
                 <td>
-                    ${this._softwareImage ? html`
-                    <span class="software-image">
-                        <a target="_blank"
-                           href="https://hub.docker.com/r/${getLabel(this._softwareImage).split(':')[0]}/tags">
-                            ${this._softwareImage.label}
-                        </a>
-                    </span>
-                    ` : 'No software image'}
                 </td>
             </tr>
 
             <tr>
                 <td>Component Location:</td>
                 <td>
-                    <textarea id="new-setup-comp-loc" disabled>${this._setup.hasComponentLocation}</textarea>
+                    <textarea id="new-setup-comp-loc" disabled></textarea>
                 </td>
             </tr>
 
             <tr>
                 <td>Grid:</td>
                 <td>
-                    ${this._gridLoading ?
-                        html`${this._setup.hasGrid[0].id} <loading-dots style="--width: 20px"></loading-dots>`
-                        : (this._grid ?  html`
-                        <span class="grid">
-                            <span style="margin-right: 30px; text-decoration: underline;">${this._grid.label}</span>
-                            <span style="font-style: oblique; color: gray;">${this._grid.type.filter(g => g != 'Grid')}</span>
-                            <br/>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="font-size: 12px;">Spatial resolution:</span>
-                                <span style="margin-right:20px; font-size: 14px;" class="monospaced">
-                                    ${this._grid.hasSpatialResolution && this._grid.hasSpatialResolution.length > 0 ?
-                                        this._grid.hasSpatialResolution[0] : '-'}
-                                </span>
-                                <span style="font-size: 12px;">Dimensions:</span>
-                                <span style="margin-right:20px" class="number">
-                                    ${this._grid.hasDimension && this._grid.hasDimension.length > 0 ? this._grid.hasDimension[0] : '-'}
-                                </span>
-                                <span style="font-size: 12px;">Shape:</span>
-                                <span style="font-size: 14px" class="monospaced">
-                                    ${this._grid.hasShape && this._grid.hasShape.length > 0 ? this._grid.hasShape[0] : '-'}
-                                </span>
-                            </div>
-                        </span>` : 'No grid'
-                    )}
-                    <wl-button style="float:right;" class="small" flat inverted
-                        @click="${this._showGridDialog}"><wl-icon>edit</wl-icon></wl-button>
                 </td>
             </tr>
 
             <tr>
                 <td>Time interval:</td>
                 <td>
-                    ${this._timeIntervalLoading ? 
-                        html`${this._setup.hasOutputTimeInterval[0].id} <loading-dots style="--width: 20px"></loading-dots>`
-                        : (this._timeInterval ? html`
-                        <span class="time-interval">
-                            <span style="display: flex; justify-content: space-between;">
-                                <span style="margin-right: 30px; text-decoration: underline;">
-                                    ${this._timeInterval.label ? this._timeInterval.label : this._timeInterval.id}
-                                </span>
-                                <span> 
-                                    ${this._timeInterval.intervalValue}
-                                    ${this._timeInterval.intervalUnit ? this._timeInterval.intervalUnit[0].label : ''}
-                                </span>
-                            </span>
-                            <span style="font-style: oblique; color: gray;"> ${this._timeInterval.description} </span>
-                        </span>` : 'No time interval'
-                    )}
-                    <wl-button style="float:right;" class="small" flat inverted
-                        @click="${this._showTimeIntervalDialog}"><wl-icon>edit</wl-icon></wl-button>
+                    <model-catalog-time-interval id="mcti" .action=${Action.SELECT}>
+                    </model-catalog-time-interval>
                 </td>
             </tr>
 
             <tr>
                 <td>Processes:</td>
                 <td>
-                    ${this._setup.hasProcess ?
-                    html`${this._setup.hasProcess.map(a => typeof a === 'object' ? a.id : a).map((procUri:string) => 
-                        (this._processes[procUri] ? html`
-                        <span class="process">
-                            ${this._processes[procUri].label ? this._processes[procUri].label : this._processes[procUri].id}
-                        </span>`
-                        : procUri + ' '))}
-                    ${this._processesLoading.size > 0 ? html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`
-                    : 'No processes'}
-                    <wl-button style="float:right;" class="small" flat inverted
-                        @click="${this._showProcessDialog}"><wl-icon>edit</wl-icon></wl-button>
                 </td>
             </tr>
 
             <tr>
                 <td>Usage notes:</td>
                 <td>
-                    <textarea id="new-setup-usage-notes" rows="6">${this._setup.hasUsageNotes}</textarea>
+                    <textarea id="new-setup-usage-notes" rows="6"></textarea>
                 </td>
             </tr>
 
@@ -365,38 +234,7 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
                 <th> </th>
             </thead>
             <tbody>
-            ${this._setup.hasParameter ? paramOrder.map((uri:string) => html`
-            <tr>
-                ${this._parameters[uri] ? html`
-                <td>
-                    <code>${this._parameters[uri].label}</code><br/>
-                    <b>${this._parameters[uri].description}</b>
-                </td>
-                <td>
-                    ${renderParameterType(this._parameters[uri])}
-                </td>
-                <td class="ta-right">
-                    ${this._parameters[uri].hasFixedValue && this._parameters[uri].hasFixedValue.length > 0 ?
-                        this._parameters[uri].hasFixedValue : (
-                        this._parameters[uri].hasDefaultValue ? this._parameters[uri].hasDefaultValue + ' (default)' : '-'
-                    )}
-                    ${this._parameters[uri].usesUnit ?this._parameters[uri].usesUnit[0].label : ''}
-                </td>
-                <td style="text-align: center;">
-                    <wl-button flat inverted @click="${() => {
-                            this._parameters[uri]['isAdjustable'] = !this._parameters[uri]['isAdjustable'];
-                            this.requestUpdate();
-                        }}">
-                        <wl-icon>${this._parameters[uri]['isAdjustable'] ? 'check_box' : 'check_box_outline_blank'}</wl-icon>
-                    </wl-button>
-                </td>
-                <td>
-                    <wl-button flat inverted @click="${() => this._showParameterDialog(uri)}" class="small"><wl-icon>edit</wl-icon></wl-button>
-                </td>
-                `
-                : html`<td colspan="5" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
-            </tr>`)
-            : html`<tr><td colspan="5" class="info-center">- This setup has no parameters -</td></tr>`}
+                <tr><td colspan="5" class="info-center">- This setup has no parameters -</td></tr>
             </tbody>
         </table>
 
@@ -417,73 +255,17 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
                 </th>
             </thead>
             <tbody>
-            ${this._setup.hasInput ? inputOrder.map((uri:string) => html `
-            <tr>${this._inputs[uri] ? html`
-                <td>
-                    <code style="font-size: 13px">${this._inputs[uri].label}</code>
-                    ${this._inputs[uri].hasFormat && this._inputs[uri].hasFormat.length === 1 ?  
-                        html`<span class="monospaced" style="color: gray;">(.${this._inputs[uri].hasFormat})<span>` : ''}
-                    <br/>
-                    ${this._inputs[uri].description}
-                </td>
-                <td>
-                    ${this._inputs[uri].hasFixedResource && this._inputs[uri].hasFixedResource.length > 0 ? 
-                    this._inputs[uri].hasFixedResource.map((fixed) => this._sampleResources[fixed.id] ? 
-                        html`
-                        <span>
-                            <b>${this._sampleResources[fixed.id].label}</b> <br/>
-                            <a target="_blank" href="${this._sampleResources[fixed.id].value}">
-                                ${this._sampleResources[fixed.id].value}
-                            </a><br/>
-                            <span class="monospaced" style="white-space: nowrap;">${this._sampleResources[fixed.id].dataCatalogIdentifier}</span>
-                        </span>` : ( this._sampleCollections[fixed.id] ? html`
-                        <span>
-                            <b>${this._sampleCollections[fixed.id].label}</b> <br/>
-                            ${this._sampleCollections[fixed.id].description}
-                            ${this._sampleCollections[fixed.id].hasPart.map(sample => html`
-                            <details>
-                                <summary style="cursor: pointer;">${sample.label}</summary>
-                                <div style="padding-left: 14px;">
-                                    ${this._sampleResources[sample.id] ? html`
-                                    <a target="_blank" href="${this._sampleResources[sample.id].value}">
-                                        ${this._sampleResources[sample.id].value}
-                                    </a><br/>
-                                    <span class="monospaced" style="white-space: nowrap;">${this._sampleResources[sample.id].dataCatalogIdentifier}</span>
-                                </div>
-                                ` : html`${sample.id.split('/').pop()} <loading-dots style="--width: 20px"></loading-dots>`}
-                            `)}
-                        </span>`
-                        : html`${fixed.id.split('/').pop()} <loading-dots style="--width: 20px"></loading-dots>`))
-                    : html`
-                    <div class="info-center" style="white-space:nowrap;">- Not set -</div>`}
-                </td>
-                <td class="ta-right">
-                    <wl-button @click="${() => {this._showNewInputDialog(uri)}}" class="small" flat inverted><wl-icon>add</wl-icon></wl-button>
-                </td>`
-                : html`<td colspan="4" style="text-align: center;"> <wl-progress-spinner></wl-progress-spinner> </td>`}
-            </tr>`)
-            : html`<tr><td colspan="4" class="info-center">- This configuration has no input files -</td></tr>`}
             </tbody>
         </table>
 
         <div style="float:right; margin-top: 1em;">
-            <wl-button @click="${this._cancel}" style="margin-right: 1em;" flat inverted>
+            <wl-button @click="" style="margin-right: 1em;" flat inverted>
                 <wl-icon>cancel</wl-icon>&ensp;Discard changes
             </wl-button>
-            <wl-button @click="${this._saveNewSetup}">
+            <wl-button @click="">
                 <wl-icon>save</wl-icon>&ensp;Save
             </wl-button>
-        </div>
-
-        <models-configure-grid id="grid-configurator" ?active=${this._dialog == 'grid'} class="page"></models-configure-grid>
-        <models-configure-time-interval id="time-interval-configurator" ?active=${this._dialog == 'timeInterval'} class="page">
-        </models-configure-time-interval>
-        <models-configure-person id="person-configurator" ?active=${this._dialog == 'person'} class="page"></models-configure-person>
-        <models-configure-process id="process-configurator" ?active=${this._dialog == 'process'} class="page"></models-configure-process>
-        <models-configure-parameter id="parameter-configurator" ?active=${this._dialog == 'parameter'} class="page"></models-configure-parameter>
-        <models-configure-input id="input-configurator" ?active=${this._dialog == 'input'} class="page"></models-configure-input>
-        <models-configure-region id="region-configurator" ?active=${this._dialog == 'region'} class="page"></models-configure-region>
-        ${renderNotifications()}`
+        </div>`
     }
 
     clearForm () {
@@ -499,23 +281,6 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
             assignMeEl  .value = '';
             usageEl     .value = '';
         }
-    }
-    _showTimeIntervalDialog () {
-        this._dialog = 'timeInterval';
-        let timeIntervalConfigurator = this.shadowRoot.getElementById('time-interval-configurator') as ModelsConfigureTimeInterval;
-        if (this._timeInterval)
-            timeIntervalConfigurator.setSelected(this._timeInterval);
-        timeIntervalConfigurator.open();
-    }
-    _onClosedDialog () {
-        this._openedDialog = '';
-    }
-    _onTimeIntervalSelected () {
-        let timeIntervalConfigurator = this.shadowRoot.getElementById('time-interval-configurator') as ModelsConfigureTimeInterval;
-        let selectedTimeInterval = timeIntervalConfigurator.getSelected();
-        console.log('Changed time interval:', selectedTimeInterval);
-        this._timeInterval = selectedTimeInterval;
-        this.requestUpdate();
     }
 
     firstUpdated () {
@@ -535,36 +300,6 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
 
     static get styles() {
         return [ExplorerStyles, SharedStyles, css`
-            wl-slider > .value-edit {
-                width: 47px;
-            }
-
-            input.value-edit {
-                width: 100%;
-                background-color: transparent;
-                border: 0px;
-                text-align: right;
-                font-size: 16px;
-                font-weight: 400;
-                family: Raleway;
-            }
-
-            input.value-edit::placeholder {
-                color: rgb(136, 142, 145);
-            }
-
-            input.value-edit:hover {
-                border-bottom: 1px dotted black;
-                margin-bottom: -1px;
-            }
-
-            input.value-edit:focus {
-                border-bottom: 1px solid black;
-                margin-bottom: -1px;
-                outline-offset: -0px;
-                outline: -webkit-focus-ring-color auto 0px;
-            }
-
             th > wl-icon {
                 vertical-align: bottom;
                 margin-left: 4px;
