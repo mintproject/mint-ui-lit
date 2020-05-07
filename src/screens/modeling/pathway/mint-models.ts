@@ -307,6 +307,9 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     }
 
     _renderDialogs() {
+        let compUrl : string = '/models/compare/' +
+            this._modelsToCompare.map(model => model.id).join('/');
+        console.log(compUrl);
         return html`
         <wl-dialog class="comparison" fixed backdrop blockscrolling id="comparisonDialog">
             <table class="pure-table pure-table-striped">
@@ -337,6 +340,9 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                     })}
                 </tbody>
             </table>
+            <div>
+                For more details, see the <a href="${compUrl}">full comparison page</a>
+            </div>
         </wl-dialog>
         `;
     }
