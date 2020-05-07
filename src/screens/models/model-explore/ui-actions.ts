@@ -10,10 +10,7 @@ export const EXPLORER_SELECT_CONFIG = 'EXPLORER_SELECT_CONFIG'
 export const EXPLORER_SELECT_CALIBRATION = 'EXPLORER_SELECT_CALIBRATION'
 
 export const EXPLORER_SET_MODE = 'EXPLORER_SET_MODE';
-
-export const EXPLORER_SET_COMPARE_A = 'EXPLORER_SET_COMPARE_A';
-export const EXPLORER_SET_COMPARE_B = 'EXPLORER_SET_COMPARE_B';
-export const EXPLORER_COMPARE_MODEL = 'EXPLORER_COMPARE_MODEL';
+export const ADD_MODEL_TO_COMPARE = 'ADD_MODEL_TO_COMPARE'
 
 interface ActionSelectUri<T> extends Action<T> { uri: string };
 
@@ -24,15 +21,10 @@ export interface ExplorerActionSelectCalibration extends ActionSelectUri<'EXPLOR
 
 export interface ExplorerActionSetMode extends Action<'EXPLORER_SET_MODE'> {mode: string};
 
-interface ActionCompare<T> extends Action<T> { compare: ComparisonEntry };
-
-export interface ExplorerActionCompareA extends ActionCompare<'EXPLORER_SET_COMPARE_A'> {};
-export interface ExplorerActionCompareB extends ActionCompare<'EXPLORER_SET_COMPARE_B'> {};
-export interface ExplorerActionCompareModel extends ActionSelectUri<'EXPLORER_COMPARE_MODEL'> {};
+export interface CompareActionAdd extends Action<'ADD_MODEL_TO_COMPARE'> { comparison: ComparisonEntry };
 
 export type ExplorerUIAction = ExplorerActionSelectModel | ExplorerActionSelectVersion | ExplorerActionSelectConfig | 
-                               ExplorerActionSelectCalibration | ExplorerActionCompareA | ExplorerActionCompareB |
-                               ExplorerActionCompareModel | ExplorerActionSetMode;
+                               ExplorerActionSelectCalibration | ExplorerActionSetMode | CompareActionAdd ;
 
 type ExplorerThunkResult = ThunkAction<void, RootState, undefined, ExplorerUIAction>;
 
@@ -76,24 +68,12 @@ export const explorerSetMode: ActionCreator<ExplorerThunkResult> = (mode:string)
     dispatch({ type: EXPLORER_SET_MODE, mode: mode})
 };
 
-export const explorerSetCompareA: ActionCreator<ExplorerThunkResult> = (comp:ComparisonEntry) => (dispatch) => {
-    let comparison : ComparisonEntry = {model: '', version: '', config: '', calibration: ''};
-    if (comp.model) comparison.model = comp.model;
-    if (comp.version) comparison.version = comp.version;
-    if (comp.config) comparison.config = comp.config;
-    if (comp.calibration) comparison.calibration = comp.calibration;
-    dispatch({ type: EXPLORER_SET_COMPARE_A, compare: comparison })
-};
-
-export const explorerSetCompareB: ActionCreator<ExplorerThunkResult> = (comp:ComparisonEntry) => (dispatch) => {
-    let comparison : ComparisonEntry = {model: '', version: '', config: '', calibration: ''};
-    if (comp.model) comparison.model = comp.model;
-    if (comp.version) comparison.version = comp.version;
-    if (comp.config) comparison.config = comp.config;
-    if (comp.calibration) comparison.calibration = comp.calibration;
-    dispatch({ type: EXPLORER_SET_COMPARE_B, compare: comp })
-};
-
-export const explorerCompareModel: ActionCreator<ExplorerThunkResult> = (modelUri:string) => (dispatch) => {
-    dispatch({ type: EXPLORER_COMPARE_MODEL, uri: modelUri})
-};
+export const addModelToCompare: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
+    dispatch({
+        type: ADD_MODEL_TO_COMPARE,
+        comparison: {
+            uri: PREFIX_URI + id,
+            type: 'ModelConfigurationSetup' //FIXME
+        } as ComparisonEntry
+    });
+}

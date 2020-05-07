@@ -140,6 +140,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             <models-register class="page" ?active="${this._subpage == 'register'}"></models-register>
             <models-configure class="page" ?active="${this._subpage == 'configure'}"></models-configure>
             <models-calibrate class="page" ?active="${this._subpage == 'calibrate'}"></models-calibrate>
+            <models-compare class="page" ?active="${this._subpage == 'compare'}"></models-compare>
         `
     }
 
