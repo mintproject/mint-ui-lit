@@ -1,7 +1,7 @@
 import { Reducer } from "redux";
 import { RootAction } from "../../../app/store";
 import { EXPLORER_SELECT_MODEL, EXPLORER_SELECT_VERSION, EXPLORER_SELECT_CONFIG,
-         EXPLORER_SELECT_CALIBRATION, ADD_MODEL_TO_COMPARE, EXPLORER_SET_MODE } from './ui-actions'
+         EXPLORER_SELECT_CALIBRATION, ADD_MODEL_TO_COMPARE, EXPLORER_SET_MODE, CLEAR_COMPARE } from './ui-actions'
 
 export interface ComparisonEntry {
     uri:        string;
@@ -65,6 +65,11 @@ const explorerUI: Reducer<ExplorerUIState, RootAction> = (state = INITIAL_STATE,
             return {
                 ...state,
                 compare: comp
+            }
+        case CLEAR_COMPARE:
+            return {
+                ...state,
+                compare: []
             }
         default:
             return state;

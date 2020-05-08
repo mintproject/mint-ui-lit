@@ -10,7 +10,8 @@ export const EXPLORER_SELECT_CONFIG = 'EXPLORER_SELECT_CONFIG'
 export const EXPLORER_SELECT_CALIBRATION = 'EXPLORER_SELECT_CALIBRATION'
 
 export const EXPLORER_SET_MODE = 'EXPLORER_SET_MODE';
-export const ADD_MODEL_TO_COMPARE = 'ADD_MODEL_TO_COMPARE'
+export const ADD_MODEL_TO_COMPARE = 'ADD_MODEL_TO_COMPARE';
+export const CLEAR_COMPARE = 'CLEAR_COMPARE';
 
 interface ActionSelectUri<T> extends Action<T> { uri: string };
 
@@ -22,9 +23,11 @@ export interface ExplorerActionSelectCalibration extends ActionSelectUri<'EXPLOR
 export interface ExplorerActionSetMode extends Action<'EXPLORER_SET_MODE'> {mode: string};
 
 export interface CompareActionAdd extends Action<'ADD_MODEL_TO_COMPARE'> { comparison: ComparisonEntry };
+export interface CompareActionClear extends Action<'CLEAR_COMPARE'> {};
 
 export type ExplorerUIAction = ExplorerActionSelectModel | ExplorerActionSelectVersion | ExplorerActionSelectConfig | 
-                               ExplorerActionSelectCalibration | ExplorerActionSetMode | CompareActionAdd ;
+                               ExplorerActionSelectCalibration | ExplorerActionSetMode | CompareActionAdd |
+                               CompareActionClear;
 
 type ExplorerThunkResult = ThunkAction<void, RootState, undefined, ExplorerUIAction>;
 
@@ -75,5 +78,11 @@ export const addModelToCompare: ActionCreator<ExplorerThunkResult> = (id:string)
             uri: PREFIX_URI + id,
             type: 'ModelConfigurationSetup' //FIXME
         } as ComparisonEntry
+    });
+}
+
+export const clearCompare: ActionCreator<ExplorerThunkResult> = () => (dispatch) => {
+    dispatch({
+        type: CLEAR_COMPARE,
     });
 }
