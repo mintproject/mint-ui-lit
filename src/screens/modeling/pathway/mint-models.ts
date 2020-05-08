@@ -316,6 +316,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     }
 
     _renderDialogs() {
+        let compUrl : string = this._regionid + '/models/compare/' + this._modelsToCompare.map(getId).join('/');
         let loading : boolean = this._modelsToCompare.some((m:Model) => !this._loadedModels[m.id]);
         return html`
         <wl-dialog class="comparison" fixed backdrop blockscrolling id="comparisonDialog">
@@ -351,6 +352,9 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                     })}
                 </tbody>
             </table>
+            <div style="padding: 10px;">
+                For more details, see the <a href="${compUrl}">full comparison page</a>
+            </div>
         </wl-dialog>
         `;
     }
