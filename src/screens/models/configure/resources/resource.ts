@@ -110,6 +110,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     @property({type: Object}) protected _resources : T[] = [] as T[];
 
+    @property({type: String}) protected _textFilter : string = "";
+
     protected classes : string = "resource";
     protected name : string = "resource";
     protected pname : string = "resources";
@@ -198,10 +200,30 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     private _renderSearchOnList () {
         return html`
-            <wl-textfield label="Search ${this.pname}" @input="">
+            <wl-textfield label="Search ${this.pname}" @input="${this._onSearchChange}" id="search-input">
                 <wl-icon slot="after">search</wl-icon>
             </wl-textfield>
         `;
+    }
+
+    _searchPromise = null;
+    private _onSearchChange () {
+        let searchInput = this.shadowRoot.getElementById('search-input') as Textfield;
+        if (this._searchPromise) {
+            clearTimeout(this._searchPromise);
+        }
+        this._searchPromise = setTimeout(() => {
+            this._textFilter = searchInput.value.toLowerCase();
+            this._searchPromise = null;
+        }, 300);
+    }
+
+    private _filterByText (r:T) {
+        return this._resourceToText(r).toLowerCase().includes( this._textFilter );
+    }
+
+    protected _resourceToText (r:T) {
+        return getLabel(r);
     }
 
     protected _renderSelectList () {
@@ -239,7 +261,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 :'' }
             ${this._allResourcesLoading ?
                 html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
-                : Object.values(this._loadedResources).map((r:T) => html`
+                : Object.values(this._loadedResources)
+                        .filter((r:T) => this._filterByText(r))
+                        .map((r:T) => html`
                 <span class="${this.classes} list-item">
                     <span class="clickable-area" @click="${() => setSelected(r.id)}">
                         <span style="display: inline-block; vertical-align: top;">

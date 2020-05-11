@@ -14,7 +14,8 @@ import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 import { personGet, personPost, modelConfigurationPut, modelConfigurationGet,
          parameterGet, datasetSpecificationGet, gridGet,
          timeIntervalGet, processGet, softwareImageGet, } from 'model-catalog/actions';
-import { getURL } from 'model-catalog/util';
+import { getURL, getLabel } from 'model-catalog/util';
+import { renderExternalLink } from 'util/ui_renders';
 
 import "weightless/progress-spinner";
 import 'components/loading-dots'
@@ -25,9 +26,12 @@ import './person';
 import './process';
 import './parameter';
 import './dataset-specification';
+
 import './resources/time-interval';
+import './resources/grid';
 
 import { ModelCatalogTimeInterval } from './resources/time-interval';
+import { ModelCatalogGrid } from './resources/grid';
 
 import { ModelsConfigureGrid } from './grid';
 import { ModelsConfigureTimeInterval } from './time-interval';
@@ -49,6 +53,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     private _editing : boolean = false;
 
     private _inputTimeInterval : ModelCatalogTimeInterval;
+    private _inputGrid : ModelCatalogGrid;
 
     private _rendered : boolean = false;
 
@@ -130,15 +135,74 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     }
 
     private _renderForm () {
-        return html`
+        let keywords : string = "";
+        if (this._config && this._config.keywords) {
+            keywords = this._config.keywords[0].split(/ *; */).join(', ');
+        }
 
+        return html`
         <table class="details-table">
             <colgroup width="150px">
             <tr>
+                ${this._editing ? html`
+                <td colspan="2" style="padding: 5px 20px;">
+                    <wl-textfield id="form-config-name" label="Configuration name" 
+                                  value="${this._config ? getLabel(this._config) : ''}" required></wl-textfield>
+                </td>` : ''}
+            </tr>
+
+            <tr>
+                <td>Description:</td>
+                <td>
+                    ${this._editing ? html`
+                    <textarea id="form-config-desc" name="description" rows="5">${this._config ? this._config.description[0] : ''}</textarea>`
+                    : (this._config ? this._config.description[0] : '')}
+                </td>
+            </tr>
+
+            <tr>
+                <td>Keywords:</td>
+                <td>
+                    ${this._editing ? html`
+                    <input id="form-config-keywords" type="text" value="${keywords}"/>
+                    ` : keywords}
+                </td>
+            </tr>
+
+            <tr>
+                <td>Configuration creator:</td>
+                <td>
+                    TODO
+                </td>
+            </tr>
+
+            <tr>
+                <td>Software Image:</td>
+                <td>
+                    TODO
+                </td>
+            </tr>
+
+            <tr>
+                <td>Component Location:</td>
+                <td>
+                    ${this._editing ? html`
+                    <textarea id="form-config-comp-loc">${this._config ? this._config.hasComponentLocation : ''}</textarea>`
+                    : (this._config ? renderExternalLink(this._config.hasComponentLocation) : '')}
+                </td>
+            </tr>
+
+            <tr>
+                <td>Grid:</td>
+                <td>
+                    <model-catalog-grid id="mcgrid"></model-catalog-grid>
+                </td>
+            </tr>
+
+            <tr>
                 <td>Time interval:</td>
                 <td>
-                    <model-catalog-time-interval id="mcti">
-                    </model-catalog-time-interval>
+                    <model-catalog-time-interval id="mcti"></model-catalog-time-interval>
                 </td>
             </tr>
         </table>
@@ -175,6 +239,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
 
     protected firstUpdated () {
         this._inputTimeInterval =  this.shadowRoot.getElementById('mcti') as ModelCatalogTimeInterval;
+        this._inputGrid = this.shadowRoot.getElementById('mcgrid') as ModelCatalogGrid;
         this._rendered = true;
         if (this._config) {
             this._initializeForm();
@@ -190,14 +255,16 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     }
 
     private _setEditingInputs () { //TODO types...
-        let inputs = [this._inputTimeInterval];
+        this._inputTimeInterval.setActionSelect();
+        this._inputGrid.setActionMultiselect();
+        /*let inputs = [this._inputTimeInterval];
         inputs.forEach((input) => {
             input.setActionSelect();
-        });
+        });*/
     }
 
     private _unsetEditingInputs () {
-        let inputs = [this._inputTimeInterval];
+        let inputs = [this._inputTimeInterval, this._inputGrid];
         inputs.forEach((input) => {
             input.unsetAction();
         });
