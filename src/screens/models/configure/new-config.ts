@@ -18,7 +18,6 @@ import { sortByPosition, createUrl, renderExternalLink, renderParameterType } fr
 import { IdMap } from 'app/reducers';
 import { ModelConfiguration } from '@mintproject/modelcatalog_client';
 import { ModelCatalogTimeInterval } from './resources/time-interval';
-import { Action } from './resources/resource';
 
 import "./resources/time-interval";
 
@@ -185,8 +184,7 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
             <tr>
                 <td>Time interval:</td>
                 <td>
-                    <model-catalog-time-interval id="mcti" .action=${Action.SELECT}>
-                    </model-catalog-time-interval>
+                    <model-catalog-time-interval id="mcti"></model-catalog-time-interval>
                 </td>
             </tr>
 

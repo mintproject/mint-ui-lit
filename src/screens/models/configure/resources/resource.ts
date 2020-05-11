@@ -33,53 +33,113 @@ interface BaseResources {
     label?: string[];
 }
 
-export enum Action {
+enum Action {
     NONE, SELECT, MULTISELECT
 }
 
 @customElement('model-catalog-resource')
 export class ModelCatalogResource<T extends BaseResources> extends LitElement {
-    @property({type: Array}) protected _loading : IdMap<boolean> = {};
-    /*@property({type: Object})
-    private _timeIntervals : IdMap<TimeInterval> = {} as IdMap<TimeInterval>;
+    static get styles() {
+        return [ExplorerStyles, SharedStyles, css`
+        #select-button {
+            border: 1px solid gray;
+            margin-right: 5px;
+            --button-padding: 4px;
+            float: right;
+        }
 
-    @property({type: Object})
-    private _selected : TimeInterval | null = null;
+        .list-item {
+            display: grid !important;
+            margin: 2px 0px !important;
+            grid-template-columns: auto 58px;
+            align-items: center;
+        }
 
-    @property({type: String})
-    private _filter : string = '';
+        .list-item.no-buttons {
+            grid-template-columns: auto !important;
+        }
 
-    /* boolean to check if we are on edit mode, if selected === null we are creating a new timeInterval 
-    @property({type: Boolean}) private _editing : boolean = false;
-    @property({type: Boolean}) private _loading : boolean = false; // Loading all timeIntervals
-    @property({type: Boolean}) private _waiting : boolean = false; // Waiting creation of new timeInterval*/
+        .clickable-area {
+            display: grid;
+            grid-template-columns: 30px auto;
+            align-items: center;
+            overflow: hidden;
+            cursor:pointer;
+        }
 
-    //FLAGS
+        .buttons-area {
+            display: inline-block;
+        }
+
+        .buttons-area > wl-button {
+            --button-padding: 5px;
+        }
+
+        .custom-radio {
+            width: 28px;
+            line-height: 1.5em;
+        }
+
+        wl-icon.warning:hover {
+            color: darkred;
+        }
+
+        span.bold {
+            font-weight: bold;
+        }
+
+        .resources-list {
+            height: 400px;
+            overflow-y: scroll;
+        }`,
+        ];
+    }
+
+    // Resources 
+    protected _loadedResources : IdMap<T> = {} as IdMap<T>;
+    @property({type: Object}) protected _loading : IdMap<boolean> = {};
+    @property({type: Boolean}) protected _allResourcesLoaded : boolean = false;
+    @property({type: Boolean}) protected _allResourcesLoading : boolean = false;
+    @property({type: String}) protected _selectedResourceId : string = "";
+    protected _selectedResources : IdMap<boolean> = {};
+
+    // FLAGS
+    @property({type: String}) private _action : Action = Action.NONE;
     @property({type: Boolean}) public inline : boolean = true;
-    @property({type: String}) public action : Action = Action.NONE;
-
-    @property({type: Boolean}) public newbutton : boolean = false;
-    @property({type: Boolean}) public addbutton : boolean = false;
-    @property({type: Boolean}) public editbutton : boolean = false;
-
     @property({type: Boolean}) private _dialogOpen : boolean = false;
-    @property({type: String}) public name : string = "resource";
 
     @property({type: Object}) protected _resources : T[] = [] as T[];
-    protected _loadedResources : IdMap<T> = {} as IdMap<T>;
-    
+
+    protected classes : string = "resource";
+    protected name : string = "resource";
+    protected pname : string = "resources";
+    protected resourcesGet;
+    protected resourceGet;
+
+    public unsetAction () {
+        this._action = Action.NONE;
+    }
+
+    public setActionSelect () {
+        this._action = Action.SELECT;
+    }
+
+    public setActionMultiselect () {
+        this._action = Action.MULTISELECT;
+    }
+
     protected render() {
-        console.log('Render resources: ', this._resources);
+        //console.log('Render', this.pname + ':', this._resources);
         return html`
             ${this.inline ? this._renderInline() : this._renderTable()}
-            ${this._dialogOpen? this._renderDialog() : ''}
+            ${this._renderDialog()}
         `;
     }
 
     private _renderInline () {
         return html`
         <div style="position: relative">
-            ${(this.action === Action.SELECT || this.action === Action.MULTISELECT) ? html`
+            ${(this._action === Action.SELECT || this._action === Action.MULTISELECT) ? html`
                 <wl-button @click="${this._showEditSelectionDialog}" id="select-button" flat inverted>
                     <wl-icon>edit</wl-icon>
                 </wl-button>`
@@ -96,378 +156,179 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     private _renderDialog () {
-        console.log('DialogRendered!');
         return html`
         <wl-dialog class="larger" id="resource-dialog" fixed backdrop blockscrolling persistent>
             <h3 slot="header">
-                Select resources
+                Select ${this.pname}
             </h3>
-            <div slot="content">
-                CONTENT!
-            </div>
-            <div slot="footer">
-                <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat ?disabled="">
-                    Cancel
-                </wl-button>
-                <wl-button class="submit" ?disabled="" @click="">
-                    SELECT
-                    <loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>
-                </wl-button>
-            </div>
+            ${this._dialogOpen ? html `
+                <div slot="content">
+                    ${this._renderSearchOnList()}
+                    ${(this._action === Action.SELECT || this._action === Action.MULTISELECT) ?
+                            this._renderSelectList() : '' }
+                </div>
+                <div slot="footer">
+                    <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat ?disabled="">
+                        Cancel
+                    </wl-button>
+                    <wl-button class="submit" ?disabled="" @click="${this._onSelectButtonClicked}">
+                        Select
+                        <loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>
+                    </wl-button>
+                </div>` 
+            : ''}
         </wl-dialog>`
     }
 
     protected _renderEmpty () {
-        return 'No resource'
+        return 'No ' + this.name;
     }
 
     private _renderStatus (r:T) {
-        //logic to display the element and stuff
-        return this._loading[r.id] ? 
-            html`${getId(r)} <loading-dots style="--width: 20px"></loading-dots>` //TODO: error handling here...
-            : this._renderResource(this._loadedResources[r.id]);
-        
+        return html`<span class="${this.classes}"> 
+            ${this._loading[r.id] ? 
+                html`${getId(r)} <loading-dots style="--width: 20px"></loading-dots>` //TODO: error handling here...
+                : this._renderResource(this._loadedResources[r.id])}
+        </span>`
     }
 
     protected _renderResource (r:T) {
-        return html`<span class="resource">${getLabel(r)}</span>`;
+        return html`${getLabel(r)}`;
+    }
+
+    private _renderSearchOnList () {
+        return html`
+            <wl-textfield label="Search ${this.pname}" @input="">
+                <wl-icon slot="after">search</wl-icon>
+            </wl-textfield>
+        `;
+    }
+
+    protected _renderSelectList () {
+        if (!this._allResourcesLoaded && !this._allResourcesLoading) this._loadAllResources();
+        // Diff between SELECT and MULTISELECT
+        let checked : string = (this._action === Action.SELECT) ?
+                'radio_button_checked' : 'check_box';
+        let unchecked : string = (this._action === Action.SELECT) ?
+                'radio_button_unchecked' : 'check_box_outline_blank';
+        let isSelected : (id:string) => boolean = (this._action === Action.SELECT) ?
+                (id:string) => (this._selectedResourceId === id)
+                : (id:string) => (!!this._selectedResources[id]);
+        let setSelected : (id:string) => void = (this._action === Action.SELECT) ?
+                (id:string) => {this._selectedResourceId = id}
+                : (id:string) => {
+                    this._selectedResources[id] = !this._selectedResources[id];
+                    this.requestUpdate();
+                };
+
+        return html`
+        <div class="resources-list" style="margin-top: 5px;">
+            ${(this._action === Action.SELECT) ? html`
+                <span class="${this.classes} list-item no-buttons">
+                    <span class="clickable-area" @click=${() => {this._selectedResourceId = '';}}>
+                        <span style="display: inline-block; vertical-align: top;">
+                            <wl-icon class="custom-radio">
+                                ${!this._selectedResourceId ? checked : unchecked}
+                            </wl-icon>
+                        </span>
+                        <span class="${!this._selectedResourceId ? 'bold' : ''}" style="display: inline-block;">
+                            No ${this.name}
+                        </span>
+                    </span>
+                </span>`
+                :'' }
+            ${this._allResourcesLoading ?
+                html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
+                : Object.values(this._loadedResources).map((r:T) => html`
+                <span class="${this.classes} list-item">
+                    <span class="clickable-area" @click="${() => setSelected(r.id)}">
+                        <span style="display: inline-block; vertical-align: top;">
+                            <wl-icon class="custom-radio">
+                                ${isSelected(r.id) ? checked : unchecked}
+                            </wl-icon>
+                        </span>
+                        <span class="${isSelected(r.id) ? 'bold' : ''}" style="display: inline-block;">
+                            ${this._renderResource(r)}
+                        </span>
+                    </span>
+                    <span class="buttons-area">
+                        <wl-button @click="" flat inverted><wl-icon>edit</wl-icon></wl-button>
+                        <wl-button @click="" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
+                    </span>
+                </span>`)}
+        </div>
+        `;
     }
 
     private _closeDialog () {
-        hideDialog("timeIntervalDialog", this.shadowRoot);
+        hideDialog("resource-dialog", this.shadowRoot);
         this._dialogOpen = false;
     }
 
-    private async _showEditSelectionDialog () {
-        console.log('showEditSelectionDialog');
-        this._dialogOpen = true; //This will triger the dialog render;
-        await this.updateComplete;
+    private _onSelectButtonClicked () {
+        if (this._action === Action.MULTISELECT) {
+            this._resources = Object.keys(this._selectedResources)
+                    .filter((id:string) => this._selectedResources[id])
+                    .map((id:string) => this._loadedResources[id]);
+        } else if (this._action === Action.SELECT) {
+            if (this._selectedResourceId) {
+                this._resources = [ this._loadedResources[this._selectedResourceId] ]
+            } else {
+                this._resources = [];
+            }
+        }
+        this._closeDialog();
+    }
+
+    private _showEditSelectionDialog () {
+        // Set 'selected' variables and open dialog
+        if (this._action === Action.MULTISELECT) {
+            let selected : IdMap<boolean> = {};
+            this._resources.forEach((r:T) => selected[r.id] = true);
+            this._selectedResources = selected;
+        } else if (this._resources.length > 0) { //ON SELECT
+            this._selectedResourceId = this._resources[0].id;
+        }
+        this._dialogOpen = true;
         showDialog("resource-dialog", this.shadowRoot);
     }
 
-    private _loadResources (r: T[]) {
-    }
-
     public setResources (r:T[]) {
-        // This asumes that all resources are loaded
         let resources : T[] = [...r];
-    }
+        let shouldLoad : string[] = resources
+                .map((r:T) => r.id)
+                .filter((id:string) => !this._loading[id] || !this._loadedResources[id]);
 
-/*
-        ${renderNotifications()}*/
-
-    /*
-    public open () {
-        if (this.active) {
-            this._filter = '';
-        } else {
-            setTimeout(() => {this.open()}, 300);
+        if (shouldLoad.length > 0) {
+            let dbResources : IdMap<T> = this._getDBResources();
+            shouldLoad.forEach((id:string) => {
+                if (dbResources[id])  {
+                    this._loadedResources[id] = dbResources[id];
+                } else {
+                    this._loading[id] = true;
+                    let req = store.dispatch(this.resourceGet(id));
+                    req.then((r:T) => {
+                        this._loading[id] = false;
+                        this._loadedResources[id] = r;
+                        this.requestUpdate();
+                    });
+                }
+            })
         }
+
+        this._resources = resources;
     }
 
-    public cancel () {
-        this._filter = '';
-        if (this._editing) {
-            this._editing = false;
-            this._selected = null;
-        } else {
-            this.dispatchEvent(new CustomEvent('dialogClosed', {composed: true}));
-            hideDialog("timeIntervalDialog", this.shadowRoot);
-        }
+    protected _getDBResources () : IdMap<T> {
+        return {} as IdMap<T>;
     }
 
-    private _onSubmitTimeInterval () {
-        this.dispatchEvent(new CustomEvent('timeIntervalSelected', {composed: true, detail: this._selected}));
-        hideDialog("timeIntervalDialog", this.shadowRoot);
-        //FIXME: should do the cancel?
-    }
-
-    public setSelected (timeInterval: TimeInterval|null) {
-        this._selected = timeInterval;
-    }
-
-    public getSelected () {
-        return this._selected;
-    }
-
-    _searchPromise = null;
-    _onSearchChange () {
-        let searchEl = this.shadowRoot.getElementById('search-input') as Textfield;
-        if (this._searchPromise) {
-            clearTimeout(this._searchPromise);
-        }
-        this._searchPromise = setTimeout(() => {
-            this._filter = searchEl.value;
-            console.log(searchEl.value);
-            this._searchPromise = null;
-        }, 300);
-    }
-
-    private _renderEdit () {
-        return html`
-        <form>
-            <wl-textfield value="${this._selected.label ? this._selected.label:''}"
-                id="edit-time-interval-name" label="Name" required></wl-textfield>
-            <wl-textarea value="${this._selected.description ? this._selected.description:''}"
-                id="edit-time-interval-desc" label="Description" required></wl-textarea>
-            <div class="two-inputs">
-                <wl-textfield value="${this._selected.intervalValue ? this._selected.intervalValue:''}"
-                    id="edit-time-interval-value" label="Interval value"></wl-textfield>
-                <wl-select value="${this._selected.intervalUnit ? this._selected.intervalUnit[0].id:''}"
-                    id="edit-time-interval-unit" label="Interval unit" required>
-                    <option value disabled>None</option>
-                    ${Object.values(this._units).map((unit:Unit) => html`
-                        <option value="${unit.id}">${unit.label}</option>
-                    `)}
-                </wl-select>
-            </div>
-        </form> `
-    }
-
-    private _renderNew () {
-        return html`
-        <form>
-            <wl-textfield id="new-time-interval-name" label="Name" required></wl-textfield>
-            <wl-textarea id="new-time-interval-desc" label="Description" required></wl-textarea>
-            <div class="two-inputs">
-                <wl-textfield id="new-time-interval-value" label="Interval unit"></wl-textfield>
-                <wl-select id="new-time-interval-unit" label="Interval unit" required>
-                    <option value selected disabled>None</option>
-                    ${Object.values(this._units).map((unit:Unit) => html`
-                        <option value="${unit.id}">${unit.label}</option>
-                    `)}
-                </wl-select>
-            </div>
-        </form>`
-    }
-
-    private _renderSelect () {
-        return html`
-        <wl-textfield label="Search time intervals" id="search-input" @input="${this._onSearchChange}"><wl-icon slot="after">search</wl-icon></wl-textfield>
-        <div class="results" style="margin-top: 5px;">
-            <div class="time-interval-container">
-                <span class="time-interval-clickable-area" @click="${() => {this.setSelected(null)}}">
-                    <span style="display: inline-block; vertical-align: top;">
-                        <wl-icon class="custom-radio">
-                            ${this._selected === null ? 'radio_button_checked' : 'radio_button_unchecked'}
-                        </wl-icon>
-                    </span>
-                    <span class="time-interval-data ${this._selected === null ? 'bold' : ''}" style="line-height: 36px;">
-                        <div style="color:black;"> No time interval </div>
-                    </span>
-                </span>
-            </div>
-            ${Object.values(this._timeIntervals)
-                .filter(timeInterval => (timeInterval.label||[]).join().toLowerCase().includes(this._filter.toLowerCase()))
-                .map((timeInterval) => html`
-            <div class="time-interval-container">
-                <span class="time-interval-clickable-area" @click="${() => {this.setSelected(timeInterval)}}">
-                    <span style="display: inline-block; vertical-align: top;">
-                        <wl-icon class="custom-radio">
-                            ${this._selected && this._selected.id === timeInterval.id ? 'radio_button_checked' : 'radio_button_unchecked'}
-                        </wl-icon>
-                    </span>
-                    <span class="time-interval-data ${this._selected && this._selected.id === timeInterval.id ? 'bold' : ''}">
-                        <div class="one-line" style="display: flex; justify-content: space-between;">
-                            <span>
-                                ${timeInterval.label ? timeInterval.label : timeInterval.id}
-                            </span>
-                            <span class="monospaced">
-                                ${timeInterval.intervalValue ? timeInterval.intervalValue : '-'}
-                                ${timeInterval.intervalUnit && timeInterval.intervalUnit.length > 0 ?
-                                    this._units[timeInterval.intervalUnit[0].id].label
-                                    : '-'}
-                            </span>
-                        </div>
-                        <div class="one-line" style="font-style: oblique;">
-                            ${timeInterval.description ? timeInterval.description : '' }
-                        </div>
-                    </span>
-                </span>
-                <span class="time-interval-buttons-area">
-                    <wl-button @click="${() => this._edit(timeInterval)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
-                    <wl-button @click="${() => this._delete(timeInterval)}" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
-                </span>
-            </div>
-        `)}
-        ${this._loading ? html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : ''}
-        </div>
-        or <a style="cursor:pointer" @click="${() => {this._selected = null; this._editing = true;}}">create a new time interval</a>
-        `
-    }
-
-    _onCreateTimeInterval () {
-        let nameEl : Textfield  = this.shadowRoot.getElementById('new-time-interval-name') as Textfield;
-        let descEl : Textarea   = this.shadowRoot.getElementById('new-time-interval-desc') as Textarea;
-        let valueEl : Textfield = this.shadowRoot.getElementById('new-time-interval-value') as Textfield;
-        let unitEl : Select     = this.shadowRoot.getElementById('new-time-interval-unit') as Select;
-
-        if (nameEl && descEl && valueEl && unitEl) {
-            let name : string = nameEl.value;
-            let desc : string = descEl.value;
-            let value: string = valueEl.value;
-            let unitId: string = unitEl.value;
-
-            if (!name || !desc || !unitId) {
-                showNotification("formValuesIncompleteNotification", this.shadowRoot!);
-                (<any>nameEl).refreshAttributes();
-                (<any>descEl).refreshAttributes();
-                (<any>unitEl).refreshAttributes();
-                return;
-            }
-
-            let newTimeInterval : TimeInterval = {
-                label: [name],
-                description: [desc],
-                intervalUnit: [ { id: unitId } ],
-            }
-            if (value) newTimeInterval.intervalValue = [<unknown>value as object];
-
-            this._waiting = true;
-            store.dispatch(timeIntervalPost(newTimeInterval)).then((timeInterval: TimeInterval) => {
-                this._waiting = false;
-                this._editing = false;
-                this._selected = timeInterval;
-            });
-            showNotification("saveNotification", this.shadowRoot!);
-        }
-    }
-
-    _onEditTimeInterval () {
-        let nameEl : Textfield  = this.shadowRoot.getElementById('edit-time-interval-name') as Textfield;
-        let descEl : Textarea   = this.shadowRoot.getElementById('edit-time-interval-desc') as Textarea;
-        let valueEl : Textfield = this.shadowRoot.getElementById('edit-time-interval-value') as Textfield;
-        let unitEl : Select     = this.shadowRoot.getElementById('edit-time-interval-unit') as Select;
-
-        if (nameEl && descEl && valueEl && unitEl) {
-            let name : string = nameEl.value;
-            let desc : string = descEl.value;
-            let value: string = valueEl.value;
-            let unitId: string = unitEl.value;
-
-            if (!name || !desc || !unitId) {
-                showNotification("formValuesIncompleteNotification", this.shadowRoot!);
-                (<any>nameEl).refreshAttributes();
-                (<any>descEl).refreshAttributes();
-                (<any>unitEl).refreshAttributes();
-                return;
-            }
-
-            let editedTimeInterval : TimeInterval = Object.assign({}, this._selected);
-            editedTimeInterval.label = [name];
-            editedTimeInterval.description = [desc];
-            editedTimeInterval.intervalUnit = [ {id : unitId} ];
-            if (value) editedTimeInterval.intervalValue = [<unknown>value as object];
-
-            this._waiting = true;
-            store.dispatch(timeIntervalPut(editedTimeInterval)).then((timeInterval: TimeInterval) => {
-                this._waiting = false;
-                this._editing = false;
-                this._selected = timeInterval;
-            });
-            showNotification("saveNotification", this.shadowRoot!);
-        }
-    }
-
-    _edit (timeInterval: TimeInterval) {
-        this._selected = timeInterval;
-        this._editing = true;
-    }
-
-    _delete (timeInterval: TimeInterval) {
-        if (confirm('This TimeInterval will be deleted on all related resources')) {
-            if (this._selected && this._selected.id === timeInterval.id)
-                this._selected = null;
-            store.dispatch(timeIntervalDelete(timeInterval));
-        }
-    }
-
-    firstUpdated () {
-        this._loading = true;
-        store.dispatch(timeIntervalsGet()).then((timeIntervals) => {
-            this._loading = false;
+    protected _loadAllResources () {
+        this._allResourcesLoading = true;
+        store.dispatch(this.resourcesGet()).then((resources:IdMap<T>) => {
+            this._allResourcesLoading = false;
+            this._loadedResources = resources;
+            this._allResourcesLoaded = true;
         });
-    }
-*/
-
-    stateChanged(state: RootState) {
-        if (state.modelCatalog) {
-            let db = state.modelCatalog;
-            //this._timeIntervals = db.timeIntervals;
-        }
-    }
-
-    static get styles() {
-        return [ExplorerStyles, SharedStyles, css`
-        #select-button {
-            border: 1px solid gray;
-            margin-right: 5px;
-            --button-padding: 4px;
-            float: right;
-        }
-
-        .time-interval-container {
-            display: grid;
-            grid-template-columns: auto 58px;
-            border: 2px solid teal;
-            border-radius: 4px;
-            padding: 1px 4px;
-            margin-bottom: 5px;
-        }
-
-        .custom-radio {
-            width: 28px;
-            line-height: 36px;
-        }
-
-        wl-icon.warning:hover {
-            color: darkred;
-        }
-
-        span.bold {
-            font-weight: bold;
-        }
-        
-        .time-interval-buttons-area {
-            display: inline-block;
-            line-height: 36px;
-        }
-
-        .time-interval-buttons-area > wl-button {
-            --button-padding: 5px;
-            line-height: 36px;
-            vertical-align: middle;
-        }
-
-        .time-interval-clickable-area {
-            overflow: hidden;
-            cursor:pointer;
-        }
-
-        .time-interval-data {
-            display: inline-block;
-            width: calc(100% - 30px);
-        }
-
-        .one-line {
-            height: 18px;
-            line-height: 18px;
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-        }
-
-        .two-inputs > wl-textfield, 
-        .two-inputs > wl-select {
-            display: inline-block;
-            width: 50%;
-        }
-
-        .results {
-            height: 400px;
-            overflow-y: scroll;
-        }
-        `,
-        ];
     }
 }
