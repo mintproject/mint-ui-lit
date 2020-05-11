@@ -10,14 +10,13 @@ import { Region, RegionMap } from '../regions/reducers';
 import { GOOGLE_API_KEY } from '../../config/google-api-key';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
-import { BASE_PATH } from '@mintproject/modelcatalog_client';
 
 import "../../components/stats-blurb";
 import "../../thirdparty/google-map/src/google-map";
 import "../../components/google-map-custom";
 import { selectTopRegion } from '../../app/ui-actions';
 import { GoogleMapCustom } from 'components/google-map-custom';
-import { BASE_HREF, goToPage, goToRegionPage } from 'app/actions';
+import { goToPage, goToRegionPage } from 'app/actions';
 
 @customElement('app-home')
 export class AppHome extends connect(store)(PageViewElement) {
@@ -129,9 +128,6 @@ export class AppHome extends connect(store)(PageViewElement) {
               </li>              
             </ul>
             <p>
-                ${BASE_PATH? html`
-                Currently this system is using the version ${BASE_PATH.split('/').pop()} of the Model Catalog.
-                ` : ''}
                 We recommend using Google Chrome browser to navigate this page.
             </p>
             <wl-title level="4">Select a region by hovering over it and clicking.</wl-title>
