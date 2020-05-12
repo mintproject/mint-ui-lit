@@ -13,13 +13,14 @@ import { timeIntervalGet, timeIntervalsGet, timeIntervalPost, timeIntervalPut, t
 
 import { renderExternalLink } from '../util';
 
+import { TimeInterval, Unit } from '@mintproject/modelcatalog_client';
 import "weightless/progress-spinner";
 import "weightless/textfield";
 import "weightless/textfield";
 import "weightless/card";
 import "weightless/dialog";
+import "weightless/button";
 import 'components/loading-dots'
-import { TimeInterval, Unit } from '@mintproject/modelcatalog_client';
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
@@ -31,10 +32,15 @@ import { getId, getLabel } from 'model-catalog/util';
 interface BaseResources {
     id?: string;
     label?: string[];
+    description?: string[];
 }
 
 enum Action {
     NONE, SELECT, MULTISELECT
+}
+
+enum Status {
+    NONE, CREATING, EDITING
 }
 
 @customElement('model-catalog-resource')
@@ -101,10 +107,12 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: Boolean}) protected _allResourcesLoaded : boolean = false;
     @property({type: Boolean}) protected _allResourcesLoading : boolean = false;
     @property({type: String}) protected _selectedResourceId : string = "";
+    @property({type: String}) protected _editingResourceId : string = "";
     protected _selectedResources : IdMap<boolean> = {};
 
     // FLAGS
     @property({type: String}) private _action : Action = Action.NONE;
+    @property({type: String}) private _status : Status = Status.NONE;
     @property({type: Boolean}) public inline : boolean = true;
     @property({type: Boolean}) private _dialogOpen : boolean = false;
 
@@ -117,6 +125,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected pname : string = "resources";
     protected resourcesGet;
     protected resourceGet;
+    protected resourcePut;
+    protected resourcePost;
 
     public unsetAction () {
         this._action = Action.NONE;
@@ -134,7 +144,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         //console.log('Render', this.pname + ':', this._resources);
         return html`
             ${this.inline ? this._renderInline() : this._renderTable()}
-            ${this._renderDialog()}
+            <wl-dialog class="larger" id="resource-dialog" fixed backdrop blockscrolling persistent>
+                ${this._dialogOpen ? this._renderDialogContent() : ''}
+            </wl-dialog>
         `;
     }
 
@@ -157,29 +169,31 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     private _renderTable () {
     }
 
-    private _renderDialog () {
+    private _renderDialogContent () {
+        if (this._status === Status.CREATING || this._status === Status.EDITING) {
+            return this._renderFormDialog();
+        } else if (this._action === Action.SELECT || this._action === Action.MULTISELECT) {
+            return this._renderSelectDialog();
+        }
+    }
+
+    private _renderSelectDialog () {
         return html`
-        <wl-dialog class="larger" id="resource-dialog" fixed backdrop blockscrolling persistent>
-            <h3 slot="header">
-                Select ${this.pname}
-            </h3>
-            ${this._dialogOpen ? html `
-                <div slot="content">
-                    ${this._renderSearchOnList()}
-                    ${(this._action === Action.SELECT || this._action === Action.MULTISELECT) ?
-                            this._renderSelectList() : '' }
-                </div>
-                <div slot="footer">
-                    <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat ?disabled="">
-                        Cancel
-                    </wl-button>
-                    <wl-button class="submit" ?disabled="" @click="${this._onSelectButtonClicked}">
-                        Select
-                        <loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>
-                    </wl-button>
-                </div>` 
-            : ''}
-        </wl-dialog>`
+        <h3 slot="header">
+            Select ${this._action === Action.SELECT ? this.name : this.pname}
+        </h3>
+        <div slot="content">
+            ${this._renderSearchOnList()}
+            ${this._renderSelectList()}
+        </div>
+        <div slot="footer">
+            <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat ?disabled="">
+                Cancel
+            </wl-button>
+            <wl-button class="submit" ?disabled="" @click="${this._onSelectButtonClicked}">
+                Select
+            </wl-button>
+        </div>`;
     }
 
     protected _renderEmpty () {
@@ -276,7 +290,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                         </span>
                     </span>
                     <span class="buttons-area">
-                        <wl-button @click="" flat inverted><wl-icon>edit</wl-icon></wl-button>
+                        <wl-button @click="${() => this._editResource(r)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
                         <wl-button @click="" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
                     </span>
                 </span>`)}
@@ -284,9 +298,51 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         `;
     }
 
+    private _renderFormDialog () {
+        let edResource = this._loadedResources[this._editingResourceId];
+        return html`
+        <h3 slot="header">
+            ${this._status === Status.CREATING ? 
+                'Creating new ' + this.name
+                :  'Editing resource ' + (edResource ? getLabel(edResource) : '-')}
+        </h3>
+        <div slot="content">
+            ${this._renderForm()}
+        </div>
+        <div slot="footer">
+            <wl-button @click="${this._clearStatus}" style="margin-right: 5px;" inverted flat ?disabled="">
+                Cancel
+            </wl-button>
+            <wl-button class="submit" ?disabled="" @click="${this._onFormSaveButtonClicked}">
+                Save
+                <loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>
+            </wl-button>
+        </div>`;
+    }
+
+    protected _renderForm () {
+        let edResource =(this._status === Status.EDITING && this._loadedResources[this._editingResourceId]) ?
+                this._loadedResources[this._editingResourceId]
+                : null;
+        return html`
+        <form>
+            <wl-textfield id="resource-label" label="Name" required
+                value=${edResource ? getLabel(edResource) : ''}>
+            </wl-textfield>
+            <wl-textarea id="resource-desc" label="Description" required
+                value=${edResource && edResource.description ? edResource.description[0] : ''}>
+            </wl-textarea>
+        </form>`;
+    }
+
     private _closeDialog () {
         hideDialog("resource-dialog", this.shadowRoot);
         this._dialogOpen = false;
+    }
+
+    private _clearStatus () {
+        this._status = Status.NONE;
+        this._editingResourceId = '';
     }
 
     private _onSelectButtonClicked () {
@@ -304,6 +360,44 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._closeDialog();
     }
 
+    private _onFormSaveButtonClicked () {
+        let resource = this._getResourceFromForm();
+        if (resource) {
+            console.log(resource);
+            let req : Promise<T>;
+            if (this._status === Status.CREATING) {
+                req = store.dispatch(this.resourcePost(resource));
+            } else if (this._status === Status.EDITING) {
+                req = store.dispatch(this.resourcePut(resource));
+            }
+            req.then((r:T) => {
+                console.log('Promise resolved')
+                this._loadedResources[r.id] = r;
+                this._clearStatus();
+                // TODO: display notifications
+            });
+        }
+    }
+
+    protected _getResourceFromForm () {
+        // GET ELEMENTS
+        let inputLabel : Textfield  = this.shadowRoot.getElementById('resource-label') as Textfield;
+        let inputDesc  : Textarea   = this.shadowRoot.getElementById('resource-desc') as Textarea;
+        // VALIDATE
+        let label : string = inputLabel ? inputLabel.value : '';
+        let desc : string = inputDesc ? inputDesc.value : '';
+        if (label && desc) {
+            return {
+                label: [label],
+                description: [desc],
+            } as T;
+        } else {
+            // Show errors
+            if (!label) (<any>inputLabel).refreshAttributes();
+            if (!desc) (<any>inputDesc).refreshAttributes();
+        }
+    }
+
     private _showEditSelectionDialog () {
         // Set 'selected' variables and open dialog
         if (this._action === Action.MULTISELECT) {
@@ -315,6 +409,11 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
         this._dialogOpen = true;
         showDialog("resource-dialog", this.shadowRoot);
+    }
+
+    private _editResource (r:T) {
+        this._editingResourceId = r.id;
+        this._status = Status.EDITING;
     }
 
     public setResources (r:T[]) {

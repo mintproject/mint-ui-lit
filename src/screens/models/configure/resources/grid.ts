@@ -1,5 +1,5 @@
 import { ModelCatalogResource } from './resource';
-import { TimeInterval } from '@mintproject/modelcatalog_client';
+import { Grid } from '@mintproject/modelcatalog_client';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
