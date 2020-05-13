@@ -49,7 +49,7 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
         },
         {
             name: "Source",
-            fn: (ds:Dataset) => html`<a href="${ds.source.url}">${ds.source.name}</a>`
+            fn: (ds:Dataset) => html`<a target="_blank" href="${ds.source.url}">${ds.source.name}</a>`
         },
         {
             name: "Source Type",
