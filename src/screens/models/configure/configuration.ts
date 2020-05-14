@@ -28,10 +28,20 @@ import './parameter';
 import './dataset-specification';
 
 import './resources/time-interval';
+import './resources/person';
+import './resources/software-image';
 import './resources/grid';
+import './resources/process';
+import './resources/parameter';
+import './resources/dataset-specification';
 
 import { ModelCatalogTimeInterval } from './resources/time-interval';
+import { ModelCatalogPerson } from './resources/person';
+import { ModelCatalogProcess } from './resources/process';
+import { ModelCatalogSoftwareImage } from './resources/software-image';
 import { ModelCatalogGrid } from './resources/grid';
+import { ModelCatalogParameter } from './resources/parameter';
+import { ModelCatalogDatasetSpecification } from './resources/dataset-specification';
 
 import { ModelsConfigureGrid } from './grid';
 import { ModelsConfigureTimeInterval } from './time-interval';
@@ -53,7 +63,12 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     private _editing : boolean = false;
 
     private _inputTimeInterval : ModelCatalogTimeInterval;
+    private _inputPerson : ModelCatalogPerson;
+    private _inputProcess : ModelCatalogProcess;
+    private _inputSoftwareImage : ModelCatalogSoftwareImage;
     private _inputGrid : ModelCatalogGrid;
+    private _inputParameter : ModelCatalogParameter;
+    private _inputDatasetSpecification : ModelCatalogDatasetSpecification;
 
     private _rendered : boolean = false;
 
@@ -172,14 +187,14 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             <tr>
                 <td>Configuration creator:</td>
                 <td>
-                    TODO
+                    <model-catalog-person id="mcperson"></model-catalog-person>
                 </td>
             </tr>
 
             <tr>
                 <td>Software Image:</td>
                 <td>
-                    TODO
+                    <model-catalog-software-image id="mcswimg"></model-catalog-software-image>
                 </td>
             </tr>
 
@@ -187,8 +202,10 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <td>Component Location:</td>
                 <td>
                     ${this._editing ? html`
-                    <textarea id="form-config-comp-loc">${this._config ? this._config.hasComponentLocation : ''}</textarea>`
-                    : (this._config ? renderExternalLink(this._config.hasComponentLocation) : '')}
+                    <textarea id="form-config-comp-loc">${this._config && this._config.hasComponentLocation ? 
+                            this._config.hasComponentLocation : ''}</textarea>`
+                    : (this._config && this._config.hasComponentLocation ? 
+                            renderExternalLink(this._config.hasComponentLocation[0]) : '')}
                 </td>
             </tr>
 
@@ -205,7 +222,23 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     <model-catalog-time-interval id="mcti"></model-catalog-time-interval>
                 </td>
             </tr>
+
+            <tr>
+                <td>Processes</td>
+                <td>
+                    <model-catalog-process id="mcprocess"></model-catalog-process>
+                </td>
+            </tr>
         </table>
+        <wl-title level="4" style="margin-top:1em">
+            Parameters:
+        </wl-title>
+        <model-catalog-parameter id="mcparameter" .inline="${false}"></model-catalog-parameter>
+
+        <wl-title level="4" style="margin-top:1em">
+            Input files:
+        </wl-title>
+        <model-catalog-dataset-specification id="mcdsspec" .inline=${false}></model-catalog-dataset-specification>
 
         ${this._editing? html`
         <div style="float:right; margin-top: 1em;">
@@ -239,6 +272,11 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
 
     protected firstUpdated () {
         this._inputTimeInterval =  this.shadowRoot.getElementById('mcti') as ModelCatalogTimeInterval;
+        this._inputPerson =  this.shadowRoot.getElementById('mcperson') as ModelCatalogPerson;
+        this._inputProcess =  this.shadowRoot.getElementById('mcprocess') as ModelCatalogProcess;
+        this._inputSoftwareImage =  this.shadowRoot.getElementById('mcswimg') as ModelCatalogSoftwareImage;
+        this._inputParameter =  this.shadowRoot.getElementById('mcparameter') as ModelCatalogParameter;
+        this._inputDatasetSpecification =  this.shadowRoot.getElementById('mcdsspec') as ModelCatalogDatasetSpecification;
         this._inputGrid = this.shadowRoot.getElementById('mcgrid') as ModelCatalogGrid;
         this._rendered = true;
         if (this._config) {
@@ -252,11 +290,21 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     private _initializeForm () {
         console.log('initializing form...', this._config);
         if (this._config.hasOutputTimeInterval) this._inputTimeInterval.setResources( this._config.hasOutputTimeInterval );
+        if (this._config.hasGrid) this._inputGrid.setResources( this._config.hasGrid );
+        if (this._config.author) 
+            this._inputPerson.setResources( this._config.author.filter( (a) => a.type.includes('Person') ) );
+        if (this._config.hasProcess) this._inputProcess.setResources( this._config.hasProcess );
+        if (this._config.hasSoftwareImage) this._inputSoftwareImage.setResources( this._config.hasSoftwareImage );
+        if (this._config.hasParameter) this._inputParameter.setResources( this._config.hasParameter );
+        if (this._config.hasInput) this._inputDatasetSpecification.setResources( this._config.hasInput );
     }
 
     private _setEditingInputs () { //TODO types...
         this._inputTimeInterval.setActionSelect();
-        this._inputGrid.setActionMultiselect();
+        this._inputPerson.setActionMultiselect();
+        this._inputGrid.setActionSelect();
+        this._inputProcess.setActionMultiselect();
+        this._inputSoftwareImage.setActionSelect();
         /*let inputs = [this._inputTimeInterval];
         inputs.forEach((input) => {
             input.setActionSelect();
@@ -264,7 +312,8 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     }
 
     private _unsetEditingInputs () {
-        let inputs = [this._inputTimeInterval, this._inputGrid];
+        let inputs = [this._inputTimeInterval, this._inputPerson, this._inputGrid, this._inputProcess,
+                this._inputSoftwareImage, this._inputParameter, this._inputDatasetSpecification];
         inputs.forEach((input) => {
             input.unsetAction();
         });
@@ -278,6 +327,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             // Set edit mode
             let newEditState : boolean = (ui.mode === 'edit');
             if (newEditState != this._editing) {
+                console.log('editing to', newEditState);
                 this._editing = newEditState;
                 if (this._rendered) {
                     if (this._editing) this._setEditingInputs();

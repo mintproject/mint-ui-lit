@@ -127,6 +127,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected classes : string = "resource";
     protected name : string = "resource";
     protected pname : string = "resources";
+    protected colspan : number = 2;
     protected resourcesGet;
     protected resourceGet;
     protected resourcePut;
@@ -172,6 +173,28 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     private _renderTable () {
+        return html`
+        <table class="pure-table pure-table-striped" style="width: 100%">
+            ${this._renderTableHeader()}
+            ${this._resources.length == 0 ?
+                this._renderEmpty()
+                : this._resources.map((r:T) => this._renderStatus(r))
+            }
+        </table>
+        `;
+    }
+
+    protected _renderTableHeader () {
+        return html`
+            <colgroup>
+                <col span="1">
+                <col span="1">
+            </colgroup>
+            <thead>
+                <th><b>Label</b></th>
+                <th><b>Description</b></th>
+            </thead>
+        `;
     }
 
     private _renderDialogContent () {
@@ -209,15 +232,32 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     private _renderStatus (r:T) {
-        return html`<span class="${this.classes}"> 
-            ${this._loading[r.id] ? 
-                html`${getId(r)} <loading-dots style="--width: 20px"></loading-dots>` //TODO: error handling here...
-                : this._renderResource(this._loadedResources[r.id])}
-        </span>`
+        if (this.inline)
+            return html`<span class="${this.classes}"> 
+                ${this._loading[r.id] ? 
+                    html`${getId(r)} <loading-dots style="--width: 20px; margin-left: 5px;"></loading-dots>` //TODO: error handling here...
+                    : this._renderResource(this._loadedResources[r.id])}
+            </span>`;
+        else
+            return html`<tr>
+                ${this._loading[r.id] ? 
+                    html`<td colspan="${this.colspan}" align="center">
+                        ${getId(r)}
+                        <loading-dots style="--width: 20px; margin-left: 5px;"></loading-dots>
+                    </td>`
+                    : this._renderRow(this._loadedResources[r.id])}
+            </tr>`;
     }
 
     protected _renderResource (r:T) {
         return html`${getLabel(r)}`;
+    }
+
+    protected _renderRow (r:T) {
+        return html`
+            <td>${getLabel(r)}</td>
+            <td>${r.description ? r.description[0] : ''}</td>
+        `;
     }
 
     private _renderSearchOnList () {
@@ -383,7 +423,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             if (this._status === Status.CREATING) {
                 req = store.dispatch(this.resourcePost(resource));
             } else if (this._status === Status.EDITING) {
-                resource.id = this._selectedResourceId;
+                resource.id = this._editingResourceId;
                 req = store.dispatch(this.resourcePut(resource));
             }
             req.then((r:T) => {
@@ -410,8 +450,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             } as T;
         } else {
             // Show errors
-            if (!label) (<any>inputLabel).refreshAttributes();
-            if (!desc) (<any>inputDesc).refreshAttributes();
+            if (!label) (<any>inputLabel).onBlur();
+            if (!desc) (<any>inputDesc).onBlur();
         }
     }
 
@@ -438,6 +478,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             if (this._selectedResources[r.id]) this._selectedResources[r.id] = false;
             if (this._selectedResourceId === r.id) this._selectedResourceId = '';
             if (this._loadedResources[r.id]) delete this._loadedResources[r.id];
+            this.requestUpdate();
             store.dispatch(this.resourceDelete(r)).then(() => {
                 //TODO: display notification;
             });

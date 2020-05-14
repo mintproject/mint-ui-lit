@@ -1,10 +1,10 @@
 import { ModelCatalogResource } from './resource';
-import { TimeInterval, Unit, TimeIntervalFromJSON } from '@mintproject/modelcatalog_client';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { timeIntervalGet, timeIntervalsGet, timeIntervalPost, timeIntervalPut, timeIntervalDelete } from 'model-catalog/actions';
+import { processGet, processesGet, processPost, processPut, processDelete } from 'model-catalog/actions';
+import { Process, ProcessFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -14,8 +14,8 @@ import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 
-@customElement('model-catalog-time-interval')
-export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResource)<TimeInterval> {
+@customElement('model-catalog-process')
+export class ModelCatalogProcess extends connect(store)(ModelCatalogResource)<Process> {
     static get styles() {
         return [ExplorerStyles, SharedStyles, this.getBasicStyles(), css`
         .two-inputs > wl-textfield, 
@@ -25,48 +25,16 @@ export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResourc
         }`];
     }
 
-    protected classes : string = "resource time-interval";
-    protected name : string = "time interval";
-    protected pname : string = "time intervals";
-    protected resourcesGet = timeIntervalsGet;
-    protected resourceGet = timeIntervalGet;
-    protected resourcePost = timeIntervalPost;
-    protected resourcePut = timeIntervalPut;
-    protected resourceDelete = timeIntervalDelete;
+    protected classes : string = "resource process";
+    protected name : string = "process";
+    protected pname : string = "processs";
+    protected resourcesGet = processesGet;
+    protected resourceGet = processGet;
+    protected resourcePost = processPost;
+    protected resourcePut = processPut;
+    protected resourceDelete = processDelete;
 
-    private _units : IdMap<Unit> = {
-        'https://w3id.org/okn/i/mint/dayT':
-            { id: 'https://w3id.org/okn/i/mint/dayT', label: ['day']},
-        'https://w3id.org/okn/i/mint/hourT':
-            { id: 'https://w3id.org/okn/i/mint/hourT', label: ['hour']},
-        'https://w3id.org/okn/i/mint/yearT':
-            { id: 'https://w3id.org/okn/i/mint/yearT', label: ['year']},
-        'https://w3id.org/okn/i/mint/minT':
-            { id: 'https://w3id.org/okn/i/mint/minT', label: ['min']},
-        'https://w3id.org/okn/i/mint/variable':
-            { id: 'https://w3id.org/okn/i/mint/variable', label: ['variable']}
-    } as IdMap<Unit>;
-
-    protected _renderResource (r:TimeInterval) {
-        return html`
-            <span style="line-height: 20px; display: flex; justify-content: space-between;">
-                <span style="margin-right: 30px; text-decoration: underline;">
-                    ${getLabel(r)}
-                </span>
-                <span class="monospaced"> 
-                    ${r.intervalValue}
-                    ${r.intervalUnit ? 
-                        getLabel(this._units[r.intervalUnit[0].id] ? this._units[r.intervalUnit[0].id] : r.intervalUnit[0])
-                        : ''}
-                </span>
-            </span>
-            <span style="line-height: 20px; font-style: oblique; color: gray;">
-                ${r.description} 
-            </span>
-        `;
-    }
-
-    protected _renderForm () {
+    /*protected _renderForm () {
         let edResource = this._getEditingResource();
         return html`
         <form>
@@ -118,10 +86,10 @@ export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResourc
             if (!label) (<any>inputLabel).onBlur();
             if (!desc) (<any>inputDesc).onBlur();
         }
-    }
+    }*/
 
     protected _getDBResources () {
         let db = (store.getState() as RootState).modelCatalog;
-        return db.timeIntervals;
+        return db.processes;
     }
 }
