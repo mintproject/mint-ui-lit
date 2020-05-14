@@ -46,7 +46,11 @@ enum Status {
 @customElement('model-catalog-resource')
 export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     static get styles() {
-        return [ExplorerStyles, SharedStyles, css`
+        return [ExplorerStyles, SharedStyles, this.getBasicStyles()];
+    }
+
+    public static getBasicStyles () {
+        return css`
         #select-button {
             border: 1px solid gray;
             margin-right: 5px;
@@ -97,8 +101,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         .resources-list {
             height: 400px;
             overflow-y: scroll;
-        }`,
-        ];
+        }`;
     }
 
     // Resources 
@@ -115,6 +118,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: String}) private _status : Status = Status.NONE;
     @property({type: Boolean}) public inline : boolean = true;
     @property({type: Boolean}) private _dialogOpen : boolean = false;
+    @property({type: Boolean}) private _waiting : boolean = false;
 
     @property({type: Object}) protected _resources : T[] = [] as T[];
 
@@ -127,6 +131,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected resourceGet;
     protected resourcePut;
     protected resourcePost;
+    protected resourceDelete;
 
     public unsetAction () {
         this._action = Action.NONE;
@@ -185,6 +190,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         <div slot="content">
             ${this._renderSearchOnList()}
             ${this._renderSelectList()}
+            <div>
+                or <a class="clickable" @click=${this._createResource}>create a new ${this.name}</a>
+            </div>
         </div>
         <div slot="footer">
             <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat ?disabled="">
@@ -291,15 +299,23 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     </span>
                     <span class="buttons-area">
                         <wl-button @click="${() => this._editResource(r)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
-                        <wl-button @click="" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
+                        <wl-button @click="${() => this._deleteResource(r)}" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
                     </span>
                 </span>`)}
         </div>
         `;
     }
 
+    protected _getEditingResource () {
+        if (this._status === Status.EDITING && this._editingResourceId 
+            && this._loadedResources[this._editingResourceId]) {
+            return this._loadedResources[this._editingResourceId];
+        }
+        return null;
+    }
+
     private _renderFormDialog () {
-        let edResource = this._loadedResources[this._editingResourceId];
+        let edResource = this._getEditingResource();
         return html`
         <h3 slot="header">
             ${this._status === Status.CREATING ? 
@@ -310,20 +326,18 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             ${this._renderForm()}
         </div>
         <div slot="footer">
-            <wl-button @click="${this._clearStatus}" style="margin-right: 5px;" inverted flat ?disabled="">
+            <wl-button @click="${this._clearStatus}" style="margin-right: 5px;" inverted flat ?disabled="${this._waiting}">
                 Cancel
             </wl-button>
-            <wl-button class="submit" ?disabled="" @click="${this._onFormSaveButtonClicked}">
+            <wl-button class="submit" ?disabled="${this._waiting}" @click="${this._onFormSaveButtonClicked}">
                 Save
-                <loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>
+                ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
             </wl-button>
         </div>`;
     }
 
     protected _renderForm () {
-        let edResource =(this._status === Status.EDITING && this._loadedResources[this._editingResourceId]) ?
-                this._loadedResources[this._editingResourceId]
-                : null;
+        let edResource = this._getEditingResource();
         return html`
         <form>
             <wl-textfield id="resource-label" label="Name" required
@@ -364,14 +378,17 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         let resource = this._getResourceFromForm();
         if (resource) {
             console.log(resource);
+            this._waiting = true;
             let req : Promise<T>;
             if (this._status === Status.CREATING) {
                 req = store.dispatch(this.resourcePost(resource));
             } else if (this._status === Status.EDITING) {
+                resource.id = this._selectedResourceId;
                 req = store.dispatch(this.resourcePut(resource));
             }
             req.then((r:T) => {
                 console.log('Promise resolved')
+                this._waiting = false;
                 this._loadedResources[r.id] = r;
                 this._clearStatus();
                 // TODO: display notifications
@@ -414,6 +431,21 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     private _editResource (r:T) {
         this._editingResourceId = r.id;
         this._status = Status.EDITING;
+    }
+
+    private _deleteResource (r:T) {
+        if (r && confirm('This ' + this.name + ' will be deleted on all related resources')) {
+            if (this._selectedResources[r.id]) this._selectedResources[r.id] = false;
+            if (this._selectedResourceId === r.id) this._selectedResourceId = '';
+            if (this._loadedResources[r.id]) delete this._loadedResources[r.id];
+            store.dispatch(this.resourceDelete(r)).then(() => {
+                //TODO: display notification;
+            });
+        }
+    }
+
+    private _createResource () {
+        this._status = Status.CREATING;
     }
 
     public setResources (r:T[]) {
