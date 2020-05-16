@@ -34,12 +34,14 @@ import './resources/grid';
 import './resources/process';
 import './resources/parameter';
 import './resources/dataset-specification';
+import './resources/region';
 
 import { ModelCatalogTimeInterval } from './resources/time-interval';
 import { ModelCatalogPerson } from './resources/person';
 import { ModelCatalogProcess } from './resources/process';
 import { ModelCatalogSoftwareImage } from './resources/software-image';
 import { ModelCatalogGrid } from './resources/grid';
+import { ModelCatalogRegion } from './resources/region';
 import { ModelCatalogParameter } from './resources/parameter';
 import { ModelCatalogDatasetSpecification } from './resources/dataset-specification';
 
@@ -68,7 +70,9 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     private _inputSoftwareImage : ModelCatalogSoftwareImage;
     private _inputGrid : ModelCatalogGrid;
     private _inputParameter : ModelCatalogParameter;
-    private _inputDatasetSpecification : ModelCatalogDatasetSpecification;
+    private _inputDSInput : ModelCatalogDatasetSpecification;
+    private _inputDSOutput : ModelCatalogDatasetSpecification;
+    private _inputRegion : ModelCatalogRegion;
 
     private _rendered : boolean = false;
 
@@ -167,11 +171,53 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             </tr>
 
             <tr>
-                <td>Description:</td>
+                <td>Category</td>
                 <td>
                     ${this._editing ? html`
-                    <textarea id="form-config-desc" name="description" rows="5">${this._config ? this._config.description[0] : ''}</textarea>`
-                    : (this._config ? this._config.description[0] : '')}
+                    <wl-select id="form-config-category" name="Category" required 
+                            value="${this._config && this._config.hasModelCategory ? this._config.hasModelCategory[0] : ''}">
+                        <option value="">None</option>
+                        <option value="Agriculture">Agriculture</option>
+                        <option value="Hydrology">Hydrology</option>
+                        <option value="Economy">Economy</option>
+                        <option value="Weather">Weather</option>
+                        <option value="Land Use">Land Use</option>
+                    </wl-select>`
+                    : (this._config && this._config.hasModelCategory ? this._config.hasModelCategory[0] : '')}
+                </td>
+            </tr>
+
+            <tr>
+                <td>Full description:</td>
+                <td>
+                    ${this._editing ? html`
+                    <textarea id="form-config-desc" name="Description" rows="5">${
+                        this._config && this._config.description ? this._config.description[0] : ''
+                    }</textarea>`
+                    : (this._config && this._config.description ? this._config.description[0] : '')}
+                </td>
+            </tr>
+
+
+            <tr>
+                <td>Sort description:</td>
+                <td>
+                    ${this._editing ? html`
+                    <textarea id="form-config-short-desc" name="Short description" rows="3">${
+                        this._config && this._config.shortDescription ? this._config.shortDescription[0] : ''
+                    }</textarea>`
+                    : (this._config && this._config.shortDescription ? this._config.shortDescription[0] : '')}
+                </td>
+            </tr>
+
+            <tr>
+                <td>Installation instructions:</td>
+                <td>
+                    ${this._editing ? html`
+                    <textarea id="form-config-installation" name="Installation instructions" rows="5">${
+                        this._config && this._config.hasInstallationInstructions? this._config.hasInstallationInstructions[0] : ''
+                    }</textarea>`
+                    : (this._config && this._config.hasInstallationInstructions? this._config.hasInstallationInstructions[0] : '')}
                 </td>
             </tr>
 
@@ -185,9 +231,37 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             </tr>
 
             <tr>
+                <td>Assumptions:</td>
+                <td>
+                    ${this._editing ? html`
+                    <textarea id="form-config-assumption" name="Assumptions" rows="3">${
+                        this._config && this._config.hasAssumption? this._config.hasAssumption[0] : ''
+                    }</textarea>`
+                    : (this._config && this._config.hasAssumption? this._config.hasAssumption[0] : '')}
+                </td>
+            </tr>
+
+            <tr>
                 <td>Configuration creator:</td>
                 <td>
                     <model-catalog-person id="mcperson"></model-catalog-person>
+                </td>
+            </tr>
+
+            <tr>
+                <td>Region</td>
+                <td>
+                    <model-catalog-region id="mcregion"></model-catalog-region>
+                </td>
+            </tr>
+
+            <tr>
+                <td>Website:</td>
+                <td>
+                    ${this._editing ? html`
+                    <textfield id="form-config-website" name="Website"
+                        value="${this._config && this._config.website ? this._config.website[0] : ''}"></textfield>`
+                    : (this._config && this._config.website ? this._config.website[0] : '')}
                 </td>
             </tr>
 
@@ -224,12 +298,13 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             </tr>
 
             <tr>
-                <td>Processes</td>
+                <td>Processes:</td>
                 <td>
                     <model-catalog-process id="mcprocess"></model-catalog-process>
                 </td>
             </tr>
         </table>
+
         <wl-title level="4" style="margin-top:1em">
             Parameters:
         </wl-title>
@@ -238,7 +313,12 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         <wl-title level="4" style="margin-top:1em">
             Input files:
         </wl-title>
-        <model-catalog-dataset-specification id="mcdsspec" .inline=${false}></model-catalog-dataset-specification>
+        <model-catalog-dataset-specification id="mcinput" .inline=${false}></model-catalog-dataset-specification>
+
+        <wl-title level="4" style="margin-top:1em">
+            Output files:
+        </wl-title>
+        <model-catalog-dataset-specification id="mcoutput" .inline=${false}></model-catalog-dataset-specification>
 
         ${this._editing? html`
         <div style="float:right; margin-top: 1em;">
@@ -250,9 +330,12 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             </wl-button>
         </div>` 
         :html`
-        <div style="float:right; margin-top: 1em;">
-            <wl-button @click="${this._onEditButtonClicked}">
+        <div style="margin-top: 1em;">
+            <wl-button style="float:right;" @click="${this._onEditButtonClicked}">
                 <wl-icon>edit</wl-icon>&ensp;Edit
+            </wl-button>
+            <wl-button style="--primary-hue: 0; --primary-saturation: 75%" @click="${this._onDeleteButtonClicked}">
+                <wl-icon>delete</wl-icon>&ensp;Delete
             </wl-button>
         </div>`}
         `
@@ -262,6 +345,10 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         this._scrollUp();
         let url = getURL(this._selectedModel, this._selectedVersion, this._selectedConfig);
         goToPage('models/configure/' + url + '/edit');
+    }
+
+    private _onDeleteButtonClicked () {
+        //TODO
     }
 
     private _onCancelButtonClicked () {
@@ -276,8 +363,10 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         this._inputProcess =  this.shadowRoot.getElementById('mcprocess') as ModelCatalogProcess;
         this._inputSoftwareImage =  this.shadowRoot.getElementById('mcswimg') as ModelCatalogSoftwareImage;
         this._inputParameter =  this.shadowRoot.getElementById('mcparameter') as ModelCatalogParameter;
-        this._inputDatasetSpecification =  this.shadowRoot.getElementById('mcdsspec') as ModelCatalogDatasetSpecification;
+        this._inputDSInput =  this.shadowRoot.getElementById('mcinput') as ModelCatalogDatasetSpecification;
+        this._inputDSOutput =  this.shadowRoot.getElementById('mcoutput') as ModelCatalogDatasetSpecification;
         this._inputGrid = this.shadowRoot.getElementById('mcgrid') as ModelCatalogGrid;
+        this._inputRegion = this.shadowRoot.getElementById('mcregion') as ModelCatalogRegion;
         this._rendered = true;
         if (this._config) {
             this._initializeForm();
@@ -292,11 +381,13 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         if (this._config.hasOutputTimeInterval) this._inputTimeInterval.setResources( this._config.hasOutputTimeInterval );
         if (this._config.hasGrid) this._inputGrid.setResources( this._config.hasGrid );
         if (this._config.author) 
-            this._inputPerson.setResources( this._config.author.filter( (a) => a.type.includes('Person') ) );
+            this._inputPerson.setResources( this._config.author.filter( (a) => a.type.includes('Person') ) ); //FIXME
         if (this._config.hasProcess) this._inputProcess.setResources( this._config.hasProcess );
         if (this._config.hasSoftwareImage) this._inputSoftwareImage.setResources( this._config.hasSoftwareImage );
         if (this._config.hasParameter) this._inputParameter.setResources( this._config.hasParameter );
-        if (this._config.hasInput) this._inputDatasetSpecification.setResources( this._config.hasInput );
+        if (this._config.hasInput) this._inputDSInput.setResources( this._config.hasInput );
+        if (this._config.hasOutput) this._inputDSOutput.setResources( this._config.hasOutput );
+        if (this._config.hasRegion) this._inputRegion.setResources( this._config.hasRegion );
     }
 
     private _setEditingInputs () { //TODO types...
@@ -305,6 +396,10 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         this._inputGrid.setActionSelect();
         this._inputProcess.setActionMultiselect();
         this._inputSoftwareImage.setActionSelect();
+        this._inputParameter.setActionEditOrAdd();
+        this._inputDSInput.setActionEditOrAdd();
+        this._inputDSOutput.setActionEditOrAdd();
+        this._inputRegion.setActionMultiselect();
         /*let inputs = [this._inputTimeInterval];
         inputs.forEach((input) => {
             input.setActionSelect();
@@ -313,7 +408,8 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
 
     private _unsetEditingInputs () {
         let inputs = [this._inputTimeInterval, this._inputPerson, this._inputGrid, this._inputProcess,
-                this._inputSoftwareImage, this._inputParameter, this._inputDatasetSpecification];
+                this._inputSoftwareImage, this._inputParameter, this._inputRegion, this._inputDSInput,
+                this._inputDSOutput];
         inputs.forEach((input) => {
             input.unsetAction();
         });
@@ -327,7 +423,6 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             // Set edit mode
             let newEditState : boolean = (ui.mode === 'edit');
             if (newEditState != this._editing) {
-                console.log('editing to', newEditState);
                 this._editing = newEditState;
                 if (this._rendered) {
                     if (this._editing) this._setEditingInputs();

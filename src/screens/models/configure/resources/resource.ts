@@ -35,8 +35,8 @@ interface BaseResources {
     description?: string[];
 }
 
-enum Action {
-    NONE, SELECT, MULTISELECT
+export enum Action {
+    NONE, SELECT, MULTISELECT, EDIT_OR_ADD,
 }
 
 enum Status {
@@ -85,6 +85,11 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             --button-padding: 5px;
         }
 
+        wl-button.edit {
+            --button-padding: 5px;
+            border: 1px solid grey;
+        }
+
         .custom-radio {
             width: 28px;
             line-height: 1.5em;
@@ -114,7 +119,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected _selectedResources : IdMap<boolean> = {};
 
     // FLAGS
-    @property({type: String}) private _action : Action = Action.NONE;
+    @property({type: String}) protected _action : Action = Action.NONE;
     @property({type: String}) private _status : Status = Status.NONE;
     @property({type: Boolean}) public inline : boolean = true;
     @property({type: Boolean}) private _dialogOpen : boolean = false;
@@ -123,6 +128,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: Object}) protected _resources : T[] = [] as T[];
 
     @property({type: String}) protected _textFilter : string = "";
+    @property({type: Boolean}) protected _creationEnabled : boolean = true;
+    @property({type: Boolean}) protected _editionEnabled : boolean = true;
+    @property({type: Boolean}) protected _deleteEnabled : boolean = true;
 
     protected classes : string = "resource";
     protected name : string = "resource";
@@ -133,6 +141,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected resourcePut;
     protected resourcePost;
     protected resourceDelete;
+    protected _filters : ((r:T) => boolean)[] = [
+        (r:T) => this._resourceToText(r).toLowerCase().includes( this._textFilter ),
+    ];
 
     public unsetAction () {
         this._action = Action.NONE;
@@ -144,6 +155,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     public setActionMultiselect () {
         this._action = Action.MULTISELECT;
+    }
+
+    public setActionEditOrAdd () {
+        this._action = Action.EDIT_OR_ADD;
     }
 
     protected render() {
@@ -175,25 +190,44 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     private _renderTable () {
         return html`
         <table class="pure-table pure-table-striped" style="width: 100%">
-            ${this._renderTableHeader()}
-            ${this._resources.length == 0 ?
-                this._renderEmpty()
-                : this._resources.map((r:T) => this._renderStatus(r))
-            }
+            ${this._renderTableColgroup()}
+            <thead>
+                ${this._renderTableHeader()}
+                ${this._action === Action.EDIT_OR_ADD ? html`<th></th>` : ''}
+            </thead>
+            ${this._resources.length > 0 ? this._resources.map((r:T) => this._renderStatus(r)) : ''}
+            ${this._action === Action.EDIT_OR_ADD ? html`
+            <tr>
+                <td colspan="${this.colspan + 1}" align="center">
+                    <a class="clickable" @click=${this._createResource}>Add a new ${this.name}</a>
+                </td>
+            </tr>` : (this._resources.length == 0 ? html`
+            <tr>
+                <td colspan="${this.colspan + 1}" align="center">
+                    ${ this._renderEmpty() }
+                </td>
+            </tr>` : '')}
         </table>
+        `;
+    }
+
+    protected _renderTableColgroup () {
+        if (this._action === Action.EDIT_OR_ADD) 
+            return html`
+                <col span="1">
+                <col span="1">
+                <col span="1" style="width: 30px;">
+            `;
+        else return html`
+            <col span="1">
+            <col span="1">
         `;
     }
 
     protected _renderTableHeader () {
         return html`
-            <colgroup>
-                <col span="1">
-                <col span="1">
-            </colgroup>
-            <thead>
-                <th><b>Label</b></th>
-                <th><b>Description</b></th>
-            </thead>
+            <th><b>Label</b></th>
+            <th><b>Description</b></th>
         `;
     }
 
@@ -213,9 +247,11 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         <div slot="content">
             ${this._renderSearchOnList()}
             ${this._renderSelectList()}
+            ${this._creationEnabled ? html`
             <div>
                 or <a class="clickable" @click=${this._createResource}>create a new ${this.name}</a>
             </div>
+            ` : ''}
         </div>
         <div slot="footer">
             <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat ?disabled="">
@@ -245,7 +281,12 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                         ${getId(r)}
                         <loading-dots style="--width: 20px; margin-left: 5px;"></loading-dots>
                     </td>`
-                    : this._renderRow(this._loadedResources[r.id])}
+                    : html`
+                    ${this._renderRow(this._loadedResources[r.id])}
+                    ${this._action === Action.EDIT_OR_ADD ? html`<td>
+                        <wl-button class="edit" @click="${() => this._editResource(r)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
+                    </td>` : ''}`
+                }
             </tr>`;
     }
 
@@ -304,6 +345,13 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     this._selectedResources[id] = !this._selectedResources[id];
                     this.requestUpdate();
                 };
+        let resourcesToShow : T[] = [];
+        if (!this._allResourcesLoading) {
+            resourcesToShow = Object.values(this._loadedResources);
+            this._filters.forEach((filter:(r:T)=>boolean) => {
+                resourcesToShow = resourcesToShow.filter(filter);
+            });
+        }
 
         return html`
         <div class="resources-list" style="margin-top: 5px;">
@@ -323,9 +371,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 :'' }
             ${this._allResourcesLoading ?
                 html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
-                : Object.values(this._loadedResources)
-                        .filter((r:T) => this._filterByText(r))
-                        .map((r:T) => html`
+                : resourcesToShow.map((r:T) => html`
                 <span class="${this.classes} list-item">
                     <span class="clickable-area" @click="${() => setSelected(r.id)}">
                         <span style="display: inline-block; vertical-align: top;">
@@ -338,8 +384,12 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                         </span>
                     </span>
                     <span class="buttons-area">
-                        <wl-button @click="${() => this._editResource(r)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
-                        <wl-button @click="${() => this._deleteResource(r)}" flat inverted><wl-icon class="warning">delete</wl-icon></wl-button>
+                        <wl-button @click="${() => this._editResource(r)}" flat inverted ?disabled="${!this._editionEnabled}">
+                            <wl-icon>edit</wl-icon>
+                        </wl-button>
+                        <wl-button @click="${() => this._deleteResource(r)}" flat inverted ?disabled="${!this._deleteEnabled}">
+                            <wl-icon class="warning">delete</wl-icon>
+                        </wl-button>
                     </span>
                 </span>`)}
         </div>
@@ -397,6 +447,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     private _clearStatus () {
         this._status = Status.NONE;
         this._editingResourceId = '';
+        if (this._action === Action.EDIT_OR_ADD) {
+            this._closeDialog();
+        }
     }
 
     private _onSelectButtonClicked () {
@@ -432,6 +485,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 this._loadedResources[r.id] = r;
                 this._clearStatus();
                 // TODO: display notifications
+                if (this._action === Action.EDIT_OR_ADD) {
+                    this._resources.push(r);
+                }
             });
         }
     }
@@ -470,7 +526,12 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     private _editResource (r:T) {
         this._editingResourceId = r.id;
+        console.log('>', this._loadedResources[r.id]);
         this._status = Status.EDITING;
+        if (this._action === Action.EDIT_OR_ADD) {
+            this._dialogOpen = true;
+            showDialog("resource-dialog", this.shadowRoot);
+        }
     }
 
     private _deleteResource (r:T) {
@@ -487,6 +548,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     private _createResource () {
         this._status = Status.CREATING;
+        if (this._action === Action.EDIT_OR_ADD) {
+            this._dialogOpen = true;
+            showDialog("resource-dialog", this.shadowRoot);
+        }
     }
 
     public setResources (r:T[]) {

@@ -80,9 +80,9 @@ export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResourc
                 <wl-textfield id="time-interval-value" label="Interval value"
                     value="${edResource && edResource.intervalValue ? edResource.intervalValue[0] : ''}" >
                 </wl-textfield>
-                <wl-select id="time-interval-unit" label="Interval unit" required
+                <wl-select id="time-interval-unit" label="Interval unit"
                     value="${edResource && edResource.intervalUnit ? edResource.intervalUnit[0].id:''}">
-                    <option value disabled>None</option>
+                    <option value="">None</option>
                     ${Object.values(this._units).map((unit:Unit) => html`
                         <option value="${unit.id}">${unit.label}</option>
                     `)}
@@ -102,16 +102,14 @@ export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResourc
         let desc : string = inputDesc ? inputDesc.value : '';
         let value : string = inputValue ? inputValue.value : '';
         let unit : string = inputUnit ? inputUnit.value : '';
-        if (label && desc && unit) {
+        if (label && desc) {
             let jsonRes = {
                 type: ["TimeInterval"],
                 label: [label],
                 description: [desc],
-                intervalUnit: [ { id: unit } ],
             };
-            if (value) {
-                jsonRes['intervalValue'] = [value];
-            }
+            if (value) jsonRes['intervalUnit'] = [{id: unit}];
+            if (value) jsonRes['intervalValue'] = [value];
             return TimeIntervalFromJSON(jsonRes);
         } else {
             // Show errors
