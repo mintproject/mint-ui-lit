@@ -242,6 +242,16 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             </tr>
 
             <tr>
+                <td>Website:</td>
+                <td>
+                    ${this._editing ? html`
+                    <textfield id="form-config-website" name="Website"
+                        value="${this._config && this._config.website ? this._config.website[0] : ''}"></textfield>`
+                    : (this._config && this._config.website ? this._config.website[0] : '')}
+                </td>
+            </tr>
+
+            <tr>
                 <td>Configuration creator:</td>
                 <td>
                     <model-catalog-person id="mcperson"></model-catalog-person>
@@ -252,16 +262,6 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <td>Region</td>
                 <td>
                     <model-catalog-region id="mcregion"></model-catalog-region>
-                </td>
-            </tr>
-
-            <tr>
-                <td>Website:</td>
-                <td>
-                    ${this._editing ? html`
-                    <textfield id="form-config-website" name="Website"
-                        value="${this._config && this._config.website ? this._config.website[0] : ''}"></textfield>`
-                    : (this._config && this._config.website ? this._config.website[0] : '')}
                 </td>
             </tr>
 

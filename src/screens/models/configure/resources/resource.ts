@@ -39,8 +39,8 @@ export enum Action {
     NONE, SELECT, MULTISELECT, EDIT_OR_ADD,
 }
 
-enum Status {
-    NONE, CREATING, EDITING
+export enum Status {
+    NONE, CREATE, EDIT, CUSTOM_CREATE,
 }
 
 @customElement('model-catalog-resource')
@@ -120,10 +120,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     // FLAGS
     @property({type: String}) protected _action : Action = Action.NONE;
-    @property({type: String}) private _status : Status = Status.NONE;
+    @property({type: String}) protected _status : Status = Status.NONE;
     @property({type: Boolean}) public inline : boolean = true;
     @property({type: Boolean}) private _dialogOpen : boolean = false;
-    @property({type: Boolean}) private _waiting : boolean = false;
+    @property({type: Boolean}) protected _waiting : boolean = false;
 
     @property({type: Object}) protected _resources : T[] = [] as T[];
 
@@ -232,14 +232,14 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     private _renderDialogContent () {
-        if (this._status === Status.CREATING || this._status === Status.EDITING) {
+        if (this._status === Status.CREATE || this._status === Status.EDIT) {
             return this._renderFormDialog();
         } else if (this._action === Action.SELECT || this._action === Action.MULTISELECT) {
             return this._renderSelectDialog();
         }
     }
 
-    private _renderSelectDialog () {
+    protected _renderSelectDialog () {
         return html`
         <h3 slot="header">
             Select ${this._action === Action.SELECT ? this.name : this.pname}
@@ -301,7 +301,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         `;
     }
 
-    private _renderSearchOnList () {
+    protected _renderSearchOnList () {
         return html`
             <wl-textfield label="Search ${this.pname}" @input="${this._onSearchChange}" id="search-input">
                 <wl-icon slot="after">search</wl-icon>
@@ -397,7 +397,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     protected _getEditingResource () {
-        if (this._status === Status.EDITING && this._editingResourceId 
+        if (this._status === Status.EDIT && this._editingResourceId 
             && this._loadedResources[this._editingResourceId]) {
             return this._loadedResources[this._editingResourceId];
         }
@@ -408,7 +408,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         let edResource = this._getEditingResource();
         return html`
         <h3 slot="header">
-            ${this._status === Status.CREATING ? 
+            ${this._status === Status.CREATE ? 
                 'Creating new ' + this.name
                 :  'Editing resource ' + (edResource ? getLabel(edResource) : '-')}
         </h3>
@@ -439,12 +439,12 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         </form>`;
     }
 
-    private _closeDialog () {
+    protected _closeDialog () {
         hideDialog("resource-dialog", this.shadowRoot);
         this._dialogOpen = false;
     }
 
-    private _clearStatus () {
+    protected _clearStatus () {
         this._status = Status.NONE;
         this._editingResourceId = '';
         if (this._action === Action.EDIT_OR_ADD) {
@@ -452,7 +452,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
     }
 
-    private _onSelectButtonClicked () {
+    protected _onSelectButtonClicked () {
         if (this._action === Action.MULTISELECT) {
             this._resources = Object.keys(this._selectedResources)
                     .filter((id:string) => this._selectedResources[id])
@@ -467,26 +467,29 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._closeDialog();
     }
 
-    private _onFormSaveButtonClicked () {
+    protected _onFormSaveButtonClicked () {
         let resource = this._getResourceFromForm();
-        if (resource) {
-            console.log(resource);
+        if (resource && this._status != Status.NONE) {
             this._waiting = true;
             let req : Promise<T>;
-            if (this._status === Status.CREATING) {
+            if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
                 req = store.dispatch(this.resourcePost(resource));
-            } else if (this._status === Status.EDITING) {
+            } else if (this._status === Status.EDIT) {
                 resource.id = this._editingResourceId;
                 req = store.dispatch(this.resourcePut(resource));
             }
             req.then((r:T) => {
-                console.log('Promise resolved')
+                console.log('Promise resolved', r);
                 this._waiting = false;
                 this._loadedResources[r.id] = r;
                 this._clearStatus();
                 // TODO: display notifications
                 if (this._action === Action.EDIT_OR_ADD) {
                     this._resources.push(r);
+                } else if (this._action === Action.MULTISELECT) {
+                    this._selectedResources[r.id] = true;
+                } else if (this._action === Action.SELECT) {
+                    this._selectedResourceId = r.id;
                 }
             });
         }
@@ -527,7 +530,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     private _editResource (r:T) {
         this._editingResourceId = r.id;
         console.log('>', this._loadedResources[r.id]);
-        this._status = Status.EDITING;
+        this._status = Status.EDIT;
         if (this._action === Action.EDIT_OR_ADD) {
             this._dialogOpen = true;
             showDialog("resource-dialog", this.shadowRoot);
@@ -539,15 +542,23 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             if (this._selectedResources[r.id]) this._selectedResources[r.id] = false;
             if (this._selectedResourceId === r.id) this._selectedResourceId = '';
             if (this._loadedResources[r.id]) delete this._loadedResources[r.id];
-            this.requestUpdate();
+            let index : number = -1;
+            this._resources.forEach((r2:T, i:number) => {
+                if (r2.id === r.id) index = i;
+            });
+            if (index >= 0) {
+                this._resources.splice(index,1);
+            } else {
+                this.requestUpdate();
+            }
             store.dispatch(this.resourceDelete(r)).then(() => {
                 //TODO: display notification;
             });
         }
     }
 
-    private _createResource () {
-        this._status = Status.CREATING;
+    protected _createResource () {
+        this._status = Status.CREATE;
         if (this._action === Action.EDIT_OR_ADD) {
             this._dialogOpen = true;
             showDialog("resource-dialog", this.shadowRoot);
