@@ -12,6 +12,7 @@ import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
 import { personGet, personPost, modelConfigurationPut, modelConfigurationGet,
+         modelConfigurationPost, versionGet, versionPut,
          parameterGet, datasetSpecificationGet, gridGet,
          timeIntervalGet, processGet, softwareImageGet, } from 'model-catalog/actions';
 import { getURL, getLabel } from 'model-catalog/util';
@@ -41,9 +42,9 @@ import { ModelCatalogPerson } from './resources/person';
 import { ModelCatalogProcess } from './resources/process';
 import { ModelCatalogSoftwareImage } from './resources/software-image';
 import { ModelCatalogGrid } from './resources/grid';
-import { ModelCatalogRegion } from './resources/region';
 import { ModelCatalogParameter } from './resources/parameter';
 import { ModelCatalogDatasetSpecification } from './resources/dataset-specification';
+import { ModelCatalogRegion } from './resources/region';
 
 import { ModelsConfigureGrid } from './grid';
 import { ModelsConfigureTimeInterval } from './time-interval';
@@ -57,8 +58,8 @@ import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 
-@customElement('models-configure-configuration')
-export class ModelsConfigureConfiguration extends connect(store)(PageViewElement) {
+@customElement('models-new-config')
+export class ModelsNewConfig extends connect(store)(PageViewElement) {
     @property({type: Boolean})
     private _loading : boolean = false;
 
@@ -77,8 +78,6 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     private _inputDSInput : ModelCatalogDatasetSpecification;
     private _inputDSOutput : ModelCatalogDatasetSpecification;
     private _inputRegion : ModelCatalogRegion;
-
-    private _rendered : boolean = false;
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
@@ -143,10 +142,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     protected render() {
         return html`
             <span id="dummy-head"/>
-            ${this._loading ?
-                    html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
-                    : ""}
-            <div style="visibility: ${this._loading ? 'hidden' : 'visible'}">
+            <div>
                 ${this._renderForm()}
             </div>
         `;
@@ -167,17 +163,15 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         <table class="details-table">
             <colgroup width="150px">
             <tr>
-                ${this._editing ? html`
                 <td colspan="2" style="padding: 5px 20px;">
                     <wl-textfield id="form-config-name" label="Configuration name" 
                                   value="${this._config ? getLabel(this._config) : ''}" required></wl-textfield>
-                </td>` : ''}
+                </td>
             </tr>
 
             <tr>
                 <td>Category</td>
                 <td>
-                    ${this._editing ? html`
                     <wl-select id="form-config-category" name="Category" required 
                             value="${this._config && this._config.hasModelCategory ? this._config.hasModelCategory[0] : ''}">
                         <option value="">None</option>
@@ -186,19 +180,16 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                         <option value="Economy">Economy</option>
                         <option value="Weather">Weather</option>
                         <option value="Land Use">Land Use</option>
-                    </wl-select>`
-                    : (this._config && this._config.hasModelCategory ? this._config.hasModelCategory[0] : '')}
+                    </wl-select>
                 </td>
             </tr>
 
             <tr>
                 <td>Full description:</td>
                 <td>
-                    ${this._editing ? html`
                     <textarea id="form-config-desc" name="Description" rows="5">${
                         this._config && this._config.description ? this._config.description[0] : ''
-                    }</textarea>`
-                    : (this._config && this._config.description ? this._config.description[0] : '')}
+                    }</textarea>
                 </td>
             </tr>
 
@@ -206,52 +197,42 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             <tr>
                 <td>Sort description:</td>
                 <td>
-                    ${this._editing ? html`
                     <textarea id="form-config-short-desc" name="Short description" rows="3">${
                         this._config && this._config.shortDescription ? this._config.shortDescription[0] : ''
-                    }</textarea>`
-                    : (this._config && this._config.shortDescription ? this._config.shortDescription[0] : '')}
+                    }</textarea>
                 </td>
             </tr>
 
             <tr>
                 <td>Installation instructions:</td>
                 <td>
-                    ${this._editing ? html`
                     <textarea id="form-config-installation" name="Installation instructions" rows="5">${
                         this._config && this._config.hasInstallationInstructions? this._config.hasInstallationInstructions[0] : ''
-                    }</textarea>`
-                    : (this._config && this._config.hasInstallationInstructions? this._config.hasInstallationInstructions[0] : '')}
+                    }</textarea>
                 </td>
             </tr>
 
             <tr>
                 <td>Keywords:</td>
                 <td>
-                    ${this._editing ? html`
-                    <wl-textfield id="form-config-keywords" type="text" value="${keywords}"/>
-                    ` : keywords}
+                    <input id="form-config-keywords" type="text" value="${keywords}"/>
                 </td>
             </tr>
 
             <tr>
                 <td>Assumptions:</td>
                 <td>
-                    ${this._editing ? html`
                     <textarea id="form-config-assumption" name="Assumptions" rows="3">${
                         this._config && this._config.hasAssumption? this._config.hasAssumption[0] : ''
-                    }</textarea>`
-                    : (this._config && this._config.hasAssumption? this._config.hasAssumption[0] : '')}
+                    }</textarea>
                 </td>
             </tr>
 
             <tr>
                 <td>Website:</td>
                 <td>
-                    ${this._editing ? html`
                     <wl-textfield id="form-config-website" name="Website"
-                        value="${this._config && this._config.website ? this._config.website[0] : ''}"></wl-textfield>`
-                    : (this._config && this._config.website ? this._config.website[0] : '')}
+                        value="${this._config && this._config.website ? this._config.website[0] : ''}"></wl-textfield>
                 </td>
             </tr>
 
@@ -279,11 +260,8 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             <tr>
                 <td>Component Location:</td>
                 <td>
-                    ${this._editing ? html`
                     <textarea id="form-config-comp-loc">${this._config && this._config.hasComponentLocation ? 
-                            this._config.hasComponentLocation : ''}</textarea>`
-                    : (this._config && this._config.hasComponentLocation ? 
-                            renderExternalLink(this._config.hasComponentLocation[0]) : '')}
+                            this._config.hasComponentLocation : ''}</textarea>
                 </td>
             </tr>
 
@@ -302,13 +280,12 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             </tr>
 
             <tr>
-                <td>Processes:</td>
+                <td>Processes</td>
                 <td>
                     <model-catalog-process id="mcprocess"></model-catalog-process>
                 </td>
             </tr>
         </table>
-
         <wl-title level="4" style="margin-top:1em">
             Parameters:
         </wl-title>
@@ -324,44 +301,44 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         </wl-title>
         <model-catalog-dataset-specification id="mcoutput" .inline=${false}></model-catalog-dataset-specification>
 
-        ${this._editing? html`
         <div style="float:right; margin-top: 1em;">
-            <wl-button @click="${this._onCancelButtonClicked}" style="margin-right: 1em;" flat inverted>
-                <wl-icon>cancel</wl-icon>&ensp;Discard changes
-            </wl-button>
             <wl-button @click="${this._onSaveButtonClicked}">
                 <wl-icon>save</wl-icon>&ensp;Save
             </wl-button>
         </div>` 
-        :html`
-        <div style="margin-top: 1em;">
-            <wl-button style="float:right;" @click="${this._onEditButtonClicked}">
-                <wl-icon>edit</wl-icon>&ensp;Edit
-            </wl-button>
-            <wl-button style="--primary-hue: 0; --primary-saturation: 75%" @click="${this._onDeleteButtonClicked}">
-                <wl-icon>delete</wl-icon>&ensp;Delete
-            </wl-button>
-        </div>`}
-        `
     }
 
-    private _onEditButtonClicked () {
-        this._scrollUp();
-        let url = getURL(this._selectedModel, this._selectedVersion, this._selectedConfig);
-        goToPage('models/configure/' + url + '/edit');
+    protected firstUpdated () {
+        this._inputTimeInterval =  this.shadowRoot.getElementById('mcti') as ModelCatalogTimeInterval;
+        this._inputPerson =  this.shadowRoot.getElementById('mcperson') as ModelCatalogPerson;
+        this._inputProcess =  this.shadowRoot.getElementById('mcprocess') as ModelCatalogProcess;
+        this._inputSoftwareImage =  this.shadowRoot.getElementById('mcswimg') as ModelCatalogSoftwareImage;
+        this._inputParameter =  this.shadowRoot.getElementById('mcparameter') as ModelCatalogParameter;
+        this._inputDSInput =  this.shadowRoot.getElementById('mcinput') as ModelCatalogDatasetSpecification;
+        this._inputDSOutput =  this.shadowRoot.getElementById('mcoutput') as ModelCatalogDatasetSpecification;
+        this._inputGrid = this.shadowRoot.getElementById('mcgrid') as ModelCatalogGrid;
+        this._inputRegion = this.shadowRoot.getElementById('mcregion') as ModelCatalogRegion;
+        this._setEditingInputs();
     }
 
-    private _onDeleteButtonClicked () {
-        //TODO
-    }
-
-    private _onCancelButtonClicked () {
-        this._scrollUp();
-        let url = getURL(this._selectedModel, this._selectedVersion, this._selectedConfig);
-        goToPage('models/configure/' + url);
+    private _setEditingInputs () { //TODO types...
+        this._inputTimeInterval.setActionSelect();
+        this._inputPerson.setActionMultiselect();
+        this._inputGrid.setActionSelect();
+        this._inputProcess.setActionMultiselect();
+        this._inputSoftwareImage.setActionSelect();
+        this._inputParameter.setActionEditOrAdd();
+        this._inputDSInput.setActionEditOrAdd();
+        this._inputDSOutput.setActionEditOrAdd();
+        this._inputRegion.setActionMultiselect();
+        /*let inputs = [this._inputTimeInterval];
+        inputs.forEach((input) => {
+            input.setActionSelect();
+        });*/
     }
 
     private _onSaveButtonClicked () {
+        console.log('click!');
         let inputName : Textfield = this.shadowRoot.getElementById("form-config-name") as Textfield;
         let inputCategory : Select = this.shadowRoot.getElementById("form-config-category") as Select;
         let inputDesc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-desc") as HTMLTextAreaElement;
@@ -405,13 +382,19 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             if (website) jsonObj['website'] = [website];
             if (compLoc) jsonObj['hasComponentLocation'] = [compLoc];
 
-            let newConfig = ModelConfigurationFromJSON({...this._config, ...jsonObj});
-
-            store.dispatch(modelConfigurationPut(newConfig)).then((c:ModelConfiguration) => {
-                console.log('<', c);
-                this._scrollUp();
-                let url = getURL(this._selectedModel, this._selectedVersion, c.id);
-                goToPage('models/configure/' + url);
+            let newConfig = ModelConfigurationFromJSON(jsonObj);
+            store.dispatch(modelConfigurationPost(newConfig)).then((c:ModelConfiguration) => {
+                store.dispatch(versionGet(this._selectedVersion)).then((sv) => {
+                    console.log('sv', sv);
+                    if (!sv.hasConfiguration) sv.hasConfiguration = [];
+                    sv.hasConfiguration.push(c);
+                    store.dispatch(versionPut(sv)).then((sv2)=>{
+                        console.log('updated!');
+                        this._scrollUp();
+                        let url = getURL(this._selectedModel, this._selectedVersion, c.id);
+                        goToPage('models/configure/' + url);
+                    });
+                });
             });
 
         } else {
@@ -421,99 +404,11 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         }
     }
 
-    protected firstUpdated () {
-        this._inputTimeInterval =  this.shadowRoot.getElementById('mcti') as ModelCatalogTimeInterval;
-        this._inputPerson =  this.shadowRoot.getElementById('mcperson') as ModelCatalogPerson;
-        this._inputProcess =  this.shadowRoot.getElementById('mcprocess') as ModelCatalogProcess;
-        this._inputSoftwareImage =  this.shadowRoot.getElementById('mcswimg') as ModelCatalogSoftwareImage;
-        this._inputParameter =  this.shadowRoot.getElementById('mcparameter') as ModelCatalogParameter;
-        this._inputDSInput =  this.shadowRoot.getElementById('mcinput') as ModelCatalogDatasetSpecification;
-        this._inputDSOutput =  this.shadowRoot.getElementById('mcoutput') as ModelCatalogDatasetSpecification;
-        this._inputGrid = this.shadowRoot.getElementById('mcgrid') as ModelCatalogGrid;
-        this._inputRegion = this.shadowRoot.getElementById('mcregion') as ModelCatalogRegion;
-        this._rendered = true;
-        if (this._config) {
-            this._initializeForm();
-        }
-        if (this._editing) {
-            this._setEditingInputs();
-        }
-    }
-
-    private _initializeForm () {
-        console.log('initializing form...', this._config);
-        this._inputTimeInterval.setResources( this._config.hasOutputTimeInterval );
-        this._inputGrid.setResources( this._config.hasGrid );
-        this._inputPerson.setResources( (this._config.author||[]).filter( (a) => a.type.includes('Person') ) ); //FIXME
-        this._inputProcess.setResources( this._config.hasProcess );
-        this._inputSoftwareImage.setResources( this._config.hasSoftwareImage );
-        this._inputParameter.setResources( this._config.hasParameter );
-        this._inputDSInput.setResources( this._config.hasInput );
-        this._inputDSOutput.setResources( this._config.hasOutput );
-        this._inputRegion.setResources( this._config.hasRegion );
-    }
-
-    private _setEditingInputs () { //TODO types...
-        this._inputTimeInterval.setActionSelect();
-        this._inputPerson.setActionMultiselect();
-        this._inputGrid.setActionSelect();
-        this._inputProcess.setActionMultiselect();
-        this._inputSoftwareImage.setActionSelect();
-        this._inputParameter.setActionEditOrAdd();
-        this._inputDSInput.setActionEditOrAdd();
-        this._inputDSOutput.setActionEditOrAdd();
-        this._inputRegion.setActionMultiselect();
-        /*let inputs = [this._inputTimeInterval];
-        inputs.forEach((input) => {
-            input.setActionSelect();
-        });*/
-    }
-
-    private _unsetEditingInputs () {
-        let inputs = [this._inputTimeInterval, this._inputPerson, this._inputGrid, this._inputProcess,
-                this._inputSoftwareImage, this._inputParameter, this._inputRegion, this._inputDSInput,
-                this._inputDSOutput];
-        inputs.forEach((input) => {
-            input.unsetAction();
-        });
-    }
-
     stateChanged(state: RootState) {
-        if (state.explorerUI && state.modelCatalog) {
+        if (state.explorerUI) {
             let ui = state.explorerUI;
-            let db = state.modelCatalog;
-
-            // Set edit mode
-            let newEditState : boolean = (ui.mode === 'edit');
-            if (newEditState != this._editing) {
-                this._editing = newEditState;
-                if (this._rendered) {
-                    if (this._editing) this._setEditingInputs();
-                    else this._unsetEditingInputs();
-                }
-            }
-
-            // Load config
-            if (ui.selectedConfig != this._selectedConfig) {
-                console.log('selected config has changed');
-                this._selectedModel = ui.selectedModel;
-                this._selectedVersion = ui.selectedVersion;
-                this._selectedConfig = ui.selectedConfig;
-                if (this._selectedConfig) {
-                    //LOAD new data
-                    if (db.configurations[this._selectedConfig]) {
-                        this._config = db.configurations[this._selectedConfig];
-                        if (this._rendered) this._initializeForm();
-                    } else {
-                        this._loading = true;
-                        store.dispatch(modelConfigurationGet(this._selectedConfig)).then((config:ModelConfiguration) => {
-                            this._loading = false;
-                            this._config = config;
-                            if (this._rendered) this._initializeForm();
-                        });
-                    }
-                }
-            }
+            this._selectedModel = ui.selectedModel;
+            this._selectedVersion = ui.selectedVersion;
         }
     }
 }

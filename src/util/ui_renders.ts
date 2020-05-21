@@ -107,3 +107,7 @@ export const renderLastUpdateText = (info: StepUpdateInformation) => {
         <div class="information">Last updated by ${info.user} on ${date.toString()}</div>
     `;
 }
+
+export const renderExternalLink = (uri, label?) => {
+    return html`<a target='_blank' href="${uri}">${label? label : uri}</a>`
+}
