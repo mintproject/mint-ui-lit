@@ -51,7 +51,11 @@ import { ModelsConfigurePerson } from './person';
 import { ModelsConfigureProcess } from './process';
 import { ModelsConfigureParameter } from './parameter';
 import { ModelsConfigureDatasetSpecification } from './dataset-specification';
-import { ModelConfiguration } from '@mintproject/modelcatalog_client';
+import { ModelConfiguration, ModelConfigurationFromJSON } from '@mintproject/modelcatalog_client';
+
+import { Textfield } from 'weightless/textfield';
+import { Textarea } from 'weightless/textarea';
+import { Select } from 'weightless/select';
 
 @customElement('models-configure-configuration')
 export class ModelsConfigureConfiguration extends connect(store)(PageViewElement) {
@@ -225,7 +229,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <td>Keywords:</td>
                 <td>
                     ${this._editing ? html`
-                    <input id="form-config-keywords" type="text" value="${keywords}"/>
+                    <wl-textfield id="form-config-keywords" type="text" value="${keywords}"/>
                     ` : keywords}
                 </td>
             </tr>
@@ -245,8 +249,8 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <td>Website:</td>
                 <td>
                     ${this._editing ? html`
-                    <textfield id="form-config-website" name="Website"
-                        value="${this._config && this._config.website ? this._config.website[0] : ''}"></textfield>`
+                    <wl-textfield id="form-config-website" name="Website"
+                        value="${this._config && this._config.website ? this._config.website[0] : ''}"></wl-textfield>`
                     : (this._config && this._config.website ? this._config.website[0] : '')}
                 </td>
             </tr>
@@ -325,7 +329,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             <wl-button @click="${this._onCancelButtonClicked}" style="margin-right: 1em;" flat inverted>
                 <wl-icon>cancel</wl-icon>&ensp;Discard changes
             </wl-button>
-            <wl-button @click="">
+            <wl-button @click="${this._onSaveButtonClicked}">
                 <wl-icon>save</wl-icon>&ensp;Save
             </wl-button>
         </div>` 
@@ -357,6 +361,66 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         goToPage('models/configure/' + url);
     }
 
+    private _onSaveButtonClicked () {
+        let inputName : Textfield = this.shadowRoot.getElementById("form-config-name") as Textfield;
+        let inputCategory : Select = this.shadowRoot.getElementById("form-config-category") as Select;
+        let inputDesc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-desc") as HTMLTextAreaElement;
+        let inputShortDesc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-short-desc") as HTMLTextAreaElement;
+        let inputInstall : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-installation") as HTMLTextAreaElement;
+        let inputKeywords : Textfield = this.shadowRoot.getElementById("form-config-keywords") as Textfield;
+        let inputAssumptions : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-assumption") as HTMLTextAreaElement;
+        let inputWebsite : Textfield = this.shadowRoot.getElementById("form-config-website") as Textfield;
+        let inputCompLoc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-comp-loc") as HTMLTextAreaElement;
+
+        let name        : string = inputName        ? inputName        .value : ''; 
+        let category    : string = inputCategory    ? inputCategory    .value : ''; 
+        let desc        : string = inputDesc        ? inputDesc        .value : '';    
+        let shortDesc   : string = inputShortDesc   ? inputShortDesc   .value : '';    
+        let install     : string = inputInstall     ? inputInstall     .value : '';
+        let keywords    : string = inputKeywords    ? inputKeywords    .value : '';
+        let assumptions : string = inputAssumptions ? inputAssumptions .value : '';
+        let website     : string = inputWebsite     ? inputWebsite     .value : '';
+        let compLoc     : string = inputCompLoc     ? inputCompLoc     .value : '';   
+        
+        if (name && category && desc) {
+            let jsonObj = {
+                //type: ["ModelConfiguration"],
+                label: [name],
+                description: [desc],
+                hasModelCategory: [category],
+                hasOutputTimeInterval: this._inputTimeInterval.getResources(),
+                author: this._inputPerson.getResources(),
+                hasProcess: this._inputProcess.getResources(),
+                hasSoftwareImage: this._inputSoftwareImage.getResources(),
+                hasParameter: this._inputParameter.getResources(),
+                hasInput: this._inputDSInput.getResources(),
+                hasOutput: this._inputDSOutput.getResources(),
+                hasGrid: this._inputGrid.getResources(),
+                hasRegion: this._inputRegion.getResources(),
+            };
+            if (shortDesc) jsonObj['shortDescription'] = [shortDesc];
+            if (install) jsonObj['hasInstallationInstructions'] = [install];
+            if (keywords) jsonObj['keywords'] = [keywords];
+            if (assumptions) jsonObj['hasAssumption'] = [assumptions];
+            if (website) jsonObj['website'] = [website];
+            if (compLoc) jsonObj['hasComponentLocation'] = [compLoc];
+
+            let newConfig = ModelConfigurationFromJSON({...this._config, ...jsonObj});
+
+            store.dispatch(modelConfigurationPut(newConfig)).then((c:ModelConfiguration) => {
+                console.log('<', c);
+                this._scrollUp();
+                let url = getURL(this._selectedModel, this._selectedVersion, c.id);
+                goToPage('models/configure/' + url);
+            });
+
+        } else {
+            if (!name && inputName) (<any>inputName).onBlur();
+            if (!category && inputCategory) (<any>inputCategory).onBlur();
+            if (!desc && inputDesc) (<any>inputDesc).onBlur();
+        }
+    }
+
     protected firstUpdated () {
         this._inputTimeInterval =  this.shadowRoot.getElementById('mcti') as ModelCatalogTimeInterval;
         this._inputPerson =  this.shadowRoot.getElementById('mcperson') as ModelCatalogPerson;
@@ -378,16 +442,15 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
 
     private _initializeForm () {
         console.log('initializing form...', this._config);
-        if (this._config.hasOutputTimeInterval) this._inputTimeInterval.setResources( this._config.hasOutputTimeInterval );
-        if (this._config.hasGrid) this._inputGrid.setResources( this._config.hasGrid );
-        if (this._config.author) 
-            this._inputPerson.setResources( this._config.author.filter( (a) => a.type.includes('Person') ) ); //FIXME
-        if (this._config.hasProcess) this._inputProcess.setResources( this._config.hasProcess );
-        if (this._config.hasSoftwareImage) this._inputSoftwareImage.setResources( this._config.hasSoftwareImage );
-        if (this._config.hasParameter) this._inputParameter.setResources( this._config.hasParameter );
-        if (this._config.hasInput) this._inputDSInput.setResources( this._config.hasInput );
-        if (this._config.hasOutput) this._inputDSOutput.setResources( this._config.hasOutput );
-        if (this._config.hasRegion) this._inputRegion.setResources( this._config.hasRegion );
+        this._inputTimeInterval.setResources( this._config.hasOutputTimeInterval );
+        this._inputGrid.setResources( this._config.hasGrid );
+        this._inputPerson.setResources( (this._config.author||[]).filter( (a) => a.type.includes('Person') ) ); //FIXME
+        this._inputProcess.setResources( this._config.hasProcess );
+        this._inputSoftwareImage.setResources( this._config.hasSoftwareImage );
+        this._inputParameter.setResources( this._config.hasParameter );
+        this._inputDSInput.setResources( this._config.hasInput );
+        this._inputDSOutput.setResources( this._config.hasOutput );
+        this._inputRegion.setResources( this._config.hasRegion );
     }
 
     private _setEditingInputs () { //TODO types...

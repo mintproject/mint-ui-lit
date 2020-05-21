@@ -960,7 +960,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         });
 
                         // Fetching ONE grid
-                        if (!this._grid && this._setup.hasGrid) {
+                        if (!this._grid && this._setup.hasGrid && this._setup.hasGrid.length > 0) {
                             let gridId : string = typeof this._setup.hasGrid[0] === 'string' ?
                                 this._setup.hasGrid[0] as string
                                 : this._setup.hasGrid[0].id;
@@ -1048,7 +1048,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         }
                     }
 
-                    if (db.grids && !this._grid && this._setup.hasGrid) {
+                    if (db.grids && !this._grid && this._setup.hasGrid && this._setup.hasGrid.length > 0) {
                         let gridId:string = typeof this._setup.hasGrid[0] === 'string'?
                             this._setup.hasGrid[0] as string
                             : this._setup.hasGrid[0].id;

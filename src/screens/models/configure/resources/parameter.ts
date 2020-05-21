@@ -32,6 +32,13 @@ const renderParameterType = (param:Parameter) => {
 export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<Parameter> {
     static get styles() {
         return [ExplorerStyles, SharedStyles, this.getBasicStyles(), css`
+        .grab { cursor: grab; }
+        .grabCursor, .grabCursor * { cursor: grabbing !important; }
+        .grabbed { 
+            /*box-shadow: 0 0 13px #000; 
+            display: table-row-group;*/
+            border: 2px solid grey;
+        }
         .min-max-input {
             display: grid;
             grid-template-columns: 25% 50% 25%;
@@ -41,27 +48,13 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     protected classes : string = "resource parameter";
     protected name : string = "parameter";
     protected pname : string = "parameters";
+    protected positionAttr : string = "position";
     protected resourcesGet = parametersGet;
     protected resourceGet = parameterGet;
     protected resourcePost = parameterPost;
     protected resourcePut = parameterPut;
     protected resourceDelete = parameterDelete;
     protected colspan = 3;
-
-    protected _renderTableColgroup () {
-        if (this._action === Action.EDIT_OR_ADD) 
-            return html`
-                <col span="1">
-                <col span="1">
-                <col span="1">
-                <col span="1" style="width: 30px;">
-            `;
-        else return html`
-            <col span="1">
-            <col span="1">
-            <col span="1">
-        `;
-    }
 
     protected _renderTableHeader () {
         return html`
@@ -73,6 +66,10 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
     protected _renderRow (r:Parameter) {
         return html`
+            ${this._action === Action.EDIT_OR_ADD ? html`
+            <td class="grab" @mousedown=${this._grabPosition}>
+                ${r.position ? r.position[0] : ''}
+            </td>` : ''}
             <td>
                 <code>${getLabel(r)}</code><br/>
                 <b>${r.description ? r.description[0] : ''}</b>
@@ -83,6 +80,55 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 ${r.usesUnit ? r.usesUnit[0].label : ''}
             </td>
         `;
+    }
+
+    private _grabPosition (e) {
+        let tr = e.target.closest("TR");
+        let trRect = tr.getBoundingClientRect();
+        let trMax = trRect.top + trRect.height;
+        let oldIndex = tr.rowIndex;
+        let table = tr.parentElement;
+        let drag;
+
+        table.classList.add("grabCursor");
+        table.style.userSelect = "none";
+        tr.classList.add("grabbed");
+        
+        function move (e) {
+            if (!drag && (e.pageY > trRect.top && e.pageY < trMax)) {
+                return;
+            }
+            drag = true;
+            let sibling = tr.parentNode.firstChild; //This can be improved as we know where can be the element.
+            while (sibling) {
+                if (sibling.nodeType === 1 && sibling !== tr) {
+                    let tRect = sibling.getBoundingClientRect();
+                    let tMax = tRect.top + tRect.height;
+                    if (e.pageY > tRect.top && e.pageY < tMax) {
+                        if (sibling.rowIndex < tr.rowIndex)
+                            tr.parentNode.insertBefore(tr, sibling);
+                        else
+                            tr.parentNode.insertBefore(tr, sibling.nextSibling);
+                        return false;
+                    }
+                }
+                sibling = sibling.nextSibling;
+            }
+        }
+
+        function up (e) {
+            if (drag && oldIndex != tr.rowIndex) {
+                drag = false;
+            }
+            document.removeEventListener("mousemove", move);
+            document.removeEventListener("mouseup", up);
+            table.classList.remove("grabCursor")
+            table.style.userSelect = "none";
+            tr.classList.remove("grabbed");
+        }
+
+        document.addEventListener("mousemove", move);
+        document.addEventListener("mouseup", up);
     }
 
     protected _renderForm () {

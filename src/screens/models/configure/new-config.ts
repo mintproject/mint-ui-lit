@@ -12,6 +12,7 @@ import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
 import { personGet, personPost, modelConfigurationPut, modelConfigurationGet,
+         modelConfigurationPost, versionGet, versionPut,
          parameterGet, datasetSpecificationGet, gridGet,
          timeIntervalGet, processGet, softwareImageGet, } from 'model-catalog/actions';
 import { getURL, getLabel } from 'model-catalog/util';
@@ -34,6 +35,7 @@ import './resources/grid';
 import './resources/process';
 import './resources/parameter';
 import './resources/dataset-specification';
+import './resources/region';
 
 import { ModelCatalogTimeInterval } from './resources/time-interval';
 import { ModelCatalogPerson } from './resources/person';
@@ -42,6 +44,7 @@ import { ModelCatalogSoftwareImage } from './resources/software-image';
 import { ModelCatalogGrid } from './resources/grid';
 import { ModelCatalogParameter } from './resources/parameter';
 import { ModelCatalogDatasetSpecification } from './resources/dataset-specification';
+import { ModelCatalogRegion } from './resources/region';
 
 import { ModelsConfigureGrid } from './grid';
 import { ModelsConfigureTimeInterval } from './time-interval';
@@ -49,7 +52,11 @@ import { ModelsConfigurePerson } from './person';
 import { ModelsConfigureProcess } from './process';
 import { ModelsConfigureParameter } from './parameter';
 import { ModelsConfigureDatasetSpecification } from './dataset-specification';
-import { ModelConfiguration } from '@mintproject/modelcatalog_client';
+import { ModelConfiguration, ModelConfigurationFromJSON } from '@mintproject/modelcatalog_client';
+
+import { Textfield } from 'weightless/textfield';
+import { Textarea } from 'weightless/textarea';
+import { Select } from 'weightless/select';
 
 @customElement('models-new-config')
 export class ModelsNewConfig extends connect(store)(PageViewElement) {
@@ -68,8 +75,9 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
     private _inputSoftwareImage : ModelCatalogSoftwareImage;
     private _inputGrid : ModelCatalogGrid;
     private _inputParameter : ModelCatalogParameter;
-    private _inputDatasetSpecification : ModelCatalogDatasetSpecification;
-
+    private _inputDSInput : ModelCatalogDatasetSpecification;
+    private _inputDSOutput : ModelCatalogDatasetSpecification;
+    private _inputRegion : ModelCatalogRegion;
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
@@ -162,9 +170,45 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
             </tr>
 
             <tr>
-                <td>Description:</td>
+                <td>Category</td>
                 <td>
-                    <textarea id="form-config-desc" name="description" rows="5">${this._config ? this._config.description[0] : ''}</textarea>
+                    <wl-select id="form-config-category" name="Category" required 
+                            value="${this._config && this._config.hasModelCategory ? this._config.hasModelCategory[0] : ''}">
+                        <option value="">None</option>
+                        <option value="Agriculture">Agriculture</option>
+                        <option value="Hydrology">Hydrology</option>
+                        <option value="Economy">Economy</option>
+                        <option value="Weather">Weather</option>
+                        <option value="Land Use">Land Use</option>
+                    </wl-select>
+                </td>
+            </tr>
+
+            <tr>
+                <td>Full description:</td>
+                <td>
+                    <textarea id="form-config-desc" name="Description" rows="5">${
+                        this._config && this._config.description ? this._config.description[0] : ''
+                    }</textarea>
+                </td>
+            </tr>
+
+
+            <tr>
+                <td>Sort description:</td>
+                <td>
+                    <textarea id="form-config-short-desc" name="Short description" rows="3">${
+                        this._config && this._config.shortDescription ? this._config.shortDescription[0] : ''
+                    }</textarea>
+                </td>
+            </tr>
+
+            <tr>
+                <td>Installation instructions:</td>
+                <td>
+                    <textarea id="form-config-installation" name="Installation instructions" rows="5">${
+                        this._config && this._config.hasInstallationInstructions? this._config.hasInstallationInstructions[0] : ''
+                    }</textarea>
                 </td>
             </tr>
 
@@ -176,9 +220,33 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
             </tr>
 
             <tr>
+                <td>Assumptions:</td>
+                <td>
+                    <textarea id="form-config-assumption" name="Assumptions" rows="3">${
+                        this._config && this._config.hasAssumption? this._config.hasAssumption[0] : ''
+                    }</textarea>
+                </td>
+            </tr>
+
+            <tr>
+                <td>Website:</td>
+                <td>
+                    <wl-textfield id="form-config-website" name="Website"
+                        value="${this._config && this._config.website ? this._config.website[0] : ''}"></wl-textfield>
+                </td>
+            </tr>
+
+            <tr>
                 <td>Configuration creator:</td>
                 <td>
                     <model-catalog-person id="mcperson"></model-catalog-person>
+                </td>
+            </tr>
+
+            <tr>
+                <td>Region</td>
+                <td>
+                    <model-catalog-region id="mcregion"></model-catalog-region>
                 </td>
             </tr>
 
@@ -226,10 +294,15 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
         <wl-title level="4" style="margin-top:1em">
             Input files:
         </wl-title>
-        <model-catalog-dataset-specification id="mcdsspec" .inline=${false}></model-catalog-dataset-specification>
+        <model-catalog-dataset-specification id="mcinput" .inline=${false}></model-catalog-dataset-specification>
+
+        <wl-title level="4" style="margin-top:1em">
+            Output files:
+        </wl-title>
+        <model-catalog-dataset-specification id="mcoutput" .inline=${false}></model-catalog-dataset-specification>
 
         <div style="float:right; margin-top: 1em;">
-            <wl-button @click="">
+            <wl-button @click="${this._onSaveButtonClicked}">
                 <wl-icon>save</wl-icon>&ensp;Save
             </wl-button>
         </div>` 
@@ -241,8 +314,10 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
         this._inputProcess =  this.shadowRoot.getElementById('mcprocess') as ModelCatalogProcess;
         this._inputSoftwareImage =  this.shadowRoot.getElementById('mcswimg') as ModelCatalogSoftwareImage;
         this._inputParameter =  this.shadowRoot.getElementById('mcparameter') as ModelCatalogParameter;
-        this._inputDatasetSpecification =  this.shadowRoot.getElementById('mcdsspec') as ModelCatalogDatasetSpecification;
+        this._inputDSInput =  this.shadowRoot.getElementById('mcinput') as ModelCatalogDatasetSpecification;
+        this._inputDSOutput =  this.shadowRoot.getElementById('mcoutput') as ModelCatalogDatasetSpecification;
         this._inputGrid = this.shadowRoot.getElementById('mcgrid') as ModelCatalogGrid;
+        this._inputRegion = this.shadowRoot.getElementById('mcregion') as ModelCatalogRegion;
         this._setEditingInputs();
     }
 
@@ -253,10 +328,87 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
         this._inputProcess.setActionMultiselect();
         this._inputSoftwareImage.setActionSelect();
         this._inputParameter.setActionEditOrAdd();
-        this._inputDatasetSpecification.setActionEditOrAdd();
+        this._inputDSInput.setActionEditOrAdd();
+        this._inputDSOutput.setActionEditOrAdd();
+        this._inputRegion.setActionMultiselect();
         /*let inputs = [this._inputTimeInterval];
         inputs.forEach((input) => {
             input.setActionSelect();
         });*/
+    }
+
+    private _onSaveButtonClicked () {
+        console.log('click!');
+        let inputName : Textfield = this.shadowRoot.getElementById("form-config-name") as Textfield;
+        let inputCategory : Select = this.shadowRoot.getElementById("form-config-category") as Select;
+        let inputDesc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-desc") as HTMLTextAreaElement;
+        let inputShortDesc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-short-desc") as HTMLTextAreaElement;
+        let inputInstall : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-installation") as HTMLTextAreaElement;
+        let inputKeywords : Textfield = this.shadowRoot.getElementById("form-config-keywords") as Textfield;
+        let inputAssumptions : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-assumption") as HTMLTextAreaElement;
+        let inputWebsite : Textfield = this.shadowRoot.getElementById("form-config-website") as Textfield;
+        let inputCompLoc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-comp-loc") as HTMLTextAreaElement;
+
+        let name        : string = inputName        ? inputName        .value : ''; 
+        let category    : string = inputCategory    ? inputCategory    .value : ''; 
+        let desc        : string = inputDesc        ? inputDesc        .value : '';    
+        let shortDesc   : string = inputShortDesc   ? inputShortDesc   .value : '';    
+        let install     : string = inputInstall     ? inputInstall     .value : '';
+        let keywords    : string = inputKeywords    ? inputKeywords    .value : '';
+        let assumptions : string = inputAssumptions ? inputAssumptions .value : '';
+        let website     : string = inputWebsite     ? inputWebsite     .value : '';
+        let compLoc     : string = inputCompLoc     ? inputCompLoc     .value : '';   
+        
+        if (name && category && desc) {
+            let jsonObj = {
+                //type: ["ModelConfiguration"],
+                label: [name],
+                description: [desc],
+                hasModelCategory: [category],
+                hasOutputTimeInterval: this._inputTimeInterval.getResources(),
+                author: this._inputPerson.getResources(),
+                hasProcess: this._inputProcess.getResources(),
+                hasSoftwareImage: this._inputSoftwareImage.getResources(),
+                hasParameter: this._inputParameter.getResources(),
+                hasInput: this._inputDSInput.getResources(),
+                hasOutput: this._inputDSOutput.getResources(),
+                hasGrid: this._inputGrid.getResources(),
+                hasRegion: this._inputRegion.getResources(),
+            };
+            if (shortDesc) jsonObj['shortDescription'] = [shortDesc];
+            if (install) jsonObj['hasInstallationInstructions'] = [install];
+            if (keywords) jsonObj['keywords'] = [keywords];
+            if (assumptions) jsonObj['hasAssumption'] = [assumptions];
+            if (website) jsonObj['website'] = [website];
+            if (compLoc) jsonObj['hasComponentLocation'] = [compLoc];
+
+            let newConfig = ModelConfigurationFromJSON(jsonObj);
+            store.dispatch(modelConfigurationPost(newConfig)).then((c:ModelConfiguration) => {
+                store.dispatch(versionGet(this._selectedVersion)).then((sv) => {
+                    console.log('sv', sv);
+                    if (!sv.hasConfiguration) sv.hasConfiguration = [];
+                    sv.hasConfiguration.push(c);
+                    store.dispatch(versionPut(sv)).then((sv2)=>{
+                        console.log('updated!');
+                        this._scrollUp();
+                        let url = getURL(this._selectedModel, this._selectedVersion, c.id);
+                        goToPage('models/configure/' + url);
+                    });
+                });
+            });
+
+        } else {
+            if (!name && inputName) (<any>inputName).onBlur();
+            if (!category && inputCategory) (<any>inputCategory).onBlur();
+            if (!desc && inputDesc) (<any>inputDesc).onBlur();
+        }
+    }
+
+    stateChanged(state: RootState) {
+        if (state.explorerUI) {
+            let ui = state.explorerUI;
+            this._selectedModel = ui.selectedModel;
+            this._selectedVersion = ui.selectedVersion;
+        }
     }
 }

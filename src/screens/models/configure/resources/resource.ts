@@ -103,6 +103,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             font-weight: bold;
         }
 
+        .striped tr:nth-child(2n-1) td {
+            background-color: #f6f6f6;
+        }
+
         .resources-list {
             height: 400px;
             overflow-y: scroll;
@@ -136,6 +140,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected name : string = "resource";
     protected pname : string = "resources";
     protected colspan : number = 2;
+    protected positionAttr : string = "";
     protected resourcesGet;
     protected resourceGet;
     protected resourcePut;
@@ -161,7 +166,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._action = Action.EDIT_OR_ADD;
     }
 
-    protected render() {
+    protected render () {
         //console.log('Render', this.pname + ':', this._resources);
         return html`
             ${this.inline ? this._renderInline() : this._renderTable()}
@@ -188,14 +193,27 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     private _renderTable () {
+        let orderedResources : T[] = (this.positionAttr) ?
+                this._resources.sort((r1:T, r2:T) => {
+                    let lr1 : T = this._loadedResources[r1.id];
+                    let lr2 : T = this._loadedResources[r2.id];
+                    if (lr1 && lr2) {
+                        let p1 = (lr1[this.positionAttr] && lr1[this.positionAttr].length > 0) ? lr1[this.positionAttr][0] : 0;
+                        let p2 = (lr2[this.positionAttr] && lr2[this.positionAttr].length > 0) ? lr2[this.positionAttr][0] : 0;
+                        return p1 - p2;
+                    } 
+                    return 0;
+                })
+                : this._resources;
+        let editing : boolean = (this._action === Action.EDIT_OR_ADD);
         return html`
-        <table class="pure-table pure-table-striped" style="width: 100%">
-            ${this._renderTableColgroup()}
+        <table class="pure-table striped" style="width: 100%">
             <thead>
+                ${editing && this.positionAttr ? html`<th style="width:10px;"></th>` : ''}
                 ${this._renderTableHeader()}
-                ${this._action === Action.EDIT_OR_ADD ? html`<th></th>` : ''}
+                ${editing ? html`<th style="width:10px;"></th>` : ''}
             </thead>
-            ${this._resources.length > 0 ? this._resources.map((r:T) => this._renderStatus(r)) : ''}
+            ${this._resources.length > 0 ? orderedResources.map((r:T) => this._renderStatus(r)) : ''}
             ${this._action === Action.EDIT_OR_ADD ? html`
             <tr>
                 <td colspan="${this.colspan + 1}" align="center">
@@ -208,19 +226,6 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 </td>
             </tr>` : '')}
         </table>
-        `;
-    }
-
-    protected _renderTableColgroup () {
-        if (this._action === Action.EDIT_OR_ADD) 
-            return html`
-                <col span="1">
-                <col span="1">
-                <col span="1" style="width: 30px;">
-            `;
-        else return html`
-            <col span="1">
-            <col span="1">
         `;
     }
 
@@ -274,7 +279,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     html`${getId(r)} <loading-dots style="--width: 20px; margin-left: 5px;"></loading-dots>` //TODO: error handling here...
                     : this._renderResource(this._loadedResources[r.id])}
             </span>`;
-        else
+        else //FIXME: colspan here could be a  b u g
             return html`<tr>
                 ${this._loading[r.id] ? 
                     html`<td colspan="${this.colspan}" align="center">
@@ -566,6 +571,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     public setResources (r:T[]) {
+        if (!r || r.length === 0) {
+            this._resources = [];
+            return;
+        }
         let resources : T[] = [...r];
         let shouldLoad : string[] = resources
                 .map((r:T) => r.id)
@@ -589,6 +598,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
 
         this._resources = resources;
+    }
+
+    public getResources () {
+        return this._resources;
     }
 
     protected _getDBResources () : IdMap<T> {
