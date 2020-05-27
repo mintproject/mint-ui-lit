@@ -136,6 +136,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: Boolean}) protected _editionEnabled : boolean = true;
     @property({type: Boolean}) protected _deleteEnabled : boolean = true;
 
+    private _order : IdMap<T> = {} as IdMap<T>;
+
     protected classes : string = "resource";
     protected name : string = "resource";
     protected pname : string = "resources";
@@ -570,9 +572,35 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
     }
 
+    private _getResourcePosition (r:T) {
+        let res : T = r[this.positionAttr];
+        if (res && res.length > 0) {
+            return res[0];
+        }
+        return -1;
+    }
+
+    protected _refreshOrder () {
+        if (this.positionAttr) {
+            this._order = {};
+            let max : number = this._resources.length;
+            //TODO: better way to do this!
+            this._resources.forEach((r:T) => {
+                let index : number = this._getResourcePosition(r);
+                if (index < 0) {
+                    index = max;
+                    max += 1;
+                }
+                this._order[index] = r;
+            });
+        }
+        this._resources
+    }
+
     public setResources (r:T[]) {
         if (!r || r.length === 0) {
             this._resources = [];
+            this._order = {};
             return;
         }
         let resources : T[] = [...r];

@@ -108,7 +108,7 @@ export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResourc
                 label: [label],
                 description: [desc],
             };
-            if (value) jsonRes['intervalUnit'] = [{id: unit}];
+            if (unit) jsonRes['intervalUnit'] = [{id: unit}];
             if (value) jsonRes['intervalValue'] = [value];
             return TimeIntervalFromJSON(jsonRes);
         } else {
