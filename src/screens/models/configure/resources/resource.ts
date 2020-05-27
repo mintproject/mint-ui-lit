@@ -110,7 +110,11 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         .resources-list {
             height: 400px;
             overflow-y: scroll;
-        }`;
+        }
+        .grab { cursor: grab; }
+        .grabCursor, .grabCursor * { cursor: grabbing !important; }
+        .grabbed { border: 2px solid grey; }
+        `;
     }
 
     // Resources 
@@ -130,6 +134,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: Boolean}) protected _waiting : boolean = false;
 
     @property({type: Object}) protected _resources : T[] = [] as T[];
+    @property({type: Object}) protected _orderedResources : T[] = [] as T[];
 
     @property({type: String}) protected _textFilter : string = "";
     @property({type: Boolean}) protected _creationEnabled : boolean = true;
@@ -169,7 +174,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     protected render () {
-        //console.log('Render', this.pname + ':', this._resources);
+        console.log('Render', this.pname + ':', this._resources, this._loadedResources);
         return html`
             ${this.inline ? this._renderInline() : this._renderTable()}
             <wl-dialog class="larger" id="resource-dialog" fixed backdrop blockscrolling persistent>
@@ -195,8 +200,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     private _renderTable () {
-        let orderedResources : T[] = (this.positionAttr) ?
-                this._resources.sort((r1:T, r2:T) => {
+        let displayedResources : T[] = (this.positionAttr) ? this._orderedResources : this._resources;
+                /*this._resources.sort((r1:T, r2:T) => {
                     let lr1 : T = this._loadedResources[r1.id];
                     let lr2 : T = this._loadedResources[r2.id];
                     if (lr1 && lr2) {
@@ -205,8 +210,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                         return p1 - p2;
                     } 
                     return 0;
-                })
-                : this._resources;
+                })*/
         let editing : boolean = (this._action === Action.EDIT_OR_ADD);
         return html`
         <table class="pure-table striped" style="width: 100%">
@@ -215,9 +219,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 ${this._renderTableHeader()}
                 ${editing ? html`<th style="width:10px;"></th>` : ''}
             </thead>
-            ${this._resources.length > 0 ? orderedResources.map((r:T) => this._renderStatus(r)) : ''}
+            ${this._resources.length > 0 ? displayedResources.map((r:T) => this._renderStatus(r)) : ''}
             ${this._action === Action.EDIT_OR_ADD ? html`
-            <tr>
+            <tr class="ignore-grab">
                 <td colspan="${this.colspan + 1}" align="center">
                     <a class="clickable" @click=${this._createResource}>Add a new ${this.name}</a>
                 </td>
@@ -275,22 +279,28 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     private _renderStatus (r:T) {
+        let lr : T = this._loadedResources[r.id];
         if (this.inline)
             return html`<span class="${this.classes}"> 
                 ${this._loading[r.id] ? 
                     html`${getId(r)} <loading-dots style="--width: 20px; margin-left: 5px;"></loading-dots>` //TODO: error handling here...
-                    : this._renderResource(this._loadedResources[r.id])}
+                    : this._renderResource(lr)}
             </span>`;
         else //FIXME: colspan here could be a  b u g
             return html`<tr>
                 ${this._loading[r.id] ? 
-                    html`<td colspan="${this.colspan}" align="center">
+                    html`<td colspan="${this.positionAttr ? this.colspan + 1 : this.colspan}" align="center">
                         ${getId(r)}
                         <loading-dots style="--width: 20px; margin-left: 5px;"></loading-dots>
                     </td>`
                     : html`
-                    ${this._renderRow(this._loadedResources[r.id])}
-                    ${this._action === Action.EDIT_OR_ADD ? html`<td>
+                    ${this._action === Action.EDIT_OR_ADD && this.positionAttr ? html`
+                    <td class="grab" @mousedown=${this._grabPosition}>
+                        ${this._getResourcePosition(lr) > 0 ? this._getResourcePosition(lr) : '-'}
+                    </td>` : ''}
+                    ${this._renderRow(lr)}
+                    ${this._action === Action.EDIT_OR_ADD ? html`
+                    <td>
                         <wl-button class="edit" @click="${() => this._editResource(r)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
                     </td>` : ''}`
                 }
@@ -446,6 +456,90 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         </form>`;
     }
 
+    private _grabPosition (e) {
+        let tr = e.target.closest("TR");
+        let trRect = tr.getBoundingClientRect();
+        let trMax = trRect.top + trRect.height;
+        let oldIndex = tr.rowIndex;
+        let table = tr.parentElement;
+        let drag;
+        let thisElement = this;
+
+        table.classList.add("grabCursor");
+        table.style.userSelect = "none";
+        tr.classList.add("grabbed");
+        
+        function move (e) {
+            if (!drag && (e.pageY > trRect.top && e.pageY < trMax)) {
+                return;
+            }
+            drag = true;
+            let sibling = tr.parentNode.firstChild; //This can be improved as we know where can be the element.
+            while (sibling) {
+                if (sibling.nodeType === 1 && sibling !== tr && !sibling.classList.contains('ignore-grab')) {
+                    let tRect = sibling.getBoundingClientRect();
+                    let tMax = tRect.top + tRect.height;
+                    if (e.pageY > tRect.top && e.pageY < tMax) {
+                        if (sibling.rowIndex < tr.rowIndex)
+                            tr.parentNode.insertBefore(tr, sibling);
+                        else
+                            tr.parentNode.insertBefore(tr, sibling.nextSibling);
+                        return false;
+                    }
+                }
+                sibling = sibling.nextSibling;
+            }
+        }
+
+        function up (e) {
+            if (drag && oldIndex != tr.rowIndex) {
+                drag = false;
+                if (confirm('Are you sure you want to move this ' + thisElement.name)) {
+                    thisElement._changeOrder(oldIndex + 1, tr.rowIndex + 1);
+                }
+                let sibling = tr.parentNode.firstChild;
+                while (sibling) {
+                    if (sibling.nodeType === 1 && sibling !== tr && sibling.rowIndex === oldIndex) {
+                        if (tr.rowIndex > oldIndex)
+                            tr.parentNode.insertBefore(tr, sibling);
+                        else 
+                            tr.parentNode.insertBefore(tr, sibling.nextSibling);
+                        break;
+                    }
+                    sibling = sibling.nextSibling;
+                }
+            }
+            document.removeEventListener("mousemove", move);
+            document.removeEventListener("mouseup", up);
+            table.classList.remove("grabCursor")
+            table.style.userSelect = "none";
+            tr.classList.remove("grabbed");
+
+        }
+
+        document.addEventListener("mousemove", move);
+        document.addEventListener("mouseup", up);
+    }
+
+    private _changeOrder (oldIndex:number, newIndex:number) {
+        console.log('changing', oldIndex, 'to', newIndex);
+
+        let min: number = oldIndex > newIndex ? newIndex : oldIndex;
+        let max: number = oldIndex > newIndex ? oldIndex : newIndex;
+        let mov: number = oldIndex > newIndex ? +1 : -1;
+
+        //console.log('1>', this._orderedResources.map(x => x.label), min, max);
+
+        for (let i = min; i < max + 1; i ++) {
+            let index : number = i === oldIndex ? newIndex : i + mov;
+            //console.log(i, '->', index, this._orderedResources[i-1]);
+            this._setResourcePosition(this._orderedResources[i-1], index);
+        }
+
+        this._refreshOrder();
+        //console.log('2>', this._orderedResources.map(x => x.label), min, max);
+    }
+
     protected _closeDialog () {
         hideDialog("resource-dialog", this.shadowRoot);
         this._dialogOpen = false;
@@ -534,9 +628,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         showDialog("resource-dialog", this.shadowRoot);
     }
 
-    private _editResource (r:T) {
+    protected _editResource (r:T) {
         this._editingResourceId = r.id;
-        console.log('>', this._loadedResources[r.id]);
         this._status = Status.EDIT;
         if (this._action === Action.EDIT_OR_ADD) {
             this._dialogOpen = true;
@@ -573,59 +666,82 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     private _getResourcePosition (r:T) {
-        let res : T = r[this.positionAttr];
-        if (res && res.length > 0) {
-            return res[0];
-        }
+        let p = r[this.positionAttr];
+        if (p && p.length > 0)
+            return p[0];
         return -1;
     }
 
-    protected _refreshOrder () {
-        if (this.positionAttr) {
-            this._order = {};
-            let max : number = this._resources.length;
-            //TODO: better way to do this!
-            this._resources.forEach((r:T) => {
-                let index : number = this._getResourcePosition(r);
-                if (index < 0) {
-                    index = max;
-                    max += 1;
-                }
-                this._order[index] = r;
-            });
+    private _setResourcePosition (r:T, position:number) {
+        let lr = this._loadedResources[r.id];
+        if (position > 0 && lr) {
+            let newR : T = { ... lr };
+            newR[this.positionAttr] = [position];
+            console.log('new', lr.position[0], position, newR);
+            this._loadedResources[r.id] = newR;
         }
-        this._resources
     }
 
+    /* Check position attribute and compute order array */
+    protected _refreshOrder () {
+        if (this.positionAttr) {
+            // Check resources with position
+            let done : Set<string> = new Set();
+            let ordered : T[] = this._resources
+                    .map((r:T) => {
+                        let lr : T = this._loadedResources[r.id]
+                        done.add(lr.id);
+                        return lr;
+                    })
+                    .filter((r:T) => r ? (this._getResourcePosition(r) > 0) : false)
+                    .sort((r1:T, r2:T) => this._getResourcePosition(r1) - this._getResourcePosition(r2));
+
+            console.log('ordered', ordered.map(r => r.label));
+            let unordered = this._resources.filter((r:T) => !done.has(r.id))
+            //console.log('unordered', unordered.map(r => r.label));
+            this._orderedResources = [ ...ordered, ...unordered ];
+            console.log('New order:', this._orderedResources.map(r => r.label[0]));
+            this.requestUpdate();
+        }
+    }
+
+    /* This is the way to set a list of resources */
     public setResources (r:T[]) {
         if (!r || r.length === 0) {
             this._resources = [];
             this._order = {};
             return;
         }
-        let resources : T[] = [...r];
-        let shouldLoad : string[] = resources
+        this._resources = [...r];
+        let shouldLoad : string[] = this._resources
                 .map((r:T) => r.id)
                 .filter((id:string) => !this._loading[id] || !this._loadedResources[id]);
 
         if (shouldLoad.length > 0) {
             let dbResources : IdMap<T> = this._getDBResources();
-            shouldLoad.forEach((id:string) => {
-                if (dbResources[id])  {
-                    this._loadedResources[id] = dbResources[id];
-                } else {
-                    this._loading[id] = true;
-                    let req = store.dispatch(this.resourceGet(id));
-                    req.then((r:T) => {
-                        this._loading[id] = false;
-                        this._loadedResources[id] = r;
-                        this.requestUpdate();
-                    });
-                }
+            Promise.all(
+                shouldLoad.map((id:string) => {
+                    if (dbResources[id])  {
+                        this._loadedResources[id] = dbResources[id];
+                        return Promise.resolve(this._loadedResources[id]);
+                    } else {
+                        this._loading[id] = true;
+                        let req = store.dispatch(this.resourceGet(id));
+                        req.then((r:T) => {
+                            this._loading[id] = false;
+                            this._loadedResources[id] = r;
+                            this.requestUpdate();
+                        });
+                        return req;
+                    }
+                })
+            ).then((resources:T[]) => {
+                if (this.positionAttr) this._refreshOrder();
             })
+        } else if (this.positionAttr) {
+            this._refreshOrder();
         }
 
-        this._resources = resources;
     }
 
     public getResources () {

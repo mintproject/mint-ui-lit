@@ -31,14 +31,8 @@ const renderParameterType = (param:Parameter) => {
 @customElement('model-catalog-parameter')
 export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<Parameter> {
     static get styles() {
+        //TODO: need to move this to resources
         return [ExplorerStyles, SharedStyles, this.getBasicStyles(), css`
-        .grab { cursor: grab; }
-        .grabCursor, .grabCursor * { cursor: grabbing !important; }
-        .grabbed { 
-            /*box-shadow: 0 0 13px #000; 
-            display: table-row-group;*/
-            border: 2px solid grey;
-        }
         .min-max-input {
             display: grid;
             grid-template-columns: 25% 50% 25%;
@@ -89,6 +83,10 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
     @property({type: String}) private _formPart : string = "";
 
+    constructor () {
+        super();
+    }
+
     protected _renderTableHeader () {
         return html`
             <th><b>Name</b></th>
@@ -99,10 +97,6 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
     protected _renderRow (r:Parameter) {
         return html`
-            ${this._action === Action.EDIT_OR_ADD ? html`
-            <td class="grab" @mousedown=${this._grabPosition}>
-                ${r.position ? r.position[0] : ''}
-            </td>` : ''}
             <td>
                 <code>${getLabel(r)}</code><br/>
                 <b>${r.description ? r.description[0] : ''}</b>
@@ -115,53 +109,14 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         `;
     }
 
-    private _grabPosition (e) {
-        let tr = e.target.closest("TR");
-        let trRect = tr.getBoundingClientRect();
-        let trMax = trRect.top + trRect.height;
-        let oldIndex = tr.rowIndex;
-        let table = tr.parentElement;
-        let drag;
-
-        table.classList.add("grabCursor");
-        table.style.userSelect = "none";
-        tr.classList.add("grabbed");
-        
-        function move (e) {
-            if (!drag && (e.pageY > trRect.top && e.pageY < trMax)) {
-                return;
-            }
-            drag = true;
-            let sibling = tr.parentNode.firstChild; //This can be improved as we know where can be the element.
-            while (sibling) {
-                if (sibling.nodeType === 1 && sibling !== tr) {
-                    let tRect = sibling.getBoundingClientRect();
-                    let tMax = tRect.top + tRect.height;
-                    if (e.pageY > tRect.top && e.pageY < tMax) {
-                        if (sibling.rowIndex < tr.rowIndex)
-                            tr.parentNode.insertBefore(tr, sibling);
-                        else
-                            tr.parentNode.insertBefore(tr, sibling.nextSibling);
-                        return false;
-                    }
-                }
-                sibling = sibling.nextSibling;
-            }
+    protected _editResource (r:Parameter) {
+        super._editResource(r);
+        let lr : Parameter = this._loadedResources[r.id];
+        if (lr && lr.hasDataType && lr.hasDataType.length > 0) {
+            let dt = lr.hasDataType[0];
+            if (dt === 'integer') dt = 'int';
+            this._formPart = dt;
         }
-
-        function up (e) {
-            if (drag && oldIndex != tr.rowIndex) {
-                drag = false;
-            }
-            document.removeEventListener("mousemove", move);
-            document.removeEventListener("mouseup", up);
-            table.classList.remove("grabCursor")
-            table.style.userSelect = "none";
-            tr.classList.remove("grabbed");
-        }
-
-        document.addEventListener("mousemove", move);
-        document.addEventListener("mouseup", up);
     }
 
     protected _renderForm () {
@@ -284,7 +239,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                     jsonRes2 = this._getPartBooleanFromForm();
                     break;
                 default:
-                    consonle.warn('unrecognized datatype');
+                    console.warn('unrecognized datatype');
                     return;
                     break;
             }
