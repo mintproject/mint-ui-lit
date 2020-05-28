@@ -971,7 +971,8 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         }
 
                         // Fetching ONE time interval
-                        if (!this._timeInterval && this._setup.hasOutputTimeInterval) {
+                        if (!this._timeInterval && this._setup.hasOutputTimeInterval &&
+                            this._setup.hasOutputTimeInterval.length > 0) {
                             let ti = this._setup.hasOutputTimeInterval[0];
                             let tiId = typeof ti === 'object' ? ti.id : ti;
                             if (!db.timeIntervals || !db.timeIntervals[tiId]) {
@@ -981,7 +982,8 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         }
 
                         // Fetching ONE softwareImage
-                        if (!this._softwareImage && this._setup.hasSoftwareImage) {
+                        if (!this._softwareImage && this._setup.hasSoftwareImage && 
+                            this._setup.hasSoftwareImage.length > 0) {
                             let si = this._setup.hasSoftwareImage[0];
                             let siId = typeof si === 'object' ? si['id'] : si;
                             if (!db.softwareImages || !db.softwareImages[siId]) {

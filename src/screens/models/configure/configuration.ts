@@ -11,7 +11,7 @@ import { goToPage } from 'app/actions';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { personGet, personPost, modelConfigurationPut, modelConfigurationGet,
+import { personGet, personPost, modelConfigurationPut, modelConfigurationGet, modelConfigurationDelete,
          parameterGet, datasetSpecificationGet, gridGet,
          timeIntervalGet, processGet, softwareImageGet, } from 'model-catalog/actions';
 import { getURL, getLabel } from 'model-catalog/util';
@@ -353,6 +353,9 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
 
     private _onDeleteButtonClicked () {
         //TODO
+        store.dispatch(modelConfigurationDelete( this._config ));
+        this._scrollUp();
+        goToPage('models/configure/');
     }
 
     private _onCancelButtonClicked () {
@@ -381,7 +384,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         let assumptions : string = inputAssumptions ? inputAssumptions .value : '';
         let website     : string = inputWebsite     ? inputWebsite     .value : '';
         let compLoc     : string = inputCompLoc     ? inputCompLoc     .value : '';   
-        
+
         if (name && category && desc) {
             let jsonObj = {
                 //type: ["ModelConfiguration"],
@@ -392,7 +395,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 author: this._inputPerson.getResources(),
                 hasProcess: this._inputProcess.getResources(),
                 hasSoftwareImage: this._inputSoftwareImage.getResources(),
-                hasParameter: this._inputParameter.getResources(),
+                //hasParameter: this._inputParameter.getResources(),
                 hasInput: this._inputDSInput.getResources(),
                 hasOutput: this._inputDSOutput.getResources(),
                 hasGrid: this._inputGrid.getResources(),
@@ -405,15 +408,25 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             if (website) jsonObj['website'] = [website];
             if (compLoc) jsonObj['hasComponentLocation'] = [compLoc];
 
-            let newConfig = ModelConfigurationFromJSON({...this._config, ...jsonObj});
+            // save parameters first
+            let promises = [];
+            if ( !this._inputParameter.isSaved() ) {
+                let p = this._inputParameter.save();
+                p.then(() => {
+                    jsonObj["hasParameter"] = this._inputParameter.getResources();
+                });
+                promises.push(p);
+            }
 
-            store.dispatch(modelConfigurationPut(newConfig)).then((c:ModelConfiguration) => {
-                console.log('<', c);
-                this._scrollUp();
-                let url = getURL(this._selectedModel, this._selectedVersion, c.id);
-                goToPage('models/configure/' + url);
+            Promise.all(promises).then(() => {
+                let newConfig = ModelConfigurationFromJSON({...this._config, ...jsonObj});
+                store.dispatch(modelConfigurationPut(newConfig)).then((c:ModelConfiguration) => {
+                    console.log('<', c);
+                    this._scrollUp();
+                    let url = getURL(this._selectedModel, this._selectedVersion, c.id);
+                    goToPage('models/configure/' + url);
+                });
             });
-
         } else {
             if (!name && inputName) (<any>inputName).onBlur();
             if (!category && inputCategory) (<any>inputCategory).onBlur();
@@ -428,7 +441,9 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         this._inputSoftwareImage =  this.shadowRoot.getElementById('mcswimg') as ModelCatalogSoftwareImage;
         this._inputParameter =  this.shadowRoot.getElementById('mcparameter') as ModelCatalogParameter;
         this._inputDSInput =  this.shadowRoot.getElementById('mcinput') as ModelCatalogDatasetSpecification;
+        this._inputDSInput.setName('input');
         this._inputDSOutput =  this.shadowRoot.getElementById('mcoutput') as ModelCatalogDatasetSpecification;
+        this._inputDSOutput.setName('output');
         this._inputGrid = this.shadowRoot.getElementById('mcgrid') as ModelCatalogGrid;
         this._inputRegion = this.shadowRoot.getElementById('mcregion') as ModelCatalogRegion;
         this._rendered = true;

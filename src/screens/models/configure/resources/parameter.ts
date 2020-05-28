@@ -80,6 +80,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     protected resourcePut = parameterPut;
     protected resourceDelete = parameterDelete;
     protected colspan = 3;
+    protected lazy = true;
 
     @property({type: String}) private _formPart : string = "";
 
@@ -132,7 +133,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
             <div class="two-inputs">
                 <wl-select id="parameter-datatype" label="Data type" required @change="${this._onDataTypeChanged}"
-                    value="${edResource && edResource.hasDataType ? edResource.hasDataType[0] : 'string'}">
+                    value="${this._formPart}">
                     <option value="string" selected>String</option>
                     <option value="int">Integer</option>
                     <option value="float">Float</option>
@@ -160,15 +161,27 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 </wl-textfield>
             </div>
 
-            <div class="two-inputs" style="display: ${this._formPart === 'float' ? 'unset' : 'none'}">
-                <!-- FIXME: step is not working -->
-                <wl-textfield id="part-float-default" type="text"  label="Default value" required
-                    step="${edResource && edResource.hasDefaultValue ? edResource.hasDefaultValue[0] : '0.01'}"
-                    value="${edResource && edResource.recommendedIncrement ? edResource.recommendedIncrement[0] : ''}">
-                </wl-textfield>
-                <wl-textfield id="part-float-increment" type="number" step="0.01" label="Increment (optional)"
-                    value="${edResource && edResource.recommendedIncrement ? edResource.recommendedIncrement[0] : ''}">
-                </wl-textfield>
+            <div style="display: ${this._formPart === 'float' ? 'unset' : 'none'}">
+                <div class="two-inputs">
+                    <!-- FIXME: step is not working -->
+                    <wl-textfield id="part-float-default" type="text"  label="Default value" required
+                        value="${edResource && edResource.hasDefaultValue ? edResource.hasDefaultValue[0] : ''}"
+                        step="${edResource && edResource.recommendedIncrement ? edResource.recommendedIncrement[0] : '0.01'}">
+                    </wl-textfield>
+                    <wl-textfield id="part-float-increment" type="number" step="0.01" label="Increment (optional)"
+                        value="${edResource && edResource.recommendedIncrement ? edResource.recommendedIncrement[0] : ''}">
+                    </wl-textfield>
+                </div>
+                <div class="two-inputs">
+                    <wl-textfield type="number" id="part-float-min" label="Minimum (optional)"
+                        step="${edResource && edResource.recommendedIncrement ? edResource.recommendedIncrement[0] : '0.01'}"
+                        value="${edResource && edResource.hasMinimumAcceptedValue ? edResource.hasMinimumAcceptedValue[0] : '' }">
+                    </wl-textfield>
+                    <wl-textfield type="number" id="part-float-max" label="Maximum (optional)"
+                        step="${edResource && edResource.recommendedIncrement ? edResource.recommendedIncrement[0] : '0.01'}"
+                        value="${edResource && edResource.hasMaximumAcceptedValue ? edResource.hasMaximumAcceptedValue[0] : ''}">
+                    </wl-textfield>
+                </div>
             </div>
 
             <div style="display: ${this._formPart === 'string' || this._formPart === '' ? 'unset' : 'none'}">
@@ -201,6 +214,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     }
 
     protected _getResourceFromForm () {
+        //TODO: should be able to add custom types
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById('parameter-label') as Textfield;
         let inputDesc : Textarea = this.shadowRoot.getElementById('parameter-desc') as Textarea;
@@ -219,6 +233,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 description: [desc],
                 label: [label],
                 hasDataType: [datatype],
+                position: [this._resources.length + 1]
             };
 
             if (unit) jsonRes["usesUnit"] = [{id: unit}];
@@ -296,13 +311,37 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     private _getPartFloatFromForm () {
         let inputDef : Textfield = this.shadowRoot.getElementById('part-float-default') as Textfield;
         let inputInc : Textfield = this.shadowRoot.getElementById('part-float-increment') as Textfield;
+        let inputMin : Textfield = this.shadowRoot.getElementById('part-float-min') as Textfield;
+        let inputMax : Textfield = this.shadowRoot.getElementById('part-float-max') as Textfield;
         let def : string = inputDef ? inputDef.value : '';
         let inc : string = inputInc ? inputInc.value : '';
+        let min : string = inputMin ? inputMin.value : '';
+        let max : string = inputMax ? inputMax.value : '';
         if (def) {
             let jsonRes = {
                 hasDefaultValue: [parseFloat(def)]
             };
             if (inc) jsonRes['recommendedIncrement'] = [inc];
+            let idef : number = parseInt(def);
+            let imin : number = undefined;
+            let imax : number = undefined;
+
+            if (min) {
+                jsonRes['hasMinimumAcceptedValue'] = [min];
+                imin = parseInt(min);
+                if (idef < imin) {
+                    //TODO: notify
+                    return;
+                }
+            }
+            if (max) {
+                jsonRes['hasMaximumAcceptedValue'] = [max];
+                imax = parseInt(max);
+                if (idef > imax) {
+                    //TODO: notify
+                    return;
+                }
+            }
             return jsonRes;
         } else {
             (<any>inputDef).onBlur();

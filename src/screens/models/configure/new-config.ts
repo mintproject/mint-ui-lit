@@ -369,7 +369,7 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
                 author: this._inputPerson.getResources(),
                 hasProcess: this._inputProcess.getResources(),
                 hasSoftwareImage: this._inputSoftwareImage.getResources(),
-                hasParameter: this._inputParameter.getResources(),
+                //hasParameter: this._inputParameter.getResources(),
                 hasInput: this._inputDSInput.getResources(),
                 hasOutput: this._inputDSOutput.getResources(),
                 hasGrid: this._inputGrid.getResources(),
@@ -382,21 +382,32 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
             if (website) jsonObj['website'] = [website];
             if (compLoc) jsonObj['hasComponentLocation'] = [compLoc];
 
-            let newConfig = ModelConfigurationFromJSON(jsonObj);
-            store.dispatch(modelConfigurationPost(newConfig)).then((c:ModelConfiguration) => {
-                store.dispatch(versionGet(this._selectedVersion)).then((sv) => {
-                    console.log('sv', sv);
-                    if (!sv.hasConfiguration) sv.hasConfiguration = [];
-                    sv.hasConfiguration.push(c);
-                    store.dispatch(versionPut(sv)).then((sv2)=>{
-                        console.log('updated!');
-                        this._scrollUp();
-                        let url = getURL(this._selectedModel, this._selectedVersion, c.id);
-                        goToPage('models/configure/' + url);
+            // save parameters first
+            let promises = [];
+            if ( !this._inputParameter.isSaved() ) {
+                let p = this._inputParameter.save();
+                p.then(() => {
+                    jsonObj["hasParameter"] = this._inputParameter.getResources();
+                });
+                promises.push(p);
+            }
+
+            Promise.all(promises).then(() => {
+                let newConfig = ModelConfigurationFromJSON(jsonObj);
+                store.dispatch(modelConfigurationPost(newConfig)).then((c:ModelConfiguration) => {
+                    store.dispatch(versionGet(this._selectedVersion)).then((sv) => {
+                        console.log('sv', sv);
+                        if (!sv.hasConfiguration) sv.hasConfiguration = [];
+                        sv.hasConfiguration.push(c);
+                        store.dispatch(versionPut(sv)).then((sv2)=>{
+                            console.log('updated!');
+                            this._scrollUp();
+                            let url = getURL(this._selectedModel, this._selectedVersion, c.id);
+                            goToPage('models/configure/' + url);
+                        });
                     });
                 });
             });
-
         } else {
             if (!name && inputName) (<any>inputName).onBlur();
             if (!category && inputCategory) (<any>inputCategory).onBlur();

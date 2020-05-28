@@ -119,6 +119,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     // Resources 
     protected _loadedResources : IdMap<T> = {} as IdMap<T>;
+    protected _resourcesToEdit : IdMap<T> = {} as IdMap<T>;
+    protected _resourcesToCreate : IdMap<T> = {} as IdMap<T>;
     @property({type: Object}) protected _loading : IdMap<boolean> = {};
     @property({type: Boolean}) protected _allResourcesLoaded : boolean = false;
     @property({type: Boolean}) protected _allResourcesLoading : boolean = false;
@@ -142,6 +144,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: Boolean}) protected _deleteEnabled : boolean = true;
 
     private _order : IdMap<T> = {} as IdMap<T>;
+
+    protected lazy : boolean = false;
 
     protected classes : string = "resource";
     protected name : string = "resource";
@@ -173,8 +177,12 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._action = Action.EDIT_OR_ADD;
     }
 
+    public setName (newName : string) {
+        this.name = newName;
+    }
+
     protected render () {
-        console.log('Render', this.pname + ':', this._resources, this._loadedResources);
+        //console.log('Render', this.pname + ':', this._resources, this._loadedResources);
         return html`
             ${this.inline ? this._renderInline() : this._renderTable()}
             <wl-dialog class="larger" id="resource-dialog" fixed backdrop blockscrolling persistent>
@@ -222,7 +230,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             ${this._resources.length > 0 ? displayedResources.map((r:T) => this._renderStatus(r)) : ''}
             ${this._action === Action.EDIT_OR_ADD ? html`
             <tr class="ignore-grab">
-                <td colspan="${this.colspan + 1}" align="center">
+                <td colspan="${this.positionAttr ? this.colspan +2 : this.colspan + 1}" align="center">
                     <a class="clickable" @click=${this._createResource}>Add a new ${this.name}</a>
                 </td>
             </tr>` : (this._resources.length == 0 ? html`
@@ -522,22 +530,15 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     private _changeOrder (oldIndex:number, newIndex:number) {
-        console.log('changing', oldIndex, 'to', newIndex);
-
         let min: number = oldIndex > newIndex ? newIndex : oldIndex;
         let max: number = oldIndex > newIndex ? oldIndex : newIndex;
         let mov: number = oldIndex > newIndex ? +1 : -1;
-
-        //console.log('1>', this._orderedResources.map(x => x.label), min, max);
-
         for (let i = min; i < max + 1; i ++) {
             let index : number = i === oldIndex ? newIndex : i + mov;
             //console.log(i, '->', index, this._orderedResources[i-1]);
             this._setResourcePosition(this._orderedResources[i-1], index);
         }
-
         this._refreshOrder();
-        //console.log('2>', this._orderedResources.map(x => x.label), min, max);
     }
 
     protected _closeDialog () {
@@ -571,29 +572,85 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected _onFormSaveButtonClicked () {
         let resource = this._getResourceFromForm();
         if (resource && this._status != Status.NONE) {
-            this._waiting = true;
-            let req : Promise<T>;
-            if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
-                req = store.dispatch(this.resourcePost(resource));
-            } else if (this._status === Status.EDIT) {
-                resource.id = this._editingResourceId;
-                req = store.dispatch(this.resourcePut(resource));
-            }
-            req.then((r:T) => {
-                console.log('Promise resolved', r);
-                this._waiting = false;
-                this._loadedResources[r.id] = r;
-                this._clearStatus();
-                // TODO: display notifications
-                if (this._action === Action.EDIT_OR_ADD) {
-                    this._resources.push(r);
-                } else if (this._action === Action.MULTISELECT) {
-                    this._selectedResources[r.id] = true;
-                } else if (this._action === Action.SELECT) {
-                    this._selectedResourceId = r.id;
+            if (this.lazy) {
+                if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
+                    // Create a temp id
+                    let id : string = (new Date()).getTime() + '';
+                    resource['id'] = id;
+                    this._resourcesToCreate[id] = resource;
+                    if (this._action === Action.EDIT_OR_ADD) {
+                        this._resources.push(resource);
+                        if (this.positionAttr) this._orderedResources.push(resource);
+                    }
+                } else if (this._status === Status.EDIT) {
+                    resource.id = this._editingResourceId;
+                    this._resourcesToEdit[this._editingResourceId] = resource;
                 }
-            });
+                this._loadedResources[resource.id] = resource;
+                this._clearStatus();
+                if (this._action === Action.MULTISELECT) {
+                    this._selectedResources[resource.id] = true;
+                } else if (this._action === Action.SELECT) {
+                    this._selectedResourceId = resource.id;
+                }
+            } else {
+                this._waiting = true;
+                let req : Promise<T>;
+                if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
+                    req = store.dispatch(this.resourcePost(resource));
+                } else if (this._status === Status.EDIT) {
+                    resource.id = this._editingResourceId;
+                    req = store.dispatch(this.resourcePut(resource));
+                }
+                req.then((r:T) => {
+                    console.log('Promise resolved', r);
+                    this._waiting = false;
+                    this._loadedResources[r.id] = r;
+                    this._clearStatus();
+                    // TODO: display notifications
+                    if (this._action === Action.EDIT_OR_ADD) {
+                        this._resources.push(r);
+                        if (this.positionAttr) this._orderedResources.push(r);
+                    } else if (this._action === Action.MULTISELECT) {
+                        this._selectedResources[r.id] = true;
+                    } else if (this._action === Action.SELECT) {
+                        this._selectedResourceId = r.id;
+                    }
+                });
+            }
         }
+    }
+
+    public save () {
+        let creation = Object.values(this._resourcesToCreate).map((r:T) => {
+            let tempId : string = r.id;
+            let index : number = -1;
+            this._resources.forEach((r2:T, i:number) => {
+                if (r2.id === r.id) index = i;
+            });
+
+            r["id"] = "";
+            let req = store.dispatch(this.resourcePost(r));
+            req.then((resource : T) => {
+                this._resources.splice(index,1);
+                this._resources.push(resource);
+            });
+            return req;
+        });
+        let edition = Object.values(this._resourcesToEdit).map((r:T) => {
+            let req = store.dispatch(this.resourcePut(r));
+            return req;
+        });
+        let allp = Promise.all([ ...creation, ...edition ]);
+        allp.then((rs: T[]) => {
+            rs.forEach((lr:T) => {
+                this._loadedResources[lr.id] = lr;
+            });
+            this._resourcesToEdit = {};
+            this._resourcesToCreate  = {};
+            if (this.positionAttr) this._refreshOrder();
+        })
+        return allp;
     }
 
     protected _getResourceFromForm () {
@@ -677,8 +734,12 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         if (position > 0 && lr) {
             let newR : T = { ... lr };
             newR[this.positionAttr] = [position];
-            console.log('new', lr.position[0], position, newR);
             this._loadedResources[r.id] = newR;
+            if (this.lazy) {
+                this._resourcesToEdit[r.id] = newR;
+            } else {
+                //TODO: do an update here;
+            }
         }
     }
 
@@ -696,11 +757,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     .filter((r:T) => r ? (this._getResourcePosition(r) > 0) : false)
                     .sort((r1:T, r2:T) => this._getResourcePosition(r1) - this._getResourcePosition(r2));
 
-            console.log('ordered', ordered.map(r => r.label));
             let unordered = this._resources.filter((r:T) => !done.has(r.id))
-            //console.log('unordered', unordered.map(r => r.label));
             this._orderedResources = [ ...ordered, ...unordered ];
-            console.log('New order:', this._orderedResources.map(r => r.label[0]));
+            //console.log('New order:', this._orderedResources.map(r => r.label[0]));
             this.requestUpdate();
         }
     }
@@ -745,7 +804,15 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     public getResources () {
-        return this._resources;
+        return this._resources.map((r:T) => {
+            let lr = this._loadedResources[r.id];
+            if (lr.id.length < 15) return { ...lr, id: "" };
+            else return lr;
+        })
+    }
+
+    public isSaved () {
+        return !this.lazy || (Object.keys(this._resourcesToEdit).length === 0 && Object.keys(this._resourcesToCreate).length === 0);
     }
 
     protected _getDBResources () : IdMap<T> {
