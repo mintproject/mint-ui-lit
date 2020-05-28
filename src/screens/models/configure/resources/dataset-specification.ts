@@ -34,6 +34,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
     protected resourcePost = datasetSpecificationPost;
     protected resourcePut = datasetSpecificationPut;
     protected resourceDelete = datasetSpecificationDelete;
+    protected positionAttr : string = "position";
 
     protected _renderTableHeader () {
         return html`
@@ -92,7 +93,8 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
                 type: ["DatasetSpecification"],
                 label: [label],
                 description: [desc],
-                hasFormat: [format]
+                hasFormat: [format],
+                position: [this._resources.length + 1]
             };
             if (dim != '') {
                 jsonRes["hasDimensionality"] = [dim];

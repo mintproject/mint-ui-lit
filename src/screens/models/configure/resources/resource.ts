@@ -209,16 +209,6 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     private _renderTable () {
         let displayedResources : T[] = (this.positionAttr) ? this._orderedResources : this._resources;
-                /*this._resources.sort((r1:T, r2:T) => {
-                    let lr1 : T = this._loadedResources[r1.id];
-                    let lr2 : T = this._loadedResources[r2.id];
-                    if (lr1 && lr2) {
-                        let p1 = (lr1[this.positionAttr] && lr1[this.positionAttr].length > 0) ? lr1[this.positionAttr][0] : 0;
-                        let p2 = (lr2[this.positionAttr] && lr2[this.positionAttr].length > 0) ? lr2[this.positionAttr][0] : 0;
-                        return p1 - p2;
-                    } 
-                    return 0;
-                })*/
         let editing : boolean = (this._action === Action.EDIT_OR_ADD);
         return html`
         <table class="pure-table striped" style="width: 100%">
