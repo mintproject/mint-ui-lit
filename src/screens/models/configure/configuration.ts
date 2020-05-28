@@ -384,7 +384,6 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         let assumptions : string = inputAssumptions ? inputAssumptions .value : '';
         let website     : string = inputWebsite     ? inputWebsite     .value : '';
         let compLoc     : string = inputCompLoc     ? inputCompLoc     .value : '';   
-
         if (name && category && desc) {
             let jsonObj = {
                 //type: ["ModelConfiguration"],
@@ -395,7 +394,6 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 author: this._inputPerson.getResources(),
                 hasProcess: this._inputProcess.getResources(),
                 hasSoftwareImage: this._inputSoftwareImage.getResources(),
-                //hasParameter: this._inputParameter.getResources(),
                 hasInput: this._inputDSInput.getResources(),
                 hasOutput: this._inputDSOutput.getResources(),
                 hasGrid: this._inputGrid.getResources(),

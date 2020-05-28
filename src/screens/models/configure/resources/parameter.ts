@@ -31,7 +31,6 @@ const renderParameterType = (param:Parameter) => {
 @customElement('model-catalog-parameter')
 export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<Parameter> {
     static get styles() {
-        //TODO: need to move this to resources
         return [ExplorerStyles, SharedStyles, this.getBasicStyles(), css`
         .min-max-input {
             display: grid;

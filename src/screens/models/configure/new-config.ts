@@ -369,7 +369,6 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
                 author: this._inputPerson.getResources(),
                 hasProcess: this._inputProcess.getResources(),
                 hasSoftwareImage: this._inputSoftwareImage.getResources(),
-                //hasParameter: this._inputParameter.getResources(),
                 hasInput: this._inputDSInput.getResources(),
                 hasOutput: this._inputDSOutput.getResources(),
                 hasGrid: this._inputGrid.getResources(),

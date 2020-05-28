@@ -11,7 +11,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 import { Action, ActionCreator } from 'redux';
 import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from './store';
-import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetConfig,
+import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetConfig, addModelToCompare, clearCompare,
          explorerSetCalibration, explorerSetMode } from '../screens/models/model-explore/ui-actions';
 import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread } from './ui-actions';
 import { auth, db } from '../config/firebase';
@@ -280,6 +280,13 @@ const loadPage: ActionCreator<ThunkResult> =
                     }
                 } else {
                     store.dispatch(explorerClearModel());
+                }
+            });
+        } else if (subpage == 'compare') {
+            import('../screens/models/models-compare').then((_module) => {
+                store.dispatch(clearCompare());
+                for (let i = 0; i < params.length; i++) {
+                    store.dispatch(addModelToCompare(params[i]));
                 }
             });
         }

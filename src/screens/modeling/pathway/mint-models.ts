@@ -5,7 +5,8 @@ import { store, RootState } from "../../../app/store";
 import { ModelMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, ExecutableEnsembleSummary } from "../reducers";
 import models, { VariableModels, Model } from "../../models/reducers";
 import { queryModelsByVariables, setupToOldModel } from "../../models/actions";
-import { setupGetAll, regionsGet } from 'model-catalog/actions';
+import { setupGetAll, regionsGet, modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet } from 'model-catalog/actions';
+import { getId } from 'model-catalog/util';
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { updatePathway, deleteAllPathwayEnsembleIds } from "../actions";
@@ -47,6 +48,15 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     private _showAllModels: boolean = false;
 
     @property({type: Object})
+    private _loadedModels : IdMap<Model> = {};
+
+    @property({type: Boolean})
+    private _baseLoaded : boolean = false;
+    private _allModels : any = {};
+    private _allVersions : any = {};
+    private _allConfigs : any = {};
+
+    @property({type: Object})
     private _allRegions : any = {};
     @property({type:Boolean})
     private _waiting: boolean = false;
@@ -57,18 +67,6 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     private _drivingVariables: string[] = [];
 
     private _comparisonFeatures: Array<ComparisonFeature> = [
-        /*{
-            name: "More information",
-            fn: (model:Model) => html `
-                <a target="_blank" href="${this._getModelSetupURL(model)}">Model Profile</a>
-                `
-        },        
-        {
-            name: "Original model",
-            fn: (model:Model) => html `
-                <a target="_blank" href="${this._getModelURL(model)}">${model.original_model}</a>
-                `
-        },        */
         {
             name: "Adjustable variables",
             fn: (model:Model) => {
@@ -78,7 +76,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                         return values.map((ip) => ip.name).join(', ');
                     }
                 }
-                return "None";
+                return html`<span style="color:#999">None<span>`
             }
         },
         {
@@ -87,39 +85,50 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         },
         {
             name: "Modeled processes",
-            fn: (model:Model) => model.modeled_processes
+            fn: (model:Model) => model.modeled_processes.length > 0 ?
+                    model.modeled_processes : html`<span style="color:#999">None specified<span>`
         },
         {
             name: "Parameter assignment/estimation",
             fn: (model:Model) => model.parameter_assignment
         },
-        {
+        /*{
             name: "Parameter assignment/estimation details",
             fn: (model:Model) => model.parameter_assignment_details
-        },
+        },*/
         {
             name: "Target variable for parameter assignment/estimation",
-            fn: (model:Model) => model.target_variable_for_parameter_assignment
+            fn: (model:Model) => model.target_variable_for_parameter_assignment ? 
+                    model.target_variable_for_parameter_assignment : html`<span style="color:#999">No specified<span>`
         },
         {
             name: "Configuration region",
-            fn: (model:Model) => model.calibrated_region
+            fn: (model:Model) => model.calibrated_region ?
+                    model.calibrated_region : html`<span style="color:#999">No specified<span>`
         },
         {
             name: "Spatial dimensionality",
-            fn: (model:Model) => html`<span style="font-family: system-ui;"> ${model.dimensionality} </span>`
+            fn: (model:Model) => model.dimensionality ? 
+                    html`<span style="font-family: system-ui;"> ${model.dimensionality} </span>`
+                    : html`<span style="color:#999">No specified<span>`
         },
         {
             name: "Spatial grid type",
-            fn: (model:Model) => model.spatial_grid_type
+            fn: (model:Model) => model.spatial_grid_type ? 
+                    model.spatial_grid_type
+                    : html`<span style="color:#999">No specified<span>`
         },
         {
             name: "Spatial grid resolution",
-            fn: (model:Model) => model.spatial_grid_resolution
+            fn: (model:Model) => model.spatial_grid_resolution ?
+                    model.spatial_grid_resolution 
+                    : html`<span style="color:#999">No specified<span>`
         },
         {
             name: "Minimum output time interval",
-            fn: (model:Model) => model.minimum_output_time_interval
+            fn: (model:Model) => model.minimum_output_time_interval ?
+                    model.minimum_output_time_interval
+                    : html`<span style="color:#999">No specified<span>`
         }
     ]
 
@@ -307,11 +316,16 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     }
 
     _renderDialogs() {
+        let compUrl : string = this._regionid + '/models/compare/' + this._modelsToCompare.map(getId).join('/');
+        let loading : boolean = this._modelsToCompare.some((m:Model) => !this._loadedModels[m.id]);
         return html`
         <wl-dialog class="comparison" fixed backdrop blockscrolling id="comparisonDialog">
             <table class="pure-table pure-table-striped">
                 <thead>
-                    <th style="border-right:1px solid #EEE; font-size: 14px;">Model details</th>
+                    <th style="border-right:1px solid #EEE; font-size: 14px;">
+                    Model details
+                    ${loading ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`: ''}
+                    </th>
                     ${this._modelsToCompare.map((model) => {
                         return html`
                         <th .style="width:${100/(this._modelsToCompare.length)}%">
@@ -328,8 +342,9 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                         <tr>
                             <td style="border-right:1px solid #EEE"><b>${feature.name}</b></td>
                             ${this._modelsToCompare.map((model) => {
+                                let smodel = this._loadedModels[model.id] ? this._loadedModels[model.id] : model;
                                 return html`
-                                    <td>${feature.fn(model)}</td>
+                                    <td>${feature.fn(smodel)}</td>
                                 `
                             })}
                         </tr>
@@ -337,36 +352,35 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                     })}
                 </tbody>
             </table>
+            <div style="padding: 10px;">
+                For more details, see the <a href="${compUrl}">full comparison page</a>
+            </div>
         </wl-dialog>
         `;
     }
 
     _getModelURL (model:Model) {
-        let url = this._regionid + '/models/explore/' + model.original_model;
-        if (model.model_version) {
-            url += '/' + model.model_version;
-            if (model.model_configuration) {
-                url += '/' + model.model_configuration;
-                if (model.localname) {
-                    url += '/' + model.localname;
+        //FIXME find a better way to do this.
+        if (this._baseLoaded) {
+            let setupid : string = model.id;
+            let config = Object.values(this._allConfigs)
+                    .filter((cfg) => cfg.hasSetup && cfg.hasSetup.some(s => s.id === setupid)).pop();
+            if (config) {
+                let version= Object.values(this._allVersions)
+                    .filter((ver) => ver.hasConfiguration && ver.hasConfiguration.some(c => c.id === config.id)).pop();
+                if (version) {
+                    let model = Object.values(this._allModels)
+                    .filter((m) => m.hasVersion && m.hasVersion.some(v => v.id === version.id)).pop();
+                    if (model) {
+                        return this._regionid + '/models/explore/' + getId(model) + '/' + getId(version)
+                                + "/" + getId(config) + "/" + setupid.split("/").pop();
+                    }
                 }
             }
         }
-        return url;
-    }
 
-    _getModelSetupURL (model:Model) {
-        let url = this._regionid + '/models/configure/' + model.original_model;
-        if (model.model_version) {
-            url += '/' + model.model_version;
-            if (model.model_configuration) {
-                url += '/' + model.model_configuration;
-                if (model.localname) {
-                    url += '/' + model.localname;
-                }
-            }
-        }
-        return url;
+
+        return this._regionid + '/models/explore/';
     }
 
     _getSelectedModels() {
@@ -400,6 +414,19 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             return;
         }
         this._modelsToCompare = Object.values(models);
+        Promise.all(
+            this._modelsToCompare.map((m:Model) => {
+                if (!this._loadedModels[m.id]) {
+                    let p = setupGetAll(m.id);
+                    p.then((setup) => {
+                        this._loadedModels[setup.id] = setupToOldModel(setup);
+                    });
+                    return p
+                } else return null;
+            })
+        ).then((setups) => {
+            this.requestUpdate();
+        })
         showDialog("comparisonDialog", this.shadowRoot!);
     }
 
@@ -535,7 +562,20 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         store.dispatch(regionsGet()).then((regions) => {
             //FIXME: this until the api return the region label.
             this._allRegions = regions;
-        })
+        });
+
+        let pm = store.dispatch(modelsGet()).then((models) => {
+            this._allModels = models;
+        });
+        let pv = store.dispatch(versionsGet()).then((versions) => {
+            this._allVersions = versions;
+        });
+        let pc = store.dispatch(modelConfigurationsGet()).then((configs) => {
+            this._allConfigs = configs;
+        });
+        Promise.all([pm,pv,pc]).then(() => {
+            this._baseLoaded = true;
+        });
     }
 
     stateChanged(state: RootState) {

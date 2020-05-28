@@ -16,7 +16,7 @@ import "../../thirdparty/google-map/src/google-map";
 import "../../components/google-map-custom";
 import { selectTopRegion } from '../../app/ui-actions';
 import { GoogleMapCustom } from 'components/google-map-custom';
-import { BASE_HREF, goToPage, goToRegionPage } from 'app/actions';
+import { goToPage, goToRegionPage } from 'app/actions';
 
 @customElement('app-home')
 export class AppHome extends connect(store)(PageViewElement) {
@@ -78,7 +78,7 @@ export class AppHome extends connect(store)(PageViewElement) {
         `
       ];
     }
-  
+
     protected render() {
       //console.log("rendering");
       return html`
@@ -127,6 +127,9 @@ export class AppHome extends connect(store)(PageViewElement) {
                 </a>
               </li>              
             </ul>
+            <p>
+                We recommend using Google Chrome browser to navigate this page.
+            </p>
             <wl-title level="4">Select a region by hovering over it and clicking.</wl-title>
         </div>
         

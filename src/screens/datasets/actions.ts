@@ -104,7 +104,7 @@ const getDatasetDetailFromDCResponse = (ds: any) => {
         limitations: dmeta['limitations'] || '',
         source: {
             name: dmeta['source'] || '',
-            url: dmeta['source_url'] || '',
+            url: dmeta['source_url'] || dmeta['source'] || '',
             type: dmeta['source_type'] || '',
         },
         categories: ds['categories'] || [],
@@ -422,7 +422,6 @@ const _createResourceQueryData = (queryConfig: DatasetQueryParameters) => {
     data["limit"] = 5000;
     return data;
 }
-
 
 // Query Data Catalog Query for datasets
 type QueryDatasetsGeneralThunkResult = ThunkAction<void, RootState, undefined, DatasetsActionGeneralQuery>;
