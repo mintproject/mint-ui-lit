@@ -89,6 +89,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
     }
 
     _getModelURL (setupURI: string) {
+        let base : string = this._regionid + '/models/explore/';
         let config : any, version : any, model : any;
         let configs = Object.values(this._configs)
                 .filter((c:any) => c.hasSetup && c.hasSetup.filter((s:any) => s.id===setupURI).length > 0);
@@ -96,7 +97,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
         if (configs.length > 0) config = configs[0];
         else {
             console.error('No config for this setup', setupURI);
-            return;
+            return base;
         }
 
         let versions = Object.values(this._versions)
@@ -104,7 +105,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
         if (versions.length > 0) version = versions[0];
         else {
             console.error('No version for this config', config.id);
-            return;
+            return base;
         }
 
         let models = Object.values(this._models)
@@ -112,7 +113,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
         if (models.length > 0) model = models[0];
         else {
             console.error('No model for this version', version.id);
-            return;
+            return base;
         }
 
         return this._regionid + '/models/explore/' + model.id.split('/').pop() + '/' + version.id.split('/').pop() +

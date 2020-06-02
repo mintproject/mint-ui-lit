@@ -1,14 +1,11 @@
 import { Reducer } from "redux";
 import { RootAction } from "../../../app/store";
 import { EXPLORER_SELECT_MODEL, EXPLORER_SELECT_VERSION, EXPLORER_SELECT_CONFIG,
-         EXPLORER_SELECT_CALIBRATION, EXPLORER_SET_COMPARE_A, EXPLORER_SET_COMPARE_B,
-         EXPLORER_COMPARE_MODEL, EXPLORER_SET_MODE } from './ui-actions'
+         EXPLORER_SELECT_CALIBRATION, ADD_MODEL_TO_COMPARE, EXPLORER_SET_MODE, CLEAR_COMPARE } from './ui-actions'
 
 export interface ComparisonEntry {
-    model:          string;
-    version:        string;
-    config:         string;
-    calibration:    string;
+    uri:        string;
+    type:       'Model' | 'ModelConfiguration' | 'ModelConfigurationSetup'; //TODO: could change to enum
 }
 
 export interface ExplorerUIState {
@@ -17,8 +14,7 @@ export interface ExplorerUIState {
     selectedConfig:         string;
     selectedCalibration:    string;
     mode:                   string;
-    compareA?:              ComparisonEntry | null;
-    compareB?:              ComparisonEntry | null;
+    compare?:               ComparisonEntry[];
 }
 
 const INITIAL_STATE: ExplorerUIState = { 
@@ -27,8 +23,7 @@ const INITIAL_STATE: ExplorerUIState = {
     selectedConfig:         '',
     selectedCalibration:    '',
     mode:                   'view',
-    compareA:               null,
-    compareB:               null
+    compare:                [],
 }
 
 const explorerUI: Reducer<ExplorerUIState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -64,27 +59,17 @@ const explorerUI: Reducer<ExplorerUIState, RootAction> = (state = INITIAL_STATE,
                 ...state,
                 mode: action.mode
             }
-        case EXPLORER_SET_COMPARE_A:
+        case ADD_MODEL_TO_COMPARE: 
+            let comp = [ ...state.compare ];
+            comp.push(action.comparison);
             return {
                 ...state,
-                compareA: { ...action.compare }
+                compare: comp
             }
-        case EXPLORER_SET_COMPARE_B:
+        case CLEAR_COMPARE:
             return {
                 ...state,
-                compareB: { ...action.compare }
-            }
-        case EXPLORER_COMPARE_MODEL:
-            if (!state.compareA || !state.compareA.model) {
-                return { 
-                    ...state,
-                    compareA: {model:action.uri, version: '', config: '', calibration: ''}
-                }
-            } else {
-                return {
-                    ...state,
-                    compareB: {model:action.uri, version: '', config: '', calibration: ''}
-                }
+                compare: []
             }
         default:
             return state;

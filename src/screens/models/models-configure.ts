@@ -12,6 +12,7 @@ import { ExplorerStyles } from './model-explore/explorer-styles'
 import './configure/configuration';
 import './configure/setup';
 import './configure/new-setup';
+import './configure/new-config';
 import './configure/parameter';
 import './models-tree'
 
@@ -169,7 +170,8 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                         </div>
                     </div>
 
-                    ${this._config || this._setup ? html`<div style="font-size: 13px; padding: 0px 10px;">
+                    ${this._config || this._setup || (this._selectedVersion && this._creating && !this._config)?
+                        html`<div style="font-size: 13px; padding: 0px 10px;">
                         <p>
                             Model configurations are customizations of the model that use a subset of all the processes
                             and functions that are possible with the general model software.
@@ -185,6 +187,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     <div style="padding: 0px 10px;">
                         <models-configure-configuration class="page" ?active="${this._selectedConfig && !this._selectedSetup && !this._creating}"></models-configure-configuration>
                         <models-configure-setup class="page" ?active="${this._selectedSetup && !this._creating}"></models-configure-setup>
+                        <models-new-config class="page" ?active="${this._selectedVersion && !this._selectedConfig && this._creating}"></models-new-config>
                         <models-new-setup class="page" ?active="${this._selectedConfig && this._creating}"></models-new-setup>
                     </div>
                 </div>
