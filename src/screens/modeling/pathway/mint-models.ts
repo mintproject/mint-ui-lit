@@ -22,6 +22,7 @@ import { getVariableLongName } from "../../../offline_data/variable_list";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { Region } from "screens/regions/reducers";
 import { IdMap } from "app/reducers";
+import { Model as MCModel, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
 
 import 'components/loading-dots';
 
@@ -363,14 +364,17 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         //FIXME find a better way to do this.
         if (this._baseLoaded) {
             let setupid : string = model.id;
-            let config = Object.values(this._allConfigs)
-                    .filter((cfg) => cfg.hasSetup && cfg.hasSetup.some(s => s.id === setupid)).pop();
+            let config : ModelConfiguration = Object.values(this._allConfigs)
+                    .filter((cfg:ModelConfiguration) => 
+                            cfg.hasSetup && cfg.hasSetup.some((s:ModelConfigurationSetup) => s.id === setupid)).pop();
             if (config) {
-                let version= Object.values(this._allVersions)
-                    .filter((ver) => ver.hasConfiguration && ver.hasConfiguration.some(c => c.id === config.id)).pop();
+                let version : SoftwareVersion = Object.values(this._allVersions)
+                    .filter((ver:SoftwareVersion) => 
+                            ver.hasConfiguration && ver.hasConfiguration.some((c:ModelConfiguration) => c.id === config.id)).pop();
                 if (version) {
-                    let model = Object.values(this._allModels)
-                    .filter((m) => m.hasVersion && m.hasVersion.some(v => v.id === version.id)).pop();
+                    let model : MCModel = Object.values(this._allModels)
+                    .filter((m:MCModel) => 
+                            m.hasVersion && m.hasVersion.some((v:SoftwareVersion) => v.id === version.id)).pop();
                     if (model) {
                         return this._regionid + '/models/explore/' + getId(model) + '/' + getId(version)
                                 + "/" + getId(config) + "/" + setupid.split("/").pop();
