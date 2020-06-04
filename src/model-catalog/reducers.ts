@@ -22,12 +22,13 @@ import { MODELS_ADD, MODEL_DELETE,
          SOURCE_CODES_ADD, SOURCE_CODE_DELETE,
          INTERVENTIONS_ADD, INTERVENTION_DELETE,
          VARIABLE_PRESENTATIONS_ADD, VARIABLE_PRESENTATION_DELETE,
+         NUMERICAL_INDEX_ADD, NUMERICAL_INDEX_DELETE,
          } from './actions'
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Region, GeoShape, Grid,
          Process, Parameter, TimeInterval, SoftwareImage, DatasetSpecification, SampleResource, Image,
          SampleCollection, Organization, FundingInformation, Visualization, SourceCode, Intervention,
-         VariablePresentation } from '@mintproject/modelcatalog_client';
+         VariablePresentation, NumericalIndex } from '@mintproject/modelcatalog_client';
 import { IdMap } from 'app/reducers'
 
 export interface ModelCatalogState {
@@ -53,6 +54,7 @@ export interface ModelCatalogState {
     sourceCodes:            IdMap<SourceCode>;
     interventions:          IdMap<Intervention>;
     variablePresentations:  IdMap<VariablePresentation>;
+    numericalIndexes:       IdMap<NumericalIndex>;
 }
 
 const INITIAL_STATE: ModelCatalogState = { 
@@ -78,6 +80,7 @@ const INITIAL_STATE: ModelCatalogState = {
     sourceCodes:            {} as IdMap<SourceCode>,
     interventions:          {} as IdMap<Intervention>,
     variablePresentations:  {} as IdMap<VariablePresentation>,
+    numericalIndexes:       {} as IdMap<NumericalIndex>,
 } as ModelCatalogState;
 
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -127,6 +130,8 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             return { ...state, interventions: {...state.interventions, ...action.payload} };
         case VARIABLE_PRESENTATIONS_ADD:
             return { ...state, variablePresentations: {...state.variablePresentations, ...action.payload} };
+        case NUMERICAL_INDEX_ADD:
+            return { ...state, numericalIndexes: {...state.numericalIndexes, ...action.payload} };
 
         case MODEL_DELETE:
             tmp = { ...state.models };
@@ -212,6 +217,10 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             tmp = { ...state.variablePresentations };
             delete tmp[action.uri];
             return { ...state, variablePresentations: tmp };
+        case NUMERICAL_INDEX_DELETE:
+            tmp = { ...state.numericalIndexes };
+            delete tmp[action.uri];
+            return { ...state, numericalIndexes: tmp };
 
         default:
             return state;

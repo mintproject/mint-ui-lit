@@ -108,12 +108,24 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
 
         .resources-list {
-            height: 400px;
+            margin-top: 5px;
+            height: var(--list-height, 400px);
             overflow-y: scroll;
         }
         .grab { cursor: grab; }
         .grabCursor, .grabCursor * { cursor: grabbing !important; }
         .grabbed { border: 2px solid grey; }
+
+        #resource-dialog {
+            --dialog-height: var(--dialog-height, unset);
+        }
+
+        #retry-button {
+            display: inline-block;
+            height: 1em;
+            width: 20px;
+            cursor: pointer;
+        }
         `;
     }
 
@@ -122,6 +134,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected _resourcesToEdit : IdMap<T> = {} as IdMap<T>;
     protected _resourcesToCreate : IdMap<T> = {} as IdMap<T>;
     @property({type: Object}) protected _loading : IdMap<boolean> = {};
+    @property({type: Object}) protected _error : IdMap<boolean> = {};
     @property({type: Boolean}) protected _allResourcesLoaded : boolean = false;
     @property({type: Boolean}) protected _allResourcesLoading : boolean = false;
     @property({type: String}) protected _selectedResourceId : string = "";
@@ -208,7 +221,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     private _renderTable () {
-        let displayedResources : T[] = (this.positionAttr) ? this._orderedResources : this._resources;
+        let displayedResources : T[] = (this.positionAttr && this._orderedResources.length > 0) ?
+                this._orderedResources : this._resources;
         let editing : boolean = (this._action === Action.EDIT_OR_ADD);
         return html`
         <table class="pure-table striped" style="width: 100%">
@@ -256,19 +270,22 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         <div slot="content">
             ${this._renderSearchOnList()}
             ${this._renderSelectList()}
-            ${this._creationEnabled ? html`
-            <div>
-                or <a class="clickable" @click=${this._createResource}>create a new ${this.name}</a>
-            </div>
-            ` : ''}
         </div>
-        <div slot="footer">
-            <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat ?disabled="">
-                Cancel
-            </wl-button>
-            <wl-button class="submit" ?disabled="" @click="${this._onSelectButtonClicked}">
-                Select
-            </wl-button>
+        <div slot="footer" style="justify-content: space-between;">
+            <div>
+                ${this._creationEnabled ? html`
+                <wl-button @click="${this._createResource}" style="--primary-hue: 124; --button-border-radius: 3px;">
+                    Create a new ${this.name}
+                </wl-button>` : ''}
+            </div>
+            <div>
+                <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat ?disabled="">
+                    Cancel
+                </wl-button>
+                <wl-button class="submit" ?disabled="" @click="${this._onSelectButtonClicked}">
+                    Select
+                </wl-button>
+            </div>
         </div>`;
     }
 
@@ -281,10 +298,17 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         if (this.inline)
             return html`<span class="${this.classes}"> 
                 ${this._loading[r.id] ? 
-                    html`${getId(r)} <loading-dots style="--width: 20px; margin-left: 5px;"></loading-dots>` //TODO: error handling here...
-                    : this._renderResource(lr)}
+                    html`${getId(r)} <loading-dots style="--width: 20px; margin-left: 5px;"></loading-dots>`
+                    : (this._error[r.id] ?
+                        html`
+                        <span style="color:red;">${getId(r)}</span>
+                        <span @click="${() => this._forceLoad(r)}" id="retry-button">
+                            <wl-icon style="position:fixed;">cached</wl-icon>
+                        </span>`
+                        : this._renderResource(lr))
+                    }
             </span>`;
-        else //FIXME: colspan here could be a  b u g
+        else
             return html`<tr>
                 ${this._loading[r.id] ? 
                     html`<td colspan="${this.positionAttr ? this.colspan + 1 : this.colspan}" align="center">
@@ -369,7 +393,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
 
         return html`
-        <div class="resources-list" style="margin-top: 5px;">
+        <div class="resources-list">
             ${(this._action === Action.SELECT) ? html`
                 <span class="${this.classes} list-item no-buttons">
                     <span class="clickable-area" @click=${() => {this._selectedResourceId = '';}}>
@@ -672,6 +696,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             this._selectedResourceId = this._resources[0].id;
         }
         this._dialogOpen = true;
+        this._textFilter = "";
         showDialog("resource-dialog", this.shadowRoot);
     }
 
@@ -754,6 +779,22 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
     }
 
+    protected _forceLoad (r:T) {
+        this._loading[r.id] = true;
+        let req = store.dispatch(this.resourceGet(r.id));
+        this.requestUpdate();
+        req.then((r2:T) => {
+            this._loading[r.id] = false;
+            this._loadedResources[r.id] = r2;
+            this.requestUpdate();
+        });
+        req.catch(() => {
+            this._error[r.id] = true;
+            this._loading[r.id] = false;
+            this.requestUpdate();
+        });
+    }
+
     /* This is the way to set a list of resources */
     public setResources (r:T[]) {
         if (!r || r.length === 0) {
@@ -781,10 +822,16 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                             this._loadedResources[id] = r;
                             this.requestUpdate();
                         });
+                        req.catch(() => {
+                            this._error[id] = true;
+                            this._loading[id] = false;
+                        });
                         return req;
                     }
                 })
             ).then((resources:T[]) => {
+                if (this.positionAttr) this._refreshOrder();
+            }).catch(() => {
                 if (this.positionAttr) this._refreshOrder();
             })
         } else if (this.positionAttr) {

@@ -27,6 +27,7 @@ import { ModelCatalogVisualizationAction } from './visualization-actions';
 import { ModelCatalogSourceCodeAction } from './source-code-actions';
 import { ModelCatalogInterventionAction } from './intervention-actions';
 import { ModelCatalogVariablePresentationAction } from './variable-presentation-actions';
+import { ModelCatalogNumericalIndexAction } from './numerical-index-actions';
 
 export type ActionThunk<R,A extends Action> = ActionCreator<ThunkAction<R, RootState, undefined, A>>
 interface IdObject { id?: string };
@@ -99,7 +100,7 @@ export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAc
         ModelCatalogDatasetSpecificationAction | ModelCatalogSampleResourceAction | ModelCatalogSampleCollectionAction |
         ModelCatalogImageAction | ModelCatalogVisualizationAction | ModelCatalogOrganizationAction | 
         ModelCatalogFundingInformationAction | ModelCatalogSourceCodeAction | ModelCatalogInterventionAction |
-        ModelCatalogVariablePresentationAction;
+        ModelCatalogVariablePresentationAction | ModelCatalogNumericalIndexAction;
 
 //FIXME: The API is returning only one model (void), doing the fetch instead.
 const CUSTOM_URI = "https://api.models.mint.isi.edu/v1.4.0/custom/";
@@ -192,3 +193,4 @@ export * from './visualization-actions';
 export * from './source-code-actions';
 export * from './intervention-actions';
 export * from './variable-presentation-actions';
+export * from './numerical-index-actions';
