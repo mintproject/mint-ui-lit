@@ -133,6 +133,11 @@ span.software-image {
     font: 12px Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace;
 }
 
+span.variable-presentation {
+    border: 2px solid darkgray;;
+    font: 12px Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace;
+}
+
 .monospaced {
     font: 12px Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace;
 }
