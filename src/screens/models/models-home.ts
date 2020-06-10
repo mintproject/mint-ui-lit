@@ -121,7 +121,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <wl-icon>search</wl-icon>
                     <div>Browse Models</div>
                 </a>
-                <a disabled>
+                <a href="${this._regionid}/models/register">
                     <wl-icon>library_add</wl-icon>
                     <div>Add Models</div>
                 </a>
