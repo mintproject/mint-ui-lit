@@ -2,7 +2,7 @@ import { property, html, customElement, css } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
 import { SharedStyles } from '../../styles/shared-styles';
-import { store } from '../../app/store';
+import { store, RootState } from 'app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 
 import './configure/resources/person';
@@ -151,7 +151,7 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
     private _inputContactPerson : ModelCatalogPerson;
     private _inputGrid : ModelCatalogGrid;
 
-    private constructor () {
+    public constructor () {
         super();
         this._inputAuthor = new ModelCatalogPerson();
         this._inputContributor = new ModelCatalogPerson();

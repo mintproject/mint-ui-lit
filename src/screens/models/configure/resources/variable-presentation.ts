@@ -25,6 +25,8 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
     protected resourcePut = variablePresentationPut;
     protected resourceDelete = variablePresentationDelete;
 
+    public pageMax : number = 10
+
     protected _renderForm () {
         let edResource = this._getEditingResource();
         return html`
@@ -32,19 +34,56 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
             <wl-textfield id="var-label" label="Name" required
                 value=${edResource ? getLabel(edResource) : ''}>
             </wl-textfield>
+            <wl-textarea id="var-desc" label="Description"
+                value=${edResource && edResource.description ? edResource.description[0] : ''}>
+            </wl-textarea>
+            <wl-textfield id="var-short-name" label="Short Name" 
+                value=${edResource && edResource.hasShortName ? edResource.hasShortName[0] : ''}>
+            </wl-textfield>
+            <wl-textfield id="var-long-name" label="Long Name" 
+                value=${edResource && edResource.hasLongName ? edResource.hasLongName[0] : ''}>
+            </wl-textfield>
         </form>`;
     }
+
+/*export interface VariablePresentation {
+    /* PARAMETER ???
+    hasDefaultValue?: Array<object> | null;
+    hasStandardVariable?: Array<StandardVariable> | null;
+    hasMinimumAcceptedValue?: Array<object> | null;
+    hasMaximumAcceptedValue?: Array<object> | null;
+    usesUnit?: Array<Unit> | null;
+
+    hasConstraint?: Array<string> | null;
+    partOfDataset?: Array<DatasetSpecification> | null;
+
+    hasLongName?: Array<string> | null;
+    hasShortName?: Array<string> | null;
+
+}*/
 
     protected _getResourceFromForm () {
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById('var-label') as Textfield;
+        let inputDesc : Textarea = this.shadowRoot.getElementById('var-desc') as Textarea;
+        let inputShort : Textfield = this.shadowRoot.getElementById('var-short-name') as Textfield;
+        let inputLong : Textfield = this.shadowRoot.getElementById('var-long-name') as Textfield;
+
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : '';
+        let desc : string = inputDesc ? inputDesc.value : '';
+        let shortName : string = inputShort ? inputShort.value : '';
+        let longName : string = inputLong ? inputLong.value : '';
+
         if (label) {
             let jsonRes = {
                 type: ["VariablePresentation"],
                 label: [label],
             };
+            if (desc) jsonRes["description"] = [desc];
+            if (shortName) jsonRes["hasShortName"] = [shortName];
+            if (longName) jsonRes["hasLongName"] = [longName];
+
             return VariablePresentationFromJSON(jsonRes);
         } else {
             // Show errors
