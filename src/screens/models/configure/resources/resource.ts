@@ -408,11 +408,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 resourcesToShow = resourcesToShow.filter(filter);
             });
             if (this.pageMax > 0 && this.pageMax < resourcesToShow.length) {
-                console.log('len:', resourcesToShow.length);
                 pages = Math.ceil(resourcesToShow.length / this.pageMax);
-                console.log('pages:', pages);
                 resourcesToShow = resourcesToShow.filter((r,i) => {
-                    console.log('i', i);
                     let a : boolean = (i > this._page * this.pageMax);
                     let b : boolean = (i < (this._page+1) * this.pageMax);
                     return a && b;

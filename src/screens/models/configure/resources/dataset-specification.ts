@@ -135,7 +135,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
         let format : string = inputFormat ? inputFormat.value : '';
         let dim : string = inputDim ? inputDim.value : '';
         let presentation : VariablePresentation[] = this._inputVariablePresentation.getResources();
-        if (label && desc && format && presentation.length > 0) {
+        if (label && desc && format) {
             let jsonRes = {
                 type: ["DatasetSpecification"],
                 label: [label],
@@ -147,7 +147,9 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             if (dim != '') {
                 jsonRes["hasDimensionality"] = [dim];
             }
-            console.log( DatasetSpecificationFromJSON(jsonRes) ); 
+            if (presentation.length > 0 || confirm("If no inpiuts have variables, we won't be able to provide suggestions from the data catalog")) {
+                return DatasetSpecificationFromJSON(jsonRes); 
+            } 
             return null;
             //return DatasetSpecificationFromJSON(jsonRes);
         } else {
