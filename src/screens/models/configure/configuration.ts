@@ -162,7 +162,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             </tr>
 
             <tr>
-                <td>Category</td>
+                <td>Category:</td>
                 <td>
                     ${this._editing ? html`
                     <wl-select id="form-config-category" name="Category" required 

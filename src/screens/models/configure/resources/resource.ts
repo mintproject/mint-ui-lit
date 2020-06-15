@@ -126,6 +126,18 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             width: 20px;
             cursor: pointer;
         }
+
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0px 0px;
+        }
+
+        .pagination > wl-button {
+            padding: 8px;
+            border-radius: 4px;
+        }
         `;
     }
 
@@ -155,6 +167,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: Boolean}) protected _creationEnabled : boolean = true;
     @property({type: Boolean}) protected _editionEnabled : boolean = true;
     @property({type: Boolean}) protected _deleteEnabled : boolean = true;
+
+    @property({type: Number}) protected _page : number = 0;
+    public pageMax : number = -1;
 
     private _order : IdMap<T> = {} as IdMap<T>;
 
@@ -271,7 +286,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             ${this._renderSearchOnList()}
             ${this._renderSelectList()}
         </div>
-        <div slot="footer" style="justify-content: space-between;">
+        <div slot="footer" style="justify-content: space-between; padding: 0px 20px 20px;">
             <div>
                 ${this._creationEnabled ? html`
                 <wl-button @click="${this._createResource}" style="--primary-hue: 124; --button-border-radius: 3px;">
@@ -356,6 +371,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
         this._searchPromise = setTimeout(() => {
             this._textFilter = searchInput.value.toLowerCase();
+            this._page = 0;
             this._searchPromise = null;
         }, 300);
     }
@@ -385,11 +401,20 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     this.requestUpdate();
                 };
         let resourcesToShow : T[] = [];
+        let pages : number = -1;
         if (!this._allResourcesLoading) {
             resourcesToShow = Object.values(this._loadedResources);
             this._filters.forEach((filter:(r:T)=>boolean) => {
                 resourcesToShow = resourcesToShow.filter(filter);
             });
+            if (this.pageMax > 0 && this.pageMax < resourcesToShow.length) {
+                pages = Math.ceil(resourcesToShow.length / this.pageMax);
+                resourcesToShow = resourcesToShow.filter((r,i) => {
+                    let a : boolean = (i > this._page * this.pageMax);
+                    let b : boolean = (i < (this._page+1) * this.pageMax);
+                    return a && b;
+                });
+            }
         }
 
         return html`
@@ -432,6 +457,21 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     </span>
                 </span>`)}
         </div>
+        ${(pages > 0) ? html`
+        <div class="pagination">
+            <wl-button 
+                @click="${() => {this._page = this._page-1}}"
+                .disabled="${this._page == 0}">
+                Prev
+            </wl-button>
+            <span> Page ${this._page+1} of ${pages} </span>
+            <wl-button 
+                @click="${() => {this._page = this._page+1}}"
+                .disabled="${this._page == pages-1}">
+                Next
+            </wl-button>
+        </div>
+        ` : ''}
         `;
     }
 

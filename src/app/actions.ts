@@ -289,6 +289,7 @@ const loadPage: ActionCreator<ThunkResult> =
                     store.dispatch(addModelToCompare(params[i]));
                 }
             });
+        } else if (subpage == 'register') {
         }
         break;
     case 'regions':

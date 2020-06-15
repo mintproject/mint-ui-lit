@@ -170,7 +170,7 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
             </tr>
 
             <tr>
-                <td>Category</td>
+                <td>Category:</td>
                 <td>
                     <wl-select id="form-config-category" name="Category" required 
                             value="${this._config && this._config.hasModelCategory ? this._config.hasModelCategory[0] : ''}">
