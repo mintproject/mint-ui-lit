@@ -1326,7 +1326,9 @@ export class ModelView extends connect(store)(PageViewElement) {
             ${dsArr.map((ds:DatasetSpecification) => html`
             <wl-expansion id="${getLabel(ds)}" name="${title}" @click="${() => this._expandDS(ds)}" style="overflow-y: hidden;">
                 <span slot="title" style="flex-grow: unset;">
-                    ${getLabel(ds)}
+                    ${this._loading[ds.id] ? 
+                        getLabel(ds)
+                        : getLabel(this._datasetSpecifications[ds.id])}
                 </span>
                 <span slot="description" style="overflow: hidden; text-overflow: ellipsis;">
                     ${this._loading[ds.id] ? 
