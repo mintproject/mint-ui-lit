@@ -489,7 +489,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         <h3 slot="header">
             ${this._status === Status.CREATE ? 
                 'Creating new ' + this.name
-                :  'Editing resource ' + (edResource ? getLabel(edResource) : '-')}
+                :  'Editing ' + this.name + ' ' + (edResource ? getLabel(edResource) : '-')}
         </h3>
         <div slot="content">
             ${this._renderForm()}

@@ -147,7 +147,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             if (dim != '') {
                 jsonRes["hasDimensionality"] = [dim];
             }
-            if (presentation.length > 0 || confirm("If no inpiuts have variables, we won't be able to provide suggestions from the data catalog")) {
+            if (presentation.length > 0 || confirm("If no variables are associated with an input, we will not be able to search dataset candidates in the MINT data catalog when using this model")) {
                 return DatasetSpecificationFromJSON(jsonRes); 
             } 
             return null;
