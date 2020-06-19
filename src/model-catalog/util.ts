@@ -43,6 +43,14 @@ export const isSubregion = (parentRegionId:string, region:Region) : boolean => {
     );
 }
 
+export const isMainRegion = (region:Region) : boolean => {
+    console.log(region);
+    return region.id === "https://w3id.org/okn/i/mint/Kyrgyzstan"
+        || region.id === "https://w3id.org/okn/i/mint/Ethiopia"
+        || region.id === "https://w3id.org/okn/i/mint/South_Sudan"
+        || region.id === "https://w3id.org/okn/i/mint/Texas";
+}
+
 export const isEmpty = (obj:object) : boolean => Object.keys(obj).length === 0;
 
 export const taggedAs = (obj:object, tag:string) => {

@@ -9,11 +9,6 @@ import { IdMap } from "app/reducers";
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { timeIntervalGet, timeIntervalsGet, timeIntervalPost, timeIntervalPut, timeIntervalDelete } from 'model-catalog/actions';
-
-import { renderExternalLink } from '../util';
-
-import { TimeInterval, Unit } from '@mintproject/modelcatalog_client';
 import "weightless/progress-spinner";
 import "weightless/textfield";
 import "weightless/textfield";
@@ -662,7 +657,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     this._loadedResources[r.id] = r;
                     this._clearStatus();
                     // TODO: display notifications
-                    if (this._action === Action.EDIT_OR_ADD) {
+                    if (this._action === Action.EDIT_OR_ADD && this._resources.filter((s:T) => s.id===r.id).length === 0) {
                         this._resources.push(r);
                         if (this.positionAttr) this._orderedResources.push(r);
                     } else if (this._action === Action.MULTISELECT) {
