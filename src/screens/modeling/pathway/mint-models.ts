@@ -491,7 +491,24 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             Object.values(fixedModels).forEach((model) => {
                 if (model.hasRegion)
                     delete model.hasRegion;
+                    Object.values(this._allConfigs).forEach((cfg:ModelConfiguration) => {
+                        if ((cfg.hasSetup || []).some((setup:ModelConfigurationSetup) => setup.id === model.id))
+                            model.model_configuration = cfg.id;
+                    });
+                    if (model.model_configuration) {
+                        Object.values(this._allVersions).forEach((ver:SoftwareVersion) => {
+                            if ((ver.hasConfiguration || []).some((cfg:ModelConfiguration) => cfg.id === model.model_configuration))
+                                model.model_version = ver.id;
+                        });
+                    }
+                    if (model.model_version) {
+                        Object.values(this._allModels).forEach((mod:MCModel) => {
+                            if ((mod.hasVersion || []).some((ver:SoftwareVersion) => ver.id === model.model_version))
+                                model.original_model = mod.id;
+                        });
+                    }
             });
+            console.log('load:', fixedModels )
             /* The api does not return collections of inputs. FIXME */
             let fixCollection = Promise.all( Object.values(fixedModels).map((model:Model) =>
                 Promise.all( model.input_files.map((input) => {

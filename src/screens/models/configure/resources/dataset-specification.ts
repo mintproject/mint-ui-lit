@@ -93,14 +93,9 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             <wl-textarea id="ds-desc" label="Description" required rows="3"
                 value=${edResource && edResource.description ? edResource.description[0] : ''}>
             </wl-textarea>
-            <div class="two-inputs">
-                <wl-textfield id="ds-format" label="Format" required
-                    value="${edResource && edResource.hasFormat ? edResource.hasFormat[0] : ''}" >
-                </wl-textfield>
-                <wl-textfield type="number" id="ds-dim" label="Dimensionality"
-                    value="${edResource && edResource.hasDimensionality ? edResource.hasDimensionality[0] : ''}">
-                </wl-textfield>
-            </div>
+            <wl-textfield id="ds-format" label="Format" required
+                value="${edResource && edResource.hasFormat ? edResource.hasFormat[0] : ''}" >
+            </wl-textfield>
             <div style="min-height:50px; padding: 10px 0px;">
                 <div style="padding: 5px 0px; font-weight: bold;">Has presentation:</div>
                 ${this._inputVariablePresentation}
@@ -143,10 +138,8 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
                 hasFormat: [format],
                 position: [this._resources.length + 1],
                 hasPresentation: presentation,
+                hasDimensionality: [0],
             };
-            if (dim != '') {
-                jsonRes["hasDimensionality"] = [dim];
-            }
             if (presentation.length > 0 || confirm("If no variables are associated with an input, we will not be able to search dataset candidates in the MINT data catalog when using this model")) {
                 return DatasetSpecificationFromJSON(jsonRes); 
             } 
