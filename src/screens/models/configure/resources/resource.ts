@@ -300,7 +300,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     protected _renderEmpty () {
-        return 'No ' + this.name;
+        return 'No specified';
+        //return 'No ' + this.name;
     }
 
     private _renderStatus (r:T) {
