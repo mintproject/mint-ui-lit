@@ -132,13 +132,16 @@ export const fetchMintConfig: ActionCreator<UserPrefsThunkResult> = () => (dispa
 };
 
 export const signIn = (email: string, password: string) => {
-  auth.signInWithEmailAndPassword(email, password);
-  modelCatalogLogin(email, password);
+  let req = auth.signInWithEmailAndPassword(email, password)
+        .then(() => modelCatalogLogin(email, password));
+  return req;
 };
 
 export const signOut = () => {
-  auth.signOut();
   localStorage.removeItem('accessToken');
+  auth.signOut().then(() => {
+      window.location.reload(false);
+  });
 };
 
 const modelCatalogLogin = (username: string, password: string) => {

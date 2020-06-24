@@ -301,6 +301,19 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     <model-catalog-numerical-index id="mcindex"></model-catalog-numerical-index>
                 </td>
             </tr>
+
+            ${this._editing ? html`
+            <tr>
+                <td>Tag</td>
+                <td>
+                    <wl-select id="form-config-tag" name="Tag"
+                            value="${this._config && this._config.tag ? this._config.tag[0] : ''}">
+                        <option value="">None</option>
+                        <option value="latest">Latest</option>
+                        <option value="deprecated">Deprecated</option>
+                    </wl-select>
+                </td>
+            </tr>`:''}
         </table>
 
         <wl-title level="4" style="margin-top:1em">
@@ -368,16 +381,19 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         let inputAssumptions : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-assumption") as HTMLTextAreaElement;
         let inputWebsite : Textfield = this.shadowRoot.getElementById("form-config-website") as Textfield;
         let inputCompLoc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-comp-loc") as HTMLTextAreaElement;
+        let inputTag : Select = this.shadowRoot.getElementById("form-config-tag") as Select;
 
-        let name        : string = inputName        ? inputName        .value : ''; 
-        let category    : string = inputCategory    ? inputCategory    .value : ''; 
-        let desc        : string = inputDesc        ? inputDesc        .value : '';    
-        let shortDesc   : string = inputShortDesc   ? inputShortDesc   .value : '';    
+        let name        : string = inputName        ? inputName        .value : '';
+        let category    : string = inputCategory    ? inputCategory    .value : '';
+        let desc        : string = inputDesc        ? inputDesc        .value : '';
+        let shortDesc   : string = inputShortDesc   ? inputShortDesc   .value : '';
         let install     : string = inputInstall     ? inputInstall     .value : '';
         let keywords    : string = inputKeywords    ? inputKeywords    .value : '';
         let assumptions : string = inputAssumptions ? inputAssumptions .value : '';
         let website     : string = inputWebsite     ? inputWebsite     .value : '';
-        let compLoc     : string = inputCompLoc     ? inputCompLoc     .value : '';   
+        let compLoc     : string = inputCompLoc     ? inputCompLoc     .value : '';
+        let tag         : string = inputTag         ? inputTag         .value : '';
+
         if (name && category && desc) {
             let jsonObj = {
                 //type: ["ModelConfiguration"],
@@ -400,6 +416,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             if (assumptions) jsonObj['hasAssumption'] = [assumptions];
             if (website) jsonObj['website'] = [website];
             if (compLoc) jsonObj['hasComponentLocation'] = [compLoc];
+            if (tag) jsonObj['tag'] = [tag];
 
             // save parameters first
             let promises = [];

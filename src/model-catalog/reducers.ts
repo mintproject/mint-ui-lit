@@ -221,7 +221,6 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             tmp = { ...state.numericalIndexes };
             delete tmp[action.uri];
             return { ...state, numericalIndexes: tmp };
-
         default:
             return state;
     }

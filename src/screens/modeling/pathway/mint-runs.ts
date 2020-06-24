@@ -118,16 +118,22 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             ${Object.keys(this.pathway.executable_ensemble_summary).map((modelid) => {
                 let summary = this.pathway.executable_ensemble_summary[modelid];
                 let model = this.pathway.models![modelid];
-                console.log('mid', modelid);
                 let grouped_ensemble = grouped_ensembles[modelid];
                 this.totalPages[modelid] = Math.ceil(summary.total_runs/this.pageSize);
 
-                let nParameters = Object.values(this.pathway.model_ensembles[modelid])
-                        .map(m => m.length)
+                //Count parameters:
+                let nParameters : number = model.input_parameters
+                        .map((param) => (this.pathway.model_ensembles[modelid][param.id] || [0]).length)
                         .reduce((ac,len) => ac*len, 1);
-                let nInputs = Object.values(this.pathway.datasets).reduce((ac,dc) => 
-                        ac * dc.resources.filter(r => r.selected).length
-                , 1);
+
+                //Count inputs:
+                let nInputs : number = model.input_files.map((input) => input.value ? 
+                    (input.value.resources || []).filter(r => r.selected != false).length
+                    : (this.pathway.model_ensembles[modelid][input.id] || [])
+                            .map((dsid) => this.pathway.datasets[dsid].resources)
+                            .map((dsres) => (dsres || []).filter((r) => r.selected).length)
+                            .reduce((ac,len) => ac*len, 1)
+                ).reduce((ac,len) => ac*len, 1);
 
                 let submitted_runs = summary.submitted_runs ? summary.submitted_runs : 0;
                 let failed_runs = summary.failed_runs ? summary.failed_runs : 0;
@@ -230,7 +236,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                     </thead>
                                     <!-- Body -->
                                     <tbody>
-                                    ${Object.keys(grouped_ensemble.ensembles).map((index) => {
+                                    ${Object.keys(grouped_ensemble.ensembles).map((index:string) => {
                                         let ensemble: ExecutableEnsemble = grouped_ensemble.ensembles[index];
                                         let model = this.pathway.models![ensemble.modelid];
                                         let param_defaults = {};

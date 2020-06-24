@@ -508,7 +508,6 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                         });
                     }
             });
-            console.log('load:', fixedModels )
             /* The api does not return collections of inputs. FIXME */
             let fixCollection = Promise.all( Object.values(fixedModels).map((model:Model) =>
                 Promise.all( model.input_files.map((input) => {

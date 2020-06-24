@@ -30,6 +30,9 @@ import '../screens/analysis/analysis-home';
 import '../screens/variables/variables-home';
 import '../screens/messages/messages-home';
 import '../screens/emulators/emulators-home';
+import 'components/notification';
+
+import { CustomNotification } from 'components/notification';
 
 import { SharedStyles } from '../styles/shared-styles';
 import { showDialog, hideDialog, formElementsComplete } from '../util/ui_functions';
@@ -59,8 +62,6 @@ export class MintApp extends connect(store)(LitElement) {
 
   private _dispatchedConfigQuery = false;
   
-  _once = false;
-
   static get styles() {
     return [
       SharedStyles,
@@ -157,6 +158,7 @@ export class MintApp extends connect(store)(LitElement) {
     // Anything that's related to rendering should be done in here.
     return html`
     <!-- Overall app layout -->
+    <custom-notification id="custom-notification"></custom-notification>
 
     <div class="appframe">
       <!-- Navigation Bar -->
@@ -284,7 +286,7 @@ export class MintApp extends connect(store)(LitElement) {
           <p></p>
           <div class="input_full">
             <label>Password</label>
-            <input name="password" type="password"></input>
+            <input name="password" type="password" @keyup="${this._onPWKey}"></input>
           </div>
 
         </form>
@@ -295,7 +297,13 @@ export class MintApp extends connect(store)(LitElement) {
       </div>
     </wl-dialog>
     `;
-}
+  }
+
+  _onPWKey (e:KeyboardEvent) {
+      if (e.code === "Enter") {
+          this._onLogin();
+      }
+  }
 
   _showLoginWindow() {
     showDialog("loginDialog", this.shadowRoot!);
@@ -310,7 +318,12 @@ export class MintApp extends connect(store)(LitElement) {
     if(formElementsComplete(form, ["username", "password"])) {
         let username = (form.elements["username"] as HTMLInputElement).value;
         let password = (form.elements["password"] as HTMLInputElement).value;
-        signIn(username, password);
+        signIn(username, password).catch((error) => {
+            let notification : CustomNotification = this.shadowRoot.querySelector<CustomNotification>("#custom-notification")!;
+            if (notification) {
+                notification.error("Username or password is incorrect");
+            }
+        });
         this._onLoginCancel();
     }
   }
