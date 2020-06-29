@@ -191,7 +191,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
 
 
             <tr>
-                <td>Sort description:</td>
+                <td>Short description:</td>
                 <td>
                     ${this._editing ? html`
                     <textarea id="form-config-short-desc" name="Short description" rows="3">${
