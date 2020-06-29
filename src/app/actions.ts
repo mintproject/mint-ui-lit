@@ -147,7 +147,8 @@ export const signOut = () => {
 const modelCatalogLogin = (username: string, password: string) => {
   let API = new DefaultApi();
   store.dispatch({type: STATUS_MODEL_CATALOG_ACCESS_TOKEN, status: 'LOADING'})
-  API.userLoginGet({username: username, password: password})
+  //API.userLoginGet({username: username, password: password})
+  API.userLoginPost({user: {username: username, password: password}})
     .then((data:any) => {
         let accessToken : string = JSON.parse(data)['access_token'];
         if (accessToken) {
