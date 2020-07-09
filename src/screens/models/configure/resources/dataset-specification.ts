@@ -6,13 +6,15 @@ import { getLabel } from 'model-catalog/util';
 import { IdMap } from "app/reducers";
 
 import { datasetSpecificationGet, datasetSpecificationsGet, datasetSpecificationPost, datasetSpecificationPut, datasetSpecificationDelete } from 'model-catalog/actions';
-import { DatasetSpecification, VariablePresentation, DatasetSpecificationFromJSON } from '@mintproject/modelcatalog_client';
+import { DatasetSpecification, VariablePresentation, DataTransformation, DatasetSpecificationFromJSON } from '@mintproject/modelcatalog_client';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
 import { ModelCatalogVariablePresentation } from './variable-presentation';
+import { ModelCatalogDataTransformation } from './data-transformation';
 import './variable-presentation';
+import './data-transformation';
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
@@ -26,6 +28,10 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             --list-height: 180px;
             --dialog-height: 100%;
         }
+        #input-data-transformation {
+            --list-height: 180px;
+            --dialog-height: 100%;
+        }
         .two-inputs > wl-textfield, 
         .two-inputs > wl-select {
             display: inline-block;
@@ -34,6 +40,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
     }
 
     private _inputVariablePresentation : ModelCatalogVariablePresentation;
+    private _inputDataTransformation : ModelCatalogDataTransformation;
 
     protected classes : string = "resource dataset-specification";
     protected name : string = "dataset specification";
@@ -50,16 +57,22 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
         this._inputVariablePresentation = new ModelCatalogVariablePresentation();
         this._inputVariablePresentation.setActionMultiselect();
         this._inputVariablePresentation.setAttribute('id', 'input-variable-presentation');
+
+        this._inputDataTransformation = new ModelCatalogDataTransformation();
+        this._inputDataTransformation.setActionMultiselect();
+        this._inputDataTransformation.setAttribute('id', 'input-data-transformation');
     }
 
     protected _editResource (r:DatasetSpecification) {
         super._editResource(r);
         let edResource = this._getEditingResource();
         this._inputVariablePresentation.setResources( edResource.hasPresentation );
+        this._inputDataTransformation.setResources( edResource.hasDataTransformation );
     }
 
     protected _createResource () {
         this._inputVariablePresentation.setResources(null);
+        this._inputDataTransformation.setResources(null);
         super._createResource();
     }
 
@@ -85,6 +98,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
 
     protected _renderForm () {
         let edResource = this._getEditingResource();
+        console.log('>>', edResource);
         return html`
         <form>
             <wl-textfield id="ds-label" label="Name" required
@@ -99,6 +113,10 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             <div style="min-height:50px; padding: 10px 0px;">
                 <div style="padding: 5px 0px; font-weight: bold;">Has presentation:</div>
                 ${this._inputVariablePresentation}
+            </div>
+            <div style="padding: 10px 0px;">
+                <div style="padding: 5px 0px; font-weight: bold;">Has data transformations:</div>
+                ${this._inputDataTransformation}
             </div>
         </form>`;
     }
@@ -130,6 +148,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
         let format : string = inputFormat ? inputFormat.value : '';
         let dim : string = inputDim ? inputDim.value : '';
         let presentation : VariablePresentation[] = this._inputVariablePresentation.getResources();
+        let dataTransformation : DataTransformation[] = this._inputDataTransformation.getResources();
         if (label && desc && format) {
             let jsonRes = {
                 type: ["DatasetSpecification"],
@@ -138,6 +157,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
                 hasFormat: [format],
                 position: [this._resources.length + 1],
                 hasPresentation: presentation,
+                hasDataTransformation: dataTransformation,
                 hasDimensionality: [0],
             };
             if (presentation.length > 0 || confirm("If no variables are associated with an input, we will not be able to search dataset candidates in the MINT data catalog when using this model")) {
