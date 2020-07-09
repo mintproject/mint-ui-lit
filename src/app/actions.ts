@@ -12,7 +12,7 @@ import { Action, ActionCreator } from 'redux';
 import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from './store';
 import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetConfig, addModelToCompare, clearCompare,
-         explorerSetCalibration, explorerSetMode } from '../screens/models/model-explore/ui-actions';
+         explorerSetCalibration, explorerSetMode, registerSetStep } from '../screens/models/model-explore/ui-actions';
 import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread } from './ui-actions';
 import { auth, db } from '../config/firebase';
 import { User } from 'firebase';
@@ -133,6 +133,12 @@ export const fetchMintConfig: ActionCreator<UserPrefsThunkResult> = () => (dispa
 
 export const signIn = (email: string, password: string) => {
   let req = auth.signInWithEmailAndPassword(email, password)
+        .then(() => modelCatalogLogin(email, password));
+  return req;
+};
+
+export const signUp = (email: string, password: string) => {
+  let req = auth.createUserWithEmailAndPassword(email, password)
         .then(() => modelCatalogLogin(email, password));
   return req;
 };
@@ -294,6 +300,16 @@ const loadPage: ActionCreator<ThunkResult> =
                 }
             });
         } else if (subpage == 'register') {
+            //TODO
+            if(params.length > 0) {
+                store.dispatch(explorerSetModel(params[0]));
+                if (params.length > 1) {
+                    let step : number = parseInt(params[1] as string);
+                    if (step) store.dispatch(registerSetStep(step));
+                }
+            } else {
+                store.dispatch(explorerClearModel());
+            }
         }
         break;
     case 'regions':
