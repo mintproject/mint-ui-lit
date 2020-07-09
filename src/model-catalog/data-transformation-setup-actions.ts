@@ -1,28 +1,28 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
-import { Configuration, datatransformationsetupSetup, datatransformationsetupSetupApi } from '@mintproject/modelcatalog_client';
+import { Configuration, DataTransformationSetup, DataTransformationSetupApi } from '@mintproject/modelcatalog_client';
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
-function debug (...args: any[]) {}// console.log('[MC datatransformationsetupSetup]', ...args); }
+function debug (...args: any[]) {}// console.log('[MC dataTransformationSetup]', ...args); }
 
 export const DATA_TRANSFORMATION_SETUP_ADD = "DATA_TRANSFORMATION_SETUP_ADD";
 export const DATA_TRANSFORMATION_SETUP_DELETE = "DATA_TRANSFORMATION_SETUP_DELETE";
 
-interface MCAdatatransformationsetupSetupsAdd extends Action<'DATA_TRANSFORMATION_SETUP_ADD'> { payload: IdMap<datatransformationsetupSetup> };
-interface MCAdatatransformationsetupSetupDelete extends Action<'DATA_TRANSFORMATION_SETUP_DELETE'> { uri: string };
+interface MCAdataTransformationSetupsAdd extends Action<'DATA_TRANSFORMATION_SETUP_ADD'> { payload: IdMap<DataTransformationSetup> };
+interface MCAdataTransformationSetupDelete extends Action<'DATA_TRANSFORMATION_SETUP_DELETE'> { uri: string };
 
-export type ModelCatalogdatatransformationsetupSetupAction =  MCAdatatransformationsetupSetupsAdd | MCAdatatransformationsetupSetupDelete;
+export type ModelCatalogDataTransformationSetupAction = MCAdataTransformationSetupsAdd | MCAdataTransformationSetupDelete;
 
-let datatransformationsetupSetupsPromise : Promise<IdMap<datatransformationsetupSetup>> | null = null;
+let dataTransformationSetupsPromise : Promise<IdMap<DataTransformationSetup>> | null = null;
 
-export const datatransformationsetupSetupsGet: ActionThunk<Promise<IdMap<datatransformationsetupSetup>>, MCAdatatransformationsetupSetupsAdd> = () => (dispatch) => {
-    if (!datatransformationsetupSetupsPromise) {
+export const dataTransformationSetupsGet: ActionThunk<Promise<IdMap<DataTransformationSetup>>, MCAdataTransformationSetupsAdd> = () => (dispatch) => {
+    if (!dataTransformationSetupsPromise) {
         debug('Fetching all');
-        let api : datatransformationsetupSetupApi = new datatransformationsetupSetupApi();
-        datatransformationsetupSetupsPromise = new Promise((resolve, reject) => {
-            let req : Promise<datatransformationsetupSetup[]> = api.datatransformationsetupsGet({username: getUser()});
-            req.then((resp:datatransformationsetupSetup[]) => {
-                let data = resp.reduce(idReducer, {}) as IdMap<datatransformationsetupSetup>
+        let api : DataTransformationSetupApi = new DataTransformationSetupApi();
+        dataTransformationSetupsPromise = new Promise((resolve, reject) => {
+            let req : Promise<DataTransformationSetup[]> = api.datatransformationsetupsGet({username: getUser()});
+            req.then((resp:DataTransformationSetup[]) => {
+                let data = resp.reduce(idReducer, {}) as IdMap<DataTransformationSetup>
                 dispatch({
                     type: DATA_TRANSFORMATION_SETUP_ADD,
                     payload: data
@@ -30,42 +30,42 @@ export const datatransformationsetupSetupsGet: ActionThunk<Promise<IdMap<datatra
                 resolve(data);
             });
             req.catch((err) => {
-                console.error('Error on GET datatransformationsetupSetups', err);
+                console.error('Error on GET dataTransformationSetups', err);
                 reject(err);
             });
         });
     } else {
-        debug('All datatransformationsetupSetups are already in memory or loading');
+        debug('All dataTransformationSetups are already in memory or loading');
     }
-    return datatransformationsetupSetupsPromise;
+    return dataTransformationSetupsPromise;
 }
 
-export const datatransformationsetupSetupGet: ActionThunk<Promise<datatransformationsetupSetup>, MCAdatatransformationsetupSetupsAdd> = ( uri:string ) => (dispatch) => {
+export const dataTransformationSetupGet: ActionThunk<Promise<DataTransformationSetup>, MCAdataTransformationSetupsAdd> = ( uri:string ) => (dispatch) => {
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
-    let api : datatransformationsetupSetupApi = new datatransformationsetupSetupApi();
-    let req : Promise<datatransformationsetupSetup> = api.datatransformationsetupsIdGet({username: getUser(), id: id});
-    req.then((resp:datatransformationsetupSetup) => {
+    let api : DataTransformationSetupApi = new DataTransformationSetupApi();
+    let req : Promise<DataTransformationSetup> = api.datatransformationsetupsIdGet({username: getUser(), id: id});
+    req.then((resp:DataTransformationSetup) => {
         dispatch({
             type: DATA_TRANSFORMATION_SETUP_ADD,
             payload: idReducer({}, resp)
         });
     });
     req.catch((err) => {
-        console.error('Error on GET datatransformationsetupSetup', err)
+        console.error('Error on GET dataTransformationSetup', err)
     });
     return req;
 }
 
-export const datatransformationsetupSetupPost: ActionThunk<Promise<datatransformationsetupSetup>, MCAdatatransformationsetupSetupsAdd> = (datatransformationsetupSetup:datatransformationsetupSetup) => (dispatch) => {
+export const dataTransformationSetupPost: ActionThunk<Promise<DataTransformationSetup>, MCAdataTransformationSetupsAdd> = (dataTransformationSetup:DataTransformationSetup) => (dispatch) => {
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {
-        debug('Creating new', datatransformationsetupSetup);
+        debug('Creating new', dataTransformationSetup);
         let postProm = new Promise((resolve,reject) => {
-            let api : datatransformationsetupSetupApi = new datatransformationsetupSetupApi(cfg);
-            let req = api.datatransformationsetupsPost({user: user, datatransformationsetupSetup: datatransformationsetupSetup});
-            req.then((resp:datatransformationsetupSetup) => {
+            let api : DataTransformationSetupApi = new DataTransformationSetupApi(cfg);
+            let req = api.datatransformationsetupsPost({user: user, dataTransformationSetup: dataTransformationSetup});
+            req.then((resp:DataTransformationSetup) => {
                 debug('Response for POST', resp);
                 dispatch({
                     type: DATA_TRANSFORMATION_SETUP_ADD,
@@ -74,26 +74,26 @@ export const datatransformationsetupSetupPost: ActionThunk<Promise<datatransform
                 resolve(resp);
             });
             req.catch((err) => {
-                console.error('Error on POST datatransformationsetupSetup', err);
+                console.error('Error on POST dataTransformationSetup', err);
                 reject(err);
             });
         });
         return postProm;
     } else {
         console.error('TOKEN ERROR:', status);
-        return Promise.reject(new Error('datatransformationsetupSetup error'));
+        return Promise.reject(new Error('dataTransformationSetup error'));
     }
 }
 
-export const datatransformationsetupSetupPut: ActionThunk<Promise<datatransformationsetupSetup>, MCAdatatransformationsetupSetupsAdd> = (datatransformationsetupSetup:datatransformationsetupSetup) => (dispatch) => {
+export const dataTransformationSetupPut: ActionThunk<Promise<DataTransformationSetup>, MCAdataTransformationSetupsAdd> = (dataTransformationSetup:DataTransformationSetup) => (dispatch) => {
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {
-        debug('Updating', datatransformationsetupSetup);
-        let api : datatransformationsetupSetupApi = new datatransformationsetupSetupApi(cfg);
-        let id : string = getIdFromUri(datatransformationsetupSetup.id);
-        let req : Promise<datatransformationsetupSetup> = api.datatransformationsetupsIdPut({id: id, user: user, datatransformationsetupSetup: datatransformationsetupSetup});
-        req.then((resp:datatransformationsetupSetup) => {
+        debug('Updating', dataTransformationSetup);
+        let api : DataTransformationSetupApi = new DataTransformationSetupApi(cfg);
+        let id : string = getIdFromUri(dataTransformationSetup.id);
+        let req : Promise<DataTransformationSetup> = api.datatransformationsetupsIdPut({id: id, user: user, dataTransformationSetup: dataTransformationSetup});
+        req.then((resp:DataTransformationSetup) => {
             debug('Response for PUT:', resp);
             dispatch({
                 type: DATA_TRANSFORMATION_SETUP_ADD,
@@ -101,7 +101,7 @@ export const datatransformationsetupSetupPut: ActionThunk<Promise<datatransforma
             });
         });
         req.catch((err) => {
-            console.error('Error on PUT datatransformationsetupSetup', err);
+            console.error('Error on PUT dataTransformationSetup', err);
         });
         return req;
     } else {
@@ -110,22 +110,22 @@ export const datatransformationsetupSetupPut: ActionThunk<Promise<datatransforma
     }
 }
 
-export const datatransformationsetupSetupDelete: ActionThunk<void, MCAdatatransformationsetupSetupDelete> = (datatransformationsetupSetup:datatransformationsetupSetup) => (dispatch) => {
+export const dataTransformationSetupDelete: ActionThunk<void, MCAdataTransformationSetupDelete> = (dataTransformationSetup:DataTransformationSetup) => (dispatch) => {
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {
-        debug('Deleting', datatransformationsetupSetup);
-        let api : datatransformationsetupSetupApi = new datatransformationsetupSetupApi(cfg);
-        let id : string = getIdFromUri(datatransformationsetupSetup.id);
+        debug('Deleting', dataTransformationSetup);
+        let api : DataTransformationSetupApi = new DataTransformationSetupApi(cfg);
+        let id : string = getIdFromUri(dataTransformationSetup.id);
         let req : Promise<void> = api.datatransformationsetupsIdDelete({id: id, user: user});
         req.then(() => {
             dispatch({
                 type: DATA_TRANSFORMATION_SETUP_DELETE,
-                uri: datatransformationsetupSetup.id
+                uri: dataTransformationSetup.id
             });
         });
         req.catch((err) => {
-            console.error('Error on DELETE datatransformationsetupSetup', err);
+            console.error('Error on DELETE dataTransformationSetup', err);
         });
         return req;
     } else {

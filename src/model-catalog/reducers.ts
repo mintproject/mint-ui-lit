@@ -85,6 +85,8 @@ const INITIAL_STATE: ModelCatalogState = {
     interventions:          {} as IdMap<Intervention>,
     variablePresentations:  {} as IdMap<VariablePresentation>,
     numericalIndexes:       {} as IdMap<NumericalIndex>,
+    dataTransformations:    {} as IdMap<DataTransformation>,
+    dataTransformationSetups: {} as IdMap<DataTransformationSetup>,
 } as ModelCatalogState;
 
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {

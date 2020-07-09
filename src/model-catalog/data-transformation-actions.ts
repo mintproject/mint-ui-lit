@@ -3,7 +3,7 @@ import { IdMap } from 'app/reducers'
 import { Configuration, DataTransformation, DataTransformationApi } from '@mintproject/modelcatalog_client';
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
-function debug (...args: any[]) {}// console.log('[MC DataTransformation]', ...args); }
+function debug (...args: any[]) { console.log('[MC DataTransformation]', ...args); }
 
 export const DATA_TRANSFORMATION_ADD = "DATA_TRANSFORMATION_ADD";
 export const DATA_TRANSFORMATION_DELETE = "DATA_TRANSFORMATION_DELETE";
