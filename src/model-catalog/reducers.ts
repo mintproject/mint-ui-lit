@@ -23,12 +23,14 @@ import { MODELS_ADD, MODEL_DELETE,
          INTERVENTIONS_ADD, INTERVENTION_DELETE,
          VARIABLE_PRESENTATIONS_ADD, VARIABLE_PRESENTATION_DELETE,
          NUMERICAL_INDEX_ADD, NUMERICAL_INDEX_DELETE,
+         DATA_TRANSFORMATION_ADD, DATA_TRANSFORMATION_DELETE,
+         DATA_TRANSFORMATION_SETUP_ADD, DATA_TRANSFORMATION_SETUP_DELETE
          } from './actions'
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Region, GeoShape, Grid,
          Process, Parameter, TimeInterval, SoftwareImage, DatasetSpecification, SampleResource, Image,
          SampleCollection, Organization, FundingInformation, Visualization, SourceCode, Intervention,
-         VariablePresentation, NumericalIndex } from '@mintproject/modelcatalog_client';
+         VariablePresentation, NumericalIndex, DataTransformation, DataTransformationSetup } from '@mintproject/modelcatalog_client';
 import { IdMap } from 'app/reducers'
 
 export interface ModelCatalogState {
@@ -55,6 +57,8 @@ export interface ModelCatalogState {
     interventions:          IdMap<Intervention>;
     variablePresentations:  IdMap<VariablePresentation>;
     numericalIndexes:       IdMap<NumericalIndex>;
+    dataTransformations:    IdMap<DataTransformation>;
+    dataTransformationSetups:IdMap<DataTransformationSetup>;
 }
 
 const INITIAL_STATE: ModelCatalogState = { 
@@ -81,6 +85,8 @@ const INITIAL_STATE: ModelCatalogState = {
     interventions:          {} as IdMap<Intervention>,
     variablePresentations:  {} as IdMap<VariablePresentation>,
     numericalIndexes:       {} as IdMap<NumericalIndex>,
+    dataTransformations:    {} as IdMap<DataTransformation>,
+    dataTransformationSetups: {} as IdMap<DataTransformationSetup>,
 } as ModelCatalogState;
 
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -132,6 +138,10 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             return { ...state, variablePresentations: {...state.variablePresentations, ...action.payload} };
         case NUMERICAL_INDEX_ADD:
             return { ...state, numericalIndexes: {...state.numericalIndexes, ...action.payload} };
+        case DATA_TRANSFORMATION_ADD:
+            return { ...state, dataTransformations: {...state.dataTransformations, ...action.payload} };
+        case DATA_TRANSFORMATION_SETUP_ADD:
+            return { ...state, dataTransformationSetups: {...state.dataTransformationSetups, ...action.payload} };
 
         case MODEL_DELETE:
             tmp = { ...state.models };
@@ -221,6 +231,14 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             tmp = { ...state.numericalIndexes };
             delete tmp[action.uri];
             return { ...state, numericalIndexes: tmp };
+        case DATA_TRANSFORMATION_DELETE:
+            tmp = { ...state.dataTransformations };
+            delete tmp[action.uri];
+            return { ...state, dataTransformations: tmp };
+        case DATA_TRANSFORMATION_SETUP_DELETE:
+            tmp = { ...state.dataTransformationSetups };
+            delete tmp[action.uri];
+            return { ...state, dataTransformationSetups: tmp };
         default:
             return state;
     }

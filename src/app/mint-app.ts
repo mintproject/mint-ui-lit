@@ -18,7 +18,7 @@ import { store, RootState } from './store';
 
 // These are the actions needed by this element.
 import {
-  navigate, fetchUser, signOut, signIn, goToPage, fetchMintConfig,
+  navigate, fetchUser, signOut, signIn, signUp, goToPage, fetchMintConfig,
 } from './actions';
 import { listTopRegions, listSubRegions } from '../screens/regions/actions';
 
@@ -32,6 +32,10 @@ import '../screens/messages/messages-home';
 import '../screens/emulators/emulators-home';
 import 'components/notification';
 
+import "weightless/popover";
+import "weightless/radio";
+
+import { Popover } from "weightless/popover";
 import { CustomNotification } from 'components/notification';
 
 import { SharedStyles } from '../styles/shared-styles';
@@ -47,6 +51,9 @@ export class MintApp extends connect(store)(LitElement) {
   @property({type: String})
   private _page = '';
 
+  @property({type: Boolean})
+  private _creatingAccount = false;
+
   @property({type:Boolean})
   private _drawerOpened = false;
 
@@ -55,6 +62,9 @@ export class MintApp extends connect(store)(LitElement) {
 
   @property({type: Object})
   private _selectedRegion? : Region;
+
+  @property({type: Array})
+  private _topRegions : string[] = [];
 
   private _dispatchedSubRegionsQuery : boolean = false;
 
@@ -226,9 +236,16 @@ export class MintApp extends connect(store)(LitElement) {
               ` : ""
             }
 
-            <wl-button flat inverted @click="${signOut}">
-              LOGOUT ${this.user.email}
+            <wl-button id="user-button" flat inverted @click="${this._onUserButtonClicked}">
+               ${this.user.email}
             </wl-button>
+            <wl-popover id="user-popover" anchor="#user-button" fixed
+                transformOriginX="right" transformOriginY="top" anchorOriginX="right" anchorOriginY="bottom">
+                <div style="background: #fff; padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px; display: flex; flex-direction: column;">
+                    <wl-button flat inverted @click="${this._showConfigWindow}"> CONFIGURE </wl-button>
+                    <wl-button flat inverted @click="${signOut}"> LOGOUT </wl-button>
+                </div>
+            </wl-popover>
             `
           }
         </div>
@@ -268,20 +285,30 @@ export class MintApp extends connect(store)(LitElement) {
       }
     </div>
 
-    ${this._renderDialogs()}
+    ${this._renderLoginDialog()}
+    ${this._renderConfigureUserDialog()}
     `;
   }
 
-  _renderDialogs() {
+  _onUserButtonClicked () {
+    let pop : Popover = this.shadowRoot.querySelector("#user-popover");
+    if (pop) pop.show();//.then(result => console.log(result));
+  }
+
+  _renderLoginDialog() {
     return html`
     <wl-dialog id="loginDialog" fixed backdrop blockscrolling>
-      <h3 slot="header">Please enter your username and password for MINT</h3>
+      <h3 slot="header">
+        ${this._creatingAccount ? 
+          'Choose an email and password for your MINT account' :
+          'Please enter your email and password for MINT'}
+      </h3>
       <div slot="content">
-        <p></p>      
+        <p></p>
         <form id="loginForm">
           <div class="input_full">
-            <label>Username</label>
-            <input name="username" type="text"></input>
+            <label>Email</label>
+            <input name="username" type="email"></input>
           </div>
           <p></p>
           <div class="input_full">
@@ -291,9 +318,50 @@ export class MintApp extends connect(store)(LitElement) {
 
         </form>
       </div>
+      <div slot="footer" style="justify-content: space-between;">
+          ${this._creatingAccount ? 
+            html`<span></span>` :
+            html`<wl-button @click="${this._createAccountActivate}">Create account</wl-button>`}
+          <span>
+              <wl-button @click="${this._onLoginCancel}" inverted flat>Cancel</wl-button>
+              <wl-button @click="${this._onLogin}" class="submit" id="dialog-submit-button">Submit</wl-button>
+          </span>
+      </div>
+    </wl-dialog>
+    `;
+  }
+
+  _renderConfigureUserDialog () {
+    return html`
+    <wl-dialog id="configDialog" fixed backdrop blockscrolling>
+      <h3 slot="header">
+          Configure your MINT account
+      </h3>
+      <div slot="content">
+        <p></p>
+        <wl-label>Default region</wl-label>
+        <wl-select name="Default Region" value="${this._preferredRegion}">
+            <option value="">None</option>
+            ${this._topRegions ? this._topRegions.map((key) => 
+                html`<option value="${key}">${key}</option>`) : ''}
+        </wl-select>
+        <p></p>
+
+        <wl-label>Model catalog graph:</wl-label>
+        <div style="margin-top: 4px;">
+            <wl-radio id="gpublic" name="graph" value="public" disabled></wl-radio>
+            <wl-label for="gpublic" style="padding: 5px;"> Public graph (mint@isi.edu) </wl-label>
+        </div>
+        <div style="margin-top: 4px;">
+            <wl-radio id="gpersonal" name="graph" value="personal" checked disabled></wl-radio>
+            <wl-label for="gpersonal" style="padding: 5px;"> My graph </wl-label>
+        </div>
+      </div>
+
+
       <div slot="footer">
-          <wl-button @click="${this._onLoginCancel}" inverted flat>Cancel</wl-button>
-          <wl-button @click="${this._onLogin}" class="submit" id="dialog-submit-button">Submit</wl-button>
+        <wl-button @click="${this._onConfigCancel}" inverted flat>Cancel</wl-button>
+        <wl-button @click="${this._onConfigSave}" class="submit" disabled>Save</wl-button>
       </div>
     </wl-dialog>
     `;
@@ -309,21 +377,49 @@ export class MintApp extends connect(store)(LitElement) {
     showDialog("loginDialog", this.shadowRoot!);
   }
 
+  _showConfigWindow() {
+    showDialog("configDialog", this.shadowRoot!);
+  }
+
+  _createAccountActivate () {
+    this._creatingAccount = true;
+  }
+
+  _onConfigCancel () {
+        hideDialog("configDialog", this.shadowRoot!);
+  }
+
+  _onConfigSave () {
+    console.log('should save');
+  }
+
   _onLoginCancel() {
-    hideDialog("loginDialog", this.shadowRoot!);
+    if (!this._creatingAccount) {
+        hideDialog("loginDialog", this.shadowRoot!);
+    }
+    this._creatingAccount = false;
   }
 
   _onLogin() {
     let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#loginForm")!;
+    let notification : CustomNotification = this.shadowRoot.querySelector<CustomNotification>("#custom-notification")!;
     if(formElementsComplete(form, ["username", "password"])) {
         let username = (form.elements["username"] as HTMLInputElement).value;
         let password = (form.elements["password"] as HTMLInputElement).value;
-        signIn(username, password).catch((error) => {
-            let notification : CustomNotification = this.shadowRoot.querySelector<CustomNotification>("#custom-notification")!;
-            if (notification) {
-                notification.error("Username or password is incorrect");
-            }
-        });
+        if (this._creatingAccount) {
+            signUp(username, password)
+                    .then((resp) => {
+                if (notification) notification.save("Account created!");
+                    })
+                    .catch((error) => {
+                if (notification) notification.error(error.message);
+            });
+            this._creatingAccount = false;
+        } else {
+            signIn(username, password).catch((error) => {
+                if (notification) notification.error("Username or password is incorrect");
+            });
+        }
         this._onLoginCancel();
     }
   }
@@ -380,5 +476,12 @@ export class MintApp extends connect(store)(LitElement) {
         this._dispatchedSubRegionsQuery = false;
       }
     }
+
+    if (state.app && state.app.prefs && state.app.prefs.profile) {
+        let profile = state.app.prefs.profile;
+        this._preferredRegion = profile.preferredRegion;
+    }
+
+    if (state.regions) this._topRegions = state.regions.top_region_ids;
   }
 }

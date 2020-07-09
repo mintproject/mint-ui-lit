@@ -313,10 +313,18 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
         <model-catalog-dataset-specification id="mcoutput" .inline=${false}></model-catalog-dataset-specification>
 
         <div style="float:right; margin-top: 1em;">
+            <wl-button @click="${this._onCancelButtonClicked}" style="margin-right: 1em;" flat inverted>
+                <wl-icon>cancel</wl-icon>&ensp;Discard changes
+            </wl-button>
             <wl-button @click="${this._onSaveButtonClicked}">
                 <wl-icon>save</wl-icon>&ensp;Save
             </wl-button>
         </div>` 
+    }
+
+    private _onCancelButtonClicked () {
+        this._scrollUp();
+        goToPage('models/configure/');
     }
 
     protected firstUpdated () {

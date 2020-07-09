@@ -133,7 +133,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             ${this._loading ?
                     html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
                     : ""}
-            <div style="visibility: ${this._loading ? 'hidden' : 'visible'}">
+            <div style="visibility: ${this._loading ? 'collapse' : 'visible'}">
                 ${this._renderForm()}
             </div>
         `;
