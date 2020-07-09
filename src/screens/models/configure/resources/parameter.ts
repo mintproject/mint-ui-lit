@@ -37,7 +37,8 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
             grid-template-columns: 25% 50% 25%;
         }
         .two-inputs > wl-textfield, 
-        .two-inputs > wl-select {
+        .two-inputs > wl-select,
+        .two-inputs > span {
             display: inline-block;
             width: 50%;
         }
@@ -167,9 +168,17 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                         value="${edResource && edResource.hasDefaultValue ? edResource.hasDefaultValue[0] : ''}"
                         step="${edResource && edResource.recommendedIncrement ? edResource.recommendedIncrement[0] : '0.01'}">
                     </wl-textfield>
-                    <wl-textfield id="part-float-increment" type="number" step="0.01" label="Increment (optional)"
-                        value="${edResource && edResource.recommendedIncrement ? edResource.recommendedIncrement[0] : ''}">
-                    </wl-textfield>
+                    <span>
+                        <span style="display: flex; align-items: center; justify-content: space-between;">
+                            <wl-textfield style="width: 100%;"
+                                id="part-float-increment" type="number" step="0.01" label="Increment (optional)"
+                                value="${edResource && edResource.recommendedIncrement ? edResource.recommendedIncrement[0] : ''}">
+                            </wl-textfield>
+                            <span slot="after" class="tooltip small-tooltip" tip="Increment defines what is the recommended delta to increase this parameter when executing multiple simulations. For example, when assessing precipitation variations, you can run a simulation incrementing the percentage of rain by 4%">
+                                <wl-icon>help</wl-icon>
+                            </span>
+                        </span>
+                    </span>
                 </div>
                 <div class="two-inputs">
                     <wl-textfield type="number" id="part-float-min" label="Minimum (optional)"

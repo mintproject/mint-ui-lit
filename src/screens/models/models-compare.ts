@@ -16,6 +16,8 @@ import { uriToId, getLabel } from 'model-catalog/util';
 
 import './models-tree'
 
+import { ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
+
 import { showDialog, hideDialog } from 'util/ui_functions';
 
 import "weightless/progress-spinner";
@@ -57,7 +59,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         },
         {
             name: "Parameter assignment/estimation",
-            fn: (model:Model) => model.parameterAssignmentMethod && model.parameterAssignmentMethod.length > 0 ?
+            fn: (model:ModelConfigurationSetup) => model.parameterAssignmentMethod && model.parameterAssignmentMethod.length > 0 ?
                     model.parameterAssignmentMethod.pop() : html`<span style="color:#999">None<span>`
         },
         {

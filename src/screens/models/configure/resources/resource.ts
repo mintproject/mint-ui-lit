@@ -9,11 +9,6 @@ import { IdMap } from "app/reducers";
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { timeIntervalGet, timeIntervalsGet, timeIntervalPost, timeIntervalPut, timeIntervalDelete } from 'model-catalog/actions';
-
-import { renderExternalLink } from '../util';
-
-import { TimeInterval, Unit } from '@mintproject/modelcatalog_client';
 import "weightless/progress-spinner";
 import "weightless/textfield";
 import "weightless/textfield";
@@ -108,12 +103,36 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
 
         .resources-list {
-            height: 400px;
+            margin-top: 5px;
+            height: var(--list-height, 400px);
             overflow-y: scroll;
         }
         .grab { cursor: grab; }
         .grabCursor, .grabCursor * { cursor: grabbing !important; }
         .grabbed { border: 2px solid grey; }
+
+        #resource-dialog {
+            --dialog-height: var(--dialog-height, unset);
+        }
+
+        #retry-button {
+            display: inline-block;
+            height: 1em;
+            width: 20px;
+            cursor: pointer;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0px 0px;
+        }
+
+        .pagination > wl-button {
+            padding: 8px;
+            border-radius: 4px;
+        }
         `;
     }
 
@@ -122,6 +141,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected _resourcesToEdit : IdMap<T> = {} as IdMap<T>;
     protected _resourcesToCreate : IdMap<T> = {} as IdMap<T>;
     @property({type: Object}) protected _loading : IdMap<boolean> = {};
+    @property({type: Object}) protected _error : IdMap<boolean> = {};
     @property({type: Boolean}) protected _allResourcesLoaded : boolean = false;
     @property({type: Boolean}) protected _allResourcesLoading : boolean = false;
     @property({type: String}) protected _selectedResourceId : string = "";
@@ -142,6 +162,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: Boolean}) protected _creationEnabled : boolean = true;
     @property({type: Boolean}) protected _editionEnabled : boolean = true;
     @property({type: Boolean}) protected _deleteEnabled : boolean = true;
+
+    @property({type: Number}) protected _page : number = 0;
+    public pageMax : number = -1;
 
     private _order : IdMap<T> = {} as IdMap<T>;
 
@@ -208,7 +231,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     private _renderTable () {
-        let displayedResources : T[] = (this.positionAttr) ? this._orderedResources : this._resources;
+        let displayedResources : T[] = (this.positionAttr && this._orderedResources.length > 0) ?
+                this._orderedResources : this._resources;
         let editing : boolean = (this._action === Action.EDIT_OR_ADD);
         return html`
         <table class="pure-table striped" style="width: 100%">
@@ -256,24 +280,28 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         <div slot="content">
             ${this._renderSearchOnList()}
             ${this._renderSelectList()}
-            ${this._creationEnabled ? html`
-            <div>
-                or <a class="clickable" @click=${this._createResource}>create a new ${this.name}</a>
-            </div>
-            ` : ''}
         </div>
-        <div slot="footer">
-            <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat ?disabled="">
-                Cancel
-            </wl-button>
-            <wl-button class="submit" ?disabled="" @click="${this._onSelectButtonClicked}">
-                Select
-            </wl-button>
+        <div slot="footer" style="justify-content: space-between; padding: 0px 20px 20px;">
+            <div>
+                ${this._creationEnabled ? html`
+                <wl-button @click="${this._createResource}" style="--primary-hue: 124; --button-border-radius: 3px;">
+                    Create a new ${this.name}
+                </wl-button>` : ''}
+            </div>
+            <div>
+                <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat ?disabled="">
+                    Cancel
+                </wl-button>
+                <wl-button class="submit" ?disabled="" @click="${this._onSelectButtonClicked}">
+                    Select
+                </wl-button>
+            </div>
         </div>`;
     }
 
     protected _renderEmpty () {
-        return 'No ' + this.name;
+        return 'No specified';
+        //return 'No ' + this.name;
     }
 
     private _renderStatus (r:T) {
@@ -281,10 +309,17 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         if (this.inline)
             return html`<span class="${this.classes}"> 
                 ${this._loading[r.id] ? 
-                    html`${getId(r)} <loading-dots style="--width: 20px; margin-left: 5px;"></loading-dots>` //TODO: error handling here...
-                    : this._renderResource(lr)}
+                    html`${getId(r)} <loading-dots style="--width: 20px; margin-left: 5px;"></loading-dots>`
+                    : (this._error[r.id] ?
+                        html`
+                        <span style="color:red;">${getId(r)}</span>
+                        <span @click="${() => this._forceLoad(r)}" id="retry-button">
+                            <wl-icon style="position:fixed;">cached</wl-icon>
+                        </span>`
+                        : this._renderResource(lr))
+                    }
             </span>`;
-        else //FIXME: colspan here could be a  b u g
+        else
             return html`<tr>
                 ${this._loading[r.id] ? 
                     html`<td colspan="${this.positionAttr ? this.colspan + 1 : this.colspan}" align="center">
@@ -332,6 +367,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
         this._searchPromise = setTimeout(() => {
             this._textFilter = searchInput.value.toLowerCase();
+            this._page = 0;
             this._searchPromise = null;
         }, 300);
     }
@@ -361,15 +397,24 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     this.requestUpdate();
                 };
         let resourcesToShow : T[] = [];
+        let pages : number = -1;
         if (!this._allResourcesLoading) {
             resourcesToShow = Object.values(this._loadedResources);
             this._filters.forEach((filter:(r:T)=>boolean) => {
                 resourcesToShow = resourcesToShow.filter(filter);
             });
+            if (this.pageMax > 0 && this.pageMax < resourcesToShow.length) {
+                pages = Math.ceil(resourcesToShow.length / this.pageMax);
+                resourcesToShow = resourcesToShow.filter((r,i) => {
+                    let a : boolean = (i > this._page * this.pageMax);
+                    let b : boolean = (i < (this._page+1) * this.pageMax);
+                    return a && b;
+                });
+            }
         }
 
         return html`
-        <div class="resources-list" style="margin-top: 5px;">
+        <div class="resources-list">
             ${(this._action === Action.SELECT) ? html`
                 <span class="${this.classes} list-item no-buttons">
                     <span class="clickable-area" @click=${() => {this._selectedResourceId = '';}}>
@@ -408,6 +453,21 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     </span>
                 </span>`)}
         </div>
+        ${(pages > 0) ? html`
+        <div class="pagination">
+            <wl-button 
+                @click="${() => {this._page = this._page-1}}"
+                .disabled="${this._page == 0}">
+                Prev
+            </wl-button>
+            <span> Page ${this._page+1} of ${pages} </span>
+            <wl-button 
+                @click="${() => {this._page = this._page+1}}"
+                .disabled="${this._page == pages-1}">
+                Next
+            </wl-button>
+        </div>
+        ` : ''}
         `;
     }
 
@@ -425,7 +485,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         <h3 slot="header">
             ${this._status === Status.CREATE ? 
                 'Creating new ' + this.name
-                :  'Editing resource ' + (edResource ? getLabel(edResource) : '-')}
+                :  'Editing ' + this.name + ' ' + (edResource ? getLabel(edResource) : '-')}
         </h3>
         <div slot="content">
             ${this._renderForm()}
@@ -598,7 +658,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     this._loadedResources[r.id] = r;
                     this._clearStatus();
                     // TODO: display notifications
-                    if (this._action === Action.EDIT_OR_ADD) {
+                    if (this._action === Action.EDIT_OR_ADD && this._resources.filter((s:T) => s.id===r.id).length === 0) {
                         this._resources.push(r);
                         if (this.positionAttr) this._orderedResources.push(r);
                     } else if (this._action === Action.MULTISELECT) {
@@ -672,6 +732,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             this._selectedResourceId = this._resources[0].id;
         }
         this._dialogOpen = true;
+        this._textFilter = "";
         showDialog("resource-dialog", this.shadowRoot);
     }
 
@@ -754,6 +815,22 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
     }
 
+    protected _forceLoad (r:T) {
+        this._loading[r.id] = true;
+        let req = store.dispatch(this.resourceGet(r.id));
+        this.requestUpdate();
+        req.then((r2:T) => {
+            this._loading[r.id] = false;
+            this._loadedResources[r.id] = r2;
+            this.requestUpdate();
+        });
+        req.catch(() => {
+            this._error[r.id] = true;
+            this._loading[r.id] = false;
+            this.requestUpdate();
+        });
+    }
+
     /* This is the way to set a list of resources */
     public setResources (r:T[]) {
         if (!r || r.length === 0) {
@@ -781,10 +858,16 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                             this._loadedResources[id] = r;
                             this.requestUpdate();
                         });
+                        req.catch(() => {
+                            this._error[id] = true;
+                            this._loading[id] = false;
+                        });
                         return req;
                     }
                 })
             ).then((resources:T[]) => {
+                if (this.positionAttr) this._refreshOrder();
+            }).catch(() => {
                 if (this.positionAttr) this._refreshOrder();
             })
         } else if (this.positionAttr) {

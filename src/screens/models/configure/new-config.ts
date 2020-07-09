@@ -170,7 +170,7 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
             </tr>
 
             <tr>
-                <td>Category</td>
+                <td>Category:</td>
                 <td>
                     <wl-select id="form-config-category" name="Category" required 
                             value="${this._config && this._config.hasModelCategory ? this._config.hasModelCategory[0] : ''}">
@@ -195,7 +195,7 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
 
 
             <tr>
-                <td>Sort description:</td>
+                <td>Short description:</td>
                 <td>
                     <textarea id="form-config-short-desc" name="Short description" rows="3">${
                         this._config && this._config.shortDescription ? this._config.shortDescription[0] : ''
@@ -285,7 +285,18 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
                     <model-catalog-process id="mcprocess"></model-catalog-process>
                 </td>
             </tr>
+            <tr>
+                <td>Tag</td>
+                <td>
+                    <wl-select id="form-config-tag" name="Tag">
+                        <option value="">None</option>
+                        <option value="latest">Latest</option>
+                        <option value="deprecated">Deprecated</option>
+                    </wl-select>
+                </td>
+            </tr>
         </table>
+
         <wl-title level="4" style="margin-top:1em">
             Parameters:
         </wl-title>
@@ -302,10 +313,18 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
         <model-catalog-dataset-specification id="mcoutput" .inline=${false}></model-catalog-dataset-specification>
 
         <div style="float:right; margin-top: 1em;">
+            <wl-button @click="${this._onCancelButtonClicked}" style="margin-right: 1em;" flat inverted>
+                <wl-icon>cancel</wl-icon>&ensp;Discard changes
+            </wl-button>
             <wl-button @click="${this._onSaveButtonClicked}">
                 <wl-icon>save</wl-icon>&ensp;Save
             </wl-button>
         </div>` 
+    }
+
+    private _onCancelButtonClicked () {
+        this._scrollUp();
+        goToPage('models/configure/');
     }
 
     protected firstUpdated () {
@@ -318,6 +337,8 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
         this._inputDSOutput =  this.shadowRoot.getElementById('mcoutput') as ModelCatalogDatasetSpecification;
         this._inputGrid = this.shadowRoot.getElementById('mcgrid') as ModelCatalogGrid;
         this._inputRegion = this.shadowRoot.getElementById('mcregion') as ModelCatalogRegion;
+        this._inputDSInput.setName('input');
+        this._inputDSOutput.setName('output');
         this._setEditingInputs();
     }
 
@@ -348,6 +369,7 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
         let inputAssumptions : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-assumption") as HTMLTextAreaElement;
         let inputWebsite : Textfield = this.shadowRoot.getElementById("form-config-website") as Textfield;
         let inputCompLoc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-comp-loc") as HTMLTextAreaElement;
+        let inputTag : Select = this.shadowRoot.getElementById("form-config-tag") as Select;
 
         let name        : string = inputName        ? inputName        .value : ''; 
         let category    : string = inputCategory    ? inputCategory    .value : ''; 
@@ -358,7 +380,8 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
         let assumptions : string = inputAssumptions ? inputAssumptions .value : '';
         let website     : string = inputWebsite     ? inputWebsite     .value : '';
         let compLoc     : string = inputCompLoc     ? inputCompLoc     .value : '';   
-        
+        let tag         : string = inputTag         ? inputTag         .value : '';   
+
         if (name && category && desc) {
             let jsonObj = {
                 //type: ["ModelConfiguration"],
@@ -380,6 +403,7 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
             if (assumptions) jsonObj['hasAssumption'] = [assumptions];
             if (website) jsonObj['website'] = [website];
             if (compLoc) jsonObj['hasComponentLocation'] = [compLoc];
+            if (tag) jsonObj['tag'] = [tag];
 
             // save parameters first
             let promises = [];

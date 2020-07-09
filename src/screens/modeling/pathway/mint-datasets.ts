@@ -59,6 +59,8 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     @property({type: Boolean})
     private _selectResourcesImmediateUpdate: boolean;
 
+    private _expandedInput : IdMap<boolean> = {};
+
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
             name: "More information",
@@ -140,7 +142,6 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                 let model = this.pathway.models![modelid];
                 let input_files = model.input_files.filter((input) => !input.value);
                 let fixed_inputs = model.input_files.filter((input) => !!input.value);
-                console.log(fixed_inputs);
                 
                 // Get any existing ensemble selection for the model
                 let ensembles:DataEnsembleMap = this.pathway.model_ensembles![modelid] || {};
@@ -152,13 +153,26 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                     <ul>
                     ${fixed_inputs.map((input) => html`
                         <li>
-                            <wl-title level="5">Input: ${input.name ? input.name : ''}</wl-title>
+                            <wl-title level="5">
+                                Input: ${input.name ? input.name : ''}
+                                ${input.value && input.value.resources && input.value.resources.length > 3 ? 
+                                    html`(${input.value.resources.length} resources 
+                                        <a @click="${() => {
+                                            this._expandedInput[input.value.id] = !this._expandedInput[input.value.id];
+                                            this.requestUpdate();
+                                        }}">
+                                            ${this._expandedInput[input.value.id] ? "show less" : "show more"}
+                                        </a>)`
+                                : ""}
+                            </wl-title>
                             <ul>
-                                ${(input.value.resources || []).map((r) => html`
+                                ${(input.value.resources || []).map((r, i:number) =>
+                                    (i < 3) || this._expandedInput[input.value.id] ?
+                                html`
                                 <li>
                                     <a target="_blank" href="${r.url ? r.url : '#'}">${r.name ? r.name : r.id}</a>
                                 </li>
-                                `)}
+                                ` : '')}
                             </ul>
                         </li>`)}
                     </ul>

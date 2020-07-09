@@ -5,7 +5,8 @@ import { store, RootState } from "../../../app/store";
 import { ModelMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, ExecutableEnsembleSummary } from "../reducers";
 import models, { VariableModels, Model } from "../../models/reducers";
 import { queryModelsByVariables, setupToOldModel } from "../../models/actions";
-import { setupGetAll, regionsGet, modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet } from 'model-catalog/actions';
+import { setupGetAll, regionsGet, modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet,
+         sampleCollectionGet, sampleResourceGet } from 'model-catalog/actions';
 import { getId } from 'model-catalog/util';
 
 import { SharedStyles } from "../../../styles/shared-styles";
@@ -22,6 +23,8 @@ import { getVariableLongName } from "../../../offline_data/variable_list";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { Region } from "screens/regions/reducers";
 import { IdMap } from "app/reducers";
+import { Model as MCModel, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, SampleCollection,
+         SampleResource } from '@mintproject/modelcatalog_client';
 
 import 'components/loading-dots';
 
@@ -363,14 +366,17 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         //FIXME find a better way to do this.
         if (this._baseLoaded) {
             let setupid : string = model.id;
-            let config = Object.values(this._allConfigs)
-                    .filter((cfg) => cfg.hasSetup && cfg.hasSetup.some(s => s.id === setupid)).pop();
+            let config : ModelConfiguration = Object.values(this._allConfigs)
+                    .filter((cfg:ModelConfiguration) => 
+                            cfg.hasSetup && cfg.hasSetup.some((s:ModelConfigurationSetup) => s.id === setupid)).pop();
             if (config) {
-                let version= Object.values(this._allVersions)
-                    .filter((ver) => ver.hasConfiguration && ver.hasConfiguration.some(c => c.id === config.id)).pop();
+                let version : SoftwareVersion = Object.values(this._allVersions)
+                    .filter((ver:SoftwareVersion) => 
+                            ver.hasConfiguration && ver.hasConfiguration.some((c:ModelConfiguration) => c.id === config.id)).pop();
                 if (version) {
-                    let model = Object.values(this._allModels)
-                    .filter((m) => m.hasVersion && m.hasVersion.some(v => v.id === version.id)).pop();
+                    let model : MCModel = Object.values(this._allModels)
+                    .filter((m:MCModel) => 
+                            m.hasVersion && m.hasVersion.some((v:SoftwareVersion) => v.id === version.id)).pop();
                     if (model) {
                         return this._regionid + '/models/explore/' + getId(model) + '/' + getId(version)
                                 + "/" + getId(config) + "/" + setupid.split("/").pop();
@@ -430,7 +436,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         showDialog("comparisonDialog", this.shadowRoot!);
     }
 
-    _selectPathwayModels() {
+    async _selectPathwayModels() {
         let models = this._getSelectedModels();
         //FIXME this is not necesary now.
         Object.values(models).forEach((model) => {
@@ -477,7 +483,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         showNotification("saveNotification", this.shadowRoot!);
         this._waiting = true;
         // GET all data for the selected models.
-        console.log("getting all info", models);
+        //console.log("getting all info", models);
         Promise.all(
             Object.keys(models || {}).map((modelid) => setupGetAll(modelid))
         ).then((setups) => {
@@ -485,36 +491,97 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             Object.values(fixedModels).forEach((model) => {
                 if (model.hasRegion)
                     delete model.hasRegion;
+                    Object.values(this._allConfigs).forEach((cfg:ModelConfiguration) => {
+                        if ((cfg.hasSetup || []).some((setup:ModelConfigurationSetup) => setup.id === model.id))
+                            model.model_configuration = cfg.id;
+                    });
+                    if (model.model_configuration) {
+                        Object.values(this._allVersions).forEach((ver:SoftwareVersion) => {
+                            if ((ver.hasConfiguration || []).some((cfg:ModelConfiguration) => cfg.id === model.model_configuration))
+                                model.model_version = ver.id;
+                        });
+                    }
+                    if (model.model_version) {
+                        Object.values(this._allModels).forEach((mod:MCModel) => {
+                            if ((mod.hasVersion || []).some((ver:SoftwareVersion) => ver.id === model.model_version))
+                                model.original_model = mod.id;
+                        });
+                    }
             });
-            let mapModels = {}
-            fixedModels.forEach(model => mapModels[model.id] = model);
+            /* The api does not return collections of inputs. FIXME */
+            let fixCollection = Promise.all( Object.values(fixedModels).map((model:Model) =>
+                Promise.all( model.input_files.map((input) => {
+                    if (input.value && input.value.id && input.value.resources && input.value.resources.length === 0) {
+                        console.log('Checking collection...', input.value.id);
+                        return new Promise((resolve, reject) => {
+                            let req : Promise<SampleCollection> = store.dispatch(sampleCollectionGet(input.value.id));
+                            req.then((sc:SampleCollection) => {
+                                if (sc.hasPart) {
+                                    console.log('hasPart:', sc.hasPart);
+                                    let pResources = Promise.all(sc.hasPart.map((sr:SampleResource) => 
+                                            store.dispatch(sampleResourceGet(sr.id))));
+                                    pResources.then((srs:SampleResource[]) => {
+                                        //console.log('all sample resources!');
+                                        input.value.resources = srs.map((sr:SampleResource) => {
+                                            return {
+                                                url: sr.value ? <unknown>sr.value[0] as string : "",
+                                                id: sr.id,
+                                                name: sr.label ? sr.label[0] : "",
+                                                selected: true
+                                            };
+                                        });
+                                        if (srs.length > 0 && srs[0].dataCatalogIdentifier) {
+                                            input.value.id = srs[0].dataCatalogIdentifier[0];
+                                        }
+                                        resolve();
+                                    });
+                                } else {
+                                    resolve();
+                                }
+                            });
+                            req.catch(resolve);
+                        });
 
-            let newpathway = {
-                ...this.pathway,
-                models: mapModels,
-                model_ensembles: model_ensembles
-            }
+                    } else {
+                        return Promise.resolve();
+                    }
+                }) )
+            ) );
 
-            // Update notes
-            let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-            newpathway.notes = {
-                ...newpathway.notes!,
-                models: notes
-            };
-            newpathway.last_update = {
-                ...newpathway.last_update!,
-                parameters: null,
-                datasets: null,
-                models: {
-                    time: Date.now(),
-                    user: this.user!.email
-                } as StepUpdateInformation
-            };        
+            fixCollection.then(() => {
 
-            this._waiting = false;
-            updatePathway(this.scenario, newpathway); 
-            
-            this._editMode = false;
+                let mapModels = {}
+                fixedModels.forEach(model => mapModels[model.id] = model);
+
+                let newpathway = {
+                    ...this.pathway,
+                    models: mapModels,
+                    model_ensembles: model_ensembles
+                }
+
+                // Update notes
+                let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
+                newpathway.notes = {
+                    ...newpathway.notes!,
+                    models: notes
+                };
+                newpathway.last_update = {
+                    ...newpathway.last_update!,
+                    parameters: null,
+                    datasets: null,
+                    models: {
+                        time: Date.now(),
+                        user: this.user!.email
+                    } as StepUpdateInformation
+                };        
+
+                this._waiting = false;
+                updatePathway(this.scenario, newpathway); 
+                
+                this._editMode = false;
+
+            })
+
         })
     }
 

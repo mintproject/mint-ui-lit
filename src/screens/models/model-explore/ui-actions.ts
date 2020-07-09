@@ -8,6 +8,7 @@ export const EXPLORER_SELECT_MODEL = 'EXPLORER_SELECT_MODEL'
 export const EXPLORER_SELECT_VERSION = 'EXPLORER_SELECT_VERSION'
 export const EXPLORER_SELECT_CONFIG = 'EXPLORER_SELECT_CONFIG'
 export const EXPLORER_SELECT_CALIBRATION = 'EXPLORER_SELECT_CALIBRATION'
+export const REGISTER_SET_STEP = 'REGISTER_SET_STEP'
 
 export const EXPLORER_SET_MODE = 'EXPLORER_SET_MODE';
 export const ADD_MODEL_TO_COMPARE = 'ADD_MODEL_TO_COMPARE';
@@ -21,15 +22,20 @@ export interface ExplorerActionSelectConfig extends ActionSelectUri<'EXPLORER_SE
 export interface ExplorerActionSelectCalibration extends ActionSelectUri<'EXPLORER_SELECT_CALIBRATION'> {};
 
 export interface ExplorerActionSetMode extends Action<'EXPLORER_SET_MODE'> {mode: string};
+export interface ExplorerActionSetStep extends Action<'REGISTER_SET_STEP'> {step: number};
 
 export interface CompareActionAdd extends Action<'ADD_MODEL_TO_COMPARE'> { comparison: ComparisonEntry };
 export interface CompareActionClear extends Action<'CLEAR_COMPARE'> {};
 
 export type ExplorerUIAction = ExplorerActionSelectModel | ExplorerActionSelectVersion | ExplorerActionSelectConfig | 
                                ExplorerActionSelectCalibration | ExplorerActionSetMode | CompareActionAdd |
-                               CompareActionClear;
+                               CompareActionClear | ExplorerActionSetStep;
 
 type ExplorerThunkResult = ThunkAction<void, RootState, undefined, ExplorerUIAction>;
+
+export const registerSetStep: ActionCreator<ExplorerThunkResult> = (step:number) => (dispatch) => {
+    dispatch({ type: REGISTER_SET_STEP, step: step })
+}
 
 export const explorerSetModel: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
     let uri : string = id ? PREFIX_URI + id : '';
@@ -37,7 +43,8 @@ export const explorerSetModel: ActionCreator<ExplorerThunkResult> = (id:string) 
 };
 
 export const explorerClearModel: ActionCreator<ExplorerThunkResult> = () => (dispatch) => {
-    dispatch({ type: EXPLORER_SELECT_MODEL, uri: '' })
+    dispatch({ type: EXPLORER_SELECT_MODEL, uri: '' });
+    dispatch({ type: REGISTER_SET_STEP, step: 0});
 };
 
 export const explorerSetVersion: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {

@@ -45,32 +45,25 @@ const parameterToParam = (parameter) => {
 }
 
 const fixedToValue = (fx) => {
-    let dataCatalogIdentifier = fx.dataCatalogIdentifier ? fx.dataCatalogIdentifier[0] : "";
-    let resources = [];
-    if (fx.value) {
+    if (fx.type.includes("SampleCollection")) {
+        return {
+            id: fx.id,
+            resources: []
+        }
+    } else if (fx.value && fx.value.length > 0) {
+        let dataCatalogIdentifier = fx.dataCatalogIdentifier && fx.dataCatalogIdentifier.length > 0 ?
+                fx.dataCatalogIdentifier[0] : "";
         let url = fx.value[0];
         let fname = url.replace(/.*[#\/]/, '');
-        resources.push({
-            url: url,
-            id: fname,
-            name: fname,
-            selected: true
-        });
-    }
-
-    if (fx.hasPart) {
-        fx.hasPart.forEach((part:any) => {
-            let partVal = fixedToValue(part)
-            if (!dataCatalogIdentifier)
-                dataCatalogIdentifier = partVal.id;
-            if (partVal.resources.length > 0)
-                resources = resources.concat(partVal.resources);
-        })
-    }
-
-    return {
-        id: dataCatalogIdentifier,
-        resources: resources
+        return {
+            id: dataCatalogIdentifier,
+            resources: [{
+                url: url,
+                id: fname,
+                name: fname,
+                selected: true
+            }]
+        }
     }
 }
 

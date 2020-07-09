@@ -11,21 +11,13 @@ import { goToPage } from 'app/actions';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { personGet, personPost, modelConfigurationPut, modelConfigurationGet, modelConfigurationDelete,
-         parameterGet, datasetSpecificationGet, gridGet,
-         timeIntervalGet, processGet, softwareImageGet, } from 'model-catalog/actions';
+import { Person, ModelConfiguration, ModelConfigurationFromJSON } from '@mintproject/modelcatalog_client';
+import { modelConfigurationPut, modelConfigurationGet, modelConfigurationDelete } from 'model-catalog/actions';
 import { getURL, getLabel } from 'model-catalog/util';
 import { renderExternalLink } from 'util/ui_renders';
 
 import "weightless/progress-spinner";
 import 'components/loading-dots'
-
-import './grid';
-import './time-interval';
-import './person';
-import './process';
-import './parameter';
-import './dataset-specification';
 
 import './resources/time-interval';
 import './resources/person';
@@ -35,6 +27,7 @@ import './resources/process';
 import './resources/parameter';
 import './resources/dataset-specification';
 import './resources/region';
+import './resources/numerical-index';
 
 import { ModelCatalogTimeInterval } from './resources/time-interval';
 import { ModelCatalogPerson } from './resources/person';
@@ -44,14 +37,7 @@ import { ModelCatalogGrid } from './resources/grid';
 import { ModelCatalogRegion } from './resources/region';
 import { ModelCatalogParameter } from './resources/parameter';
 import { ModelCatalogDatasetSpecification } from './resources/dataset-specification';
-
-import { ModelsConfigureGrid } from './grid';
-import { ModelsConfigureTimeInterval } from './time-interval';
-import { ModelsConfigurePerson } from './person';
-import { ModelsConfigureProcess } from './process';
-import { ModelsConfigureParameter } from './parameter';
-import { ModelsConfigureDatasetSpecification } from './dataset-specification';
-import { ModelConfiguration, ModelConfigurationFromJSON } from '@mintproject/modelcatalog_client';
+import { ModelCatalogNumericalIndex } from './resources/numerical-index';
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
@@ -77,6 +63,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     private _inputDSInput : ModelCatalogDatasetSpecification;
     private _inputDSOutput : ModelCatalogDatasetSpecification;
     private _inputRegion : ModelCatalogRegion;
+    private _inputNumericalIndex : ModelCatalogNumericalIndex;
 
     private _rendered : boolean = false;
 
@@ -146,7 +133,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             ${this._loading ?
                     html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
                     : ""}
-            <div style="visibility: ${this._loading ? 'hidden' : 'visible'}">
+            <div style="visibility: ${this._loading ? 'collapse' : 'visible'}">
                 ${this._renderForm()}
             </div>
         `;
@@ -175,7 +162,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             </tr>
 
             <tr>
-                <td>Category</td>
+                <td>Category:</td>
                 <td>
                     ${this._editing ? html`
                     <wl-select id="form-config-category" name="Category" required 
@@ -204,7 +191,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
 
 
             <tr>
-                <td>Sort description:</td>
+                <td>Short description:</td>
                 <td>
                     ${this._editing ? html`
                     <textarea id="form-config-short-desc" name="Short description" rows="3">${
@@ -307,6 +294,26 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     <model-catalog-process id="mcprocess"></model-catalog-process>
                 </td>
             </tr>
+
+            <tr>
+                <td>Useful for calculating index:</td>
+                <td>
+                    <model-catalog-numerical-index id="mcindex"></model-catalog-numerical-index>
+                </td>
+            </tr>
+
+            ${this._editing ? html`
+            <tr>
+                <td>Tag</td>
+                <td>
+                    <wl-select id="form-config-tag" name="Tag"
+                            value="${this._config && this._config.tag ? this._config.tag[0] : ''}">
+                        <option value="">None</option>
+                        <option value="latest">Latest</option>
+                        <option value="deprecated">Deprecated</option>
+                    </wl-select>
+                </td>
+            </tr>`:''}
         </table>
 
         <wl-title level="4" style="margin-top:1em">
@@ -374,16 +381,19 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         let inputAssumptions : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-assumption") as HTMLTextAreaElement;
         let inputWebsite : Textfield = this.shadowRoot.getElementById("form-config-website") as Textfield;
         let inputCompLoc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-comp-loc") as HTMLTextAreaElement;
+        let inputTag : Select = this.shadowRoot.getElementById("form-config-tag") as Select;
 
-        let name        : string = inputName        ? inputName        .value : ''; 
-        let category    : string = inputCategory    ? inputCategory    .value : ''; 
-        let desc        : string = inputDesc        ? inputDesc        .value : '';    
-        let shortDesc   : string = inputShortDesc   ? inputShortDesc   .value : '';    
+        let name        : string = inputName        ? inputName        .value : '';
+        let category    : string = inputCategory    ? inputCategory    .value : '';
+        let desc        : string = inputDesc        ? inputDesc        .value : '';
+        let shortDesc   : string = inputShortDesc   ? inputShortDesc   .value : '';
         let install     : string = inputInstall     ? inputInstall     .value : '';
         let keywords    : string = inputKeywords    ? inputKeywords    .value : '';
         let assumptions : string = inputAssumptions ? inputAssumptions .value : '';
         let website     : string = inputWebsite     ? inputWebsite     .value : '';
-        let compLoc     : string = inputCompLoc     ? inputCompLoc     .value : '';   
+        let compLoc     : string = inputCompLoc     ? inputCompLoc     .value : '';
+        let tag         : string = inputTag         ? inputTag         .value : '';
+
         if (name && category && desc) {
             let jsonObj = {
                 //type: ["ModelConfiguration"],
@@ -398,6 +408,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 hasOutput: this._inputDSOutput.getResources(),
                 hasGrid: this._inputGrid.getResources(),
                 hasRegion: this._inputRegion.getResources(),
+                usefulForCalculatingIndex: this._inputNumericalIndex.getResources(),
             };
             if (shortDesc) jsonObj['shortDescription'] = [shortDesc];
             if (install) jsonObj['hasInstallationInstructions'] = [install];
@@ -405,6 +416,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             if (assumptions) jsonObj['hasAssumption'] = [assumptions];
             if (website) jsonObj['website'] = [website];
             if (compLoc) jsonObj['hasComponentLocation'] = [compLoc];
+            if (tag) jsonObj['tag'] = [tag];
 
             // save parameters first
             let promises = [];
@@ -444,6 +456,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         this._inputDSOutput.setName('output');
         this._inputGrid = this.shadowRoot.getElementById('mcgrid') as ModelCatalogGrid;
         this._inputRegion = this.shadowRoot.getElementById('mcregion') as ModelCatalogRegion;
+        this._inputNumericalIndex = this.shadowRoot.getElementById('mcindex') as ModelCatalogNumericalIndex;
         this._rendered = true;
         if (this._config) {
             this._initializeForm();
@@ -457,13 +470,15 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         console.log('initializing form...', this._config);
         this._inputTimeInterval.setResources( this._config.hasOutputTimeInterval );
         this._inputGrid.setResources( this._config.hasGrid );
-        this._inputPerson.setResources( (this._config.author||[]).filter( (a) => a.type.includes('Person') ) ); //FIXME
+        this._inputPerson.setResources( (this._config.author||[])
+                .filter((a:Person) => a.type.includes('Person') ) ); //FIXME
         this._inputProcess.setResources( this._config.hasProcess );
         this._inputSoftwareImage.setResources( this._config.hasSoftwareImage );
         this._inputParameter.setResources( this._config.hasParameter );
         this._inputDSInput.setResources( this._config.hasInput );
         this._inputDSOutput.setResources( this._config.hasOutput );
         this._inputRegion.setResources( this._config.hasRegion );
+        this._inputNumericalIndex.setResources( this._config.usefulForCalculatingIndex );
     }
 
     private _setEditingInputs () { //TODO types...
@@ -476,6 +491,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         this._inputDSInput.setActionEditOrAdd();
         this._inputDSOutput.setActionEditOrAdd();
         this._inputRegion.setActionMultiselect();
+        this._inputNumericalIndex.setActionMultiselect();
         /*let inputs = [this._inputTimeInterval];
         inputs.forEach((input) => {
             input.setActionSelect();
@@ -485,7 +501,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     private _unsetEditingInputs () {
         let inputs = [this._inputTimeInterval, this._inputPerson, this._inputGrid, this._inputProcess,
                 this._inputSoftwareImage, this._inputParameter, this._inputRegion, this._inputDSInput,
-                this._inputDSOutput];
+                this._inputDSOutput, this._inputNumericalIndex];
         inputs.forEach((input) => {
             input.unsetAction();
         });

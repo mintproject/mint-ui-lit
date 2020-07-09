@@ -3,7 +3,7 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 
 import { Action, Status, ModelCatalogResource } from './resource';
-import { getLabel, isSubregion } from 'model-catalog/util';
+import { getLabel, isSubregion, isMainRegion } from 'model-catalog/util';
 import { regionGet, regionsGet, regionPost, regionPut, regionDelete } from 'model-catalog/actions';
 import { Region, RegionFromJSON, GeoShape, GeoShapeFromJSON } from '@mintproject/modelcatalog_client';
 
@@ -65,7 +65,7 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
     constructor () {
         super();
         this._filters.push(
-            (r:Region) => !this._topRegionUri || isSubregion(this._topRegionUri, r)
+            (r:Region) => isMainRegion(r) || (!this._topRegionUri || isSubregion(this._topRegionUri, r))
         );
     }
 
