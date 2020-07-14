@@ -67,6 +67,24 @@ export const fetchUserProfile: ActionCreator<UserProfileThunkResult> = (user:Use
     })
 }
 
+type SetProfileThunkResult = ThunkAction<Promise<void>, RootState, undefined, AppActionFetchUserPreferences>;
+//export const setUserProfile = (user:User, profile:UserProfile) : Promise<void> => {
+export const setUserProfile: ActionCreator<SetProfileThunkResult> = (user:User, profile:UserProfile) => (dispatch) => {
+    let userProfiles = db.collection('users');
+    let id = user.email;
+    if (!id || !userProfiles || !profile) {
+        return Promise.reject('Must include user id and a valid profile.');
+    }
+    let req = userProfiles.doc(id).set(profile);
+    req.then(() => { 
+        dispatch({
+            type: FETCH_USER_PROFILE,
+            profile: profile
+        });
+    });
+    return req;
+}
+
 type UserThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchUser>;
 export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
   //console.log("Subscribing to user authentication updates");

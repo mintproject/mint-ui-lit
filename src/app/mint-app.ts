@@ -18,8 +18,9 @@ import { store, RootState } from './store';
 
 // These are the actions needed by this element.
 import {
-  navigate, fetchUser, signOut, signIn, signUp, goToPage, fetchMintConfig,
+  navigate, fetchUser, signOut, signIn, signUp, goToPage, fetchMintConfig, setUserProfile,
 } from './actions';
+import { UserPreferences, UserProfile } from './reducers';
 import { listTopRegions, listSubRegions } from '../screens/regions/actions';
 
 import '../screens/modeling/modeling-home';
@@ -34,6 +35,7 @@ import 'components/notification';
 
 import "weightless/popover";
 import "weightless/radio";
+import { Select } from 'weightless/select';
 
 import { Popover } from "weightless/popover";
 import { CustomNotification } from 'components/notification';
@@ -50,6 +52,9 @@ export class MintApp extends connect(store)(LitElement) {
 
   @property({type: String})
   private _page = '';
+
+  @property({type: String})
+  private _preferredRegion = '';
 
   @property({type: Boolean})
   private _creatingAccount = false;
@@ -340,7 +345,7 @@ export class MintApp extends connect(store)(LitElement) {
       <div slot="content">
         <p></p>
         <wl-label>Default region</wl-label>
-        <wl-select name="Default Region" value="${this._preferredRegion}">
+        <wl-select name="Default Region" value="${this._preferredRegion}" id="user-config-region">
             <option value="">None</option>
             ${this._topRegions ? this._topRegions.map((key) => 
                 html`<option value="${key}">${key}</option>`) : ''}
@@ -361,7 +366,7 @@ export class MintApp extends connect(store)(LitElement) {
 
       <div slot="footer">
         <wl-button @click="${this._onConfigCancel}" inverted flat>Cancel</wl-button>
-        <wl-button @click="${this._onConfigSave}" class="submit" disabled>Save</wl-button>
+        <wl-button @click="${this._onConfigSave}" class="submit">Save</wl-button>
       </div>
     </wl-dialog>
     `;
@@ -390,7 +395,20 @@ export class MintApp extends connect(store)(LitElement) {
   }
 
   _onConfigSave () {
-    console.log('should save');
+    let inputRegion : Select  = this.shadowRoot.getElementById('user-config-region') as Select;
+    let notification : CustomNotification = this.shadowRoot.querySelector<CustomNotification>("#custom-notification")!;
+    let profile : UserProfile = {
+        preferredRegion: inputRegion.value
+    }
+    console.log('new profile:', profile);
+    store.dispatch(
+        setUserProfile(this.user, profile)
+    ).then(() => {
+        if (notification) notification.save("Saved");
+        this._onConfigCancel();
+    }).catch((error) => {
+        if (notification) notification.error("Could not save changes.");
+    });
   }
 
   _onLoginCancel() {
