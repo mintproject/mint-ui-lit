@@ -1,6 +1,6 @@
 import { RootAction } from "./store";
 import { Reducer } from "redux";
-import { UI_SELECT_SUBGOAL, UI_SELECT_PATHWAY, UI_SELECT_PATHWAY_SECTION, 
+import { UI_SELECT_SUBGOAL, UI_SELECT_PATHWAY, UI_SELECT_PATHWAY_SECTION, UI_SELECT_DATA_TRANSFORMATION,
     UI_SELECT_SCENARIO, UI_SELECT_TOP_REGION, UI_SELECT_THREAD, UI_SELECT_SUB_REGION } from "./ui-actions";
 
 export interface UIState {
@@ -11,6 +11,7 @@ export interface UIState {
     selected_pathwayid?:string
     selected_pathway_section?:string
     selected_threadid?:string
+    selected_datatransformationid?:string
 }
 
 const INITIAL_STATE: UIState = {};
@@ -57,6 +58,11 @@ const ui: Reducer<UIState, RootAction> = (state = INITIAL_STATE, action) => {
             return {
                 ...state,
                 selected_pathway_section: action.section
+            }
+        case UI_SELECT_DATA_TRANSFORMATION:
+            return {
+                ...state,
+                selected_datatransformationid: action.dtid
             }
         default:
             return state;

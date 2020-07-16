@@ -13,7 +13,8 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from './store';
 import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetConfig, addModelToCompare, clearCompare,
          explorerSetCalibration, explorerSetMode, registerSetStep } from '../screens/models/model-explore/ui-actions';
-import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread } from './ui-actions';
+import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread,
+         selectDataTransformation } from './ui-actions';
 import { auth, db } from '../config/firebase';
 import { User } from 'firebase';
 import { UserPreferences, MintPreferences, UserProfile } from './reducers';
@@ -365,8 +366,8 @@ const loadPage: ActionCreator<ThunkResult> =
               }
             });
         }
-
         break;
+
     case 'datasets':
         import('../screens/datasets/datasets-home').then((_module) => {
           if(subpage == "browse") {
@@ -379,9 +380,17 @@ const loadPage: ActionCreator<ThunkResult> =
               else {
                 store.dispatch(dexplorerSelectDataset(null));
               }
-          }
+          } else if(subpage == "data-transformations") {
+              if(params.length == 1) {
+                store.dispatch(selectDataTransformation(params[0]));
+              }
+              else {
+                store.dispatch(selectDataTransformation(null));
+              }
+            }
         });
         break;
+
     case 'variables':
         import('../screens/variables/variables-home').then((_module) => {
           if(params.length > 0) {
