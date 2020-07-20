@@ -315,8 +315,9 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             onLoad: function(e: any) {
                 hideNotification("runNotification", me.shadowRoot);
             },
-            onError: function() {
-                console.log("Could not send");
+            onError: function(e:any) {
+                hideNotification("runNotification", me.shadowRoot);
+                alert("Could not connect to the Ensemble Manager!");
             }
         }, data, false);
     }
@@ -376,7 +377,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
     async _fetchRuns (modelid: string, currentPage: number, pageSize: number) {
         this.currentPage[modelid] = currentPage;
         
-        if(!this.pathwayModelEnsembleIds[modelid]) {
+        if(!this.pathwayModelEnsembleIds[modelid] || this.pathwayModelEnsembleIds[modelid].length == 0) {
             this.pathwayModelEnsembleIds[modelid] =  await getAllPathwayEnsembleIds(this.scenario.id, this.pathway.id, modelid);
         }
         
