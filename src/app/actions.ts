@@ -86,11 +86,16 @@ export const setUserProfile: ActionCreator<SetProfileThunkResult> = (user:User, 
     return req;
 }
 
+export const resetPassword = (email:string) => {
+    return auth.sendPasswordResetEmail(email);
+}
+
 type UserThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchUser>;
 export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
   //console.log("Subscribing to user authentication updates");
   auth.onAuthStateChanged(user => {
     if (user) {
+      dispatch(fetchUserProfile(user));
       // Check the state of the model-catalog access token.
       let state: any = store.getState();
       if (!state.app.prefs.modelCatalog.status) {
@@ -106,8 +111,6 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
           console.error('Login failed!');
           // Should log out
       }
-
-      dispatch(fetchUserProfile(user));
 
       dispatch({
         type: FETCH_USER,

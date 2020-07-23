@@ -78,7 +78,8 @@ export interface ModelCatalogPreferences {
 }
 
 export type UserProfile = {
-    preferredRegion: string
+    mainRegion: string,
+    graph: string,
 }
 
 const INITIAL_STATE: AppState = {

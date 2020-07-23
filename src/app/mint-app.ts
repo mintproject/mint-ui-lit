@@ -18,7 +18,7 @@ import { store, RootState } from './store';
 
 // These are the actions needed by this element.
 import {
-  navigate, fetchUser, signOut, signIn, signUp, goToPage, fetchMintConfig, setUserProfile,
+  navigate, fetchUser, signOut, signIn, signUp, goToPage, fetchMintConfig, setUserProfile, resetPassword,
 } from './actions';
 import { UserPreferences, UserProfile } from './reducers';
 import { listTopRegions, listSubRegions } from '../screens/regions/actions';
@@ -36,6 +36,7 @@ import 'components/notification';
 import "weightless/popover";
 import "weightless/radio";
 import { Select } from 'weightless/select';
+import { Radio } from 'weightless/radio';
 
 import { Popover } from "weightless/popover";
 import { CustomNotification } from 'components/notification';
@@ -54,10 +55,16 @@ export class MintApp extends connect(store)(LitElement) {
   private _page = '';
 
   @property({type: String})
-  private _preferredRegion = '';
+  private _mainRegion = '';
+
+  @property({type: String})
+  private _defGraph = '';
 
   @property({type: Boolean})
   private _creatingAccount = false;
+
+  @property({type: Boolean})
+  private _resetingPassword = false;
 
   @property({type:Boolean})
   private _drawerOpened = false;
@@ -306,7 +313,9 @@ export class MintApp extends connect(store)(LitElement) {
       <h3 slot="header">
         ${this._creatingAccount ? 
           'Choose an email and password for your MINT account' :
-          'Please enter your email and password for MINT'}
+          (this._resetingPassword ? 
+            'Enter your email to reset your password'
+            : 'Please enter your email and password for MINT')}
       </h3>
       <div slot="content">
         <p></p>
@@ -315,21 +324,27 @@ export class MintApp extends connect(store)(LitElement) {
             <label>Email</label>
             <input name="username" type="email"></input>
           </div>
+          ${this._resetingPassword ? '' : html`
           <p></p>
           <div class="input_full">
             <label>Password</label>
             <input name="password" type="password" @keyup="${this._onPWKey}"></input>
           </div>
-
+          `}
         </form>
+        ${this._creatingAccount || this._resetingPassword ? 
+            ''
+            : html`<p></p><a @click="${() => {this._resetingPassword = true;}}">Reset your password</a>`}
       </div>
       <div slot="footer" style="justify-content: space-between;">
-          ${this._creatingAccount ? 
+          ${this._creatingAccount || this._resetingPassword ? 
             html`<span></span>` :
             html`<wl-button @click="${this._createAccountActivate}">Create account</wl-button>`}
           <span>
               <wl-button @click="${this._onLoginCancel}" inverted flat>Cancel</wl-button>
-              <wl-button @click="${this._onLogin}" class="submit" id="dialog-submit-button">Submit</wl-button>
+              <wl-button @click="${this._onLogin}" class="submit" id="dialog-submit-button">
+                  ${this._resetingPassword ? 'Reset password' : 'Submit'}
+              </wl-button>
           </span>
       </div>
     </wl-dialog>
@@ -344,8 +359,8 @@ export class MintApp extends connect(store)(LitElement) {
       </h3>
       <div slot="content">
         <p></p>
-        <wl-label>Default region</wl-label>
-        <wl-select name="Default Region" value="${this._preferredRegion}" id="user-config-region">
+        <wl-label for="user-config-region">Default region</wl-label>
+        <wl-select name="Default Region" value="${this._mainRegion}" id="user-config-region">
             <option value="">None</option>
             ${this._topRegions ? this._topRegions.map((key) => 
                 html`<option value="${key}">${key}</option>`) : ''}
@@ -354,15 +369,14 @@ export class MintApp extends connect(store)(LitElement) {
 
         <wl-label>Model catalog graph:</wl-label>
         <div style="margin-top: 4px;">
-            <wl-radio id="gpublic" name="graph" value="public" disabled></wl-radio>
+            <wl-radio id="gpublic" name="graph" ?checked=${!this._defGraph}></wl-radio>
             <wl-label for="gpublic" style="padding: 5px;"> Public graph (mint@isi.edu) </wl-label>
         </div>
         <div style="margin-top: 4px;">
-            <wl-radio id="gpersonal" name="graph" value="personal" checked disabled></wl-radio>
+            <wl-radio id="gpersonal" name="graph" ?checked=${this.user && this.user.email == this._defGraph}></wl-radio>
             <wl-label for="gpersonal" style="padding: 5px;"> My graph </wl-label>
         </div>
       </div>
-
 
       <div slot="footer">
         <wl-button @click="${this._onConfigCancel}" inverted flat>Cancel</wl-button>
@@ -396,32 +410,39 @@ export class MintApp extends connect(store)(LitElement) {
 
   _onConfigSave () {
     let inputRegion : Select  = this.shadowRoot.getElementById('user-config-region') as Select;
+    let inputPublicGraph : Select  = this.shadowRoot.getElementById('gpublic') as Select;
+    let inputPrivateGraph : Radio  = this.shadowRoot.getElementById('gpersonal') as Radio;
     let notification : CustomNotification = this.shadowRoot.querySelector<CustomNotification>("#custom-notification")!;
-    let profile : UserProfile = {
-        preferredRegion: inputRegion.value
+    if (inputRegion && inputPublicGraph && inputPrivateGraph) {
+        let profile : UserProfile = {
+            mainRegion: inputRegion.value,
+            graph: inputPrivateGraph.checked ? this.user.email : ''
+        }
+        console.log('new profile:', profile);
+        store.dispatch(
+            setUserProfile(this.user, profile)
+        ).then(() => {
+            if (notification) notification.save("Saved");
+            this._onConfigCancel();
+            window.location.reload(false);
+        }).catch((error) => {
+            if (notification) notification.error("Could not save changes.");
+        });
     }
-    console.log('new profile:', profile);
-    store.dispatch(
-        setUserProfile(this.user, profile)
-    ).then(() => {
-        if (notification) notification.save("Saved");
-        this._onConfigCancel();
-    }).catch((error) => {
-        if (notification) notification.error("Could not save changes.");
-    });
   }
 
   _onLoginCancel() {
-    if (!this._creatingAccount) {
+    if (!this._creatingAccount && !this._resetingPassword) {
         hideDialog("loginDialog", this.shadowRoot!);
     }
     this._creatingAccount = false;
+    this._resetingPassword = false;
   }
 
   _onLogin() {
     let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#loginForm")!;
     let notification : CustomNotification = this.shadowRoot.querySelector<CustomNotification>("#custom-notification")!;
-    if(formElementsComplete(form, ["username", "password"])) {
+    if (!this._resetingPassword && formElementsComplete(form, ["username", "password"])) {
         let username = (form.elements["username"] as HTMLInputElement).value;
         let password = (form.elements["password"] as HTMLInputElement).value;
         if (this._creatingAccount) {
@@ -439,6 +460,17 @@ export class MintApp extends connect(store)(LitElement) {
             });
         }
         this._onLoginCancel();
+    } else if (this._resetingPassword && formElementsComplete(form, ["username"])) {
+        let username = (form.elements["username"] as HTMLInputElement).value;
+        resetPassword(username)
+                .then((resp) => {
+            if (notification) notification.save("Email send");
+            this._resetingPassword = false;
+                })
+                .catch((error) => {
+            if (notification) notification.error(error.message);
+            this._resetingPassword = false;
+        });
     }
   }
 
@@ -497,7 +529,8 @@ export class MintApp extends connect(store)(LitElement) {
 
     if (state.app && state.app.prefs && state.app.prefs.profile) {
         let profile = state.app.prefs.profile;
-        this._preferredRegion = profile.preferredRegion;
+        this._mainRegion = profile.mainRegion;
+        this._defGraph = profile.graph;
     }
 
     if (state.regions) this._topRegions = state.regions.top_region_ids;
