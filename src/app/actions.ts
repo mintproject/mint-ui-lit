@@ -13,7 +13,8 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from './store';
 import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetConfig, addModelToCompare, clearCompare,
          explorerSetCalibration, explorerSetMode, registerSetStep } from '../screens/models/model-explore/ui-actions';
-import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread } from './ui-actions';
+import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread,
+         selectDataTransformation } from './ui-actions';
 import { auth, db } from '../config/firebase';
 import { User } from 'firebase';
 import { UserPreferences, MintPreferences, UserProfile } from './reducers';
@@ -67,11 +68,34 @@ export const fetchUserProfile: ActionCreator<UserProfileThunkResult> = (user:Use
     })
 }
 
+type SetProfileThunkResult = ThunkAction<Promise<void>, RootState, undefined, AppActionFetchUserPreferences>;
+//export const setUserProfile = (user:User, profile:UserProfile) : Promise<void> => {
+export const setUserProfile: ActionCreator<SetProfileThunkResult> = (user:User, profile:UserProfile) => (dispatch) => {
+    let userProfiles = db.collection('users');
+    let id = user.email;
+    if (!id || !userProfiles || !profile) {
+        return Promise.reject('Must include user id and a valid profile.');
+    }
+    let req = userProfiles.doc(id).set(profile);
+    req.then(() => { 
+        dispatch({
+            type: FETCH_USER_PROFILE,
+            profile: profile
+        });
+    });
+    return req;
+}
+
+export const resetPassword = (email:string) => {
+    return auth.sendPasswordResetEmail(email);
+}
+
 type UserThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchUser>;
 export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
   //console.log("Subscribing to user authentication updates");
   auth.onAuthStateChanged(user => {
     if (user) {
+      dispatch(fetchUserProfile(user));
       // Check the state of the model-catalog access token.
       let state: any = store.getState();
       if (!state.app.prefs.modelCatalog.status) {
@@ -87,8 +111,6 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
           console.error('Login failed!');
           // Should log out
       }
-
-      dispatch(fetchUserProfile(user));
 
       dispatch({
         type: FETCH_USER,
@@ -347,8 +369,8 @@ const loadPage: ActionCreator<ThunkResult> =
               }
             });
         }
-
         break;
+
     case 'datasets':
         import('../screens/datasets/datasets-home').then((_module) => {
           if(subpage == "browse") {
@@ -361,9 +383,17 @@ const loadPage: ActionCreator<ThunkResult> =
               else {
                 store.dispatch(dexplorerSelectDataset(null));
               }
-          }
+          } else if(subpage == "data-transformations") {
+              if(params.length == 1) {
+                store.dispatch(selectDataTransformation(params[0]));
+              }
+              else {
+                store.dispatch(selectDataTransformation(null));
+              }
+            }
         });
         break;
+
     case 'variables':
         import('../screens/variables/variables-home').then((_module) => {
           if(params.length > 0) {

@@ -8,6 +8,7 @@ export const UI_SELECT_PATHWAY_SECTION = 'UI_SELECT_PATHWAY_SECTION';
 export const UI_SELECT_TOP_REGION = 'UI_SELECT_TOP_REGION';
 export const UI_SELECT_SUB_REGION = 'UI_SELECT_SUB_REGION';
 export const UI_SELECT_THREAD = 'UI_SELECT_THREAD';
+export const UI_SELECT_DATA_TRANSFORMATION = 'UI_SELECT_DATA_TRANSFORMATION';
 
 export interface UIActionSelectScenario extends Action<'UI_SELECT_SCENARIO'> { scenarioid: string }
 export interface UIActionSelectSubgoal extends Action<'UI_SELECT_SUBGOAL'> { subgoalid: string }
@@ -16,9 +17,11 @@ export interface UIActionSelectPathwaySection extends Action<'UI_SELECT_PATHWAY_
 export interface UIActionSelectTopRegion extends Action<'UI_SELECT_TOP_REGION'> { regionid?: string };
 export interface UIActionSelectSubRegion extends Action<'UI_SELECT_SUB_REGION'> { regionid?: string };
 export interface UIActionSelectThread extends Action<'UI_SELECT_THREAD'> { threadid?: string };
+export interface UIActionSelectDataTransformation extends Action<'UI_SELECT_DATA_TRANSFORMATION'> { dtid?: string };
 
 export type UIAction = UIActionSelectScenario | UIActionSelectSubgoal | UIActionSelectPathway 
-    | UIActionSelectPathwaySection | UIActionSelectTopRegion | UIActionSelectSubRegion | UIActionSelectThread;
+    | UIActionSelectPathwaySection | UIActionSelectTopRegion | UIActionSelectSubRegion | UIActionSelectThread
+    | UIActionSelectDataTransformation;
 
 export const selectScenario: ActionCreator<UIActionSelectScenario> = (scenarioid:string) => {
     console.log("SelectScenario:" + scenarioid);
@@ -70,5 +73,12 @@ export const selectThread: ActionCreator<UIActionSelectThread> = (threadid: stri
     return {
         type: UI_SELECT_THREAD,
         threadid: threadid
+    }
+}
+
+export const selectDataTransformation: ActionCreator<UIActionSelectDataTransformation> = (dtid: string) => {
+    return {
+        type: UI_SELECT_DATA_TRANSFORMATION,
+        dtid: dtid ? dtid : ''
     }
 }

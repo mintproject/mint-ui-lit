@@ -21,6 +21,10 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
     static get styles() {
         return [
             css `
+            :host {
+                overflow: hidden;
+            }
+
             @media (min-width: 1025px) {
                 .content {
                     width: 75%;
@@ -34,6 +38,13 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
             .content {
                 margin: 0 auto;
             }
+            .datacatalog {
+                width: 100%;
+                height: 100%;
+                margin-top: -70px;
+                height: 100vh;
+                border: 0;
+            }
             `,
             SharedStyles
         ];
@@ -41,13 +52,11 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
 
     protected render() {
         return html`
-        <!--
-        <iframe src="https://data-catalog.mint.isi.edu"></iframe>
-        -->
-        <div class="content">
-            <datasets-search class="page" ?active="${!this._dsid}"></datasets-search>
-            <dataset-detail class="page" ?active="${this._dsid}"></dataset-detail>
-        </div>
+        <iframe class="datacatalog" src="https://data-catalog.mint.isi.edu"></iframe>
+        <!--div class="content">
+            <datasets-search class="page" ?active="{!this._dsid}"></datasets-search>
+            <dataset-detail class="page" ?active="{this._dsid}"></dataset-detail>
+        </div-->
         `
     }
 

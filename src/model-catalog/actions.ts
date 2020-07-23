@@ -85,14 +85,18 @@ export const getStatusConfigAndUser = () => {
     let state: any = store.getState();
     let status = state.app.prefs.modelCatalog.status;
     let token = state.app.prefs.modelCatalog.accessToken;
-    let user = state.app.user ? state.app.user.email : DEFAULT_GRAPH;
+    //let user = state.app.user ? state.app.user.email : DEFAULT_GRAPH;
+    let user = state.app.prefs.profile && state.app.prefs.profile.graph ?
+        state.app.prefs.profile.graph : DEFAULT_GRAPH;
     let cfg : Configuration = new Configuration({accessToken: token});
     return [status, cfg, user];
 }
 
 export const getUser = () => {
     let state: any = store.getState();
-    return state.app.user ? state.app.user.email : DEFAULT_GRAPH;
+    let user = state.app.prefs.profile && state.app.prefs.profile.graph ?
+        state.app.prefs.profile.graph : DEFAULT_GRAPH;
+    return user;
 }
 
 export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAction | 
@@ -106,7 +110,7 @@ export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAc
         ModelCatalogDataTransformationAction | ModelCatalogDataTransformationSetupAction; 
 
 //FIXME: The API is returning only one model (void), doing the fetch instead.
-const CUSTOM_URI = "https://api.models.mint.isi.edu/v1.4.0/custom/";
+const CUSTOM_URI = "https://api.models.mint.isi.edu/v1.5.0/custom/";
 export const modelsSearchIndex = (term:string) => {
     /*let MApi : ModelApi = new ModelApi();
     let req = MApi.customModelIndexGet({label:term, username: DEFAULT_GRAPH, customQueryName: 'custom_model_index'});
