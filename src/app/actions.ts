@@ -57,7 +57,8 @@ export const OFFLINE_DEMO_MODE = false;
 type UserProfileThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchUserPreferences>;
 export const fetchUserProfile: ActionCreator<UserProfileThunkResult> = (user:User) => (dispatch) => {
     let ref = db.collection('users').doc(user.email);
-    ref.get().then((qs) => {
+    let q = ref.get()
+    q.then((qs) => {
         let profile = qs.data();
         if (profile) {
             dispatch({
@@ -65,7 +66,8 @@ export const fetchUserProfile: ActionCreator<UserProfileThunkResult> = (user:Use
                 profile: profile as UserProfile
             });
         }
-    })
+    });
+    return q;
 }
 
 type SetProfileThunkResult = ThunkAction<Promise<void>, RootState, undefined, AppActionFetchUserPreferences>;
@@ -95,27 +97,28 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
   //console.log("Subscribing to user authentication updates");
   auth.onAuthStateChanged(user => {
     if (user) {
-      dispatch(fetchUserProfile(user));
-      // Check the state of the model-catalog access token.
-      let state: any = store.getState();
-      if (!state.app.prefs.modelCatalog.status) {
-        // This happen when we are already auth on firebase, the access token should be on local storage
-        let accessToken = localStorage.getItem('accessToken');
-        if (accessToken) {
-            store.dispatch({type: FETCH_MODEL_CATALOG_ACCESS_TOKEN, accessToken: accessToken});
-        } else {
-            console.error('No access token on local storage!')
-            // Should log out
-        }
-      } else if (state.app.prefs.modelCatalog.status === 'ERROR') {
-          console.error('Login failed!');
-          // Should log out
-      }
+      dispatch(fetchUserProfile(user)).then(() => {
+          // Check the state of the model-catalog access token.
+          let state: any = store.getState();
+          if (!state.app.prefs.modelCatalog.status) {
+            // This happen when we are already auth on firebase, the access token should be on local storage
+            let accessToken = localStorage.getItem('accessToken');
+            if (accessToken) {
+                store.dispatch({type: FETCH_MODEL_CATALOG_ACCESS_TOKEN, accessToken: accessToken});
+            } else {
+                console.error('No access token on local storage!')
+                // Should log out
+            }
+          } else if (state.app.prefs.modelCatalog.status === 'ERROR') {
+              console.error('Login failed!');
+              // Should log out
+          }
 
-      dispatch({
-        type: FETCH_USER,
-        user: user
-      });
+          dispatch({
+            type: FETCH_USER,
+            user: user
+          });
+        })
     } else {
       dispatch({
         type: FETCH_USER,

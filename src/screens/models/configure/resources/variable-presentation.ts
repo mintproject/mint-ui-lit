@@ -51,6 +51,12 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
             <wl-textfield id="var-long-name" label="Long Name" 
                 value=${edResource && edResource.hasLongName ? edResource.hasLongName[0] : ''}>
             </wl-textfield>
+            <div style="padding: 10px 0px;">
+                <div style="padding: 5px 0px; font-weight: bold;">Standard Variables</div>
+                ${edResource && edResource.hasStandardVariable.map((s) => html`
+                <span> ${getLabel(s)} </span>
+                `)}
+            </div>
         </form>`;
     }
 

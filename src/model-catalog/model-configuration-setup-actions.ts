@@ -23,7 +23,7 @@ export const modelConfigurationSetupsGet: ActionThunk<Promise<IdMap<ModelConfigu
             debug('Fetching all');
             let user : string = getUser();
             let api : ModelConfigurationSetupApi = new ModelConfigurationSetupApi();
-            let req2 : Promise<ModelConfigurationSetup[]> = api.modelconfigurationsetupsGet({username: user});
+            let req2 : Promise<ModelConfigurationSetup[]> = api.modelconfigurationsetupsGet({username: user, perPage:200});
 
             let promises : Promise<ModelConfigurationSetup[]>[] = [req2];
             promises.forEach((p:Promise<ModelConfigurationSetup[]>, i:number) => {
