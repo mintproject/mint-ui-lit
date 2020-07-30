@@ -12,7 +12,7 @@ import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
 import { Person, ModelConfiguration, ModelConfigurationFromJSON } from '@mintproject/modelcatalog_client';
-import { modelConfigurationPut, modelConfigurationGet, modelConfigurationDelete } from 'model-catalog/actions';
+import { modelConfigurationPut, modelConfigurationPost, modelConfigurationGet, modelConfigurationDelete } from 'model-catalog/actions';
 import { getURL, getLabel } from 'model-catalog/util';
 import { renderExternalLink } from 'util/ui_renders';
 
@@ -355,11 +355,31 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             <wl-button style="float:right;" @click="${this._onEditButtonClicked}">
                 <wl-icon>edit</wl-icon>&ensp;Edit
             </wl-button>
+            <wl-button style="float:right;margin-right: 10px;--primary-hue: 100;"
+                @click="${this._onDuplicateButtonClicked}" disabled>
+                <wl-icon>content_copy</wl-icon>&ensp;Duplicate
+            </wl-button>
             <wl-button style="--primary-hue: 0; --primary-saturation: 75%" @click="${this._onDeleteButtonClicked}">
                 <wl-icon>delete</wl-icon>&ensp;Delete
             </wl-button>
         </div>`}
         `
+    }
+
+    private _onDuplicateButtonClicked () {
+        let name = window.prompt("Enter the name of the new Model Configuration", getLabel(this._config) + " copy");
+        if (name) {
+            let jsonObj = { ...this._config };
+            jsonObj.id = "";
+            jsonObj.label = [name];
+            /* TODO
+            store.dispatch(modelConfigurationPost(ModelConfigurationFromJSON(jsonObj))).then((nconf) => {
+                this._scrollUp();
+                let url = getURL(this._selectedModel, this._selectedVersion, nconf.id);
+                goToPage('models/configure/' + url);
+            })
+            */
+        }
     }
 
     private _onEditButtonClicked () {

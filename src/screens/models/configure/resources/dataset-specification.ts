@@ -51,6 +51,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
     protected resourcePut = datasetSpecificationPut;
     protected resourceDelete = datasetSpecificationDelete;
     protected positionAttr : string = "position";
+    protected colspan = 3;
 
     constructor () {
         super();
@@ -80,6 +81,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
         return html`
             <th><b>Input name</b></th>
             <th><b>Description</b></th>
+            <th><b>Data Transformations</b></th>
         `;
     }
 
@@ -92,6 +94,10 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             </td>
             <td>
                 <b>${r.description ? r.description[0] : ''}</b>
+            </td>
+            <td>
+                ${r.hasDataTransformation ? r.hasDataTransformation.map((dt:DataTransformation) =>
+                html `<span class="resource data-transformation">${getLabel(dt)}</span>`) : ''}
             </td>
         `;
     }
@@ -111,11 +117,11 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
                 value="${edResource && edResource.hasFormat ? edResource.hasFormat[0] : ''}" >
             </wl-textfield>
             <div style="min-height:50px; padding: 10px 0px;">
-                <div style="padding: 5px 0px; font-weight: bold;">Has presentation:</div>
+                <div style="padding: 5px 0px; font-weight: bold;">Variables:</div>
                 ${this._inputVariablePresentation}
             </div>
             <div style="padding: 10px 0px;">
-                <div style="padding: 5px 0px; font-weight: bold;">Has data transformations:</div>
+                <div style="padding: 5px 0px; font-weight: bold;">Data transformations:</div>
                 ${this._inputDataTransformation}
             </div>
         </form>`;
