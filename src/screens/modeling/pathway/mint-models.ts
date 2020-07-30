@@ -6,7 +6,7 @@ import { ModelMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, E
 import models, { VariableModels, Model } from "../../models/reducers";
 import { queryModelsByVariables, setupToOldModel } from "../../models/actions";
 import { setupGetAll, regionsGet, modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet,
-         sampleCollectionGet, sampleResourceGet } from 'model-catalog/actions';
+         sampleCollectionGet, sampleResourceGet, softwareImagesGet } from 'model-catalog/actions';
 import { getId } from 'model-catalog/util';
 
 import { SharedStyles } from "../../../styles/shared-styles";
@@ -27,6 +27,7 @@ import { Model as MCModel, SoftwareVersion, ModelConfiguration, ModelConfigurati
          SampleResource } from '@mintproject/modelcatalog_client';
 
 import 'components/loading-dots';
+import { ModelCatalogState } from "model-catalog/reducers";
 
 store.addReducers({
     models
@@ -46,7 +47,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
 
     @property({type: Object})
     private _subregion: Region;
-    
+
     @property({type:Boolean})
     private _showAllModels: boolean = false;
 
@@ -58,6 +59,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     private _allModels : any = {};
     private _allVersions : any = {};
     private _allConfigs : any = {};
+    private _allSoftwareImages: any = null;
 
     @property({type: Object})
     private _allRegions : any = {};
@@ -226,7 +228,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                 </p>
                 <ul>
                     <li>
-                    ${this._dispatched ? 
+                    ${this._dispatched || this._allSoftwareImages == null ? 
                         html`<wl-progress-bar></wl-progress-bar>`
                     :
                         html`
@@ -429,7 +431,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                 if (!this._loadedModels[m.id]) {
                     let p = setupGetAll(m.id);
                     p.then((setup) => {
-                        this._loadedModels[setup.id] = setupToOldModel(setup);
+                        this._loadedModels[setup.id] = setupToOldModel(setup, this._allSoftwareImages);
                     });
                     return p
                 } else return null;
@@ -491,7 +493,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         Promise.all(
             Object.keys(models || {}).map((modelid) => setupGetAll(modelid))
         ).then((setups) => {
-            let fixedModels = setups.map(setupToOldModel);
+            let fixedModels = setups.map((setup) => setupToOldModel(setup, this._allSoftwareImages));
             Object.values(fixedModels).forEach((model) => {
                 if (model.hasRegion)
                     delete model.hasRegion;
@@ -624,7 +626,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             if(this._responseVariables && this._responseVariables.length > 0) {
                 //console.log("Querying model catalog for " + this._responseVariables);
                 this._dispatched = true;
-                store.dispatch(queryModelsByVariables(this._responseVariables, this._drivingVariables));
+                store.dispatch(queryModelsByVariables(this._responseVariables, this._drivingVariables, this._allSoftwareImages));
             }
         }       
     }
@@ -644,7 +646,10 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         let pc = store.dispatch(modelConfigurationsGet()).then((configs) => {
             this._allConfigs = configs;
         });
-        Promise.all([pm,pv,pc]).then(() => {
+        let si = store.dispatch(softwareImagesGet()).then((images) => {
+            this._allSoftwareImages = images;
+        });
+        Promise.all([pm,pv,pc,si]).then(() => {
             this._baseLoaded = true;
         });
     }
@@ -660,7 +665,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         if(this.pathway && 
                 this.pathway.response_variables != this._responseVariables && 
                 this.pathway.driving_variables != this._drivingVariables && 
-                !this._dispatched) {
+                !this._dispatched && this._allSoftwareImages) {
             this._responseVariables = this.pathway.response_variables;
             this._drivingVariables = this.pathway.driving_variables;
             this._queryModelCatalog();

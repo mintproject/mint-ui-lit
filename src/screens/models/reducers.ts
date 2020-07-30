@@ -20,6 +20,7 @@ export interface Model extends IdNameObject {
     model_configuration?:string,
     parameter_assignment?: string,
     parameter_assignment_details?: string,
+    software_image?: string,
     target_variable_for_parameter_assignment?: string,
     modeled_processes?: string[],
     dimensionality?: number|string,
