@@ -244,12 +244,16 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                                     availableModels.map((model: Model) => {
                                         if(!model)
                                             return;
+                                        console.log('>>', model);
                                         if(this._showAllModels || regionModels.indexOf(model) >=0) {
                                             return html`
                                             <tr>
                                                 <td><input class="checkbox" type="checkbox" data-modelid="${model.id}"
                                                     ?checked="${modelids.indexOf(model.id!) >= 0}"></input></td>
-                                                <td><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></td> 
+                                                <td>
+                                                    <a target="_blank" href="${this._getModelURL(model)}">${model.name}</a>
+                                                    ${model.description ? html`<div>${model.description}</div>` : ''}
+                                                </td> 
                                                 <td>${model.category}</td>
                                                 <td>
                                                 ${model.hasRegion ?

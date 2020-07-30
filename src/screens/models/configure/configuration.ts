@@ -12,7 +12,7 @@ import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
 import { Person, ModelConfiguration, ModelConfigurationFromJSON } from '@mintproject/modelcatalog_client';
-import { modelConfigurationPut, modelConfigurationGet, modelConfigurationDelete } from 'model-catalog/actions';
+import { modelConfigurationPut, modelConfigurationPost, modelConfigurationGet, modelConfigurationDelete } from 'model-catalog/actions';
 import { getURL, getLabel } from 'model-catalog/util';
 import { renderExternalLink } from 'util/ui_renders';
 
@@ -302,6 +302,16 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 </td>
             </tr>
 
+            <tr>
+                <td>Usage notes:</td>
+                <td>
+                    ${this._editing ? html`
+                    <textarea id="form-config-usage-notes" rows="6">${this._config.hasUsageNotes}</textarea>
+                ` : this._config.hasUsageNotes}
+                </td>
+            </tr>
+
+
             ${this._editing ? html`
             <tr>
                 <td>Tag</td>
@@ -345,11 +355,31 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             <wl-button style="float:right;" @click="${this._onEditButtonClicked}">
                 <wl-icon>edit</wl-icon>&ensp;Edit
             </wl-button>
+            <wl-button style="float:right;margin-right: 10px;--primary-hue: 100;"
+                @click="${this._onDuplicateButtonClicked}" disabled>
+                <wl-icon>content_copy</wl-icon>&ensp;Duplicate
+            </wl-button>
             <wl-button style="--primary-hue: 0; --primary-saturation: 75%" @click="${this._onDeleteButtonClicked}">
                 <wl-icon>delete</wl-icon>&ensp;Delete
             </wl-button>
         </div>`}
         `
+    }
+
+    private _onDuplicateButtonClicked () {
+        let name = window.prompt("Enter the name of the new Model Configuration", getLabel(this._config) + " copy");
+        if (name) {
+            let jsonObj = { ...this._config };
+            jsonObj.id = "";
+            jsonObj.label = [name];
+            /* TODO
+            store.dispatch(modelConfigurationPost(ModelConfigurationFromJSON(jsonObj))).then((nconf) => {
+                this._scrollUp();
+                let url = getURL(this._selectedModel, this._selectedVersion, nconf.id);
+                goToPage('models/configure/' + url);
+            })
+            */
+        }
     }
 
     private _onEditButtonClicked () {
@@ -359,10 +389,11 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     }
 
     private _onDeleteButtonClicked () {
-        //TODO
-        store.dispatch(modelConfigurationDelete( this._config ));
-        this._scrollUp();
-        goToPage('models/configure/');
+        if (confirm('This configuration and all its associated resources (variables, files) will be deleted. Are you sure?')) {
+            store.dispatch(modelConfigurationDelete( this._config ));
+            this._scrollUp();
+            goToPage('models/configure/');
+        }
     }
 
     private _onCancelButtonClicked () {
@@ -382,6 +413,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         let inputWebsite : Textfield = this.shadowRoot.getElementById("form-config-website") as Textfield;
         let inputCompLoc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-comp-loc") as HTMLTextAreaElement;
         let inputTag : Select = this.shadowRoot.getElementById("form-config-tag") as Select;
+        let inputNote : Textfield = this.shadowRoot.getElementById("form-config-usage-notes") as Textfield;
 
         let name        : string = inputName        ? inputName        .value : '';
         let category    : string = inputCategory    ? inputCategory    .value : '';
@@ -393,6 +425,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         let website     : string = inputWebsite     ? inputWebsite     .value : '';
         let compLoc     : string = inputCompLoc     ? inputCompLoc     .value : '';
         let tag         : string = inputTag         ? inputTag         .value : '';
+        let notes : string = inputNote ? inputNote.value : '';
 
         if (name && category && desc) {
             let jsonObj = {
@@ -417,6 +450,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             if (website) jsonObj['website'] = [website];
             if (compLoc) jsonObj['hasComponentLocation'] = [compLoc];
             if (tag) jsonObj['tag'] = [tag];
+            if (notes) jsonObj['hasUsageNotes'] = [notes];
 
             // save parameters first
             let promises = [];
