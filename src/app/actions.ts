@@ -384,6 +384,9 @@ const loadPage: ActionCreator<ThunkResult> =
                 store.dispatch(dexplorerSelectDataset(null));
               }
           } else if(subpage == "data-transformations") {
+              if (params[params.length -1] === 'edit' || params[params.length -1] === 'new')
+                store.dispatch(explorerSetMode(params.pop()));
+              else store.dispatch(explorerSetMode('view'));
               if(params.length == 1) {
                 store.dispatch(selectDataTransformation(params[0]));
               }

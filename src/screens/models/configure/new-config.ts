@@ -285,6 +285,14 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
                     <model-catalog-process id="mcprocess"></model-catalog-process>
                 </td>
             </tr>
+
+            <tr>
+                <td>Usage notes:</td>
+                <td>
+                    <textarea id="form-config-usage-notes" rows="6"></textarea>
+                </td>
+            </tr>
+
             <tr>
                 <td>Tag</td>
                 <td>
@@ -370,6 +378,7 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
         let inputWebsite : Textfield = this.shadowRoot.getElementById("form-config-website") as Textfield;
         let inputCompLoc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-comp-loc") as HTMLTextAreaElement;
         let inputTag : Select = this.shadowRoot.getElementById("form-config-tag") as Select;
+        let inputNotes : Textfield = this.shadowRoot.getElementById("form-config-usage-notes") as Textfield;
 
         let name        : string = inputName        ? inputName        .value : ''; 
         let category    : string = inputCategory    ? inputCategory    .value : ''; 
@@ -381,6 +390,7 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
         let website     : string = inputWebsite     ? inputWebsite     .value : '';
         let compLoc     : string = inputCompLoc     ? inputCompLoc     .value : '';   
         let tag         : string = inputTag         ? inputTag         .value : '';   
+        let notes : string = inputNotes ? inputNotes.value : '';
 
         if (name && category && desc) {
             let jsonObj = {
@@ -404,6 +414,7 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
             if (website) jsonObj['website'] = [website];
             if (compLoc) jsonObj['hasComponentLocation'] = [compLoc];
             if (tag) jsonObj['tag'] = [tag];
+            if (notes) jsonObj['hasUsageNotes'] = [notes];
 
             // save parameters first
             let promises = [];

@@ -280,12 +280,14 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         let descEl      = this.shadowRoot.getElementById('edit-setup-desc') as HTMLInputElement;
         let keywordsEl  = this.shadowRoot.getElementById('edit-setup-keywords') as HTMLInputElement;
         let complocEl   = this.shadowRoot.getElementById('edit-setup-comp-loc') as HTMLInputElement;
+        let usageEl     = this.shadowRoot.getElementById('edit-setup-usage-notes') as HTMLInputElement;
 
         if (labelEl && descEl && keywordsEl && complocEl) {
             let label    = labelEl.value;
             let desc     = descEl.value;
             let keywords = keywordsEl.value;
             let compLoc  = complocEl.value;
+            let notes       = usageEl.value;
 
             if (!label) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
@@ -300,6 +302,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             editedSetup.description = [desc];
             editedSetup.keywords = [keywords.split(/ *, */).join('; ')];
             editedSetup.hasComponentLocation = [compLoc];
+            if (notes) editedSetup.hasUsageNotes = [notes];
             /*editedSetup.adjustableParameter = (editedSetup.adjustableParameter||[])
                     .map((uri) => {return  {id: uri} as Parameter});*/
 
@@ -364,7 +367,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         if (this._setup.keywords) {
             keywords = this._setup.keywords[0].split(/ *; */).join(', ');
         }
-
         return html`
         <span id="start"/>
 
@@ -554,6 +556,16 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     `: ''}
                 </td>
             </tr>
+
+            <tr>
+                <td>Usage notes:</td>
+                <td>
+                    ${this._editing ? html`
+                    <textarea id="edit-setup-usage-notes" rows="6">${this._setup.hasUsageNotes}</textarea>
+                ` : this._setup.hasUsageNotes}
+                </td>
+            </tr>
+
         </table>
 
         <wl-title level="4" style="margin-top:1em;">Parameters:</wl-title>
