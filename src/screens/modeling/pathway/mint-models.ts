@@ -67,6 +67,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     private _waiting: boolean = false;
 
     private _dispatched: Boolean = false;
+    private _pendingQuery: Boolean = false;
 
     private _responseVariables: string[] = [];
     private _drivingVariables: string[] = [];
@@ -620,15 +621,22 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     }
 
     _queryModelCatalog() {
-        // Only query for models if we don't already have them
-        // Unless we're in edit mode
-        if(!this.pathway.models || Object.keys(this.pathway.models).length == 0 || this._editMode) {
-            if(this._responseVariables && this._responseVariables.length > 0) {
-                //console.log("Querying model catalog for " + this._responseVariables);
-                this._dispatched = true;
-                store.dispatch(queryModelsByVariables(this._responseVariables, this._drivingVariables, this._allSoftwareImages));
+        if(!this._allSoftwareImages) {
+            // Wait
+            this._pendingQuery = true;
+        }
+        else {
+            this._pendingQuery = false;
+            // Only query for models if we don't already have them
+            // Unless we're in edit mode
+            if(!this.pathway.models || Object.keys(this.pathway.models).length == 0 || this._editMode) {
+                if(this._responseVariables && this._responseVariables.length > 0) {
+                    //console.log("Querying model catalog for " + this._responseVariables);
+                    this._dispatched = true;
+                    store.dispatch(queryModelsByVariables(this._responseVariables, this._drivingVariables, this._allSoftwareImages));
+                }
             }
-        }       
+        }     
     }
 
     protected firstUpdated () {
@@ -648,6 +656,8 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         });
         let si = store.dispatch(softwareImagesGet()).then((images) => {
             this._allSoftwareImages = images;
+            if(this._pendingQuery)
+                this._queryModelCatalog();
         });
         Promise.all([pm,pv,pc,si]).then(() => {
             this._baseLoaded = true;
@@ -665,7 +675,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         if(this.pathway && 
                 this.pathway.response_variables != this._responseVariables && 
                 this.pathway.driving_variables != this._drivingVariables && 
-                !this._dispatched && this._allSoftwareImages) {
+                !this._dispatched) {
             this._responseVariables = this.pathway.response_variables;
             this._drivingVariables = this.pathway.driving_variables;
             this._queryModelCatalog();

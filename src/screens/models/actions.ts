@@ -95,7 +95,6 @@ const dsSpecToIO = (ds: DatasetSpecification) => {
 }
 
 export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages: IdMap<SoftwareImage>) :  Model => {
-    console.log(softwareImages);
     let model: Model = {
         id: setup.id,
         localname: setup.id.substr(setup.id.lastIndexOf("/") + 1),
