@@ -30,6 +30,30 @@ export interface Model extends IdNameObject {
     hasRegion?: any
 };
 
+const getLastPart = (s:string) => {
+    let sp = s.split('/');
+    if (sp && sp.length > 0) return sp.pop();
+    return '';
+}
+
+export const getPathFromModel = (m:Model) => {
+    let path = "";
+    let model = getLastPart(m.original_model);
+    if (model) {
+        path += "/" + model;
+        let version = getLastPart(m.model_version);
+        if (version) {
+            path += "/" + version;
+            let cfg = getLastPart(m.model_configuration)
+            if (cfg) {
+                path += "/" + cfg;
+                if (m.localname) path += "/" + m.localname;
+            }
+        }
+    }
+    return path;
+}
+
 export interface ModelIO extends IdNameObject {
     type?: string,
     variables: string[],

@@ -53,6 +53,13 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
     protected positionAttr : string = "position";
     protected colspan = 3;
 
+    public isSetup : boolean = false;
+
+    public setAsSetup () {
+        this.isSetup = true;
+        this.colspan = 4;
+    }
+
     constructor () {
         super();
         this._inputVariablePresentation = new ModelCatalogVariablePresentation();
@@ -82,10 +89,12 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             <th><b>Input name</b></th>
             <th><b>Description</b></th>
             <th><b>Data Transformations</b></th>
+            ${this.isSetup ? html` <th><b>Selected File</b></th> ` : ''}
         `;
     }
 
     protected _renderRow (r:DatasetSpecification) {
+    //console.log(r.hasFixedResource);
         return html`
             <td>
                 <code>${getLabel(r)}</code> 
@@ -99,6 +108,11 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
                 ${r.hasDataTransformation ? r.hasDataTransformation.map((dt:DataTransformation) =>
                 html `<span class="resource data-transformation">${getLabel(dt)}</span>`) : ''}
             </td>
+            ${this.isSetup ? html`
+            <td>
+                <b>${r.hasFixedResource ? getLabel(r.hasFixedResource[0]) : ''}</b>
+            </td>
+            ` : ''}
         `;
     }
 
