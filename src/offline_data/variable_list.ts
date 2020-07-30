@@ -82,10 +82,6 @@ export const VARIABLES = {
             },
         },
         "Hydrology": {
-            "var13": {
-                "long_name": "Distance Down",
-                "SVO_name": "recharge_volume_flux"
-            },
             "var8": {
                 "long_name": "Flooding Contour",
                 "SVO_name": "flooding_contour"
