@@ -1616,7 +1616,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                                         (cfg.hasSetup || [])
                                             .map((setup:ModelConfigurationSetup) => this._setups[setup.id])
                                             .forEach((setup:ModelConfigurationSetup) => {
-                                                (setup.hasRegion || [])
+                                                (setup && setup.hasRegion ? setup.hasRegion : [])
                                                     .map((region:Region) => db.regions[region.id])
                                                     .forEach((region:Region) => regions.add(region.id));
                                             });
@@ -1748,7 +1748,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 (cfg.hasSetup || [])
                                     .map((setup:ModelConfigurationSetup) => this._setups[setup.id])
                                     .forEach((setup:ModelConfigurationSetup) => {
-                                        (setup.hasRegion || [])
+                                        (setup && setup.hasRegion ? setup.hasRegion : [])
                                             .map((region:Region) => db.regions[region.id])
                                             .forEach((region:Region) => regions.add(region.id));
                                     });

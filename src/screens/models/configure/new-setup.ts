@@ -443,7 +443,13 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             <tr>
                 <td>Component Location:</td>
                 <td>
-                    <textarea id="new-setup-comp-loc" disabled>${this._setup.hasComponentLocation}</textarea>
+                    <textarea id="new-setup-comp-loc" disabled>${
+                        this._config.hasComponentLocation ?
+                        ( this._config.hasComponentLocation[0]["@value"] ?
+                            this._config.hasComponentLocation[0]["@value"]
+                            : this._config.hasComponentLocation[0] )
+                        : ''
+                    }</textarea>
                 </td>
             </tr>
 
