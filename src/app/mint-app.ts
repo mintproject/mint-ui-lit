@@ -369,6 +369,7 @@ export class MintApp extends connect(store)(LitElement) {
 
         <wl-label>Model catalog graph:</wl-label>
         <div style="margin-top: 4px;">
+
             <wl-radio id="gpublic" name="graph" ?checked=${!this._defGraph}></wl-radio>
             <wl-label for="gpublic" style="padding: 5px;"> Public graph (mint@isi.edu) </wl-label>
         </div>

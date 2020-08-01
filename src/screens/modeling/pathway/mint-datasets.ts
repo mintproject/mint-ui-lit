@@ -62,7 +62,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     private _selectResourcesImmediateUpdate: boolean;
 
     private _expandedInput : IdMap<boolean> = {};
-
+  
     private _mcInputs : IdMap<ModelCatalogDatasetSpecification> = {};
 
     private _comparisonFeatures: Array<ComparisonFeature> = [
@@ -150,8 +150,6 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                 let url = getPathFromModel(model);
                 let input_files = model.input_files.filter((input) => !input.value);
                 let fixed_inputs = model.input_files.filter((input) => !!input.value);
-
-                console.log('>', url);
                 
                 // Get any existing ensemble selection for the model
                 let ensembles:DataEnsembleMap = this.pathway.model_ensembles![modelid] || {};
@@ -162,7 +160,6 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                         </wl-title>
                         ${this._mcInputs[model.id] ? this._mcInputs[model.id] : ''}
                     </li>
-
                 <li>
                     <wl-title level="4">User selected Datasets:</wl-title>
                     ${input_files.length == 0 ? 

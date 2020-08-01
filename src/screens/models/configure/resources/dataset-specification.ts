@@ -84,6 +84,30 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
         super._createResource();
     }
 
+    constructor () {
+        super();
+        this._inputVariablePresentation = new ModelCatalogVariablePresentation();
+        this._inputVariablePresentation.setActionMultiselect();
+        this._inputVariablePresentation.setAttribute('id', 'input-variable-presentation');
+
+        this._inputDataTransformation = new ModelCatalogDataTransformation();
+        this._inputDataTransformation.setActionMultiselect();
+        this._inputDataTransformation.setAttribute('id', 'input-data-transformation');
+    }
+
+    protected _editResource (r:DatasetSpecification) {
+        super._editResource(r);
+        let edResource = this._getEditingResource();
+        this._inputVariablePresentation.setResources( edResource.hasPresentation );
+        this._inputDataTransformation.setResources( edResource.hasDataTransformation );
+    }
+
+    protected _createResource () {
+        this._inputVariablePresentation.setResources(null);
+        this._inputDataTransformation.setResources(null);
+        super._createResource();
+    }
+
     protected _renderTableHeader () {
         return html`
             <th><b>Input name</b></th>

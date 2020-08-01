@@ -15,6 +15,7 @@ import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetCo
          explorerSetCalibration, explorerSetMode, registerSetStep } from '../screens/models/model-explore/ui-actions';
 import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread,
          selectDataTransformation } from './ui-actions';
+import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread } from './ui-actions';
 import { auth, db } from '../config/firebase';
 import { User } from 'firebase';
 import { UserPreferences, MintPreferences, UserProfile } from './reducers';

@@ -693,7 +693,6 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
             let db = state.modelCatalog;
             this._modelid = ui.selectedModel;
             this._step = ui.step;
-            //console.log('model:', this._modelid, '| step:', this._step );
             if (!this._model && this._modelid) {
                 if (db && db.models && db.models[this._modelid]) {
                     console.log('model loaded!');

@@ -24,6 +24,7 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
             }
         `];
     }
+
     protected classes : string = "resource variable-presentation";
     protected name : string = "variable presentation";
     protected pname : string = "variable presentations";
@@ -67,6 +68,7 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
                 ${getLabel(r)}
             </span>` : html`${getLabel(r)}`;
     }
+
 
 /*export interface VariablePresentation {
     /* PARAMETER ???
