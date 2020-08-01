@@ -12,17 +12,21 @@ import { IdMap } from 'app/reducers';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { personGet, modelConfigurationSetupPut, regionGet, modelConfigurationSetupDelete, parameterGet, 
+import { modelConfigurationSetupPost,
+         personGet, modelConfigurationSetupPut, regionGet, modelConfigurationSetupDelete, parameterGet, 
          datasetSpecificationGet, gridGet, timeIntervalGet, processGet, softwareImageGet, sampleResourceGet,
          sampleCollectionGet, parameterPut, sampleResourcePut, sampleCollectionPut } from 'model-catalog/actions';
 import { sortByPosition, createUrl, renderExternalLink, renderParameterType } from './util';
+import { getURL, getLabel } from 'model-catalog/util';
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Parameter, SoftwareImage,
-         Person, Process, SampleResource, SampleCollection, Region } from '@mintproject/modelcatalog_client';
+         DatasetSpecification,
+         Person, Process, SampleResource, SampleCollection, Region, ModelConfigurationSetupFromJSON } from '@mintproject/modelcatalog_client';
 
 import "weightless/slider";
 import "weightless/progress-spinner";
 import 'components/loading-dots'
+import 'components/data-catalog-id-checker';
 
 import './grid';
 import './time-interval';
@@ -280,12 +284,14 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         let descEl      = this.shadowRoot.getElementById('edit-setup-desc') as HTMLInputElement;
         let keywordsEl  = this.shadowRoot.getElementById('edit-setup-keywords') as HTMLInputElement;
         let complocEl   = this.shadowRoot.getElementById('edit-setup-comp-loc') as HTMLInputElement;
+        let usageEl     = this.shadowRoot.getElementById('edit-setup-usage-notes') as HTMLInputElement;
 
         if (labelEl && descEl && keywordsEl && complocEl) {
             let label    = labelEl.value;
             let desc     = descEl.value;
             let keywords = keywordsEl.value;
             let compLoc  = complocEl.value;
+            let notes       = usageEl.value;
 
             if (!label) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
@@ -300,6 +306,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             editedSetup.description = [desc];
             editedSetup.keywords = [keywords.split(/ *, */).join('; ')];
             editedSetup.hasComponentLocation = [compLoc];
+            if (notes) editedSetup.hasUsageNotes = [notes];
             /*editedSetup.adjustableParameter = (editedSetup.adjustableParameter||[])
                     .map((uri) => {return  {id: uri} as Parameter});*/
 
@@ -364,7 +371,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         if (this._setup.keywords) {
             keywords = this._setup.keywords[0].split(/ *; */).join(', ');
         }
-
         return html`
         <span id="start"/>
 
@@ -554,6 +560,16 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     `: ''}
                 </td>
             </tr>
+
+            <tr>
+                <td>Usage notes:</td>
+                <td>
+                    ${this._editing ? html`
+                    <textarea id="edit-setup-usage-notes" rows="6">${this._setup.hasUsageNotes}</textarea>
+                ` : this._setup.hasUsageNotes}
+                </td>
+            </tr>
+
         </table>
 
         <wl-title level="4" style="margin-top:1em;">Parameters:</wl-title>
@@ -649,7 +665,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                             <a target="_blank" href="${this._sampleResources[fixed.id].value}">
                                 ${this._sampleResources[fixed.id].value}
                             </a><br/>
-                            <span class="monospaced" style="white-space: nowrap;">${this._sampleResources[fixed.id].dataCatalogIdentifier}</span>
+                            <data-catalog-id-checker id=${this._sampleResources[fixed.id].dataCatalogIdentifier}><data-catalog-id-checker>
                         </span>` : ( this._sampleCollections[fixed.id] ? html`
                         <span>
                             <b>${this._sampleCollections[fixed.id].label}</b> <br/>
@@ -662,7 +678,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                                     <a target="_blank" href="${this._sampleResources[sample.id].value}">
                                         ${this._sampleResources[sample.id].value}
                                     </a><br/>
-                                    <span class="monospaced" style="white-space: nowrap;">${this._sampleResources[sample.id].dataCatalogIdentifier}</span>
+                                    <data-catalog-id-checker id=${this._sampleResources[sample.id].dataCatalogIdentifier}><data-catalog-id-checker>
                                 </div>
                                 ` : html`${sample.id ? sample.id.split('/').pop() : console.log(fixed, sample)} <loading-dots style="--width: 20px"></loading-dots>`}
                             `)}
@@ -699,6 +715,10 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         :html`
         <div style="margin-top: 1em;">
             <wl-button style="float:right;" @click="${this._edit}"> <wl-icon>edit</wl-icon>&ensp;Edit </wl-button>
+            <wl-button style="float:right;margin-right: 10px;--primary-hue: 100;"
+                @click="${this._onDuplicateButtonClicked}" disabled>
+                <wl-icon>content_copy</wl-icon>&ensp;Duplicate
+            </wl-button>
             <wl-button style="--primary-hue: 0; --primary-saturation: 75%" @click="${this._delete}"> <wl-icon>delete</wl-icon>&ensp;Delete </wl-button>
         </div>`}
 
@@ -712,6 +732,42 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         <models-configure-region id="region-configurator" ?active=${this._dialog == 'region'} class="page"></models-configure-region>
         ${renderNotifications()}`
     } 
+
+    private _onDuplicateButtonClicked () {
+        let name = window.prompt("Enter the name of the new Setup", getLabel(this._setup) + " copy");
+        if (name) {
+            let jsonObj = { ...this._setup };
+            jsonObj.id = "";
+            jsonObj.label = [name];
+
+            jsonObj.hasInput = (jsonObj.hasInput || []).map((input: DatasetSpecification) => {
+                input.id = '';
+                input.hasFixedResource = (input.hasFixedResource||[]).map((sample:SampleCollection|SampleResource) => {
+                    sample.id = '';
+                    sample['hasPart'] = ((<SampleCollection>sample).hasPart||[]).map((sr:SampleResource) => {
+                        sr.id = '';
+                        return sr;
+                    });
+                    return sample;
+                });
+                return input;
+            });
+
+            jsonObj.hasParameter = (jsonObj.hasParameter || []).map((param: Parameter) => {
+                param.id = '';
+                return param;
+            });
+
+            /* TODO
+            store.dispatch(modelConfigurationSetupPost(ModelConfigurationSetupFromJSON(jsonObj), this._config)).then((nset) => {
+                this._scrollUp();
+                let url = getURL(this._selectedModel, this._selectedVersion, this._selectedConfig, nset.id);
+                goToPage('models/configure/' + url);
+            })
+            */
+        }
+    }
+
 
     _showGridDialog () {
         this._dialog = 'grid';

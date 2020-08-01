@@ -18,6 +18,7 @@ import { DataResource } from "screens/datasets/reducers";
 import { isObject } from "util";
 import { postJSONResource, getResource } from "util/mint-requests";
 import { getPathwayRunsStatus, TASK_DONE, pathwayTotalRunsChanged, pathwaySummaryChanged } from "util/state_functions";
+import { getPathFromModel } from "../../models/reducers";
 
 @customElement('mint-runs')
 export class MintRuns extends connect(store)(MintPathwayPage) {
@@ -153,6 +154,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 if(!model) {
                     return "";
                 }
+                 console.log(summary, model);
 
                 if(!submitted) {
                     return html`
@@ -161,6 +163,9 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                         <p>
                             The parameter settings you selected require ${summary.total_runs} runs
                             (${nInputs} input resources &#215; ${nParameters} parameters).
+                            <br/>
+                            ${model.output_files.length * summary.total_runs} output files will be generated
+                            (${model.output_files.length} outputs x ${summary.total_runs} runs).
                         </p>
                         <wl-button class="submit"
                             @click="${() => this._submitRuns(model.id)}">Send Runs</wl-button>
@@ -315,7 +320,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             onLoad: function(e: any) {
                 hideNotification("runNotification", me.shadowRoot);
             },
-            onError: function(e:any) {
+            onError: function() {
                 hideNotification("runNotification", me.shadowRoot);
                 alert("Could not connect to the Ensemble Manager!");
             }
@@ -404,16 +409,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         if(!model) {
             return "";
         }
-        let url = this._regionid + '/models/explore/' + model.original_model;
-        if (model.model_version) {
-            url += '/' + model.model_version;
-            if (model.model_configuration) {
-                url += '/' + model.model_configuration;
-                if (model.localname) {
-                    url += '/' + model.localname;
-                }
-            }
-        }
+        let url = this._regionid + '/models/explore' + getPathFromModel(model) + "/";
         return url;
     } 
 

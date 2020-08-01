@@ -27,7 +27,7 @@ export class AppHome extends connect(store)(PageViewElement) {
     private _regions!: Region[];
 
     @property({type: String})
-    private _preferredRegion : string = '';
+    private _mainRegion : string = '';
 
     @property({type: Boolean})
     private _mapReady: boolean = false;
@@ -155,7 +155,7 @@ export class AppHome extends connect(store)(PageViewElement) {
     private _addRegions() {
       let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
       if(map && this._regions) {
-        let prefRegions = this._regions.filter((region:Region) => region.id === this._preferredRegion);
+        let prefRegions = this._regions.filter((region:Region) => region.id === this._mainRegion);
         try {
           map.setRegions(this._regions, this._regionid);
           if (prefRegions.length > 0) map.alignMapToRegions(prefRegions);
@@ -224,11 +224,13 @@ export class AppHome extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         if (state.app && state.app.prefs && state.app.prefs.profile) {
             let profile = state.app.prefs.profile;
-            if (profile.preferredRegion != this._preferredRegion) {
-                this._preferredRegion = profile.preferredRegion;
-            }
-            if (!profile.preferredRegion) {
-                this._preferredRegion = 'south_sudan';
+            if (profile.mainRegion != this._mainRegion) {
+                if (!profile.mainRegion) {
+                    this._mainRegion = 'south_sudan';
+                } else {
+                    this._mainRegion = profile.mainRegion;
+                }
+                if (this._regions) this._addRegions();
             }
         }
 

@@ -11,6 +11,7 @@ import { ExplorerStyles } from '../../model-explore/explorer-styles'
 import { parameterGet, parametersGet, parameterPost, parameterPut, parameterDelete } from 'model-catalog/actions';
 import { Parameter, Unit, ParameterFromJSON } from '@mintproject/modelcatalog_client';
 
+import 'components/data-catalog-id-checker';
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
@@ -97,15 +98,22 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     }
 
     protected _renderRow (r:Parameter) {
+        let label : string = getLabel(r);
+        let dcata : boolean = r.hasDefaultValue && 
+                (label == "gldas_dataset_id" || label == "shapefile_dataset_id" || label == "data_set_id");
         return html`
             <td>
-                <code>${getLabel(r)}</code><br/>
+                <code>${label}</code><br/>
                 <b>${r.description ? r.description[0] : ''}</b>
             </td>
             <td>${renderParameterType(r)}</td>
             <td>
-                ${r.hasDefaultValue ? r.hasDefaultValue : '-'}
-                ${r.usesUnit ? r.usesUnit[0].label : ''}
+                ${dcata ? html`
+                    <data-catalog-id-checker id=${r.hasDefaultValue[0]}><data-catalog-id-checker>
+                ` : html `
+                    ${r.hasDefaultValue ? r.hasDefaultValue : '-'}
+                    ${r.usesUnit ? r.usesUnit[0].label : ''}
+                `}
             </td>
         `;
     }

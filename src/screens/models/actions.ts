@@ -5,10 +5,11 @@ import { Model, ModelParameter } from "./reducers";
 import { Dataset } from "../datasets/reducers";
 
 import { setupsSearchVariable } from 'model-catalog/actions';
-import { ModelConfigurationSetup, DatasetSpecification } from '@mintproject/modelcatalog_client';
+import { ModelConfigurationSetup, DatasetSpecification, SoftwareImage } from '@mintproject/modelcatalog_client';
 import { sortByPosition, getLabel } from 'model-catalog/util';
 
 import { getVariableProperty } from "offline_data/variable_list";
+import { IdMap } from "app/reducers";
 
 export const MODELS_VARIABLES_QUERY = 'MODELS_VARIABLES_QUERY';
 
@@ -93,7 +94,7 @@ const dsSpecToIO = (ds: DatasetSpecification) => {
     return io;
 }
 
-export const setupToOldModel = (setup: ModelConfigurationSetup) :  Model => {
+export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages: IdMap<SoftwareImage>) :  Model => {
     let model: Model = {
         id: setup.id,
         localname: setup.id.substr(setup.id.lastIndexOf("/") + 1),
@@ -109,6 +110,7 @@ export const setupToOldModel = (setup: ModelConfigurationSetup) :  Model => {
         original_model: "", //FIXME row["modelName"] || "",
         model_version: "", //FIXME row["versionName"] || "",
         model_configuration: "", //FIXME row["configurationName"] || "",
+        software_image: setup.hasSoftwareImage ? softwareImages[setup.hasSoftwareImage[0].id].label[0]: "",
         model_type: (setup.type || [])
             .filter(m => m != "ConfigurationSetup" && m != "ModelConfigurationSetup").join(', ')
             .replace('Model', ' Model'),
@@ -153,7 +155,7 @@ export const setupToOldModel = (setup: ModelConfigurationSetup) :  Model => {
 // Query Model Catalog By Output? Variables
 type QueryModelsThunkResult = ThunkAction<void, RootState, undefined, ModelsActionVariablesQuery>;
 export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (response_variables: string[],
-        driving_variables: string[]) => (dispatch) => {
+        driving_variables: string[], softwareImages: IdMap<SoftwareImage>) => (dispatch) => {
     let models = [] as Model[];
     //console.log('queryModelsByVariables(', response_variables, ',', driving_variables, ')');
 
@@ -182,7 +184,7 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
         dispatch({
             type: MODELS_VARIABLES_QUERY,
             variables: response_variables,
-            models: setups.map(setupToOldModel),
+            models: setups.map((setup) => setupToOldModel(setup, softwareImages)),
             loading: false
         });
     })

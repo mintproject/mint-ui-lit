@@ -5,7 +5,7 @@ import datasets, { Dataset, ModelDatasets } from "../../datasets/reducers";
 
 import { DatasetMap, DataEnsembleMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, SubGoal } from "../reducers";
 import { SharedStyles } from "../../../styles/shared-styles";
-import { Model } from "../../models/reducers";
+import { Model, getPathFromModel } from "../../models/reducers";
 import { queryDatasetsByVariables, loadResourcesForDataset } from "../../datasets/actions";
 import { updatePathway } from "../actions";
 import { removeDatasetFromPathway, matchVariables, getPathwayDatasetsStatus, TASK_DONE, getUISelectedSubgoal } from "../../../util/state_functions";
@@ -19,6 +19,8 @@ import { fromTimeStampToDateString } from "util/date-utils";
 import "weightless/snackbar";
 import 'components/loading-dots';
 import { Region } from "screens/regions/reducers";
+
+import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
 
 store.addReducers({
     datasets
@@ -60,6 +62,8 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     private _selectResourcesImmediateUpdate: boolean;
 
     private _expandedInput : IdMap<boolean> = {};
+  
+    private _mcInputs : IdMap<ModelCatalogDatasetSpecification> = {};
 
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
@@ -119,6 +123,9 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
 
         let done = (getPathwayDatasetsStatus(this.pathway) == TASK_DONE);
 
+        console.log(this.pathway.models);
+        console.log(this._mcInputs);
+
         // If models have been selected, go over each model
         return html `
         <p>
@@ -140,6 +147,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
             <ul>
             ${(Object.keys(this.pathway.models) || []).map((modelid) => {
                 let model = this.pathway.models![modelid];
+                let url = getPathFromModel(model);
                 let input_files = model.input_files.filter((input) => !input.value);
                 let fixed_inputs = model.input_files.filter((input) => !!input.value);
                 
@@ -147,38 +155,13 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                 let ensembles:DataEnsembleMap = this.pathway.model_ensembles![modelid] || {};
 
                 return html`
-                ${fixed_inputs.length > 0 ? html`
+                    <li>
+                        <wl-title level="4">Expert modeler has selected the following files:
+                        </wl-title>
+                        ${this._mcInputs[model.id] ? this._mcInputs[model.id] : ''}
+                    </li>
                 <li>
-                    <wl-title level="4">Preselected datasets for ${model.name}</wl-title>
-                    <ul>
-                    ${fixed_inputs.map((input) => html`
-                        <li>
-                            <wl-title level="5">
-                                Input: ${input.name ? input.name : ''}
-                                ${input.value && input.value.resources && input.value.resources.length > 3 ? 
-                                    html`(${input.value.resources.length} resources 
-                                        <a @click="${() => {
-                                            this._expandedInput[input.value.id] = !this._expandedInput[input.value.id];
-                                            this.requestUpdate();
-                                        }}">
-                                            ${this._expandedInput[input.value.id] ? "show less" : "show more"}
-                                        </a>)`
-                                : ""}
-                            </wl-title>
-                            <ul>
-                                ${(input.value.resources || []).map((r, i:number) =>
-                                    (i < 3) || this._expandedInput[input.value.id] ?
-                                html`
-                                <li>
-                                    <a target="_blank" href="${r.url ? r.url : '#'}">${r.name ? r.name : r.id}</a>
-                                </li>
-                                ` : '')}
-                            </ul>
-                        </li>`)}
-                    </ul>
-                </li>` : ''}
-                <li>
-                    <wl-title level="4">Datasets for ${model.name}</wl-title>
+                    <wl-title level="4">User selected Datasets:</wl-title>
                     ${input_files.length == 0 ? 
                     html `<ul><li>No additional datasets were needed for this model.</li></ul>`
                     :
@@ -716,6 +699,29 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         super.setPathway(state);
         if(this.pathway && this.pathway.models != this._models) {
             this._models = this.pathway.models!;
+            if (Object.keys(this._models).length > 0) {
+                Object.values(this._models).forEach((m:Model) => {
+                    let fixed = m.input_files.filter((i) => !!i.value);
+                    if (fixed.length > 0) {
+                        if (!this._mcInputs[m.id]) {
+                            this._mcInputs[m.id] = new ModelCatalogDatasetSpecification();
+                            this._mcInputs[m.id].inline = false;
+                            this._mcInputs[m.id].isSetup = true;
+                            this._mcInputs[m.id].colspan = 4;
+                            //this._mcInputs.setAsSetup();
+                        }
+                        let fakeInputs = fixed.map((i) => {
+                            return {
+                                id: i.id,
+                                label: [i.name]
+                            };
+                        });
+                        this._mcInputs[m.id].setResources(fakeInputs);
+                    }
+                });
+            }
+
+
             this.queryDataCatalog();
             if(this.pathway.id != pathwayid) 
                 this._resetEditMode();

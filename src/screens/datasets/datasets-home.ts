@@ -1,4 +1,3 @@
-
 import { html, customElement, css, property } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
@@ -9,9 +8,10 @@ import dataExplorerUI from './ui-reducers';
 import { connect } from 'pwa-helpers/connect-mixin';
 
 import './datasets-browse';
-import './datasets-register';
+//import './datasets-register';
 import './datasets-quality-workflows';
 import './datasets-rs-workflows';
+import './data-transformation-list'
 import '../../components/nav-title';
 
 store.addReducers({
@@ -53,6 +53,9 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
             case 'rs-workflows':
                 nav.push({label: 'Remote Sensing', url: 'datasets/rs-workflows'});
                 break;
+            case 'data-transformations':
+                nav.push({label: 'Data transformations', url: 'datasets/data-transformations'});
+                break;
             default:
                 break;
         }
@@ -66,9 +69,13 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
                     <div>Browse Datasets</div>
                 </a>
                 <!--a href="this._regionid/datasets/register"-->
-                <a disabled>
+                <!--a disabled>
                     <wl-icon>library_add</wl-icon>
                     <div>Add Datasets</div>
+                </a-->
+                <a href="${this._regionid}/datasets/data-transformations">
+                    <wl-icon style="margin-top: 4px;">addchart</wl-icon>
+                    <div style="margin-top: -10px;">Data Transformations</div>
                 </a>
                 <a href="${this._regionid}/datasets/quality-workflows">
                     <wl-icon>high_quality</wl-icon>
@@ -81,7 +88,8 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
             </div>
 
             <datasets-browse class="page" ?active="${this._subpage == 'browse'}"></datasets-browse>
-            <datasets-register class="page" ?active="${this._subpage == 'register'}"></datasets-register>
+            <data-transformation-list class="page" ?active="${this._subpage == 'data-transformations'}"></data-transformation-list>
+            <!--datasets-register class="page" ?active="{this._subpage == 'register'}"></datasets-register-->
             <datasets-quality-workflows class="page" ?active="${this._subpage == 'quality-workflows'}"></datasets-quality-workflows>
             <datasets-rs-workflows class="page" ?active="${this._subpage == 'rs-workflows'}"></datasets-rs-workflows>
         `

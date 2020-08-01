@@ -16,6 +16,15 @@ import { Select } from 'weightless/select';
 
 @customElement('model-catalog-variable-presentation')
 export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalogResource)<VariablePresentation> {
+    static get styles() {
+        return [ExplorerStyles, SharedStyles, this.getBasicStyles(), css`
+            .small-tooltip:hover::after {
+                width: 200px;
+                left: 30%;
+            }
+        `];
+    }
+
     protected classes : string = "resource variable-presentation";
     protected name : string = "variable presentation";
     protected pname : string = "variable presentations";
@@ -43,8 +52,23 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
             <wl-textfield id="var-long-name" label="Long Name" 
                 value=${edResource && edResource.hasLongName ? edResource.hasLongName[0] : ''}>
             </wl-textfield>
+            <div style="padding: 10px 0px;">
+                <div style="padding: 5px 0px; font-weight: bold;">Standard Variables</div>
+                ${edResource && edResource.hasStandardVariable.map((s) => html`
+                <span> ${getLabel(s)} </span>
+                `)}
+            </div>
         </form>`;
     }
+
+    protected _renderResource (r:VariablePresentation) {
+        let desc : string = r.description ? r.description[0] : '';
+        return desc ? html`
+            <span class="tooltip small-tooltip" tip="${desc}">
+                ${getLabel(r)}
+            </span>` : html`${getLabel(r)}`;
+    }
+
 
 /*export interface VariablePresentation {
     /* PARAMETER ???
