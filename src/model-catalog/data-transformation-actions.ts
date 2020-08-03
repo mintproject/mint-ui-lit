@@ -110,7 +110,7 @@ export const dataTransformationPut: ActionThunk<Promise<DataTransformation>, MCA
     }
 }
 
-export const dataTransformationDelete: ActionThunk<void, MCADataTransformationDelete> = (dataTransformation:DataTransformation) => (dispatch) => {
+export const dataTransformationDelete: ActionThunk<Promise<void>, MCADataTransformationDelete> = (dataTransformation:DataTransformation) => (dispatch) => {
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {
