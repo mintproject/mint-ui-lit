@@ -15,7 +15,6 @@ import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetCo
          explorerSetCalibration, explorerSetMode, registerSetStep } from '../screens/models/model-explore/ui-actions';
 import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread,
          selectDataTransformation } from './ui-actions';
-import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread } from './ui-actions';
 import { auth, db } from '../config/firebase';
 import { User } from 'firebase';
 import { UserPreferences, MintPreferences, UserProfile } from './reducers';
@@ -55,7 +54,7 @@ type ThunkResult = ThunkAction<void, RootState, undefined, AppAction>;
 export const OFFLINE_DEMO_MODE = false;
 
 /* This retrieve the user profile from the db. Maybe we should move this to other file. */
-type UserProfileThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchUserPreferences>;
+type UserProfileThunkResult = ThunkAction<Promise<any>, RootState, undefined, AppActionFetchUserPreferences>;
 export const fetchUserProfile: ActionCreator<UserProfileThunkResult> = (user:User) => (dispatch) => {
     let ref = db.collection('users').doc(user.email);
     let q = ref.get()
