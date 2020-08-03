@@ -480,10 +480,20 @@ export class ModelView extends connect(store)(PageViewElement) {
         } 
     }
 
+    _clearVariables () {
+        /* This does not work 
+        let wls = this.shadowRoot.querySelectorAll('wl-expansion');
+        wls.forEach((exp) => exp.checked = false); */
+        if (this._tab === "variables") {
+            this._tab = "overview";
+        }
+    }
+
     _onConfigChange () {
         let configSelectorWl : Select = this.shadowRoot!.getElementById('config-selector') as Select;
         let configSelector : HTMLSelectElement | null = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
         if (configSelectorWl && configSelector) {
+            this._clearVariables();
             let cfgURL : string = configSelector.value;
             let ver = Object.values(this._versions).filter((ver:SoftwareVersion) =>
                 (ver.hasConfiguration||[]).some((cfg:ModelConfiguration) => cfg.id === cfgURL)
@@ -528,6 +538,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         let setupSelectorWl : Select = this.shadowRoot!.getElementById('setup-selector') as Select;
         let setupSelector : HTMLSelectElement | null = setupSelectorWl? setupSelectorWl.getElementsByTagName('select')[0] : null;
         if (setupSelectorWl && setupSelector) {
+            this._clearVariables();
             let setupURL : string = setupSelector.value;
             goToPage(this.PREFIX + getURL(this._model, this._version, this._config, setupURL));
         }
@@ -1397,6 +1408,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     private _expandDS (ds: DatasetSpecification) {
+        console.log('>', ds.id);
         if (!this._loading[ds.id]) {
             if (!this._loadedPresentations[ds.id]) {
                 let db = (store.getState() as RootState).modelCatalog;

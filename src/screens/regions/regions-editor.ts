@@ -58,6 +58,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     @property({type: Boolean})
     private _mapReady: boolean = false;
 
+    @property({type: Boolean})
+    private _mapEmpty: boolean = true;
+
     @property({type: Object})
     private _bbox_preview: BoundingBox[] = [];
 
@@ -81,6 +84,18 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 top: -10px;
                 position: sticky;
                 width: 100%;
+            }
+
+            .empty-message {
+                height: var(--map-height, calc(100% - 45px));
+                background: #DDD;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                font-weight: bold;
+                flex-direction: column;
+                color: dimgrey;
             }
 
             .desc-grid {
@@ -184,13 +199,24 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             </div>
         </div>
 
-        ${!this._mapReady ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
+        ${!this._mapReady ?  html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
         <google-map-custom class="map" api-key="${GOOGLE_API_KEY}" 
-            .style="visibility: ${this._mapReady ? 'visible': 'hidden'}"
+            .style="visibility: ${this._mapReady? 'visible': 'hidden'}; display: ${this._mapEmpty? 'unset' : 'block'}"
             disable-default-ui="true" draggable="true"
             @click="${this._handleMapClick}"
             mapTypeId="terrain" styles="${this._mapStyles}">
         </google-map-custom>
+
+        ${this._mapReady && this._mapEmpty ? html`
+        <div class="empty-message">
+            <div>This category does not have any region yet.</div>
+            <div>
+                Click 
+                <wl-icon @click="${this._showAddRegionsDialog}" class="actionIcon bigActionIcon">note_add</wl-icon>
+                to add new regions.
+            </div>
+        </div>
+        ` : ''}
 
         ${this._selectedRegion ? html`
         <div class="bottom-panel">
@@ -246,21 +272,24 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     public addRegionsToMap() {   
         let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
         if (map && this._regions) {
-            try {
-                map.setRegions(this._regions.filter(
-                    (region) => region.region_type == (this._selectedSubcategory ? this._selectedSubcategory : this.regionType)),
-                    this._selectedSubregionId);
-                (this._bbox_preview || []).forEach((bbox) => map.addBoundingBox(bbox));
-                this._mapReady = true;
-            }
-            catch {
-              map.addEventListener("google-map-ready", (e) => {
-                map.setRegions(this._regions.filter(
-                    (region) => region.region_type == (this._selectedSubcategory ? this._selectedSubcategory : this.regionType)),
-                    this._selectedSubregionId);
-                (this._bbox_preview || []).forEach((bbox) => map.addBoundingBox(bbox));
-                this._mapReady = true;
-              })
+            let selectedRegions = this._regions.filter((region) => 
+                    region.region_type == (this._selectedSubcategory ? this._selectedSubcategory : this.regionType))
+            if (selectedRegions.length > 0) {
+                this._mapEmpty = false;
+                try {
+                    map.setRegions(selectedRegions, this._selectedSubregionId);
+                    (this._bbox_preview || []).forEach((bbox) => map.addBoundingBox(bbox));
+                    this._mapReady = true;
+                }
+                catch {
+                  map.addEventListener("google-map-ready", (e) => {
+                    map.setRegions(regions.region_type, this._selectedSubregionId);
+                    (this._bbox_preview || []).forEach((bbox) => map.addBoundingBox(bbox));
+                    this._mapReady = true;
+                  })
+                }
+            } else {
+                this._mapEmpty = true;
             }
         }
     }
