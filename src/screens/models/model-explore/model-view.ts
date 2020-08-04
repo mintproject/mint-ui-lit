@@ -12,7 +12,7 @@ import { modelGet, versionGet, versionsGet, modelConfigurationGet, modelConfigur
          modelConfigurationSetupGet, imageGet, personGet, regionsGet, organizationGet, fundingInformationGet,
          timeIntervalGet, gridGet, processGet, setupGetAll, visualizationGet, sourceCodeGet, softwareImageGet,
          parameterGet, datasetSpecificationGet, interventionGet, variablePresentationGet } from 'model-catalog/actions';
-import { capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition, isExecutable } from 'model-catalog/util';
+import { setupInRegion, capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition, isExecutable } from 'model-catalog/util';
 import { GalleryEntry } from 'components/image-gallery';
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -517,6 +517,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             setupSelector.add(unselect, null);
             (this._config.hasSetup || [])
                     .map((setup:ModelConfigurationSetup) => this._setups[setup.id] ? this._setups[setup.id] : setup)
+                    .filter((setup:ModelConfigurationSetup) => setupInRegion(setup, this._region.model_catalog_uri, this._regions))
                     .forEach((setup:ModelConfigurationSetup) => {
                 let newOption = document.createElement('option');
                 newOption.text = '\xA0\xA0' + getLabel(setup);
@@ -1891,15 +1892,11 @@ export class ModelView extends connect(store)(PageViewElement) {
         return this._loading[ti.id] ? 
             html`${getId(ti)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
             : html`<span class="resource time-interval">
-                <div style="display: flex; justify-content: space-between;">
-                    <span style="text-decoration: underline;">${getLabel(this._timeIntervals[ti.id])}</span>
-                    <span style="margin-left:20px;">
-                        ${this._timeIntervals[ti.id].intervalValue}
-                        ${this._timeIntervals[ti.id].intervalUnit && this._timeIntervals[ti.id].intervalUnit.length > 0 ? 
-                            getLabel(this._timeIntervals[ti.id].intervalUnit[0]) : ''}
-                    </span>
-                </div>
-                <div style="font-style: oblique; color: gray;">${this._timeIntervals[ti.id].description}</div>
+                <span>
+                    ${this._timeIntervals[ti.id].intervalValue}
+                    ${this._timeIntervals[ti.id].intervalUnit && this._timeIntervals[ti.id].intervalUnit.length > 0 ? 
+                        getLabel(this._timeIntervals[ti.id].intervalUnit[0]) : ''}
+                </span>
             </span>`
     }
 
@@ -1923,33 +1920,28 @@ export class ModelView extends connect(store)(PageViewElement) {
             html`${getId(grid)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
             : html`<span class="resource grid">
                 <div style="display: flex; justify-content: space-between;">
-                    <span style="text-decoration: underline;">${getLabel(this._grids[grid.id])}</span>
-                    <span style="margin-left:20px; font-style: oblique; color: gray;">
+                    <span style="text-decoration: underline;">
                         ${this._grids[grid.id].type.filter(t => t != 'Grid')}
+                    </span>
+                    <span style="margin-left:20px;">
+                        ${this._grids[grid.id].hasDimension && this._grids[grid.id].hasDimension.length > 0 ?  html`
+                            <span>Dimensions:</span>
+                            <span class="number"> ${this._grids[grid.id].hasDimension[0]} </span>` : ""}
                     </span>
                 </div>
                 <div style="display: flex; justify-content: space-between;">
+                    ${this._grids[grid.id].hasSpatialResolution && this._grids[grid.id].hasSpatialResolution.length > 0 ?
+                    html`
                     <span>
                         <span>Spatial resolution:</span>
-                        <span class="monospaced">
-                            ${this._grids[grid.id].hasSpatialResolution && this._grids[grid.id].hasSpatialResolution.length > 0 ?
-                                this._grids[grid.id].hasSpatialResolution[0] : '-'}
-                        </span>
-                    </span>
-                        <span>Dimensions:</span>
-                        <span class="number">
-                            ${this._grids[grid.id].hasDimension && this._grids[grid.id].hasDimension.length > 0 ?
-                                this._grids[grid.id].hasDimension[0] : '-'}
-                        </span>
-                    <span>
-                    </span>
-                    <span>
+                        <span class="monospaced"> ${this._grids[grid.id].hasSpatialResolution[0]} </span>
+                    </span>`: ""}
+                    ${this._grids[grid.id].hasShape && this._grids[grid.id].hasShape.length > 0 ? html`
+                    <span style="${this._grids[grid.id].hasSpatialResolution && this._grids[grid.id].hasSpatialResolution.length > 0 ?
+                            'margin-left:20px;' : ''}">
                         <span>Shape:</span>
-                        <span class="monospaced">
-                            ${this._grids[grid.id].hasShape && this._grids[grid.id].hasShape.length > 0 ?
-                                this._grids[grid.id].hasShape[0] : '-'}
-                        </span>
-                    </span>
+                        <span class="monospaced"> ${this._grids[grid.id].hasShape[0]} </span>
+                    </span>` : ""}
                 </div>
             </span>`
     }

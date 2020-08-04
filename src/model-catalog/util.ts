@@ -1,4 +1,5 @@
 import { Region, SoftwareVersion, Model, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
+import { IdMap } from "app/reducers";
 
 const TAG_LATEST = "latest";
 const TAG_DEPRECATED = "deprecated";
@@ -49,6 +50,13 @@ export const isMainRegion = (region:Region) : boolean => {
         || region.id === "https://w3id.org/okn/i/mint/Ethiopia"
         || region.id === "https://w3id.org/okn/i/mint/South_Sudan"
         || region.id === "https://w3id.org/okn/i/mint/Texas";
+}
+
+export const setupInRegion = (setup: ModelConfigurationSetup, parentRegionId: string, allRegions? : IdMap<Region>) => {
+    if (!setup.hasRegion || setup.hasRegion.length == 0)
+        return true;
+    let regions = allRegions ? setup.hasRegion.map((region:Region) => allRegions[region.id]) : setup.hasRegion;
+    return regions.some((region:Region) => isSubregion(parentRegionId, region));
 }
 
 export const isEmpty = (obj:object) : boolean => Object.keys(obj).length === 0;

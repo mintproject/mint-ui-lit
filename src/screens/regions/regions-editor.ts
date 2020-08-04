@@ -283,7 +283,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 }
                 catch {
                   map.addEventListener("google-map-ready", (e) => {
-                    map.setRegions(regions.region_type, this._selectedSubregionId);
+                    map.setRegions(selectedRegions, this._selectedSubregionId);
                     (this._bbox_preview || []).forEach((bbox) => map.addBoundingBox(bbox));
                     this._mapReady = true;
                   })
@@ -525,10 +525,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
               return function(eread: any) {
                 let geojson = JSON.parse(eread.target.result);
                 let newregions = [];
-                if(geojson.type == "FeatureCollection") {
+                if (geojson.type == "FeatureCollection") {
                     newregions = geojson.features;
-                }
-                else {
+                } else {
                     newregions = [ geojson ];
                 }
                 me._newregions = newregions.filter((region) => 
