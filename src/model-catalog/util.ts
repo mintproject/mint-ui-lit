@@ -30,11 +30,11 @@ export const uriToId = (uri:string) : string => {
 }
 
 export const getId = (obj: any) : string => {
-    return uriToId(obj.id);
+    return obj.id ? uriToId(obj.id) : "";
 }
 
 export const getLabel = (obj: any) : string => {
-    return obj.label && obj.label.length > 0 ? obj.label[0] : getId(obj);
+    return obj && obj.label && obj.label.length > 0 ? obj.label[0] : getId(obj);
 }
 
 export const isSubregion = (parentRegionId:string, region:Region) : boolean => {

@@ -1362,7 +1362,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         : html`
                         <table class="pure-table pure-table-bordered">
                             <thead>
-                                <th>Label</th>
+                                <th>Name</th>
                                 <th>Long Name</th>
                                 <th>Description</th>
                                 <th>Standard Name</th>

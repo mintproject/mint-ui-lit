@@ -285,6 +285,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         let keywordsEl  = this.shadowRoot.getElementById('edit-setup-keywords') as HTMLInputElement;
         let complocEl   = this.shadowRoot.getElementById('edit-setup-comp-loc') as HTMLInputElement;
         let usageEl     = this.shadowRoot.getElementById('edit-setup-usage-notes') as HTMLInputElement;
+        let tagEl       = this.shadowRoot.getElementById('edit-setup-tag') as HTMLInputElement;
 
         if (labelEl && descEl && keywordsEl && complocEl) {
             let label    = labelEl.value;
@@ -292,6 +293,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             let keywords = keywordsEl.value;
             let compLoc  = complocEl.value;
             let notes       = usageEl.value;
+            let tag = tagEl.value;
 
             if (!label) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
@@ -307,6 +309,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             editedSetup.keywords = [keywords.split(/ *, */).join('; ')];
             editedSetup.hasComponentLocation = [compLoc];
             if (notes) editedSetup.hasUsageNotes = [notes];
+            if (tag) editedSetup.tag = [tag];
             /*editedSetup.adjustableParameter = (editedSetup.adjustableParameter||[])
                     .map((uri) => {return  {id: uri} as Parameter});*/
 
@@ -428,7 +431,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         : authorUri + ' ')
                     )}
                     ${this._authorsLoading.size > 0 ? html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`
-                    : 'No authors'}
+                    : 'None specified'}
                     ${this._editing ? html`
                     <wl-button style="float:right;" class="small" flat inverted
                         @click="${this._showAuthorDialog}"><wl-icon>edit</wl-icon></wl-button>
@@ -468,7 +471,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         </span>`
                         : html`${this._setup.hasSoftwareImage[0]['id']} ${this._softwareImageLoading ?
                             html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`)
-                    : 'No software image'}
+                    : 'None specified'}
                 </td>
             </tr>
 
@@ -506,7 +509,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                                     ${this._grid.hasShape && this._grid.hasShape.length > 0 ? this._grid.hasShape[0] : '-'}
                                 </span>
                             </div>
-                        </span>` : 'No grid'
+                        </span>` : 'None specified'
                     )}
                     ${this._editing ? html`
                     <wl-button style="float:right;" class="small" flat inverted
@@ -532,7 +535,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                                 </span>
                             </span>
                             <span style="font-style: oblique; color: gray;"> ${this._timeInterval.description} </span>
-                        </span>` : 'No time interval'
+                        </span>` : 'None specified'
                     )}
                     ${this._editing ? html`
                     <wl-button style="float:right;" class="small" flat inverted
@@ -553,7 +556,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         </span>`
                         : procUri + ' '))}
                     ${this._processesLoading.size > 0 ? html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`
-                    : 'No processes'}
+                    : 'None specified'}
                     ${this._editing ? html`
                     <wl-button style="float:right;" class="small" flat inverted
                         @click="${this._showProcessDialog}"><wl-icon>edit</wl-icon></wl-button>
@@ -570,6 +573,19 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 </td>
             </tr>
 
+            ${this._editing ? html`
+            <tr>
+                <td>Tag</td>
+                <td>
+                    <wl-select id="edit-setup-tag" name="Tag"
+                            value="${this._setup && this._setup.tag ? this._setup.tag[0] : ''}">
+                        <option value="">None</option>
+                        <option value="latest">Latest</option>
+                        <option value="deprecated">Deprecated</option>
+                        <option value="preferred">Preferred</option>
+                    </wl-select>
+                </td>
+            </tr>`:''}
         </table>
 
         <wl-title level="4" style="margin-top:1em;">Parameters:</wl-title>
@@ -582,7 +598,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                 ${this._editing? html`<col span="1">` : ''}
             </colgroup>
             <thead>
-                <th><b>Label</b></th>
+                <th><b>Name</b></th>
                 <th><b>Type</b></th>
                 <th class="ta-right" style="white-space:nowrap;">
                     <b>Value in this setup</b>
