@@ -90,7 +90,7 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
                     href="${this._getModeURL('datasets')}">Datasets</li>
                 <a id="parameters_breadcrumb" 
                     class="${this._getBreadcrumbClass('parameters')}" 
-                    href="${this._getModeURL('parameters')}">Setup</li>
+                    href="${this._getModeURL('parameters')}">Parameters</li>
                 <a id="runs_breadcrumb" 
                     class="${this._getBreadcrumbClass('runs')}" 
                     href="${this._getModeURL('runs')}">Runs</li>

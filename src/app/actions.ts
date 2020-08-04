@@ -55,7 +55,7 @@ type ThunkResult = ThunkAction<void, RootState, undefined, AppAction>;
 export const OFFLINE_DEMO_MODE = false;
 
 /* This retrieve the user profile from the db. Maybe we should move this to other file. */
-type UserProfileThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchUserPreferences>;
+type UserProfileThunkResult = ThunkAction<Promise<any>, RootState, undefined, AppActionFetchUserPreferences>;
 export const fetchUserProfile: ActionCreator<UserProfileThunkResult> = (user:User) => (dispatch) => {
     let ref = db.collection('users').doc(user.email);
     let q = ref.get()

@@ -173,7 +173,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected classes : string = "resource";
     protected name : string = "resource";
     protected pname : string = "resources";
-    protected colspan : number = 2;
+    public colspan : number = 2;
     protected positionAttr : string = "";
     protected resourcesGet;
     protected resourceGet;
@@ -259,7 +259,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     protected _renderTableHeader () {
         return html`
-            <th><b>Label</b></th>
+            <th><b>Name</b></th>
             <th><b>Description</b></th>
         `;
     }

@@ -141,7 +141,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                         ${!this._hideModels ? "fullscreen" : "fullscreen_exit"}
                     </wl-icon>
                     ${this._selectedConfig && !this._creating ? html`
-                    <span style="float:right;" class="custom-button" @click="${this._goToCatalog}">See on catalog</span>
+                    <span style="float:right;" class="custom-button" @click="${this._goToCatalog}">See in catalog</span>
                     `: ''}
                     <div class="cltrow_padded">
                         <div class="cltmain">

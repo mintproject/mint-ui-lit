@@ -69,23 +69,6 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
             </span>` : html`${getLabel(r)}`;
     }
 
-
-/*export interface VariablePresentation {
-    /* PARAMETER ???
-    hasDefaultValue?: Array<object> | null;
-    hasStandardVariable?: Array<StandardVariable> | null;
-    hasMinimumAcceptedValue?: Array<object> | null;
-    hasMaximumAcceptedValue?: Array<object> | null;
-    usesUnit?: Array<Unit> | null;
-
-    hasConstraint?: Array<string> | null;
-    partOfDataset?: Array<DatasetSpecification> | null;
-
-    hasLongName?: Array<string> | null;
-    hasShortName?: Array<string> | null;
-
-}*/
-
     protected _getResourceFromForm () {
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById('var-label') as Textfield;
