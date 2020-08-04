@@ -51,7 +51,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
     protected resourcePut = datasetSpecificationPut;
     protected resourceDelete = datasetSpecificationDelete;
     protected positionAttr : string = "position";
-    protected colspan = 3;
+    public colspan = 3;
 
     public isSetup : boolean = false;
 

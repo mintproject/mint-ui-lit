@@ -24,6 +24,7 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
             }
         `];
     }
+
     protected classes : string = "resource variable-presentation";
     protected name : string = "variable presentation";
     protected pname : string = "variable presentations";
@@ -67,22 +68,6 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
                 ${getLabel(r)}
             </span>` : html`${getLabel(r)}`;
     }
-
-/*export interface VariablePresentation {
-    /* PARAMETER ???
-    hasDefaultValue?: Array<object> | null;
-    hasStandardVariable?: Array<StandardVariable> | null;
-    hasMinimumAcceptedValue?: Array<object> | null;
-    hasMaximumAcceptedValue?: Array<object> | null;
-    usesUnit?: Array<Unit> | null;
-
-    hasConstraint?: Array<string> | null;
-    partOfDataset?: Array<DatasetSpecification> | null;
-
-    hasLongName?: Array<string> | null;
-    hasShortName?: Array<string> | null;
-
-}*/
 
     protected _getResourceFromForm () {
         // GET ELEMENTS

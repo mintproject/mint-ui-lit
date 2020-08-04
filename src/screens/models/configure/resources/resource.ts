@@ -173,7 +173,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected classes : string = "resource";
     protected name : string = "resource";
     protected pname : string = "resources";
-    protected colspan : number = 2;
+    public colspan : number = 2;
     protected positionAttr : string = "";
     protected resourcesGet;
     protected resourceGet;
@@ -301,7 +301,6 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     protected _renderEmpty () {
         return 'None specified';
-        //return 'No ' + this.name;
     }
 
     private _renderStatus (r:T) {

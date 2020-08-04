@@ -311,7 +311,6 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 </td>
             </tr>
 
-
             ${this._editing ? html`
             <tr>
                 <td>Tag</td>
