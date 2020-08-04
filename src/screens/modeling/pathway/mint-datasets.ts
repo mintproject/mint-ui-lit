@@ -62,6 +62,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     private _selectResourcesImmediateUpdate: boolean;
 
     private _expandedInput : IdMap<boolean> = {};
+
     private _mcInputs : IdMap<ModelCatalogDatasetSpecification> = {};
 
     private _comparisonFeatures: Array<ComparisonFeature> = [

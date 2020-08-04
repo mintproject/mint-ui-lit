@@ -12,6 +12,7 @@ import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
 import { Person, ModelConfiguration, ModelConfigurationFromJSON } from '@mintproject/modelcatalog_client';
+
 import { modelConfigurationPut, modelConfigurationPost, modelConfigurationGet, modelConfigurationDelete } from 'model-catalog/actions';
 import { getURL, getLabel } from 'model-catalog/util';
 import { renderExternalLink } from 'util/ui_renders';
@@ -414,6 +415,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         let inputCompLoc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-comp-loc") as HTMLTextAreaElement;
         let inputTag : Select = this.shadowRoot.getElementById("form-config-tag") as Select;
         let inputNote : Textfield = this.shadowRoot.getElementById("form-config-usage-notes") as Textfield;
+
 
         let name        : string = inputName        ? inputName        .value : '';
         let category    : string = inputCategory    ? inputCategory    .value : '';
