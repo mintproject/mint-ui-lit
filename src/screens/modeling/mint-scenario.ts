@@ -256,6 +256,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                 <wl-icon @click="${this._editPathwayDialog}" 
                                     class="actionIcon addIcon">note_add</wl-icon>
                             </div>
+                            ${this._hideObjectives ? '' : html`
                             <div style="font-size:12.5px; color: #888; padding: 5px; padding-top: 0px">
                                 For a given task, you can investigate different initial conditions or different models.  
                                 Each of them can be explored by creating a new modeling thread for that task.
@@ -302,6 +303,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                 </li>
                             ` : ''}
                             </ul>
+                            `}
                         </div>
 
                         <mint-pathway ?active="${this._selectedSubgoal}"
