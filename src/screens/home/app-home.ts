@@ -155,7 +155,8 @@ export class AppHome extends connect(store)(PageViewElement) {
     private _addRegions() {
       let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
       if(map && this._regions) {
-        let prefRegions = this._regions.filter((region:Region) => region.id === this._mainRegion);
+        let prefRegions = this._regions.filter((region:Region) => 
+                region.id === (this._regionid ? this._regionid : this._mainRegion));
         try {
           map.setRegions(this._regions, this._regionid);
           if (prefRegions.length > 0) map.alignMapToRegions(prefRegions);

@@ -45,6 +45,10 @@ export class ScenariosList extends connect(store)(PageViewElement) {
     return [
       SharedStyles,
       css`
+      .small-notes {
+        font-size: 13px;
+        color: black;
+      }
       `
     ];
   }
@@ -89,6 +93,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
                 </div>
               </div>
               <wl-title level="4" style="margin: 0">${scenario.name}</wl-title>
+              ${scenario.notes ? html`<div class="small-notes"><b>Notes:</b> ${scenario.notes}</div>` : ''}
               <div>
                 Time Period: ${fromTimeStampToDateString(scenario.dates.start_date)} to 
                 ${fromTimeStampToDateString(scenario.dates.end_date)}
@@ -157,6 +162,14 @@ export class ScenariosList extends connect(store)(PageViewElement) {
               <input name="scenario_to" type="date"></input>
             </div>
           </div>
+
+          <p></p>
+          <div class="input_full">
+            <label>Notes</label>
+          </div>
+          <div class="input_full">
+            <textarea style="color:unset; font: unset;" name="scenario_notes" rows="4"></textarea>
+          </div>
         </form>
       </div>
       <div slot="footer">
@@ -171,6 +184,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
     let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#scenarioForm")!;
     (form.elements["scenarioid"] as HTMLInputElement).value = "";
     (form.elements["scenario_name"] as HTMLInputElement).value = "";
+    (form.elements["scenario_notes"] as HTMLInputElement).value = "";
     (form.elements["scenario_from"] as HTMLInputElement).value = "";
     (form.elements["scenario_to"] as HTMLInputElement).value = "";
 
@@ -186,6 +200,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
         let scenario_subregion = (form.elements["scenario_subregion"] as HTMLInputElement).value;
         let scenario_from = (form.elements["scenario_from"] as HTMLInputElement).value;
         let scenario_to = (form.elements["scenario_to"] as HTMLInputElement).value;
+        let scenario_notes = (form.elements["scenario_notes"] as HTMLInputElement).value;
 
         let scenario = {
           name: scenario_name,
@@ -194,7 +209,8 @@ export class ScenariosList extends connect(store)(PageViewElement) {
           dates: {
             start_date: toTimeStamp(scenario_from),
             end_date: toTimeStamp(scenario_to)
-          }
+          },
+          notes: scenario_notes,
         } as Scenario;
         if(scenarioid) {
           scenario.id = scenarioid;
@@ -233,6 +249,7 @@ export class ScenariosList extends connect(store)(PageViewElement) {
             (form.elements["scenario_subregion"] as HTMLInputElement).value = scenario.subregionid;
             (form.elements["scenario_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
             (form.elements["scenario_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
+            (form.elements["scenario_notes"] as HTMLInputElement).value = scenario.notes? scenario.notes : "";
             showDialog("scenarioDialog", this.shadowRoot!);
         }
     }

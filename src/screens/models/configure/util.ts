@@ -40,6 +40,11 @@ export const renderParameterType = (param) => {
     return html`
         ${ptype} ${param.hasDataType ? html`(<span class="monospaced">${param.hasDataType}</span>)` : ''}
         ${(param.hasMinimumAcceptedValue || param.hasMaximumAcceptedValue) ?
-            html`<br/><span style="font-size: 11px;">Range is from ${param.hasMinimumAcceptedValue} to ${param.hasMaximumAcceptedValue}</span>` : '' }
+            html`<br/>
+                <span style="font-size: 11px;">
+                    Range is 
+                    ${param.hasMinimumAcceptedValue ? html`from ${param.hasMinimumAcceptedValue}` : ""}
+                    ${param.hasMaximumAcceptedValue ? html`to ${param.hasMaximumAcceptedValue}` : ""}
+                </span>` : '' }
     `
 }

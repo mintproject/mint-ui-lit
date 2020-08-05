@@ -1,4 +1,5 @@
 import { Region, SoftwareVersion, Model, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
+import { IdMap } from "app/reducers";
 
 const TAG_LATEST = "latest";
 const TAG_DEPRECATED = "deprecated";
@@ -29,11 +30,11 @@ export const uriToId = (uri:string) : string => {
 }
 
 export const getId = (obj: any) : string => {
-    return uriToId(obj.id);
+    return obj.id ? uriToId(obj.id) : "";
 }
 
 export const getLabel = (obj: any) : string => {
-    return obj.label && obj.label.length > 0 ? obj.label[0] : getId(obj);
+    return obj && obj.label && obj.label.length > 0 ? obj.label[0] : getId(obj);
 }
 
 export const isSubregion = (parentRegionId:string, region:Region) : boolean => {
@@ -49,6 +50,13 @@ export const isMainRegion = (region:Region) : boolean => {
         || region.id === "https://w3id.org/okn/i/mint/Ethiopia"
         || region.id === "https://w3id.org/okn/i/mint/South_Sudan"
         || region.id === "https://w3id.org/okn/i/mint/Texas";
+}
+
+export const setupInRegion = (setup: ModelConfigurationSetup, parentRegionId: string, allRegions? : IdMap<Region>) => {
+    if (!setup.hasRegion || setup.hasRegion.length == 0)
+        return true;
+    let regions = allRegions ? setup.hasRegion.map((region:Region) => allRegions[region.id]) : setup.hasRegion;
+    return regions.some((region:Region) => isSubregion(parentRegionId, region));
 }
 
 export const isEmpty = (obj:object) : boolean => Object.keys(obj).length === 0;

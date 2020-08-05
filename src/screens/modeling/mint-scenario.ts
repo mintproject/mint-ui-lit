@@ -256,6 +256,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                 <wl-icon @click="${this._editPathwayDialog}" 
                                     class="actionIcon addIcon">note_add</wl-icon>
                             </div>
+                            ${this._hideObjectives ? '' : html`
                             <div style="font-size:12.5px; color: #888; padding: 5px; padding-top: 0px">
                                 For a given task, you can investigate different initial conditions or different models.  
                                 Each of them can be explored by creating a new modeling thread for that task.
@@ -302,6 +303,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
                                 </li>
                             ` : ''}
                             </ul>
+                            `}
                         </div>
 
                         <mint-pathway ?active="${this._selectedSubgoal}"
@@ -569,6 +571,12 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 </div>
                 <br />
 
+              <div class="input_full">
+                <label>Notes</label>
+                <textarea style="color:unset; font: unset;" name="pathway_notes" rows="4"></textarea>
+              </div>
+              <br/>
+
                 <!-- Time Period -->
                 <div class="input_full">
                     <label>Time Period</label>
@@ -694,6 +702,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
         }
         (form.elements["pathway_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
         (form.elements["pathway_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
+        (form.elements["pathway_notes"] as HTMLInputElement).value = this._selectedSubgoal.notes ?  this._selectedSubgoal.notes : "";
 
         showDialog("threadDialog", this.shadowRoot!);
         e.stopPropagation();
@@ -709,10 +718,11 @@ export class MintScenario extends connect(store)(PageViewElement) {
             let pathway_name = (form.elements["pathway_name"] as HTMLInputElement).value;
             let pathway_from = (form.elements["pathway_from"] as HTMLInputElement).value;
             let pathway_to = (form.elements["pathway_to"] as HTMLInputElement).value;
+            let pathway_notes = (form.elements["pathway_notes"] as HTMLInputElement).value;
 
             // If no subgoalid, but goalid is there, then this is a new subgoal
             let pathway : PathwayInfo = null;
-            if(pathwayid) {
+            if (pathwayid) {
                 // Edit Pathway Info (Summary)
                 pathway = this._selectedSubgoal!.pathways[pathwayid];
                 pathway.name = pathway_name;

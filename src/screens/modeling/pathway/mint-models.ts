@@ -155,6 +155,8 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         let done = (this.pathway.models && modelids.length > 0);
         let availableModels = this._queriedModels[this._responseVariables.join(",")] || [];
         let regionModels = availableModels.filter((model: Model) =>
+            !model.hasRegion ||
+            model.hasRegion.length == 0 ||
             (model.hasRegion||[]).some((region) => isSubregion(this._region.model_catalog_uri, region))
         );
         return html`

@@ -257,6 +257,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         let keywordsEl  = this.shadowRoot.getElementById('new-setup-keywords') as HTMLInputElement;
         let assignMeEl  = this.shadowRoot.getElementById('new-setup-assign-method') as HTMLInputElement;
         let usageEl     = this.shadowRoot.getElementById('new-setup-usage-notes') as HTMLInputElement;
+        let tagEl       = this.shadowRoot.getElementById('new-setup-tag') as HTMLInputElement;
 
         if (nameEl && descEl && keywordsEl && assignMeEl) {
             let name        = nameEl.value;
@@ -264,6 +265,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             let keywords    = keywordsEl.value;
             let assignMe    = assignMeEl.value;
             let notes       = usageEl.value;
+            let tag = tagEl? tagEl.value : "";
 
             if (!name || !assignMe) {
                 if (!name) nameEl.setAttribute('invalid', 'true');
@@ -286,6 +288,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
 
             setupCreated.hasGrid = this._grid ? [this._grid] : undefined;
             setupCreated.hasOutputTimeInterval = this._timeInterval ? [this._timeInterval] : undefined;
+            setupCreated.tag = tag ? [tag] : undefined;
 
             setupCreated.hasInput = (setupCreated.hasInput || []).map((input: DatasetSpecification) => {
                 let newInput = this._inputs[input.id];
@@ -403,7 +406,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         : authorUri + ' ')
                     )}
                     ${this._authorsLoading.size > 0 ? html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`
-                    : 'No authors'}
+                    : 'None specified'}
                     <wl-button style="float:right;" class="small" flat inverted
                         @click="${this._showAuthorDialog}"><wl-icon>edit</wl-icon></wl-button>
                 </td>
@@ -436,7 +439,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                             ${this._softwareImage.label}
                         </a>
                     </span>
-                    ` : 'No software image'}
+                    ` : 'None specified'}
                 </td>
             </tr>
 
@@ -478,7 +481,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                                     ${this._grid.hasShape && this._grid.hasShape.length > 0 ? this._grid.hasShape[0] : '-'}
                                 </span>
                             </div>
-                        </span>` : 'No grid'
+                        </span>` : 'None specified'
                     )}
                     <wl-button style="float:right;" class="small" flat inverted
                         @click="${this._showGridDialog}"><wl-icon>edit</wl-icon></wl-button>
@@ -502,7 +505,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                                 </span>
                             </span>
                             <span style="font-style: oblique; color: gray;"> ${this._timeInterval.description} </span>
-                        </span>` : 'No time interval'
+                        </span>` : 'None specified'
                     )}
                     <wl-button style="float:right;" class="small" flat inverted
                         @click="${this._showTimeIntervalDialog}"><wl-icon>edit</wl-icon></wl-button>
@@ -520,7 +523,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         </span>`
                         : procUri + ' '))}
                     ${this._processesLoading.size > 0 ? html`<loading-dots style="--width: 20px"></loading-dots>`: ''}`
-                    : 'No processes'}
+                    : 'None specified'}
                     <wl-button style="float:right;" class="small" flat inverted
                         @click="${this._showProcessDialog}"><wl-icon>edit</wl-icon></wl-button>
                 </td>
@@ -530,6 +533,18 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 <td>Usage notes:</td>
                 <td>
                     <textarea id="new-setup-usage-notes" rows="6">${this._setup.hasUsageNotes}</textarea>
+                </td>
+            </tr>
+
+            <tr>
+                <td>Tag</td>
+                <td>
+                    <wl-select id="new-setup-tag" name="Tag">
+                        <option value="">None</option>
+                        <option value="latest">Latest</option>
+                        <option value="deprecated">Deprecated</option>
+                        <option value="preferred">Preferred</option>
+                    </wl-select>
                 </td>
             </tr>
 
@@ -545,7 +560,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                 <col span="1">
             </colgroup>
             <thead>
-                <th><b>Label</b></th>
+                <th><b>Name</b></th>
                 <th><b>Type</b></th>
                 <th class="ta-right" style="white-space:nowrap;">
                     <b>Value in this setup</b>
@@ -654,7 +669,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         </span>`
                         : html`${fixed.id.split('/').pop()} <loading-dots style="--width: 20px"></loading-dots>`))
                     : html`
-                    <div class="info-center" style="white-space:nowrap;">- Not set -</div>`}
+                    <div class="info-center" style="white-space:nowrap;">User can select this input</div>`}
                 </td>
                 <td class="ta-right">
                     <wl-button @click="${() => {this._showNewInputDialog(uri)}}" class="small" flat inverted><wl-icon>add</wl-icon></wl-button>
@@ -691,12 +706,14 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
         let keywordsEl  = this.shadowRoot.getElementById('new-setup-keywords') as HTMLInputElement;
         let assignMeEl  = this.shadowRoot.getElementById('new-setup-assign-method') as HTMLInputElement;
         let usageEl     = this.shadowRoot.getElementById('new-setup-usage-notes') as HTMLInputElement;
+        let tagEl       = this.shadowRoot.getElementById('new-setup-tag') as HTMLInputElement;
         if (nameEl && descEl && keywordsEl && assignMeEl) {
             nameEl      .value = '';
             descEl      .value = '';
             keywordsEl  .value = '';
             assignMeEl  .value = '';
             usageEl     .value = '';
+            tagEl.value = '';
         }
     }
 

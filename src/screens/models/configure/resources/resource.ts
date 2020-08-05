@@ -259,7 +259,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     protected _renderTableHeader () {
         return html`
-            <th><b>Label</b></th>
+            <th><b>Name</b></th>
             <th><b>Description</b></th>
         `;
     }
