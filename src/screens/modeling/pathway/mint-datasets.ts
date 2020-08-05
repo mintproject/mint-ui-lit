@@ -123,9 +123,6 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
 
         let done = (getPathwayDatasetsStatus(this.pathway) == TASK_DONE);
 
-        console.log(this.pathway.models);
-        console.log(this._mcInputs);
-
         // If models have been selected, go over each model
         return html `
         <p>
@@ -168,7 +165,32 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                 html`No pre-selected datasets were needed for this model.`
                                 : html`
                                     Expert modeler has selected the following files:
-                                    ${this._mcInputs[model.id] ? this._mcInputs[model.id] : ''}
+                                    <table class="pure-table pure-table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Input</th>
+                                                <th>Selected File</th>
+
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        ${fixed_inputs.map((input) => html`
+                                            <tr>
+                                                <td>${input.name}</td>
+                                                <td>
+                                                ${input.value && input.value.resources ? 
+                                                    input.value.resources.map((r) => 
+                                                        html`<a target="_blank" href="${r.url}">${r.name}</a>`)
+                                                    : ""}
+                                                </td>
+                                            </tr>
+                                        `)}
+                                        </tbody>
+                                    </table>
+                                    <!-- TODO: This is a better way to do it, but theres no way to know if the resources
+                                        are in the model catalog:
+                                    {this._mcInputs[model.id] ? this._mcInputs[model.id] : ''}
+                                    -->
                                 `}
                             </li>
                         </ul>
@@ -436,6 +458,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                     <div style="margin-top: 10px; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>
                 `:'' }
             </div>   
+
             <div slot="footer">
                 <wl-button @click="${this._closeResourceSelectionDialog}" inverted flat>Close</wl-button>
                 <wl-button @click="${this._submitDatasetResources}" class="submit">Submit</wl-button>

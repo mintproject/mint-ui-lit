@@ -3,7 +3,7 @@ import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 
 import { ModelMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, ExecutableEnsembleSummary } from "../reducers";
-import models, { VariableModels, Model } from "../../models/reducers";
+import models, { VariableModels, Model, getPathFromModel } from "../../models/reducers";
 import { queryModelsByVariables, setupToOldModel } from "../../models/actions";
 import { setupGetAll, regionsGet, modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet,
          sampleCollectionGet, sampleResourceGet, softwareImagesGet } from 'model-catalog/actions';
@@ -183,7 +183,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                         let model = this.pathway.models![modelid];
                         return html`
                         <li>
-                            <a target="_blank" href="${this._getModelURL(model)}">${model.name}</a>
+                            <a target="_blank" href="${this._getStoredModelURL(model)}">${model.name}</a>
                         </li>
                         `
                     })}
@@ -369,6 +369,12 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             </div>
         </wl-dialog>
         `;
+    }
+
+    private _getStoredModelURL (model:Model) {
+        console.log(model);
+        let uri =  this._regionid + '/models/explore' + getPathFromModel(model) + "/";
+        return uri;
     }
 
     _getModelURL (model:Model) {
