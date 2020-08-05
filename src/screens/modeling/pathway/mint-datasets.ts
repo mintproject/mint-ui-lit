@@ -65,8 +65,6 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
   
     private _mcInputs : IdMap<ModelCatalogDatasetSpecification> = {};
 
-    private _mcInputs : IdMap<ModelCatalogDatasetSpecification> = {};
-
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
             name: "More information",
