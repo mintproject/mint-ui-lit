@@ -414,8 +414,8 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
             if (assumptions) jsonObj['hasAssumption'] = [assumptions];
             if (website) jsonObj['website'] = [website];
             if (compLoc) jsonObj['hasComponentLocation'] = [compLoc];
-            if (tag) jsonObj['tag'] = [tag];
             if (notes) jsonObj['hasUsageNotes'] = [notes];
+            jsonObj['tag'] = tag ? [tag] : undefined
 
             // save parameters first
             let promises = [];

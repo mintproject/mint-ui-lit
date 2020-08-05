@@ -293,7 +293,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             let keywords = keywordsEl.value;
             let compLoc  = complocEl.value;
             let notes       = usageEl.value;
-            let tag = tagEl.value;
+            let tag = tagEl ? tagEl.value : "";
 
             if (!label) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
@@ -308,8 +308,8 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             editedSetup.description = [desc];
             editedSetup.keywords = [keywords.split(/ *, */).join('; ')];
             editedSetup.hasComponentLocation = [compLoc];
+            editedSetup.tag = tag ? [tag] : undefined;
             if (notes) editedSetup.hasUsageNotes = [notes];
-            if (tag) editedSetup.tag = [tag];
             /*editedSetup.adjustableParameter = (editedSetup.adjustableParameter||[])
                     .map((uri) => {return  {id: uri} as Parameter});*/
 
@@ -551,7 +551,6 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                     html`${this._setup.hasProcess.map(a => typeof a === 'object' ? a.id : a).map((procUri:string) => 
                         (this._processes[procUri] ? html`
                         <span class="process">
-                            ${this._processes[procUri].label}
                             ${this._processes[procUri].label ? this._processes[procUri].label : this._processes[procUri].id}
                         </span>`
                         : procUri + ' '))}
@@ -701,7 +700,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
                         </span>`
                         : html`${fixed.id.split('/').pop()} <loading-dots style="--width: 20px"></loading-dots>`))
                     : html`
-                    <div class="info-center" style="white-space:nowrap;">- Not set -</div>`}
+                    <div class="info-center" style="white-space:nowrap;">User can select this input</div>`}
                 </td>
                 ${this._editing ? html`
                 <td>
