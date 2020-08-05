@@ -30,6 +30,7 @@ export interface Scenario extends IdNameObject {
     dates: DateRange
     last_update?: string
     last_update_user?: string
+    notes?: string
 }
 
 export interface DateRange {
@@ -105,7 +106,8 @@ export interface SubGoal extends IdNameObject {
     dates?: DateRange,
     response_variables: string[],
     driving_variables: string[],
-    subregionid?: string
+    subregionid?: string,
+    notes?: string,
     pathways?: IdMap<PathwayInfo>
 }
 

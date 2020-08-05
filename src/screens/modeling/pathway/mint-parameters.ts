@@ -12,6 +12,7 @@ import { showNotification } from "../../../util/ui_functions";
 import { selectPathwaySection } from "../../../app/ui-actions";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { IdMap } from "../../../app/reducers";
+import { getPathFromModel } from "../../models/reducers";
 
 import "weightless/progress-bar";
 
@@ -90,6 +91,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
             <ul>
             ${(Object.keys(this.pathway.models) || []).map((modelid) => {
                 let model = this.pathway.models![modelid];
+                let url = this._regionid + '/models/explore' + getPathFromModel(model) + "/";
                 // Get any existing ensemble selection for the model
                 let ensembles:DataEnsembleMap = this.pathway.model_ensembles![modelid] || {};
                 let input_parameters = model.input_parameters
@@ -103,7 +105,10 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
 
                 return html`
                 <li>
-                    <wl-title level="4">Model: ${model.name}</wl-title>
+                    <wl-title level="4">
+                        Model:
+                        <a target="_blank" href="${url}">${model.name}</a>
+                    </wl-title>
                     ${input_parameters.length > 0 ? 
                         html `
                         <p>
@@ -384,6 +389,7 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
 
     stateChanged(state: RootState) {
         super.setUser(state);
+        super.setRegion(state);
         
         let pathwayid = this.pathway ? this.pathway.id : null;
         super.setPathway(state);

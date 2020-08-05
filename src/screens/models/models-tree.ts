@@ -52,6 +52,11 @@ export class ModelsTree extends connect(store)(PageViewElement) {
 
     static get styles() {
         return [ExplorerStyles, SharedStyles, css`
+            .tooltip:hover::after {
+                width: 80px;
+                left: -10px;
+            }
+
             .inline-new-button {
                 line-height: 1.2em;
                 font-size: 1.2em;
@@ -280,7 +285,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
         if (!tag || tag.length == 0)
             return '';
         if (tag[0] == "preferred") 
-            return html`<wl-icon style="width: 20px;">start</wl-icon>`;
+            return html`<span tip="Preferred" class="tooltip"><wl-icon style="width: 20px;">start</wl-icon></span>`;
         return html`<span class="tag ${tag[0]}">${tag[0]}</span>`;
     }
 

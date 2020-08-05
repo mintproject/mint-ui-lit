@@ -144,10 +144,9 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                 Change Datasets Selection
             </wl-tooltip>
 
-            <ul>
             ${(Object.keys(this.pathway.models) || []).map((modelid) => {
                 let model = this.pathway.models![modelid];
-                let url = getPathFromModel(model);
+                let url = this._regionid + '/models/explore' + getPathFromModel(model) + "/";
                 let input_files = model.input_files.filter((input) => !input.value);
                 let fixed_inputs = model.input_files.filter((input) => !!input.value);
                 
@@ -155,10 +154,24 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                 let ensembles:DataEnsembleMap = this.pathway.model_ensembles![modelid] || {};
 
                 return html`
+                    <wl-title level="4">
+                        <span style="color:#888">MODEL:</span>
+                        <a target="_blank" href="${url}">${model.name}</a>
+                    </wl-title>
+                    <ul>
+
                     <li>
-                        <wl-title level="4">Expert modeler has selected the following files:
-                        </wl-title>
-                        ${this._mcInputs[model.id] ? this._mcInputs[model.id] : ''}
+                        <wl-title level="4"> Pre-selected Datasets: </wl-title>
+                        <ul>
+                            <li>
+                            ${fixed_inputs.length == 0 ?
+                                html`No pre-selected datasets were needed for this model.`
+                                : html`
+                                    Expert modeler has selected the following files:
+                                    ${this._mcInputs[model.id] ? this._mcInputs[model.id] : ''}
+                                `}
+                            </li>
+                        </ul>
                     </li>
                 <li>
                     <wl-title level="4">User selected Datasets:</wl-title>
@@ -307,9 +320,9 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                     `
                     }
                 </li>
+                </ul>
                 `;
             })}
-            </ul>
             ${!done || this._editMode ? 
                 html`
                 <div class="footer">

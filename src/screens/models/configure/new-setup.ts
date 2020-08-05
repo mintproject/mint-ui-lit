@@ -265,7 +265,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             let keywords    = keywordsEl.value;
             let assignMe    = assignMeEl.value;
             let notes       = usageEl.value;
-            let tag = tagEl.value;
+            let tag = tagEl? tagEl.value : "";
 
             if (!name || !assignMe) {
                 if (!name) nameEl.setAttribute('invalid', 'true');
@@ -669,7 +669,7 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
                         </span>`
                         : html`${fixed.id.split('/').pop()} <loading-dots style="--width: 20px"></loading-dots>`))
                     : html`
-                    <div class="info-center" style="white-space:nowrap;">- Not set -</div>`}
+                    <div class="info-center" style="white-space:nowrap;">User can select this input</div>`}
                 </td>
                 <td class="ta-right">
                     <wl-button @click="${() => {this._showNewInputDialog(uri)}}" class="small" flat inverted><wl-icon>add</wl-icon></wl-button>

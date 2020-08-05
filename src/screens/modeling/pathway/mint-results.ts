@@ -16,6 +16,7 @@ import { IdMap } from "app/reducers";
 import { DataResource } from "screens/datasets/reducers";
 import { isObject } from "util";
 import { downloadFile } from "util/ui_functions";
+import { getPathFromModel } from "../../models/reducers";
 
 @customElement('mint-results')
 export class MintResults extends connect(store)(MintPathwayPage) {
@@ -424,16 +425,10 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     }
     
     _getModelURL (model:Model) {
-        let url = this._regionid + '/models/explore/' + model.original_model;
-        if (model.model_version) {
-            url += '/' + model.model_version;
-            if (model.model_configuration) {
-                url += '/' + model.model_configuration;
-                if (model.localname) {
-                    url += '/' + model.localname;
-                }
-            }
+        if(!model) {
+            return "";
         }
+        let url = this._regionid + '/models/explore' + getPathFromModel(model) + "/";
         return url;
     }
 
