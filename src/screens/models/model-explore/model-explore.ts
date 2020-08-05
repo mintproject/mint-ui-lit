@@ -385,7 +385,8 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     this._fullText[model.id] = (
                         (model.label ? model.label.join() : '') +
                         (model.description ? model.description.join() : '') +
-                        (model.keywords ? model.keywords.join() : '')
+                        (model.keywords ? model.keywords.join() : '') +
+                        (model.hasModelCategory ? model.hasModelCategory.join() : '')
                     ).toLowerCase();
                 });
                 this._activeModels = {};
