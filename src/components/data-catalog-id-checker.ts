@@ -21,7 +21,7 @@ export class DataCatalogIdChecker extends LitElement {
     public description = {};
 
     protected render() {
-        if (this.id && this.id.length > 3 && !(this.id[0] == "F" && this.id[1] == "F" && this.id[2] == "F")) {
+        if (this.id && this.id != 'undefined' && this.id.length > 3 && !(this.id[0] == "F" && this.id[1] == "F" && this.id[2] == "F")) {
             return this.loaded[this.id] ? html`
                 <b>${this.name[this.id]}</b>
                 <hr/>
