@@ -13,6 +13,7 @@ import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
 import { ModelCatalogVariablePresentation } from './variable-presentation';
 import { ModelCatalogDataTransformation } from './data-transformation';
+import { ModelCatalogSampleResource } from './sample-resource';
 import './variable-presentation';
 import './data-transformation';
 
@@ -54,6 +55,8 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
     public colspan = 3;
 
     public isSetup : boolean = false;
+    private sampleResources : IdMap<ModelCatalogSampleResource> = {};
+    private loadingSR : IdMap<boolean> = {};
 
     public setAsSetup () {
         this.isSetup = true;
@@ -93,8 +96,17 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
         `;
     }
 
+    private _loadResources (r:DatasetSpecification) {
+        if (r.hasFixedResource && r.hasFixedResource.length > 0 && r.hasFixedResource[0].type.indexOf("SampleResource") >= 0) {
+            if (!this.loadingSR[r.id] && !this.sampleResources[r.id]) {
+                this.sampleResources[r.id] = new ModelCatalogSampleResource();
+                this.sampleResources[r.id].setResources(r.hasFixedResource);
+            }
+        }
+    }
+
     protected _renderRow (r:DatasetSpecification) {
-    //console.log(r.hasFixedResource);
+        this._loadResources(r);
         return html`
             <td>
                 <code>${getLabel(r)}</code> 
@@ -110,7 +122,11 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             </td>
             ${this.isSetup ? html`
             <td>
-                <b>${r.hasFixedResource ? getLabel(r.hasFixedResource[0]) : ''}</b>
+                ${r.hasFixedResource ?
+                    (this.sampleResources[r.id] ?
+                        html`${this.sampleResources[r.id]}`
+                        : html`<b>${getLabel(r.hasFixedResource[0])}</b>`)
+                    : ''}
             </td>
             ` : ''}
         `;

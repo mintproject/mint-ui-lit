@@ -41,7 +41,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         {
             name: "Category",
             fn: (setup:ModelConfigurationSetup) => setup.hasModelCategory && setup.hasModelCategory.length > 0 ?
-                    setup.hasModelCategory.pop() : html`<span style="color:#999">None<span>`
+                    setup.hasModelCategory[setup.hasModelCategory.length-1] : html`<span style="color:#999">None<span>`
         },
         {
             name: "Keywords",
@@ -55,12 +55,12 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         {
             name: "Description",
             fn: (setup:ModelConfigurationSetup) => setup.description && setup.description.length > 0 ?
-                    setup.description.pop() : html`<span style="color:#999">None provided<span>`
+                    setup.description[setup.description.length -1] : html`<span style="color:#999">None provided<span>`
         },
         {
             name: "Parameter assignment/estimation",
             fn: (model:ModelConfigurationSetup) => model.parameterAssignmentMethod && model.parameterAssignmentMethod.length > 0 ?
-                    model.parameterAssignmentMethod.pop() : html`<span style="color:#999">None<span>`
+                    model.parameterAssignmentMethod[model.parameterAssignmentMethod.length -1] : html`<span style="color:#999">None<span>`
         },
         {
             name: "Authors",
@@ -107,7 +107,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         {
             name: "Component Location",
             fn: (setup:ModelConfigurationSetup) => setup.hasComponentLocation && setup.hasComponentLocation.length > 0 ?
-                    setup.hasComponentLocation.pop() : html`<span style="color:#999">None specified<span>`
+                    setup.hasComponentLocation[setup.hasComponentLocation.length -1] : html`<span style="color:#999">None specified<span>`
         },
         {
             name: "Software Image",
@@ -212,6 +212,18 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                 overflow: auto;
                 height: 100%;
             }
+            .custom-button {
+                line-height: 20px;
+                cursor: pointer;
+                margin-right: 5px;
+                border: 1px solid green;
+                padding: 1px 3px;
+                border-radius: 4px;
+            }
+
+            .custom-button:hover {
+                background-color: rgb(224, 224, 224);
+            }
 
             .right_full {
                 width: 100%;
@@ -236,6 +248,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                         class="actionIcon bigActionIcon" style="float:right">
                         ${!this._hideLateral ? "fullscreen" : "fullscreen_exit"}
                     </wl-icon>
+                    <span style="float:right;" class="custom-button" @click="${this._goToCatalog}">Go to Model Catalog</span>
                     ${this._renderTable()}
                 </div>
             </div>
@@ -243,7 +256,10 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         `
     }
 
-                    //${loading ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`: ''}
+    private _goToCatalog () {
+        goToPage('models/explore/');
+    }
+
     private _renderTable () {
         return html`
             <table class="pure-table pure-table-striped">
@@ -251,13 +267,13 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                     <th style="border-right:1px solid #EEE; font-size: 14px;">
                     Model details
                     </th>
-                    ${this._compare.map(c => c.uri).map((mid) => {
+                    ${this._compare.map((c:ComparisonEntry) => {
                         return html`
-                        <th .style="width:${100/(this._compare.length)}%">
-                            ${this._loading[mid] ? html`
-                                ${uriToId(mid)}
-                                <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>
-                            ` : html `${getLabel(this._setups[mid])}`}
+                            <th .style="width:${100/(this._compare.length)}%">
+                            ${this._loading[c.uri] ? 
+                                html`${uriToId(c.uri)}
+                                <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`
+                                : html`<wl-title level="4">${getLabel(this._setups[c.uri])}</wl-title>`}
                         </th>`;
                     })}
                 </thead>
@@ -266,14 +282,10 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                         return html`
                         <tr>
                             <td style="border-right:1px solid #EEE"><b>${feature.name}</b></td>
-                            ${this._compare.map(c => c.uri).map((mid) => {
-                                if (this._loading[mid])
-                                    return html`<td>
-                                        <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>
-                                    </td>`;
-                                else 
-                                    return html`<td>${feature.fn(this._setups[mid])}</td>`
-                            })}
+                            ${this._compare.map((c:ComparisonEntry) => this._loading[c.uri] ?
+                            html`<td> <loading-dots style="--width: 20px; margin-left:10px"></loading-dots></td>`
+                            : html`<td>${feature.fn(this._setups[c.uri])}</td>`
+                            )}
                         </tr>
                         `;
                     })}
@@ -289,15 +301,12 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                 if (!this._loading[c.uri] && !this._setups[c.uri]) {
                     this._loading[c.uri] = true;
                     setupGetAll(c.uri).then((setup) => {
-                        console.log('<', setup);
-                        this._loading[c.uri] = false;
-                        this._setups[c.uri] = setup;
+                        this._setups[setup.id] = {...setup};
+                        this._loading[setup.id] = false;
                         this.requestUpdate();
                     });
                 }
             });
-            //TODO: Has lo mismo de siempre, crea _setup, guarda _compare[] y luego revisas en loading o setup. Ver como
-            //hacer para solo cargar lo necesario.
         }
     }
 }
