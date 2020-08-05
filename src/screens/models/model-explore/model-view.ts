@@ -86,6 +86,8 @@ export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Boolean}) private _loadingRegions : boolean = false;
     @property({type: String}) private _tab : tabType = 'overview';
 
+    @property({type: Boolean}) private _setupNotFound : boolean = false;
+
     private _emulators = {
         'https://w3id.org/okn/i/mint/CYCLES' : '/emulators/cycles',
         'https://w3id.org/okn/i/mint/TOPOFLOW': '/emulators/topoflow',
@@ -659,7 +661,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                             )
                     ): 'No logo'}
                     ${this._model.dateCreated ?
-                      html`<div><b>Creation date:</b> ${this._model.dateCreated}</div>`
+                      html`<div><b>Creation date:</b> ${this._model.dateCreated[0].replace(/T.*$/,'')}</div>`
                       :''}
                     ${this._model.hasModelCategory ?
                       html`<div><b>Category:</b> ${this._model.hasModelCategory.join(', ')}</div>`
@@ -716,6 +718,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                         </wl-text>` :''}
                     </div>
                     ${this._renderSelectors()}
+                    ${this._setupNotFound ? html`
+                    <p style="text-align: center; color:red;">
+                        The setup ${this._selectedSetup ? this._selectedSetup.split('/').pop() : 'selected'} is private or was deleted 
+                    </p>` : ''}
                 </div>
 
                 <div class="row-tab-header">
@@ -997,7 +1003,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${this._config.hasProcess && this._config.hasProcess.length > 0 ?
                         html`<wl-text><b>• Processes:</b> ${this._renderProcesses(this._config.hasProcess)}</wl-text>` :''}
                 </div>
-                ${this._selectedSetup ?
+                ${this._selectedSetup && !this._setupNotFound?
                     this._loading[this._selectedSetup] ? 
                         html`<div class="text-centered"><wl-progress-spinner></wl-progress-spinner></div>`
                         : (this._setup ? this._renderSetupResume() : '')
@@ -1699,6 +1705,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 this._shouldUpdateSetups = true;
                 if (this._selectedSetup) {
                     setupGetAll(this._selectedSetup).then((setup:ModelConfigurationSetup) => {
+                        this._setupNotFound = false;
                         // Save authors 
                         (setup.author || []).forEach((author:Person|Organization) => {
                             if (author.type && author.type.includes("Person")) {
@@ -1743,7 +1750,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                         this._setup = setup;
                         //console.log('setup', setup);
                         this._loading[this._selectedSetup] = false;
-                    })
+                    }).catch((error) => {
+                        if (error.status == 404) {
+                            this._setupNotFound = true;
+                        }
+                    });
                 }
             }
 
