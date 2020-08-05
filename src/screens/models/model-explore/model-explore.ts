@@ -8,9 +8,10 @@ import { store, RootState } from 'app/store';
 import { goToPage } from 'app/actions';
 import { IdMap } from 'app/reducers';
 
-import { isEmpty } from 'model-catalog/util';
+import { isEmpty, uriToId } from 'model-catalog/util';
 import { Model } from '@mintproject/modelcatalog_client';
 import { modelsSearchIndex, modelsSearchIntervention, modelsSearchRegion, modelsSearchStandardVariable } from 'model-catalog/actions';
+import { CustomNotification } from 'components/notification';
 
 import './model-preview'
 import './model-view'
@@ -26,6 +27,7 @@ store.addReducers({
 
 @customElement('model-explorer')
 export class ModelExplorer extends connect(store)(PageViewElement) {
+    private _notifications : CustomNotification;
     @property({type: Object})
     private _models! : IdMap<Model>;
 
@@ -45,6 +47,8 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     @property({type: Boolean})
     private _loading : boolean = true;
+
+    @property({type: Object}) private _comparisonList : string[] = [];
 
     static get styles() {
         return [SharedStyles, ExplorerStyles,
@@ -141,8 +145,14 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         goToPage('models/explore');
     }
 
+    public constructor () {
+        super();
+        this._notifications = new CustomNotification();
+    }
+
     protected render() {
         return html`
+            ${this._notifications}
             ${this._selectedUri? 
                 //Display only selected model or the search
                 html`<div id="model-view-cont"><model-view active></model-view></div>`
@@ -193,6 +203,8 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                         ${this._models[key].description}
                       </div>
 
+                      <wl-icon slot="extra-icon" @click="${()=>{this._addToComparisonList(key)}}">compare_arrows</wl-icon>
+
                     </model-preview>`)
                     :html`<div class="centered-info">
                         <wl-text style="font-size: 1.4em;">No model fits the search parameters</wl-text>
@@ -200,6 +212,34 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 }
             </div>
         `
+    }
+
+    private _addToComparisonList (uri: string) {
+        let id : string = uriToId(uri)
+        let msg : string = "";
+        let icon : string = "";
+        if (this._comparisonList.indexOf(id) >= 0) {
+            msg = "Model already on comparison list";
+            icon = "report_problem";
+        } else {
+            this._comparisonList.push(id);
+            msg = "Model added to comparison list";
+            icon = "done";
+        }
+
+        if (this._comparisonList.length < 2) {
+            this._notifications.custom(msg, icon);
+        } else {
+            let buttonName : string = "Compare";
+            let url : string = 'models/compare/' + this._comparisonList.join('/');
+            let me = this;
+            let buttonFn = function () {
+                me._comparisonList = [];
+                goToPage(url);
+            };
+
+            this._notifications.custom(msg, icon, buttonName, buttonFn);
+        }
     }
 
     updated () {

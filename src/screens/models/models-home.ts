@@ -102,6 +102,9 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             case 'calibrate':
                 nav.push({label: 'Calibrate Models', url: 'models/calibrate'});
                 break;
+            case 'compare':
+                nav.push({label: 'Compare Models', url: 'models/compare'});
+                break;
             default:
                 break;
         }
