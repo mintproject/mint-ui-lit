@@ -27,7 +27,8 @@ export const EXAMPLE_SCENARIOS_LIST_DATA = {
             "dates": {
                 "start_date": toTimeStamp(new Date().toDateString()),
                 "end_date": toTimeStamp(new Date().toDateString()),
-            }
+            },
+            "notes": ""
         },
         "scenario2": {
             "id": "scenario2",
@@ -37,7 +38,8 @@ export const EXAMPLE_SCENARIOS_LIST_DATA = {
             "dates": {
                 "start_date": toTimeStamp(new Date().toDateString()),
                 "end_date": toTimeStamp(new Date().toDateString()),
-            }
+            },
+            "notes": ""
         },
         "scenario3": {
             "id": "scenario3",
@@ -47,7 +49,8 @@ export const EXAMPLE_SCENARIOS_LIST_DATA = {
             "dates": {
                 "start_date": toTimeStamp(new Date().toDateString()),
                 "end_date":toTimeStamp (new Date().toDateString()),
-            }
+            },
+            "notes": ""
         },
         "scenario4": {
             "id": "scenario4",
@@ -56,7 +59,8 @@ export const EXAMPLE_SCENARIOS_LIST_DATA = {
             "dates": {
                 "start_date": toTimeStamp(new Date().toDateString()),
                 "end_date": toTimeStamp(new Date().toDateString()),
-            }
+            },
+            "notes": ""
         },
         "scenario5": {
             "id": "scenario5",
@@ -65,7 +69,8 @@ export const EXAMPLE_SCENARIOS_LIST_DATA = {
             "dates": {
                 "start_date":toTimeStamp(new Date().toDateString()),
                 "end_date":toTimeStamp(new Date().toDateString()),
-            }
+            },
+            "notes": ""
         }
     }
 }
@@ -78,6 +83,7 @@ export const EXAMPLE_SCENARIO_DETAILS = {
         "start_date": toTimeStamp("2017-01-01"),
         "end_date": toTimeStamp("2018-01-01")
     },
+    "notes": "",
     "goals": {
         "goal1": {
             "id": "goal1",

@@ -571,6 +571,12 @@ export class MintScenario extends connect(store)(PageViewElement) {
                 </div>
                 <br />
 
+              <div class="input_full">
+                <label>Notes</label>
+                <textarea style="color:unset; font: unset;" name="pathway_notes" rows="4"></textarea>
+              </div>
+              <br/>
+
                 <!-- Time Period -->
                 <div class="input_full">
                     <label>Time Period</label>
@@ -696,6 +702,7 @@ export class MintScenario extends connect(store)(PageViewElement) {
         }
         (form.elements["pathway_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
         (form.elements["pathway_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
+        (form.elements["pathway_notes"] as HTMLInputElement).value = this._selectedSubgoal.notes ?  this._selectedSubgoal.notes : "";
 
         showDialog("threadDialog", this.shadowRoot!);
         e.stopPropagation();
@@ -711,10 +718,11 @@ export class MintScenario extends connect(store)(PageViewElement) {
             let pathway_name = (form.elements["pathway_name"] as HTMLInputElement).value;
             let pathway_from = (form.elements["pathway_from"] as HTMLInputElement).value;
             let pathway_to = (form.elements["pathway_to"] as HTMLInputElement).value;
+            let pathway_notes = (form.elements["pathway_notes"] as HTMLInputElement).value;
 
             // If no subgoalid, but goalid is there, then this is a new subgoal
             let pathway : PathwayInfo = null;
-            if(pathwayid) {
+            if (pathwayid) {
                 // Edit Pathway Info (Summary)
                 pathway = this._selectedSubgoal!.pathways[pathwayid];
                 pathway.name = pathway_name;
