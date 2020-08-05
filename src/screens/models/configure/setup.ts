@@ -309,6 +309,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
             editedSetup.keywords = [keywords.split(/ *, */).join('; ')];
             editedSetup.hasComponentLocation = [compLoc];
             editedSetup.tag = tag ? [tag] : undefined;
+
             if (notes) editedSetup.hasUsageNotes = [notes];
             /*editedSetup.adjustableParameter = (editedSetup.adjustableParameter||[])
                     .map((uri) => {return  {id: uri} as Parameter});*/
