@@ -1,6 +1,7 @@
 import { customElement, html, css, property } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
+import ReactGA from 'react-ga';
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { BASE_HREF } from "../../../app/actions";
@@ -305,6 +306,10 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
     }
 
     _submitRuns(modelid: string) {
+        ReactGA.event({
+          category: 'Pathway',
+          action: 'Send run',
+        });
         let mint = this.prefs.mint;
         let data = {
             scenario_id: this.scenario.id,

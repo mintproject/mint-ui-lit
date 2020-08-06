@@ -1,6 +1,7 @@
 import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
+import ReactGA from 'react-ga';
 
 import { DataEnsembleMap, ModelEnsembleMap, StepUpdateInformation, Pathway, ExecutableEnsembleSummary } from "../reducers";
 import { SharedStyles } from "../../../styles/shared-styles";
@@ -345,6 +346,10 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
     }
 
     _setPathwayParameters() {
+        ReactGA.event({
+          category: 'Pathway',
+          action: 'Parameters continue',
+        });
         let model_ensembles: ModelEnsembleMap = {
             ... (this.pathway.model_ensembles || {})
         };

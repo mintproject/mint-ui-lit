@@ -1,6 +1,7 @@
 import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
+import ReactGA from 'react-ga';
 
 import { ModelMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, ExecutableEnsembleSummary } from "../reducers";
 import models, { VariableModels, Model, getPathFromModel } from "../../models/reducers";
@@ -452,6 +453,10 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     }
 
     async _selectPathwayModels() {
+        ReactGA.event({
+          category: 'Pathway',
+          action: 'Models continue',
+        });
         let models = this._getSelectedModels();
         //FIXME this is not necesary now.
         Object.values(models).forEach((model) => {

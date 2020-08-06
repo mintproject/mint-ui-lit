@@ -1,5 +1,6 @@
 import { property, html, customElement, css } from 'lit-element';
 import { PageViewElement } from 'components/page-view-element';
+import ReactGA from 'react-ga';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../model-explore/explorer-styles'
@@ -404,6 +405,10 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     }
 
     private _onSaveButtonClicked () {
+        ReactGA.event({
+          category: 'Model Catalog',
+          action: 'Configuration save button clicked',
+        });
         let inputName : Textfield = this.shadowRoot.getElementById("form-config-name") as Textfield;
         let inputCategory : Select = this.shadowRoot.getElementById("form-config-category") as Select;
         let inputDesc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-desc") as HTMLTextAreaElement;
@@ -470,6 +475,11 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                     console.log('<', c);
                     this._scrollUp();
                     let url = getURL(this._selectedModel, this._selectedVersion, c.id);
+                    ReactGA.event({
+                      category: 'Model Catalog',
+                      action: 'Configuration saved',
+                      label: c.id
+                    });
                     goToPage('models/configure/' + url);
                 });
             });

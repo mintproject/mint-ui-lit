@@ -2,6 +2,7 @@ import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 import datasets, { Dataset, ModelDatasets } from "../../datasets/reducers";
+import ReactGA from 'react-ga';
 
 import { DatasetMap, DataEnsembleMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, SubGoal } from "../reducers";
 import { SharedStyles } from "../../../styles/shared-styles";
@@ -569,6 +570,10 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     }
 
     _loadAndSelectPathwayDatasets() {
+        ReactGA.event({
+          category: 'Pathway',
+          action: 'Dataset continue',
+        });
         let new_datasets = []
         this._waiting = true;
         Object.keys(this.pathway.models!).map((modelid) => {
@@ -738,7 +743,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
             if (Object.keys(this._models).length > 0) {
                 Object.values(this._models).forEach((m:Model) => {
                     let fixed = m.input_files.filter((i) => !!i.value);
-                    if (fixed.length > 0) {
+                    if (false && fixed.length > 0) { //FIXME: not all inputs are in the catalog!
                         if (!this._mcInputs[m.id]) {
                             this._mcInputs[m.id] = new ModelCatalogDatasetSpecification();
                             this._mcInputs[m.id].inline = false;
