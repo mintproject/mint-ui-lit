@@ -137,7 +137,7 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
             <wl-title level="4">
                 Virtual Gage Videos
             </wl-title>
-            <video class="hidden" loop controls>
+            <video class="hidden" loop controls style="width: 100%">
                 <source src="/videos/data-1050819440-658.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
@@ -183,7 +183,7 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
                             <ul>
                                 <li>Autoencoder based unsupervised feature learning using large unlabeled data
                                     <ul>
-                                        <li>Uses 9,0000 unlabeled image patches to learn features that could 
+                                        <li>Uses 90,000 unlabeled image patches to learn features that could 
                                         reconstruct a wide variety of image patches</li>
                                         <li>Clustering of 2-D compression of auto-encoder features show 
                                         effectiveness in grouping similar image patches</li>
