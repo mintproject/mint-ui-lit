@@ -135,7 +135,7 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
             <wl-divider style="margin: 20px 0px;"></wl-divider>
 
             <wl-title level="4">
-                Virtual Gage Videos
+                Virtual Gauges Videos
             </wl-title>
             <video class="hidden" loop controls style="width: 100%">
                 <source src="/videos/data-1050819440-658.mp4" type="video/mp4">
