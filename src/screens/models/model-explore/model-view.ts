@@ -661,7 +661,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                             )
                     ): 'No logo'}
                     ${this._model.dateCreated ?
-                      html`<div><b>Creation date:</b> ${this._model.dateCreated[0].replace(/T.*$/,'')}</div>`
+                      html`<div><b>Creation date:</b> ${this._model.dateCreated[0].toString().replace(/T.*$/,'')}</div>`
                       :''}
                     ${this._model.hasModelCategory ?
                       html`<div><b>Category:</b> ${this._model.hasModelCategory.join(', ')}</div>`
