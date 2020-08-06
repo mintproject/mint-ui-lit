@@ -28,7 +28,6 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
             }
 
             video {
-                width: 90%;
                 margin-bottom: 1em;
             }
             
@@ -121,44 +120,57 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
             <p>
             Below are some example results for Ethiopia, using a tool that generates river width and depth for model calibration in ungauged hydrological basins using satellite imagery and machine learning.  These “virtual gauges” are generated with a method that uses Sentinel-2 satellite imagery and deep learning.  A detailed description of the method is shown at the bottom of this page.
             </p>
-            <a target="_blank" href="http://umnlcc.cs.umn.edu/carto-test/"><wl-title level="4">
+            <a target="_blank" href="http://umnlcc.cs.umn.edu/river-width-demo-v2/"><wl-title level="4">
                 Ethiopia River Width Visualization
             <wl-icon>open_in_new</wl-icon></wl-title></a>
             <p>
-                Each dot represents a location on the river. 
-                Size and color of the point changes based on the river depth as the slider is changed.
+                Each point on the map represents a river segment.
+                Click on the point to visualize the surface area changes of the river segment.
             </p>
             <div class="img-hover-zoom">
                 <img src="/images/thumbnails/ethiopia-river-width-visualization.png"></img>
-                <a target="_blank" href="http://umnlcc.cs.umn.edu/carto-test/">Open visualization <wl-icon>open_in_new</wl-icon></a>
+                <a target="_blank" href="http://umnlcc.cs.umn.edu/river-width-demo-v2/">Open visualization <wl-icon>open_in_new</wl-icon></a>
             </div>
             
             <wl-divider style="margin: 20px 0px;"></wl-divider>
 
-            <wl-title level="4">Virtual Gauge Videos</wl-title>
+            <wl-title level="4">
+                Virtual Gage Videos
+            </wl-title>
+            <video class="hidden" loop controls>
+                <source src="/videos/data-1050819440-658.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
             <p>
-                This represents river width/depth variation for a single cross section. The background in this animation is SRTM based elevation.
+                The left panel shows the raw multi-spectral imagery from Sentinel-2, the middle panel shows the land/water mask created by our ML approach, and the right panel shows the land/water mask created using an existing algorithm (for comparison) that uses traditional remote sensing indices to classify land/water, and the bottom panel shows the surface area timeseries.
             </p>
-            <div style="width: 90%; margin: 0px auto;">
-                <image-gallery .items="${items}"></image-gallery>
+
+            <p>
+                These area timeseries can be used to build relationships between ground observations of streamflow to complement ground observations for periods when they are not available. For example, the video below shows the comparison of surface area of a river segment (blue curve) with streamflow measurements from a nearby gage station (red curve). The high agreement suggests that this segment can be potentially used for model calibration.
+            </p>
+
+            <div style="display: flex; width:100%;">
+                <img src="/images/thumbnails/GageLocation.png" style="width:50%;"></img>
+                <video class="hidden" loop controls style="width:50%;">
+                    <source src="/videos/data-1050883510-17704.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
             </div>
 
             <div style="clear:both"></div>
             <wl-divider style="margin: 20px 0px;"></wl-divider>
 
-            <wl-title level="4">Method for Generating River Width and Depth for Model Calibration in 
-            Ungauged Hydrological Basins using Satellite Imagery and Machine Learning:</wl-title>
+            <wl-title level="4">
+                Methodology for Generating Surface Area Variations for Model Calibration in Ungauged Hydrological Basins using Satellite Imagery and Machine Learning:
+            </wl-title>
             <ul>
-                <li>Global dataset from Sentinel-2 satellite imagery at 10m resolution from 2016
+                <li>Training dataset
                     <ul>
-                        <li>8434 predefined boxes around the globe
-                            <ul><li>1805 in Ethiopia</li></ul>
+                        <li>
+                            ~4,000 label image patches taken from different parts of the world.
                         </li>
-                        <li>351888 Sentinel-2 image patches
-                            <ul><li>~60k cloud free</li></ul>
-                        </li>
-                        <li>2976 labeled image patches taken from different parts of the world
-                            <ul><li>created using visual inspection</li></ul>
+                        <li>
+                            ~90,000 unlabeled (and cloud free) images from Ethiopia.
                         </li>
                     </ul>
                 </li>
@@ -171,7 +183,7 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
                             <ul>
                                 <li>Autoencoder based unsupervised feature learning using large unlabeled data
                                     <ul>
-                                        <li>Uses 9,000 unlabeled image patches to learn features that could 
+                                        <li>Uses 9,0000 unlabeled image patches to learn features that could 
                                         reconstruct a wide variety of image patches</li>
                                         <li>Clustering of 2-D compression of auto-encoder features show 
                                         effectiveness in grouping similar image patches</li>
@@ -189,42 +201,39 @@ export class DatasetsRemoteSensingWorkflows extends connect(store)(PageViewEleme
                                 <li>Semantic segmentation-based classification to incorporate structural/shape constraints</li>
                             </ul>
                         </li>
-                        <li>Identification of cross sections along the river segment by automatically identifying the 
-                        center line and cross sections at regular intervals on the center line 
-                            <ul>
-                                <li>Create multi-temporal maps to create a fraction map
-                                    <ul><li>Used to identify the core region of the river segment</li></ul>
-                                </li>
-                                <li>Extract the center line using morphological operations on the core region</li>
-                                <li>Perpendicular cross-sections are calculated automatically at regular intervals 
-                                along the center line</li>
-                                <li>Cross sections along with elevation data are used to create river 
-                                depth hydrographs (next slide)</li>
-                            </ul>
-                        </li>
-                        <li>Estimating river width/depth hydrograph along the cross-section, merging with 
-                            <ul>
-                                <li>SRTM 30m elevation data to convert river width hydrograph to river depth hydrograph
-                                    <ul><li>Elevation profile along the cross section is smoothed and approximated to a 
-                                    triangular river bed.</li></ul>
-                                </li>
-                                <li>Constrained by surface extent to exclude irrelevant minimas in the elevation profile</li>
-                                <li>For a given cross section, river width at any date can be calculated using the 
-                                land/water mask on that date</li>
-                                <li>Width variations are then converted to depth variations using the triangular river bed</li>
-                            </ul>
-                        </li>
                     </ol>
                 </li>
-                <li>Geospatial visualizations show river width, depth shown at select locations</li>
-                <li>Quality of the results is still being evaluated:
+                <li>
+                    The quality of the ML approach to generate surface area variations is being evaluated, and will be
+                    presented in a peer reviewed publication.
+                </li>
+                <li>
+                    Data Specifications and Availability
                     <ul>
-                        <li>The spatial resolution of the width is 10 meters</li>
-                        <li>The quality of the depth is limited by the resolution (in meters) and 
-                        quality (not very good on a global scale) of the Digital Elevation Model (DEM)</li>
+                        <li>
+                            The spatial resolution of the land/water masks is 10m.
+                            The temporal resolution is ~10 days (however, very cloudy images are not considered which impacts the temporal frequency of the land/water masks). 
+                        </li>
+                        <li>
+                            The surface area variations of river segments in Ethiopia (from Jan-2016 till May-2020) are available 
+                            <a targe="_blank" href="https://data-catalog.mint.isi.edu/datasets/da6b6d47-7672-4e6e-a455-7bbc7e7ceb99">
+                                here in the MINT data catalog
+                            </a>
+                        </li>
                     </ul>
                 </li>
             </ul>
+
+            <wl-title level="4">
+                Extraction of River Depth using Surface Area Variations and Digital Elevation Data
+            </wl-title>
+            <p>
+                If high quality bathymetric information is available for some river segments, it can be combined with surface area variations to derive changes in river depth over time. For example, videos below demonstrate the concept by combining area/width variations with SRTM elevation data at 30m resolution.
+            </p>
+            <div style="width: 90%; margin: 0px auto;">
+                <image-gallery .items="${items}"></image-gallery>
+            </div>
+
 
             ` : ''}
         </div>`
