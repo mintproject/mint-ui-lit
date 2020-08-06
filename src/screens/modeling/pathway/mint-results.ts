@@ -1,6 +1,7 @@
 import { customElement, html, css, property } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
+import ReactGA from 'react-ga';
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { BASE_HREF } from "../../../app/actions";
@@ -446,6 +447,10 @@ export class MintResults extends connect(store)(MintPathwayPage) {
     }
 
     _publishAllResults(modelid) {
+        ReactGA.event({
+          category: 'Pathway',
+          action: 'Save results',
+        });
         let model = this.pathway.models[modelid];
         /*
         -> Ingest thread to visualization database

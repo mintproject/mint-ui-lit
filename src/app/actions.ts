@@ -22,6 +22,8 @@ import { DefaultApi } from '@mintproject/modelcatalog_client';
 import { dexplorerSelectDataset, dexplorerSelectDatasetArea } from 'screens/datasets/ui-actions';
 import { selectEmulatorModel } from 'screens/emulators/actions';
 
+import ReactGA from 'react-ga';
+
 export const BASE_HREF = document.getElementsByTagName("base")[0].href.replace(/^http(s)?:\/\/.*?\//, "/");
 
 export const UPDATE_PAGE = 'UPDATE_PAGE';
@@ -97,6 +99,7 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
   //console.log("Subscribing to user authentication updates");
   auth.onAuthStateChanged(user => {
     if (user) {
+      ReactGA.set({ userId: user.email });
       dispatch(fetchUserProfile(user)).then(() => {
           // Check the state of the model-catalog access token.
           let state: any = store.getState();
@@ -214,6 +217,7 @@ export const goToRegionPage = (regionid: string, page:string) => {
 
 export const navigate: ActionCreator<ThunkResult> = (path: string) => (dispatch) => {
   //console.log(path);
+  ReactGA.pageview(path);
   // Extract the page name from path.
   let cpath = path === BASE_HREF ? '/home' : path.slice(BASE_HREF.length);
   let regionIndex = cpath.indexOf("/");

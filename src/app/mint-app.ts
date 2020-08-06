@@ -12,6 +12,7 @@ import { LitElement, html, property, PropertyValues, customElement, css } from '
 import { connect } from 'pwa-helpers/connect-mixin';
 import { installRouter } from 'pwa-helpers/router';
 import { updateMetadata } from 'pwa-helpers/metadata';
+import ReactGA from 'react-ga';
 
 // This element is connected to the Redux store.
 import { store, RootState } from './store';
@@ -482,6 +483,9 @@ export class MintApp extends connect(store)(LitElement) {
   }
 
   protected firstUpdated() {
+    ReactGA.initialize('UA-174574572-1', {
+        siteSpeedSampleRate: 100
+    });
     installRouter((location) => store.dispatch(navigate(decodeURIComponent(location.pathname))));
     store.dispatch(fetchUser());
   }

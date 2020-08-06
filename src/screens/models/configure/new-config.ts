@@ -1,5 +1,6 @@
 import { property, html, customElement, css } from 'lit-element';
 import { PageViewElement } from 'components/page-view-element';
+import ReactGA from 'react-ga';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../model-explore/explorer-styles'
@@ -368,7 +369,10 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
     }
 
     private _onSaveButtonClicked () {
-        console.log('click!');
+        ReactGA.event({
+          category: 'Model Catalog',
+          action: 'New Configuration save button clicked',
+        });
         let inputName : Textfield = this.shadowRoot.getElementById("form-config-name") as Textfield;
         let inputCategory : Select = this.shadowRoot.getElementById("form-config-category") as Select;
         let inputDesc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-desc") as HTMLTextAreaElement;
@@ -430,6 +434,11 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
             Promise.all(promises).then(() => {
                 let newConfig = ModelConfigurationFromJSON(jsonObj);
                 store.dispatch(modelConfigurationPost(newConfig)).then((c:ModelConfiguration) => {
+                    ReactGA.event({
+                      category: 'Model Catalog',
+                      action: 'New Configuration saved',
+                      label: c.id
+                    });
                     store.dispatch(versionGet(this._selectedVersion)).then((sv) => {
                         console.log('sv', sv);
                         if (!sv.hasConfiguration) sv.hasConfiguration = [];

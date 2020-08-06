@@ -1,5 +1,6 @@
 import { property, html, customElement, css } from 'lit-element';
 import { PageViewElement } from 'components/page-view-element';
+import ReactGA from 'react-ga';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../model-explore/explorer-styles'
@@ -280,6 +281,10 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
     }
 
     _saveConfig () {
+        ReactGA.event({
+          category: 'Model Catalog',
+          action: 'Setup save button clicked',
+        });
         let labelEl     = this.shadowRoot.getElementById('edit-setup-name') as HTMLInputElement;
         let descEl      = this.shadowRoot.getElementById('edit-setup-desc') as HTMLInputElement;
         let keywordsEl  = this.shadowRoot.getElementById('edit-setup-keywords') as HTMLInputElement;
@@ -331,6 +336,11 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
 
             Promise.all( paramProms.concat(sampleResProms).concat(sampleColProms) ).then((results:any) => {
                 store.dispatch(modelConfigurationSetupPut(editedSetup)).then((setup) => {
+                    ReactGA.event({
+                      category: 'Model Catalog',
+                      action: 'Setup saved',
+                      label: setup.id
+                    });
                     goToPage(createUrl(this._model, this._version, this._config, setup));
                 });
             });
