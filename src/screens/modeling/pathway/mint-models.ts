@@ -1,9 +1,10 @@
 import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
+import ReactGA from 'react-ga';
 
 import { ModelMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, ExecutableEnsembleSummary } from "../reducers";
-import models, { VariableModels, Model } from "../../models/reducers";
+import models, { VariableModels, Model, getPathFromModel } from "../../models/reducers";
 import { queryModelsByVariables, setupToOldModel } from "../../models/actions";
 import { setupGetAll, regionsGet, modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet,
          sampleCollectionGet, sampleResourceGet, softwareImagesGet } from 'model-catalog/actions';
@@ -183,7 +184,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                         let model = this.pathway.models![modelid];
                         return html`
                         <li>
-                            <a target="_blank" href="${this._getModelURL(model)}">${model.name}</a>
+                            <a target="_blank" href="${this._getStoredModelURL(model)}">${model.name}</a>
                         </li>
                         `
                     })}
@@ -371,6 +372,12 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         `;
     }
 
+    private _getStoredModelURL (model:Model) {
+        console.log(model);
+        let uri =  this._regionid + '/models/explore' + getPathFromModel(model) + "/";
+        return uri;
+    }
+
     _getModelURL (model:Model) {
         //FIXME find a better way to do this.
         if (this._baseLoaded) {
@@ -446,6 +453,10 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     }
 
     async _selectPathwayModels() {
+        ReactGA.event({
+          category: 'Pathway',
+          action: 'Models continue',
+        });
         let models = this._getSelectedModels();
         //FIXME this is not necesary now.
         Object.values(models).forEach((model) => {

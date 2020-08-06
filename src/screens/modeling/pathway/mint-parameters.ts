@@ -1,6 +1,7 @@
 import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
+import ReactGA from 'react-ga';
 
 import { DataEnsembleMap, ModelEnsembleMap, StepUpdateInformation, Pathway, ExecutableEnsembleSummary } from "../reducers";
 import { SharedStyles } from "../../../styles/shared-styles";
@@ -102,6 +103,14 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                         else 
                             return a.name.localeCompare(b.name)
                     });
+                let fixed_parameters = model.input_parameters
+                    .filter((input) => !!input.value)
+                    .sort((a, b) => {
+                        if(a.position && b.position)
+                            return a.position - b.position;
+                        else 
+                            return a.name.localeCompare(b.name)
+                    });
 
                 return html`
                 <li>
@@ -109,68 +118,101 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                         Model:
                         <a target="_blank" href="${url}">${model.name}</a>
                     </wl-title>
+                    <ul>
+                    ${fixed_parameters.length > 0 ? 
+                        html `
+                        <li>
+                            <b> Expert modeler has selected the following parameters: </b>
+                            <table class="pure-table pure-table-striped">
+                                <thead>
+                                    <th><b>Adjustable Parameter</b></th>
+                                    <th>Values</th>
+                                </thead>
+                                <tbody>
+                                ${fixed_parameters.map((input) => {
+                                    return html`
+                                    <tr>
+                                        <td style="width:60%">
+                                            <wl-title level="5">${input.name.replace(/_/g, ' ')}</wl-title>
+                                            <div class="caption">${input.description}.</div>
+                                        </td>
+                                        <td>
+                                            ${input.value}
+                                        </td>
+                                    </tr>
+                                    `
+                                })}
+                                </tbody>
+                            </table>
+                        </li>
+                        ` : ""
+                    }
                     ${input_parameters.length > 0 ? 
                         html `
-                        <p>
-                            Setup the model by specifying values below. You can enter more than one value (comma separated) if you want several runs.
-                        </p>
-                        <p>
-                            ${model.usage_notes}
-                        </p>
-                        <form id="form_${this._valid(model.localname || model.id)}">
-                        <table class="pure-table pure-table-striped">
-                        <thead>
-                            <th><b>Adjustable Parameter</b></th>
-                            <th>Values</th>
-                        </thead>
-                        <tbody>
-                        ${input_parameters.map((input) => {
-                            let bindings:string[] = ensembles[input.id!];
-                            return html`
-                            <tr>
-                                <td style="width:60%">
-                                    <wl-title level="5">${input.name.replace(/_/g, ' ')}</wl-title>
-                                    <div class="caption">${input.description}.</div>
-                                    <div class="caption">
-                                    ${input.min && input.max ? 
-                                        html `The range is from ${input.min} to ${input.max}.` : html``
-                                    }
-                                    ${input.default ? html` Default is ${input.default}` : html``}
-                                    </div>
-                                </td>
-                                <td>
-                                    ${(bindings && bindings.length > 0 && !this._editMode) ? 
-                                        bindings.join(", ")
-                                        :
-                                        html`
-                                        <div class="input_full">
-                                            <input type="text" name="${input.id}" 
-                                                @change="${() => this._validateInput(model, input)}"
-                                                value="${(bindings||[]).join(", ")}"></input>
+                        <li>
+                            <p>
+                                Setup the model by specifying values below. You can enter more than one value (comma separated) if you want several runs.
+                            </p>
+                            <p>
+                                ${model.usage_notes}
+                            </p>
+                            <form id="form_${this._valid(model.localname || model.id)}">
+                            <table class="pure-table pure-table-striped">
+                            <thead>
+                                <th><b>Adjustable Parameter</b></th>
+                                <th>Values</th>
+                            </thead>
+                            <tbody>
+                            ${input_parameters.map((input) => {
+                                let bindings:string[] = ensembles[input.id!];
+                                return html`
+                                <tr>
+                                    <td style="width:60%">
+                                        <wl-title level="5">${input.name.replace(/_/g, ' ')}</wl-title>
+                                        <div class="caption">${input.description}.</div>
+                                        <div class="caption">
+                                        ${input.min && input.max ? 
+                                            html `The range is from ${input.min} to ${input.max}.` : html``
+                                        }
+                                        ${input.default ? html` Default is ${input.default}` : html``}
                                         </div>
-                                        <div id="message_${this._valid(input.name)}" 
-                                            style="color:red; font-size: 12px;"></div>
-                                        `
-                                    }
-                                </td>
-                            </tr>
-                            `
-                        })}
-                        </tbody>
-                        </table>
-                        </form>
+                                    </td>
+                                    <td>
+                                        ${(bindings && bindings.length > 0 && !this._editMode) ? 
+                                            bindings.join(", ")
+                                            :
+                                            html`
+                                            <div class="input_full">
+                                                <input type="text" name="${input.id}" 
+                                                    @change="${() => this._validateInput(model, input)}"
+                                                    value="${(bindings||[]).join(", ")}"></input>
+                                            </div>
+                                            <div id="message_${this._valid(input.name)}" 
+                                                style="color:red; font-size: 12px;"></div>
+                                            `
+                                        }
+                                    </td>
+                                </tr>
+                                `
+                            })}
+                            </tbody>
+                            </table>
+                            </form>
+                        </li>
                         `
                         : 
                         html `
-                            <p>
-                                There are no adjustments possible for this model
-                            </p>
+                            <li>
+                                <b>There are no adjustments possible for this model</b>
+                            </li>
                         `
                     }
+                    </ul>
                 </li>
                 `;
             })}
             </ul>
+
             ${!done || this._editMode ? 
                 html`
                 <div class="footer">
@@ -304,6 +346,10 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
     }
 
     _setPathwayParameters() {
+        ReactGA.event({
+          category: 'Pathway',
+          action: 'Parameters continue',
+        });
         let model_ensembles: ModelEnsembleMap = {
             ... (this.pathway.model_ensembles || {})
         };

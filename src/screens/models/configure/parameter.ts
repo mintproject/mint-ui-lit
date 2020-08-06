@@ -337,7 +337,8 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
                 }
             }
 
-            if ((!fixedVal && !this._editDefaults) || (min!=undefined && Number(fixedVal)<min) || (max!=undefined && Number(fixedVal)>max)) {
+            if (fixedVal && (
+                    (min!=undefined && Number(fixedVal)<min) || (max!=undefined && Number(fixedVal)>max))) {
                 showNotification("formValuesIncompleteNotification", this.shadowRoot!);
                 (<any>fixedValEl).refreshAttributes();
                 return;
@@ -346,6 +347,10 @@ export class ModelsConfigureParameter extends connect(store)(PageViewElement) {
             let editedParameter : Parameter = Object.assign({}, this._parameter);
             editedParameter.description = [description];
             if (fixedVal) editedParameter.hasFixedValue = [fixedVal as any];
+            else if (confirm("Not setting a fixed value for this parameter will make it adjustable"))
+                editedParameter.hasFixedValue = undefined;
+            else return;
+
             if (this._editDefaults) {
                 if (def) editedParameter.hasDefaultValue = [def as any];
                 if (min) editedParameter.hasMinimumAcceptedValue = [min as any]

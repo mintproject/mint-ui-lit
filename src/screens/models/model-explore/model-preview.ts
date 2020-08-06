@@ -6,9 +6,7 @@ import { store, RootState } from '../../../app/store';
 import { html, property, customElement, css } from 'lit-element';
 
 import { goToPage } from '../../../app/actions';
-
 import { ExplorerStyles } from './explorer-styles'
-//import { explorerCompareModel } from './ui-actions'
 
 import { getId, isEmpty, isSubregion, getLatestVersion, getLatestConfiguration, getLatestSetup,
          isExecutable } from 'model-catalog/util';
@@ -228,7 +226,10 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                 <td class="right">
                   <div class="header"> 
                     <span class="title">${this._model.label}</span>
-                    <span class="icon"><wl-icon @click="${()=>{this._compare(this._model.id)}}">compare_arrows</wl-icon></span>
+                    <span class="icon">
+                        <slot name="extra-icon"></slot>
+                        <!--wl-icon @click="{()=>{this._addToComparisonList(this._model.id)}}">compare_arrows</wl-icon-->
+                    </span>
                     <span class="ver-conf-text">
                     ${this._nVersions > 0 ? this._nVersions.toString() + ' version' + (this._nVersions > 1? 's' :'') : 'No versions'},
                     ${this._nConfigs > 0 ? this._nConfigs.toString() + ' config' + (this._nConfigs > 1? 's' :'') : 'No configs'}
@@ -263,12 +264,6 @@ export class ModelPreview extends connect(store)(PageViewElement) {
         } else {
             return html`Something when wrong!`
         }
-    }
-
-    _compare (uri:string) {
-        //FIXME
-        let compUrl : string = 'models/compare/' + uri.split('/').pop();
-        goToPage(compUrl);
     }
 
     stateChanged(state: RootState) {

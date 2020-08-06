@@ -1,5 +1,6 @@
 import { property, html, customElement, css } from 'lit-element';
 import { PageViewElement } from 'components/page-view-element';
+import ReactGA from 'react-ga';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../model-explore/explorer-styles'
@@ -252,6 +253,10 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
     }
 
     _saveNewSetup () {
+        ReactGA.event({
+          category: 'Model Catalog',
+          action: 'New Setup save button clicked',
+        });
         let nameEl      = this.shadowRoot.getElementById('new-setup-name') as HTMLInputElement;
         let descEl      = this.shadowRoot.getElementById('new-setup-desc') as HTMLInputElement;
         let keywordsEl  = this.shadowRoot.getElementById('new-setup-keywords') as HTMLInputElement;
@@ -314,6 +319,11 @@ export class ModelsNewSetup extends connect(store)(PageViewElement) {
             });
 
             store.dispatch(modelConfigurationSetupPost(setupCreated, this._config)).then((setup:ModelConfigurationSetup) => {
+                ReactGA.event({
+                  category: 'Model Catalog',
+                  action: 'New Setup saved',
+                  label: setup.id
+                });
                 goToPage(createUrl(this._model, this._version, this._config, setup));
             });
             showNotification("saveNotification", this.shadowRoot!);

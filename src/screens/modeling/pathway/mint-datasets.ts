@@ -2,6 +2,7 @@ import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 import datasets, { Dataset, ModelDatasets } from "../../datasets/reducers";
+import ReactGA from 'react-ga';
 
 import { DatasetMap, DataEnsembleMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, SubGoal } from "../reducers";
 import { SharedStyles } from "../../../styles/shared-styles";
@@ -123,9 +124,6 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
 
         let done = (getPathwayDatasetsStatus(this.pathway) == TASK_DONE);
 
-        console.log(this.pathway.models);
-        console.log(this._mcInputs);
-
         // If models have been selected, go over each model
         return html `
         <p>
@@ -168,7 +166,32 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                 html`No pre-selected datasets were needed for this model.`
                                 : html`
                                     Expert modeler has selected the following files:
-                                    ${this._mcInputs[model.id] ? this._mcInputs[model.id] : ''}
+                                    <table class="pure-table pure-table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Input</th>
+                                                <th>Selected File</th>
+
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        ${fixed_inputs.map((input) => html`
+                                            <tr>
+                                                <td>${input.name}</td>
+                                                <td>
+                                                ${input.value && input.value.resources ? 
+                                                    input.value.resources.map((r) => 
+                                                        html`<a target="_blank" href="${r.url}">${r.name}</a>`)
+                                                    : ""}
+                                                </td>
+                                            </tr>
+                                        `)}
+                                        </tbody>
+                                    </table>
+                                    <!-- TODO: This is a better way to do it, but theres no way to know if the resources
+                                        are in the model catalog:
+                                    {this._mcInputs[model.id] ? this._mcInputs[model.id] : ''}
+                                    -->
                                 `}
                             </li>
                         </ul>
@@ -436,6 +459,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                     <div style="margin-top: 10px; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>
                 `:'' }
             </div>   
+
             <div slot="footer">
                 <wl-button @click="${this._closeResourceSelectionDialog}" inverted flat>Close</wl-button>
                 <wl-button @click="${this._submitDatasetResources}" class="submit">Submit</wl-button>
@@ -546,6 +570,10 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     }
 
     _loadAndSelectPathwayDatasets() {
+        ReactGA.event({
+          category: 'Pathway',
+          action: 'Dataset continue',
+        });
         let new_datasets = []
         this._waiting = true;
         Object.keys(this.pathway.models!).map((modelid) => {
@@ -715,7 +743,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
             if (Object.keys(this._models).length > 0) {
                 Object.values(this._models).forEach((m:Model) => {
                     let fixed = m.input_files.filter((i) => !!i.value);
-                    if (fixed.length > 0) {
+                    if (false && fixed.length > 0) { //FIXME: not all inputs are in the catalog!
                         if (!this._mcInputs[m.id]) {
                             this._mcInputs[m.id] = new ModelCatalogDatasetSpecification();
                             this._mcInputs[m.id].inline = false;
