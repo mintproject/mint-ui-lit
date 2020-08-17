@@ -146,6 +146,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Baro/Baro_DEM_buffer.tif
                                 </a>
                             </td>
+
                             <td>
                                 <a href="/ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/d42dee74-17b6-4821-b18e-5af4f7e3754c/">
                                     /ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/d42dee74-17b6-4821-b18e-5af4f7e3754c/
@@ -333,7 +334,6 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     /ethiopia/modeling/scenario/vKAnkUcLzKqVnfwr1Qy2/wdS8drGoYwN4OJbIwnVn/bP8Y4q31sDdhAzlZZU2J
                                 </a>
                             </td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
