@@ -128,9 +128,12 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
 
             <div id="hand_emulators" .style="display:${this._selectedModel=='hand' ? '': 'none'}" class="emulators">
                 <h2>HAND Emulators</h2>
+                <h4 style="margin: 2px;">To view and download the inputs used in the execution, click on the Input column.</h4>
+                <h4 style="margin: 2px;">To view information about the model associated with the results, click on the setup column.</h4>
+                <h4 style="margin: 2px;">To access and download the results, click on the output summary link.</h4>
                 <table class="pure-table pure-table-bordered">
                     <thead>
-                        <tr><th>Area</th><th>Region</th><th>Time period</th><th>Input (data preparation has been completed)</th><th>Model setup has been tested (outside MINT)</th><th>Setup (the model setup available in MINT)</th><th>Ensemble description (range of parameters completed in the simulation)</th><th>Output summary (Ensemble)</th><th>JSON-Summary (triggered manually)</th><th>URL to be shared (with hand-curated metadata and provenance)</th><th>Results reviewed by modeler</th><th>Status</th><th>Validated?</th><th>Usage Notes</th><th>Comments</th></tr>
+                        <tr><th>Area</th><th>Region</th><th>Time period</th><th>Input (data preparation has been completed)</th><th>Setup (the model setup available in MINT)</th><th>Ensemble description (range of parameters completed in the simulation)</th><th>Output summary (Ensemble)</th></tr>
                     </thead>
                     <tbody>
 
@@ -143,10 +146,9 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Baro/Baro_DEM_buffer.tif
                                 </a>
                             </td>
-                            <td>Yes (Node 1)</td>
                             <td>
-                                <a href="https://w3id.org/okn/i/mint/d42dee74-17b6-4821-b18e-5af4f7e3754c">
-                                    https://w3id.org/okn/i/mint/d42dee74-17b6-4821-b18e-5af4f7e3754c
+                                <a href="/ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/d42dee74-17b6-4821-b18e-5af4f7e3754c/">
+                                    /ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/d42dee74-17b6-4821-b18e-5af4f7e3754c/
                                 </a>
                             </td>
                             <td>Threshold: 500</td>
@@ -155,14 +157,6 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     /ethiopia/modeling/scenario/vKAnkUcLzKqVnfwr1Qy2/wdS8drGoYwN4OJbIwnVn/OPOZ17QlQq9g47bDiiyU
                                 </a>
                             </td>
-                            <td>
-                                Results available in output summary
-                            </td>
-                            <td>
-                            </td>
-                            <td>-</td>
-                            <td>Completed</td>
-                            <td>NO</td>
                         </tr>
 
                         <tr>
@@ -174,10 +168,9 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Guder/Guder_DEM_buffer.tif
                                 </a>
                             </td>
-                            <td>Yes (Node 1)</td>
                             <td>
-                                <a href="https://w3id.org/okn/i/mint/4268c4ae-6a91-476c-9f0d-57643cfab6ea">
-                                    https://w3id.org/okn/i/mint/4268c4ae-6a91-476c-9f0d-57643cfab6ea
+                                <a href="/ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/4268c4ae-6a91-476c-9f0d-57643cfab6ea/">
+                                    /ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/4268c4ae-6a91-476c-9f0d-57643cfab6ea/
                                 </a>
                             </td>
                             <td>Threshold: 500</td>
@@ -186,14 +179,6 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     /ethiopia/modeling/scenario/vKAnkUcLzKqVnfwr1Qy2/wdS8drGoYwN4OJbIwnVn/310lucStjp4XXhN7u1zZ
                                 </a>
                             </td>
-                            <td>
-                                Results available in output summary
-                            </td>
-                            <td>
-                            </td>
-                            <td>-</td>
-                            <td>Completed</td>
-                            <td>NO</td>
                         </tr>
 
                         <tr>
@@ -205,10 +190,9 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Muger/Muger_DEM_buffer.tif
                                 </a>
                             </td>
-                            <td>Yes (Node 1)</td>
                             <td>
-                                <a href="https://w3id.org/okn/i/mint/01ebfec2-a192-4c4b-a905-37aba583c31b">
-                                    https://w3id.org/okn/i/mint/01ebfec2-a192-4c4b-a905-37aba583c31b
+                                <a href="/ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/01ebfec2-a192-4c4b-a905-37aba583c31b/">
+                                    /ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/01ebfec2-a192-4c4b-a905-37aba583c31b/
                                 </a>
                             </td>
                             <td>Threshold: 500</td>
@@ -217,14 +201,6 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     /ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/01ebfec2-a192-4c4b-a905-37aba583c31b/
                                 </a>
                             </td>
-                            <td>
-                                Results available in output summary
-                            </td>
-                            <td>
-                            </td>
-                            <td>-</td>
-                            <td>Completed</td>
-                            <td>NO</td>
                         </tr>
 
                         <tr>
@@ -236,10 +212,9 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Awash/Awash-border_DEM_buffer.tif
                                 </a>
                             </td>
-                            <td>Yes (Node 1)</td>
                             <td>
-                                <a href="https://w3id.org/okn/i/mint/1727b1d9-e9d2-4a82-8c7c-188c8cf140b2">
-                                    https://w3id.org/okn/i/mint/1727b1d9-e9d2-4a82-8c7c-188c8cf140b2
+                                <a href="/ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/1727b1d9-e9d2-4a82-8c7c-188c8cf140b2/">
+                                    /ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/1727b1d9-e9d2-4a82-8c7c-188c8cf140b2/
                                 </a>
                             </td>
                             <td>Threshold: 500</td>
@@ -248,14 +223,6 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     /ethiopia/modeling/scenario/vKAnkUcLzKqVnfwr1Qy2/wdS8drGoYwN4OJbIwnVn/GKs94p4EcggiBVao8Xti
                                 </a>
                             </td>
-                            <td>
-                                Results available in output summary
-                            </td>
-                            <td>
-                            </td>
-                            <td>-</td>
-                            <td>Completed</td>
-                            <td>NO</td>
                         </tr>
 
                         <tr>
@@ -267,10 +234,9 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Shebelle/Shebelle-Imi_3sec_DEM_buffer.tif
                                 </a>
                             </td>
-                            <td>Yes (Node 1)</td>
                             <td>
-                                <a href="https://w3id.org/okn/i/mint/c2e5cb61-4535-4321-8be5-410437d361b8">
-                                    https://w3id.org/okn/i/mint/c2e5cb61-4535-4321-8be5-410437d361b8
+                                <a href="/ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/c2e5cb61-4535-4321-8be5-410437d361b8/">
+                                    /ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/c2e5cb61-4535-4321-8be5-410437d361b8/
                                 </a>
                             </td>
                             <td>Threshold: 500</td>
@@ -279,14 +245,6 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     /ethiopia/modeling/scenario/vKAnkUcLzKqVnfwr1Qy2/wdS8drGoYwN4OJbIwnVn/vcG6cIj76iuNTyUhU3Kh
                                 </a>
                             </td>
-                            <td>
-                                Results available in output summary
-                            </td>
-                            <td>
-                            </td>
-                            <td>-</td>
-                            <td>Completed</td>
-                            <td>NO</td>
                         </tr>
 
                         <tr>
@@ -298,10 +256,9 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Ganale/Ganale-border_3sec_DEM_buffer.tif
                                 </a>
                             </td>
-                            <td>Yes (Node 1)</td>
                             <td>
-                                <a href="https://w3id.org/okn/i/mint/853e0986-f642-4035-aa4e-a8679123da90">
-                                    https://w3id.org/okn/i/mint/853e0986-f642-4035-aa4e-a8679123da90
+                                <a href="/ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/853e0986-f642-4035-aa4e-a8679123da90/">
+                                    /ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/853e0986-f642-4035-aa4e-a8679123da90/
                                 </a>
                             </td>
                             <td>Threshold: 500</td>
@@ -310,14 +267,6 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     /ethiopia/modeling/scenario/vKAnkUcLzKqVnfwr1Qy2/wdS8drGoYwN4OJbIwnVn/5Iqar4ruRdiqqGaZSWiG
                                 </a>
                             </td>
-                            <td>
-                                Results available in output summary
-                            </td>
-                            <td>
-                            </td>
-                            <td>-</td>
-                            <td>Completed</td>
-                            <td>NO</td>
                         </tr>
 
                         <tr>
@@ -329,10 +278,9 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     https://data.mint.isi.edu/files/hand-dem/Jamma_DEM.tif
                                 </a>
                             </td>
-                            <td>Yes (Node 1)</td>
                             <td>
-                                <a href="https://w3id.org/okn/i/mint/433bc0ad-9751-4e79-9472-ddc156ef46e0">
-                                    https://w3id.org/okn/i/mint/433bc0ad-9751-4e79-9472-ddc156ef46e0
+                                <a href="/ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/433bc0ad-9751-4e79-9472-ddc156ef46e0/">
+                                    /ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/433bc0ad-9751-4e79-9472-ddc156ef46e0/
                                 </a>
                             </td>
                             <td>Threshold: 500</td>
@@ -341,14 +289,6 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     /ethiopia/modeling/scenario/vKAnkUcLzKqVnfwr1Qy2/wdS8drGoYwN4OJbIwnVn/pr1IfNPmDiLQTCy5xZh1
                                 </a>
                             </td>
-                            <td>
-                                Results available in output summary
-                            </td>
-                            <td>
-                            </td>
-                            <td>-</td>
-                            <td>Completed</td>
-                            <td>NO</td>
                         </tr>
 
                         <tr>
@@ -360,10 +300,9 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     https://data.mint.isi.edu/files/hand-dem/Bashilo_DEM.tif
                                 </a>
                             </td>
-                            <td>Yes (Node 1)</td>
                             <td>
-                                <a href="https://w3id.org/okn/i/mint/eba6afdc-c20b-44d6-ab63-702e9498699a">
-                                    https://w3id.org/okn/i/mint/eba6afdc-c20b-44d6-ab63-702e9498699a
+                                <a href="/ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/eba6afdc-c20b-44d6-ab63-702e9498699a/">
+                                    /ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/eba6afdc-c20b-44d6-ab63-702e9498699a/
                                 </a>
                             </td>
                             <td>Threshold: 500</td>
@@ -372,14 +311,6 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     /ethiopia/modeling/scenario/vKAnkUcLzKqVnfwr1Qy2/wdS8drGoYwN4OJbIwnVn/i2qQfaaZHnQl0wF3yRVk
                                 </a>
                             </td>
-                            <td>
-                                Results available in output summary
-                            </td>
-                            <td>
-                            </td>
-                            <td>-</td>
-                            <td>Completed</td>
-                            <td>NO</td>
                         </tr>
 
                         <tr>
@@ -391,10 +322,9 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     https://data.mint.isi.edu/files/hand-dem/Beko-Tippi_DEM.tif
                                 </a>
                             </td>
-                            <td>Yes (Node 1)</td>
                             <td>
-                                <a href="https://w3id.org/okn/i/mint/bc7179eb-bbcf-4042-963d-ef01fa331886">
-                                    https://w3id.org/okn/i/mint/bc7179eb-bbcf-4042-963d-ef01fa331886
+                                <a href="/ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/bc7179eb-bbcf-4042-963d-ef01fa331886/">
+                                    /ethiopia/models/explore/HAND/HANDv2/hand_v2_raster/bc7179eb-bbcf-4042-963d-ef01fa331886/
                                 </a>
                             </td>
                             <td>Threshold: 500</td>
@@ -403,25 +333,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     /ethiopia/modeling/scenario/vKAnkUcLzKqVnfwr1Qy2/wdS8drGoYwN4OJbIwnVn/bP8Y4q31sDdhAzlZZU2J
                                 </a>
                             </td>
-                            <td>
-                                Results available in output summary
-                            </td>
-                            <td>
-                            </td>
-                            <td>-</td>
-                            <td>Completed</td>
-                            <td>NO</td>
                         </tr>
-
-                        <tr><td>Baro </td><td>Oromia</td><td>N/A</td><td><a href="https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Baro/Baro_DEM_buffer.tif">https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Baro/Baro_DEM_buffer.tif</a></td><td>Yes (Node 1)</td><td><a href="https://w3id.org/okn/i/mint/hand_v1_simple_baro">https://w3id.org/okn/i/mint/hand_v1_simple_baro</a></td><td>Threshold: 22.3</td><td><a href="/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/zeb8nvpXeiQ5sQVxKt4I">/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/zeb8nvpXeiQ5sQVxKt4I</a></td><td><a href="https://ingestion.mint.isi.edu/data/zeb8nvpXeiQ5sQVxKt4I_export/summary.json">https://ingestion.mint.isi.edu/data/zeb8nvpXeiQ5sQVxKt4I_export/summary.json</a></td><td><a href="https://data.mint.isi.edu/files/sharedResults/HAND/Baro.zip">https://data.mint.isi.edu/files/sharedResults/HAND/Baro.zip</a></td><td>-</td><td>Completed</td><td>NO</td></tr>
-                        <tr><td>Guder</td><td>Oromia</td><td>N/A</td><td><a href="https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Guder/Guder_DEM_buffer.tif">https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Guder/Guder_DEM_buffer.tif</a></td><td>Yes (Node 1)</td><td><a href="https://w3id.org/okn/i/mint/hand_v1_simple_guder">https://w3id.org/okn/i/mint/hand_v1_simple_guder</a></td><td>Threshold: 22.3</td><td><a href="/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/pPv1ncjpuJ3cFi4neccF/runs">/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/pPv1ncjpuJ3cFi4neccF/runs</a></td><td><a href="https://ingestion.mint.isi.edu/data/pPv1ncjpuJ3cFi4neccF_export/summary.json">https://ingestion.mint.isi.edu/data/pPv1ncjpuJ3cFi4neccF_export/summary.json</a></td><td><a href="https://data.mint.isi.edu/files/sharedResults/HAND/Guder.zip">https://data.mint.isi.edu/files/sharedResults/HAND/Guder.zip</a></td><td>-</td><td>Completed</td><td>NO</td></tr>
-                        <tr><td>Muger</td><td>Oromia</td><td>N/A</td><td><a href="https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Muger/Muger_DEM_buffer.tif">https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Muger/Muger_DEM_buffer.tif</a></td><td>Yes (Node 1)</td><td><a href="https://w3id.org/okn/i/mint/hand_v1_simple_muger">https://w3id.org/okn/i/mint/hand_v1_simple_muger</a></td><td>Threshold: 22.3</td><td><a href="/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/je9iWYBhpntcTsPcigXB/results">/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/je9iWYBhpntcTsPcigXB/results</a></td><td><a href="https://ingestion.mint.isi.edu/data/je9iWYBhpntcTsPcigXB_export/summary.json">https://ingestion.mint.isi.edu/data/je9iWYBhpntcTsPcigXB_export/summary.json</a></td><td><a href="https://data.mint.isi.edu/files/sharedResults/HAND/Muger.zip">https://data.mint.isi.edu/files/sharedResults/HAND/Muger.zip</a></td><td>-</td><td>Completed</td><td>NO</td></tr>
-                        <tr><td>Awash</td><td>Oromia</td><td>N/A</td><td><a href="https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Awash/Awash-border_DEM_buffer.tif">https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Awash/Awash-border_DEM_buffer.tif</a></td><td>Yes (Node 1)</td><td><a href="https://w3id.org/okn/i/mint/hand_v1_simple_awash">https://w3id.org/okn/i/mint/hand_v1_simple_awash</a></td><td>Threshold: 22.3</td><td><a href="/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/q5v983pi0SHXyHG8lY3Y">/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/q5v983pi0SHXyHG8lY3Y</a></td><td><a href="https://ingestion.mint.isi.edu/data/sUC7yyNkovWW6ajR3fg5_export/summary.json">https://ingestion.mint.isi.edu/data/sUC7yyNkovWW6ajR3fg5_export/summary.json</a></td><td><a href="https://data.mint.isi.edu/files/sharedResults/HAND/Awash.zip">https://data.mint.isi.edu/files/sharedResults/HAND/Awash.zip</a></td><td>-</td><td>Completed</td><td>NO</td></tr>
-                        <tr><td>Shebelle</td><td>Oromia</td><td>N/A</td><td><a href="https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Shebelle/Shebelle-Imi_3sec_DEM_buffer.tif">https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Shebelle/Shebelle-Imi_3sec_DEM_buffer.tif</a></td><td>Yes (Node 1)</td><td><a href="https://w3id.org/okn/i/mint/hand_v1_simple_shebelle">https://w3id.org/okn/i/mint/hand_v1_simple_shebelle</a></td><td>Threshold: 22.3</td><td><a href="/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/sUC7yyNkovWW6ajR3fg5">/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/sUC7yyNkovWW6ajR3fg5</a></td><td><a href="https://ingestion.mint.isi.edu/data/q5v983pi0SHXyHG8lY3Y_export/summary.json">https://ingestion.mint.isi.edu/data/q5v983pi0SHXyHG8lY3Y_export/summary.json</a></td><td><a href="https://data.mint.isi.edu/files/sharedResults/HAND/Shebelle.zip">https://data.mint.isi.edu/files/sharedResults/HAND/Shebelle.zip</a></td><td>-</td><td>Completed</td><td>NO</td></tr>
-                        <tr><td>Ganale</td><td>Oromia</td><td>N/A</td><td><a href="https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Ganale/Ganale-border_3sec_DEM_buffer.tif">https://data.mint.isi.edu/files/hand-dem/GIS-Oromia/Ganale/Ganale-border_3sec_DEM_buffer.tif</a></td><td>Yes (Node 1). </td><td><a href="https://w3id.org/okn/i/mint/hand_v1_simple_ganale">https://w3id.org/okn/i/mint/hand_v1_simple_ganale</a></td><td>Threshold: 22.3</td><td><a href="/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/uZWdcJMRjwmVm8FdIU7i/results">/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/uZWdcJMRjwmVm8FdIU7i/results</a></td><td><a href="https://ingestion.mint.isi.edu/data/uZWdcJMRjwmVm8FdIU7i_export/summary.json">https://ingestion.mint.isi.edu/data/uZWdcJMRjwmVm8FdIU7i_export/summary.json</a></td><td><a href="https://data.mint.isi.edu/files/sharedResults/HAND/Ganale.zip">https://data.mint.isi.edu/files/sharedResults/HAND/Ganale.zip</a></td><td>-</td><td>Completed</td><td>NO</td></tr>
-                        <tr><td>Jamma</td><td></td><td>N/A</td><td><a href="https://data.mint.isi.edu/files/hand-dem/Jamma_DEM.tif">https://data.mint.isi.edu/files/hand-dem/Jamma_DEM.tif</a></td><td>Yes (Node 1)</td><td><a href="https://w3id.org/okn/i/mint/hand_v1_simple_jamma">https://w3id.org/okn/i/mint/hand_v1_simple_jamma</a></td><td>Threshold: 22.3</td><td><a href="/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/fNNs1aPlHsl3P1EhM5Ge">/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/fNNs1aPlHsl3P1EhM5Ge</a></td><td></td><td></td><td>-</td><td>Completed</td><td>NO</td></tr>
-                        <tr><td>Bashilo</td><td></td><td>N/A</td><td><a href="https://data.mint.isi.edu/files/hand-dem/Bashilo_DEM.tif">https://data.mint.isi.edu/files/hand-dem/Bashilo_DEM.tif</a></td><td>Yes (Node 1)</td><td><a href="https://w3id.org/okn/i/mint/hand_v1_simple_bashilo">https://w3id.org/okn/i/mint/hand_v1_simple_bashilo</a></td><td>Threshold: 22.3</td><td><a href="/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/Y9ffZCpgHSL2Zq3v29T5">/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/Y9ffZCpgHSL2Zq3v29T5</a></td><td></td><td></td><td>-</td><td>Completed</td><td>NO</td></tr>
-                        <tr><td>Beko-Tippi</td><td></td><td>N/A</td><td><a href="https://data.mint.isi.edu/files/hand-dem/Beko-Tippi_DEM.tif">https://data.mint.isi.edu/files/hand-dem/Beko-Tippi_DEM.tif</a></td><td>Yes (Node 1)</td><td><a href="https://w3id.org/okn/i/mint/hand_v1_simple_beko-tippi">https://w3id.org/okn/i/mint/hand_v1_simple_beko-tippi</a></td><td>Threshold: 22.3</td><td><a href="/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/Tc0T2c7KcZ6v49Prm4vB/runs">/ethiopia/modeling/scenario/EnaNTF1qst06U4STDl78/dAkQZmVskdPUcCkk7gAg/Tc0T2c7KcZ6v49Prm4vB/runs</a></td><td></td><td></td><td>-</td><td>Completed</td><td>NO</td></tr>
                     </tbody>
                 </table>
             </div>
