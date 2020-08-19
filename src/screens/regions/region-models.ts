@@ -16,7 +16,7 @@ import { selectSubRegion } from 'app/ui-actions';
 import { modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet, regionsGet, geoShapesGet,
          datasetSpecificationGet, sampleResourceGet, sampleCollectionGet, setupGetAll } from 'model-catalog/actions';
 
-import { isSubregion } from 'model-catalog/util';
+import { isSubregion, isMainRegion } from 'model-catalog/util';
 import { GeoShape, Region, Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
 import { Dataset } from "screens/datasets/reducers";
 
@@ -167,19 +167,20 @@ export class RegionModels extends connect(store)(PageViewElement)  {
         let parentRegion : string = this._region.model_catalog_uri;
 
         Object.values(this._regions).forEach((region:Region) => {
-            (region.geo || []).forEach((geo:GeoShape) => {
-                let geoshape = this._geoShapes[geo.id];
-                if (geoshape && geoshape.bbox) {
-                    let bbox : BoundingBox = geoshape.bbox;
-                    if (bbox && bbox.xmin && this._doBoxesIntersect(bbox, selbox) && isSubregion(parentRegion, region)) {
-                        // A point inside the bbox does not mean that the point is inside the polygon
-                        let area : number = (bbox.xmax - bbox.xmin) * (bbox.ymax - bbox.ymin);
-                        if (area >= selArea || this._bboxInRegion(bbox, this._selectedRegion) ) {
-                            regions.add(region.id);
+            if (!isMainRegion(region))
+                (region.geo || []).forEach((geo:GeoShape) => {
+                    let geoshape = this._geoShapes[geo.id];
+                    if (geoshape && geoshape.bbox) {
+                        let bbox : BoundingBox = geoshape.bbox;
+                        if (bbox && bbox.xmin && this._doBoxesIntersect(bbox, selbox) && isSubregion(parentRegion, region)) {
+                            // A point inside the bbox does not mean that the point is inside the polygon
+                            let area : number = (bbox.xmax - bbox.xmin) * (bbox.ymax - bbox.ymin);
+                            if (area >= selArea || this._bboxInRegion(bbox, this._selectedRegion) ) {
+                                regions.add(region.id);
+                            }
                         }
                     }
-                }
-            });
+                });
         });
         //console.log('regions:', regions);
 
