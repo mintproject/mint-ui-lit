@@ -25,63 +25,13 @@ import { Textarea } from 'weightless/textarea';
 import { ModelCatalogSoftwareImage } from 'screens/models/configure/resources/software-image';
 import { ModelCatalogParameter } from 'screens/models/configure/resources/parameter';
 import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
+import { ModelCatalogDataTransformation } from 'screens/models/configure/resources/data-transformation';
 import { ModelCatalogRegion } from 'screens/models/configure/resources/region';
 
 @customElement('data-transformation-list')
 export class DataTransformationList extends connect(store)(PageViewElement) {
     static get styles() {
         return [SharedStyles, css`
-            .details-table {
-                border-collapse: collapse;
-                width: 100%;
-            }
-
-            .details-table tr td:first-child {
-                font-weight: bold;
-                padding-right: 6px;
-                padding-left: 13px;
-            }
-
-            .details-table tr td:last-child {
-                padding-right: 13px;
-            }
-
-            .details-table tr:nth-child(odd) {
-                background-color: rgb(246, 246, 246);
-            }
-
-            .details-table > tbody > tr > td > span {
-                display: inline-block;
-                border-radius: 4px;
-                line-height: 20px;
-                padding: 1px 4px;
-                margin-right: 4px;
-                margin-bottom: 2px;
-            }
-
-            .details-table > tbody > tr > td > span > wl-icon {
-                --icon-size: 16px;
-                cursor: pointer;
-                vertical-align: middle;
-            }
-
-            .details-table > tbody > tr > td > input, textarea {
-                background: transparent;
-                font-family: Raleway;
-                font-size: 14px;
-                width: calc(100% - 10px);
-                resize: vertical;
-            }
-
-            .details-table > tbody > tr > td > span > wl-icon:hover {
-                background-color: rgb(224, 224, 224);
-            }
-
-            .details-table td {
-                padding: 5px 1px;
-                vertical-align: top;
-            }
-
             .card2 {
                 margin: 0px;
                 left: 0px;
@@ -127,7 +77,6 @@ export class DataTransformationList extends connect(store)(PageViewElement) {
             }
         `];
     }
-    private _rendered : boolean = false;
 
     @property({type: Boolean})
     private _hideLateral : boolean = false;
@@ -139,30 +88,16 @@ export class DataTransformationList extends connect(store)(PageViewElement) {
     private _editing : boolean = false;
 
     @property({type: Object})
-    private _loading: IdMap<boolean> = {};
-
-    @property({type: Object})
-    private _nloaded: IdMap<boolean> = {};
-
-    @property({type: Object})
     private _dts : IdMap<DataTransformation> = {};
 
     @property({type: String})
     private _dtid : string = '';
 
-    private _inputSI : ModelCatalogSoftwareImage;
-    private _inputParameters : ModelCatalogParameter;
-    private _inputRegion : ModelCatalogRegion;
-    private _inputOutputs : ModelCatalogDatasetSpecification;
+    private _selectedDT : ModelCatalogDataTransformation;
 
     public constructor () {
         super();
-        this._inputSI = new ModelCatalogSoftwareImage();
-        this._inputParameters = new ModelCatalogParameter();
-        this._inputOutputs = new ModelCatalogDatasetSpecification();
-        this._inputRegion = new ModelCatalogRegion();
-        this._inputParameters.inline = false;
-        this._inputOutputs.inline = false;
+        this._selectedDT = new ModelCatalogDataTransformation();
     }
 
     protected render() {
@@ -183,7 +118,7 @@ export class DataTransformationList extends connect(store)(PageViewElement) {
                             ${!this._hideLateral ? "fullscreen" : "fullscreen_exit"}
                         </wl-icon>
                     </div>
-                    ${this._dtid ? this._renderDTDetails() : html`
+                    ${this._dtid ? this._selectedDT : html`
                     <div>
                         <wl-title level="3"> Data transformations </wl-title>
                         <p>
@@ -205,140 +140,7 @@ export class DataTransformationList extends connect(store)(PageViewElement) {
         </ul>`
     }
 
-    private _renderDTDetails () {
-        let dt = this._dts[this._dtid];
-        return this._loading[this._dtid] ? 
-            html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`    
-            : html`
-            <table class="details-table">
-                <colgroup width="150px">
-                <tr>
-                    <td colspan="2" style="padding: 5px 20px;">
-                        <wl-title level="3"> ${dt ? getLabel(dt) : ''} </wl-title>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>Description:</td>
-                    <td>
-                        ${this._editing ? html`
-                        <textarea id="form-config-desc" name="Description" rows="5">${
-                            dt && dt.description ? dt.description[0] : ''
-                        }</textarea>`
-                        : (dt && dt.description ? dt.description[0] : '')}
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>Region</td>
-                    <td>
-                        ${this._inputRegion}
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>Software Image:</td>
-                    <td>
-                        ${this._inputSI}
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>Component Location:</td>
-                    <td>
-                        ${this._editing ? html`
-                        <textarea id="form-config-comp-loc">${dt && dt.hasComponentLocation ? 
-                                dt.hasComponentLocation : ''}</textarea>`
-                        : (dt && dt.hasComponentLocation ? 
-                                renderExternalLink(dt.hasComponentLocation[0]) : '')}
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>Usage notes:</td>
-                    <td>
-                        ${this._editing ? html`
-                            <textarea id="form-config-usage-notes" rows="6">${dt && dt.hasUsageNotes ?  dt.hasUsageNotes[0] : ''}</textarea>
-                        ` : (dt && dt.hasUsageNotes ? dt.hasUsageNotes[0] : '') }
-                    </td>
-                </tr>
-
-            </table>
-
-            <wl-title level="4" style="margin-top:1em"> Parameters: </wl-title>
-            ${this._inputParameters}
-
-            <wl-title level="4" style="margin-top:1em"> Output files: </wl-title>
-            ${this._inputOutputs}
-
-            ${this._editing? html`
-            <div style="float:right; margin-top: 1em;">
-                <wl-button @click="${this._onCancelButtonClicked}" style="margin-right: 1em;" flat inverted>
-                    <wl-icon>cancel</wl-icon>&ensp;Discard changes
-                </wl-button>
-                <wl-button @click="${this._onSaveButtonClicked}">
-                    <wl-icon>save</wl-icon>&ensp;Save
-                </wl-button>
-            </div>` 
-            :html`
-            <div style="margin-top: 1em;">
-                <wl-button style="float:right;" @click="${this._onEditButtonClicked}">
-                    <wl-icon>edit</wl-icon>&ensp;Edit
-                </wl-button>
-                <wl-button style="float:right;margin-right: 10px;--primary-hue: 100;"
-                    @click="${this._onDuplicateButtonClicked}">
-                    <wl-icon>content_copy</wl-icon>&ensp;Duplicate
-                </wl-button>
-                <wl-button style="--primary-hue: 0; --primary-saturation: 75%" @click="${this._onDeleteButtonClicked}">
-                    <wl-icon>delete</wl-icon>&ensp;Delete
-                </wl-button>
-            </div>`}
-        `
-    }
-
-    private _onSaveButtonClicked () {
-        let dt = this._dts[this._dtid];
-        let edDT = DataTransformationFromJSON({ ...dt, ...this._getResourceFromForm() });
-        console.log('>>', edDT);
-        store.dispatch(dataTransformationPut(edDT)).then((ndt) => {
-            console.log("done!");
-            this._dts[ndt.id] = ndt;
-        });
-    }
-
-    private _onDeleteButtonClicked () {
-        if (confirm('This data transformation and all its associated resources will be deleted. Are you sure?')) {
-            let dt = this._dts[this._dtid];
-            let lid = this._dtid;
-            store.dispatch(dataTransformationDelete(dt)).then(() => {
-                delete this._dts[lid];
-                goToPage('datasets');
-            });
-        }
-    }
-
-    protected _getResourceFromForm () {
-        // GET ELEMENTS
-        let inputDesc : Textarea = this.shadowRoot.getElementById('form-config-desc') as Textarea;
-        let inputCompLoc : Textarea = this.shadowRoot.getElementById('form-config-comp-loc') as Textarea;
-        let inputNotes : Textarea = this.shadowRoot.getElementById('form-config-usage-notes') as Textarea;
-
-        // VALIDATE
-        let desc : string = inputDesc ? inputDesc.value : '';
-        let compLoc : string = inputCompLoc ? inputCompLoc.value : '';
-        let notes : string = inputNotes ? inputNotes.value : '';
-
-        let jsonRes = {
-            type: ["DataTransformation"],
-        };
-        if (desc) jsonRes["description"] = [desc];
-        if (compLoc) jsonRes["hasComponentLocation"] = compLoc;
-        if (notes) jsonRes["hasUsageNotes"] = notes;
-
-        return jsonRes;
-    }
-
-    private _onDuplicateButtonClicked () {
+    /*private _onDuplicateButtonClicked () {
         let dt = this._dts[this._dtid];
         let name = window.prompt("Enter the name of the new Data Transformation", getLabel(dt) + " copy");
         if (name) {
@@ -350,21 +152,10 @@ export class DataTransformationList extends connect(store)(PageViewElement) {
                 goToPage('datasets/data-transformations/' + getId(ndt));
             })
         }
-    }
-
-    private _onEditButtonClicked () {
-        //this._scrollUp(c);
-        goToPage('datasets/data-transformations/' + getId({id: this._dtid}) + '/edit');
-    }
-
-    private _onCancelButtonClicked () {
-        //this._scrollUp();
-        goToPage('datasets/data-transformations/' + getId({id: this._dtid}));
-    }
+    }*/
 
     protected firstUpdated () {
         this._loadingAll = true;
-        this._rendered = true;
         store.dispatch(dataTransformationsGet()).then((dts) => {
             this._loadingAll = false;
             this._dts = { ... dts };
@@ -374,21 +165,6 @@ export class DataTransformationList extends connect(store)(PageViewElement) {
         });
     }
 
-    private _setEditingInputs () { //TODO types...
-        this._inputSI.setActionSelect();
-        this._inputParameters.setActionEditOrAdd();
-        this._inputOutputs.setActionEditOrAdd();
-        this._inputRegion.setActionSelect();
-    }
-
-    private _unsetEditingInputs () {
-        let inputs = [this._inputSI, this._inputRegion, this._inputParameters, this._inputOutputs];
-        inputs.forEach((input) => {
-            input.unsetAction();
-        });
-    }
-
-
     stateChanged(state: RootState) {
         super.setRegionId(state);
         if (state.explorerUI) {
@@ -397,10 +173,11 @@ export class DataTransformationList extends connect(store)(PageViewElement) {
             let newEditState : boolean = (ui.mode === 'edit');
             if (newEditState != this._editing) {
                 this._editing = newEditState;
-                if (this._rendered) {
+                /* FIXME: change to edit depending on URL
+                if (false && this._rendered) {
                     if (this._editing) this._setEditingInputs();
                     else this._unsetEditingInputs();
-                }
+                }*/
             }
         }
 
@@ -408,19 +185,10 @@ export class DataTransformationList extends connect(store)(PageViewElement) {
             let pdtid = PREFIX_URI + state.ui.selected_datatransformationid;
             if (this._dtid != pdtid) {
                 this._dtid = pdtid;
-                if (!this._loading[this._dtid] && !this._nloaded[this._dtid]) {
-                    this._loading[this._dtid] = true;
-                    store.dispatch(dataTransformationGet(this._dtid)).then((dt:DataTransformation) => {
-                        this._loading[this._dtid] = false;
-                        this._nloaded[this._dtid] = false;
-                        this._dts[this._dtid] = dt;
-                        this._inputSI.setResources(dt.hasSoftwareImage);
-                        this._inputParameters.setResources(dt.hasParameter);
-                        this._inputOutputs.setResources(dt.hasOutput);
-                        //this._inputRegion.setResources(dt.hasRegion); FIXME
-                        this.requestUpdate();
-                    });
-                }
+                this._selectedDT.setResource(
+                    this._dtid == "" ? null :
+                    {id: this._dtid} as DataTransformation
+                );
             }
         }
     }

@@ -197,7 +197,7 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
             <wl-button @click="${this._closeMap}" style="margin-right: 5px;" inverted flat ?disabled="">
                 Cancel
             </wl-button>
-            <wl-button class="submit" ?disabled="${this._waiting || !this._selectedMapRegion}" @click="${this._onFormSaveButtonClicked}">
+            <wl-button class="submit" ?disabled="${this._waiting || !this._selectedMapRegion}" @click="${this._onSaveButtonClicked}">
                 Select
                 ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
             </wl-button>
