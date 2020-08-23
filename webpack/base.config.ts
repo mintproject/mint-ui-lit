@@ -41,9 +41,14 @@ const config: webpack.Configuration = {
         use: {
           loader: 'babel-loader',
           options: {
-            cacheDirectory: true,
-          },
+            presets: ['@babel/preset-env', '@babel/preset-typescript', '@babel/preset-flow']
+          }
         },
+      },
+      {
+        test: /\.graphql$/,
+        exclude: /node_modules/,
+        loader: 'graphql-tag/loader',
       },
       {
         test: /\.s?[ac]ss$/,

@@ -4,17 +4,18 @@ import { EMULATORS_LIST, EMULATORS_LIST_EMULATORS_FOR_MODEL, EMULATORS_SELECT_MO
 
 export interface EmulatorsState {
     models?: string[],
+    loading?: boolean,
     selected_model?: string,
     emulators?: EmulatorsList
 }
 
 export interface EmulatorsList {
-    [model:string]: string[]
+    [modelid:string]: any[]
 }
 
 const INITIAL_STATE: EmulatorsState = {
-    models: [ "pihm", "topoflow", "hand", "cycles", "eacs"],
-    selected_model: "pihm"
+    models: null, //[ "pihm", "topoflow", "hand", "cycles", "eacs"],
+    selected_model: null
 };
 
 const emulators: Reducer<EmulatorsState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -27,14 +28,15 @@ const emulators: Reducer<EmulatorsState, RootAction> = (state = INITIAL_STATE, a
         case EMULATORS_LIST:
             return {
                 ...state,
+                loading: action.loading,
                 models: action.models
             };
         case EMULATORS_LIST_EMULATORS_FOR_MODEL:
-            // Return datasets
             state.emulators = { ...state.emulators };
-            state.emulators[action.model] = action.emulators || [];
+            state.emulators[action.model] = action.emulators;
             return {
-                ...state
+                ...state,
+                loading: action.loading
             };
     }
     return state;

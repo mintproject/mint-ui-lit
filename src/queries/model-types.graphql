@@ -1,0 +1,5 @@
+query {
+    model(distinct_on:original_model) {
+        original_model
+    }
+}

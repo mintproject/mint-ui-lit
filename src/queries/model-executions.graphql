@@ -1,0 +1,74 @@
+query model_types($modelTypes: [String!], $regionId: String!) {
+  model(where: {original_model: {_in: $modelTypes}}, order_by: {thread_models_aggregate: {count: desc}}) {
+    id
+    name
+    calibrated_region
+    thread_models(order_by: {executions_aggregate: {count: desc}}, where: {thread: {task: {problem_statement: {region: {id: {_eq: $regionId}}}}}}) {
+      thread {
+        oldid
+        name
+        start_date
+        end_date
+        task {
+          oldid
+          name
+          region {
+            name
+          }
+          problem_statement {
+            oldid
+            name
+            region {
+              name
+            }
+          }
+        }
+      }
+      model {
+        parameters {
+          name
+          value
+        }
+        inputs {
+          model_io {
+            name
+            fixed_bindings {
+              resource {
+                name
+                url
+              }
+            }
+          }
+        }
+      }
+      data_bindings_aggregate {
+        nodes {
+          dataslice {
+            resources(where:{selected:{_eq: true}}) {
+              resource {
+                name
+                url
+              }
+            }
+          }
+          model_io {
+            name
+          }
+        }
+      }
+      parameter_bindings_aggregate {
+        nodes {
+          model_parameter {
+            name
+          }
+          parameter_value
+        }
+      }
+      executions_aggregate {
+        aggregate {
+          count
+        }
+      }
+    }
+  }
+}

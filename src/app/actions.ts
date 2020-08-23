@@ -351,9 +351,8 @@ const loadPage: ActionCreator<ThunkResult> =
     case 'emulators':
       import('../screens/emulators/emulators-home').then((_module) => {
         let model = subpage;
-        if(model == "home")
-          model = "pihm";
-        store.dispatch(selectEmulatorModel(model))
+        if(model != "home")
+          store.dispatch(selectEmulatorModel(model))
       });
       break;
     case 'analysis':
