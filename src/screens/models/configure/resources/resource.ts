@@ -282,7 +282,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 ${editing ? html`<th style="width:10px;"></th>` : ''}
             </thead>
             ${this._resources.length > 0 ? displayedResources.map((r:T) => this._renderStatus(r)) : ''}
-            ${this._action === Action.EDIT_OR_ADD ? html`
+            ${this._action === Action.EDIT_OR_ADD && this._creationEnabled ? html`
             <tr class="ignore-grab">
                 <td colspan="${this.positionAttr ? this.colspan +2 : this.colspan + 1}" align="center">
                     <a class="clickable" @click=${this._createResource}>Add a new ${this.name}</a>

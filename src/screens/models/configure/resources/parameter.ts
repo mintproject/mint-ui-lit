@@ -82,6 +82,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     protected resourceDelete = parameterDelete;
     public colspan = 3;
     protected lazy = true;
+    public onlyFixedValue = false;
 
     @property({type: String}) private _formPart : string = "";
 
@@ -107,6 +108,17 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 <b>${r.description ? r.description[0] : ''}</b>
             </td>
             <td>${renderParameterType(r)}</td>
+            ${this.onlyFixedValue ? html`
+            <td>
+                ${dcata ? html`
+                    <data-catalog-id-checker id=${r.hasFixedValue ? r.hasFixedValue[0] : r.hasDefaultValue[0]}><data-catalog-id-checker>
+                ` : html `
+                    ${r.hasFixedValue ? r.hasFixedValue[0] : html`
+                        ${r.hasDefaultValue ? r.hasDefaultValue : '-'} (default)`}
+                    ${r.usesUnit ? r.usesUnit[0].label : ''}
+                `}
+            </td>
+            ` : html`
             <td>
                 ${dcata ? html`
                     <data-catalog-id-checker id=${r.hasDefaultValue[0]}><data-catalog-id-checker>
@@ -115,6 +127,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                     ${r.usesUnit ? r.usesUnit[0].label : ''}
                 `}
             </td>
+            `}
         `;
     }
 
@@ -130,6 +143,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
     protected _renderForm () {
         let edResource = this._getEditingResource();
+        if (edResource && this.onlyFixedValue) return this._renderFixedForm(edResource);
         return html`
         <form>
             <wl-textfield id="parameter-label" label="Name" required
@@ -221,6 +235,15 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         </form>`;
     }
 
+    private _renderFixedForm(r:Parameter) {
+        return html`
+        <form>
+            <wl-textfield id="parameter-fixed" label="value" required
+                value="${r && r.hasDefaultValue ? r.hasDefaultValue[0] : ''}">
+            </wl-textfield>
+        </form>`;
+    }
+
     private _onDataTypeChanged (e) {
         let inputDataType : Select = this.shadowRoot.getElementById('parameter-datatype') as Select;
         let datatype : string = inputDataType ? inputDataType.value : '';
@@ -229,7 +252,21 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         }
     }
 
+    protected _getFixedValue () {
+        let inputFixed : Textfield = this.shadowRoot.getElementById('parameter-fixed') as Textfield;
+        let fixed : string = inputFixed ? inputFixed.value : '';
+        let edResource = this._getEditingResource();
+        if (fixed && edResource) {
+            return ParameterFromJSON({
+                ...edResource,
+                hasFixedValue: [fixed]
+            });
+        }
+    }
+
     protected _getResourceFromForm () {
+        if (this.onlyFixedValue) return this._getFixedValue();
+
         //TODO: should be able to add custom types
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById('parameter-label') as Textfield;
