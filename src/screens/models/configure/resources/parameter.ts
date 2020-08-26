@@ -81,7 +81,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     protected resourcePut = parameterPut;
     protected resourceDelete = parameterDelete;
     public colspan = 3;
-    protected lazy = true;
+    public lazy = true;
     public onlyFixedValue = false;
 
     @property({type: String}) private _formPart : string = "";

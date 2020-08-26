@@ -169,7 +169,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     private _order : IdMap<T> = {} as IdMap<T>;
     private _notification : CustomNotification;
 
-    protected lazy : boolean = false;
+    public lazy : boolean = false;
 
     protected classes : string = "resource";
     protected name : string = "resource";
@@ -184,6 +184,14 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected _filters : ((r:T) => boolean)[] = [
         (r:T) => this._resourceToText(r).toLowerCase().includes( this._textFilter ),
     ];
+
+    public creationEnable () {
+        this._creationEnabled = true;
+    }
+
+    public creationDisable () {
+        this._creationEnabled = false;
+    }
     
     private _singleModeInitialized : boolean = false;
 
