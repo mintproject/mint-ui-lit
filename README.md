@@ -60,17 +60,28 @@ You can see that the actual version is v0.0.1
 
 ## INSTALL
 ```
-npm install
+yarn install
 ```
 
-## TEST
+You will need to create a configuration file with your google maps API key and your firestore API key.
+```
+cp src/config/google-api-key.ts.example src/config/google-api-key.ts
+```
+Check that file for more information.
 
-Open file (Create if not already there) src/config/google-api-key.ts and write:
+## BUILDING
+
+To create the production build use:
 ```
-export const GOOGLE_API_KEY = "your_google_api_key";
+yarn create-build
 ```
 
-Then run this;
+You can start the development server with:
 ```
-npm start
+yarn start
+```
+
+Or build the development version with:
+```
+yarn create-build-dev
 ```
