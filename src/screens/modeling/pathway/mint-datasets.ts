@@ -369,7 +369,6 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                                     <th></th>
                                                     <th><b>Transformation name</b></th>
                                                     <th>Description</th>
-                                                    <th></th>
 
                                                 </tr>
                                             </thead>
@@ -377,15 +376,12 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                             ${this._inputDT[input.id].map((dt:DataTransformation) => html`
                                                 <tr>
                                                     <td>
-                                                        <input type="checkbox" ?checked="${this._selectedDT == dt.id}" @click="${() => {this._selectDT(dt)}}"></input>
+                                                        <input class="${this._valid(modelid)}_${this._valid(input.id!)}_dt_checkbox" 
+                                                            type="checkbox" data-transformationid="${dt.id}"
+                                                            ?checked=""></input>
                                                     </td>
                                                     <td><b>${getLabel(dt)}</b></td>
                                                     <td>${dt.description ? dt.description[0] : ''}</td>
-                                                    <td>
-                                                        <wl-button @click="${() => {this._selectDT(dt)}}" style="padding:6px; float:right;"> 
-                                                            SET UP 
-                                                        </wl-button>
-                                                    </td>
                                                 </tr>
                                                 ${this._selectedDT == dt.id ? html`
                                                 <tr>
@@ -579,6 +575,35 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         return selected_datasets;     
     }
 
+    _getDataTransformationSelections(modelid: string, inputid: string) {
+        let selected_datatransformations = {};
+        this.shadowRoot!.querySelectorAll("input."+
+                this._valid(modelid) + "_" + this._valid(inputid) +"_dt_checkbox" )
+                .forEach((cbox) => {
+                    let cboxinput = (cbox as HTMLInputElement);
+                    let transformationid = cboxinput.dataset["transformationid"];
+                    if(cboxinput.checked) {
+                        selected_datatransformations[transformationid]
+                                = this._removeUndefined(this._dataTransformations[transformationid]);
+                        console.log('x', selected_datatransformations[transformationid]);
+                    }
+        });
+        return selected_datatransformations;     
+    }
+
+    _removeUndefined (oobj) {
+        if (typeof oobj != 'object') return oobj;
+        let obj = {...oobj};
+        Object.keys(obj).forEach((key:string) => {
+            if (obj[key] === undefined) delete obj[key]
+            else if (Array.isArray(obj[key])) {
+                console.log("Array! rec");
+                obj[key] = obj[key].map((x:object) => this._removeUndefined(x));
+            }
+        });
+        return obj;
+    }
+
     _loadDatasetResources(dataset: Dataset) {
         let dates = this.pathway.dates || this.subgoal.dates || this.scenario.dates;
         let req = loadResourcesForDataset(dataset.id, dates, this._subgoal_region, this.prefs.mint)
@@ -686,6 +711,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                 }
 
                 let new_datasets = this._getDatasetSelections(modelid, inputid);
+                let new_datatransformations = this._getDataTransformationSelections(modelid, inputid);
         
                 // Check if any datasets need to be removed
                 let datasets_to_be_removed: string[] = [];
@@ -715,12 +741,28 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                     model_ensembles[modelid][inputid].push(dsid!);
                     datasets[dsid] = new_datasets[dsid];
                 });
+
+                // Now add the data transformations
+                let data_transformations = {}; //FIXME: load from firestore
+                let model_dt_ensembles: ModelEnsembleMap = this.pathway.model_dt_ensembles || {};
+                Object.keys(new_datatransformations).map((dtid) => {
+                    if(!model_dt_ensembles[modelid])
+                        model_dt_ensembles[modelid] = {};
+                    if(!model_dt_ensembles[modelid][inputid])
+                        model_dt_ensembles[modelid][inputid] = [];
+                    model_dt_ensembles[modelid][inputid].push(dtid!);
+                    data_transformations[dtid] = new_datatransformations[dtid];
+                });
+
                 // Create new pathway
                 this.pathway = {
                     ...this.pathway,
                     datasets: datasets,
-                    model_ensembles: model_ensembles
-                }                        
+                    data_transformations: data_transformations,
+                    model_ensembles: model_ensembles,
+                    model_dt_ensembles: model_dt_ensembles
+                }
+                console.log(">>>", this.pathway);
             })
         });
         // Turn off edit mode

@@ -14,6 +14,8 @@ import { selectPathwaySection } from "../../../app/ui-actions";
 import { MintPathwayPage } from "./mint-pathway-page";
 import { IdMap } from "../../../app/reducers";
 import { getPathFromModel } from "../../models/reducers";
+import { getLabel } from "model-catalog/util";
+import { DataTransformation } from '@mintproject/modelcatalog_client';
 
 import "weightless/progress-bar";
 
@@ -65,6 +67,9 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
             Please select model(s) first
             `
         }
+
+        console.log('>>', this.pathway);
+        console.log('>>>', this.scenario);
 
         let done = (getPathwayParametersStatus(this.pathway) == TASK_DONE);
         if(!done) {
@@ -213,6 +218,51 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
             })}
             </ul>
 
+
+
+            <wl-title level="3">
+                Setup Data Transformations
+                <wl-icon @click="${() => this._setEditMode(true)}" 
+                    class="actionIcon editIcon"
+                    id="editParametersIcon">edit</wl-icon>
+            </wl-title>
+            <ul>
+                ${(Object.values(this.pathway.data_transformations) || []).map((dt:DataTransformation) => html`
+                <li>
+                    <wl-title level="4">
+                        Data transformation:
+                        ${getLabel(dt)}
+                    </wl-title>
+                    <ul>
+                        <li>
+                            <table class="pure-table pure-table-striped">
+                                <thead>
+                                    <th><b>Adjustable Parameter</b></th>
+                                    <th>Values</th>
+                                </thead>
+                                <tbody> 
+                                    ${Object.values(dt.hasParameter).map((p:Parameter) => html`
+                                    <tr>
+                                        <td style="width:60%">
+                                            <wl-title level="5">${getLabel(p).replace(/_/g, ' ')}</wl-title>
+                                            <div class="caption">${p.description ? p.description[0] : ''}.</div>
+                                        </td>
+                                        <td>
+                                            <div class="input_full">
+                                                <input type="text" name="${p.id}" 
+                                                    value="${this._getDTParameterValue(p)}"></input>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    `)}
+                                </tbody>
+                            </table>
+                        </li>
+                    </ul>
+                </li>
+                `)}
+            </ul>
+
             ${!done || this._editMode ? 
                 html`
                 <div class="footer">
@@ -259,6 +309,29 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
 
         ${renderNotifications()}
         `;
+    }
+
+    _getDTParameterValue (r:Parameter) {
+        let additionalType : string = r.type && r.type.length > 1 ?
+                r.type.filter((p:string) => p != 'Parameter')[0] : '';
+        if (additionalType == "https://w3id.org/wings/export/MINT#StartDate" && 
+                this.scenario.dates &&
+                this.scenario.dates.start_date) {
+            return this._getFormattedDate(this.scenario.dates.start_date);
+        } else if (additionalType == "https://w3id.org/wings/export/MINT#EndDate" &&
+                this.scenario.dates &&
+                this.scenario.dates.end_date ) {
+            return this._getFormattedDate(this.scenario.dates.end_date);
+        }
+        return "";
+    }
+ 
+    _getFormattedDate (ts) {
+        let date = ts.toDate();
+        let year = date.getFullYear();
+        let month = (1 + date.getMonth()).toString().padStart(2, '0');
+        let day = date.getDate().toString().padStart(2, '0');
+        return month + '/' + day + '/' + year;
     }
 
     _validateInput(model: Model, input: ModelParameter) {
