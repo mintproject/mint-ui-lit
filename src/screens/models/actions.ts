@@ -180,7 +180,7 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
         })
     ).then((resp) => {
         setups = resp.reduce((arr:ModelConfigurationSetup[], r:ModelConfigurationSetup[]) => arr.concat(r), []);
-        console.log('preview:', setups);
+        //console.log('preview:', setups);
         dispatch({
             type: MODELS_VARIABLES_QUERY,
             variables: response_variables,

@@ -1,0 +1,67 @@
+#import "../fragments/thread-info.graphql"
+#import "../fragments/model-info.graphql"
+
+subscription sub_thread($id: uuid!) {
+    thread_by_pk(id:$id) {
+        ...thread_info
+        thread_data {
+            dataslice {
+                id
+                dataset {
+                    id
+                    name
+                }
+                resources {
+                    selected
+                    resource {
+                        id
+                        name
+                        url
+                    }
+                }
+            }
+        }
+        thread_models {
+            model {
+               ...model_info
+            }
+            successful_runs: executions_aggregate(where: {
+                execution: {
+                    status:{_eq: "SUCCESS"}
+                }
+            }){
+                aggregate {
+                    count
+                }
+            }
+            failed_runs: executions_aggregate(where: {
+                execution: {
+                    status:{_eq: "FAILURE"}
+                }
+            }){
+                aggregate {
+                    count
+                }
+            }
+            submitted_runs: executions_aggregate{
+                aggregate {
+                    count
+                }
+            }
+            data_bindings {
+                model_io {
+                    id
+                    name
+                }
+                dataslice_id
+            }
+            parameter_bindings {
+                model_parameter {
+                    id
+                    name
+                }
+              parameter_value
+            }
+        }
+    }
+}

@@ -9,17 +9,16 @@ import "weightless/tooltip";
 import "weightless/popover-card";
 import "weightless/snackbar";
 
-import { updatePathway } from "../actions";
+import { updateThread } from "../actions";
 import { BASE_HREF } from "../../../app/actions";
 import { renderNotifications, renderResponseVariables, renderDrivingVariables, renderLastUpdateText } from "../../../util/ui_renders";
 import { formElementsComplete, showNotification, hideNotification } from "../../../util/ui_functions";
-import { selectPathwaySection } from "../../../app/ui-actions";
-import { StepUpdateInformation } from "../reducers";
+import { selectThreadSection } from "../../../app/ui-actions";
 import { getVariableLongName } from "../../../offline_data/variable_list";
-import { MintPathwayPage } from "./mint-pathway-page";
+import { MintThreadPage } from "./mint-thread-page";
 
 @customElement('mint-variables')
-export class MintVariables extends connect(store)(MintPathwayPage) {
+export class MintVariables extends connect(store)(MintThreadPage) {
     @property({type: Boolean})
     private _editMode: Boolean = false;
 
@@ -32,11 +31,11 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
     }
     
     protected render() {
-        if(!this.pathway) {
+        if(!this.thread) {
             return html ``;
         }
-        let driverids = (this.pathway ? this.pathway.driving_variables : []) || [];
-        let responseids = (this.pathway ? this.pathway.response_variables: []) || [];
+        let driverids = (this.thread ? this.thread.driving_variables : []) || [];
+        let responseids = (this.thread ? this.thread.response_variables: []) || [];
         return html `
         <p>
             This step is for selecting indicators and adjustable variables for your analysis. 
@@ -112,22 +111,8 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
                 </ul> 
             </div> 
             <div class="footer">
-                <wl-button type="button" class="submit" @click="${() => store.dispatch(selectPathwaySection("models"))}">Continue</wl-button>
+                <wl-button type="button" class="submit" @click="${() => store.dispatch(selectThreadSection("models"))}">Continue</wl-button>
             </div>
-            
-            ${this.pathway.last_update && this.pathway.last_update.variables ? 
-                html `
-                <div class="notepage">${renderLastUpdateText(this.pathway.last_update.variables)}</div>
-                `: html ``
-            }
-            ${this.pathway.notes && this.pathway.notes.variables ? 
-                html`
-                <fieldset class="notes">
-                    <legend>Notes</legend>
-                    <div class="notepage">${this.pathway.notes.variables}</div>
-                </fieldset>
-                `: html``
-            }
             `
         :
             html`
@@ -180,10 +165,6 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
                     ${this._editMode ? html `<wl-button @click="${this._onSetVariablesCancel}" flat inverted>CANCEL</wl-button>`: html``}
                     <wl-button type="button" class="submit" @click="${this._onSetVariablesSubmit}">Select &amp; Continue</wl-button>
                 </div>
-                <fieldset class="notes">
-                    <legend>Notes</legend>
-                    <textarea name="notes">${this.pathway.notes ? this.pathway.notes.variables : ""}</textarea>
-                </fieldset>
                 </form>
             </div> 
             `
@@ -198,27 +179,15 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
         if (formElementsComplete(form, ["response_variable"])) {
             let driving_variable = (form.elements["driving_variable"] as HTMLSelectElement).value;
             let response_variable = (form.elements["response_variable"] as HTMLSelectElement).value;
-            let newpathway = {
-                ...this.pathway
+            let newthread = {
+                ...this.thread
             }
-            newpathway.driving_variables = driving_variable ? [driving_variable] : [];
-            newpathway.response_variables = response_variable ? [response_variable] : [];
+            newthread.driving_variables = driving_variable ? [driving_variable] : [];
+            newthread.response_variables = response_variable ? [response_variable] : [];
 
             // Update notes
-            let notes = (form.elements["notes"] as HTMLTextAreaElement).value;
-            newpathway.notes = {
-                ...newpathway.notes!,
-                variables: notes
-            };
-            newpathway.last_update = {
-                ...newpathway.last_update!,
-                variables: {
-                    time: Date.now(),
-                    user: this.user!.email
-                } as StepUpdateInformation
-            };            
-            
-            updatePathway(this.scenario, newpathway);
+            // let notes = (form.elements["notes"] as HTMLTextAreaElement).value;
+            updateThread(newthread);
             
             this._editMode = false;
             //hideDialog("variablesDialog", this.shadowRoot!);
@@ -237,7 +206,7 @@ export class MintVariables extends connect(store)(MintPathwayPage) {
 
     stateChanged(state: RootState) {
         super.setUser(state);
-        if(super.setPathway(state)) {
+        if(super.setThread(state)) {
             hideNotification("saveNotification", this.shadowRoot!);
         }
     }

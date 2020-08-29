@@ -10,10 +10,11 @@ import '../../components/nav-title'
 import "weightless/tab-group";
 import "weightless/tab";
 
-import emulators, { EmulatorsList } from './reducers';
+import 'components/loading-dots';
+
+import emulators from './reducers';
 import { goToPage } from 'app/actions';
-import { listModels, selectEmulatorModel, searchEmulatorsForModel } from './actions';
-import { forEach } from 'puppeteer/DeviceDescriptors';
+import { listEmulatorModelTypes, searchEmulatorsForModel } from './actions';
 
 store.addReducers({
     emulators
@@ -23,6 +24,9 @@ store.addReducers({
 export class EmulatorsHome extends connect(store)(PageViewElement) {
     @property({type: Array})
     private _modelTypes : string[];
+
+    @property({type: String})
+    private _emulatorRegion : string;
 
     @property({type: Boolean})
     private _typesLoading : boolean = true;
@@ -239,7 +243,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
         <nav-title .nav="${nav}"></nav-title>
 
         <wl-tab-group align="center" style="width: 100%;">
-        ${this._typesLoading ? html `Loading...` :
+        ${this._typesLoading ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>` :
             (!this._modelTypes ? 
                 html`<wl-tab>Error: Could not load tabs</wl-tab>` 
                 : this._modelTypes.map((mtype) => {
@@ -263,7 +267,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                             <tr><th>Area</th><th>Region</th><th>Time period</th><th>Input</th><th>Model Setup</th><th>Ensemble description (range of parameters)</th><th>Output summary (Ensemble)</th><th>JSON-Summary</th><th>URL to be shared</th><th>Results reviewed by modeler</th><th>Quality</th><th>Status</th><th>Validated?</th><th>Usage Notes</th><th>Comments</th></tr>
                         </thead>
                         <tbody>
-                        ${this._emulatorsLoading ? html `Loading...` :
+                        ${this._emulatorsLoading ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`:
                             (!this._emulators) ? 
                                 html`<tr><td colspan="10">Error: Could not load emulators</td></tr>` 
                                 : this._emulators.map((em) => {
@@ -278,7 +282,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                             let problem = task["problem_statement"];
                                             let numexecutions = tm["executions_aggregate"]["aggregate"]["count"];
                                             if(numexecutions > 0) {
-                                                let thread_uri = `/${this._regionid}/scenario/${problem["oldid"]}/${task["oldid"]}/${thread["oldid"]}`;
+                                                let thread_uri = `/${this._regionid}/modeling/problem_statement/${problem["id"]}/${task["id"]}/${thread["id"]}`;
                                                 let params = this.getParameters(
                                                     tm["model"], 
                                                     tm["parameter_bindings_aggregate"]["nodes"]);
@@ -315,17 +319,12 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                         }
                         </tbody>
                     </table>`
-            : ""
+            : html`<center><br />Please select a model</center>`
             )}
         </div>`;
     }
 
     protected firstUpdated() {
-        store.dispatch(listModels());
-        if(this._selectedModel) {
-            this._emulators = null;
-            store.dispatch(searchEmulatorsForModel(this._selectedModel, this._regionid));
-        }
         /*
         db.collectionGroup('pathways')
             .where('last_update.parameters.time', '>', 0)
@@ -343,6 +342,21 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
 
     stateChanged(state: RootState) {
         super.setRegionId(state);
+        if(this._emulatorRegion != this._regionid && this._regionid) {
+            this._emulatorRegion = this._regionid;
+            this._selectedModel = null;            
+            state.emulators.selected_model = null;
+
+            this._modelTypes = null;
+            state.emulators.models = null;
+            store.dispatch(listEmulatorModelTypes(this._emulatorRegion));
+
+            if(this._selectedModel) {
+                this._emulators = null;
+                state.emulators.emulators = null;                
+                store.dispatch(searchEmulatorsForModel(this._selectedModel, this._emulatorRegion));
+            }
+        }
         if(state.emulators && state.emulators.models && !this._modelTypes) {
             this._typesLoading = state.models.loading;
             if(!this._typesLoading) {

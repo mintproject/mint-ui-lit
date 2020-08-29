@@ -1,0 +1,22 @@
+query model_types($regionId: String!) {
+  execution(where:{
+    thread_model_executions: {
+      thread_model: {
+        thread: {
+          task: {
+            problem_statement: {
+              region_id: { _eq: $regionId}
+            }
+          }
+        }
+      }
+    }
+  }
+    distinct_on: model_id
+  ) {
+		model {
+      id
+      original_model
+    }
+  }
+}

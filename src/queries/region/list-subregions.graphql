@@ -1,0 +1,10 @@
+query list_sub_regions($regionId: String!) {
+  region(where: {
+    parent_region_id:{
+      _eq: $regionId
+    }
+  }) {
+    id
+    name
+  }
+}

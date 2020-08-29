@@ -4,16 +4,16 @@ import { store, RootState } from "../../../app/store";
 import datasets, { Dataset, ModelDatasets } from "../../datasets/reducers";
 import ReactGA from 'react-ga';
 
-import { DatasetMap, DataEnsembleMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, SubGoal } from "../reducers";
+import { DatasetMap, DataEnsembleMap, ModelEnsembleMap, ComparisonFeature, Task, ThreadEvent } from "../reducers";
 import { SharedStyles } from "../../../styles/shared-styles";
 import { Model, getPathFromModel } from "../../models/reducers";
 import { queryDatasetsByVariables, loadResourcesForDataset } from "../../datasets/actions";
-import { updatePathway } from "../actions";
-import { removeDatasetFromPathway, matchVariables, getPathwayDatasetsStatus, TASK_DONE, getUISelectedSubgoal } from "../../../util/state_functions";
+import { updateThread } from "../actions";
+import { removeDatasetFromThread, matchVariables, getThreadDatasetsStatus, TASK_DONE, getUISelectedTask } from "../../../util/state_functions";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
 import { showNotification, showDialog, hideDialog } from "../../../util/ui_functions";
-import { selectPathwaySection } from "../../../app/ui-actions";
-import { MintPathwayPage } from "./mint-pathway-page";
+import { selectThreadSection } from "../../../app/ui-actions";
+import { MintThreadPage } from "./mint-thread-page";
 import { IdMap } from "../../../app/reducers";
 import { fromTimeStampToDateString } from "util/date-utils";
 
@@ -22,15 +22,17 @@ import 'components/loading-dots';
 import { Region } from "screens/regions/reducers";
 
 import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
+import { getLatestEventOfType } from "util/event_utils";
+import { getCustomEvent } from "../graphql_adapter";
 
 store.addReducers({
     datasets
 });
 
 @customElement('mint-datasets')
-export class MintDatasets extends connect(store)(MintPathwayPage) {
+export class MintDatasets extends connect(store)(MintThreadPage) {
     @property({type: Object})
-    private _subgoal_region: Region;
+    private _task_region: Region;
 
     @property({type: Object})
     private _queriedDatasets!: ModelDatasets;
@@ -51,7 +53,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     private _showAllDatasets: boolean = false;
 
     @property({type: Object})
-    subgoal: SubGoal;
+    task: Task;
 
     @property({type: Object})
     private _selectResourcesDataset: Dataset;
@@ -108,12 +110,12 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     }
 
     protected render() {
-        if(!this.pathway) {
+        if(!this.thread) {
             return html ``;
         }
         
         // If no models selected
-        if(!this.pathway.models || !Object.keys(this.pathway.models).length) {
+        if(!this.thread.models || !Object.keys(this.thread.models).length) {
             return html `
             <p>
                 This step is for selecting datasets for each of the models that you selected earlier.
@@ -122,8 +124,11 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
             `
         }
 
-        let done = (getPathwayDatasetsStatus(this.pathway) == TASK_DONE);
+        let done = (getThreadDatasetsStatus(this.thread) == TASK_DONE);
 
+        let latest_update_event = getLatestEventOfType(["CREATE", "UPDATE"], this.thread.events);
+        let latest_data_event = getLatestEventOfType(["SELECT_DATA"], this.thread.events);
+        
         // If models have been selected, go over each model
         return html `
         <p>
@@ -142,14 +147,14 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                 Change Datasets Selection
             </wl-tooltip>
 
-            ${(Object.keys(this.pathway.models) || []).map((modelid) => {
-                let model = this.pathway.models![modelid];
+            ${(Object.keys(this.thread.models) || []).map((modelid) => {
+                let model = this.thread.models![modelid];
                 let url = this._regionid + '/models/explore' + getPathFromModel(model) + "/";
                 let input_files = model.input_files.filter((input) => !input.value);
                 let fixed_inputs = model.input_files.filter((input) => !!input.value);
                 
                 // Get any existing ensemble selection for the model
-                let ensembles:DataEnsembleMap = this.pathway.model_ensembles![modelid] || {};
+                let ensembles:DataEnsembleMap = this.thread.model_ensembles![modelid] || {};
 
                 return html`
                     <wl-title level="4">
@@ -213,7 +218,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                 <wl-title level="5">Input: ${input.name}</wl-title>
                                 <ul>
                                     ${bindings.map((binding) => {
-                                        let dataset = this.pathway.datasets![binding];
+                                        let dataset = this.thread.datasets![binding];
                                         let resources = dataset.resources || [];
                                         let selected_resources = dataset.resources.filter((res) => res.selected);
                                         // Fix for older saved resources
@@ -271,7 +276,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                         </thead>
                                         <tbody>
                                             ${(queriedInputDatasets || []).map((dataset:Dataset) => {
-                                                let matched = matchVariables(this.pathway.driving_variables, dataset.variables, false); // Partial match
+                                                let matched = matchVariables(this.thread.driving_variables, dataset.variables, false); // Partial match
                                                 let resources = dataset.resources;
                                                 let selected_resources = dataset.resources.filter((res) => res.selected);
                                                 if(this._showAllDatasets || this._selectionUpdate || dtypeMatchingInputDatasets.indexOf(dataset) >=0) {
@@ -354,35 +359,36 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                             @click="${() => this._setEditMode(false)}">CANCEL</wl-button>`
                         : html``}
                     <wl-button type="button" class="submit" ?disabled="${this._waiting}"
-                            @click="${() => this._loadAndSelectPathwayDatasets()}">
+                            @click="${() => this._loadAndSelectThreadDatasets()}">
                         Select &amp; Continue
                         ${this._waiting? html`<loading-dots style="--width: 20px"></loading-dots>` : ''}
                     </wl-button>
                 </div>  
+                
                 <fieldset class="notes">
                     <legend>Notes</legend>
-                    <textarea id="notes">${this.pathway.notes ? this.pathway.notes.datasets : ""}</textarea>
+                    <textarea id="notes">${latest_data_event?.notes ? latest_data_event.notes : ""}</textarea>
                 </fieldset>
                 `: 
                 html`
-                
+
                 <div class="footer">
-                    <wl-button type="button" class="submit" @click="${() => store.dispatch(selectPathwaySection("parameters"))}">Continue</wl-button>
+                    <wl-button type="button" class="submit" @click="${() => store.dispatch(selectThreadSection("parameters"))}">Continue</wl-button>
                 </div>
 
-                ${this.pathway.last_update && this.pathway.last_update.datasets ? 
+                ${latest_data_event?.notes ? 
                     html `
-                    <div class="notepage">${renderLastUpdateText(this.pathway.last_update.datasets)}</div>
+                    <div class="notepage">${renderLastUpdateText(latest_data_event)}</div>
                     `: html ``
-                }                
-                ${this.pathway.notes && this.pathway.notes.datasets ? 
+                }
+                ${latest_update_event?.notes ? 
                     html`
                     <fieldset class="notes">
                         <legend>Notes</legend>
-                        <div class="notepage">${this.pathway.notes.datasets}</div>
+                        <div class="notepage">${latest_update_event.notes}</div>
                     </fieldset>
                     `: html``
-                }
+                }             
                 `
             }           
         </div>
@@ -503,8 +509,8 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     }
 
     _loadDatasetResources(dataset: Dataset) {
-        let dates = this.pathway.dates || this.subgoal.dates || this.scenario.dates;
-        let req = loadResourcesForDataset(dataset.id, dates, this._subgoal_region, this.prefs.mint)
+        let dates = this.thread.dates || this.task.dates || this.problem_statement.dates;
+        let req = loadResourcesForDataset(dataset.id, dates, this._task_region, this.prefs.mint)
         req.then((resources) => {
             dataset.resources = resources;
             dataset.resources_loaded = true;
@@ -535,16 +541,8 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         })
         this._selectionUpdate = true;
         if(this._selectResourcesImmediateUpdate) {
-            let newpathway = {...this.pathway};
-            newpathway.last_update = {
-                ...newpathway.last_update!,
-                parameters: null,
-                datasets: {
-                    time: Date.now(),
-                    user: this.user!.email
-                } as StepUpdateInformation
-            };    
-            updatePathway(this.scenario, newpathway);
+            let newthread = {...this.thread};  
+            updateThread(newthread);
             showNotification("saveNotification", this.shadowRoot!);
         }
         hideDialog("resourceSelectionDialog", this.shadowRoot);
@@ -569,15 +567,15 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         showDialog("comparisonDialog", this.shadowRoot!);
     }
 
-    _loadAndSelectPathwayDatasets() {
+    _loadAndSelectThreadDatasets() {
         ReactGA.event({
-          category: 'Pathway',
+          category: 'Thread',
           action: 'Dataset continue',
         });
         let new_datasets = []
         this._waiting = true;
-        Object.keys(this.pathway.models!).map((modelid) => {
-            let model = this.pathway.models![modelid];
+        Object.keys(this.thread.models!).map((modelid) => {
+            let model = this.thread.models![modelid];
             model.input_files.filter((input) => !input.value).map((input) => {
                 let inputid = input.id!;
                 Object.values(this._getDatasetSelections(modelid, inputid)).forEach((ds) => {
@@ -591,19 +589,19 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                 .map(ds => this._loadDatasetResources(ds))
         ).then((values) => {
             this._waiting = false;
-            this._selectPathwayDatasets();
+            this._selectThreadDatasets();
         });
 
     }
 
-    _selectPathwayDatasets() {
-        Object.keys(this.pathway.models!).map((modelid) => {
-            let model = this.pathway.models![modelid];
+    _selectThreadDatasets() {
+        Object.keys(this.thread.models!).map((modelid) => {
+            let model = this.thread.models![modelid];
             model.input_files.filter((input) => !input.value).map((input) => {
                 let inputid = input.id!;
                 // If not in edit mode, then check if we already have bindings for this
                 // -If so, return
-                let current_data_ensemble: string[] = (this.pathway.model_ensembles![modelid] || {})[inputid];
+                let current_data_ensemble: string[] = (this.thread.model_ensembles![modelid] || {})[inputid];
                 if(!this._editMode && current_data_ensemble && current_data_ensemble.length > 0) {
                     return;
                 }
@@ -623,13 +621,13 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                 });
                 datasets_to_be_removed.map((dsid) => {
                     //console.log("Removing dataset " + dsid);
-                    // If the existing dataset was removed, remove it from the pathway
-                    this.pathway = removeDatasetFromPathway(this.pathway, dsid, modelid, inputid);            
+                    // If the existing dataset was removed, remove it from the thread
+                    this.thread = removeDatasetFromThread(this.thread, dsid, modelid, inputid);            
                 })
         
                 // Now add the rest of the new datasets
-                let datasets: DatasetMap = this.pathway.datasets || {};
-                let model_ensembles: ModelEnsembleMap = this.pathway.model_ensembles || {};
+                let datasets: DatasetMap = this.thread.datasets || {};
+                let model_ensembles: ModelEnsembleMap = this.thread.model_ensembles || {};
                 Object.keys(new_datasets).map((dsid) => {
                     if(!model_ensembles[modelid])
                         model_ensembles[modelid] = {};
@@ -638,9 +636,9 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                     model_ensembles[modelid][inputid].push(dsid!);
                     datasets[dsid] = new_datasets[dsid];
                 });
-                // Create new pathway
-                this.pathway = {
-                    ...this.pathway,
+                // Create new thread
+                this.thread = {
+                    ...this.thread,
                     datasets: datasets,
                     model_ensembles: model_ensembles
                 }                        
@@ -649,37 +647,25 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         // Turn off edit mode
         this._editMode = false;
 
-        let newpathway = {
-            ...this.pathway
+        let newthread = {
+            ...this.thread
         };
 
         // Update notes
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        newpathway.notes = {
-            ...newpathway.notes!,
-            datasets: notes
-        };
-        newpathway.last_update = {
-            ...newpathway.last_update!,
-            parameters: null,
-            results: null,
-            datasets: {
-                time: Date.now(),
-                user: this.user!.email
-            } as StepUpdateInformation
-        };    
+        newthread.events.push(getCustomEvent("SELECT_DATA", notes) as ThreadEvent);
 
-        // Update pathway itself
-        //console.log(this.pathway);
-        updatePathway(this.scenario, newpathway);
+        // Update thread itself
+        //console.log(this.thread);
+        updateThread(newthread);
         showNotification("saveNotification", this.shadowRoot!);
     }
 
-    _removePathwayDataset(modelid: string, inputid: string, datasetid:string) {
+    _removeThreadDataset(modelid: string, inputid: string, datasetid:string) {
         if(confirm("Are you sure you want to remove this dataset ?")) {
-            let newpathway = {...this.pathway};
-            newpathway = removeDatasetFromPathway(newpathway, datasetid, modelid, inputid);
-            updatePathway(this.scenario, newpathway);
+            let newthread = {...this.thread};
+            newthread = removeDatasetFromThread(newthread, datasetid, modelid, inputid);
+            updateThread(newthread);
         }
     }
 
@@ -689,7 +675,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
 
     queryDataCatalog() {
         //console.log("Querying data catalog again");
-        let dates = this.pathway.dates || this.subgoal.dates || this.scenario.dates;
+        let dates = this.thread.dates || this.task.dates || this.problem_statement.dates;
 
         if(this._models) {
             if(!this._queriedDatasets) {
@@ -701,19 +687,19 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                 model.input_files.filter((input) => !input.value).map((input) => {
                     // Only query for model inputs that we haven't already made a selection for
                     // Unless we're in edit more, then get all datasets
-                    if(!this.pathway.model_ensembles![modelid] || 
-                            !this.pathway.model_ensembles![modelid][input.id!] ||
+                    if(!this.thread.model_ensembles![modelid] || 
+                            !this.thread.model_ensembles![modelid][input.id!] ||
                             this._editMode) {
                         //console.log("Querying datasets for model: " + modelid+", input: " + input.id);
                         store.dispatch(queryDatasetsByVariables(
-                            modelid, input.id, input.variables, dates, this._subgoal_region, this.prefs.mint));
+                            modelid, input.id, input.variables, dates, this._task_region, this.prefs.mint));
                     } else {
                         this._queriedDatasets[modelid][input.id!] = {
                             loading: false,
                             datasets: []
                         };
-                        this.pathway.model_ensembles![modelid][input.id!].map((datasetid) => {
-                            let dataset = this.pathway.datasets![datasetid];
+                        this.thread.model_ensembles![modelid][input.id!].map((datasetid) => {
+                            let dataset = this.thread.datasets![datasetid];
                             this._queriedDatasets[modelid][input.id!].datasets.push(dataset);
                         });
                     }
@@ -724,7 +710,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     }
 
     getSubregionId() {
-        return this.subgoal.subregionid || this.scenario.subregionid || this.scenario.regionid;
+        return this.task.regionid || this.problem_statement.regionid || this.problem_statement.regionid;
     }
 
     stateChanged(state: RootState) {
@@ -733,13 +719,13 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         
         if(state.regions && state.regions.regions && state.regions.sub_region_ids) {
             let subregionid = this.getSubregionId();
-            this._subgoal_region = state.regions.regions[subregionid];
+            this._task_region = state.regions.regions[subregionid];
         }
 
-        let pathwayid = this.pathway ? this.pathway.id : null;
-        super.setPathway(state);
-        if(this.pathway && this.pathway.models != this._models) {
-            this._models = this.pathway.models!;
+        let thread_id = this.thread ? this.thread.id : null;
+        super.setThread(state);
+        if(this.thread && this.thread.models != this._models) {
+            this._models = this.thread.models!;
             if (Object.keys(this._models).length > 0) {
                 Object.values(this._models).forEach((m:Model) => {
                     let fixed = m.input_files.filter((i) => !!i.value);
@@ -764,7 +750,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
 
 
             this.queryDataCatalog();
-            if(this.pathway.id != pathwayid) 
+            if(this.thread.id != thread_id) 
                 this._resetEditMode();
         }
 

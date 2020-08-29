@@ -3,14 +3,26 @@ import { RootState } from "../../app/store";
 import { ActionCreator, Action } from "redux";
 import { EXAMPLE_REGION_DATA } from "../../offline_data/sample_scenarios";
 import { db } from "../../config/firebase";
-import { Region, BoundingBox, Point, RegionMap } from "./reducers";
+import { Region, BoundingBox, Point, RegionMap, RegionCategory } from "./reducers";
 import { OFFLINE_DEMO_MODE } from "../../app/actions";
+import { APOLLO_CLIENT } from "config/graphql";
 
+import listTopRegionsGQL from '../../queries/region/list-top.graphql';
+import listSubRegionsGQL from '../../queries/region/list-subregions.graphql';
+import listRegionCategoriesGQL from '../../queries/region/list-categories.graphql';
+import getRegionDetailsGQL from '../../queries/region/get.graphql';
+
+import { IdMap } from "app/reducers";
+
+export const REGIONS_LIST_CATEGORIES = 'REGIONS_LIST_CATEGORIES';
 export const REGIONS_LIST_TOP_REGIONS = 'REGIONS_LIST_TOP_REGIONS';
 export const REGIONS_LIST_SUB_REGIONS = 'REGIONS_LIST_SUB_REGIONS';
 //export const REGIONS_ADD = 'REGIONS_ADD';
 export const REGIONS_SET_PREVIEW = 'REGIONS_SET_PREVIEW';
 
+export interface RegionsActionListCategories extends Action<'REGIONS_LIST_CATEGORIES'> { 
+    categories: IdMap<RegionCategory>
+};
 export interface RegionsActionListTopRegions extends Action<'REGIONS_LIST_TOP_REGIONS'> { 
     regions: RegionMap
 };
@@ -24,7 +36,8 @@ export interface RegionsActionSetPreview extends Action<'REGIONS_SET_PREVIEW'> {
     payload: BoundingBox[]
 };
 
-export type RegionsAction =  RegionsActionListTopRegions | RegionsActionListSubRegions | RegionsActionSetPreview;
+export type RegionsAction =  RegionsActionListCategories | RegionsActionListTopRegions | 
+    RegionsActionListSubRegions | RegionsActionSetPreview;
 
 // Set bbox preview
 type BBoxPreviewThunkResult = ThunkAction<void, RootState, undefined, RegionsActionSetPreview>;
@@ -35,21 +48,60 @@ export const setPreview: ActionCreator<BBoxPreviewThunkResult> = (bbox: Bounding
     });
 };
 
+// List Region Categories
+type ListCategoriesThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListCategories>;
+export const listRegionCategories: ActionCreator<ListCategoriesThunkResult> = () => (dispatch) => {
+    APOLLO_CLIENT.query({
+        query: listRegionCategoriesGQL
+    }).then(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let categories = {} as IdMap<RegionCategory>;
+            result.data.region_category.forEach((catobj:any) => {
+                let category = {
+                    id: catobj.id,
+                    description: catobj.name,
+                    citation: catobj.citation
+                } as RegionCategory;
+                categories[category.id] = category;
+            })
+            result.data.region_category.forEach((catobj:any) => {
+                 categories[catobj.id].subcategories = catobj.sub_categories.map(
+                     (subobj) => categories[subobj.region_category_id]);
+            });
+            dispatch({
+                type: REGIONS_LIST_CATEGORIES,
+                categories
+            });
+        }
+    });
+};
+
 // List Regions
 type ListRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListTopRegions>;
 export const listTopRegions: ActionCreator<ListRegionsThunkResult> = () => (dispatch) => {
-    db.collection("regions").get().then((querySnapshot) => {
-        let regions:RegionMap = {};
-        querySnapshot.forEach((doc) => {
-            var data = doc.data();
-            data.id = doc.id;
-            regions[doc.id] = data as Region;
-            regions[doc.id].bounding_box = _calculateBoundingBox(regions[doc.id].geojson_blob);
-        });
-        dispatch({
-            type: REGIONS_LIST_TOP_REGIONS,
-            regions
-        });
+    APOLLO_CLIENT.query({
+        query: listTopRegionsGQL
+    }).then(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let regions = {} as RegionMap;
+            result.data.region.forEach((regionobj) => {
+                let region = regionobj as Region;
+                region.bounding_box = _calculateBoundingBox(region.geojson_blob)
+                regions[region.id] = region;
+            })
+            dispatch({
+                type: REGIONS_LIST_TOP_REGIONS,
+                regions
+            });
+        }
     });
 };
 
@@ -158,45 +210,60 @@ const _calculateZoom = (extent : any, mapWidth: number, mapHeight: number) => {
 // Query for Sub Regions
 type SubRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListSubRegions>;
 export const listSubRegions: ActionCreator<SubRegionsThunkResult> = (regionid: string) => (dispatch) => {
-    let collRef : firebase.firestore.CollectionReference | firebase.firestore.Query
-        = db.collection("regions/"+regionid+"/subregions");
-    /*if(type) {
-        collRef = collRef.where("region_type", "==", type);
-    }*/
-    
-    console.log("Fetching subregions for " + regionid);
-    collRef.onSnapshot((querySnapshot) => {
-        let regions:RegionMap = {};
-        querySnapshot.forEach((doc) => {
-            var data = doc.data();
-            data.id = doc.id;
-            regions[doc.id] = data as Region;
-            regions[doc.id].bounding_box = _calculateBoundingBox(regions[doc.id].geojson_blob);
-        });
-        dispatch({
-            type: REGIONS_LIST_SUB_REGIONS,
-            parentid: regionid,
-            regions
-        });
+    APOLLO_CLIENT.query({
+        query: listSubRegionsGQL,
+        variables: {
+            regionId: regionid
+        }
+    }).then(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let regions = {} as RegionMap;
+            result.data.region.forEach((regionobj) => {
+                let region = regionobj as Region;
+                regions[region.id] = region;
+            })
+            dispatch({
+                type: REGIONS_LIST_SUB_REGIONS,
+                parentid: regionid,
+                regions
+            });
+        }
     });
 };
 
 export const filterRegionsOfType = (regionids: string[], regions: RegionMap, type: string) => {
     return regionids.filter((regionid) => {
-        return regions[regionid].region_type == type;
+        return regions[regionid].category_id == type;
     })
 }
 
 // Get details about a particular region/subregion
 export const getRegionDetails = (regionid: string, subregionid: string) => {
-    let docpath = "regions/"+regionid + (subregionid ? ("/subregions/" + subregionid) : "");
-    let docRef : firebase.firestore.DocumentReference = db.doc(docpath);
     return new Promise<Region>((resolve, reject) => {
-        docRef.get().then((doc) => {
-            resolve(doc.data() as Region);
-        })
+        APOLLO_CLIENT.query({
+            query: getRegionDetailsGQL,
+            variables: {
+                id: subregionid
+            }
+        }).then(result => {
+            if(result.errors && result.errors.length > 0) {
+                console.log("ERROR");
+                console.log(result);
+                reject();
+            }
+            else {
+                let region = result.data.region_by_pk as Region;
+                region.bounding_box = _calculateBoundingBox(region.geojson_blob)
+                resolve(region);
+            }
+        });
     });
 };
+
 
 function chunkRegions(array: Region[], size: number) {
     const chunked_arr = [];

@@ -4,31 +4,29 @@ import { store, RootState } from "../../../app/store";
 import ReactGA from 'react-ga';
 
 import { SharedStyles } from "../../../styles/shared-styles";
-import { BASE_HREF } from "../../../app/actions";
 
 import "weightless/progress-bar";
-import { selectPathwaySection } from "../../../app/ui-actions";
-import { MintPathwayPage } from "./mint-pathway-page";
+import { selectThreadSection } from "../../../app/ui-actions";
+import { MintThreadPage } from "./mint-thread-page";
 import { showNotification, hideDialog, showDialog, hideNotification } from "util/ui_functions";
 import { renderNotifications } from "util/ui_renders";
 import { Model } from "screens/models/reducers";
-import { ExecutableEnsemble, ModelEnsembles, Pathway } from "../reducers";
+import { Execution, ModelExecutions } from "../reducers";
 import { IdMap } from "app/reducers";
-import { fetchPathwayEnsembles, getAllPathwayEnsembleIds } from "../actions";
+import { listThreadExecutions, getAllThreadExecutionIds, threadSummaryChanged, threadTotalRunsChanged } from "../actions";
 import { DataResource } from "screens/datasets/reducers";
-import { isObject } from "util";
 import { postJSONResource, getResource } from "util/mint-requests";
-import { getPathwayRunsStatus, TASK_DONE, pathwayTotalRunsChanged, pathwaySummaryChanged } from "util/state_functions";
+import { getThreadRunsStatus, TASK_DONE } from "util/state_functions";
 import { getPathFromModel } from "../../models/reducers";
 
 @customElement('mint-runs')
-export class MintRuns extends connect(store)(MintPathwayPage) {
+export class MintRuns extends connect(store)(MintThreadPage) {
 
     @property({type: Object})
-    private _ensembles: ModelEnsembles;
+    private _executions: ModelExecutions;
 
     @property({type: String})
-    private _subgoalid: string;
+    private _task_id: string;
 
     @property({type: Object})
     private totalPages : Map<string, number> = {} as Map<string, number>;
@@ -42,7 +40,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
 
     private _initialSubmit: boolean = false;
 
-    private pathwayModelEnsembleIds: IdMap<string[]> = {};
+    private threadModelExecutionIds: IdMap<string[]> = {};
 
     static get styles() {
         return [
@@ -53,12 +51,12 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
     }
     
     protected render() {
-        if(!this.pathway) {
+        if(!this.thread) {
             return html ``;
         }
         
         // If no models selected
-        if(!this.pathway.executable_ensemble_summary) {
+        if(!this.thread.execution_summary) {
             return html `
             <p>
                 This step is for monitoring model runs.
@@ -67,18 +65,18 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             `
         }
 
-        let done = (getPathwayRunsStatus(this.pathway) == TASK_DONE);
+        let done = (getThreadRunsStatus(this.thread) == TASK_DONE);
         
-        // Group running ensembles
-        let grouped_ensembles = {};
-        Object.keys(this._ensembles || {}).map((modelid) => {
-            let model = this.pathway.models![modelid];
-            let loading = this._ensembles[modelid].loading;
+        // Group running executions
+        let grouped_executions = {};
+        Object.keys(this._executions || {}).map((modelid) => {
+            let model = this.thread.models![modelid];
+            let loading = this._executions[modelid].loading;
             if(!model) {
                 return;
             }
-            grouped_ensembles[model.id] = {
-                ensembles: {},
+            grouped_executions[model.id] = {
+                executions: {},
                 params: [],
                 inputs: [],
                 outputs: [],
@@ -94,18 +92,18 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 });
             input_parameters.map((ip) => {
                 if(!ip.value)
-                    grouped_ensembles[model.id].params.push(ip);
+                    grouped_executions[model.id].params.push(ip);
             })
             model.input_files.map((inf) => {
                 if(!inf.value)
-                    grouped_ensembles[model.id].inputs.push(inf);
+                    grouped_executions[model.id].inputs.push(inf);
             })
 
-            let ensembles: ExecutableEnsemble [] = this._ensembles[modelid].ensembles;
-            if(ensembles)
-                ensembles.map((ensemble) => {
-                    if(ensemble)
-                        grouped_ensembles[model.id].ensembles[ensemble.id] = ensemble;
+            let executions: Execution [] = this._executions[modelid].executions;
+            if(executions)
+                executions.map((execution) => {
+                    if(execution)
+                        grouped_executions[model.id].executions[execution.id] = execution;
                 });
         });
 
@@ -117,22 +115,22 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         <wl-title level="3">Runs</wl-title>
         <div class="clt">
             <ul>
-            ${Object.keys(this.pathway.executable_ensemble_summary).map((modelid) => {
-                let summary = this.pathway.executable_ensemble_summary[modelid];
-                let model = this.pathway.models![modelid];
-                let grouped_ensemble = grouped_ensembles[modelid];
+            ${Object.keys(this.thread.execution_summary).map((modelid) => {
+                let summary = this.thread.execution_summary[modelid];
+                let model = this.thread.models![modelid];
+                let grouped_ensemble = grouped_executions[modelid];
                 this.totalPages[modelid] = Math.ceil(summary.total_runs/this.pageSize);
 
                 //Count parameters:
                 let nParameters : number = model.input_parameters
-                        .map((param) => (this.pathway.model_ensembles[modelid][param.id] || [0]).length)
+                        .map((param) => (this.thread.model_ensembles[modelid][param.id] || [0]).length)
                         .reduce((ac,len) => ac*len, 1);
 
                 //Count inputs:
                 let nInputs : number = model.input_files.map((input) => input.value ? 
                     (input.value.resources || []).filter(r => r.selected != false).length
-                    : (this.pathway.model_ensembles[modelid][input.id] || [])
-                            .map((dsid) => this.pathway.datasets[dsid].resources)
+                    : (this.thread.model_ensembles[modelid][input.id] || [])
+                            .map((dsid) => this.thread.datasets[dsid].resources)
                             .map((dsres) => (dsres || []).filter((r) => r.selected).length)
                             .reduce((ac,len) => ac*len, 1)
                 ).reduce((ac,len) => ac*len, 1);
@@ -149,13 +147,15 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                 if(!this.currentPage[modelid])
                     this.currentPage[modelid] = 1;
 
+                /*
                 if(!grouped_ensemble && model) {
                     this._fetchRuns(model.id, 1, this.pageSize)
                 }
+                */
                 if(!model) {
                     return "";
                 }
-                 console.log(summary, model);
+                //console.log(summary, model);
 
                 if(!submitted) {
                     return html`
@@ -242,9 +242,9 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
                                     </thead>
                                     <!-- Body -->
                                     <tbody>
-                                    ${Object.keys(grouped_ensemble.ensembles).map((index:string) => {
-                                        let ensemble: ExecutableEnsemble = grouped_ensemble.ensembles[index];
-                                        let model = this.pathway.models![ensemble.modelid];
+                                    ${Object.keys(grouped_ensemble.executions).map((index:string) => {
+                                        let ensemble: Execution = grouped_ensemble.executions[index];
+                                        let model = this.thread.models![ensemble.modelid];
                                         let param_defaults = {};
                                         model.input_parameters.map((param) => param_defaults[param.id] = param.default);
                                         return html`
@@ -293,7 +293,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             ${done ? 
             html`
                 <div class="footer">
-                    <wl-button type="button" class="submit" @click="${() => store.dispatch(selectPathwaySection("results"))}">Continue</wl-button>
+                    <wl-button type="button" class="submit" @click="${() => store.dispatch(selectThreadSection("results"))}">Continue</wl-button>
                 </div>
             ` : ""
             }
@@ -307,14 +307,14 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
 
     _submitRuns(modelid: string) {
         ReactGA.event({
-          category: 'Pathway',
+          category: 'Thread',
           action: 'Send run',
         });
         let mint = this.prefs.mint;
         let data = {
-            scenario_id: this.scenario.id,
-            subgoal_id: this._subgoalid,
-            thread_id: this.pathway.id,
+            problem_statement_id: this.problem_statement.id,
+            task_id: this._task_id,
+            thread_id: this.thread.id,
             model_id: modelid
         };
         this._initialSubmit = true;
@@ -327,7 +327,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             },
             onError: function() {
                 hideNotification("runNotification", me.shadowRoot);
-                alert("Could not connect to the Ensemble Manager!");
+                alert("Could not connect to the Execution Manager!");
             }
         }, data, false);
     }
@@ -386,18 +386,19 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
 
     async _fetchRuns (modelid: string, currentPage: number, pageSize: number) {
         this.currentPage[modelid] = currentPage;
+        console.log("Fetch Runs called");
         
-        if(!this.pathwayModelEnsembleIds[modelid] || this.pathwayModelEnsembleIds[modelid].length == 0) {
-            this.pathwayModelEnsembleIds[modelid] =  await getAllPathwayEnsembleIds(this.scenario.id, this.pathway.id, modelid);
+        if(!this.threadModelExecutionIds[modelid] || this.threadModelExecutionIds[modelid].length == 0) {
+            this.threadModelExecutionIds[modelid] =  await getAllThreadExecutionIds(this.thread.id, modelid);
         }
         
-        let ensembleids = this.pathwayModelEnsembleIds[modelid].slice((currentPage - 1)*pageSize, currentPage*pageSize);
-        store.dispatch(fetchPathwayEnsembles(this.pathway.id, modelid, ensembleids));
+        let ensembleids = this.threadModelExecutionIds[modelid].slice((currentPage - 1)*pageSize, currentPage*pageSize);
+        store.dispatch(listThreadExecutions(this.thread.id, modelid, ensembleids));
     }
 
     async _reloadAllRuns() {
         let promises: any[] = [];
-        Object.keys(this.pathway.models).map((modelid) => {
+        Object.keys(this.thread.models).map((modelid) => {
             if(!this.currentPage[modelid])
                 this.currentPage[modelid] = 1;
             console.log("Fetch runs for model " + modelid);
@@ -406,7 +407,7 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         await Promise.all(promises);
     }
 
-    _isEnsembleRunFinished(ensemble: ExecutableEnsemble) {
+    _isExecutionRunFinished(ensemble: Execution) {
         return (ensemble.status == "SUCCESS" || ensemble.status == "FAILURE");
     }
 
@@ -433,14 +434,14 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
         super.setUser(state);
         super.setRegionId(state);
 
-        // Before resetting pathway, check if the pathway run status has changed
-        let runs_changed = this._initialSubmit || pathwaySummaryChanged(this.pathway, state.modeling.pathway);
-        let runs_total_changed = this._initialSubmit || pathwayTotalRunsChanged(this.pathway, state.modeling.pathway);
+        // Before resetting thread, check if the thread run status has changed
+        let runs_changed = this._initialSubmit || threadSummaryChanged(this.thread, state.modeling.thread);
+        let runs_total_changed = this._initialSubmit || threadTotalRunsChanged(this.thread, state.modeling.thread);
 
-        super.setPathway(state) 
+        super.setThread(state) 
 
-        if(state.ui && state.ui.selected_subgoalid) {
-            this._subgoalid = state.ui.selected_subgoalid;
+        if(state.ui && state.ui.selected_task_id) {
+            this._task_id = state.ui.selected_task_id;
         }
 
         // If run status has changed, then reload all runs
@@ -448,18 +449,18 @@ export class MintRuns extends connect(store)(MintPathwayPage) {
             this._initialSubmit = false;
             if(runs_total_changed) {
                 console.log("Total runs changed !");
-                this.pathwayModelEnsembleIds = {};
+                this.threadModelExecutionIds = {};
             }
-            state.modeling.ensembles = null;
-            this._ensembles = null;            
+            state.modeling.executions = null;
+            this._executions = null;            
             console.log("Reloading runs");
             this._reloadAllRuns().then(() => {
                 console.log("Reload finished");
             });
         }
 
-        if(state.modeling.ensembles) {
-            this._ensembles = state.modeling.ensembles; 
+        if(state.modeling.executions) {
+            this._executions = state.modeling.executions; 
         }
     }
 }

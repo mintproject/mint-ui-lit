@@ -3,23 +3,22 @@ import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 
 import { SharedStyles } from "../../../styles/shared-styles";
-import { updatePathway } from "../actions";
+import { updateThread } from "../actions";
 import { renderNotifications } from "../../../util/ui_renders";
 import { showNotification } from "../../../util/ui_functions";
-import { ExecutableEnsemble, Goal, SubGoal, DataEnsembleMap, Visualization } from "../reducers";
-import { getUISelectedSubgoal, getUISelectedGoal, getVisualizationURLs } from "../../../util/state_functions";
-import { MintPathwayPage } from "./mint-pathway-page";
+import { Execution, Task, DataEnsembleMap, Visualization, ThreadEvent } from "../reducers";
+import { getUISelectedTask, getVisualizationURLs } from "../../../util/state_functions";
+import { MintThreadPage } from "./mint-thread-page";
 import { getVariableLongName } from "../../../offline_data/variable_list";
 
 import "weightless/button";
+import { getLatestEventOfType, getLatestEvent } from "util/event_utils";
+import { getCustomEvent } from "../graphql_adapter";
 
 @customElement('mint-visualize')
-export class MintVisualize extends connect(store)(MintPathwayPage) {
+export class MintVisualize extends connect(store)(MintThreadPage) {
     @property({type: Object})
-    private _goal!: Goal;
-
-    @property({type: Object})
-    private _subgoal!: SubGoal;
+    private _task!: Task;
 
     @property({type: String})
     private _bigViz : boolean = false;
@@ -50,18 +49,20 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
     }
     
     protected render() {
-        if(!this.pathway) {
+        if(!this.thread) {
             return html ``;
         }
-        let vizurls = getVisualizationURLs(this.pathway, this._subgoal, this.scenario, this.prefs.mint)
-        let responseV = this.pathway.response_variables.length > 0?
-            getVariableLongName(this.pathway.response_variables[0]) : '';
+        let vizurls = getVisualizationURLs(this.thread, this._task, this.problem_statement, this.prefs.mint)
+        let responseV = this.thread.response_variables.length > 0?
+            getVariableLongName(this.thread.response_variables[0]) : '';
 
         if (this._lastLinks.length != vizurls.length ||
             this._lastLinks.some((vizurl:string, i:number) => vizurl != vizurls[i])) {
             this._lastLinks = vizurls;
             this._bigViz = (responseV == "Flooding Contour");
         }
+        
+        let latest_viz_event = getLatestEventOfType(["VISUALIZE"], this.thread.events);
         
         return html`
         <style>
@@ -86,7 +87,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
 
             <fieldset class="notes">
                 <legend>Notes</legend>
-                <textarea id="notes">${this.pathway.notes ? this.pathway.notes.visualization : ""}</textarea>
+                <textarea id="notes">${latest_viz_event?.notes ? latest_viz_event.notes : ""}</textarea>
             </fieldset>
             <div class="footer">
                 <wl-button type="button" class="submit" @click="${this._saveNotes}">Save</wl-button>
@@ -104,67 +105,63 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
     }
 
     _saveNotes () {
-        let newpathway = { ...this.pathway };
+        let newthread = { ...this.thread };
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        newpathway.notes = {
-            ...newpathway.notes!,
-            visualization: notes
-        };
-        updatePathway(this.scenario, newpathway); 
+        newthread.events.push(getCustomEvent("VISUALIZE", notes) as ThreadEvent);
+        updateThread(newthread); 
         showNotification("saveNotification", this.shadowRoot!);
     }
 
     _renderSummary () {
-        if(!this._subgoal) {
+        if(!this._task) {
             return "";
         }
         
         return html`
-        <h2>${this.scenario.name}</h2>
+        <h2>${this.problem_statement.name}</h2>
         <div class="clt">
             <ul>
                 <li>
-                    <h2>Task: ${this._subgoal.name}</h3>
+                    <h2>Task: ${this._task.name}</h3>
                     <ul>
                         <li>
                             Variables:
                             <ul>
                                 <li>Response: 
-                                    ${this.pathway.response_variables.map((v)=>
+                                    ${this.thread.response_variables.map((v)=>
                                         getVariableLongName(v) + " (" + v + ")").join(", ")}
                                 </li>
                                 <li>Driving: 
-                                    ${this.pathway.driving_variables.map((v)=>
+                                    ${this.thread.driving_variables.map((v)=>
                                         getVariableLongName(v) + " (" + v + ")").join(", ")}
                                 </li>
                             </ul>
-                            <i>Notes: ${this.pathway.notes!.variables}</i>
                         </li>
                         <li>
                             Models:
                             <ul>
-                                ${Object.keys(this.pathway.models!).map((modelid: string) => {
-                                    let model = this.pathway.models![modelid];
+                                ${Object.keys(this.thread.models!).map((modelid: string) => {
+                                    let model = this.thread.models![modelid];
                                     return html`
                                     <li>${model.name}</li>
                                     `;
                                 })}
                             </ul>
-                            <i>Notes: ${this.pathway.notes!.models}</i>
+                            <i>Notes: ${getLatestEventOfType(["SELECT_MODELS"], this.thread.events)?.notes}</i>
                         </li>
                         <li>
                             Datasets:
                             <ul>
-                                ${Object.keys(this.pathway.model_ensembles!).map((modelid) => {
-                                    let model_ensemble = this.pathway.model_ensembles![modelid] as DataEnsembleMap;
-                                    let model = this.pathway.models![modelid];
+                                ${Object.keys(this.thread.model_ensembles!).map((modelid) => {
+                                    let model_ensemble = this.thread.model_ensembles![modelid] as DataEnsembleMap;
+                                    let model = this.thread.models![modelid];
                                     return html`
                                     Datasets for model : ${model.name}
                                     <ul>
                                         ${model.input_files.filter((input) => !input.value).map((io) => {
                                             let bindings = model_ensemble[io.id!];
                                             let blist = bindings.map((binding) => {
-                                                let ds = this.pathway.datasets![binding];
+                                                let ds = this.thread.datasets![binding];
                                                 return ds.name;
                                             }).join(", ");
 
@@ -176,14 +173,14 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                                     `;
                                 })}
                             </ul>
-                            <i>Notes: ${this.pathway.notes!.datasets}</i>
+                            <i>Notes: ${getLatestEventOfType(["SELECT_DATA"], this.thread.events)?.notes}</i>
                         </li>
                         <li>
                             Setup:
                             <ul>
-                                ${Object.keys(this.pathway.model_ensembles!).map((modelid) => {
-                                    let model_ensemble = this.pathway.model_ensembles![modelid] as DataEnsembleMap;
-                                    let model = this.pathway.models![modelid];
+                                ${Object.keys(this.thread.model_ensembles!).map((modelid) => {
+                                    let model_ensemble = this.thread.model_ensembles![modelid] as DataEnsembleMap;
+                                    let model = this.thread.models![modelid];
                                     return html`
                                     Adjustment Variables for model : ${model.name}
                                     <ul>
@@ -200,14 +197,14 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                                     `;
                                 })}
                             </ul>
-                            <i>Notes: ${this.pathway.notes!.parameters}</i>
+                            <i>Notes: ${getLatestEventOfType(["SELECT_PARAMETERS"], this.thread.events)?.notes}</i>
                         </li>
                         <li>
                             Model Runs and Results:
                             <ul>
-                                ${Object.keys(this.pathway.executable_ensemble_summary).map((modelid: string) => {
-                                    let model = this.pathway.models[modelid];
-                                    let summary = this.pathway.executable_ensemble_summary[modelid];
+                                ${Object.keys(this.thread.execution_summary).map((modelid: string) => {
+                                    let model = this.thread.models[modelid];
+                                    let summary = this.thread.execution_summary[modelid];
                                     return html`
                                     <li>
                                         The model setup created ${summary.total_runs} configurations. 
@@ -217,7 +214,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
                                     `
                                 })}
                             </ul>
-                            <i>Notes: ${this.pathway.notes!.results}</i>
+                            <i>Notes: ${getLatestEventOfType(["INGEST"], this.thread.events)?.notes}</i>
                         </li> 
                     </ul>
                 </li>
@@ -228,9 +225,7 @@ export class MintVisualize extends connect(store)(MintPathwayPage) {
 
     stateChanged(state: RootState) {
         super.setUser(state);
-        super.setPathway(state);
-        this._subgoal = getUISelectedSubgoal(state)!;
-        if(this._subgoal)
-            this._goal = getUISelectedGoal(state, this._subgoal)!;
+        super.setThread(state);
+        this._task = getUISelectedTask(state)!;
     }
 }

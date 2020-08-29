@@ -1,252 +1,330 @@
 import { Action, ActionCreator } from 'redux';
-import { ScenarioList, Scenario, ScenarioDetails, 
-    Goal, Pathway, SubGoal, ExecutableEnsemble, PathwayInfo } from './reducers';
+import { ProblemStatementList, ProblemStatement, ProblemStatementDetails,  Thread, Task, Execution, ThreadInfo, ThreadList, TaskList } from './reducers';
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from '../../app/store';
-import { db, fieldValue, auth } from '../../config/firebase';
-import { Dataset } from '../datasets/reducers';
+//import { db, fieldValue, auth } from '../../config/firebase';
+import { Dataset, DataResource } from '../datasets/reducers';
 import { Model } from '../models/reducers';
-import { EXAMPLE_SCENARIOS_LIST_DATA, EXAMPLE_SCENARIO_DETAILS } from '../../offline_data/sample_scenarios';
-import { IdMap } from '../../app/reducers';
-import { OFFLINE_DEMO_MODE } from '../../app/actions';
-import { listEnsembles } from 'util/state_functions';
+import { IdMap, UserPreferences } from '../../app/reducers';
 
-export const SCENARIOS_LIST = 'SCENARIOS_LIST';
-export const SCENARIOS_ADD = 'SCENARIOS_ADD';
-export const SCENARIOS_REMOVE = 'SCENARIOS_REMOVE';
-export const SCENARIOS_UPDATE = 'SCENARIOS_UPDATE';
-export const SCENARIO_DETAILS = 'SCENARIO_DETAILS';
-export const SCENARIO_SUBSCRIPTION = 'SCENARIO_SUBSCRIPTION';
+import { APOLLO_CLIENT } from 'config/graphql';
 
-export const GOALS_LIST = 'GOALS_LIST';
-export const GOALS_ADD = 'GOALS_ADD';
-export const GOALS_REMOVE = 'GOALS_REMOVE';
-export const GOALS_UPDATE = 'GOALS_UPDATE';
+import subscribeProblemStatementsListGQL from '../../queries/problem-statement/list-subscription.graphql';
+import subscribeTasksListGQL from '../../queries/task/list-subscription.graphql';
+import subscribeThreadsListGQL from '../../queries/thread/list-subscription.graphql';
+import subscribeProblemStatementGQL from '../../queries/problem-statement/get-subscription.graphql';
+import subscribeTaskGQL from '../../queries/task/get-subscription.graphql';
+import subscribeThreadGQL from '../../queries/thread/get-subscription.graphql';
+import newProblemStatementGQL from '../../queries/problem-statement/new.graphql';
+import newTaskGQL from '../../queries/task/new.graphql';
+import newThreadGQL from '../../queries/thread/new.graphql';
+import updateProblemStatementGQL from '../../queries/problem-statement/update.graphql';
+import updateTaskGQL from '../../queries/task/update.graphql';
+import updateThreadGQL from '../../queries/thread/update.graphql';
+import deleteProblemStatementGQL from '../../queries/problem-statement/delete.graphql';
+import deleteTaskGQL from '../../queries/task/delete.graphql';
+import deleteThreadGQL from '../../queries/thread/delete.graphql';
+import executionIdsForThreadGQL from '../../queries/execution/executionids-for-thread.graphql';
+import subscribeExecutionsListGQL from '../../queries/execution/list-subscription.graphql';
+import listExecutionsListGQL from '../../queries/execution/list.graphql';
 
-export const SUBGOALS_LIST = 'SUBGOALS_LIST';
-export const SUBGOALS_ADD = 'SUBGOALS_ADD';
-export const SUBGOALS_REMOVE = 'SUBGOALS_REMOVE';
-export const SUBGOALS_UPDATE = 'SUBGOALS_UPDATE';
+import { fromTimeStamp } from 'util/date-utils';
+import { problemStatementFromGQL, taskFromGQL, threadFromGQL, threadInfoFromGQL, taskToGQL, threadToGQL, problemStatementToGQL, executionFromGQL, taskUpdateToGQL, threadUpdateToGQL, problemStatementUpdateToGQL } from './graphql_adapter';
+import { postJSONResource } from 'util/mint-requests';
+import { isObject } from 'util';
+import { Md5 } from 'ts-md5';
 
-export const PATHWAY_DETAILS = 'PATHWAY_DETAILS';
-export const PATHWAY_SUBSCRIPTION = 'PATHWAY_SUBSCRIPTION';
-export const PATHWAYS_ADD = 'PATHWAYS_ADD';
-export const PATHWAYS_REMOVE = 'PATHWAYS_REMOVE';
-export const PATHWAYS_UPDATE = 'PATHWAYS_UPDATE';
+export const PROBLEM_STATEMENTS_LIST = 'PROBLEM_STATEMENTS_LIST';
+export const PROBLEM_STATEMENTS_LIST_SUBSCRIPTION = 'PROBLEM_STATEMENTS_LIST_SUBSCRIPTION';
+export const PROBLEM_STATEMENTS_ADD = 'PROBLEM_STATEMENTS_ADD';
+export const PROBLEM_STATEMENTS_REMOVE = 'PROBLEM_STATEMENTS_REMOVE';
+export const PROBLEM_STATEMENTS_UPDATE = 'PROBLEM_STATEMENTS_UPDATE';
+export const PROBLEM_STATEMENT_DETAILS = 'PROBLEM_STATEMENT_DETAILS';
+export const PROBLEM_STATEMENT_SUBSCRIPTION = 'PROBLEM_STATEMENT_SUBSCRIPTION';
 
-export const PATHWAY_VARIABLES_ADD = 'PATHWAY_VARIABLES_ADD';
-export const PATHWAY_VARIABLES_REMOVE = 'PATHWAY_VARIABLES_REMOVE';
+export const TASKS_LIST = 'TASKS_LIST';
+export const TASKS_LIST_SUBSCRIPTION = 'TASKS_LIST_SUBSCRIPTION';
+export const TASKS_ADD = 'TASKS_ADD';
+export const TASKS_REMOVE = 'TASKS_REMOVE';
+export const TASKS_UPDATE = 'TASKS_UPDATE';
+export const TASK_DETAILS = 'TASK_DETAILS';
+export const TASK_SUBSCRIPTION = 'TASK_SUBSCRIPTION';
 
-export const PATHWAY_MODELS_ADD = 'PATHWAY_MODELS_ADD';
-export const PATHWAY_MODELS_REMOVE = 'PATHWAY_MODELS_REMOVE';
+export const THREADS_LIST = 'THREADS_LIST';
+export const THREADS_LIST_SUBSCRIPTION = 'THREADS_LIST_SUBSCRIPTION';
+export const THREADS_ADD = 'THREADS_ADD';
+export const THREADS_REMOVE = 'THREADS_REMOVE';
+export const THREADS_UPDATE = 'THREADS_UPDATE';
 
-export const PATHWAY_DATASETS_ADD = 'PATHWAY_DATASETS_ADD';
-export const PATHWAY_DATASETS_REMOVE = 'PATHWAY_DATASETS_REMOVE';
+export const THREAD_DETAILS = 'THREAD_DETAILS';
+export const THREAD_SUBSCRIPTION = 'THREAD_SUBSCRIPTION';
+export const THREAD_VARIABLES_ADD = 'THREAD_VARIABLES_ADD';
+export const THREAD_VARIABLES_REMOVE = 'THREAD_VARIABLES_REMOVE';
+export const THREAD_MODELS_ADD = 'THREAD_MODELS_ADD';
+export const THREAD_MODELS_REMOVE = 'THREAD_MODELS_REMOVE';
+export const THREAD_DATASETS_ADD = 'THREAD_DATASETS_ADD';
+export const THREAD_DATASETS_REMOVE = 'THREAD_DATASETS_REMOVE';
+export const THREAD_EXECUTIONS_LIST = 'THREAD_EXECUTIONS_LIST';
+export const THREAD_EXECUTIONS_ADD = 'THREAD_EXECUTIONS_ADD';
+export const THREAD_EXECUTIONS_REMOVE = 'THREAD_EXECUTIONS_REMOVE';
+export const THREAD_EXECUTIONS_RUN = 'THREAD_EXECUTIONS_RUN';
 
-export const PATHWAY_ENSEMBLES_LIST = 'PATHWAY_ENSEMBLES_LIST';
-export const PATHWAY_ENSEMBLES_ADD = 'PATHWAY_ENSEMBLES_ADD';
-export const PATHWAY_ENSEMBLES_REMOVE = 'PATHWAY_ENSEMBLES_REMOVE';
-export const PATHWAY_ENSEMBLES_RUN = 'PATHWAY_ENSEMBLES_RUN';
+export interface ProblemStatementsActionList extends Action<'PROBLEM_STATEMENTS_LIST'> { list: ProblemStatementList };
+export interface ProblemStatementsActionListSubscription extends Action<'PROBLEM_STATEMENTS_LIST_SUBSCRIPTION'> { unsubscribe: Function };
+export interface ProblemStatementsActionAdd extends Action<'PROBLEM_STATEMENTS_ADD'> { item: ProblemStatement };
+export interface ProblemStatementsActionRemove extends Action<'PROBLEM_STATEMENTS_REMOVE'> { id: string };
+export interface ProblemStatementsActionUpdate extends Action<'PROBLEM_STATEMENTS_UPDATE'> { item: ProblemStatement };
 
-export interface ScenariosActionList extends Action<'SCENARIOS_LIST'> { list: ScenarioList };
-export interface ScenariosActionAdd extends Action<'SCENARIOS_ADD'> { item: Scenario };
-export interface ScenariosActionRemove extends Action<'SCENARIOS_REMOVE'> { id: string };
-export interface ScenariosActionUpdate extends Action<'SCENARIOS_UPDATE'> { item: Scenario };
+export interface ProblemStatementsActionDetails extends Action<'PROBLEM_STATEMENT_DETAILS'> { details: ProblemStatementDetails };
+export interface ProblemStatementsActionSubscription extends Action<'PROBLEM_STATEMENT_SUBSCRIPTION'> { unsubscribe: Function };
 
-export interface ScenariosActionDetails extends Action<'SCENARIO_DETAILS'> { details: ScenarioDetails };
-export interface ScenariosActionSubscription extends Action<'SCENARIO_SUBSCRIPTION'> { unsubscribe: Function };
+export type ProblemStatementsAction = ProblemStatementsActionList | ProblemStatementsActionAdd | ProblemStatementsActionRemove |
+    ProblemStatementsActionUpdate | ProblemStatementsActionDetails | ProblemStatementsActionSubscription | ProblemStatementsActionListSubscription;
 
-export type ScenariosAction = ScenariosActionList | ScenariosActionAdd | ScenariosActionRemove |
-    ScenariosActionUpdate | ScenariosActionDetails | ScenariosActionSubscription;
+export interface TasksActionList extends Action<'TASKS_LIST'> { list: TaskList };
+export interface TasksActionListSubscription extends Action<'TASKS_LIST_SUBSCRIPTION'> { unsubscribe: Function };
+export interface TasksActionAdd extends Action<'TASKS_ADD'> { item: Task, goalid: string, problem_statement_id: string };
+export interface TasksActionRemove extends Action<'TASKS_REMOVE'> { id: string, problem_statement_id: string };
+export interface TasksActionUpdate extends Action<'TASKS_UPDATE'> { item: Task, problem_statement_id: string };
+export interface TasksActionDetails extends Action<'TASK_DETAILS'> { details: Task };
+export interface TasksActionSubscription extends Action<'TASK_SUBSCRIPTION'> { unsubscribe: Function };
 
-export interface GoalsActionList extends Action<'GOALS_LIST'> { scenarioid: string };
-export interface GoalsActionAdd extends Action<'GOALS_ADD'> { item: Goal, scenarioid: string };
-export interface GoalsActionRemove extends Action<'GOALS_REMOVE'> { id: string, scenarioid: string };
-export interface GoalsActionUpdate extends Action<'GOALS_UPDATE'> { item: Goal, scenarioid: string };
+export type TasksAction = TasksActionList | TasksActionAdd | TasksActionRemove 
+    | TasksActionUpdate | TasksActionDetails | TasksActionSubscription | TasksActionListSubscription;
 
-export type GoalsAction = GoalsActionList | GoalsActionAdd | GoalsActionRemove | GoalsActionUpdate;
+export interface ThreadsActionList extends Action<'THREADS_LIST'> { list: ThreadList };
+export interface ThreadsActionListSubscription extends Action<'THREADS_LIST_SUBSCRIPTION'> { unsubscribe: Function };
+export interface ThreadsActionAdd extends Action<'THREADS_ADD'> { item: Thread, subgoalid: string, problem_statement_id: string };
+export interface ThreadsActionRemove extends Action<'THREADS_REMOVE'> { id: string, problem_statement_id: string };
+export interface ThreadsActionUpdate extends Action<'THREADS_UPDATE'> { item: Thread, problem_statement_id: string };
+export interface ThreadsActionDetails extends Action<'THREAD_DETAILS'> { details: Thread };
+export interface ThreadsActionSubscription extends Action<'THREAD_SUBSCRIPTION'> { unsubscribe: Function };
 
-export interface SubGoalsActionList extends Action<'SUBGOALS_LIST'> { scenarioid: string };
-export interface SubGoalsActionAdd extends Action<'SUBGOALS_ADD'> { item: SubGoal, goalid: string, scenarioid: string };
-export interface SubGoalsActionRemove extends Action<'SUBGOALS_REMOVE'> { id: string, scenarioid: string };
-export interface SubGoalsActionUpdate extends Action<'SUBGOALS_UPDATE'> { item: SubGoal, scenarioid: string };
+export type ThreadsAction = ThreadsActionList | ThreadsActionAdd | ThreadsActionRemove 
+    | ThreadsActionUpdate | ThreadsActionDetails | ThreadsActionSubscription | ThreadsActionListSubscription;
 
-export type SubGoalsAction = SubGoalsActionList | SubGoalsActionAdd | SubGoalsActionRemove | SubGoalsActionUpdate;
-
-export interface PathwaysActionList extends Action<'PATHWAYS_LIST'> { scenarioid: string };
-export interface PathwaysActionAdd extends Action<'PATHWAYS_ADD'> { item: Pathway, subgoalid: string, scenarioid: string };
-export interface PathwaysActionRemove extends Action<'PATHWAYS_REMOVE'> { id: string, scenarioid: string };
-export interface PathwaysActionUpdate extends Action<'PATHWAYS_UPDATE'> { item: Pathway, scenarioid: string };
-export interface PathwaysActionDetails extends Action<'PATHWAY_DETAILS'> { details: Pathway };
-export interface PathwaysActionSubscription extends Action<'PATHWAY_SUBSCRIPTION'> { unsubscribe: Function };
-
-export type PathwaysAction = PathwaysActionList | PathwaysActionAdd | PathwaysActionRemove 
-    | PathwaysActionUpdate | PathwaysActionDetails | PathwaysActionSubscription;
-
-export interface PathwayVariablesActionAdd extends Action<'PATHWAY_VARIABLES_ADD'> { 
-    item: string, pathwayid: string, scenarioid: string 
+export interface ThreadVariablesActionAdd extends Action<'THREAD_VARIABLES_ADD'> { 
+    item: string, thread_id: string
 };
-export interface PathwayVariablesActionRemove extends Action<'PATHWAY_VARIABLES_REMOVE'> { 
-    id: string, pathwayid: string, scenarioid: string 
+export interface ThreadVariablesActionRemove extends Action<'THREAD_VARIABLES_REMOVE'> { 
+    id: string, thread_id: string
 };
 
-export interface PathwayModelsActionAdd extends Action<'PATHWAY_MODELS_ADD'> { 
-    item: Model, pathwayid: string, sceanarioid: string
+export interface ThreadModelsActionAdd extends Action<'THREAD_MODELS_ADD'> { 
+    item: Model, thread_id: string, problem_statement_id: string
 };
-export interface PathwayModelsActionRemove extends Action<'PATHWAY_MODELS_REMOVE'> { 
-    id: string, pathwayid: string, sceanarioid: string
-};
-
-export interface PathwayDatasetsActionAdd extends Action<'PATHWAY_DATASETS_ADD'> { 
-    item: Dataset, pathwayid: string, sceanarioid: string
-};
-export interface PathwayDatasetsActionRemove extends Action<'PATHWAY_DATASETS_REMOVE'> { 
-    id: string, pathwayid: string, sceanarioid: string
+export interface ThreadModelsActionRemove extends Action<'THREAD_MODELS_REMOVE'> { 
+    id: string, thread_id: string
 };
 
-export interface PathwayEnsemblesActionList extends Action<'PATHWAY_ENSEMBLES_LIST'> { 
-    pathwayid: string
+export interface ThreadDatasetsActionAdd extends Action<'THREAD_DATASETS_ADD'> { 
+    item: Dataset, thread_id: string
+};
+export interface ThreadDatasetsActionRemove extends Action<'THREAD_DATASETS_REMOVE'> { 
+    id: string, thread_id: string
+};
+
+export interface ThreadExecutionsActionList extends Action<'THREAD_EXECUTIONS_LIST'> { 
+    thread_id: string
     modelid: string
     loading: boolean
-    ensembles: ExecutableEnsemble[] 
+    executions: Execution[] 
 };
-export interface PathwayEnsemblesActionAdd extends Action<'PATHWAY_ENSEMBLES_ADD'> { 
-    item: ExecutableEnsemble, pathwayid: string, sceanarioid: string
+export interface ThreadExecutionsActionAdd extends Action<'THREAD_EXECUTIONS_ADD'> { 
+    item: Execution, thread_id: string
 };
-export interface PathwayEnsemblesActionRemove extends Action<'PATHWAY_ENSEMBLES_REMOVE'> { 
-    id: string, pathwayid: string, sceanarioid: string
+export interface ThreadExecutionsActionRemove extends Action<'THREAD_EXECUTIONS_REMOVE'> { 
+    id: string, thread_id: string
 };
-export interface PathwayEnsemblesActionRun extends Action<'PATHWAY_ENSEMBLES_RUN'> { 
-    id: string, pathwayid: string, sceanarioid: string
-};
-
-export type PathwayAction = PathwayVariablesActionAdd | PathwayVariablesActionRemove |
-    PathwayModelsActionAdd | PathwayModelsActionRemove | 
-    PathwayDatasetsActionAdd | PathwayDatasetsActionRemove |
-    PathwayEnsemblesActionAdd | PathwayEnsemblesActionRemove | PathwayEnsemblesActionRun | 
-    PathwayEnsemblesActionList;
-
-export type ModelingAction =  ScenariosAction | GoalsAction  | PathwaysAction | PathwayAction ;
-
-// List Scenarios
-type ListThunkResult = ThunkAction<void, RootState, undefined, ScenariosActionList>;
-export const listScenarios: ActionCreator<ListThunkResult> = () => (dispatch) => {
-
-    if(OFFLINE_DEMO_MODE) {
-        dispatch({
-            type: SCENARIOS_LIST,
-            list: EXAMPLE_SCENARIOS_LIST_DATA
-        });
-        return;
-    }
-
-    db.collection("scenarios").onSnapshot((querySnapshot) => {
-        let scenarios:IdMap<Scenario> = {};
-        let scenarioids:string[] = [];
-        querySnapshot.forEach((sdoc) => {
-            var data = sdoc.data();
-            data.id = sdoc.id;
-            scenarios[sdoc.id] = data as Scenario;
-            scenarioids.push(sdoc.id);
-        });
-
-        let list = {
-            scenarioids: scenarioids,
-            scenarios: scenarios
-        } as ScenarioList;
-        //console.log(list);
-
-        dispatch({
-            type: SCENARIOS_LIST,
-            list
-        })
-    });
+export interface ThreadExecutionsActionRun extends Action<'THREAD_EXECUTIONS_RUN'> { 
+    id: string, thread_id: string
 };
 
-// Get Scenario details
-type DetailsThunkResult = ThunkAction<void, RootState, undefined, ScenariosActionDetails | ScenariosActionSubscription>;
-export const getScenarioDetail: ActionCreator<DetailsThunkResult> = (scenarioid: string) => (dispatch) => {
+export type ThreadAction = ThreadVariablesActionAdd | ThreadVariablesActionRemove |
+    ThreadModelsActionAdd | ThreadModelsActionRemove | 
+    ThreadDatasetsActionAdd | ThreadDatasetsActionRemove |
+    ThreadExecutionsActionAdd | ThreadExecutionsActionRemove | ThreadExecutionsActionRun | 
+    ThreadExecutionsActionList | ThreadsActionListSubscription;
 
-    if(OFFLINE_DEMO_MODE) {
-        dispatch({
-            type: SCENARIO_SUBSCRIPTION,
-            unsubscribe: ()=>{}
-        });
-        EXAMPLE_SCENARIO_DETAILS["id"] = scenarioid;    
-        dispatch({
-            type: SCENARIO_DETAILS,
-            details: EXAMPLE_SCENARIO_DETAILS
-        });
-        return;
-    }
+export type ModelingAction =  ProblemStatementsAction | TasksAction | ThreadsAction | ThreadAction ;
 
-    let unsubscribe = db.collection("scenarios").doc(scenarioid).onSnapshot({
-        complete: () => {},
-        error: (error) => {
-            // FIXME: Check error code (if permissions error, then unsubscribe)
-            console.log(error.code);
-            unsubscribe();
-        },
-        next: (doc) => {
-            var details = Object.assign({}, doc.data()) as ScenarioDetails;
-            if(!details)
-                return;
-            details.id = doc.id;
-            db.collection("scenarios/"+scenarioid+"/subgoals").get().then((subgoals) => {
-                details.goals = {};
-                details.subgoals = {};
-                subgoals.forEach((doc) => {
-                    var data = Object.assign({}, doc.data());
-                    data.id = doc.id;
-                    details.subgoals[doc.id] = data as SubGoal;
-                });
-                // Dispach scenario details on an edit
-                dispatch({
-                    type: SCENARIO_DETAILS,
-                    details
-                });
-            });
+// List ProblemStatements
+type ProblemListThunkResult = ThunkAction<void, RootState, undefined, ProblemStatementsActionList | ProblemStatementsActionListSubscription>;
+export const subscribeProblemStatementsList: ActionCreator<ProblemListThunkResult> = (regionid: string) => (dispatch) => {
+
+    let subscription = APOLLO_CLIENT.subscribe({
+        query: subscribeProblemStatementsListGQL,
+        variables: {
+            regionId: regionid
+        }
+    }).subscribe(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let problem_statements:IdMap<ProblemStatement> = {};
+            let problem_statement_ids:string[] = [];
+            let problems = result.data.problem_statement;
+            //console.log(problems);
+            problems.forEach((problem: any) => {
+                problem_statement_ids.push(problem["id"]);
+                problem_statements[problem["id"]] = problemStatementFromGQL(problem);
+            })
+            let list = {
+                problem_statement_ids: problem_statement_ids,
+                problem_statements: problem_statements
+            } as ProblemStatementList;   
+            dispatch({
+                type: PROBLEM_STATEMENTS_LIST,
+                list
+            })
         }
     });
 
     // Dispatch unsubscribe function
     dispatch({
-        type: SCENARIO_SUBSCRIPTION,
-        unsubscribe: unsubscribe
+        type: PROBLEM_STATEMENTS_LIST_SUBSCRIPTION,
+        unsubscribe: subscription.unsubscribe
+    });
+};
+
+/*
+// List Tasks
+type ListTasksThunkResult = ThunkAction<void, RootState, undefined, TasksActionList | TasksActionListSubscription>;
+export const subscribeTasksList: ActionCreator<ListTasksThunkResult> = (problem_statement_id: string) => (dispatch) => {
+    let subscription = APOLLO_CLIENT.subscribe({
+        query: subscribeTasksListGQL,
+        variables: {
+            problem_statement_id: problem_statement_id
+        }
+    }).subscribe(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let tasks:IdMap<Task> = {};
+            let task_ids:string[] = [];
+            //console.log(problems);
+            result.data.task.forEach((task: any) => {
+                task_ids.push(task["id"]);
+                tasks[task["id"]] = taskFromGQL(task);
+            })
+            let list = {
+                task_ids: task_ids,
+                tasks: tasks
+            } as TaskList;   
+            dispatch({
+                type: TASKS_LIST,
+                list
+            })
+        }
+    });
+
+    // Dispatch unsubscribe function
+    dispatch({
+        type: TASKS_LIST_SUBSCRIPTION,
+        unsubscribe: subscription.unsubscribe
     });
 };
 
 
-// Get Pathway details
-type PathwayDetailsThunkResult = ThunkAction<void, RootState, undefined, PathwaysActionDetails | PathwaysActionSubscription>;
-export const getPathway: ActionCreator<PathwayDetailsThunkResult> = (scenarioid: string, pathwayid: string) => (dispatch) => {
-    let unsubscribe = db.collection("scenarios/"+scenarioid+"/pathways").doc(pathwayid).onSnapshot({
-        complete: () => {},
-        error: (error) => {
-            // FIXME: Check error code (if permissions error, then unsubscribe)
-            console.log(error.code);
-            unsubscribe();
-        },
-        next: (doc) => {
-            if(!doc.exists) {
-                unsubscribe();
-                dispatch({
-                    type: PATHWAY_DETAILS,
-                    details: null
-                });
-                return;
-            }
-            var details = Object.assign({}, doc.data()) as Pathway;
-            if(!details)
-                return;
-            details.id = doc.id;
-            // TODO: Move datasets and ensembles to separate collections
-            // datasets/<dsid> => contains details about resources and metadata
-            // ensembles<ensid> => contains details about the ensemble: bindings and run details
+// List Threads
+type ListThreadsThunkResult = ThunkAction<void, RootState, undefined, ThreadsActionList | ThreadsActionListSubscription >;
+export const subscribeThreadsList: ActionCreator<ListThreadsThunkResult> = (task_id: string) => (dispatch) => {
 
-            // Dispach pathway details
+    let subscription = APOLLO_CLIENT.subscribe({
+        query: subscribeThreadsListGQL,
+        variables: {
+            task_id: task_id
+        }
+    }).subscribe(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let threads:IdMap<ThreadInfo> = {};
+            let thread_ids:string[] = [];
+            //console.log(problems);
+            result.data.thread.forEach((thread: any) => {
+                thread_ids.push(thread["id"]);
+                threads[thread["id"]] = threadInfoFromGQL(thread);
+            })
+            let list = {
+                thread_ids: thread_ids,
+                threads: threads
+            } as ThreadList;   
             dispatch({
-                type: PATHWAY_DETAILS,
+                type: THREADS_LIST,
+                list
+            })
+        }
+    });
+
+    // Dispatch unsubscribe function
+    dispatch({
+        type: THREADS_LIST_SUBSCRIPTION,
+        unsubscribe: subscription.unsubscribe
+    });
+};
+*/
+
+// Get ProblemStatement details
+type ProblemDetailsThunkResult = ThunkAction<void, RootState, undefined, ProblemStatementsActionDetails | ProblemStatementsActionSubscription>;
+export const subscribeProblemStatement: ActionCreator<ProblemDetailsThunkResult> = (problem_statement_id: string) => (dispatch) => {
+    let subscription = APOLLO_CLIENT.subscribe({
+        query: subscribeProblemStatementGQL,
+        variables: {
+            id: problem_statement_id
+        }
+    }).subscribe(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let problem = result.data.problem_statement_by_pk;
+            if(problem) {
+                console.log("Changes to the problem statement");
+                let details = problemStatementFromGQL(problem);
+                // Dispatch problem_statement details on an edit
+                dispatch({
+                    type: PROBLEM_STATEMENT_DETAILS,
+                    details
+                });
+            }
+        }
+    });
+
+    // Dispatch unsubscribe function
+    dispatch({
+        type: PROBLEM_STATEMENT_SUBSCRIPTION,
+        unsubscribe: subscription.unsubscribe
+    });
+};
+
+/*
+// Get Task details
+type TaskDetailsThunkResult = ThunkAction<void, RootState, undefined, TasksActionDetails | TasksActionSubscription >;
+export const subscribeTask: ActionCreator<TaskDetailsThunkResult> = (task_id: string) => (dispatch) => {
+    let subscription = APOLLO_CLIENT.subscribe({
+        query: subscribeTaskGQL,
+        variables: {
+            id: task_id
+        }
+    }).subscribe(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let task = result.data.task_by_pk;
+            let details = taskFromGQL(task);
+            // Dispatch problem_statement details on an edit
+            dispatch({
+                type: TASK_DETAILS,
                 details
             });
         }
@@ -254,232 +332,206 @@ export const getPathway: ActionCreator<PathwayDetailsThunkResult> = (scenarioid:
 
     // Dispatch unsubscribe function
     dispatch({
-        type: PATHWAY_SUBSCRIPTION,
-        unsubscribe: unsubscribe
+        type: TASK_SUBSCRIPTION,
+        unsubscribe: subscription.unsubscribe
     });
 };
+*/
 
-// List Pathway Runs
-type ListEnsemblesThunkResult = ThunkAction<void, RootState, undefined, PathwayEnsemblesActionList>;
-export const fetchPathwayEnsembles: ActionCreator<ListEnsemblesThunkResult> = 
-        (pathwayid: string, modelid: string, ensembleids: string[]) => (dispatch) => {
-
-    
+// Get Thread details
+type ThreadDetailsThunkResult = ThunkAction<void, RootState, undefined, ThreadsActionDetails | ThreadsActionSubscription>;
+export const subscribeThread: ActionCreator<ThreadDetailsThunkResult> = (threadid: string) => (dispatch) => {
+    let subscription = APOLLO_CLIENT.subscribe({
+        query: subscribeThreadGQL,
+        variables: {
+            id: threadid
+        }
+    }).subscribe(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            //console.log(result);
+            let thread = result.data.thread_by_pk;
+            if(thread) {
+                let details = threadFromGQL(thread);
+                // Dispatch problem_statement details on an edit
+                dispatch({
+                    type: THREAD_DETAILS,
+                    details
+                });
+            }
+        }
+    });
+    // Dispatch unsubscribe function
     dispatch({
-        type: PATHWAY_ENSEMBLES_LIST,
-        pathwayid: pathwayid,
-        modelid: modelid,
-        ensembles: null,
-        loading: true
+        type: THREAD_SUBSCRIPTION,
+        unsubscribe: subscription.unsubscribe
     });
+};
 
-    listEnsembles(ensembleids).then((ensembles) => {
+// List Thread Runs
+type ListExecutionsThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionsActionList>;
+export const listThreadExecutions: ActionCreator<ListExecutionsThunkResult> = 
+        (thread_id: string, modelid: string, executionids: string[]) => (dispatch) => {
+    if(executionids && executionids.length > 0) {
         dispatch({
-            type: PATHWAY_ENSEMBLES_LIST,
-            pathwayid: pathwayid,
+            type: THREAD_EXECUTIONS_LIST,
+            thread_id: thread_id,
             modelid: modelid,
-            loading: false,
-            ensembles
-        })
-    });
-};
+            executions: null,
+            loading: true
+        });
 
-export const setPathwayEnsembleIds = (scenarioid: string, pathwayid: string, 
-        modelid, batchid: number, ensembleids: string[]) : Promise<void> => {
-    let pathwayEnsembleIdsRef = db.collection("scenarios").doc(scenarioid).collection("pathways").doc(pathwayid).collection("ensembleids");
-    let docid = modelid.replace(/.+\//, '') + "_" + batchid;
-    let data = {
-        modelid: modelid,
-        ensemble_ids: ensembleids
-    }
-    return pathwayEnsembleIdsRef.doc(docid).set(data);
-}
-
-export const deleteAllPathwayEnsembleIds = async (scenarioid: string, pathwayid: string, modelid: string) => {
-    let pathwayEnsembleIdsRef = db.collection("scenarios").doc(scenarioid).collection("pathways").doc(pathwayid).collection("ensembleids");
-    let queryRef = null;
-    if(modelid) {
-        queryRef = pathwayEnsembleIdsRef.where("modelid", "==", modelid);
-    }
-    else {
-        queryRef = pathwayEnsembleIdsRef;
-    }
-    queryRef.get().then((snapshot) => {
-        snapshot.forEach((doc) => {
-            doc.ref.delete();
-        })
-    })
-}
-
-export const getAllPathwayEnsembleIds = async (scenarioid: string, pathwayid: string,
-        modelid: string) : Promise<string[]> => {
-    let pathwayEnsembleIdsRef = db.collection("scenarios").doc(scenarioid).collection("pathways").doc(pathwayid).collection("ensembleids")
-        .where("modelid", "==", modelid);
-
-    return pathwayEnsembleIdsRef.get().then((snapshot) => {
-        let ensembleids = [];
-        snapshot.forEach((doc) => {
-            ensembleids = ensembleids.concat(doc.data().ensemble_ids);
-        })
-        return ensembleids;
-    });
-}
-
-// Add Scenario
-export const addScenario = (scenario:Scenario) =>  {
-    let scenarioRef = db.collection("scenarios").doc();
-    scenario.last_update = Date.now().toString();
-    scenario.last_update_user = auth.currentUser.email;    
-    scenarioRef.set(scenario);
-    return scenarioRef.id;
-};
-
-// Add Goal
-export const addGoal = (scenario:Scenario, goal:Goal) =>  {
-    let goalRef = db.collection("scenarios/"+scenario.id+"/goals").doc();
-    goalRef.set(goal).then(() => updateScenario(scenario));
-    return goalRef.id;
-};
-
-// Add SubGoal
-export const addSubGoal = (scenario:Scenario, goalid:string, subgoal: SubGoal) =>  {
-    let subgoalRef = db.collection("scenarios/"+scenario.id+"/subgoals").doc();
-    Promise.all([
-        db.collection("scenarios/"+scenario.id+"/goals").doc(goalid).update({
-            subgoalids: fieldValue.arrayUnion(subgoalRef.id)
-        }),
-        subgoalRef.set(subgoal)
-    ])
-    .then(() => updateScenario(scenario));
-
-    return subgoalRef.id;
-};
-
-// Add Pathway
-export const addPathway = (scenario:Scenario, subgoalid: string, pathway:Pathway) =>  {
-    let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc();
-    let pathwayinfo = {
-        id: pathwayRef.id,
-        name: pathway.name,
-        dates: pathway.dates
-    };
-    Promise.all([
-        db.collection("scenarios/"+scenario.id+"/subgoals").doc(subgoalid).update({
-            [`pathways.${pathwayinfo.id}`]: pathwayinfo
-        }),
-        pathwayRef.set(pathway)
-    ])
-    .then(() => updateScenario(scenario));
-
-    return pathwayRef.id;
-};
-
-// Add Goal along with Subgoal and a pathway with a response & driving variable
-export const addGoalFull = (scenario:Scenario, goal: Goal, subgoal: SubGoal, pathway: Pathway) => {
-    let goalRef = db.collection("scenarios/"+scenario.id+"/goals").doc();
-    let subgoalRef = db.collection("scenarios/"+scenario.id+"/subgoals").doc();
-    let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc();
-    goal.subgoalids = [subgoalRef.id];
-    subgoal.pathways[pathwayRef.id] = {
-        id: pathwayRef.id,
-        name: pathway.name ? pathway.name : subgoal.name
-    };
-
-    Promise.all([
-        pathwayRef.set(pathway),
-        subgoalRef.set(subgoal),
-        goalRef.set(goal)
-    ])
-    .then(() => updateScenario(scenario));
-    
-    return goalRef.id;
-}
-
-// Add Subgoal and a pathway with a response & driving variable, to an existing Goal
-export const addSubGoalFull = (scenario:Scenario, goalid: string, subgoal: SubGoal, pathway: Pathway) => {
-    let subgoalRef = db.collection("scenarios/"+scenario.id+"/subgoals").doc();
-    let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc();
-    subgoal.pathways[pathwayRef.id] = {
-        id: pathwayRef.id,
-        name: pathway.name ? pathway.name : subgoal.name
-    };
-    let promises = [
-        pathwayRef.set(pathway),
-        subgoalRef.set(subgoal)
-    ];
-    if(goalid) {
-        promises.push(
-            db.collection("scenarios/"+scenario.id+"/goals").doc(goalid).update({
-                subgoalids: fieldValue.arrayUnion(subgoalRef.id)
+        listExecutions(executionids).then((executions) => {
+            dispatch({
+                type: THREAD_EXECUTIONS_LIST,
+                thread_id: thread_id,
+                modelid: modelid,
+                loading: false,
+                executions
             })
-        );
-    }
-    Promise.all(promises).then(() => updateScenario(scenario));
-
-    return subgoalRef.id;
-}
-
-// Update Scenario
-export const updateScenario = (scenario: Scenario) =>  {
-    let scenarioRef = db.collection("scenarios").doc(scenario.id);
-    if(auth.currentUser) {
-        scenario.last_update = Date.now().toString();
-        scenario.last_update_user = auth.currentUser.email;
-        if(!scenario.subregionid)
-            scenario.subregionid = null;
-        scenarioRef.set(scenario);
+        });
     }
 };
 
-// Update Goal
-export const updateGoal = (scenario: Scenario, goal: Goal) =>  {
-    let goalRef = db.collection("scenarios/"+scenario.id+"/goals").doc(goal.id);
-    goalRef.set(goal).then(() => updateScenario(scenario));
-};
-
-// Update Sub Goal
-export const updateSubGoal = (scenario: Scenario, subgoal: SubGoal) =>  {
-    let goalRef = db.collection("scenarios/"+scenario.id+"/subgoals").doc(subgoal.id);
-    goalRef.set(subgoal).then(() => updateScenario(scenario));
-};
-
-// Update Pathway
-export const updatePathway = (scenario: Scenario, pathway: Pathway) =>  {
-    let npathway = Object.assign({}, pathway);
-    delete npathway.unsubscribe;
-    let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc(pathway.id);
-    console.log(scenario.id + " ---- update pathway: " + pathway.id);
-    //console.log(pathway);
-    return pathwayRef.set(npathway); //.then(() => updateScenario(scenario));
-};
-
-export const updatePathwayInfo = (scenario: Scenario, subgoalid: string, pathwayinfo: PathwayInfo) => {
-    let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc(pathwayinfo.id);
-    Promise.all([
-        db.collection("scenarios/"+scenario.id+"/subgoals").doc(subgoalid).update({
-            [`pathways.${pathwayinfo.id}`]: pathwayinfo
-        }),
-        pathwayRef.set(pathwayinfo, {merge: true})
-    ])
-    .then(() => updateScenario(scenario));
+export const setThreadExecutionIds = (thread_id: string, modelid, ensembleids: string[]) : Promise<void> => {
+    // TODO
+    return null;
 }
 
-export const updatePathwayVariables = (scenarioid: string, pathwayid: string, 
+export const deleteAllThreadExecutionIds = async (thread_id: string, modelid: string) => {
+    // TODO
+}
+
+export const getAllThreadExecutionIds = async (thread_id: string, modelid: string) : Promise<string[]> => {
+    return APOLLO_CLIENT.query({
+        query: executionIdsForThreadGQL,
+        variables: {
+            id: thread_id,
+            modelId: modelid
+        }
+    }).then((result) => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            if(result.data.thread_by_pk.thread_models.length > 0)
+                return result.data.thread_by_pk.thread_models[0].executions.map((ex:any) => ex.execution_id);
+        }
+        return null;        
+    });
+}
+
+// Add ProblemStatement
+export const addProblemStatement = (problem_statement:ProblemStatement) =>  {
+    let problemobj = problemStatementToGQL(problem_statement);
+    //console.log(problemobj);
+    return APOLLO_CLIENT.mutate({
+        mutation: newProblemStatementGQL,
+        variables: {
+            object: problemobj
+        }
+    });
+};
+
+// Add Task
+export const addTask = (problem_statement: ProblemStatement, task: Task) =>  {
+    let taskobj = taskToGQL(task, problem_statement);
+    return APOLLO_CLIENT.mutate({
+        mutation: newTaskGQL,
+        variables: {
+            object: taskobj
+        }
+    });
+};
+
+// Add Task
+export const addTaskWithThread = (problem_statement: ProblemStatement, task: Task, thread: Thread) =>  {
+    let taskobj = taskToGQL(task, problem_statement);
+    let threadobj = threadToGQL(thread, task);
+    taskobj["threads"] = {
+        data: [threadobj]
+    }
+    return APOLLO_CLIENT.mutate({
+        mutation: newTaskGQL,
+        variables: {
+            object: taskobj
+        }
+    });
+};
+
+// Add Thread
+export const addThread = (task:Task, thread:Thread) =>  {
+    let threadobj = threadToGQL(thread, task);
+    //console.log(threadobj);
+    return APOLLO_CLIENT.mutate({
+        mutation: newThreadGQL,
+        variables: {
+            object: threadobj
+        }
+    });
+};
+
+
+// Update ProblemStatement
+export const updateProblemStatement = (problem_statement: ProblemStatement) =>  {
+    let problemobj = problemStatementUpdateToGQL(problem_statement);
+    return APOLLO_CLIENT.mutate({
+        mutation: updateProblemStatementGQL,
+        variables: {
+            object: problemobj
+        }
+    });
+};
+
+// Update Task
+export const updateTask = (task: Task) =>  {
+    let taskobj = taskUpdateToGQL(task);
+    return APOLLO_CLIENT.mutate({
+        mutation: updateTaskGQL,
+        variables: {
+            id: task.id,
+            object: taskobj
+        }
+    });
+};
+
+// Update Thread
+export const updateThread = (thread:Thread) =>  {
+    let threadobj = threadUpdateToGQL(thread);
+    return APOLLO_CLIENT.mutate({
+        mutation: updateThreadGQL,
+        variables: {
+            id: thread.id,
+            object: threadobj
+        }
+    });
+};
+
+export const updateThreadVariables = (problem_statement_id: string, thread_id: string, 
         driving_variables: string[], response_variables: string[]) =>  {
-    let pathwayRef = db.collection("scenarios/"+scenarioid+"/pathways").doc(pathwayid);
+    /*
+    let pathwayRef = db.collection("problem_statements/"+problem_statement_id+"/pathways").doc(thread_id);
     return pathwayRef.set({
         driving_variables: driving_variables,
         response_variables: response_variables
     }, {merge: true});
+    */
 };
 
-export const updatePathwayFromPathwayInformation = (scenarioid: string, pathwayid: string, pathwayinfo: PathwayInfo) => {
-    let pathwayRef = db.collection("scenarios/"+scenarioid+"/pathways").doc(pathwayinfo.id);
+export const updateThreadFromThreadInformation = (problem_statement_id: string, thread_id: string, pathwayinfo: ThreadInfo) => {
+    /*
+    let pathwayRef = db.collection("problem_statements/"+problem_statement_id+"/pathways").doc(pathwayinfo.id);
     return pathwayRef.set(pathwayinfo, {merge: true});
+    */
 }
 
-// Add Ensembles
-export const addPathwayEnsembles = (ensembles: ExecutableEnsemble[]) => {
+// Add Executions
+export const addThreadExecutions = (executions: Execution[]) => {
+    /*
     let ensemblesRef = db.collection("ensembles");
     // Read all docs (to check if they exist or not)
     let readpromises = [];
@@ -496,55 +548,49 @@ export const addPathwayEnsembles = (ensembles: ExecutableEnsemble[]) => {
             batch.set(curdoc.ref, ensemble);
         })
         return batch.commit();
-    })
+    })*/
 }
 
-// Update Pathway Ensembles
-export const updatePathwayEnsembles = (ensembles: ExecutableEnsemble[]) => {
+// Update Thread Executions
+export const updateThreadExecutions = (executions: Execution[]) => {
+    /*
     let ensemblesRef = db.collection("ensembles");
     let batch = db.batch();
     let i = 0;
     ensembles.map((ensemble) => {
         batch.update(ensemblesRef.doc(ensemble.id), ensemble);
     })
-    return batch.commit();
+    return batch.commit();*/
 }
 
-// Delete Scenario
-export const deleteScenario = (scenario:Scenario) =>  {
-    let scenarioRef = db.collection("scenarios").doc(scenario.id);
-    _deleteCollection(scenarioRef.collection("goals"), null);
-    _deleteCollection(scenarioRef.collection("subgoals"), null);
-    _deleteCollection(scenarioRef.collection("pathways"), "ensembleids");
-    return scenarioRef.delete();
+// Delete ProblemStatement
+export const deleteProblemStatement = (problem_statement_id: string) =>  {
+    return APOLLO_CLIENT.mutate({
+        mutation: deleteProblemStatementGQL,
+        variables: {
+            id: problem_statement_id
+        }
+    });
 };
 
-// Delete Goal
-export const deleteGoal = (scenario:Scenario, goalid: string) =>  {
-    let goalRef = db.collection("scenarios/"+scenario.id+"/goals").doc(goalid);
-    goalRef.delete().then(() => updateScenario(scenario));
+// Delete Task
+export const deleteTask = (taskid: string) =>  {
+    return APOLLO_CLIENT.mutate({
+        mutation: deleteTaskGQL,
+        variables: {
+            id: taskid
+        }
+    });
 };
 
-// Delete SubGoal
-export const deleteSubGoal = (scenario:Scenario, goalid:string, subgoalid: string) =>  {
-    let subgoalRef = db.collection("scenarios/"+scenario.id+"/subgoals").doc(subgoalid);
-    if(goalid) {
-        db.collection("scenarios/"+scenario.id+"/goals").doc(goalid).update({
-            subgoalids: fieldValue.arrayRemove(subgoalid)
-        });
-    }
-    subgoalRef.delete().then(() => updateScenario(scenario));
-};
-
-// Delete Pathway
-export const deletePathway = (scenario:Scenario, subgoalid: string, pathway:PathwayInfo) =>  {
-    deleteAllPathwayEnsembleIds(scenario.id, pathway.id, null);
-    
-    let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc(pathway.id);
-    pathwayRef.delete()
-    db.collection("scenarios/"+scenario.id+"/subgoals").doc(subgoalid).update({
-        [`pathways.${pathway.id}`]: fieldValue.delete()
-    }).then(() => updateScenario(scenario));;
+// Delete Thread
+export const deleteThread = (threadid: string) =>  {
+    return APOLLO_CLIENT.mutate({
+        mutation: deleteThreadGQL,
+        variables: {
+            id: threadid
+        }
+    });
 };
 
 /* Helper Function */
@@ -561,4 +607,107 @@ const _deleteCollection = (collRef: firebase.firestore.CollectionReference, subC
             doc.ref.delete();
         });
     });
+}
+
+/* Execution Functions */
+
+// List Executions
+export const listExecutions = (executionids: string[]) : Promise<Execution[]> => {
+    return APOLLO_CLIENT.query({
+        query: listExecutionsListGQL,
+        variables: {
+            ids: executionids
+        }
+    }).then((result) => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            return result.data.execution.map((ex:any) => executionFromGQL(ex));
+        }
+        return null;        
+    });
+};
+
+export const getMatchingEnsemble = (ensembles: Execution[], execution: Execution, hashes: string[]) => {
+    let hash = getEnsembleHash(execution);
+    let index = hashes.indexOf(hash);
+    if(index >= 0) {
+        return ensembles[index];
+    }
+    return null;
+}
+
+export const getEnsembleHash = (ensemble: Execution) : string => {
+    let str = ensemble.modelid;
+    let varids = Object.keys(ensemble.bindings).sort();
+    varids.map((varid) => {
+        let binding = ensemble.bindings[varid];
+        let bindingid = isObject(binding) ? (binding as DataResource).id : binding;
+        str += varid + "=" + bindingid + "&";
+    })
+    return Md5.hashStr(str).toString();
+}
+
+export const sendDataForIngestion = (problem_statement_id: string, task_id: string, threadid: string, prefs: UserPreferences) => {
+    let data = {
+        problem_statement_id: problem_statement_id,
+        task_id: task_id,
+        thread_id: threadid
+    };
+    return new Promise<void>((resolve, reject) => {
+        postJSONResource({
+            url: prefs.mint.ingestion_api + "/modelthreads",
+            onLoad: function(e: any) {
+                resolve();
+            },
+            onError: function() {
+                reject("Cannot ingest thread");
+            }
+        }, data, false);
+    });    
+}
+
+export const threadTotalRunsChanged = (oldthread: Thread, newthread: Thread) => {
+    if((oldthread == null || newthread == null) && oldthread != newthread)
+        return true;
+
+    let oldtotal = 0;
+    Object.keys(oldthread.execution_summary).map((modelid) => {
+        oldtotal += oldthread.execution_summary[modelid].total_runs;
+    })
+    let newtotal = 0;
+    Object.keys(newthread.execution_summary).map((modelid) => {
+        newtotal += newthread.execution_summary[modelid].total_runs;
+    })
+    return oldtotal != newtotal;
+}
+
+
+export const threadSummaryChanged = (oldthread: Thread, newthread: Thread) => {
+    if((oldthread == null || newthread == null) && oldthread != newthread)
+        return true;
+    let oldsummary = _stringify_ensemble_summary(oldthread.execution_summary);
+    let newsummary = _stringify_ensemble_summary(newthread.execution_summary);
+    return oldsummary != newsummary;
+}
+
+const _stringify_ensemble_summary = (obj: Object) => {
+    if(!obj) {
+        return "";
+    }
+    let keys = Object.keys(obj);
+    keys = keys.sort();
+    let str = "";
+    keys.map((key) => {
+        if(key.match(/ingested_runs/) 
+            || key.match(/fetched_run_outputs/) 
+            || key.match(/submitted_for_ingestion/)) {
+            return;
+        }
+        let binding = isObject(obj[key]) ? _stringify_ensemble_summary(obj[key]) : obj[key];
+        str += key + "=" + binding + "&";
+    })
+    return str;
 }

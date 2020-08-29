@@ -1,0 +1,7 @@
+mutation new_task ($object: task_insert_input!) {
+    insert_task (objects: [$object]) {
+        returning {
+            id
+        }
+    }
+}

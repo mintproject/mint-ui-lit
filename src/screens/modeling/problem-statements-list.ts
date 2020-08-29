@@ -1,0 +1,337 @@
+import { html, customElement, property, css } from 'lit-element';
+
+import { SharedStyles } from '../../styles/shared-styles';
+import { connect } from 'pwa-helpers/connect-mixin';
+import { store, RootState } from '../../app/store';
+
+import { subscribeProblemStatementsList, addProblemStatement, deleteProblemStatement, updateProblemStatement } from './actions';
+import { ProblemStatementList, ProblemStatement, ProblemStatementEvent } from './reducers';
+
+import "weightless/list-item";
+import "weightless/button";
+import "weightless/icon";
+import "weightless/nav";
+import "weightless/title";
+//import "weightless/progress-bar";
+import "weightless/dialog";
+import "weightless/tooltip";
+import "weightless/popover-card";
+import "weightless/snackbar";
+
+import "./mint-problem-statement";
+
+import { goToPage } from '../../app/actions';
+import { PageViewElement } from '../../components/page-view-element';
+import { renderNotifications } from '../../util/ui_renders';
+import { formElementsComplete, showDialog, hideDialog, showNotification, resetForm, hideNotification } from '../../util/ui_functions';
+import { Region, RegionMap } from '../regions/reducers';
+import { toTimeStamp, fromTimeStampToDateString, fromTimestampIntegerToString, fromTimestampIntegerToReadableString } from 'util/date-utils';
+import { getLatestEventOfType, getLatestEvent } from 'util/event_utils';
+import { getCreateEvent, getUpdateEvent } from './graphql_adapter';
+
+@customElement('problem-statements-list')
+export class ProblemStatementsList extends connect(store)(PageViewElement) {
+  @property({type: Object})
+  private _top_region: Region;
+
+  @property({type: Object})
+  private _regions!: RegionMap;
+
+  @property({type: Object})
+  private _list!: ProblemStatementList;
+
+  @property({type: String})
+  private _top_regionid?: string;
+
+  static get styles() {
+    return [
+      SharedStyles,
+      css`
+      .small-notes {
+        font-size: 13px;
+        color: black;
+      }
+      `
+    ];
+  }
+
+  protected render() {
+    //console.log("rendering");
+    return html`
+
+    <div class="cltrow problem_statement_row">
+        <wl-button flat inverted disabled>
+            <wl-icon>arrow_back_ios</wl-icon>
+        </wl-button>
+        <div class="cltmain navtop">
+            <wl-title level="3">Problem statements</wl-title>
+        </div>
+        <wl-icon @click="${this._addProblemStatementDialog}" 
+          class="actionIcon bigActionIcon addIcon" id="addProblemStatementIcon">note_add</wl-icon>
+    </div>
+    <p style="margin-left: 44px">
+    Choose an existing problem from the list below or click add to create a new one. 
+    </p>
+    <!-- Show ProblemStatement List -->
+    ${this._list && this._list.problem_statement_ids.map((problem_statement_id) => {
+        let problem_statement = this._list.problem_statements[problem_statement_id];
+        let last_event = getLatestEvent(problem_statement.events);
+        //let region = this._regions[problem_statement.regionid];
+        if(problem_statement.regionid == this._top_regionid) {
+          return html`
+          <wl-list-item class="active"
+              @click="${this._onSelectProblemStatement}"
+              data-problem_statement_id="${problem_statement.id}">
+              <wl-icon slot="before">label_important</wl-icon>
+              <div slot="after" style="display:flex">
+                <div>
+                  ${last_event?.userid}<br/>
+                  ${last_event?.timestamp}
+                </div>
+                <div style="height: 24px; padding-left: 10px; display:flex">
+                  <wl-icon @click="${this._editProblemStatementDialog}" data-problem_statement_id="${problem_statement.id}"
+                      id="editProblemStatementIcon" class="actionIcon editIcon">edit</wl-icon>
+                  <wl-icon @click="${this._onDeleteProblemStatement}" data-problem_statement_id="${problem_statement.id}"
+                      id="delProblemStatementIcon" class="actionIcon deleteIcon">delete</wl-icon>
+                </div>
+              </div>
+              <wl-title level="4" style="margin: 0">${problem_statement.name}</wl-title>
+              ${last_event?.notes ? html`<div class="small-notes"><b>Notes:</b> ${last_event.notes}</div>` : ''}
+              <div>
+                Time Period: ${fromTimeStampToDateString(problem_statement.dates.start_date)} to 
+                ${fromTimeStampToDateString(problem_statement.dates.end_date)}
+              </div>
+          </wl-list-item>
+          `
+        }
+        return html``;
+    })}
+    
+    ${this._renderTooltips()}
+    ${renderNotifications()}
+    ${this._renderDialogs()}
+    `
+  }
+
+  _renderTooltips() {
+    return html`
+    <wl-tooltip anchor="#addProblemStatementIcon" 
+      .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
+      anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
+      Add a ProblemStatement
+    </wl-tooltip>
+    <wl-tooltip anchor="#editProblemStatementIcon" 
+      .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
+      anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
+      Edit ProblemStatement 
+    </wl-tooltip>
+    <wl-tooltip anchor="#delProblemStatementIcon" 
+      .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
+      anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
+      Delete ProblemStatement
+    </wl-tooltip>    
+    `
+  }
+
+  _renderDialogs() {
+    return html`
+    <wl-dialog id="problem_statementDialog" fixed backdrop blockscrolling>
+      <h3 slot="header">What is your Problem statement ?</h3>
+      <div slot="content">
+        <form id="problem_statementForm">
+          <p>
+          Please enter a short text to describe the overall problem. 
+          For instance, “Explore interventions to increase agricultural productivity in South Sudan”,  
+          “Explore interventions to improve farmer livelihoods in Gambella”. 
+          </p>
+          <input type="hidden" name="problem_statement_id"></input>
+          <div class="input_full">
+            <input name="problem_statement_name"></input>
+          </div>
+          
+          <div style="height:10px;">&nbsp;</div>
+          <input type="hidden" name="problem_statement_region" value="${this._top_region.id}"></input>
+          <input type="hidden" name="problem_statement_subregion" value=""></input>
+
+          <div class="input_full">
+            <label>Time Period</label>
+          </div>
+          <div class="formRow">
+            <div class="input_half">
+              <input name="problem_statement_from" type="date"></input>
+            </div>
+            to
+            <div class="input_half">
+              <input name="problem_statement_to" type="date"></input>
+            </div>
+          </div>
+
+          <p></p>
+          <div class="input_full">
+            <label>Notes</label>
+          </div>
+          <div class="input_full">
+            <textarea style="color:unset; font: unset;" name="problem_statement_notes" rows="4"></textarea>
+          </div>
+        </form>
+      </div>
+      <div slot="footer">
+          <wl-button @click="${this._onAddEditProblemStatementCancel}" inverted flat>Cancel</wl-button>
+          <wl-button @click="${this._onAddEditProblemStatementSubmit}" class="submit" id="dialog-submit-button">Submit</wl-button>
+      </div>
+    </wl-dialog>
+    `;
+  }
+
+  _addProblemStatementDialog() {
+    let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#problem_statementForm")!;
+    (form.elements["problem_statement_id"] as HTMLInputElement).value = "";
+    (form.elements["problem_statement_name"] as HTMLInputElement).value = "";
+    (form.elements["problem_statement_notes"] as HTMLInputElement).value = "";
+    (form.elements["problem_statement_from"] as HTMLInputElement).value = "";
+    (form.elements["problem_statement_to"] as HTMLInputElement).value = "";
+
+    showDialog("problem_statementDialog", this.shadowRoot!);
+  }
+
+  _onAddEditProblemStatementSubmit() {
+    let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#problem_statementForm")!;
+    if(formElementsComplete(form, ["problem_statement_name", "problem_statement_region", "problem_statement_from", "problem_statement_to"])) {
+        let problem_statement_id = (form.elements["problem_statement_id"] as HTMLInputElement).value;
+        let problem_statement_name = (form.elements["problem_statement_name"] as HTMLInputElement).value;
+        let problem_statement_region = (form.elements["problem_statement_region"] as HTMLInputElement).value;
+        let problem_statement_subregion = (form.elements["problem_statement_subregion"] as HTMLInputElement).value;
+        let problem_statement_from = (form.elements["problem_statement_from"] as HTMLInputElement).value;
+        let problem_statement_to = (form.elements["problem_statement_to"] as HTMLInputElement).value;
+        let problem_statement_notes = (form.elements["problem_statement_notes"] as HTMLInputElement).value;
+
+        let problem_statement = {
+          name: problem_statement_name,
+          regionid: problem_statement_region,
+          subregionid: problem_statement_subregion,
+          dates: {
+            start_date: toTimeStamp(problem_statement_from),
+            end_date: toTimeStamp(problem_statement_to)
+          },
+          notes: problem_statement_notes,
+          events: []
+        } as ProblemStatement;
+        if(problem_statement_id) {
+          problem_statement.id = problem_statement_id;
+          problem_statement.events = [getUpdateEvent(problem_statement_notes) as ProblemStatementEvent];
+          updateProblemStatement(problem_statement);
+        }
+        else {
+          addProblemStatement(problem_statement);
+          problem_statement.events.push(getCreateEvent(problem_statement_notes) as ProblemStatementEvent);
+        }
+
+        hideDialog("problem_statementDialog", this.shadowRoot!);
+        showNotification("saveNotification", this.shadowRoot!);
+    
+        goToPage("modeling/problem_statement/"+problem_statement_id);
+
+    }
+    else {
+        showNotification("formValuesIncompleteNotification", this.shadowRoot!);
+    }    
+  }
+
+  _onAddEditProblemStatementCancel() {
+    hideDialog("problem_statementDialog", this.shadowRoot!);
+  }
+
+  _editProblemStatementDialog(e: Event) {
+    let problem_statement_id = (e.currentTarget as HTMLButtonElement).dataset['problem_statement_id'];
+    if(problem_statement_id) {
+        let problem_statement = this._list!.problem_statements[problem_statement_id];
+        if(problem_statement) {
+            let form = this.shadowRoot!.querySelector<HTMLFormElement>("#problem_statementForm")!;
+            resetForm(form, null);
+            let dates = problem_statement.dates;
+            let last_event = getLatestEventOfType(["CREATE", "UPDATE"], problem_statement.events);
+            (form.elements["problem_statement_id"] as HTMLInputElement).value = problem_statement.id;
+            (form.elements["problem_statement_name"] as HTMLInputElement).value = problem_statement.name;
+            (form.elements["problem_statement_region"] as HTMLInputElement).value = problem_statement.regionid;
+            (form.elements["problem_statement_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
+            (form.elements["problem_statement_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
+            (form.elements["problem_statement_notes"] as HTMLInputElement).value = last_event.notes? last_event.notes : "";
+            showDialog("problem_statementDialog", this.shadowRoot!);
+        }
+    }
+    e.stopPropagation();
+    e.preventDefault();
+    return false;
+  }
+
+  _onDeleteProblemStatement(e: Event) {
+    let problem_statement_id = (e.currentTarget as HTMLButtonElement).dataset['problem_statement_id'];
+    e.stopPropagation();
+    e.preventDefault();
+    if(problem_statement_id) {
+      let problem_statement = this._list!.problem_statements[problem_statement_id];
+      if(problem_statement) {
+        if(!confirm("Do you want to delete the problem_statement '" + problem_statement.name + "' ?"))
+            return false;
+
+        showNotification("deleteNotification", this.shadowRoot!);
+        // Delete problem_statement itself. ProblemStatement deletion returns a "Promise"
+        deleteProblemStatement(problem_statement.id!).then(() => {
+          hideNotification("deleteNotification", this.shadowRoot!);
+        });
+      }
+    }
+    return false;
+  }
+
+  _showProblemStatements() {
+    console.log('here');
+    var item = this.shadowRoot!.getElementById("problem_statementsTab");
+    var item2 = this.shadowRoot!.getElementById("datasetsTab");
+    item!.className = "middle2 active";
+    item2!.className = "middle2";
+  }
+
+  _showDatasets() {
+    var item = this.shadowRoot!.getElementById("problem_statementsTab");
+    var item2 = this.shadowRoot!.getElementById("datasetsTab");
+    item!.className = "middle2";
+    item2!.className = "middle2 active";
+  }
+
+
+  _onSelectProblemStatement(e: Event) {
+    let selectedProblemStatementId = (e.currentTarget as HTMLButtonElement).dataset['problem_statement_id']+"";    
+    this._selectProblemStatement(selectedProblemStatementId);
+  }
+
+  _selectProblemStatement(problem_statement_id: string) {
+    goToPage("modeling/problem_statement/" + problem_statement_id);
+  }
+
+  protected firstUpdated() {    
+    //store.dispatch(listTopRegions()); done by mint-app
+    store.dispatch(subscribeProblemStatementsList(this._regionid));
+    // list summaries of datasets, models, etc
+  }
+
+  // This is called every time something is updated in the store.
+  stateChanged(state: RootState) {
+    //console.log(state);
+    if(state.modeling) {
+      if(state.modeling.problem_statements) {
+        this._list = state.modeling.problem_statements;
+        this._list.problem_statement_ids.sort((id1,id2) => {
+          return (getLatestEvent(this._list.problem_statements[id2].events)?.timestamp > 
+            getLatestEvent(this._list.problem_statements[id1].events)?.timestamp ? -1 : 1);
+        });
+      }
+    }
+    if(state.ui && state.ui.selected_top_regionid && state.regions!.regions) {
+      this._top_regionid = state.ui.selected_top_regionid;
+      this._regions = state.regions!.regions;
+      this._top_region = this._regions[this._top_regionid];
+    }
+    super.setRegionId(state);
+  }
+}

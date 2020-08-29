@@ -1,0 +1,12 @@
+#import "../fragments/thread-events.graphql"
+
+fragment thread_info on thread {
+    id
+    name
+    start_date
+    end_date
+    region_id
+    driving_variable_id
+    response_variable_id
+    ...thread_events
+}

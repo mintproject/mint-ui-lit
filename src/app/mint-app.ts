@@ -22,7 +22,7 @@ import {
   navigate, fetchUser, signOut, signIn, signUp, goToPage, fetchMintConfig, setUserProfile, resetPassword,
 } from './actions';
 import { UserPreferences, UserProfile } from './reducers';
-import { listTopRegions, listSubRegions } from '../screens/regions/actions';
+import { listTopRegions, listSubRegions, listRegionCategories } from '../screens/regions/actions';
 
 import '../screens/modeling/modeling-home';
 import '../screens/datasets/datasets-home';
@@ -515,6 +515,8 @@ export class MintApp extends connect(store)(LitElement) {
     }
     
     if(!state.regions || !state.regions.top_region_ids) {
+      // Fetch region categories
+      store.dispatch(listRegionCategories());
       // Fetch top regions
       store.dispatch(listTopRegions());
     }

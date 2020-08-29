@@ -1,0 +1,23 @@
+mutation delete_thread($id: uuid!) {
+  delete_thread_provenance(where: {thread_id: {_eq: $id}}) {
+    affected_rows
+  }
+  delete_thread_data(where: {thread_id: {_eq: $id}}) {
+    affected_rows
+  }
+  delete_thread_model_io(where: {thread_model: {thread_id: {_eq: $id}}}) {
+    affected_rows
+  }
+  delete_thread_model_parameter(where: {thread_model: {thread_id: {_eq: $id}}}) {
+    affected_rows
+  }
+  delete_thread_model_execution(where: {thread_model: {thread_id: {_eq: $id}}}) {
+    affected_rows
+  }
+  delete_thread_model(where: {thread_id: {_eq: $id}}) {
+    affected_rows
+  }
+  delete_thread_by_pk(id: $id) {
+    id
+  }
+}

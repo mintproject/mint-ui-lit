@@ -2,17 +2,17 @@ import { property } from "lit-element";
 import { RootState } from "../../../app/store";
 import { PageViewElement } from "../../../components/page-view-element";
 
-import { Pathway, Scenario } from "../reducers";
-import { getUISelectedPathway } from "../../../util/state_functions";
+import { Thread, ProblemStatement } from "../reducers";
+import { getUISelectedThread } from "../../../util/state_functions";
 import { User } from "firebase";
 import { UserPreferences } from "app/reducers";
 
-export class MintPathwayPage extends PageViewElement {
+export class MintThreadPage extends PageViewElement {
     @property({type: Object})
-    protected scenario!: Scenario;
+    protected problem_statement!: ProblemStatement;
     
     @property({type: Object})
-    protected pathway!: Pathway
+    protected thread!: Thread
 
     @property({type: Object})
     protected user: User | null = null;
@@ -20,10 +20,10 @@ export class MintPathwayPage extends PageViewElement {
     @property({type: Object})
     protected prefs: UserPreferences | null = null;
 
-    setPathway(state: RootState): Boolean {
-        let pathwayid = state.ui!.selected_pathwayid;
-        this.pathway = state.modeling.pathway;
-        if(state.modeling.pathway && state.modeling.pathway.id == pathwayid) {
+    setThread(state: RootState): Boolean {
+        let thread_id = state.ui!.selected_thread_id;
+        this.thread = state.modeling.thread;
+        if(state.modeling.thread && state.modeling.thread.id == thread_id) {
             return false;
         }
         return true;

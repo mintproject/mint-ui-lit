@@ -1,56 +1,54 @@
 import { Action, ActionCreator } from "redux";
 
 // UI ACTIONS
-export const UI_SELECT_SCENARIO = 'UI_SELECT_SCENARIO';
-export const UI_SELECT_SUBGOAL = 'UI_SELECT_SUBGOAL';
-export const UI_SELECT_PATHWAY = 'UI_SELECT_PATHWAY';
-export const UI_SELECT_PATHWAY_SECTION = 'UI_SELECT_PATHWAY_SECTION';
+export const UI_SELECT_PROBLEM_STATEMENT = 'UI_SELECT_PROBLEM_STATEMENT';
+export const UI_SELECT_TASK = 'UI_SELECT_TASK';
+export const UI_SELECT_THREAD = 'UI_SELECT_THREAD';
+export const UI_SELECT_THREAD_SECTION = 'UI_SELECT_THREAD_SECTION';
 export const UI_SELECT_TOP_REGION = 'UI_SELECT_TOP_REGION';
 export const UI_SELECT_SUB_REGION = 'UI_SELECT_SUB_REGION';
-export const UI_SELECT_THREAD = 'UI_SELECT_THREAD';
 export const UI_SELECT_DATA_TRANSFORMATION = 'UI_SELECT_DATA_TRANSFORMATION';
 
-export interface UIActionSelectScenario extends Action<'UI_SELECT_SCENARIO'> { scenarioid: string }
-export interface UIActionSelectSubgoal extends Action<'UI_SELECT_SUBGOAL'> { subgoalid: string }
-export interface UIActionSelectPathway extends Action<'UI_SELECT_PATHWAY'> { pathwayid: string }
-export interface UIActionSelectPathwaySection extends Action<'UI_SELECT_PATHWAY_SECTION'> { section: string }
+export interface UIActionSelectProblemStatement extends Action<'UI_SELECT_PROBLEM_STATEMENT'> { problem_statement_id: string }
+export interface UIActionSelectTask extends Action<'UI_SELECT_TASK'> { task_id: string }
+export interface UIActionSelectThread extends Action<'UI_SELECT_THREAD'> { thread_id: string }
+export interface UIActionSelectThreadSection extends Action<'UI_SELECT_THREAD_SECTION'> { section: string }
 export interface UIActionSelectTopRegion extends Action<'UI_SELECT_TOP_REGION'> { regionid?: string };
 export interface UIActionSelectSubRegion extends Action<'UI_SELECT_SUB_REGION'> { regionid?: string };
-export interface UIActionSelectThread extends Action<'UI_SELECT_THREAD'> { threadid?: string };
 export interface UIActionSelectDataTransformation extends Action<'UI_SELECT_DATA_TRANSFORMATION'> { dtid?: string };
 
-export type UIAction = UIActionSelectScenario | UIActionSelectSubgoal | UIActionSelectPathway 
-    | UIActionSelectPathwaySection | UIActionSelectTopRegion | UIActionSelectSubRegion | UIActionSelectThread
+export type UIAction = UIActionSelectProblemStatement | UIActionSelectTask | UIActionSelectThread 
+    | UIActionSelectThreadSection | UIActionSelectTopRegion | UIActionSelectSubRegion | UIActionSelectThread
     | UIActionSelectDataTransformation;
 
-export const selectScenario: ActionCreator<UIActionSelectScenario> = (scenarioid:string) => {
-    console.log("SelectScenario:" + scenarioid);
+export const selectProblemStatement: ActionCreator<UIActionSelectProblemStatement> = (problem_statement_id:string) => {
+    console.log("SelectProblemStatement:" + problem_statement_id);
     return {
-        type: UI_SELECT_SCENARIO,
-        scenarioid: scenarioid
+        type: UI_SELECT_PROBLEM_STATEMENT,
+        problem_statement_id: problem_statement_id
     };
 };
 
-export const selectSubgoal: ActionCreator<UIActionSelectSubgoal> = (subgoalid:string) => {
-    console.log("selectSubgoal:" + subgoalid);
+export const selectTask: ActionCreator<UIActionSelectTask> = (task_id:string) => {
+    //console.log("selectTask:" + task_id);
     return {
-        type: UI_SELECT_SUBGOAL,
-        subgoalid: subgoalid
+        type: UI_SELECT_TASK,
+        task_id: task_id
     };
 };
 
-export const selectPathway: ActionCreator<UIActionSelectPathway> = (pathwayid:string) => {
-    console.log("selectPathway:" + pathwayid);
+export const selectThread: ActionCreator<UIActionSelectThread> = (thread_id:string) => {
+    console.log("selectThread:" + thread_id);
     return {
-        type: UI_SELECT_PATHWAY,
-        pathwayid: pathwayid
+        type: UI_SELECT_THREAD,
+        thread_id: thread_id
     };
 };
 
-export const selectPathwaySection: ActionCreator<UIActionSelectPathwaySection> = (section:string) => {
-    //console.log("selectPathwaySection:" + section);
+export const selectThreadSection: ActionCreator<UIActionSelectThreadSection> = (section:string) => {
+    //console.log("selectThreadSection:" + section);
     return {
-        type: UI_SELECT_PATHWAY_SECTION,
+        type: UI_SELECT_THREAD_SECTION,
         section: section
     };
 };
@@ -66,13 +64,6 @@ export const selectSubRegion: ActionCreator<UIActionSelectSubRegion> = (regionid
     return {
         type: UI_SELECT_SUB_REGION,
         regionid: regionid
-    }
-}
-
-export const selectThread: ActionCreator<UIActionSelectThread> = (threadid: string) => {
-    return {
-        type: UI_SELECT_THREAD,
-        threadid: threadid
     }
 }
 

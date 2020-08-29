@@ -13,20 +13,21 @@ import "./mint-visualize";
 
 import "weightless/progress-spinner";
 
-import { getPathwayVariablesStatus, TASK_NOT_STARTED, getPathwayModelsStatus, 
-    getPathwayDatasetsStatus, getPathwayRunsStatus, getPathwayResultsStatus, 
+import { getThreadVariablesStatus, TASK_NOT_STARTED, getThreadModelsStatus, 
+    getThreadDatasetsStatus, getThreadRunsStatus, getThreadResultsStatus, 
     TASK_DONE, TASK_PARTLY_DONE, 
-    getUISelectedSubgoal, getPathwayParametersStatus } from "../../../util/state_functions";
-import { SubGoal, Pathway } from "../reducers";
+    getUISelectedTask, getThreadParametersStatus } from "../../../util/state_functions";
+import { Task, Thread } from "../reducers";
 import { BASE_HREF } from "../../../app/actions";
-import { MintPathwayPage } from "./mint-pathway-page";
+import { MintThreadPage } from "./mint-thread-page";
 import { hideNotification } from "util/ui_functions";
-import { getPathway } from "../actions";
+import { subscribeThread } from "../actions";
+import { getLatestEvent } from "util/event_utils";
 
-@customElement('mint-pathway')
-export class MintPathway extends connect(store)(MintPathwayPage) {
+@customElement('mint-thread')
+export class MintThread extends connect(store)(MintThreadPage) {
     @property({type: Object })
-    private subgoal: SubGoal | null = null;
+    private task: Task | null = null;
 
     @property({ type: String })
     private _currentMode: string = "";
@@ -108,22 +109,22 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
         let status = TASK_NOT_STARTED;
         switch(section) {
             case "variables":
-                status = getPathwayVariablesStatus(this.pathway);
+                status = getThreadVariablesStatus(this.thread);
                 break;
             case "models":
-                status = getPathwayModelsStatus(this.pathway);
+                status = getThreadModelsStatus(this.thread);
                 break;
             case "datasets":
-                status = getPathwayDatasetsStatus(this.pathway);
+                status = getThreadDatasetsStatus(this.thread);
                 break;
             case "parameters":
-                status = getPathwayParametersStatus(this.pathway);
+                status = getThreadParametersStatus(this.thread);
                 break;
             case "runs":
-                status = getPathwayRunsStatus(this.pathway);
+                status = getThreadRunsStatus(this.thread);
                 break;
             case "results":
-                status = getPathwayResultsStatus(this.pathway);
+                status = getThreadResultsStatus(this.thread);
                 break;
             default:
                 break;
@@ -187,23 +188,23 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
         this._currentMode = mode;
 
         // TODO: Change the url to reflect mode change.
-        if(this.subgoal && this.pathway) {
-          let page = this._regionid + "/modeling/scenario/" + 
-                this.scenario.id + "/" + this.subgoal!.id + "/" + this.pathway.id + "/" + mode;
+        if(this.task && this.thread) {
+          let page = this._regionid + "/modeling/problem_statement/" + 
+                this.problem_statement.id + "/" + this.task!.id + "/" + this.thread.id + "/" + mode;
           window.history.pushState({}, mode, BASE_HREF + page);
         }
     }
 
     private _getModeURL(mode: string) {
-        return this._regionid + "/modeling/scenario/" + 
-                this.scenario.id + "/" + this.subgoal!.id + "/" + this.pathway.id + "/" + mode;
+        return this._regionid + "/modeling/problem_statement/" + 
+                this.problem_statement.id + "/" + this.task!.id + "/" + this.thread.id + "/" + mode;
     }    
 
     protected render() {
         if(this._dispatched)
             return html`<wl-progress-spinner class="loading"></wl-progress-spinner>`;
 
-        if (!this.pathway) {
+        if (!this.thread) {
             return html``;
         }
 
@@ -212,32 +213,32 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
 
             <div class="card2">
                 <mint-variables class="page" 
-                    .scenario="${this.scenario}"
+                    .problem_statement="${this.problem_statement}"
                     ?active="${this._currentMode == 'variables'}">
                 </mint-variables>
                 <mint-models class="page" 
-                    .scenario="${this.scenario}"
+                    .problem_statement="${this.problem_statement}"
                     ?active="${this._currentMode == 'models'}">
                 </mint-models>
                 <mint-datasets class="page" 
-                    .scenario="${this.scenario}"
-                    .subgoal="${this.subgoal}"
+                    .problem_statement="${this.problem_statement}"
+                    .task="${this.task}"
                     ?active="${this._currentMode == 'datasets'}">
                 </mint-datasets>
                 <mint-parameters class="page" 
-                    .scenario="${this.scenario}"
+                    .problem_statement="${this.problem_statement}"
                     ?active="${this._currentMode == 'parameters'}">
                 </mint-parameters>
                 <mint-runs class="page" 
-                    .scenario="${this.scenario}"
+                    .problem_statement="${this.problem_statement}"
                     ?active="${this._currentMode == 'runs'}">
                 </mint-runs>
                 <mint-results class="page" 
-                    .scenario="${this.scenario}"
+                    .problem_statement="${this.problem_statement}"
                     ?active="${this._currentMode == 'results'}">
                 </mint-results>
                 <mint-visualize class="page" 
-                    .scenario="${this.scenario}"
+                    .problem_statement="${this.problem_statement}"
                     ?active="${this._currentMode == 'visualize'}">
                 </mint-visualize>
             </div>
@@ -248,83 +249,74 @@ export class MintPathway extends connect(store)(MintPathwayPage) {
         super.setRegionId(state);
         super.setUser(state);
           
-        this.subgoal = getUISelectedSubgoal(state);
+        this.task = getUISelectedTask(state);
 
-        let pathwayid = state.ui!.selected_pathwayid;
-        // If there is no pathway, then stop monitoring
-        if(!pathwayid) {
-            if(this.pathway) {
-                //console.log("No pathway passed in ? Unsubscribing to pathway " + this.pathway.id);
-                //this.pathway.unsubscribe();
+        let thread_id = state.ui!.selected_thread_id;
+        // If there is no thread, then stop monitoring
+        if(!thread_id) {
+            if(this.thread) {
+                //console.log("No thread passed in ? Unsubscribing to thread " + this.thread.id);
+                //this.thread.unsubscribe();
             }
-            this.pathway = null;
+            this.thread = null;
         }
-        // If a pathway has been selected, fetch pathway details
-        if(pathwayid && this.user) {
-            if(!this._dispatched && (!state.modeling.pathway || (state.modeling.pathway.id != pathwayid))) {
-                // Unsubscribe to any existing pathway details listener
-                if(state.modeling.pathway && state.modeling.pathway.unsubscribe) {
-                    console.log("Unsubscribing to pathway " + state.modeling.pathway.id);
-                    state.modeling.pathway.unsubscribe();
+        // If a thread has been selected, fetch thread details
+        if(thread_id && this.user) {
+            if(!this._dispatched && (!state.modeling.thread || (state.modeling.thread.id != thread_id))) {
+                // Unsubscribe to any existing thread details listener
+                if(state.modeling.thread && state.modeling.thread.unsubscribe) {
+                    console.log("Unsubscribing to thread " + state.modeling.thread.id);
+                    state.modeling.thread.unsubscribe();
                 }
-                console.log("Subscribing to pathway " + pathwayid);
+                console.log("Subscribing to thread " + thread_id);
 
-                // Reset the scenario details
-                this.pathway = null;
+                // Reset the problem_statement details
+                this.thread = null;
                 this._dispatched = true;
-                // Make a subscription call for the new scenario id
-                store.dispatch(getPathway(this.scenario.id, pathwayid));
+                // Make a subscription call for the new problem_statement id
+                store.dispatch(subscribeThread(thread_id));
                 return;
             }
 
             // If we've already got the details in the state
             // - extract details from the state
-            if(state.modeling.pathway && state.modeling.pathway.id == pathwayid) {
+            if(state.modeling.thread && state.modeling.thread.id == thread_id) {
                 this._dispatched = false;
-                if(this.pathwayChanged(this.pathway, state.modeling.pathway)) {
-                    this.pathway = state.modeling.pathway;
-                    if(!state.ui.selected_pathway_section)
+                if(this.threadChanged(this.thread, state.modeling.thread)) {
+                    this.thread = state.modeling.thread;
+                    if(!state.ui.selected_thread_section)
                         this._selectMode(this._getNextMode());
                 }
             }
-            else if(!state.modeling.pathway) {
+            else if(!state.modeling.thread) {
                 this._dispatched = false;
             }
         }
 
-        if(this.pathway && state.ui.selected_pathway_section) {
-          //console.log(state.ui.selected_pathway_section);
-          this._selectMode(state.ui.selected_pathway_section);
-          state.ui.selected_pathway_section = "";
+        if(this.thread && state.ui.selected_thread_section) {
+          //console.log(state.ui.selected_thread_section);
+          this._selectMode(state.ui.selected_thread_section);
+          state.ui.selected_thread_section = "";
         }
 
-        if(!this.user && state.modeling.pathway) {
+        if(!this.user && state.modeling.thread) {
             // Logged out, Unsubscribe
-            if(state.modeling.pathway.unsubscribe) {
-                console.log("Unsubscribing to pathway " + state.modeling.pathway.id);
-                state.modeling.pathway.unsubscribe();
+            if(state.modeling.thread.unsubscribe) {
+                console.log("Unsubscribing to thread " + state.modeling.thread.id);
+                state.modeling.thread.unsubscribe();
             }
-            state.modeling.pathway = undefined;
+            state.modeling.thread = undefined;
         }
     }
 
-    pathwayChanged(oldp: Pathway, newp: Pathway) {
+    threadChanged(oldp: Thread, newp: Thread) {
         if(!oldp && newp)
             return true;
         if(oldp && newp) {
-            let oldup = oldp.last_update;
-            let newup = newp.last_update;
-            if(!oldup && newup) return true;
-            if(oldup && !newup) return true;
-            if(!oldup && !newup) return false;
-            if(
-                this.timeChanged(oldup.variables, newup.variables) ||
-                this.timeChanged(oldup.datasets, newup.datasets) ||
-                this.timeChanged(oldup.models, newup.models) ||
-                this.timeChanged(oldup.parameters, newup.parameters) ||
-                this.timeChanged(oldup.results, newup.results)
-            ) {
-                console.log("Pathway changed !");
+            let oldup = getLatestEvent(oldp.events)?.timestamp;
+            let newup = getLatestEvent(newp.events)?.timestamp;
+            if(oldup != newup) {
+                console.log("Thread changed !");
                 return true;
             }
         }

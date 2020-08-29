@@ -1,5 +1,5 @@
 import { html } from "lit-element";
-import { StepUpdateInformation } from "../screens/modeling/reducers";
+import { MintEvent } from "../screens/modeling/reducers";
 import { VARIABLES } from "../offline_data/variable_list";
 
 export const renderVariables = (readonly: boolean, response_callback: Function, driving_callback: Function) => {
@@ -101,10 +101,10 @@ export const renderDrivingVariables = (variableid: string, readonly: boolean, ca
     `;
 } 
 
-export const renderLastUpdateText = (info: StepUpdateInformation) => {
-    let date = new Date(info.time);
+export const renderLastUpdateText = (info: MintEvent) => {
+    let date = info.timestamp;
     return html `
-        <div class="information">Last updated by ${info.user} on ${date.toString()}</div>
+        <div class="information">Last updated by ${info.userid} on ${date.toString()}</div>
     `;
 }
 

@@ -1,0 +1,8 @@
+mutation update_thread($id:uuid!, $object:thread_set_input!) {
+  update_thread_by_pk (
+    pk_columns: {id: $id}
+    _set: $object
+  ) {
+    id
+  }
+}

@@ -1,0 +1,11 @@
+query list_top_regions {
+  region(where: {
+    parent_region_id:{
+      _is_null: true
+    }
+  }) {
+    id
+    name
+    geojson_blob
+  }
+}

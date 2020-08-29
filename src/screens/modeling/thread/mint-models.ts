@@ -3,7 +3,7 @@ import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 import ReactGA from 'react-ga';
 
-import { ModelMap, ModelEnsembleMap, ComparisonFeature, StepUpdateInformation, ExecutableEnsembleSummary } from "../reducers";
+import { ModelMap, ModelEnsembleMap, ComparisonFeature, ExecutionSummary, ThreadEvent } from "../reducers";
 import models, { VariableModels, Model, getPathFromModel } from "../../models/reducers";
 import { queryModelsByVariables, setupToOldModel } from "../../models/actions";
 import { setupGetAll, regionsGet, modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet,
@@ -11,17 +11,17 @@ import { setupGetAll, regionsGet, modelsGet, versionsGet, modelConfigurationsGet
 import { getId } from 'model-catalog/util';
 
 import { SharedStyles } from "../../../styles/shared-styles";
-import { updatePathway, deleteAllPathwayEnsembleIds } from "../actions";
-import { removeDatasetFromPathway, matchVariables, getUISelectedSubgoalRegion } from "../../../util/state_functions";
+import { updateThread, deleteAllThreadExecutionIds } from "../actions";
+import { removeDatasetFromThread, matchVariables, getUISelectedSubgoalRegion } from "../../../util/state_functions";
 import { isSubregion } from "model-catalog/util";
 
 import "weightless/tooltip";
 import "weightless/popover-card";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
 import { showNotification, showDialog } from "../../../util/ui_functions";
-import { selectPathwaySection } from "../../../app/ui-actions";
+import { selectThreadSection } from "../../../app/ui-actions";
 import { getVariableLongName } from "../../../offline_data/variable_list";
-import { MintPathwayPage } from "./mint-pathway-page";
+import { MintThreadPage } from "./mint-thread-page";
 import { Region } from "screens/regions/reducers";
 import { IdMap } from "app/reducers";
 import { Model as MCModel, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, SampleCollection,
@@ -29,13 +29,15 @@ import { Model as MCModel, SoftwareVersion, ModelConfiguration, ModelConfigurati
 
 import 'components/loading-dots';
 import { ModelCatalogState } from "model-catalog/reducers";
+import { getLatestEventOfType } from "util/event_utils";
+import { getUpdateEvent, getCustomEvent } from "../graphql_adapter";
 
 store.addReducers({
     models
 });
 
 @customElement('mint-models')
-export class MintModels extends connect(store)(MintPathwayPage) {
+export class MintModels extends connect(store)(MintThreadPage) {
 
     @property({type: Object})
     private _queriedModels: VariableModels = {} as VariableModels;
@@ -148,18 +150,20 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     }
 
     protected render() {
-        if(!this.pathway) {
+        if(!this.thread) {
             return html ``;
         }
                 
-        let modelids = Object.keys((this.pathway.models || {})) || [];
-        let done = (this.pathway.models && modelids.length > 0);
+        let modelids = Object.keys((this.thread.models || {})) || [];
+        let done = (this.thread.models && modelids.length > 0);
         let availableModels = this._queriedModels[this._responseVariables.join(",")] || [];
         let regionModels = availableModels.filter((model: Model) =>
             !model.hasRegion ||
             model.hasRegion.length == 0 ||
             (model.hasRegion||[]).some((region) => isSubregion(this._region.model_catalog_uri, region))
         );
+        let latest_update_event = getLatestEventOfType(["CREATE", "UPDATE"], this.thread.events);
+        let latest_model_event = getLatestEventOfType(["SELECT_MODELS"], this.thread.events);
         return html`
         <p>
             The models below are appropriate for the indicators of interest. You can select multiple calibrated models and compare them.  
@@ -181,7 +185,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                 </wl-tooltip>
                 <ul>
                     ${modelids.map((modelid) => {
-                        let model = this.pathway.models![modelid];
+                        let model = this.thread.models![modelid];
                         return html`
                         <li>
                             <a target="_blank" href="${this._getStoredModelURL(model)}">${model.name}</a>
@@ -191,25 +195,25 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                 </ul>
             </div>
             <div class="footer">
-                <wl-button type="button" class="submit" @click="${() => store.dispatch(selectPathwaySection("datasets"))}">Continue</wl-button>
+                <wl-button type="button" class="submit" @click="${() => store.dispatch(selectThreadSection("datasets"))}">Continue</wl-button>
             </div>
             
-            ${this.pathway.last_update && this.pathway.last_update.models ? 
+            ${latest_model_event ? 
                 html `
-                <div class="notepage">${renderLastUpdateText(this.pathway.last_update.models)}</div>
+                <div class="notepage">${renderLastUpdateText(latest_model_event)}</div>
                 `: html ``
             }            
-            ${this.pathway.notes && this.pathway.notes.models ? 
+            ${latest_model_event?.notes ? 
                 html`
                 <fieldset class="notes">
                     <legend>Notes</legend>
-                    <div class="notepage">${this.pathway.notes.models}</div>
+                    <div class="notepage">${latest_model_event}</div>
                 </fieldset>
                 `: html``
             }         
             `
         :
-        !(this.pathway.response_variables && this.pathway.response_variables.length > 0) ?
+        !(this.thread.response_variables && this.thread.response_variables.length > 0) ?
             html `Please select a response variable first`
             :
             // Choose Models
@@ -220,12 +224,12 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                 </wl-title>
                 <p>
                     The models below generate data that includes the indicator that you selected earlier: 
-                    "${this.pathway.response_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
+                    "${this.thread.response_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
                     Other models that are available in the system do not generate that kind of result.
-                    ${this.pathway.driving_variables.length ? 
+                    ${this.thread.driving_variables.length ? 
                         html`
                         These models also allow adjusting the adjustable variable you selected earlier:
-                        "${this.pathway.driving_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
+                        "${this.thread.driving_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
                         `
                         : ""
                     }
@@ -250,7 +254,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                                     availableModels.map((model: Model) => {
                                         if(!model)
                                             return;
-                                        console.log('>>', model);
+                                        //console.log('>>', model);
                                         if(this._showAllModels || regionModels.indexOf(model) >=0) {
                                             return html`
                                             <tr>
@@ -302,7 +306,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                             <wl-button type="button" flat inverted outlined @click="${this._compareModels}">Compare Selected Models</wl-button>
                             <div style="flex-grow: 1">&nbsp;</div>
                             ${this._editMode ? html `<wl-button @click="${()=>{this._editMode=false}}" flat inverted>CANCEL</wl-button>`: html``}
-                            <wl-button type="button" class="submit" @click="${this._selectPathwayModels}" ?disabled=${this._waiting}>
+                            <wl-button type="button" class="submit" @click="${this._selectThreadModels}" ?disabled=${this._waiting}>
                                 Select &amp; Continue
                                 ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`: ''}
                             </wl-button>
@@ -316,7 +320,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
 
             <fieldset class="notes">
                 <legend>Notes</legend>
-                <textarea id="notes">${this.pathway.notes ? this.pathway.notes.models : ""}</textarea>
+                <textarea id="notes">${latest_model_event?.notes ? latest_model_event.notes : ""}</textarea>
             </fieldset>
 
             `
@@ -373,7 +377,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     }
 
     private _getStoredModelURL (model:Model) {
-        console.log(model);
+        //console.log(model);
         let uri =  this._regionid + '/models/explore' + getPathFromModel(model) + "/";
         return uri;
     }
@@ -452,9 +456,9 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         showDialog("comparisonDialog", this.shadowRoot!);
     }
 
-    async _selectPathwayModels() {
+    async _selectThreadModels() {
         ReactGA.event({
-          category: 'Pathway',
+          category: 'Thread',
           action: 'Models continue',
         });
         let models = this._getSelectedModels();
@@ -463,8 +467,8 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             if (model.hasRegion)
                 delete model.hasRegion;
         });
-        let model_ensembles:ModelEnsembleMap = this.pathway.model_ensembles || {};
-        let executable_ensemble_summary:IdMap<ExecutableEnsembleSummary> = this.pathway.executable_ensemble_summary || {};
+        let model_ensembles:ModelEnsembleMap = this.thread.model_ensembles || {};
+        let execution_summary:IdMap<ExecutionSummary> = this.thread.execution_summary || {};
 
         if (Object.keys(models).length < 1) {
             showNotification("selectOneModelNotification", this.shadowRoot!);
@@ -472,7 +476,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         }
 
         // Check if any models have been removed
-        Object.keys(this.pathway.models || {}).map((modelid) => {
+        Object.keys(this.thread.models || {}).map((modelid) => {
             if(!models[modelid]) {
                 // modelid has been removed. Remove it from the model and data ensembles
                 if(model_ensembles[modelid]) {
@@ -480,16 +484,16 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                     Object.keys(data_ensembles).map((inputid) => {
                         let datasets = data_ensembles[inputid].slice();
                         datasets.map((dsid) => {
-                            this.pathway = removeDatasetFromPathway(this.pathway, dsid, modelid, inputid);
+                            this.thread = removeDatasetFromThread(this.thread, dsid, modelid, inputid);
                         })
                     })
                     delete model_ensembles[modelid];
                 }
-                if(executable_ensemble_summary[modelid]) {
+                if(execution_summary[modelid]) {
                     // Delete ensemble ids
-                    deleteAllPathwayEnsembleIds(this.scenario.id, this.pathway.id, modelid);
+                    deleteAllThreadExecutionIds(this.thread.id, modelid);
                     // Remove executable summary
-                    delete executable_ensemble_summary[modelid];
+                    delete execution_summary[modelid];
                 }
             }
         });
@@ -573,30 +577,16 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                 let mapModels = {}
                 fixedModels.forEach(model => mapModels[model.id] = model);
 
-                let newpathway = {
-                    ...this.pathway,
+                let newthread = {
+                    ...this.thread,
                     models: mapModels,
                     model_ensembles: model_ensembles
                 }
-
-                // Update notes
-                let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-                newpathway.notes = {
-                    ...newpathway.notes!,
-                    models: notes
-                };
-                newpathway.last_update = {
-                    ...newpathway.last_update!,
-                    parameters: null,
-                    datasets: null,
-                    models: {
-                        time: Date.now(),
-                        user: this.user!.email
-                    } as StepUpdateInformation
-                };        
+                let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;                
+                newthread.events.push(getCustomEvent("SELECT_MODELS", notes) as ThreadEvent);     
 
                 this._waiting = false;
-                updatePathway(this.scenario, newpathway); 
+                updateThread(newthread); 
                 
                 this._editMode = false;
 
@@ -605,30 +595,30 @@ export class MintModels extends connect(store)(MintPathwayPage) {
         })
     }
 
-    _removePathwayModel(modelid:string) {
-        let newpathway = { ...this.pathway };
-        let model = newpathway.models![modelid];
+    _removeThreadModel(modelid:string) {
+        let newthread = { ...this.thread };
+        let model = newthread.models![modelid];
         if(model) {
             if(confirm("Are you sure you want to remove this model ?")) {
-                let models:ModelMap = newpathway.models || {};
-                let model_ensembles:ModelEnsembleMap = newpathway.model_ensembles || {};
+                let models:ModelMap = newthread.models || {};
+                let model_ensembles:ModelEnsembleMap = newthread.model_ensembles || {};
                 delete models[modelid];
                 if(model_ensembles[modelid]) {
                     let data_ensembles = { ...model_ensembles[modelid] };
                     Object.keys(data_ensembles).map((inputid) => {
                         let datasets = data_ensembles[inputid].slice();
                         datasets.map((dsid) => {
-                            newpathway = removeDatasetFromPathway(newpathway, dsid, modelid, inputid);
+                            newthread = removeDatasetFromThread(newthread, dsid, modelid, inputid);
                         })
                     })
                     delete model_ensembles[modelid];
                 }
-                newpathway = {
-                    ...newpathway,
+                newthread = {
+                    ...newthread,
                     models: models,
                     model_ensembles: model_ensembles
                 }
-                updatePathway(this.scenario, newpathway);                   
+                updateThread(newthread);                   
             }
         }
     }
@@ -642,7 +632,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
             this._pendingQuery = false;
             // Only query for models if we don't already have them
             // Unless we're in edit mode
-            if(!this.pathway.models || Object.keys(this.pathway.models).length == 0 || this._editMode) {
+            if(!this.thread.models || Object.keys(this.thread.models).length == 0 || this._editMode) {
                 if(this._responseVariables && this._responseVariables.length > 0) {
                     //console.log("Querying model catalog for " + this._responseVariables);
                     this._dispatched = true;
@@ -680,17 +670,17 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     stateChanged(state: RootState) {
         super.setUser(state);
         super.setRegionId(state);
-        //let pathwayid = this.pathway ? this.pathway.id : null;
-        super.setPathway(state);
+        //let thread_id = this.thread ? this.thread.id : null;
+        super.setThread(state);
         
         this._subregion = getUISelectedSubgoalRegion(state);
 
-        if(this.pathway && 
-                this.pathway.response_variables != this._responseVariables && 
-                this.pathway.driving_variables != this._drivingVariables && 
+        if(this.thread && 
+                this.thread.response_variables != this._responseVariables && 
+                this.thread.driving_variables != this._drivingVariables && 
                 !this._dispatched) {
-            this._responseVariables = this.pathway.response_variables;
-            this._drivingVariables = this.pathway.driving_variables;
+            this._responseVariables = this.thread.response_variables;
+            this._drivingVariables = this.thread.driving_variables;
             this._queryModelCatalog();
             this._setEditMode(false);
         }

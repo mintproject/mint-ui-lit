@@ -1,0 +1,7 @@
+#import "../fragments/thread-info.graphql"
+
+subscription sub_threads($task_id: uuid!) {
+    thread(where:{task_id:{_eq:$task_id}}) {
+        ...thread_info
+    }
+}

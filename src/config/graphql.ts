@@ -1,26 +1,47 @@
-import { ApolloClient, createHttpLink, InMemoryCache, HttpLink } from '@apollo/client';
+import { ApolloClient, createHttpLink, InMemoryCache, HttpLink, split } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
+import { WebSocketLink } from '@apollo/client/link/ws';
+import { getMainDefinition } from '@apollo/client/utilities';
 
-const ENDPOINT = "https://graphql.mint.isi.edu/v1/graphql";
+const ENDPOINT = "graphql.mint.isi.edu/v1/graphql";
 const SECRET = "WmGrIc4MxU";
 
-const httpLink = createHttpLink({
-  uri: ENDPOINT
-});
-
-// Set Authorization
-const authLink = setContext((_, { headers }) => {
-  return {
-    headers: {
-      ...headers,
-      "X-Hasura-Admin-Secret": SECRET
+// Subscription Link
+const wsLink = new WebSocketLink({
+  uri: "wss://" + ENDPOINT,
+  options: {
+    reconnect: true,
+    connectionParams: {
+      headers: {
+        "X-Hasura-Admin-Secret": SECRET
+      }
     }
   }
 });
 
+// Normal HTTP Link
+const httpLink = createHttpLink({
+  uri: "https://" + ENDPOINT,
+  headers: {
+    "X-Hasura-Admin-Secret": SECRET
+  }
+});
+
+const splitLink = split(
+  ({ query }) => {
+    const definition = getMainDefinition(query);
+    return (
+      definition.kind === 'OperationDefinition' &&
+      definition.operation === 'subscription'
+    );
+  },
+  wsLink,
+  httpLink,
+);
+
 // Create the Apollo GraphQL Client
 export const APOLLO_CLIENT = new ApolloClient({
-  link: authLink.concat(httpLink),
+  link: splitLink,
   cache: new InMemoryCache()
 });
 

@@ -1,0 +1,11 @@
+#import "../fragments/task-info.graphql"
+#import "../fragments/thread-info.graphql"
+
+subscription sub_task($id: uuid!) {
+    task_by_pk(id:$id) {
+        ...task_info
+        threads {
+            ...thread_info
+        }
+    }
+}

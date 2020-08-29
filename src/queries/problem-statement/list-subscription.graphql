@@ -1,0 +1,6 @@
+#import "../fragments/problem-statement-info.graphql"
+subscription sub_problem_statements($regionId: String!) {
+    problem_statement(where:{region_id:{_eq:$regionId}}) {
+        ...problem_statement_info
+    }
+}

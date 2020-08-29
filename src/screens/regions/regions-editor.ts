@@ -28,6 +28,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     @property({type: String})
     public regionType: string;
 
+    @property({type: Object})
+    public _regionCategory: RegionCategory;
+
     @property({type: String})
     private _selectedSubregionId: string;
 
@@ -151,13 +154,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
 	// TODO: maybe move the description text outside and move the button to other place.
     protected render() {
-        let subcatArr = this._region ? 
-            (this._selectedSubcategory === '' ? 
-                this._region.categories.filter((c:RegionCategory) => c.id === this.regionType)
-                : this._region.subcategories[this.regionType].filter((c:RegionCategory) => 
-                    c.id === this._selectedSubcategory)
-            ) : [];
-        let subcat : RegionCategory | null = subcatArr.length > 0 ? subcatArr[0] : null;
+        let subcat = this._regionCategory[this._selectedSubcategory];
         return html`
         <div style="display: flex; margin-bottom: 10px;">
             <wl-tab-group align="center" style="width: 100%;">
@@ -273,7 +270,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
         if (map && this._regions) {
             let selectedRegions = this._regions.filter((region) => 
-                    region.region_type == (this._selectedSubcategory ? this._selectedSubcategory : this.regionType))
+                    region.category_id == (this._selectedSubcategory ? this._selectedSubcategory : this.regionType))
             if (selectedRegions.length > 0) {
                 this._mapEmpty = false;
                 try {
@@ -344,7 +341,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 let region = {
                     geojson_blob: JSON.stringify(nregion),
                     name: input.value,
-                    region_type: regionType
+                    category_id: regionType
                 } as Region;
                 newregions.push(region);
             }
@@ -560,8 +557,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             shouldUpdateRegions = true;
         }
 
-        if (this._region && this._region.subcategories && this._region.subcategories[this.regionType]) {
-            this._subcategories = this._region.subcategories[this.regionType];
+        if (this._region && state.regions.categories && state.regions.categories[this.regionType]) {
+            this._regionCategory = state.regions.categories[this.regionType];
+            this._subcategories = this._regionCategory.subcategories;
         }
 
         if (state.ui && state.ui.selected_sub_regionid != this._selectedSubregionId) {

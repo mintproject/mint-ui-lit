@@ -3,42 +3,32 @@ import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 import ReactGA from 'react-ga';
 
-import { DataEnsembleMap, ModelEnsembleMap, StepUpdateInformation, Pathway, ExecutableEnsembleSummary } from "../reducers";
+import { DataEnsembleMap, ModelEnsembleMap, Thread, ExecutionSummary, ThreadEvent } from "../reducers";
 import { SharedStyles } from "../../../styles/shared-styles";
 import { Model, ModelParameter } from "../../models/reducers";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
-import { TASK_DONE, getPathwayParametersStatus } from "../../../util/state_functions";
-import { updatePathway, deleteAllPathwayEnsembleIds } from "../actions";
+import { TASK_DONE, getThreadParametersStatus } from "../../../util/state_functions";
+import { updateThread, deleteAllThreadExecutionIds } from "../actions";
 import { showNotification } from "../../../util/ui_functions";
-import { selectPathwaySection } from "../../../app/ui-actions";
-import { MintPathwayPage } from "./mint-pathway-page";
+import { selectThreadSection } from "../../../app/ui-actions";
+import { MintThreadPage } from "./mint-thread-page";
 import { IdMap } from "../../../app/reducers";
 import { getPathFromModel } from "../../models/reducers";
 
 import "weightless/progress-bar";
+import { getLatestEventOfType } from "util/event_utils";
+import { getUpdateEvent, getCustomEvent, getTotalConfigs } from "../graphql_adapter";
 
 const MAX_PARAMETER_COMBINATIONS = 100000;
 
 @customElement('mint-parameters')
-export class MintParameters extends connect(store)(MintPathwayPage) {
+export class MintParameters extends connect(store)(MintThreadPage) {
 
     @property({type: Object})
     private _models!: IdMap<Model>;
 
-    @property({type: Array})
-    private _current_ensemble_ids: string[];
-
     @property({type: Boolean})
     private _editMode: Boolean = false;
-
-    @property({type: String})
-    private _progress_item: string;
-    @property({type: Number})
-    private _progress_total : number;
-    @property({type: Number})
-    private _progress_number : number;
-    @property({type: Boolean})
-    private _progress_abort: boolean;
 
     static get styles() {
         return [
@@ -52,12 +42,12 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
     }
 
     protected render() {
-        if(!this.pathway) {
+        if(!this.thread) {
             return html ``;
         }
         
         // If no models selected
-        if(!this.pathway.models || !Object.keys(this.pathway.models).length) {
+        if(!this.thread.models || !Object.keys(this.thread.models).length) {
             return html `
             <p>
                 Please specify the values for the adjustable parameters.
@@ -66,10 +56,12 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
             `
         }
 
-        let done = (getPathwayParametersStatus(this.pathway) == TASK_DONE);
+        let done = (getThreadParametersStatus(this.thread) == TASK_DONE);
         if(!done) {
             this._editMode = true;
         }
+        let latest_update_event = getLatestEventOfType(["CREATE", "UPDATE"], this.thread.events);
+        let latest_parameter_event = getLatestEventOfType(["SELECT_PARAMETERS"], this.thread.events);
         
         // If models have been selected, go over each model
         return html `
@@ -90,11 +82,11 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                 Change Adjustable Parameter Values
             </wl-tooltip>
             <ul>
-            ${(Object.keys(this.pathway.models) || []).map((modelid) => {
-                let model = this.pathway.models![modelid];
+            ${(Object.keys(this.thread.models) || []).map((modelid) => {
+                let model = this.thread.models![modelid];
                 let url = this._regionid + '/models/explore' + getPathFromModel(model) + "/";
                 // Get any existing ensemble selection for the model
-                let ensembles:DataEnsembleMap = this.pathway.model_ensembles![modelid] || {};
+                let ensembles:DataEnsembleMap = this.thread.model_ensembles![modelid] || {};
                 let input_parameters = model.input_parameters
                     .filter((input) => !input.value)
                     .sort((a, b) => {
@@ -221,38 +213,37 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                             <wl-button flat inverted
                                 @click="${() => this._setEditMode(false)}">CANCEL</wl-button>
                             <wl-button type="button" class="submit" 
-                                @click="${() => this._setPathwayParameters()}">Select &amp; Continue</wl-button>                            
+                                @click="${() => this._setThreadParameters()}">Select &amp; Continue</wl-button>                            
                         `
                         : 
                         html`
                             <wl-button type="button" class="submit" 
-                                @click="${() => store.dispatch(selectPathwaySection("runs"))}">Continue</wl-button>                        
+                                @click="${() => store.dispatch(selectThreadSection("runs"))}">Continue</wl-button>                        
                         `
                         }
-                </div>  
+                </div>
                 <fieldset class="notes">
                     <legend>Notes</legend>
-                    <textarea id="notes">${this.pathway.notes ? this.pathway.notes.parameters : ""}</textarea>
+                    <textarea id="notes">${latest_parameter_event?.notes ? latest_parameter_event.notes : ""}</textarea>
                 </fieldset>
                 `: 
                 html`
                 <div class="footer">
-                    <wl-button type="button" class="submit" @click="${() => store.dispatch(selectPathwaySection("runs"))}">Continue</wl-button>
+                    <wl-button type="button" class="submit" @click="${() => store.dispatch(selectThreadSection("runs"))}">Continue</wl-button>
                 </div>
-                                
-                ${this.pathway.last_update && this.pathway.last_update.parameters ? 
+                ${latest_parameter_event?.notes ? 
                     html `
-                    <div class="notepage">${renderLastUpdateText(this.pathway.last_update.parameters)}</div>
+                    <div class="notepage">${renderLastUpdateText(latest_parameter_event)}</div>
                     `: html ``
-                }                
-                ${this.pathway.notes && this.pathway.notes.parameters ? 
+                }
+                ${latest_update_event?.notes ? 
                     html`
                     <fieldset class="notes">
                         <legend>Notes</legend>
-                        <div class="notepage">${this.pathway.notes.parameters}</div>
+                        <div class="notepage">${latest_update_event.notes}</div>
                     </fieldset>
                     `: html``
-                }
+                }             
                 `
             }        
         </div>
@@ -312,60 +303,27 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         return inputField.value.split(/\s*,\s*/);
     }
 
-    _getTotalConfigs(model: Model, bindings: DataEnsembleMap, pathway: Pathway) {
-        let totalconfigs = 1;
-        model.input_files.map((io) => {
-            if(!io.value) {
-                // Expand a dataset to it's constituent resources
-                // FIXME: Create a collection if the model input has dimensionality of 1
-                if(bindings[io.id]) {
-                    let nensemble : any[] = [];
-                    bindings[io.id].map((dsid) => {
-                        let ds = pathway.datasets[dsid];
-                        let selected_resources = ds.resources.filter((res) => res.selected);
-                        // Fix for older saved resources
-                        if(selected_resources.length == 0) 
-                            selected_resources = ds.resources;
-                        nensemble = nensemble.concat(selected_resources);
-                    });
-                    totalconfigs *= nensemble.length;
-                }
-            }
-            else {
-                totalconfigs *= (io.value.resources as any[]).length;
-            }
-        })
-        
-        // Add adjustable parameters to the input ids
-        model.input_parameters.map((io) => {
-            if(!io.value)
-                totalconfigs *= bindings[io.id].length;
-        });
-
-        return totalconfigs;
-    }
-
-    _setPathwayParameters() {
+    _setThreadParameters() {
         ReactGA.event({
-          category: 'Pathway',
+          category: 'Thread',
           action: 'Parameters continue',
         });
         let model_ensembles: ModelEnsembleMap = {
-            ... (this.pathway.model_ensembles || {})
+            ... (this.thread.model_ensembles || {})
         };
-        let executable_ensemble_summary : IdMap<ExecutableEnsembleSummary> = {};
+        let execution_summary : IdMap<ExecutionSummary> = {};
 
         let allok = true;
 
-        Object.keys(this.pathway.models!).map((modelid) => {
-            let model = this.pathway.models![modelid];
+        Object.keys(this.thread.models!).map((modelid) => {
+            let model = this.thread.models![modelid];
             let input_parameters = model.input_parameters
                     .filter((input) => !input.value);
             input_parameters.filter((input) => !input.value).map((input) => {
                 let inputid = input.id!;
                 // If not in edit mode, then check if we already have bindings for this
                 // -If so, return
-                let current_parameter_ensemble: string[] = (this.pathway.model_ensembles![modelid] || {})[inputid];
+                let current_parameter_ensemble: string[] = (this.thread.model_ensembles![modelid] || {})[inputid];
                 if(!this._editMode && current_parameter_ensemble && current_parameter_ensemble.length > 0) {
                     return;
                 }
@@ -380,18 +338,18 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
                 model_ensembles[modelid][inputid] = new_parameters;
             })
 
-            let totalconfigs = this._getTotalConfigs(model, model_ensembles[modelid], this.pathway);
+            let totalconfigs = getTotalConfigs(model, model_ensembles[modelid], this.thread);
             if(totalconfigs > MAX_PARAMETER_COMBINATIONS) {
                 alert("Too many parameter combinations (" + totalconfigs + ") for the model '" + model.name + "'");
                 allok = false;
                 return;
             }
-            executable_ensemble_summary[modelid] = {
+            execution_summary[modelid] = {
                 total_runs: totalconfigs,
                 submitted_runs: 0,
                 failed_runs: 0,
                 successful_runs: 0
-            } as ExecutableEnsembleSummary;
+            } as ExecutionSummary;
         });
 
         if(!allok) {
@@ -399,35 +357,24 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         }
 
         // Update notes
-        let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        
-        let newpathway = {
-            ...this.pathway
+        let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;    
+        let newthread = {
+            ...this.thread
         };
-        newpathway.notes = {
-            ...newpathway.notes!,
-            parameters: notes
-        };
-        newpathway.last_update = {
-            ...newpathway.last_update!,
-            parameters: {
-                time: Date.now(),
-                user: this.user!.email
-            } as StepUpdateInformation
-        };
+        newthread.events.push(getCustomEvent("SELECT_PARAMETERS", notes) as ThreadEvent);
 
         this._editMode = false;
 
-        // Update pathway
-        newpathway = {
-            ...newpathway,
+        // Update thread
+        newthread = {
+            ...newthread,
             model_ensembles: model_ensembles,
-            executable_ensemble_summary: executable_ensemble_summary
+            execution_summary: execution_summary
         }
 
-        // Delete existing pathway ensemble ids
-        deleteAllPathwayEnsembleIds(this.scenario.id, newpathway.id, null).then(() => {
-            updatePathway(this.scenario, newpathway);
+        // Delete existing thread ensemble ids
+        deleteAllThreadExecutionIds(newthread.id, null).then(() => {
+            updateThread(newthread);
         });
 
         showNotification("saveNotification", this.shadowRoot!);
@@ -437,13 +384,12 @@ export class MintParameters extends connect(store)(MintPathwayPage) {
         super.setUser(state);
         super.setRegion(state);
         
-        let pathwayid = this.pathway ? this.pathway.id : null;
-        super.setPathway(state);
-        if(this.pathway && this.pathway.models != this._models) {
-            this._models = this.pathway.models!;
-            if(this.pathway.id != pathwayid)  {
+        let thread_id = this.thread ? this.thread.id : null;
+        super.setThread(state);
+        if(this.thread && this.thread.models != this._models) {
+            this._models = this.thread.models!;
+            if(this.thread.id != thread_id)  {
                 this._resetEditMode();
-                this._current_ensemble_ids = [];
             }
         }
     }    

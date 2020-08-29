@@ -1,0 +1,10 @@
+#import "../fragments/problem-statement-events.graphql"
+
+fragment problem_statement_info on problem_statement {
+    id
+    name
+    start_date
+    end_date
+    region_id
+    ...problem_statement_events
+}

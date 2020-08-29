@@ -1,0 +1,8 @@
+mutation update_task($id:uuid!, $object:task_set_input!) {
+  update_task_by_pk (
+    pk_columns: {id: $id}
+    _set: $object
+  ) {
+    id
+  }
+}

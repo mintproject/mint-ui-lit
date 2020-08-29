@@ -1,0 +1,30 @@
+fragment execution_info on execution {
+    id
+    start_time
+    end_time
+    status
+    run_progress
+    run_id
+    execution_engine
+    model_id
+    parameter_bindings {
+        model_parameter_id
+        parameter_value
+    }
+    data_bindings {
+        model_io_id
+        resource {
+            id
+            name
+            url
+        }
+    }
+    results {
+        model_output_id
+        resource {
+            id
+            name
+            url
+        }
+    }
+}

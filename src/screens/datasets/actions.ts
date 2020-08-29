@@ -353,8 +353,8 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
         let dsQueryData = {
             standard_variable_names__in: driving_variables,
             spatial_coverage__intersects: geojson.geometry,
-            end_time__gte: fromTimeStampToString(dates.start_date).replace(/\.\d{3}Z$/,''),
-            start_time__lte: fromTimeStampToString(dates.end_date).replace(/\.\d{3}Z$/,''),
+            end_time__gte: dates.start_date+"T00:00:00",
+            start_time__lte: dates.end_date+"T00:00:00",
             limit: 100
         }
 

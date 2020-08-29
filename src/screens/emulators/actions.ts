@@ -5,9 +5,9 @@ import { ThunkAction } from "redux-thunk";
 import { RootState } from "app/store";
 import { Emulator } from "@mintproject/modelcatalog_client";
 
-import modelTypesQuery from "../../queries/model-types.graphql";
-import modelExecutionsQuery from "../../queries/model-executions.graphql";
-import threadExecutionsQuery from "../../queries/thread-executions.graphql";
+import modelTypesQuery from "../../queries/emulator/model-types.graphql";
+import modelExecutionsQuery from "../../queries/emulator/model-executions.graphql";
+import threadExecutionsQuery from "../../queries/emulator/thread-executions.graphql";
 
 export const EMULATORS_LIST = 'EMULATORS_LIST_MODELS';
 export const EMULATORS_SELECT_MODEL = 'EMULATORS_SELECT_MODEL';
@@ -37,9 +37,12 @@ export type EmulatorsAction = EmulatorsActionListModels | EmulatorsActionListEmu
 const MODEL_PREFIX = "https://w3id.org/okn/i/mint/";
 
 type ListModelsThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListModels>;
-export const listModels: ActionCreator<ListModelsThunkAction> = () => (dispatch) => {
+export const listEmulatorModelTypes: ActionCreator<ListModelsThunkAction> = (regionid) => (dispatch) => {
     APOLLO_CLIENT.query({
         query: modelTypesQuery,
+        variables: {
+            regionId: regionid
+        }
     }).then((result) => {
         if(result.error) {
             dispatch({
@@ -48,8 +51,8 @@ export const listModels: ActionCreator<ListModelsThunkAction> = () => (dispatch)
                 loading: false
             });
         }
-        let types = result.data.model.map((m:any) => 
-            m.original_model.replace(MODEL_PREFIX, ""));
+        let types = result.data.execution.map((m:any) => 
+            m.model.original_model.replace(MODEL_PREFIX, ""));
         types = types.filter((item: string, pos: number) => 
             item && (types.indexOf(item) == pos));
         types.sort();
