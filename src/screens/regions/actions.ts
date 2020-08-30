@@ -166,6 +166,7 @@ export const listSubRegions: ActionCreator<SubRegionsThunkResult> = (regionid: s
             let regions = {} as RegionMap;
             result.data.region.forEach((regionobj) => {
                 let region = regionFromGQL(regionobj);
+                region.bounding_box = _calculateBoundingBox(region.geojson_blob)
                 regions[region.id] = region;
             })
             dispatch({

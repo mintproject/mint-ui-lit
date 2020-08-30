@@ -196,8 +196,9 @@ export class MintThread extends connect(store)(MintThreadPage) {
     }
 
     private _getModeURL(mode: string) {
-        return this._regionid + "/modeling/problem_statement/" + 
-                this.problem_statement.id + "/" + this.task!.id + "/" + this.thread.id + "/" + mode;
+        if(this.problem_statement && this._regionid && this.task && this.thread)
+            return this._regionid + "/modeling/problem_statement/" + 
+                    this.problem_statement.id + "/" + this.task!.id + "/" + this.thread.id + "/" + mode;
     }    
 
     protected render() {
