@@ -308,8 +308,8 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                                         <td>${(dataset.categories || []).join(", ")}</td>
                                                         <td>${dataset.region}</td>
                                                         <td>
-                                                            ${fromTimeStampToDateString(dataset.time_period.start_date)} to 
-                                                            ${fromTimeStampToDateString(dataset.time_period.end_date)}
+                                                            ${dataset.time_period.start_date?.toDateString()} to 
+                                                            ${dataset.time_period.end_date?.toDateString()}
                                                         </td>
                                                         <td><a href="${dataset.source.url}">${dataset.source.name}</a></td>
                                                     </tr>
@@ -453,8 +453,8 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                     </td>
                                     <td><a target="_blank" href="${resource.url}">${resource.name}</a></td> 
                                     <td>
-                                        ${fromTimeStampToDateString(resource.time_period.start_date)} to 
-                                        ${fromTimeStampToDateString(resource.time_period.end_date)}
+                                        ${resource.time_period.start_date?.toDateString()} to 
+                                        ${resource.time_period.end_date?.toDateString()}
                                     </td>
                                 </tr>
                             `;

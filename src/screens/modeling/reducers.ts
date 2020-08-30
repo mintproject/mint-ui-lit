@@ -51,8 +51,8 @@ export interface ProblemStatement extends IdNameObject {
 }
 
 export interface DateRange {
-    start_date: firebase.firestore.Timestamp
-    end_date: firebase.firestore.Timestamp
+    start_date: Date
+    end_date: Date
 }
 
 export interface ProblemStatementDetails extends ProblemStatement {
@@ -63,7 +63,10 @@ export interface ProblemStatementDetails extends ProblemStatement {
 
 export interface ThreadInfo extends IdNameObject {
     dates?: DateRange
-    events?: MintEvent[]
+    task_id: string,
+    driving_variables: string[]
+    response_variables: string[]
+    events?: ThreadEvent[]
 }
 
 export interface ThreadList {
@@ -73,8 +76,6 @@ export interface ThreadList {
 }
 
 export interface Thread extends ThreadInfo {
-    driving_variables: string[]
-    response_variables: string[]
     models?: ModelMap
     datasets?: DatasetMap
     model_ensembles?: ModelEnsembleMap
@@ -105,6 +106,7 @@ export interface TaskList {
 }
 
 export interface Task extends IdNameObject {
+    problem_statement_id: string,
     dates?: DateRange,
     response_variables: string[],
     driving_variables: string[],

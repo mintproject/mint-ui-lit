@@ -2,9 +2,9 @@ import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../app/store";
 import { PageViewElement } from "../../components/page-view-element";
-import { ProblemStatementDetails, Task, Thread, ProblemStatement, ThreadInfo, TaskList, ThreadList, TaskEvent, ThreadEvent } from "./reducers";
+import { ProblemStatementDetails, Task, ProblemStatement, ThreadInfo } from "./reducers";
 import { SharedStyles } from "../../styles/shared-styles";
-import { addThread, deleteThread, deleteTask, subscribeProblemStatement, updateTask, updateThreadVariables, addTaskWithThread } from "./actions";
+import { deleteThread, deleteTask, subscribeProblemStatement } from "./actions";
 
 import "weightless/icon";
 import "weightless/tooltip";
@@ -12,19 +12,19 @@ import "weightless/popover-card";
 import "weightless/snackbar";
 
 import './thread/mint-thread';
+import '../../components/task-editor';
+import '../../components/thread-editor';
 
 //mport { selectTask, selectThread } from "../actions/ui";
-import { getUISelectedTask, getUISelectedThread, getCategorizedRegions } from "../../util/state_functions";
+import { getUISelectedTask} from "../../util/state_functions";
 import { goToPage } from "../../app/actions";
-import { renderVariables, renderNotifications } from "../../util/ui_renders";
-import { resetForm, showDialog, formElementsComplete, showNotification, hideDialog, hideNotification } from "../../util/ui_functions";
-import { firestore } from "firebase";
-import { toTimeStamp, fromTimeStampToDateString } from "util/date-utils";
-import { RegionMap, Region, RegionCategory } from "screens/regions/reducers";
-import { getVariableLongName, getVariableIntervention } from "offline_data/variable_list";
-import { getCreateEvent, getUpdateEvent } from "../../util/graphql_adapter";
-import { getLatestEventOfType, getLatestEvent } from "util/event_utils";
-import { IdMap } from "app/reducers";
+import { renderNotifications } from "../../util/ui_renders";
+import { showDialog, showNotification, hideDialog } from "../../util/ui_functions";
+import { toDateString } from "util/date-utils";
+import { RegionMap } from "screens/regions/reducers";
+import { getVariableLongName } from "offline_data/variable_list";
+import { TaskEditor } from "components/task-editor";
+import { ThreadEditor } from "components/thread-editor";
 
 
 @customElement('mint-problem-statement')
@@ -32,18 +32,6 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _regions: RegionMap;
-
-    @property({type: Object})
-    private _regionCategories: IdMap<RegionCategory>;
-
-    @property({type: Array})
-    private _subRegionIds: string[];
-
-    @property({type: Object})
-    private _categorizedRegions: any; 
-
-    @property({type: String})
-    private _selectedCategory: string = '';
 
     @property({type: Object})
     private _problem_statement_details!: ProblemStatementDetails | null;
@@ -62,12 +50,6 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
     
     @property({type: Boolean})
     private _threadListExpanded: boolean = false;
-    
-    @property({type: Boolean})
-    private _taskEditMode: boolean = false;
-
-    @property({type: Object})
-    private _selectedIntervention!: any;
 
     private _dispatched: boolean = false;
 
@@ -328,9 +310,11 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         <!-- Notifications -->
         ${renderNotifications()}
 
-        <!-- Dialogs -->
-        ${this._renderTaskDialog()}
-        ${this._renderThreadDialog()}
+        <!-- Editors -->
+        <task-editor .problem_statement="${this._problem_statement}" id="taskEditor"></task-editor>
+        <thread-editor .task="${this._selectedTask}" id="threadEditor"></thread-editor>
+
+        <!-- Help Dialogs -->
         ${this._renderHelpDialogs()}
         `;
     }
@@ -360,6 +344,23 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
             `
         })}        
         `        
+    }
+
+    _getTaskVariablesText(task) {
+        let response = task.response_variables ? getVariableLongName(task.response_variables[0]) : "";
+        let driving = (task.driving_variables && task.driving_variables.length > 0) ? 
+            getVariableLongName(task.driving_variables[0]) : "";
+        return (driving ? driving + " -> " : "") + response;
+    }
+
+    _getTaskRegionTimeText(task: Task) {
+        let regionid = task.regionid;
+        let regionname = (regionid && this._regions && this._regions[regionid]) ? 
+                this._regions[regionid].name : this._region.name;
+        let dates = task.dates ? task.dates : this._problem_statement.dates;
+        let startdate = toDateString(dates!.start_date);
+        let enddate = toDateString(dates!.end_date);
+        return regionname + " : " + startdate + " to " + enddate;
     }
 
     _renderHelpDialogs() {
@@ -406,437 +407,65 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         </wl-dialog>        
         `;
     }
-
-    _renderTaskDialog() {
-        return html`
-        <wl-dialog id="subObjectiveDialog" fixed backdrop blockscrolling>
-            <h3 slot="header">Task</h3>
-            <div slot="content">
-                <form id="subObjectiveForm">
-                   ${this._renderSubObjectiveForm()}
-                </form>
-            </div>
-            <div slot="footer">
-                <wl-button @click="${this._onEditTaskCancel}" inverted flat>Cancel</wl-button>
-                <wl-button @click="${this._onEditTaskSubmit}" class="submit" id="dialog-submit-button">Submit</wl-button>
-            </div>
-        </wl-dialog>
-        `;
-    }
-
-    _onRegionCategoryChange () {
-        let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#subObjectiveForm")!;
-        let category = (form.elements["task_subregion_category"] as HTMLSelectElement).value;
-        let selector = form.elements["task_subregion"] as HTMLSelectElement
-        if (category != this._selectedCategory && selector) {
-            this._selectedCategory = category;
-            while (selector.options.length > 0) {
-                selector.remove(selector.options.length - 1);
-            }
-            let defOption = document.createElement('option');
-            defOption.text = 'None';
-            defOption.value = '';
-            selector.options.add(defOption);
-
-            (this._categorizedRegions[category]||[]).forEach((region:Region) => {
-                let newOption = document.createElement('option');
-                newOption.text = region.name;
-                newOption.value = region.id;
-                selector.options.add(newOption);
-            });
-        }
-    }
-
-    _renderSubObjectiveForm() {
-        return html`
-            <p>
-            Specify the region, time period, and variables of interest.
-            </p>
-            <input type="hidden" name="goalid"></input>
-            <input type="hidden" name="taskid"></input>
-
-            <!-- Variables --> 
-            ${renderVariables(this._taskEditMode, this._handleResponseVariableChange, this._handleDrivingVariableChange)}
-            <br />
-
-            <!-- Intervention Details (if any) -->
-            ${this._selectedIntervention ? 
-                html`
-                    <b>Intervention: ${this._selectedIntervention.name}</b>
-                    <div style="font-size:12px;color:#999">
-                    ${this._selectedIntervention.description}
-                    </div>
-                    <div style="height:10px;">&nbsp;</div>
-                `
-                : ""
-            }
-
-            <!-- Sub Region -->
-            <div class="formRow">
-                <div class="input_half">
-                    <label>Region category</label>
-                    <select name="task_subregion_category" value="${this._selectedCategory}" @change="${this._onRegionCategoryChange}">
-                        <option value="">None</option>
-                        ${Object.values(this._regionCategories).map((cat: RegionCategory) => {
-                            let subCategories = cat.subcategories || [];
-                            return html`
-                            <option value="${cat.id}">${cat.name}</option>
-                            ${subCategories.length > 0 ? subCategories.map((subcat: RegionCategory) => {
-                                if(this._categorizedRegions[subcat.id])
-                                    return html`<option value="${subcat.id}">&nbsp;&nbsp;&nbsp;&nbsp;${subcat.name}</option>`;
-                            }) : html`
-                                <option disabled>&nbsp;&nbsp;&nbsp;&nbsp;No subcategories</option>
-                            `}`
-                        })}
-                    </select>
-                </div>            
-
-                <div class="input_half">
-                    <label>Region</label>
-                    <select name="task_subregion">
-                        <option value="">None</option>
-                    </select>
-                </div>            
-            </div>
-
-            <div style="height:10px;">&nbsp;</div>
-
-            <!-- Time Period -->
-            <div class="input_full">
-                <label>Time Period</label>
-            </div>
-            <div class="formRow">
-                <div class="input_half">
-                    <input name="task_from" type="date" value="${this._problem_statement!.dates?.start_date}">
-                </div>
-                to
-                <div class="input_half">
-                    <input name="task_to" type="date" value="${this._problem_statement!.dates?.end_date}">
-                </div>
-            </div>
-            <br />
-
-            <br />
-            <!-- Sub-Objective name -->
-            <div class="input_full">
-                <label>Description</label>
-                <input name="task_name"></input>
-            </div>
-            <br />
-        `;        
-    }
-
-    _handleResponseVariableChange() {}
     
-    _handleDrivingVariableChange(e: any) {
-        let varid = e.target.value;
-        this._selectedIntervention = getVariableIntervention(varid);
-    }
-    
-    _renderThreadDialog() {
-        return html`
-        <wl-dialog id="threadDialog" fixed backdrop blockscrolling>
-            <h3 slot="header">Modeling thread</h3>
-            <div slot="content">
-                <form id="threadForm">
-                <p>
-                    Specify modeling thread details.
-                    A Thread constitutes analysis of a sub-objective using a single model. A sub-objective may have multiple modeling threads.
-                </p>
-                <input type="hidden" name="threadid"></input>
-                
-                <!-- Sub-Objective name -->
-                <div class="input_full">
-                    <label>Modeling thread name*</label>
-                    <input name="thread_name"></input>
-                </div>
-                <br />
-
-              <div class="input_full">
-                <label>Notes</label>
-                <textarea style="color:unset; font: unset;" name="thread_notes" rows="4"></textarea>
-              </div>
-              <br/>
-
-                <!-- Time Period -->
-                <div class="input_full">
-                    <label>Time Period</label>
-                </div>
-                <div class="formRow">
-                    <div class="input_half">
-                        <input name="thread_from" type="date">
-                    </div>
-                    to
-                    <div class="input_half">
-                        <input name="thread_to" type="date">
-                    </div>
-                </div>
-                <br />
-                </form>
-            </div>
-            <div slot="footer">
-                <wl-button @click="${this._onEditThreadCancel}" inverted flat>Cancel</wl-button>
-                <wl-button @click="${this._onEditThreadSubmit}" class="submit" id="dialog-submit-button">Submit</wl-button>
-            </div>
-        </wl-dialog>
-        `;
-    }
-
-    _getTaskVariablesText(task) {
-        let response = task.response_variables ? getVariableLongName(task.response_variables[0]) : "";
-        let driving = (task.driving_variables && task.driving_variables.length > 0) ? 
-            getVariableLongName(task.driving_variables[0]) : "";
-        return (driving ? driving + " -> " : "") + response;
-    }
-
-    _getTaskRegionTimeText(task) {
-        let regionid = (task.regionid && task.regionid != "Select") ? task.regionid : null;
-        let regionname = (regionid && this._regions && this._regions[regionid]) ? 
-                this._regions[regionid].name : this._region.name;
-        let dates = task.dates ? task.dates : this._problem_statement.dates;
-        let startdate = dates!.start_date;
-        let enddate = dates!.end_date;
-        return regionname + " : " + startdate + " to " + enddate;
-    }
 
     _addTaskDialog(e: Event) {
-        let goalid = null; //(e.currentTarget as HTMLButtonElement).dataset['goalid']; 
-        let form = this.shadowRoot!.querySelector<HTMLFormElement>("#subObjectiveForm")!;
-        resetForm(form, null);
-
-        this._taskEditMode = false;
-        let dates = this._problem_statement.dates;
-        (form.elements["goalid"] as HTMLInputElement).value = goalid!;
-        (form.elements["task_subregion"] as HTMLSelectElement).value = this._problem_statement.regionid!;
-        (form.elements["task_from"] as HTMLInputElement).value = "" + dates?.start_date;
-        (form.elements["task_to"] as HTMLInputElement).value = "" + dates?.end_date;
-
-        this._selectedIntervention = null;
-
-        showDialog("subObjectiveDialog", this.shadowRoot!);
+        let taskEditor = this.shadowRoot.querySelector<TaskEditor>("#taskEditor")!;
+        taskEditor.addTaskDialog();
     }
 
-    _editThreadDialog(e: Event) {
-        let form = this.shadowRoot!.querySelector<HTMLFormElement>("#threadForm")!;
-        resetForm(form, null);
-
-        let threadid = (e.currentTarget as HTMLButtonElement).dataset['threadid'];
-        let dates = this._selectedTask.dates || this._problem_statement.dates;
-        let notes = "";
-        if(threadid) {
-            let thread = this._selectedTask.threads[threadid];
-            if(thread) {
-                if(thread.dates)
-                    dates = thread.dates;
-                (form.elements["threadid"] as HTMLInputElement).value = thread.id;
-                (form.elements["thread_name"] as HTMLInputElement).value = thread.name || this._selectedTask.name;
-                
-                let threadEvent = getLatestEventOfType(["CREATE", "UPDATE"], thread.events);
-                notes = threadEvent.notes;
-            }
-        }
-        (form.elements["thread_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
-        (form.elements["thread_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
-        (form.elements["thread_notes"] as HTMLInputElement).value = notes;
-
-        showDialog("threadDialog", this.shadowRoot!);
-        e.stopPropagation();
-        e.preventDefault();
-        return false;
-    }
-
-    _onEditThreadSubmit() {
-        let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#threadForm")!;
-        if(formElementsComplete(form, ["thread_name"])) {
-            let threadid = (form.elements["threadid"] as HTMLInputElement).value;
-            let taskid = this._selectedTask.id;
-            let thread_name = (form.elements["thread_name"] as HTMLInputElement).value;
-            let thread_from = (form.elements["thread_from"] as HTMLInputElement).value;
-            let thread_to = (form.elements["thread_to"] as HTMLInputElement).value;
-            let thread_notes = (form.elements["thread_notes"] as HTMLInputElement).value;
-
-            // If no taskid, but goalid is there, then this is a new task
-            let thread : ThreadInfo = null;
-            if (threadid) {
-                // Edit Thread Info (Summary)
-                thread = this._selectedTask!.threads[threadid];
-                thread.name = thread_name;
-                thread.dates = {
-                    start_date: firestore.Timestamp.fromDate(new Date(thread_from)),
-                    end_date: firestore.Timestamp.fromDate(new Date(thread_to))
-                };
-                //updateThreadInfo(thread);
-            }
-            else {
-                // Add Thread
-                let thread = {
-                    name: thread_name,
-                    dates: {
-                        start_date: toTimeStamp(thread_from),
-                        end_date: toTimeStamp(thread_to)
-                    },
-                    driving_variables: this._selectedTask.driving_variables,
-                    response_variables: this._selectedTask.response_variables,
-                    models: {},
-                    datasets: {},
-                    model_ensembles: {},
-                    execution_summary: {},
-                    events: [getCreateEvent(thread_notes)]
-                } as Thread;
-
-                addThread(this._selectedTask, thread);
-            }
-
-            showNotification("saveNotification", this.shadowRoot!);
-            hideDialog("threadDialog", this.shadowRoot!);
-        }
-        else {
-            showNotification("formValuesIncompleteNotification", this.shadowRoot!);
-        }
-    }
-
-    _onEditThreadCancel() {
-        hideDialog("threadDialog", this.shadowRoot!);
-    }
-    
     _editTaskDialog(e: Event) {
         let taskid = (e.currentTarget as HTMLButtonElement).dataset['taskid'];
         if(taskid) {
             let task = this._problem_statement_details!.tasks[taskid];
+            let taskEditor = this.shadowRoot.querySelector<TaskEditor>("#taskEditor")!;
             if(task) {
-                let form = this.shadowRoot!.querySelector<HTMLFormElement>("#subObjectiveForm")!;
-                resetForm(form, null);
-                
-                this._taskEditMode = false; // FIXME: This should be true
-                let dates = task.dates ? task.dates : this._problem_statement.dates;
-                let response_variable = (task.response_variables && task.response_variables.length > 0) ? 
-                    task.response_variables[0] : "";
-                let driving_variable = (task.driving_variables && task.driving_variables.length > 0) ? 
-                    task.driving_variables[0] : "";
-
-                (form.elements["taskid"] as HTMLInputElement).value = task.id;
-                (form.elements["task_name"] as HTMLInputElement).value = task.name;
-                (form.elements["task_subregion"] as HTMLInputElement).value = task.regionid;
-                (form.elements["task_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
-                (form.elements["task_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
-                (form.elements["response_variable"] as HTMLInputElement).value = response_variable;
-                (form.elements["driving_variable"] as HTMLInputElement).value = driving_variable;
-
-                this._selectedIntervention = getVariableIntervention(driving_variable);
-
-                showDialog("subObjectiveDialog", this.shadowRoot!);
+                taskEditor.editTaskDialog(task);
             }
         }
         e.stopPropagation();
         e.preventDefault();
         return false;
-    }
-
-    _onEditTaskSubmit() {
-        let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#subObjectiveForm")!;
-        if(formElementsComplete(form, ["response_variable", "task_from", "task_to"])) {
-            let goalid = (form.elements["goalid"] as HTMLInputElement).value;
-            let taskid = (form.elements["taskid"] as HTMLInputElement).value;
-            let task_subregion = (form.elements["task_subregion"] as HTMLInputElement).value;
-            let task_name = (form.elements["task_name"] as HTMLInputElement).value;
-            let task_from = (form.elements["task_from"] as HTMLInputElement).value;
-            let task_to = (form.elements["task_to"] as HTMLInputElement).value;
-
-            // If no taskid then this is a new task
-            let task : Task = null;
-            if(taskid) {
-                // Edit Task 
-                task = this._problem_statement_details!.tasks[taskid];
-                task.name = task_name;
-                task.regionid = task_subregion;
-                task.dates = {
-                    start_date: firestore.Timestamp.fromDate(new Date(task_from)),
-                    end_date: firestore.Timestamp.fromDate(new Date(task_to))
-                };
-
-                // Temporary addition FIXME:
-                let response_variable = (form.elements["response_variable"] as HTMLInputElement).value;
-                let driving_variable = (form.elements["driving_variable"] as HTMLInputElement).value || "";
-                task.driving_variables = driving_variable ? [driving_variable] : [],
-                task.response_variables = response_variable ? [response_variable] : [],
-                task.events.push(getUpdateEvent(task_name) as TaskEvent);
-                // End of Temporary Addition
-
-                updateTask(task);
-                Object.values(task.threads!).map((thread: ThreadInfo) => {
-                    updateThreadVariables(this._problem_statement!.id, thread.id, 
-                        task.driving_variables, task.response_variables);
-                })
-            }
-            else {
-                // Add Task
-                let response_variable = (form.elements["response_variable"] as HTMLInputElement).value;
-                let driving_variable = (form.elements["driving_variable"] as HTMLInputElement).value || "";
-                task = {
-                    name: task_name,
-                    regionid: task_subregion,
-                    driving_variables: driving_variable ? [driving_variable] : [],
-                    response_variables: response_variable ? [response_variable] : [],
-                    dates: {
-                        start_date: toTimeStamp(task_from),
-                        end_date: toTimeStamp(task_to)
-                    },
-                    threads: {},
-                    events: [getCreateEvent(task_name) as TaskEvent]
-                } as Task;
-
-                let thread = {
-                    driving_variables: driving_variable ? [driving_variable] : [],
-                    response_variables: response_variable ? [response_variable] : [],
-                    dates: {
-                        start_date: toTimeStamp(task_from),
-                        end_date: toTimeStamp(task_to)
-                    },
-                    models: {},
-                    datasets: {},
-                    model_ensembles: {},
-                    execution_summary: {},
-                    events: [getCreateEvent("Default Thread Created") as ThreadEvent]
-                } as Thread
-
-                addTaskWithThread(this._problem_statement!, task, thread);
-            }
-
-            showNotification("saveNotification", this.shadowRoot!);
-            hideDialog("subObjectiveDialog", this.shadowRoot!);
-        }
-        else {
-            showNotification("formValuesIncompleteNotification", this.shadowRoot!);
-        }
-    }
-
-    _onEditTaskCancel() {
-        hideDialog("subObjectiveDialog", this.shadowRoot!);
     }
 
     _onDeleteTask(e: Event) {
         e.preventDefault();
         e.stopPropagation();        
 
-        //let goalid = (e.currentTarget as HTMLButtonElement).dataset['goalid'];
         let taskid = (e.currentTarget as HTMLButtonElement).dataset['taskid'];
         if(taskid) {
             let task = this._problem_statement_details!.tasks[taskid];
             if(task) {
                 if(!confirm("Do you want to delete the task '" + task.name + "' ?"))
                     return false;
-                this._deleteTask(null, taskid);
+                deleteTask(taskid);
+                showNotification("deleteNotification", this.shadowRoot!);
+                goToPage("modeling/problem_statement/" + this._problem_statement!.id);
             }
         }
         return false;
     }
+    
+    _addThreadDialog(e: Event) {
+        let threadEditor = this.shadowRoot.querySelector<ThreadEditor>("#threadEditor")!;
+        threadEditor.addThreadDialog();
+    }
 
-    _deleteTask(goalid: string, taskid: string) {
-        if(taskid) {
-            deleteTask(taskid);
-            showNotification("deleteNotification", this.shadowRoot!);
-            goToPage("modeling/problem_statement/" + this._problem_statement!.id);
+    _editThreadDialog(e: Event) {
+        let threadEditor = this.shadowRoot.querySelector<ThreadEditor>("#threadEditor")!;
+        let threadid = (e.currentTarget as HTMLButtonElement).dataset['threadid'];
+        if(threadid) {
+            let thread = this._selectedTask!.threads[threadid];
+            if(thread) {
+                threadEditor.editThreadDialog(thread);
+            }
         }
+        else {
+            threadEditor.addThreadDialog();
+        }
+        e.stopPropagation();
+        e.preventDefault();
+        return false;
     }
 
     _onDeleteThread(e: Event) {
@@ -904,22 +533,13 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
 
     stateChanged(state: RootState) {
         super.setRegionId(state);
-        super.setRegionId(state);
         if(state.ui && state.ui.selected_thread_id) 
             this._selectedThreadId = state.ui.selected_thread_id;
 
-        if(state.regions.categories && !this._regionCategories) {
-            this._regionCategories = state.regions.categories;
-        }
         if(state.regions.sub_region_ids && this._regionid && state.regions.sub_region_ids[this._regionid]) {
-            let all_regionids = state.regions.sub_region_ids[this._regionid];
             this._regions = state.regions.regions;
-            if(all_regionids != this._subRegionIds) {
-                this._subRegionIds = all_regionids;
-                this._categorizedRegions = getCategorizedRegions(state);
-            }
         }
-
+        
         // If a problem_statement has been selected, fetch problem_statement details
         let problem_statement_id = state.ui!.selected_problem_statement_id;
         let user = state.app.user;

@@ -25,7 +25,7 @@ import { PageViewElement } from '../../components/page-view-element';
 import { renderNotifications } from '../../util/ui_renders';
 import { formElementsComplete, showDialog, hideDialog, showNotification, resetForm, hideNotification } from '../../util/ui_functions';
 import { Region, RegionMap } from '../regions/reducers';
-import { toTimeStamp, fromTimeStampToDateString, fromTimestampIntegerToString, fromTimestampIntegerToReadableString } from 'util/date-utils';
+import { toTimeStamp, fromTimeStampToDateString, fromTimestampIntegerToString, fromTimestampIntegerToReadableString, toDateString } from 'util/date-utils';
 import { getLatestEventOfType, getLatestEvent } from 'util/event_utils';
 import { getCreateEvent, getUpdateEvent } from '../../util/graphql_adapter';
 
@@ -92,7 +92,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
               <div slot="after" style="display:flex">
                 <div>
                   ${last_event?.userid}<br/>
-                  ${last_event?.timestamp}
+                  ${last_event?.timestamp.toDateString()}
                 </div>
                 <div style="height: 24px; padding-left: 10px; display:flex">
                   <wl-icon @click="${this._editProblemStatementDialog}" data-problem_statement_id="${problem_statement.id}"
@@ -104,8 +104,8 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
               <wl-title level="4" style="margin: 0">${problem_statement.name}</wl-title>
               ${last_event?.notes ? html`<div class="small-notes"><b>Notes:</b> ${last_event.notes}</div>` : ''}
               <div>
-                Time Period: ${fromTimeStampToDateString(problem_statement.dates.start_date)} to 
-                ${fromTimeStampToDateString(problem_statement.dates.end_date)}
+                Time Period: ${toDateString(problem_statement.dates.start_date)} to 
+                ${toDateString(problem_statement.dates.end_date)}
               </div>
           </wl-list-item>
           `
@@ -200,7 +200,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
     showDialog("problem_statementDialog", this.shadowRoot!);
   }
 
-  _onAddEditProblemStatementSubmit() {
+  async _onAddEditProblemStatementSubmit() {
     let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#problem_statementForm")!;
     if(formElementsComplete(form, ["problem_statement_name", "problem_statement_region", "problem_statement_from", "problem_statement_to"])) {
         let problem_statement_id = (form.elements["problem_statement_id"] as HTMLInputElement).value;
@@ -216,8 +216,8 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
           regionid: problem_statement_region,
           subregionid: problem_statement_subregion,
           dates: {
-            start_date: toTimeStamp(problem_statement_from),
-            end_date: toTimeStamp(problem_statement_to)
+            start_date: new Date(problem_statement_from),
+            end_date: new Date(problem_statement_to)
           },
           notes: problem_statement_notes,
           events: []
@@ -225,10 +225,10 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
         if(problem_statement_id) {
           problem_statement.id = problem_statement_id;
           problem_statement.events = [getUpdateEvent(problem_statement_notes) as ProblemStatementEvent];
-          updateProblemStatement(problem_statement);
+          await updateProblemStatement(problem_statement);
         }
         else {
-          addProblemStatement(problem_statement);
+          await addProblemStatement(problem_statement);
           problem_statement.events.push(getCreateEvent(problem_statement_notes) as ProblemStatementEvent);
         }
 
@@ -259,8 +259,8 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
             (form.elements["problem_statement_id"] as HTMLInputElement).value = problem_statement.id;
             (form.elements["problem_statement_name"] as HTMLInputElement).value = problem_statement.name;
             (form.elements["problem_statement_region"] as HTMLInputElement).value = problem_statement.regionid;
-            (form.elements["problem_statement_from"] as HTMLInputElement).value = fromTimeStampToDateString(dates.start_date);
-            (form.elements["problem_statement_to"] as HTMLInputElement).value = fromTimeStampToDateString(dates.end_date);
+            (form.elements["problem_statement_from"] as HTMLInputElement).value = toDateString(dates.start_date);
+            (form.elements["problem_statement_to"] as HTMLInputElement).value = toDateString(dates.end_date);
             (form.elements["problem_statement_notes"] as HTMLInputElement).value = last_event.notes? last_event.notes : "";
             showDialog("problem_statementDialog", this.shadowRoot!);
         }

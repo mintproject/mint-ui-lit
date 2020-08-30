@@ -50,3 +50,9 @@ export const fromTimeStampToDateString = (timestamp: firebase.firestore.Timestam
 export const fromTimeStampToReadableString = (timestamp: firebase.firestore.Timestamp) : string => {
     return fromTimeStampToString(timestamp).replace(/T/,' at ').replace(/\..+$/,'');
 }
+
+export const toDateString = (date: Date) : string => {
+    if(!date)
+        return null;
+    return date.toISOString().split('T')[0]
+}

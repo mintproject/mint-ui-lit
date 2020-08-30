@@ -419,6 +419,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     }
 
     _renderAddRegionsDialog() {
+        let regionCategoryName = this._regionCategory?.name;
         return html`
         <wl-dialog class="larger" id="addRegionDialog" fixed backdrop blockscrolling>
             <h3 slot="header">Add ${this.regionType.toLowerCase()} regions</h3>
@@ -426,9 +427,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 <br />
                 <form id="regionsForm">
                     <wl-select label="Category" id="subcategory-selector" style="margin-bottom: 1em;">
-                        <option value="base" selected> ${this.regionType ? this.regionType : 'Base regions'} </option>
+                        <option value="base" selected> ${ regionCategoryName ? regionCategoryName : 'Base regions'} </option>
                         ${this._subcategories.map((sc:RegionCategory) => html`
-                        <option value="${sc.id}">${sc.id}</option>
+                        <option value="${sc.id}">${sc.name}</option>
                         `)}
                     </wl-select>
                     <div>

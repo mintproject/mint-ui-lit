@@ -30,7 +30,6 @@ import executionIdsForThreadGQL from '../../queries/execution/executionids-for-t
 import subscribeExecutionsListGQL from '../../queries/execution/list-subscription.graphql';
 import listExecutionsListGQL from '../../queries/execution/list.graphql';
 
-import { fromTimeStamp } from 'util/date-utils';
 import { problemStatementFromGQL, taskFromGQL, threadFromGQL, 
     threadInfoFromGQL, taskToGQL, threadToGQL, problemStatementToGQL, 
     executionFromGQL, taskUpdateToGQL, threadUpdateToGQL, 
@@ -456,7 +455,7 @@ export const addTask = (problem_statement: ProblemStatement, task: Task) =>  {
 };
 
 // Add Task
-export const addTaskWithThread = (problem_statement: ProblemStatement, task: Task, thread: Thread) =>  {
+export const addTaskWithThread = (problem_statement: ProblemStatement, task: Task, thread: ThreadInfo) =>  {
     let taskobj = taskToGQL(task, problem_statement);
     let threadobj = threadToGQL(thread, task);
     taskobj["threads"] = {
@@ -471,7 +470,7 @@ export const addTaskWithThread = (problem_statement: ProblemStatement, task: Tas
 };
 
 // Add Thread
-export const addThread = (task:Task, thread:Thread) =>  {
+export const addThread = (task:Task, thread: Thread | ThreadInfo) =>  {
     let threadobj = threadToGQL(thread, task);
     //console.log(threadobj);
     return APOLLO_CLIENT.mutate({
@@ -500,7 +499,6 @@ export const updateTask = (task: Task) =>  {
     return APOLLO_CLIENT.mutate({
         mutation: updateTaskGQL,
         variables: {
-            id: task.id,
             object: taskobj
         }
     });
@@ -508,32 +506,54 @@ export const updateTask = (task: Task) =>  {
 
 // Update Thread
 export const updateThread = (thread:Thread) =>  {
-    let threadobj = threadUpdateToGQL(thread);
+    // Update everything about the thread ?
+};
+
+export const updateThreadInformation = (threadinfo: ThreadInfo) => {
+    let threadobj = threadUpdateToGQL(threadinfo);
     return APOLLO_CLIENT.mutate({
         mutation: updateThreadGQL,
         variables: {
-            id: thread.id,
             object: threadobj
         }
     });
+}
+
+export const setThreadModels = (thread: Thread, model: Model) =>  {
+    // Delete all from thread_models for thread
+    // Delete all from thread_data for thread
+    // Delete all thread_executions for thread
+    // Delete thread_execution_summary for thread
+
+    // Add new models in thread_models
 };
 
-export const updateThreadVariables = (problem_statement_id: string, thread_id: string, 
-        driving_variables: string[], response_variables: string[]) =>  {
-    /*
-    let pathwayRef = db.collection("problem_statements/"+problem_statement_id+"/pathways").doc(thread_id);
-    return pathwayRef.set({
-        driving_variables: driving_variables,
-        response_variables: response_variables
-    }, {merge: true});
-    */
+export const setThreadData = (thread: Thread, model: Model) =>  {
+    // Delete all from thread_data for thread
+    // Delete all thread_executions for thread
+    // Delete thread_execution_summary for thread
+
+    // Add new datasets in thread_data
+    // Add new data bindings in thread_models
 };
 
-export const updateThreadFromThreadInformation = (problem_statement_id: string, thread_id: string, pathwayinfo: ThreadInfo) => {
+export const setThreadParameters = (thread: Thread, model: Model) =>  {
+    // Delete all thread_executions for thread
+    // Delete thread_execution_summary for thread
+
+    // Add new parameter bindings in thread_models
+};
+
+// Update Thread Executions
+export const setThreadExecutions = (executions: Execution[]) => {
     /*
-    let pathwayRef = db.collection("problem_statements/"+problem_statement_id+"/pathways").doc(pathwayinfo.id);
-    return pathwayRef.set(pathwayinfo, {merge: true});
-    */
+    let ensemblesRef = db.collection("ensembles");
+    let batch = db.batch();
+    let i = 0;
+    ensembles.map((ensemble) => {
+        batch.update(ensemblesRef.doc(ensemble.id), ensemble);
+    })
+    return batch.commit();*/
 }
 
 // Add Executions
@@ -556,18 +576,6 @@ export const addThreadExecutions = (executions: Execution[]) => {
         })
         return batch.commit();
     })*/
-}
-
-// Update Thread Executions
-export const updateThreadExecutions = (executions: Execution[]) => {
-    /*
-    let ensemblesRef = db.collection("ensembles");
-    let batch = db.batch();
-    let i = 0;
-    ensembles.map((ensemble) => {
-        batch.update(ensemblesRef.doc(ensemble.id), ensemble);
-    })
-    return batch.commit();*/
 }
 
 // Delete ProblemStatement

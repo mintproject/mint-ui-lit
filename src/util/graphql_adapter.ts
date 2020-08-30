@@ -1,9 +1,9 @@
 import { Task, Thread, ProblemStatement, ProblemStatementDetails, ThreadInfo, MintEvent, ModelEnsembleMap, DataEnsembleMap, Execution, ExecutionSummary } from "../screens/modeling/reducers"
-import { fromTimeStamp } from "util/date-utils";
 import { auth } from "config/firebase";
 import { Model, ModelIO, ModelParameter } from "screens/models/reducers";
 import { Dataset, DataResource } from "screens/datasets/reducers";
 import { Region } from "screens/regions/reducers";
+import { toDateString } from "./date-utils";
 
 export const regionToGQL = (region: Region) => {
     let regionobj = {
@@ -27,14 +27,34 @@ export const regionFromGQL = (regionobj: any) : Region => {
     return region;
 }
 
+export const eventToGQL = (event: MintEvent) => {
+    let eventobj = {
+        event: event.event,
+        userid: event.userid,
+        timestamp: event.timestamp.toISOString(),
+        notes: event.notes
+    };
+    return eventobj;
+}
+
+export const eventFromGQL = (eventobj: any) : MintEvent => {
+    let event = {
+        event: eventobj.event,
+        userid: eventobj.userid,
+        timestamp: new Date(eventobj.timestamp),
+        notes: eventobj.notes
+    } as MintEvent;
+    return event;
+}
+
 export const problemStatementToGQL = (problem_statement: ProblemStatement) => {
     let problemobj = {
         name: problem_statement.name,
-        start_date: fromTimeStamp(problem_statement.dates.start_date),
-        end_date: fromTimeStamp(problem_statement.dates.end_date),
+        start_date: toDateString(problem_statement.dates.start_date),
+        end_date: toDateString(problem_statement.dates.end_date),
         region_id: problem_statement.regionid,
         events: {
-            data: problem_statement.events
+            data: problem_statement.events.map(eventToGQL)
         }
     };
     return problemobj;
@@ -44,11 +64,11 @@ export const problemStatementUpdateToGQL = (problem_statement: ProblemStatement)
     let problemobj = {
         id: problem_statement.id,
         name: problem_statement.name,
-        start_date: fromTimeStamp(problem_statement.dates.start_date),
-        end_date: fromTimeStamp(problem_statement.dates.end_date),
+        start_date: toDateString(problem_statement.dates.start_date),
+        end_date: toDateString(problem_statement.dates.end_date),
         region_id: problem_statement.regionid,
         events: {
-            data: problem_statement.events
+            data: problem_statement.events.map(eventToGQL)
         }
     };
     return problemobj;
@@ -60,15 +80,16 @@ export const problemStatementFromGQL = (problem: any) : ProblemStatementDetails 
         regionid: problem["region_id"],
         name: problem["name"],
         dates: {
-            start_date: problem["start_date"],
-            end_date: problem["end_date"]
+            start_date: new Date(problem["start_date"]),
+            end_date: new Date(problem["end_date"])
         },
-        events: problem["events"],
+        events: problem["events"].map(eventFromGQL),
         tasks: {}
     } as ProblemStatementDetails;
     if(problem["tasks"]) {
         problem["tasks"].forEach((task:any) => {
             let fbtask = taskFromGQL(task);
+            fbtask.problem_statement_id = problem["id"];
             details.tasks[fbtask.id] = fbtask;
         })
     }
@@ -79,13 +100,13 @@ export const taskToGQL = (task: Task, problem_statement: ProblemStatement) => {
     let taskGQL = {
         name: task.name,
         problem_statement_id: problem_statement.id,
-        start_date: fromTimeStamp(task.dates.start_date),
-        end_date: fromTimeStamp(task.dates.end_date),
+        start_date: toDateString(task.dates.start_date),
+        end_date: toDateString(task.dates.end_date),
         region_id: task.regionid,
         response_variable_id: task.response_variables[0],
         driving_variable_id: task.driving_variables.length > 0 ? task.driving_variables[0] : null,
         events: {
-            data: task.events
+            data: task.events.map(eventToGQL),
         }
     };
     return taskGQL;
@@ -95,13 +116,14 @@ export const taskUpdateToGQL = (task: Task) => {
     let taskGQL = {
         id: task.id,
         name: task.name,
-        start_date: fromTimeStamp(task.dates.start_date),
-        end_date: fromTimeStamp(task.dates.end_date),
+        problem_statement_id: task.problem_statement_id,
+        start_date: toDateString(task.dates.start_date),
+        end_date: toDateString(task.dates.end_date),
         region_id: task.regionid,
         response_variable_id: task.response_variables[0],
         driving_variable_id: task.driving_variables.length > 0 ? task.driving_variables[0] : null,
         events: {
-            data: task.events
+            data: task.events.map(eventToGQL),
         }
     };
     
@@ -111,52 +133,56 @@ export const taskUpdateToGQL = (task: Task) => {
 export const taskFromGQL = (task: any) : Task => {
     let taskobj = {
         id : task["id"],
+        problem_statement_id: task["problem_statement_id"],
         regionid: task["region_id"],
         name: task["name"],
         dates: {
-            start_date: task["start_date"],
-            end_date: task["end_date"]
+            start_date: new Date(task["start_date"]),
+            end_date: new Date(task["end_date"])
         },
         threads: {},
         driving_variables: task.driving_variable_id != null ? [task.driving_variable_id] : [],
         response_variables: task.response_variable_id != null ? [task.response_variable_id] : [],
-        events: task["events"]
+        events: task["events"].map(eventFromGQL),
     } as Task;
     if(task["threads"]) {
         task["threads"].forEach((thread:any) => {
             let fbthread = threadInfoFromGQL(thread);
+            fbthread.task_id = task["id"];
             taskobj.threads[fbthread.id] = fbthread;
         });
     }
     return taskobj;
 }
 
-export const threadToGQL = (thread: Thread, task: Task) => {
+export const threadToGQL = (thread: Thread | ThreadInfo, task: Task) => {
     let threadobj = {
         id: thread.id,
         name: thread.name,
         task_id: task.id,
-        start_date: fromTimeStamp(thread.dates.start_date),
-        end_date: fromTimeStamp(thread.dates.end_date),
+        start_date: toDateString(thread.dates.start_date),
+        end_date: toDateString(thread.dates.end_date),
         region_id: task.regionid,
         response_variable_id: thread.response_variables[0],
         driving_variable_id: thread.driving_variables.length > 0 ? thread.driving_variables[0] : null,
         events: {
-            data: thread.events
+            data: thread.events.map(eventToGQL),
         }
     };
     return threadobj;
 }
 
-export const threadUpdateToGQL = (thread: Thread) => {
+export const threadUpdateToGQL = (thread: Thread | ThreadInfo) => {
     let threadobj = {
+        id: thread.id,
+        task_id: thread.task_id,
         name: thread.name,
-        start_date: fromTimeStamp(thread.dates.start_date),
-        end_date: fromTimeStamp(thread.dates.end_date),
+        start_date: toDateString(thread.dates.start_date),
+        end_date: toDateString(thread.dates.end_date),
         response_variable_id: thread.response_variables[0],
         driving_variable_id: thread.driving_variables.length > 0 ? thread.driving_variables[0] : null,
         events: {
-            data: thread.events
+            data: thread.events.map(eventToGQL),
         }
     };
     return threadobj;
@@ -165,16 +191,17 @@ export const threadUpdateToGQL = (thread: Thread) => {
 export const threadFromGQL = (thread: any) => {
     let fbthread = {
         id : thread["id"],
+        task_id: thread["task_id"],
         regionid: thread["region_id"],
         name: thread["name"],
         dates: {
-            start_date: thread["start_date"],
-            end_date: thread["end_date"]
+            start_date: new Date(thread["start_date"]),
+            end_date: new Date(thread["end_date"])
         },
         driving_variables: thread.driving_variable_id != null ? [thread.driving_variable_id] : [],
         response_variables: thread.response_variable_id != null ? [thread.response_variable_id] : [],
         execution_summary: {},
-        events: thread["events"],
+        events: thread["events"].map(eventFromGQL),
         models: {},
         datasets: {},
         model_ensembles: {}
@@ -333,11 +360,13 @@ export const threadInfoToGQL = (thread: ThreadInfo, taskid: string, regionid: st
     let threadobj = {
         name: thread.name,
         task_id: taskid,
-        start_date: fromTimeStamp(thread.dates.start_date),
-        end_date: fromTimeStamp(thread.dates.end_date),
+        start_date: toDateString(thread.dates.start_date),
+        end_date: toDateString(thread.dates.end_date),
         region_id: regionid,
+        response_variable_id: thread.response_variables[0],
+        driving_variable_id: thread.driving_variables.length > 0 ? thread.driving_variables[0] : null,
         events: {
-            data: thread.events
+            data: thread.events.map(eventToGQL),
         }
     };
     return threadobj;
@@ -348,10 +377,12 @@ export const threadInfoFromGQL = (thread: any) => {
         id : thread["id"],
         name: thread["name"],
         dates: {
-            start_date: thread["start_date"],
-            end_date: thread["end_date"]
+            start_date: new Date(thread["start_date"]),
+            end_date: new Date(thread["end_date"])
         },
-        events: thread["events"]
+        driving_variables: thread.driving_variable_id != null ? [thread.driving_variable_id] : [],
+        response_variables: thread.response_variable_id != null ? [thread.response_variable_id] : [],
+        events: thread["events"].map(eventFromGQL),
     } as ThreadInfo;
 }
 
