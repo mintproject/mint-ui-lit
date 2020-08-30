@@ -2,6 +2,12 @@ mutation delete_problem_statement($id: uuid!) {
   delete_thread_provenance(where: {thread: {task: {problem_statement_id: {_eq: $id}}}}) {
     affected_rows
   }
+  delete_task_provenance(where: {task: {problem_statement_id: {_eq: $id}}}) {
+    affected_rows
+  }
+  delete_problem_statement_provenance(where: {problem_statement_id: {_eq: $id}}) {
+    affected_rows
+  }  
   delete_thread_data(where: {thread: {task: {problem_statement_id: {_eq: $id}}}}) {
     affected_rows
   }
@@ -20,13 +26,7 @@ mutation delete_problem_statement($id: uuid!) {
   delete_thread(where: {task: {problem_statement_id: {_eq: $id}}}) {
     affected_rows
   }
-  delete_task_provenance(where: {task_id: {_eq: $id}}) {
-    affected_rows
-  }
   delete_task(where: {problem_statement_id: {_eq: $id}}) {
-    affected_rows
-  }
-  delete_problem_statement_provenance(where: {problem_statement_id: {_eq: $id}}) {
     affected_rows
   }
   delete_problem_statement_by_pk(id: $id) {

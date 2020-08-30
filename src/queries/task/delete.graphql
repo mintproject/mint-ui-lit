@@ -2,6 +2,9 @@ mutation delete_task($id: uuid!) {
   delete_thread_provenance(where: {thread: {task_id: {_eq: $id}}}) {
     affected_rows
   }
+  delete_task_provenance(where: {task_id: {_eq: $id}}) {
+    affected_rows
+  }  
   delete_thread_data(where: {thread: {task_id: {_eq: $id}}}) {
     affected_rows
   }
@@ -18,9 +21,6 @@ mutation delete_task($id: uuid!) {
     affected_rows
   }
   delete_thread(where: {task_id: {_eq: $id}}) {
-    affected_rows
-  }
-  delete_task_provenance(where: {task_id: {_eq: $id}}) {
     affected_rows
   }
   delete_task_by_pk(id: $id) {
