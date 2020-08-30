@@ -1,6 +1,6 @@
 import { Action, ActionCreator } from "redux";
 import { gql } from '@apollo/client';
-import { APOLLO_CLIENT } from "config/graphql";
+import { GraphQL } from "config/graphql";
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "app/store";
 import { Emulator } from "@mintproject/modelcatalog_client";
@@ -35,6 +35,8 @@ export interface EmulatorsActionListThreadExecutionsJson extends Action<'EMULATO
 export type EmulatorsAction = EmulatorsActionListModels | EmulatorsActionListEmulatorsForModel | EmulatorsActionSelectModel | EmulatorsActionListThreadExecutionsJson;
 
 const MODEL_PREFIX = "https://w3id.org/okn/i/mint/";
+
+const APOLLO_CLIENT = GraphQL.instance();
 
 type ListModelsThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListModels>;
 export const listEmulatorModelTypes: ActionCreator<ListModelsThunkAction> = (regionid) => (dispatch) => {

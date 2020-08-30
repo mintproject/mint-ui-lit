@@ -1,5 +1,7 @@
 import { Action, ActionCreator } from 'redux';
-import { ProblemStatementList, ProblemStatement, ProblemStatementDetails,  Thread, Task, Execution, ThreadInfo, ThreadList, TaskList } from './reducers';
+import { ProblemStatementList, ProblemStatement, 
+    ProblemStatementDetails,  Thread, Task, 
+    Execution, ThreadInfo, ThreadList, TaskList } from './reducers';
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from '../../app/store';
 //import { db, fieldValue, auth } from '../../config/firebase';
@@ -7,7 +9,7 @@ import { Dataset, DataResource } from '../datasets/reducers';
 import { Model } from '../models/reducers';
 import { IdMap, UserPreferences } from '../../app/reducers';
 
-import { APOLLO_CLIENT } from 'config/graphql';
+import { GraphQL } from 'config/graphql';
 
 import subscribeProblemStatementsListGQL from '../../queries/problem-statement/list-subscription.graphql';
 import subscribeTasksListGQL from '../../queries/task/list-subscription.graphql';
@@ -29,7 +31,10 @@ import subscribeExecutionsListGQL from '../../queries/execution/list-subscriptio
 import listExecutionsListGQL from '../../queries/execution/list.graphql';
 
 import { fromTimeStamp } from 'util/date-utils';
-import { problemStatementFromGQL, taskFromGQL, threadFromGQL, threadInfoFromGQL, taskToGQL, threadToGQL, problemStatementToGQL, executionFromGQL, taskUpdateToGQL, threadUpdateToGQL, problemStatementUpdateToGQL } from './graphql_adapter';
+import { problemStatementFromGQL, taskFromGQL, threadFromGQL, 
+    threadInfoFromGQL, taskToGQL, threadToGQL, problemStatementToGQL, 
+    executionFromGQL, taskUpdateToGQL, threadUpdateToGQL, 
+    problemStatementUpdateToGQL } from '../../util/graphql_adapter';
 import { postJSONResource } from 'util/mint-requests';
 import { isObject } from 'util';
 import { Md5 } from 'ts-md5';
@@ -147,6 +152,8 @@ export type ThreadAction = ThreadVariablesActionAdd | ThreadVariablesActionRemov
     ThreadExecutionsActionList | ThreadsActionListSubscription;
 
 export type ModelingAction =  ProblemStatementsAction | TasksAction | ThreadsAction | ThreadAction ;
+
+const APOLLO_CLIENT = GraphQL.instance();
 
 // List ProblemStatements
 type ProblemListThunkResult = ThunkAction<void, RootState, undefined, ProblemStatementsActionList | ProblemStatementsActionListSubscription>;

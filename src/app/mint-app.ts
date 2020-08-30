@@ -79,6 +79,7 @@ export class MintApp extends connect(store)(LitElement) {
   @property({type: Array})
   private _topRegions : string[] = [];
 
+  private _dispatchedRegionsQuery : boolean = false;
   private _dispatchedSubRegionsQuery : boolean = false;
 
   private _loggedIntoWings = false;
@@ -513,14 +514,19 @@ export class MintApp extends connect(store)(LitElement) {
         store.dispatch(fetchMintConfig());
       }
     }
-    
+
     if(!state.regions || !state.regions.top_region_ids) {
-      // Fetch region categories
-      store.dispatch(listRegionCategories());
-      // Fetch top regions
-      store.dispatch(listTopRegions());
+      if(!this._dispatchedRegionsQuery) {
+        console.log("Dispatching Top Region Query")
+        this._dispatchedRegionsQuery = true;
+        // Fetch region categories
+        store.dispatch(listRegionCategories());
+        // Fetch top regions
+        store.dispatch(listTopRegions());
+      }
     }
     else if (state.regions && state.regions.regions) {
+      this._dispatchedRegionsQuery = false;
       let regionid = state.ui.selected_top_regionid;
       // If a region is selected, then fetch it's subregions
       this._selectedRegion = state.regions.regions[regionid];

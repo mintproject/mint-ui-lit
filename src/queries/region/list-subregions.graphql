@@ -6,5 +6,6 @@ query list_sub_regions($regionId: String!) {
   }) {
     id
     name
+    category_id
   }
 }

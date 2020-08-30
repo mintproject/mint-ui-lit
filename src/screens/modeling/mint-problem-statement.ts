@@ -22,7 +22,7 @@ import { firestore } from "firebase";
 import { toTimeStamp, fromTimeStampToDateString } from "util/date-utils";
 import { RegionMap, Region, RegionCategory } from "screens/regions/reducers";
 import { getVariableLongName, getVariableIntervention } from "offline_data/variable_list";
-import { getCreateEvent, getUpdateEvent } from "./graphql_adapter";
+import { getCreateEvent, getUpdateEvent } from "../../util/graphql_adapter";
 import { getLatestEventOfType, getLatestEvent } from "util/event_utils";
 import { IdMap } from "app/reducers";
 
@@ -480,9 +480,10 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                         ${Object.values(this._regionCategories).map((cat: RegionCategory) => {
                             let subCategories = cat.subcategories || [];
                             return html`
-                            <option value="${cat.id}">${cat.id}</option>
+                            <option value="${cat.id}">${cat.name}</option>
                             ${subCategories.length > 0 ? subCategories.map((subcat: RegionCategory) => {
-                                return html`<option value="${subcat.id}">&nbsp;&nbsp;&nbsp;&nbsp;${subcat.id}</option>`;
+                                if(this._categorizedRegions[subcat.id])
+                                    return html`<option value="${subcat.id}">&nbsp;&nbsp;&nbsp;&nbsp;${subcat.name}</option>`;
                             }) : html`
                                 <option disabled>&nbsp;&nbsp;&nbsp;&nbsp;No subcategories</option>
                             `}`

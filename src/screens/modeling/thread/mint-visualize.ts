@@ -13,7 +13,7 @@ import { getVariableLongName } from "../../../offline_data/variable_list";
 
 import "weightless/button";
 import { getLatestEventOfType, getLatestEvent } from "util/event_utils";
-import { getCustomEvent } from "../graphql_adapter";
+import { getCustomEvent } from "../../../util/graphql_adapter";
 
 @customElement('mint-visualize')
 export class MintVisualize extends connect(store)(MintThreadPage) {

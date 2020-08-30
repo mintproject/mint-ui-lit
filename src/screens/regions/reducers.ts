@@ -20,9 +20,7 @@ export interface RegionsState {
     bbox_preview?: BoundingBox[]
 }
 
-export interface RegionCategory {
-    id: string,
-    description: string,
+export interface RegionCategory extends IdNameObject {
     citation?: string,
     subcategories?: RegionCategory[]
 }

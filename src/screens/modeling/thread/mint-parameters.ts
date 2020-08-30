@@ -17,7 +17,7 @@ import { getPathFromModel } from "../../models/reducers";
 
 import "weightless/progress-bar";
 import { getLatestEventOfType } from "util/event_utils";
-import { getUpdateEvent, getCustomEvent, getTotalConfigs } from "../graphql_adapter";
+import { getUpdateEvent, getCustomEvent, getTotalConfigs } from "../../../util/graphql_adapter";
 
 const MAX_PARAMETER_COMBINATIONS = 100000;
 

@@ -27,7 +27,7 @@ import { formElementsComplete, showDialog, hideDialog, showNotification, resetFo
 import { Region, RegionMap } from '../regions/reducers';
 import { toTimeStamp, fromTimeStampToDateString, fromTimestampIntegerToString, fromTimestampIntegerToReadableString } from 'util/date-utils';
 import { getLatestEventOfType, getLatestEvent } from 'util/event_utils';
-import { getCreateEvent, getUpdateEvent } from './graphql_adapter';
+import { getCreateEvent, getUpdateEvent } from '../../util/graphql_adapter';
 
 @customElement('problem-statements-list')
 export class ProblemStatementsList extends connect(store)(PageViewElement) {
@@ -39,6 +39,9 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
 
   @property({type: Object})
   private _list!: ProblemStatementList;
+
+  @property({type: Boolean})
+  private _dispatched: Boolean;
 
   @property({type: String})
   private _top_regionid?: string;
@@ -56,6 +59,9 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
   }
 
   protected render() {
+    if(this._dispatched)
+      return html`<wl-progress-spinner class="loading"></wl-progress-spinner>`;
+
     //console.log("rendering");
     return html`
 
@@ -309,11 +315,14 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
     goToPage("modeling/problem_statement/" + problem_statement_id);
   }
 
-  protected firstUpdated() {    
-    //store.dispatch(listTopRegions()); done by mint-app
-    store.dispatch(subscribeProblemStatementsList(this._regionid));
-    // list summaries of datasets, models, etc
+  _subscribeToProblemStatementList() {
+    if(this._list && this._list.unsubscribe)
+      this._list.unsubscribe();
+    this._dispatched = true;
+    console.log("Subscribing to Problem Statement List for " + this._top_regionid);
+    store.dispatch(subscribeProblemStatementsList(this._top_regionid));
   }
+
 
   // This is called every time something is updated in the store.
   stateChanged(state: RootState) {
@@ -321,6 +330,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
     if(state.modeling) {
       if(state.modeling.problem_statements) {
         this._list = state.modeling.problem_statements;
+        this._dispatched = false;
         this._list.problem_statement_ids.sort((id1,id2) => {
           return (getLatestEvent(this._list.problem_statements[id2].events)?.timestamp > 
             getLatestEvent(this._list.problem_statements[id1].events)?.timestamp ? -1 : 1);
@@ -328,9 +338,12 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
       }
     }
     if(state.ui && state.ui.selected_top_regionid && state.regions!.regions) {
-      this._top_regionid = state.ui.selected_top_regionid;
-      this._regions = state.regions!.regions;
-      this._top_region = this._regions[this._top_regionid];
+      if(this._top_regionid != state.ui.selected_top_regionid) {
+        this._top_regionid = state.ui.selected_top_regionid;
+        this._regions = state.regions!.regions;
+        this._top_region = this._regions[this._top_regionid];
+        this._subscribeToProblemStatementList();
+      }
     }
     super.setRegionId(state);
   }

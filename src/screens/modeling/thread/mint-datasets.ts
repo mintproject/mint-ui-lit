@@ -23,7 +23,7 @@ import { Region } from "screens/regions/reducers";
 
 import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
 import { getLatestEventOfType } from "util/event_utils";
-import { getCustomEvent } from "../graphql_adapter";
+import { getCustomEvent } from "../../../util/graphql_adapter";
 
 store.addReducers({
     datasets

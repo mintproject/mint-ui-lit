@@ -1,8 +1,31 @@
-import { Task, Thread, ProblemStatement, ProblemStatementDetails, ThreadInfo, MintEvent, ModelEnsembleMap, DataEnsembleMap, Execution, ExecutionSummary } from "./reducers"
+import { Task, Thread, ProblemStatement, ProblemStatementDetails, ThreadInfo, MintEvent, ModelEnsembleMap, DataEnsembleMap, Execution, ExecutionSummary } from "../screens/modeling/reducers"
 import { fromTimeStamp } from "util/date-utils";
 import { auth } from "config/firebase";
 import { Model, ModelIO, ModelParameter } from "screens/models/reducers";
 import { Dataset, DataResource } from "screens/datasets/reducers";
+import { Region } from "screens/regions/reducers";
+
+export const regionToGQL = (region: Region) => {
+    let regionobj = {
+        id: region.id,
+        name: region.name,
+        category_id: region.category_id,
+        geojson_blob: JSON.parse(region.geojson_blob),
+        model_catalog_uri: region.model_catalog_uri
+    };
+    return regionobj;
+}
+
+export const regionFromGQL = (regionobj: any) : Region => {
+    let region = {
+        id: regionobj.id,
+        name: regionobj.name,
+        category_id: regionobj.category_id,
+        geojson_blob: JSON.stringify(regionobj.geojson_blob),
+        model_catalog_uri: regionobj.model_catalog_uri
+    } as Region;
+    return region;
+}
 
 export const problemStatementToGQL = (problem_statement: ProblemStatement) => {
     let problemobj = {

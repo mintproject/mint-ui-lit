@@ -30,7 +30,7 @@ import { Model as MCModel, SoftwareVersion, ModelConfiguration, ModelConfigurati
 import 'components/loading-dots';
 import { ModelCatalogState } from "model-catalog/reducers";
 import { getLatestEventOfType } from "util/event_utils";
-import { getUpdateEvent, getCustomEvent } from "../graphql_adapter";
+import { getUpdateEvent, getCustomEvent } from "../../../util/graphql_adapter";
 
 store.addReducers({
     models

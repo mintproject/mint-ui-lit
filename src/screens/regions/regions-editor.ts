@@ -184,7 +184,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                     modeling in ${this._region.name || this._regionid}`)
                 : ''}
             ${subcat ? html`
-                ${subcat.description ? html`<div>${subcat.description}</div>` : ''}
+                ${subcat.name ? html`<div>${subcat.name}</div>` : ''}
                 ${subcat.citation ?
                     html`<div style="font-size: 13px; font-style: italic; padding-top: 3px;">${subcat.citation}</div>`
                     : ''}
@@ -369,18 +369,18 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     _onAddSubcategorySubmit() {
         let nameEl = this.shadowRoot!.getElementById('subcategory-name') as HTMLInputElement;
         let descEl = this.shadowRoot!.getElementById('subcategory-desc') as HTMLInputElement;
-        let name = nameEl.value;
-        let desc = descEl.value;
+        let id = nameEl.value;
+        let name = descEl.value;
         if (!name) {
             showNotification("formValuesIncompleteNotification", this.shadowRoot!);
             return;
         }
 
-        let index = this._subcategories.map((sc) => sc.id).indexOf(name);
+        let index = this._subcategories.map((sc) => sc.id).indexOf(id);
         if (index < 0) {
-            addSubcategory(this._regionid, this.regionType, name, desc).then((value) => {
+            addSubcategory(this._regionid, this.regionType, id, name).then((value) => {
                 hideDialog("addSubcategoryDialog", this.shadowRoot);
-                this._subcategories.push({id: name, description: desc});
+                this._subcategories.push({id: id, name: name});
                 this.requestUpdate();
             })
         } else {
