@@ -240,7 +240,12 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     private _renderFullView () {
-        if (this._resources.length > 0) {
+        if (this._status === Status.CREATE) {
+            return html`
+                ${this._renderFullForm()}
+                ${this._renderActionButtons()}
+            `;
+        } else if (this._resources.length > 0) {
             let r : T = this._resources[0];
             if (this._loading[r.id])
                 return html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
@@ -252,7 +257,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     </span>
                 </p>`;
             return html`
-                ${(this._status === Status.CREATE || this._status === Status.EDIT) ? 
+                ${(this._status === Status.EDIT) ? 
                     this._renderFullForm()
                     : this._renderFullResource(this._loadedResources[r.id])}
                 ${this._renderActionButtons()}
@@ -862,6 +867,16 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             this._dialogOpen = true;
             showDialog("resource-dialog", this.shadowRoot);
         }
+    }
+
+    public enableSingleResourceCreation () {
+        this._singleMode = true;
+        this._status = Status.CREATE;
+    }
+
+    public disableSingleResourceCreation () {
+        this._clearStatus();
+        this._singleMode = false;
     }
 
     private _getResourcePosition (r:T) {
