@@ -224,13 +224,20 @@ export const threadFromGQL = (thread: any) => {
         let model_ensemble = modelEnsembleFromGQL(tm["data_bindings"], tm["parameter_bindings"]);
         fbthread.model_ensembles[model.id] = model_ensemble;
 
-        let totalconfigs = getTotalConfigs(model, model_ensemble, fbthread);
         fbthread.execution_summary[model.id] = {
-            total_runs: totalconfigs,
-            submitted_runs: tm["submitted_runs"]["aggregate"]["count"],
-            successful_runs: tm["successful_runs"]["aggregate"]["count"],
-            failed_runs: tm["failed_runs"]["aggregate"]["count"],
-            submitted_for_execution: tm["submitted_runs"]["aggregate"]["count"] > 0
+            total_runs: tm["total_runs"],
+            submitted_runs: tm["submitted_runs"],
+            successful_runs: tm["successful_runs"],
+            failed_runs: tm["failed_runs"],
+            ingested_runs: tm["ingested_runs"],
+            registered_runs: tm["registered_runs"],
+            published_runs: tm["published_runs"],
+            submission_time: tm["submission_time"],
+            submitted_for_execution: tm["submitted_for_execution"],
+            fetched_run_outputs: tm["fetched_run_outputs"],
+            submitted_for_ingestion: tm["submitted_for_ingestion"],
+            submitted_for_publishing: tm["submitted_for_publishing"],
+            submitted_for_registration: tm["submitted_for_registration"]
         } as ExecutionSummary
     })
 

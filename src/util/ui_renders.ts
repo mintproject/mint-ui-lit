@@ -27,15 +27,15 @@ export const renderNotifications = () => {
         <wl-icon slot="icon">error</wl-icon>
         <span>Please fill in all the required values.</span>
     </wl-snackbar>
-    <wl-snackbar id="saveNotification" hideDelay="2000" fixed backdrop disableFocusTrap>
+    <wl-snackbar id="saveNotification" hideDelay="1000" fixed backdrop disableFocusTrap>
         <wl-icon slot="icon">save</wl-icon>
         <span>Saving...</span>
     </wl-snackbar>
-    <wl-snackbar id="deleteNotification" hideDelay="2000" fixed backdrop disableFocusTrap>
+    <wl-snackbar id="deleteNotification" hideDelay="1000" fixed backdrop disableFocusTrap>
         <wl-icon slot="icon">delete</wl-icon>
         <span>Deleting...</span>
     </wl-snackbar>   
-    <wl-snackbar id="runNotification" hideDelay="2000" fixed backdrop>
+    <wl-snackbar id="runNotification" hideDelay="1000" fixed backdrop>
         <wl-icon slot="icon">settings</wl-icon>
         <span>Sending runs...Please wait</span>
     </wl-snackbar>       

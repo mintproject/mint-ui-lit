@@ -136,7 +136,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         let totalThreads : number = 0;
         if (this._selectedTask && this._selectedTask.threads) {
             let orderedKeys : string[] = Object.values(this._selectedTask.threads)
-                    .sort((a,b) => a.name.localeCompare(b.name))
+                    .sort((a,b) => (a.name ?? "").localeCompare((b.name ?? "")))
                     .map(pw => pw.id);
             totalThreads = orderedKeys.length;
             if (totalThreads > 3 && !this._threadListExpanded) {
@@ -438,8 +438,8 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
             if(task) {
                 if(!confirm("Do you want to delete the task '" + task.name + "' ?"))
                     return false;
-                deleteTask(taskid);
                 showNotification("deleteNotification", this.shadowRoot!);
+                deleteTask(taskid);
                 goToPage("modeling/problem_statement/" + this._problem_statement!.id);
             }
         }
@@ -477,16 +477,10 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         
         let threadid = (e.currentTarget as HTMLButtonElement).dataset['threadid'];    
         if(this._selectedTask && threadid) {
-            this._deleteThread(this._selectedTask.id!, threadid);
             showNotification("deleteNotification", this.shadowRoot!);
-        }
-    }
-
-    _deleteThread(taskid: string, threadid: string) {
-        if(taskid && threadid) {
-            let task = this._problem_statement_details.tasks[taskid];
             deleteThread(threadid);
-            goToPage("modeling/problem_statement/" + this._problem_statement!.id + "/" + task.id + "/");
+            if(this._selectedThreadId == threadid)
+                goToPage("modeling/problem_statement/" + this._problem_statement!.id + "/" + this._selectedTask.id + "/");
         }
     }
 

@@ -432,7 +432,7 @@ export const getAllThreadExecutionIds = async (thread_id: string, modelid: strin
 }
 
 // Add ProblemStatement
-export const addProblemStatement = (problem_statement:ProblemStatement) =>  {
+export const addProblemStatement = (problem_statement:ProblemStatement) : Promise<string> =>  {
     let problemobj = problemStatementToGQL(problem_statement);
     //console.log(problemobj);
     return APOLLO_CLIENT.mutate({
@@ -440,22 +440,40 @@ export const addProblemStatement = (problem_statement:ProblemStatement) =>  {
         variables: {
             object: problemobj
         }
+    }).then((result) => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            return result.data.insert_problem_statement.returning[0].id;
+        }
+        return null;        
     });
 };
 
 // Add Task
-export const addTask = (problem_statement: ProblemStatement, task: Task) =>  {
+export const addTask = (problem_statement: ProblemStatement, task: Task) : Promise<string> =>  {
     let taskobj = taskToGQL(task, problem_statement);
     return APOLLO_CLIENT.mutate({
         mutation: newTaskGQL,
         variables: {
             object: taskobj
         }
+    }).then((result) => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            return result.data.insert_task.returning[0].id;
+        }
+        return null;        
     });
 };
 
 // Add Task
-export const addTaskWithThread = (problem_statement: ProblemStatement, task: Task, thread: ThreadInfo) =>  {
+export const addTaskWithThread = (problem_statement: ProblemStatement, task: Task, thread: ThreadInfo) : Promise<string[]> =>  {
     let taskobj = taskToGQL(task, problem_statement);
     let threadobj = threadToGQL(thread, task);
     taskobj["threads"] = {
@@ -466,11 +484,23 @@ export const addTaskWithThread = (problem_statement: ProblemStatement, task: Tas
         variables: {
             object: taskobj
         }
+    }).then((result) => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            return [
+                result.data.insert_task.returning[0].id,
+                result.data.insert_task.returning[0].threads[0].id
+            ];
+        }
+        return null;        
     });
 };
 
 // Add Thread
-export const addThread = (task:Task, thread: Thread | ThreadInfo) =>  {
+export const addThread = (task:Task, thread: Thread | ThreadInfo) : Promise<string> =>  {
     let threadobj = threadToGQL(thread, task);
     //console.log(threadobj);
     return APOLLO_CLIENT.mutate({
@@ -478,6 +508,15 @@ export const addThread = (task:Task, thread: Thread | ThreadInfo) =>  {
         variables: {
             object: threadobj
         }
+    }).then((result) => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            return result.data.insert_thread.returning[0].id;
+        }
+        return null;        
     });
 };
 

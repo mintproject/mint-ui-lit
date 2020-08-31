@@ -1,5 +1,6 @@
 #import "../fragments/thread-info.graphql"
 #import "../fragments/model-info.graphql"
+#import "../fragments/execution-summary-info.graphql"
 
 subscription sub_thread($id: uuid!) {
     thread_by_pk(id:$id) {
@@ -22,31 +23,9 @@ subscription sub_thread($id: uuid!) {
             }
         }
         thread_models {
+            ...execution_summary
             model {
                ...model_info
-            }
-            successful_runs: executions_aggregate(where: {
-                execution: {
-                    status:{_eq: "SUCCESS"}
-                }
-            }){
-                aggregate {
-                    count
-                }
-            }
-            failed_runs: executions_aggregate(where: {
-                execution: {
-                    status:{_eq: "FAILURE"}
-                }
-            }){
-                aggregate {
-                    count
-                }
-            }
-            submitted_runs: executions_aggregate{
-                aggregate {
-                    count
-                }
             }
             data_bindings {
                 model_io {

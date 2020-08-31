@@ -3,7 +3,7 @@ import { SharedStyles } from '../styles/shared-styles';
 
 import "weightless/icon";
 import { Task, TaskEvent, ThreadInfo, ThreadEvent, Thread, ProblemStatement } from "screens/modeling/reducers";
-import { formElementsComplete, showNotification, resetForm, showDialog, hideDialog } from "util/ui_functions";
+import { formElementsComplete, showNotification, resetForm, showDialog, hideDialog, hideNotification } from "util/ui_functions";
 import { getVariableIntervention, getVariableLongName } from "offline_data/variable_list";
 import { getUpdateEvent, getCreateEvent } from "util/graphql_adapter";
 import { updateTask, updateThreadInformation, addTaskWithThread } from "screens/modeling/actions";
@@ -14,6 +14,7 @@ import { store, RootState } from "app/store";
 import { connect } from "pwa-helpers/connect-mixin";
 import { IdMap } from "app/reducers";
 import { getCategorizedRegions } from "util/state_functions";
+import { goToPage } from "app/actions";
 
 @customElement('task-editor')
 export class TaskEditor extends connect(store)(LitElement) {
@@ -216,7 +217,7 @@ export class TaskEditor extends connect(store)(LitElement) {
 
         this.editMode = false;
         let dates = this.problem_statement.dates;
-        (form.elements["task_region"] as HTMLSelectElement).value = this.problem_statement.regionid!;
+        (form.elements["task_region"] as HTMLSelectElement).value = ""; //this.problem_statement.regionid!;
         (form.elements["task_from"] as HTMLInputElement).value = toDateString(dates?.start_date);
         (form.elements["task_to"] as HTMLInputElement).value = toDateString(dates?.end_date);
 
@@ -238,7 +239,7 @@ export class TaskEditor extends connect(store)(LitElement) {
         (form.elements["taskid"] as HTMLInputElement).value = task.id;
         (form.elements["task_name"] as HTMLInputElement).value = task.name;
 
-        (form.elements["task_region_category"] as HTMLInputElement).value = this._regions[task.regionid].category_id;
+        (form.elements["task_region_category"] as HTMLInputElement).value = this._regions[task.regionid].category_id ?? "";
         this._onRegionCategoryChange();
 
         (form.elements["task_region"] as HTMLInputElement).value = task.regionid;                
@@ -281,14 +282,17 @@ export class TaskEditor extends connect(store)(LitElement) {
         }
     }
     
-    _onEditTaskSubmit() {
+    async _onEditTaskSubmit() {
         let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#taskForm")!;
         if(formElementsComplete(form, ["response_variable", "task_from", "task_to"])) {
-            let task_region = (form.elements["task_region"] as HTMLInputElement).value;
             let task_name = (form.elements["task_name"] as HTMLInputElement).value;
             let task_from = (form.elements["task_from"] as HTMLInputElement).value;
             let task_to = (form.elements["task_to"] as HTMLInputElement).value;
-
+            let task_region = (form.elements["task_region"] as HTMLInputElement).value;
+            if(!task_region)
+                task_region = this._regionid;
+                
+            showNotification("saveNotification", this.shadowRoot!);
             // If no taskid then this is a new task
             if(this.task) {
                 // Edit Task 
@@ -307,10 +311,14 @@ export class TaskEditor extends connect(store)(LitElement) {
                 this.task.events.push(getUpdateEvent(task_name) as TaskEvent);
                 // End of Temporary Addition
 
+                // Update the task
                 this.task.events = [getUpdateEvent(task_name) as TaskEvent];
                 updateTask(this.task);
                 
+                // Update Threads of this task if variables have been modified
                 Object.values(this.task.threads!).map((thread: ThreadInfo) => {
+                    if(thread.driving_variables?.toString() != this.task.driving_variables?.toString() ||
+                        thread.response_variables?.toString() != this.task.response_variables?.toString())
                     thread.driving_variables = this.task.driving_variables;
                     thread.response_variables = this.task.response_variables;
                     thread.events = [getUpdateEvent("Updated Task Variables") as ThreadEvent];
@@ -334,6 +342,7 @@ export class TaskEditor extends connect(store)(LitElement) {
                     events: [getCreateEvent(task_name) as TaskEvent]
                 } as Task;
 
+                // Create a default thread for this task
                 let thread = {
                     driving_variables: driving_variable ? [driving_variable] : [],
                     response_variables: response_variable ? [response_variable] : [],
@@ -348,9 +357,10 @@ export class TaskEditor extends connect(store)(LitElement) {
                     events: [getCreateEvent("Default Thread Created") as ThreadEvent]
                 } as Thread
 
-                addTaskWithThread(this.problem_statement!, this.task, thread);
+                // Create the Task along with default thread
+                let ids = await addTaskWithThread(this.problem_statement!, this.task, thread);
+                goToPage("modeling/problem_statement/" + this.problem_statement.id + "/" + ids[0] + "/" + ids[1]);
             }
-            showNotification("saveNotification", this.shadowRoot!);
             hideDialog("taskDialog", this.shadowRoot!);
         }
         else {

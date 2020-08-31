@@ -25,7 +25,7 @@ import { PageViewElement } from '../../components/page-view-element';
 import { renderNotifications } from '../../util/ui_renders';
 import { formElementsComplete, showDialog, hideDialog, showNotification, resetForm, hideNotification } from '../../util/ui_functions';
 import { Region, RegionMap } from '../regions/reducers';
-import { toTimeStamp, fromTimeStampToDateString, fromTimestampIntegerToString, fromTimestampIntegerToReadableString, toDateString } from 'util/date-utils';
+import { toDateString } from 'util/date-utils';
 import { getLatestEventOfType, getLatestEvent } from 'util/event_utils';
 import { getCreateEvent, getUpdateEvent } from '../../util/graphql_adapter';
 
@@ -222,21 +222,20 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
           notes: problem_statement_notes,
           events: []
         } as ProblemStatement;
+
+        showNotification("saveNotification", this.shadowRoot!);
         if(problem_statement_id) {
           problem_statement.id = problem_statement_id;
           problem_statement.events = [getUpdateEvent(problem_statement_notes) as ProblemStatementEvent];
           await updateProblemStatement(problem_statement);
         }
         else {
-          await addProblemStatement(problem_statement);
           problem_statement.events.push(getCreateEvent(problem_statement_notes) as ProblemStatementEvent);
+          problem_statement_id = await addProblemStatement(problem_statement);
+          goToPage("modeling/problem_statement/"+problem_statement_id);
         }
-
+        hideNotification("saveNotification", this.shadowRoot!);
         hideDialog("problem_statementDialog", this.shadowRoot!);
-        showNotification("saveNotification", this.shadowRoot!);
-    
-        goToPage("modeling/problem_statement/"+problem_statement_id);
-
     }
     else {
         showNotification("formValuesIncompleteNotification", this.shadowRoot!);
@@ -261,7 +260,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
             (form.elements["problem_statement_region"] as HTMLInputElement).value = problem_statement.regionid;
             (form.elements["problem_statement_from"] as HTMLInputElement).value = toDateString(dates.start_date);
             (form.elements["problem_statement_to"] as HTMLInputElement).value = toDateString(dates.end_date);
-            (form.elements["problem_statement_notes"] as HTMLInputElement).value = last_event.notes? last_event.notes : "";
+            (form.elements["problem_statement_notes"] as HTMLInputElement).value = last_event?.notes ? last_event.notes : "";
             showDialog("problem_statementDialog", this.shadowRoot!);
         }
     }
@@ -332,7 +331,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
         this._list = state.modeling.problem_statements;
         this._dispatched = false;
         this._list.problem_statement_ids.sort((id1,id2) => {
-          return (getLatestEvent(this._list.problem_statements[id2].events)?.timestamp > 
+          return (getLatestEvent(this._list.problem_statements[id2].events)?.timestamp < 
             getLatestEvent(this._list.problem_statements[id1].events)?.timestamp ? -1 : 1);
         });
       }

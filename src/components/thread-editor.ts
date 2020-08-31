@@ -3,7 +3,7 @@ import { SharedStyles } from '../styles/shared-styles';
 
 import "weightless/icon";
 import { Task, ThreadInfo, ThreadEvent } from "screens/modeling/reducers";
-import { formElementsComplete, showNotification, resetForm, showDialog, hideDialog } from "util/ui_functions";
+import { formElementsComplete, showNotification, resetForm, showDialog, hideDialog, hideNotification } from "util/ui_functions";
 import { getUpdateEvent, getCreateEvent } from "util/graphql_adapter";
 import { updateThreadInformation, addThread } from "screens/modeling/actions";
 import { toDateString } from "util/date-utils";
@@ -135,6 +135,8 @@ export class ThreadEditor extends LitElement {
             let thread_to = (form.elements["thread_to"] as HTMLInputElement).value;
             let thread_notes = (form.elements["thread_notes"] as HTMLInputElement).value;
 
+            showNotification("saveNotification", this.shadowRoot!);
+            
             let thread : ThreadInfo = null;
             if (threadid) {
                 // Edit Thread Info (Summary)
@@ -167,8 +169,6 @@ export class ThreadEditor extends LitElement {
 
                 addThread(this.task, thread);
             }
-
-            showNotification("saveNotification", this.shadowRoot!);
             hideDialog("threadDialog", this.shadowRoot!);
         }
         else {

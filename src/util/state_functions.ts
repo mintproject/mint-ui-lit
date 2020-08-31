@@ -190,7 +190,8 @@ export const getVisualizationURLs = (thread: Thread, task: Task, problem_stateme
 
 export const getCategorizedRegions = (state: RootState) => {            
     if(state.regions && state.regions.categories && state.regions.regions && state.regions.sub_region_ids) {
-        let all_regionids = state.regions.sub_region_ids[state.ui.selected_top_regionid]         
+        let top_region = state.regions.regions[state.ui.selected_top_regionid];
+        let all_regionids = state.regions.sub_region_ids[state.ui.selected_top_regionid];       
         let categorized_regions = {};
         Object.keys(state.regions.categories).forEach((catid) => {
             categorized_regions[catid] = [];
@@ -206,6 +207,8 @@ export const getCategorizedRegions = (state: RootState) => {
             let regions = categorized_regions[regionid];
             regions.sort((a, b) => a.name.localeCompare(b.name));
         })
+        // Add the top region with category "" (i.e. None)
+        categorized_regions[""] = [top_region];
         return categorized_regions;
     }
     return null;
