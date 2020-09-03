@@ -167,7 +167,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     public pageMax : number = -1;
 
     private _order : IdMap<T> = {} as IdMap<T>;
-    private _notification : CustomNotification;
+    protected _notification : CustomNotification;
 
     public lazy : boolean = false;
 
@@ -191,6 +191,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     public creationDisable () {
         this._creationEnabled = false;
+    }
+
+    public isCreating () {
+        return this._status == Status.CREATE;
     }
     
     private _singleModeInitialized : boolean = false;
@@ -718,6 +722,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
             req = store.dispatch(this.resourcePost(resource));
         } else if (this._status === Status.EDIT) {
+            //TODO: Donde se agrega lo nuevo a lo antiguo?
             resource.id = this._editingResourceId;
             req = store.dispatch(this.resourcePut(resource));
         }
@@ -869,8 +874,12 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
     }
 
-    public enableSingleResourceCreation () {
+    public enableSingleResourceCreation (...args: any[]) {
         this._singleMode = true;
+        if (!this._singleModeInitialized) {
+            this._initializeSingleMode();
+            this._singleModeInitialized = true;
+        }
         this._status = Status.CREATE;
     }
 

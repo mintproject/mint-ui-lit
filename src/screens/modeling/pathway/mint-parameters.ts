@@ -15,7 +15,7 @@ import { MintPathwayPage } from "./mint-pathway-page";
 import { IdMap } from "../../../app/reducers";
 import { getPathFromModel } from "../../models/reducers";
 import { getLabel } from "model-catalog/util";
-import { DataTransformation } from '@mintproject/modelcatalog_client';
+import { DataTransformation, Parameter } from '@mintproject/modelcatalog_client';
 
 import "weightless/progress-bar";
 

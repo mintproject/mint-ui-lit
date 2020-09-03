@@ -124,10 +124,10 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         if (!r.hasFixedValue || r.hasFixedValue.length == 0) {
             isDefault = true;
             if (r.hasDefaultValue && r.hasDefaultValue.length > 0) {
-                value = r.hasDefaultValue[0];
+                value = <unknown>r.hasDefaultValue[0] as string;
             }
         } else {
-            value = r.hasFixedValue[0];
+            value = <unknown>r.hasFixedValue[0] as string;
         }
 
         if (additionalType == "https://w3id.org/wings/export/MINT#DataCatalogId") {
