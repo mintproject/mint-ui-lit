@@ -16,6 +16,7 @@ import { ModelCatalogGrid } from './configure/resources/grid';
 import { ModelCatalogFundingInformation } from './configure/resources/funding-information';
 import { ModelCatalogVisualization } from './configure/resources/visualization';
 import { ModelCatalogNumericalIndex } from './configure/resources/numerical-index';
+import { ModelCatalogModel } from './configure/resources/model';
 
 import { renderNotifications } from "util/ui_renders";
 import { showNotification } from 'util/ui_functions';
@@ -173,6 +174,8 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _model : Model;
 
+    private _iModel : ModelCatalogModel;
+
     private _inputAuthor : ModelCatalogPerson;
     private _inputContributor : ModelCatalogPerson;
     private _inputContactPerson : ModelCatalogPerson;
@@ -184,6 +187,8 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
 
     public constructor () {
         super();
+        this._iModel = new ModelCatalogModel();
+
         this._inputAuthor = new ModelCatalogPerson();
         this._inputContributor = new ModelCatalogPerson();
         this._inputContactPerson = new ModelCatalogPerson();
@@ -215,13 +220,15 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
                             ${!this._hideLateral ? "fullscreen" : "fullscreen_exit"}
                         </wl-icon>
                     </div>
-                    ${this._renderStepForm()}
+                    ${this._iModel}
+                    <!--
+                    {this._renderStepForm()}
                     <div class="footer">
-                        <wl-button @click="${this._onContinueButtonClicked}" .disabled="${this._waiting}">
+                        <wl-button @click="{this._onContinueButtonClicked}" .disabled="{this._waiting}">
                             continue 
-                            ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 5px;"></loading-dots>` : ''}
+                            {this._waiting ? html<loading-dots style="--width: 20px; margin-left: 5px;"></loading-dots> : ''}
                         </wl-button>
-                    </div>
+                    </div-->
                 </div>
             </div>
         </div>
@@ -659,13 +666,16 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         if (state.app) {
             if (state.app.subpage === 'register') {
-                if (this._shouldClear) this._clearForms();
+                if (this._shouldClear) {
+                    this._iModel.enableSingleResourceCreation();
+                    //this._clearForms();
+                }
             } else {
                 this._shouldClear = true;
             }
         } 
 
-        if (state.explorerUI) {
+        /*if (state.explorerUI) {
             let ui = state.explorerUI;
             let db = state.modelCatalog;
             this._modelid = ui.selectedModel;
@@ -682,10 +692,10 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
                     /*store.dispatch(modelGet(this._modelid)).then((model:Model) => {
                         this._model = model;
                         console.log('loading');
-                    });*/
+                    });
                 }
             }
-        }
+        }*/
 
     }
 }

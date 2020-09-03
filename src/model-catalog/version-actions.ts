@@ -1,7 +1,8 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
-import { Configuration, SoftwareVersion, SoftwareVersionApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
+import { Configuration, SoftwareVersion, SoftwareVersionApi, Model } from '@mintproject/modelcatalog_client';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, 
+         getUser, modelPut, modelGet } from './actions';
 
 function debug (...args: any[]) { console.log('[MC SoftwareVersion]', ...args); }
 
@@ -57,7 +58,10 @@ export const versionGet: ActionThunk<Promise<SoftwareVersion>, MCAVersionsAdd> =
     return req;
 }
 
-export const versionPost: ActionThunk<Promise<SoftwareVersion>, MCAVersionsAdd> = (version:SoftwareVersion) => (dispatch) => {
+export const versionPost: ActionThunk<Promise<SoftwareVersion>, MCAVersionsAdd> = (version:SoftwareVersion, model:Model) => (dispatch) => {
+    if (!model || !model.id) {
+        return Promise.reject(new Error('Version creation needs a valid model.'));
+    }
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {
@@ -71,7 +75,18 @@ export const versionPost: ActionThunk<Promise<SoftwareVersion>, MCAVersionsAdd> 
                     type: VERSIONS_ADD,
                     payload: createIdMap(resp)
                 });
-                resolve(resp);
+
+                // ADD Version to Model
+                dispatch(modelGet(model.id)).then((sModel:Model) => {
+                    let syncModel = { ...sModel };
+                    if (syncModel.hasVersion) syncModel.hasVersion.push(resp);
+                    else syncModel.hasVersion = [resp];
+                    //FIXME: --> FIX DATES
+                    if (syncModel.dateCreated) delete syncModel.dateCreated;
+                    dispatch(modelPut(syncModel)).then((rModel:Model) => {
+                        resolve(resp);
+                    });
+                });
             });
             req.catch((err) => {
                 console.error('Error on POST SoftwareVersion', err);
