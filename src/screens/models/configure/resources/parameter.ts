@@ -10,6 +10,7 @@ import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
 import { parameterGet, parametersGet, parameterPost, parameterPut, parameterDelete } from 'model-catalog/actions';
 import { Parameter, Unit, ParameterFromJSON } from '@mintproject/modelcatalog_client';
+import { PARAMETER_TYPES } from 'offline_data/parameter_types';
 
 import 'components/data-catalog-id-checker';
 import { Textfield } from 'weightless/textfield';
@@ -81,7 +82,8 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     protected resourcePut = parameterPut;
     protected resourceDelete = parameterDelete;
     public colspan = 3;
-    protected lazy = true;
+    public lazy = true;
+    public onlyFixedValue = false;
 
     @property({type: String}) private _formPart : string = "";
 
@@ -108,14 +110,35 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
             </td>
             <td>${renderParameterType(r)}</td>
             <td>
-                ${dcata ? html`
-                    <data-catalog-id-checker id=${r.hasDefaultValue[0]}><data-catalog-id-checker>
-                ` : html `
-                    ${r.hasDefaultValue ? r.hasDefaultValue : '-'}
-                    ${r.usesUnit ? r.usesUnit[0].label : ''}
-                `}
+                ${this._renderTypedValue(r)}
             </td>
         `;
+    }
+
+    protected _renderTypedValue (r:Parameter) {
+        let additionalType : string = r.type && r.type.length > 1 ?
+                r.type.filter((p:string) => p != 'Parameter')[0] : '';
+
+        let isDefault = false;
+        let value = '';
+        if (!r.hasFixedValue || r.hasFixedValue.length == 0) {
+            isDefault = true;
+            if (r.hasDefaultValue && r.hasDefaultValue.length > 0) {
+                value = <unknown>r.hasDefaultValue[0] as string;
+            }
+        } else {
+            value = <unknown>r.hasFixedValue[0] as string;
+        }
+
+        if (additionalType == "https://w3id.org/wings/export/MINT#DataCatalogId") {
+            return html`
+                <data-catalog-id-checker id=${value}><data-catalog-id-checker>
+            `;
+        }
+
+        return html`
+            ${value} ${isDefault && this.onlyFixedValue ? '(default)' : ''}
+            ${r.usesUnit ? r.usesUnit[0].label : ''}`;
     }
 
     protected _editResource (r:Parameter) {
@@ -130,6 +153,9 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
     protected _renderForm () {
         let edResource = this._getEditingResource();
+        if (edResource && this.onlyFixedValue) return this._renderFixedForm(edResource);
+        let additionalTypes = edResource && edResource.type && edResource.type.length > 1 ?
+                edResource.type.filter((p:string) => p != 'Parameter') : [];
         return html`
         <form>
             <wl-textfield id="parameter-label" label="Name" required
@@ -138,6 +164,14 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
             <wl-textarea id="parameter-desc" label="Description" required
                 value=${edResource && edResource.description ? edResource.description[0] : ''}>
             </wl-textarea>
+
+            <wl-select id="parameter-type" label="Parameter type" 
+                value=${(additionalTypes.length > 0)? additionalTypes[0] : ''}>
+                <option value="">None</option>
+                ${Object.keys(PARAMETER_TYPES).map((id:string) => html`
+                    <option value="${id}">${PARAMETER_TYPES[id]}</option>
+                `)}
+            </wl-select>
 
             <div class="two-inputs">
                 <wl-select id="parameter-datatype" label="Data type" required @change="${this._onDataTypeChanged}"
@@ -221,6 +255,15 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         </form>`;
     }
 
+    private _renderFixedForm(r:Parameter) {
+        return html`
+        <form>
+            <wl-textfield id="parameter-fixed" label="value" required
+                value="${r && r.hasDefaultValue ? r.hasDefaultValue[0] : ''}">
+            </wl-textfield>
+        </form>`;
+    }
+
     private _onDataTypeChanged (e) {
         let inputDataType : Select = this.shadowRoot.getElementById('parameter-datatype') as Select;
         let datatype : string = inputDataType ? inputDataType.value : '';
@@ -229,19 +272,34 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         }
     }
 
+    protected _getFixedValue () {
+        let inputFixed : Textfield = this.shadowRoot.getElementById('parameter-fixed') as Textfield;
+        let fixed : string = inputFixed ? inputFixed.value : '';
+        let edResource = this._getEditingResource();
+        if (fixed && edResource) {
+            return ParameterFromJSON({
+                ...edResource,
+                hasFixedValue: [fixed]
+            });
+        }
+    }
+
     protected _getResourceFromForm () {
-        //TODO: should be able to add custom types
+        if (this.onlyFixedValue) return this._getFixedValue();
+
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById('parameter-label') as Textfield;
         let inputDesc : Textarea = this.shadowRoot.getElementById('parameter-desc') as Textarea;
         let inputDatatype : Textfield = this.shadowRoot.getElementById("parameter-datatype") as Textfield;
         let inputUnit : Select = this.shadowRoot.getElementById("parameter-unit") as Select;
+        let inputType : Select = this.shadowRoot.getElementById("parameter-type") as Select;
 
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : '';
         let desc : string = inputDesc ? inputDesc.value : '';
         let datatype : string = inputDatatype ? inputDatatype.value : '';
         let unit : string = inputUnit ? inputUnit.value : '';
+        let aType : string = inputType ? inputType.value : '';
         if (label && desc && datatype) {
 
             let jsonRes = {
@@ -253,6 +311,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
             };
 
             if (unit) jsonRes["usesUnit"] = [{id: unit}];
+            if (aType) jsonRes["type"].push(aType);
 
             let jsonRes2 = undefined;
 

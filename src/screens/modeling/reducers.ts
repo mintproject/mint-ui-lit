@@ -5,6 +5,7 @@ import { Model } from "../models/reducers";
 import { Dataset, DataResource } from "../datasets/reducers";
 import { IdMap, IdNameObject } from "../../app/reducers";
 import { REGIONS_LIST_TOP_REGIONS } from "../regions/actions";
+import { DataTransformation } from '@mintproject/modelcatalog_client';
 
 export interface ModelingState {
     scenarios?: ScenarioList
@@ -54,6 +55,8 @@ export interface Pathway extends PathwayInfo {
     response_variables: string[]
     models?: ModelMap
     datasets?: DatasetMap
+    data_transformations? : IdMap<DataTransformation>
+    model_dt_ensembles?: ModelEnsembleMap
     model_ensembles?: ModelEnsembleMap
     executable_ensemble_summary: IdMap<ExecutableEnsembleSummary>
     notes?: Notes

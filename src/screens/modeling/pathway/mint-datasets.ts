@@ -20,8 +20,12 @@ import { fromTimeStampToDateString } from "util/date-utils";
 import "weightless/snackbar";
 import 'components/loading-dots';
 import { Region } from "screens/regions/reducers";
+import { datasetSpecificationGet, dataTransformationGet } from "model-catalog/actions";
+import { getLabel } from "model-catalog/util";
+import { DatasetSpecification, DataTransformation } from '@mintproject/modelcatalog_client';
 
-import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
+//import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
+import { ModelCatalogParameter } from 'screens/models/configure/resources/parameter';
 
 store.addReducers({
     datasets
@@ -63,8 +67,28 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
     private _selectResourcesImmediateUpdate: boolean;
 
     private _expandedInput : IdMap<boolean> = {};
+
+    private _dsInputs: IdMap<DatasetSpecification> = {};
+    private _dataTransformations: IdMap<DataTransformation> = {};
+    private _inputDT: IdMap<DataTransformation[]> = {};
+    private _loading: IdMap<boolean> = {};
+
+    private _dtParameters : ModelCatalogParameter;
+
+    @property({type: String})
+    private _selectedDT: string;
   
-    private _mcInputs : IdMap<ModelCatalogDatasetSpecification> = {};
+    //private _mcInputs : IdMap<ModelCatalogDatasetSpecification> = {};
+
+    constructor () {
+        super();
+        this._dtParameters = new ModelCatalogParameter();
+        this._dtParameters.creationEnable();
+        this._dtParameters.inline = false;
+        this._dtParameters.setActionEditOrAdd();
+        this._dtParameters.onlyFixedValue = true;
+        this._dtParameters.lazy = true;
+    }
 
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
@@ -334,6 +358,45 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                                         <div style="flex-grow: 1">&nbsp;</div>
                                     </div>
                                     `}
+
+                                    ${this._inputDT[input.id] && this._inputDT[input.id].length > 0 ? html`
+                                        You can also use the following <b>data transformations</b> to generate 
+                                        <b>${input.name}</b>:
+                                        <p/>
+                                        <table class="pure-table pure-table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th></th>
+                                                    <th><b>Transformation name</b></th>
+                                                    <th>Description</th>
+
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            ${this._inputDT[input.id].map((dt:DataTransformation) => html`
+                                                <tr>
+                                                    <td>
+                                                        <input class="${this._valid(modelid)}_${this._valid(input.id!)}_dt_checkbox" 
+                                                            type="checkbox" data-transformationid="${dt.id}"
+                                                            ?checked=""></input>
+                                                    </td>
+                                                    <td><b>${getLabel(dt)}</b></td>
+                                                    <td>${dt.description ? dt.description[0] : ''}</td>
+                                                </tr>
+                                                ${this._selectedDT == dt.id ? html`
+                                                <tr>
+                                                    <td></td>
+                                                    <td colspan="4">
+                                                        To use this <b>data transformation</b> you must set up the following parameters:
+                                                        ${this._dtParameters}
+                                                    </td>
+                                                </tr>
+                                                ` : ''}
+                                            `)}
+                                            </tbody>
+                                        </table>
+                                    ` : ""}
+
                                 </li>
                                 `;
                             }
@@ -390,6 +453,16 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         ${renderNotifications()}
         ${this._renderDialogs()}
         `;
+    }
+
+    private _selectDT (dt:DataTransformation) {
+        if (this._selectedDT == dt.id) {
+            this._dtParameters.setResources(null);
+            this._selectedDT = "";
+        } else {
+            this._dtParameters.setResources(dt.hasParameter);
+            this._selectedDT = dt.id;
+        }
     }
 
     _renderDialogs() {
@@ -502,6 +575,35 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
         return selected_datasets;     
     }
 
+    _getDataTransformationSelections(modelid: string, inputid: string) {
+        let selected_datatransformations = {};
+        this.shadowRoot!.querySelectorAll("input."+
+                this._valid(modelid) + "_" + this._valid(inputid) +"_dt_checkbox" )
+                .forEach((cbox) => {
+                    let cboxinput = (cbox as HTMLInputElement);
+                    let transformationid = cboxinput.dataset["transformationid"];
+                    if(cboxinput.checked) {
+                        selected_datatransformations[transformationid]
+                                = this._removeUndefined(this._dataTransformations[transformationid]);
+                        console.log('x', selected_datatransformations[transformationid]);
+                    }
+        });
+        return selected_datatransformations;     
+    }
+
+    _removeUndefined (oobj) {
+        if (typeof oobj != 'object') return oobj;
+        let obj = {...oobj};
+        Object.keys(obj).forEach((key:string) => {
+            if (obj[key] === undefined) delete obj[key]
+            else if (Array.isArray(obj[key])) {
+                console.log("Array! rec");
+                obj[key] = obj[key].map((x:object) => this._removeUndefined(x));
+            }
+        });
+        return obj;
+    }
+
     _loadDatasetResources(dataset: Dataset) {
         let dates = this.pathway.dates || this.subgoal.dates || this.scenario.dates;
         let req = loadResourcesForDataset(dataset.id, dates, this._subgoal_region, this.prefs.mint)
@@ -609,6 +711,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                 }
 
                 let new_datasets = this._getDatasetSelections(modelid, inputid);
+                let new_datatransformations = this._getDataTransformationSelections(modelid, inputid);
         
                 // Check if any datasets need to be removed
                 let datasets_to_be_removed: string[] = [];
@@ -638,12 +741,28 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                     model_ensembles[modelid][inputid].push(dsid!);
                     datasets[dsid] = new_datasets[dsid];
                 });
+
+                // Now add the data transformations
+                let data_transformations = {}; //FIXME: load from firestore
+                let model_dt_ensembles: ModelEnsembleMap = this.pathway.model_dt_ensembles || {};
+                Object.keys(new_datatransformations).map((dtid) => {
+                    if(!model_dt_ensembles[modelid])
+                        model_dt_ensembles[modelid] = {};
+                    if(!model_dt_ensembles[modelid][inputid])
+                        model_dt_ensembles[modelid][inputid] = [];
+                    model_dt_ensembles[modelid][inputid].push(dtid!);
+                    data_transformations[dtid] = new_datatransformations[dtid];
+                });
+
                 // Create new pathway
                 this.pathway = {
                     ...this.pathway,
                     datasets: datasets,
-                    model_ensembles: model_ensembles
-                }                        
+                    data_transformations: data_transformations,
+                    model_ensembles: model_ensembles,
+                    model_dt_ensembles: model_dt_ensembles
+                }
+                console.log(">>>", this.pathway);
             })
         });
         // Turn off edit mode
@@ -742,7 +861,28 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
             this._models = this.pathway.models!;
             if (Object.keys(this._models).length > 0) {
                 Object.values(this._models).forEach((m:Model) => {
-                    let fixed = m.input_files.filter((i) => !!i.value);
+                    (m.input_files || []).forEach((i) => {
+                        if (!this._loading[i.id] && !this._dsInputs[i.id]) {
+                            this._loading[i.id] = true;
+                            store.dispatch(datasetSpecificationGet(i.id)).then((ds:DatasetSpecification) => {
+                                this._dsInputs[ds.id] = ds;
+                                this._loading[ds.id] = false;
+                                (ds.hasDataTransformation || []).forEach((dt) => {
+                                    if (!this._loading[dt.id] && !this._dataTransformations[dt.id]) {
+                                        this._loading[dt.id] = true;
+                                        store.dispatch(dataTransformationGet(dt.id)).then((DT) => {
+                                            this._dataTransformations[DT.id] = DT;
+                                            this._loading[DT.id] = false;
+                                            if (!this._inputDT[i.id]) this._inputDT[i.id] = [];
+                                            this._inputDT[i.id].push(DT);
+                                            this.requestUpdate();
+                                        });
+                                    }
+                                });
+                            })
+                        }
+                    });
+                    /*let fixed = m.input_files.filter((i) => !!i.value);
                     if (false && fixed.length > 0) { //FIXME: not all inputs are in the catalog!
                         if (!this._mcInputs[m.id]) {
                             this._mcInputs[m.id] = new ModelCatalogDatasetSpecification();
@@ -758,7 +898,7 @@ export class MintDatasets extends connect(store)(MintPathwayPage) {
                             };
                         });
                         this._mcInputs[m.id].setResources(fakeInputs);
-                    }
+                    }*/
                 });
             }
 
