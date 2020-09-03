@@ -2,7 +2,7 @@ import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../app/store";
 import { PageViewElement } from "../../components/page-view-element";
-import { ProblemStatementDetails, Task, ProblemStatement, ThreadInfo } from "./reducers";
+import { ProblemStatement, Task, ProblemStatementInfo, ThreadInfo } from "./reducers";
 import { SharedStyles } from "../../styles/shared-styles";
 import { deleteThread, deleteTask, subscribeProblemStatement } from "./actions";
 
@@ -25,6 +25,7 @@ import { RegionMap } from "screens/regions/reducers";
 import { getVariableLongName } from "offline_data/variable_list";
 import { TaskEditor } from "components/task-editor";
 import { ThreadEditor } from "components/thread-editor";
+import { getLatestEvent } from "util/event_utils";
 
 
 @customElement('mint-problem-statement')
@@ -32,9 +33,6 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _regions: RegionMap;
-
-    @property({type: Object})
-    private _problem_statement_details!: ProblemStatementDetails | null;
 
     @property({type: Object})
     private _problem_statement!: ProblemStatement | null;
@@ -46,7 +44,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
     private _selectedThreadId!: String | null;
 
     @property({type: Boolean})
-    private _hideObjectives: boolean = false;
+    private _hideTasks: boolean = false;
     
     @property({type: Boolean})
     private _threadListExpanded: boolean = false;
@@ -70,6 +68,10 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                 padding-top: 5px;
                 height: calc(100% - 73px);
                 background: #FFFFFF;
+            }
+
+            .right_full .card2 {
+                height: 100%;
             }
 
             .twocolumns {
@@ -128,16 +130,25 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
             return html`<wl-progress-spinner class="loading"></wl-progress-spinner>`;
 
         //console.log("rendering");
-        if(!this._problem_statement_details) {
+        if(!this._problem_statement) {
             return html``;
         }
+
+        let tasks = this._problem_statement.tasks;
+        let taskids = Object.keys(tasks);
+        taskids = taskids.sort((a, b) => 
+            (getLatestEvent(tasks[a].events)?.timestamp < 
+            getLatestEvent(tasks[b].events)?.timestamp ? -1 : 1));
 
         let threads : string[] = []; //Threads id to show
         let totalThreads : number = 0;
         if (this._selectedTask && this._selectedTask.threads) {
-            let orderedKeys : string[] = Object.values(this._selectedTask.threads)
-                    .sort((a,b) => (a.name ?? "").localeCompare((b.name ?? "")))
-                    .map(pw => pw.id);
+            let allThreads = this._selectedTask.threads;
+            let orderedKeys = Object.keys(allThreads);
+            orderedKeys = orderedKeys.sort((a, b) => 
+                (getLatestEvent(allThreads[a].events)?.timestamp < 
+                getLatestEvent(allThreads[b].events)?.timestamp ? -1 : 1));
+
             totalThreads = orderedKeys.length;
             if (totalThreads > 3 && !this._threadListExpanded) {
                 let index = orderedKeys.indexOf(this._selectedThreadId as string);
@@ -173,7 +184,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
             <div class="twocolumns">
 
                 <!-- Left Column : Tree of Objectives/Subobjectives -->
-                <div class="${this._hideObjectives ? 'left_closed' : 'left'}">
+                <div class="${this._hideTasks ? 'left_closed' : 'left'}">
                     <div class="clt">
                         <div class="cltrow_padded problem_statementrow">
                             <div class="cltmain">
@@ -190,9 +201,10 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                 @click="${() => showDialog('tasksHelpDialog', this.shadowRoot)}">Read more</a>
                         </div>
                         <ul>
-                        ${Object.keys(this._problem_statement_details.tasks).map((taskid) => {
-                            const task = this._problem_statement_details!.tasks[taskid];
+                        ${Object.keys(this._problem_statement.tasks).map((taskid) => {
+                            const task = this._problem_statement!.tasks[taskid];
                             if(task) {
+                                let last_event = getLatestEvent(task.events);
                                 return html`
                                 <li class="active ${this._getTaskClass(task.id!)}">
                                     <div class="cltrow taskrow" id="task_${task.id}"
@@ -200,12 +212,17 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                             data-taskid="${task.id}">
                                         <div class="cltmain">
                                             ${this._getTaskVariablesText(task)}
-                                            ${task.name ? 
-                                                html `<div class='description'>${task.name}</div>` : ""
-                                            }
                                             <div class='description'>
-                                                ${this._getTaskRegionTimeText(task)}
+                                            ${this._getTaskRegionText(task)}${task.name ? (": " + task.name) :  ""}
                                             </div>
+                                            <div class='description'>
+                                                ${this._getTaskTimeText(task)}
+                                            </div>
+                                            ${last_event ? 
+                                            html`
+                                            <div class='caption'>
+                                                ${last_event?.userid} on ${last_event?.timestamp.toDateString()}
+                                            </div>` : ""}                                            
                                         </div>
                                         <wl-icon @click="${this._editTaskDialog}" 
                                             data-taskid="${task.id}"
@@ -226,7 +243,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                 </div>
 
                 <!-- Right Column : Thread Tree + Thread details -->
-                <div class="${this._hideObjectives ? 'right_full' : 'right'}">
+                <div class="${this._hideTasks ? 'right_full' : 'right'}">
                     <div class="card2">
                     ${this._selectedTask ?
                         html`
@@ -236,15 +253,15 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                     <wl-title level="4">
                                         Modeling threads
                                         &nbsp;&nbsp;
-                                        <wl-icon @click="${() => this._hideObjectives = !this._hideObjectives}"
+                                        <wl-icon @click="${() => this._hideTasks = !this._hideTasks}"
                                             class="actionIcon bigActionIcon" style="vertical-align:bottom">
-                                            ${!this._hideObjectives ? "fullscreen" : "fullscreen_exit"}</wl-icon>
+                                            ${!this._hideTasks ? "fullscreen" : "fullscreen_exit"}</wl-icon>
                                     </wl-title>
                                 </div>
                                 <wl-icon @click="${this._editThreadDialog}" 
                                     class="actionIcon addIcon">note_add</wl-icon>
                             </div>
-                            ${this._hideObjectives ? '' : html`
+                            ${this._hideTasks ? '' : html`
                             <div style="font-size:12.5px; color: #888; padding: 5px; padding-top: 0px">
                                 For a given task, you can investigate different initial conditions or different models.  
                                 Each of them can be explored by creating a new modeling thread for that task.
@@ -257,6 +274,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                     return "";
                                 }
                                 let pname = thread.name ? thread.name : this._selectedTask.name;
+                                let last_event = getLatestEvent(thread.events);
                                 return html`
                                     <li class="active ${this._getThreadClass(thread.id!)}">
                                         <div class="cltrow taskrow" id="thread_${thread.id}"
@@ -268,6 +286,11 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                                 }
                                             </div>
                                             ${i != (threads.length-1) || totalThreads < 4 || this._threadListExpanded ? html`
+                                            ${last_event ? 
+                                            html`
+                                            <div class='thread_caption'>
+                                                ${last_event?.userid} on ${last_event?.timestamp.toDateString()}
+                                            </div>` : ""}
                                             <wl-icon @click="${this._editThreadDialog}" 
                                                 data-threadid="${thread.id}"
                                                 class="actionIcon editIcon">edit</wl-icon>
@@ -328,7 +351,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
             Add Task
         </wl-tooltip>
         
-        ${Object.keys(this._problem_statement_details.tasks).map((taskid) => {
+        ${Object.keys(this._problem_statement.tasks).map((taskid) => {
             return html`
             <!-- Tooltips for the sub-goal -->
             <wl-tooltip anchor="#task_${taskid} .editIcon" 
@@ -361,6 +384,20 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         let startdate = toDateString(dates!.start_date);
         let enddate = toDateString(dates!.end_date);
         return regionname + " : " + startdate + " to " + enddate;
+    }
+
+    _getTaskRegionText(task: Task) {
+        let regionid = task.regionid;
+        let regionname = (regionid && this._regions && this._regions[regionid]) ? 
+                this._regions[regionid].name : this._region.name;
+        return regionname;
+    }
+
+    _getTaskTimeText(task: Task) {
+        let dates = task.dates ? task.dates : this._problem_statement.dates;
+        let startdate = toDateString(dates!.start_date);
+        let enddate = toDateString(dates!.end_date);
+        return startdate + " to " + enddate;
     }
 
     _renderHelpDialogs() {
@@ -417,7 +454,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
     _editTaskDialog(e: Event) {
         let taskid = (e.currentTarget as HTMLButtonElement).dataset['taskid'];
         if(taskid) {
-            let task = this._problem_statement_details!.tasks[taskid];
+            let task = this._problem_statement!.tasks[taskid];
             let taskEditor = this.shadowRoot.querySelector<TaskEditor>("#taskEditor")!;
             if(task) {
                 taskEditor.editTaskDialog(task);
@@ -434,7 +471,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
 
         let taskid = (e.currentTarget as HTMLButtonElement).dataset['taskid'];
         if(taskid) {
-            let task = this._problem_statement_details!.tasks[taskid];
+            let task = this._problem_statement!.tasks[taskid];
             if(task) {
                 if(!confirm("Do you want to delete the task '" + task.name + "' ?"))
                     return false;
@@ -487,7 +524,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
     _onSelectTask(e: Event) {
         let taskid = (e.currentTarget as HTMLButtonElement).dataset['taskid'];
 
-        let task = this._problem_statement_details!.tasks[taskid!];
+        let task = this._problem_statement!.tasks[taskid!];
         if(task && (!this._selectedTask || (this._selectedTask.id != taskid))) {     
             let threadid = "";
             for(let pathwayid in task.threads) {
@@ -543,7 +580,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
             if(!this._dispatched && (!state.modeling.problem_statement || (state.modeling.problem_statement.id != problem_statement_id))) {
                 // Reset the problem_statement details
                 this._problem_statement = null;
-                this._problem_statement_details = null;
+                this._problem_statement = null;
                 this._selectedTask = null;
                 this._selectedThreadId = null;
                 this._dispatched = true;
@@ -568,27 +605,27 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
 
                 this._dispatched = false;
                 state.modeling.problem_statement.changed = false;
-                this._problem_statement_details = state.modeling.problem_statement;
-                
-                this._problem_statement = {
-                    id: this._problem_statement_details.id,
-                    dates: this._problem_statement_details.dates,
-                    name: this._problem_statement_details.name,
-                    regionid: this._problem_statement_details.regionid,
-                    events: this._problem_statement_details.events
-                } as ProblemStatement;
+                this._problem_statement = state.modeling.problem_statement;
             }
             else if(!state.modeling.problem_statement) {
                 this._dispatched = false;
             }
         }
         else {
-            this._hideObjectives = false;
+            this._hideTasks = false;
         }
 
         if(state.modeling.problem_statement && state.modeling.problem_statement.tasks) {
             // If a task has been selected
             this._selectedTask = getUISelectedTask(state)!;
+        }
+
+        if(state.modeling && state.ui && state.ui.selected_problem_statement_id == null) {
+            if(state.modeling.problem_statement?.unsubscribe) {
+                console.log("Unsubscribing to problem_statement " + state.modeling.problem_statement.id);
+                state.modeling.problem_statement.unsubscribe();
+            }
+            state.modeling.problem_statement = null;
         }
 
         if(!user && state.modeling.problem_statement) {

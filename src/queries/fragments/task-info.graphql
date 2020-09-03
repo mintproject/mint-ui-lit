@@ -2,6 +2,7 @@
 
 fragment task_info on task {
     id
+    oldid
     name
     problem_statement_id
     start_date

@@ -1,5 +1,4 @@
 import { Action, ActionCreator } from "redux";
-import { gql } from '@apollo/client';
 import { GraphQL } from "config/graphql";
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "app/store";
@@ -54,7 +53,7 @@ export const listEmulatorModelTypes: ActionCreator<ListModelsThunkAction> = (reg
             });
         }
         let types = result.data.execution.map((m:any) => 
-            m.model.original_model.replace(MODEL_PREFIX, ""));
+            m.model.model_name.replace(MODEL_PREFIX, ""));
         types = types.filter((item: string, pos: number) => 
             item && (types.indexOf(item) == pos));
         types.sort();

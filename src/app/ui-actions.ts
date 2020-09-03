@@ -22,7 +22,7 @@ export type UIAction = UIActionSelectProblemStatement | UIActionSelectTask | UIA
     | UIActionSelectDataTransformation;
 
 export const selectProblemStatement: ActionCreator<UIActionSelectProblemStatement> = (problem_statement_id:string) => {
-    console.log("SelectProblemStatement:" + problem_statement_id);
+    console.log("selectProblemStatement:" + problem_statement_id);
     return {
         type: UI_SELECT_PROBLEM_STATEMENT,
         problem_statement_id: problem_statement_id
@@ -30,7 +30,7 @@ export const selectProblemStatement: ActionCreator<UIActionSelectProblemStatemen
 };
 
 export const selectTask: ActionCreator<UIActionSelectTask> = (task_id:string) => {
-    //console.log("selectTask:" + task_id);
+    console.log("selectTask:" + task_id);
     return {
         type: UI_SELECT_TASK,
         task_id: task_id

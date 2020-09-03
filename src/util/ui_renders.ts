@@ -8,16 +8,15 @@ export const renderVariables = (readonly: boolean, response_callback: Function, 
         Indicators are the variables or index that indicates the state of the system being modeled.
         Adjustable parameters are the variables and interventions you are interested in changing to explore outcomes on the indicator.
         </p>
-        <div class="formRow">
-            <div class="input_half">
-                <label>Indicators/Response of interest</label>
-                ${renderResponseVariables("", readonly, response_callback)}
-            </div>  
-            <div class="input_half">
-                <label>Adjustable Variables</label>
-                ${renderDrivingVariables("", readonly, driving_callback)}
-            </div>                            
-        </div>     
+        <div class="input_full">
+            <label>Indicators/Response of interest</label>
+            ${renderResponseVariables("", readonly, response_callback)}
+        </div>  
+        <br />
+        <div class="input_full">
+            <label>Adjustable Variables</label>
+            ${renderDrivingVariables("", readonly, driving_callback)}
+        </div>                            
     `;
 }
 

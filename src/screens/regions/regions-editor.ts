@@ -21,6 +21,7 @@ import { BoundingBox } from './reducers';
 
 import "./region-models";
 import "./region-datasets";
+import { geometriesToGeoJson, geoJsonToGeometries } from 'util/geometry_functions';
 
 @customElement('regions-editor')
 export class RegionsEditor extends connect(store)(PageViewElement)  {
@@ -51,6 +52,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     @property({type: Array})
     private _newregions: Array<any> = [];
+
+    @property({type: Object})
+    private _new_geometries: any = {};
 
     @property({type: Array})
     private _subcategories: RegionCategory[] = [];
@@ -261,7 +265,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     private _downloadGeoJson () {
         downloadFile(
-            this._selectedRegion.geojson_blob,
+            JSON.stringify(geometriesToGeoJson(this._selectedRegion.geometries)),
             this._selectedRegion.name.replace(/\s/, '_').toLowerCase() + '.json',
             'application/json');
     }
@@ -337,9 +341,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                     return;
                 }
                 let index = checkbox.value;
-                let nregion = this._newregions[index];
+                let geomobj = this._new_geometries[index];
                 let region = {
-                    geojson_blob: JSON.stringify(nregion),
+                    geometries: geomobj.geometries,
                     name: input.value,
                     category_id: regionType
                 } as Region;
@@ -460,15 +464,18 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                                 </th>
                             </thead>
                             <tbody>
-                                ${this._newregions.map((newregion, index) => {
+                                ${Object.keys(this._new_geometries).map((regionname) => {
+                                    let newgeometry = this._new_geometries[regionname];
                                     return html`
                                         <tr>
-                                            <td><input type="checkbox" checked class="regionindex" value="${index}"></td>
+                                            <td><input type="checkbox" checked class="regionindex" value="${regionname}"></td>
                                             <td>
                                                 <div class="input_full">
                                                     <input type="text" class="regionname"
                                                         value="${this._geojson_nameprop ? 
-                                                            newregion.properties['_mint_name'] : ''}">
+                                                            newgeometry.name + (newgeometry.geometries.length > 1 ? 
+                                                                ' (' + newgeometry.geometries.length +' parts)':  '')
+                                                                : ''}">
                                                     </input>
                                                 </div>
                                             </td>
@@ -493,23 +500,19 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     _selectGeojsonNameProperty(e: any) {
         this._geojson_nameprop = e.target.value;
-        this._setMintNameProperty();
+        this._setMintRegionNameAndGeometries();
     }
 
-    _setMintNameProperty() {
-        let dupesmap = {}
-        this._newregions = this._newregions.map((region) => {
-            let orig_region_name = region.properties[this._geojson_nameprop];
-            let new_region_name = orig_region_name;
-            if(!dupesmap[orig_region_name]) {
-                dupesmap[orig_region_name] = 1;
-            }
-            else {
-                new_region_name += "_" + dupesmap[orig_region_name];
-                dupesmap[orig_region_name] ++ ;
-            }
-            region.properties["_mint_name"]  = new_region_name;
-            return region;
+    _setMintRegionNameAndGeometries() {
+        this._new_geometries = {};
+        this._newregions.forEach((region) => {
+            let region_name = region.properties[this._geojson_nameprop];
+            if (!this._new_geometries[region_name])
+                this._new_geometries[region_name] = {
+                    name: region_name,
+                    geometries: []
+                }
+            this._new_geometries[region_name].geometries.push(region.geometry);
         })
     }    
 

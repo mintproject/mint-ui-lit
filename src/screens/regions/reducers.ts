@@ -6,10 +6,10 @@ import { REGIONS_LIST_TOP_REGIONS, REGIONS_LIST_SUB_REGIONS, REGIONS_SET_PREVIEW
 export type RegionMap = IdMap<Region>;
 
 export interface Region extends IdNameObject {
-    geojson_blob?: string, // This contains the whole geojson itself
     bounding_box?: BoundingBox,
     model_catalog_uri?: string,
-    category_id: string
+    category_id: string,
+    geometries: any[]
 }
 
 export interface RegionsState {

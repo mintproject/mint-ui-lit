@@ -99,15 +99,15 @@ export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages:
         id: setup.id,
         localname: setup.id.substr(setup.id.lastIndexOf("/") + 1),
         name: setup.label ? setup.label[0] : "",
-        calibrated_region: setup.hasRegion && setup.hasRegion.length > 0 ?
+        region_name: setup.hasRegion && setup.hasRegion.length > 0 ?
                 setup.hasRegion.map(getLabel).join(', ') : "",
         description: setup.description ? setup.description[0] : "",
         category: setup.hasModelCategory ? setup.hasModelCategory[0] : "",
-        wcm_uri: setup.hasComponentLocation ? setup.hasComponentLocation[0] : "",
+        code_url: setup.hasComponentLocation ? setup.hasComponentLocation[0] : "",
         input_files: [],
         input_parameters: [],
         output_files: [],
-        original_model: "", //FIXME row["modelName"] || "",
+        model_name: "", //FIXME row["modelName"] || "",
         model_version: "", //FIXME row["versionName"] || "",
         model_configuration: "", //FIXME row["configurationName"] || "",
         software_image: setup.hasSoftwareImage ? softwareImages[setup.hasSoftwareImage[0].id].label[0]: "",
@@ -116,7 +116,7 @@ export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages:
             .replace('Model', ' Model'),
         parameter_assignment: setup.parameterAssignmentMethod ? setup.parameterAssignmentMethod[0] : "",
         parameter_assignment_details: "",
-        target_variable_for_parameter_assignment: setup.calibrationTargetVariable ?
+        calibration_target_variable: setup.calibrationTargetVariable ?
                 setup.calibrationTargetVariable
                         .map((tv:any) => tv.label? tv.label[0] : '')
                         .filter((l:string) => !!l)

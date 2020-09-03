@@ -49,7 +49,7 @@ export class MintVisualize extends connect(store)(MintThreadPage) {
     }
     
     protected render() {
-        if(!this.thread) {
+        if(!this.thread || !this._task || !this.problem_statement) {
             return html ``;
         }
         let vizurls = getVisualizationURLs(this.thread, this._task, this.problem_statement, this.prefs.mint)

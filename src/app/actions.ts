@@ -254,6 +254,7 @@ const loadPage: ActionCreator<ThunkResult> =
         // No parameters. Load Modeling Home (List of ProblemStatements)
         import('../screens/modeling/modeling-home').then((_module) => {
           store.dispatch(selectProblemStatement(null));
+          store.dispatch(selectTask(null));
           store.dispatch(selectThread(null));
         });
       }

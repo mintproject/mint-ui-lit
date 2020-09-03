@@ -5,7 +5,7 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from '../../app/store';
 
 import { subscribeProblemStatementsList, addProblemStatement, deleteProblemStatement, updateProblemStatement } from './actions';
-import { ProblemStatementList, ProblemStatement, ProblemStatementEvent } from './reducers';
+import { ProblemStatementList, ProblemStatementInfo, ProblemStatementEvent } from './reducers';
 
 import "weightless/list-item";
 import "weightless/button";
@@ -221,7 +221,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
           },
           notes: problem_statement_notes,
           events: []
-        } as ProblemStatement;
+        } as ProblemStatementInfo;
 
         showNotification("saveNotification", this.shadowRoot!);
         if(problem_statement_id) {

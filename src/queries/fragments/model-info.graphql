@@ -3,14 +3,15 @@ fragment model_info on model {
     name
     description
     category
-    calibrated_region
+    region_name
     dimensionality
-    model_type
+    type
     model_version
-    original_model
+    model_name
+    model_configuration
     parameter_assignment
     parameter_assignment_details
-    target_variable_for_parameter_assignment        
+    calibration_target_variable
     spatial_grid_type
     spatial_grid_resolution
     inputs {
@@ -54,7 +55,7 @@ fragment model_info on model {
         min
         max
         unit
-        value
+        fixed_value
         position
         accepted_values
         adjustment_variable

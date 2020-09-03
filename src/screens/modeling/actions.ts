@@ -1,6 +1,6 @@
 import { Action, ActionCreator } from 'redux';
-import { ProblemStatementList, ProblemStatement, 
-    ProblemStatementDetails,  Thread, Task, 
+import { ProblemStatementList, ProblemStatementInfo, 
+    ProblemStatement,  Thread, Task, 
     Execution, ThreadInfo, ThreadList, TaskList } from './reducers';
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from '../../app/store';
@@ -75,11 +75,11 @@ export const THREAD_EXECUTIONS_RUN = 'THREAD_EXECUTIONS_RUN';
 
 export interface ProblemStatementsActionList extends Action<'PROBLEM_STATEMENTS_LIST'> { list: ProblemStatementList };
 export interface ProblemStatementsActionListSubscription extends Action<'PROBLEM_STATEMENTS_LIST_SUBSCRIPTION'> { unsubscribe: Function };
-export interface ProblemStatementsActionAdd extends Action<'PROBLEM_STATEMENTS_ADD'> { item: ProblemStatement };
+export interface ProblemStatementsActionAdd extends Action<'PROBLEM_STATEMENTS_ADD'> { item: ProblemStatementInfo };
 export interface ProblemStatementsActionRemove extends Action<'PROBLEM_STATEMENTS_REMOVE'> { id: string };
-export interface ProblemStatementsActionUpdate extends Action<'PROBLEM_STATEMENTS_UPDATE'> { item: ProblemStatement };
+export interface ProblemStatementsActionUpdate extends Action<'PROBLEM_STATEMENTS_UPDATE'> { item: ProblemStatementInfo };
 
-export interface ProblemStatementsActionDetails extends Action<'PROBLEM_STATEMENT_DETAILS'> { details: ProblemStatementDetails };
+export interface ProblemStatementsActionDetails extends Action<'PROBLEM_STATEMENT_DETAILS'> { details: ProblemStatement };
 export interface ProblemStatementsActionSubscription extends Action<'PROBLEM_STATEMENT_SUBSCRIPTION'> { unsubscribe: Function };
 
 export type ProblemStatementsAction = ProblemStatementsActionList | ProblemStatementsActionAdd | ProblemStatementsActionRemove |
@@ -169,7 +169,7 @@ export const subscribeProblemStatementsList: ActionCreator<ProblemListThunkResul
             console.log(result);
         }
         else {
-            let problem_statements:IdMap<ProblemStatement> = {};
+            let problem_statements:IdMap<ProblemStatementInfo> = {};
             let problem_statement_ids:string[] = [];
             let problems = result.data.problem_statement;
             //console.log(problems);
@@ -432,7 +432,7 @@ export const getAllThreadExecutionIds = async (thread_id: string, modelid: strin
 }
 
 // Add ProblemStatement
-export const addProblemStatement = (problem_statement:ProblemStatement) : Promise<string> =>  {
+export const addProblemStatement = (problem_statement:ProblemStatementInfo) : Promise<string> =>  {
     let problemobj = problemStatementToGQL(problem_statement);
     //console.log(problemobj);
     return APOLLO_CLIENT.mutate({
@@ -453,7 +453,7 @@ export const addProblemStatement = (problem_statement:ProblemStatement) : Promis
 };
 
 // Add Task
-export const addTask = (problem_statement: ProblemStatement, task: Task) : Promise<string> =>  {
+export const addTask = (problem_statement: ProblemStatementInfo, task: Task) : Promise<string> =>  {
     let taskobj = taskToGQL(task, problem_statement);
     return APOLLO_CLIENT.mutate({
         mutation: newTaskGQL,
@@ -473,7 +473,7 @@ export const addTask = (problem_statement: ProblemStatement, task: Task) : Promi
 };
 
 // Add Task
-export const addTaskWithThread = (problem_statement: ProblemStatement, task: Task, thread: ThreadInfo) : Promise<string[]> =>  {
+export const addTaskWithThread = (problem_statement: ProblemStatementInfo, task: Task, thread: ThreadInfo) : Promise<string[]> =>  {
     let taskobj = taskToGQL(task, problem_statement);
     let threadobj = threadToGQL(thread, task);
     taskobj["threads"] = {
@@ -522,7 +522,7 @@ export const addThread = (task:Task, thread: Thread | ThreadInfo) : Promise<stri
 
 
 // Update ProblemStatement
-export const updateProblemStatement = (problem_statement: ProblemStatement) =>  {
+export const updateProblemStatement = (problem_statement: ProblemStatementInfo) =>  {
     let problemobj = problemStatementUpdateToGQL(problem_statement);
     return APOLLO_CLIENT.mutate({
         mutation: updateProblemStatementGQL,
@@ -724,8 +724,10 @@ export const sendDataForIngestion = (problem_statement_id: string, task_id: stri
 }
 
 export const threadTotalRunsChanged = (oldthread: Thread, newthread: Thread) => {
-    if((oldthread == null || newthread == null) && oldthread != newthread)
+    if(oldthread == null && newthread != null)
         return true;
+    if(newthread == null)
+        return false;
 
     let oldtotal = 0;
     Object.keys(oldthread.execution_summary).map((modelid) => {
@@ -740,8 +742,11 @@ export const threadTotalRunsChanged = (oldthread: Thread, newthread: Thread) => 
 
 
 export const threadSummaryChanged = (oldthread: Thread, newthread: Thread) => {
-    if((oldthread == null || newthread == null) && oldthread != newthread)
+    if(oldthread == null && newthread != null)
         return true;
+    if(newthread == null)
+        return false;
+
     let oldsummary = _stringify_ensemble_summary(oldthread.execution_summary);
     let newsummary = _stringify_ensemble_summary(newthread.execution_summary);
     return oldsummary != newsummary;

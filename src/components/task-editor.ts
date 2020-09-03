@@ -2,7 +2,7 @@ import { customElement, LitElement, property, html, css } from "lit-element";
 import { SharedStyles } from '../styles/shared-styles';
 
 import "weightless/icon";
-import { Task, TaskEvent, ThreadInfo, ThreadEvent, Thread, ProblemStatement } from "screens/modeling/reducers";
+import { Task, TaskEvent, ThreadInfo, ThreadEvent, Thread, ProblemStatementInfo } from "screens/modeling/reducers";
 import { formElementsComplete, showNotification, resetForm, showDialog, hideDialog, hideNotification } from "util/ui_functions";
 import { getVariableIntervention, getVariableLongName } from "offline_data/variable_list";
 import { getUpdateEvent, getCreateEvent } from "util/graphql_adapter";
@@ -22,7 +22,7 @@ export class TaskEditor extends connect(store)(LitElement) {
     public task: Task;
 
     @property({type: Object})
-    public problem_statement: ProblemStatement;
+    public problem_statement: ProblemStatementInfo;
 
     @property({type: Function})
     public onSave : Function;
@@ -318,11 +318,12 @@ export class TaskEditor extends connect(store)(LitElement) {
                 // Update Threads of this task if variables have been modified
                 Object.values(this.task.threads!).map((thread: ThreadInfo) => {
                     if(thread.driving_variables?.toString() != this.task.driving_variables?.toString() ||
-                        thread.response_variables?.toString() != this.task.response_variables?.toString())
-                    thread.driving_variables = this.task.driving_variables;
-                    thread.response_variables = this.task.response_variables;
-                    thread.events = [getUpdateEvent("Updated Task Variables") as ThreadEvent];
-                    updateThreadInformation(thread);
+                            thread.response_variables?.toString() != this.task.response_variables?.toString()) {
+                        thread.driving_variables = this.task.driving_variables;
+                        thread.response_variables = this.task.response_variables;
+                        thread.events = [getUpdateEvent("Updated Task Variables") as ThreadEvent];
+                        updateThreadInformation(thread);
+                    }
                 })
             }
             else {

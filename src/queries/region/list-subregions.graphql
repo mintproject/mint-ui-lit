@@ -6,7 +6,9 @@ query list_sub_regions($regionId: String!) {
   }) {
     id
     name
-    geojson_blob
+    geometries {
+      geometry
+    }
     category_id
   }
 }

@@ -206,7 +206,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
             return html`<wl-progress-spinner class="loading"></wl-progress-spinner>`;
 
         if (!this.thread) {
-            return html``;
+            return html`No thread selected`;
         }
 
         return html`
@@ -253,14 +253,6 @@ export class MintThread extends connect(store)(MintThreadPage) {
         this.task = getUISelectedTask(state);
 
         let thread_id = state.ui!.selected_thread_id;
-        // If there is no thread, then stop monitoring
-        if(!thread_id) {
-            if(this.thread) {
-                //console.log("No thread passed in ? Unsubscribing to thread " + this.thread.id);
-                //this.thread.unsubscribe();
-            }
-            this.thread = null;
-        }
         // If a thread has been selected, fetch thread details
         if(thread_id && this.user) {
             if(!this._dispatched && (!state.modeling.thread || (state.modeling.thread.id != thread_id))) {
@@ -281,13 +273,15 @@ export class MintThread extends connect(store)(MintThreadPage) {
 
             // If we've already got the details in the state
             // - extract details from the state
-            if(state.modeling.thread && state.modeling.thread.id == thread_id) {
+            if(state.modeling.thread && 
+                state.modeling.thread.id == thread_id && 
+                state.modeling.thread.changed) {
+
                 this._dispatched = false;
-                if(this.threadChanged(this.thread, state.modeling.thread)) {
-                    this.thread = state.modeling.thread;
-                    if(!state.ui.selected_thread_section)
-                        this._selectMode(this._getNextMode());
-                }
+                state.modeling.thread.changed = false;
+                this.thread = state.modeling.thread;
+                if(!state.ui.selected_thread_section)
+                    this._selectMode(this._getNextMode());
             }
             else if(!state.modeling.thread) {
                 this._dispatched = false;
@@ -299,6 +293,14 @@ export class MintThread extends connect(store)(MintThreadPage) {
           this._selectMode(state.ui.selected_thread_section);
           state.ui.selected_thread_section = "";
         }
+
+        if(state.modeling && state.ui && state.ui.selected_thread_id == null) {
+            if(state.modeling.thread?.unsubscribe) {
+                console.log("Unsubscribing to thread " + state.modeling.thread.id);
+                state.modeling.thread.unsubscribe();
+            }
+            state.modeling.thread = null;
+        }        
 
         if(!this.user && state.modeling.thread) {
             // Logged out, Unsubscribe

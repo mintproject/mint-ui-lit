@@ -1,8 +1,8 @@
 query model_executions($modelTypes: [String!], $regionId: String!) {
-  model(where: {original_model: {_in: $modelTypes}}, order_by: {thread_models_aggregate: {count: desc}}) {
+  model(where: {model_name: {_in: $modelTypes}}, order_by: {thread_models_aggregate: {count: desc}}) {
     id
     name
-    calibrated_region
+    region_name
     thread_models(order_by: {executions_aggregate: {count: desc}}, where: {thread: {task: {problem_statement: {region: {id: {_eq: $regionId}}}}}}) {
       thread {
         id
@@ -27,7 +27,7 @@ query model_executions($modelTypes: [String!], $regionId: String!) {
       model {
         parameters {
           name
-          value
+          fixed_value
         }
         inputs {
           model_io {

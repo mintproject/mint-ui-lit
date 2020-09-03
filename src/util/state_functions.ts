@@ -1,4 +1,4 @@
-import { Thread, DatasetMap, ModelEnsembleMap, DataEnsembleMap, InputBindings, Execution, Task, ProblemStatement } from "../screens/modeling/reducers";
+import { Thread, DatasetMap, ModelEnsembleMap, DataEnsembleMap, InputBindings, Execution, Task, ProblemStatementInfo } from "../screens/modeling/reducers";
 import { RootState } from "../app/store";
 import { getVariableLongName } from "offline_data/variable_list";
 import { getLatestEventOfType } from "./event_utils";
@@ -64,6 +64,10 @@ export const getThreadModelsStatus = (thread:Thread) => {
     if(latest_event) {
         return TASK_DONE;
     }
+    // If there is no event, check if models have been selected
+    if(Object.keys(thread.models).length > 0) {
+        return TASK_DONE;
+    }
     return TASK_NOT_STARTED;
 }
 
@@ -72,6 +76,22 @@ export const getThreadDatasetsStatus = (thread:Thread) => {
     if(latest_event) {
         return TASK_DONE;
     }
+    if(getThreadModelsStatus(thread) == TASK_DONE) {
+        // If there is no event, check if datasets are needed and have been selected
+        let ok = true;
+        Object.keys(thread.model_ensembles).forEach((modelid) => {
+            let model = thread.models[modelid];
+            let mensemble = thread.model_ensembles[modelid];
+            model.input_files.forEach((input) => {
+                if(!input.value && !mensemble[input.id]) {
+                    ok = false;
+                }
+            })
+        });
+        if(ok) {
+            return TASK_DONE;
+        }
+    }
     return TASK_NOT_STARTED;
 }
 
@@ -79,6 +99,22 @@ export const getThreadParametersStatus = (thread:Thread) => {
     let latest_event = getLatestEventOfType(["SELECT_PARAMETERS"], thread.events);
     if(latest_event) {
         return TASK_DONE;
+    }
+    // If there is no event, check if parameters are needed and have been selected
+    if(getThreadModelsStatus(thread) == TASK_DONE) {
+        let ok = true;
+        Object.keys(thread.model_ensembles).forEach((modelid) => {
+            let model = thread.models[modelid];
+            let mensemble = thread.model_ensembles[modelid];
+            model.input_parameters.forEach((input) => {
+                if(!input.value && !mensemble[input.id]) {
+                    ok = false;
+                }
+            })
+        });
+        if(ok) {
+            return TASK_DONE;
+        }
     }
     return TASK_NOT_STARTED;
 }
@@ -89,7 +125,7 @@ export const getThreadRunsStatus = (thread:Thread) => {
         let ok = true;
         Object.keys(sum).map((modelid) => {
             let summary = sum[modelid];
-            if(summary.total_runs == 0 || 
+            if(!summary.total_runs || 
                     (summary.successful_runs != summary.total_runs))
                 ok = false;
         });
@@ -108,7 +144,7 @@ export const getThreadResultsStatus = (thread:Thread) => {
         let ok = true;
         Object.keys(sum).map((modelid) => {
             let summary = sum[modelid];
-            if(summary.total_runs == 0 || 
+            if(!summary.total_runs || 
                 (summary.ingested_runs != summary.total_runs))
                 ok = false;
         });
@@ -156,7 +192,7 @@ export const getUISelectedSubgoalRegion = (state: RootState) => {
     return null;
 }
 
-export const getVisualizationURLs = (thread: Thread, task: Task, problem_statement: ProblemStatement, prefs: MintPreferences) => {
+export const getVisualizationURLs = (thread: Thread, task: Task, problem_statement: ProblemStatementInfo, prefs: MintPreferences) => {
     if(getThreadResultsStatus(thread) == "TASK_DONE") {
         let responseV = thread.response_variables.length > 0?
             getVariableLongName(thread.response_variables[0]) : '';
@@ -165,9 +201,9 @@ export const getVisualizationURLs = (thread: Thread, task: Task, problem_stateme
 
         let visualizations = [];
         let data = {
-            thread_id: thread.id,
-            task_id: task.id,
-            problem_statement_id: problem_statement.id
+            thread_id: thread.oldid ?? thread.id,
+            task_id: task.oldid ?? task.id,
+            problem_statement_id: problem_statement.oldid ?? problem_statement.id
         };
         let qs = new URLSearchParams(data);
         let query : string = qs.toString();

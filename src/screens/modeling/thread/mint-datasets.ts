@@ -15,7 +15,7 @@ import { showNotification, showDialog, hideDialog } from "../../../util/ui_funct
 import { selectThreadSection } from "../../../app/ui-actions";
 import { MintThreadPage } from "./mint-thread-page";
 import { IdMap } from "../../../app/reducers";
-import { fromTimeStampToDateString } from "util/date-utils";
+import { fromTimeStampToDateString, toDateString } from "util/date-utils";
 
 import "weightless/snackbar";
 import 'components/loading-dots';
@@ -308,8 +308,8 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                                         <td>${(dataset.categories || []).join(", ")}</td>
                                                         <td>${dataset.region}</td>
                                                         <td>
-                                                            ${dataset.time_period.start_date?.toDateString()} to 
-                                                            ${dataset.time_period.end_date?.toDateString()}
+                                                            ${toDateString(dataset.time_period.start_date)} to 
+                                                            ${toDateString(dataset.time_period.end_date)}
                                                         </td>
                                                         <td><a href="${dataset.source.url}">${dataset.source.name}</a></td>
                                                     </tr>
@@ -453,8 +453,8 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                     </td>
                                     <td><a target="_blank" href="${resource.url}">${resource.name}</a></td> 
                                     <td>
-                                        ${resource.time_period.start_date?.toDateString()} to 
-                                        ${resource.time_period.end_date?.toDateString()}
+                                        ${toDateString(resource.time_period.start_date)} to 
+                                        ${toDateString(resource.time_period.end_date)}
                                     </td>
                                 </tr>
                             `;
@@ -710,7 +710,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
     }
 
     getSubregionId() {
-        return this.task.regionid || this.problem_statement.regionid || this.problem_statement.regionid;
+        return this.task?.regionid || this.problem_statement?.regionid;
     }
 
     stateChanged(state: RootState) {

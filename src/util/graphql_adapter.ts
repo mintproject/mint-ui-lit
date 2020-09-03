@@ -1,4 +1,4 @@
-import { Task, Thread, ProblemStatement, ProblemStatementDetails, ThreadInfo, MintEvent, ModelEnsembleMap, DataEnsembleMap, Execution, ExecutionSummary } from "../screens/modeling/reducers"
+import { Task, Thread, ProblemStatementInfo, ProblemStatement, ThreadInfo, MintEvent, ModelEnsembleMap, DataEnsembleMap, Execution, ExecutionSummary } from "../screens/modeling/reducers"
 import { auth } from "config/firebase";
 import { Model, ModelIO, ModelParameter } from "screens/models/reducers";
 import { Dataset, DataResource } from "screens/datasets/reducers";
@@ -10,7 +10,9 @@ export const regionToGQL = (region: Region) => {
         id: region.id,
         name: region.name,
         category_id: region.category_id,
-        geojson_blob: JSON.parse(region.geojson_blob),
+        geometries: {
+            data: region.geometries
+        },
         model_catalog_uri: region.model_catalog_uri
     };
     return regionobj;
@@ -21,7 +23,7 @@ export const regionFromGQL = (regionobj: any) : Region => {
         id: regionobj.id,
         name: regionobj.name,
         category_id: regionobj.category_id,
-        geojson_blob: JSON.stringify(regionobj.geojson_blob),
+        geometries: regionobj.geometries.map((geoobj) => geoobj["geometry"]),
         model_catalog_uri: regionobj.model_catalog_uri
     } as Region;
     return region;
@@ -47,7 +49,7 @@ export const eventFromGQL = (eventobj: any) : MintEvent => {
     return event;
 }
 
-export const problemStatementToGQL = (problem_statement: ProblemStatement) => {
+export const problemStatementToGQL = (problem_statement: ProblemStatementInfo) => {
     let problemobj = {
         name: problem_statement.name,
         start_date: toDateString(problem_statement.dates.start_date),
@@ -60,7 +62,7 @@ export const problemStatementToGQL = (problem_statement: ProblemStatement) => {
     return problemobj;
 }
 
-export const problemStatementUpdateToGQL = (problem_statement: ProblemStatement) => {
+export const problemStatementUpdateToGQL = (problem_statement: ProblemStatementInfo) => {
     let problemobj = {
         id: problem_statement.id,
         name: problem_statement.name,
@@ -74,9 +76,10 @@ export const problemStatementUpdateToGQL = (problem_statement: ProblemStatement)
     return problemobj;
 }
 
-export const problemStatementFromGQL = (problem: any) : ProblemStatementDetails => {
+export const problemStatementFromGQL = (problem: any) : ProblemStatement => {
     let details = {
         id : problem["id"],
+        oldid : problem["oldid"],
         regionid: problem["region_id"],
         name: problem["name"],
         dates: {
@@ -85,7 +88,7 @@ export const problemStatementFromGQL = (problem: any) : ProblemStatementDetails 
         },
         events: problem["events"].map(eventFromGQL),
         tasks: {}
-    } as ProblemStatementDetails;
+    } as ProblemStatement;
     if(problem["tasks"]) {
         problem["tasks"].forEach((task:any) => {
             let fbtask = taskFromGQL(task);
@@ -96,7 +99,7 @@ export const problemStatementFromGQL = (problem: any) : ProblemStatementDetails 
     return details;
 }
 
-export const taskToGQL = (task: Task, problem_statement: ProblemStatement) => {
+export const taskToGQL = (task: Task, problem_statement: ProblemStatementInfo) => {
     let taskGQL = {
         name: task.name,
         problem_statement_id: problem_statement.id,
@@ -133,6 +136,7 @@ export const taskUpdateToGQL = (task: Task) => {
 export const taskFromGQL = (task: any) : Task => {
     let taskobj = {
         id : task["id"],
+        oldid : task["oldid"],
         problem_statement_id: task["problem_statement_id"],
         regionid: task["region_id"],
         name: task["name"],
@@ -191,6 +195,7 @@ export const threadUpdateToGQL = (thread: Thread | ThreadInfo) => {
 export const threadFromGQL = (thread: any) => {
     let fbthread = {
         id : thread["id"],
+        oldid : thread["oldid"],
         task_id: thread["task_id"],
         regionid: thread["region_id"],
         name: thread["name"],
@@ -282,7 +287,11 @@ export const dataFromGQL = (d: any) => {
     return {
         id: d["id"],
         name: ds["name"],
-        resources: d["resources"],
+        resources: d["resources"].map((resobj:any) => {
+            let res = resourceFromGQL(resobj["resource"]);
+            res.selected = resobj["selected"];
+            return res;
+        }),
         resource_count: d["resources"].length
     } as Dataset;
 }
@@ -382,6 +391,7 @@ export const threadInfoToGQL = (thread: ThreadInfo, taskid: string, regionid: st
 export const threadInfoFromGQL = (thread: any) => {
     return {
         id : thread["id"],
+        oldid : thread["oldid"],
         name: thread["name"],
         dates: {
             start_date: new Date(thread["start_date"]),
@@ -420,6 +430,32 @@ export const executionFromGQL = (ex: any) : Execution => {
     });
     return exobj;
 }
+
+export const resourceToGQL = (resource: DataResource) => {
+    let resourceobj = {
+        id: resource.id,
+        name: resource.name,
+        url: resource.url,
+        start_date: resource.time_period?.start_date,
+        end_date: resource.time_period?.end_date
+    };
+    return resourceobj;
+}
+
+export const resourceFromGQL = (resourceobj: any) : DataResource => {
+    let resource = {
+        id: resourceobj.id,
+        name: resourceobj.name,
+        url: resourceobj.url,
+        spatial_coverage: resourceobj.spatial_coverage,
+        time_period: {
+            start_date: new Date(resourceobj.start_date),
+            end_date: new Date(resourceobj.end_date)
+        }
+    } as DataResource;
+    return resource;
+}
+
 
 export const getCreateEvent = (notes: string) => {
     return {

@@ -8,7 +8,7 @@ import { REGIONS_LIST_TOP_REGIONS } from "../regions/actions";
 
 export interface ModelingState {
     problem_statements?: ProblemStatementList
-    problem_statement?: ProblemStatementDetails
+    problem_statement?: ProblemStatement
     thread?: Thread
     executions?: ModelExecutions
 }
@@ -40,11 +40,11 @@ export interface ThreadEvent extends MintEvent {
 
 export interface ProblemStatementList {
     problem_statement_ids: string[]
-    problem_statements: IdMap<ProblemStatement>
+    problem_statements: IdMap<ProblemStatementInfo>
     unsubscribe?: Function
 }
 
-export interface ProblemStatement extends IdNameObject {
+export interface ProblemStatementInfo extends IdNameObject {
     regionid: string
     dates: DateRange
     events: ProblemStatementEvent[]
@@ -55,9 +55,9 @@ export interface DateRange {
     end_date: Date
 }
 
-export interface ProblemStatementDetails extends ProblemStatement {
+export interface ProblemStatement extends ProblemStatementInfo {
     tasks: IdMap<Task>
-    changed: boolean
+    changed?: boolean
     unsubscribe?: Function
 }
 
@@ -82,6 +82,7 @@ export interface Thread extends ThreadInfo {
     execution_summary: IdMap<ExecutionSummary>
     visualizations?: Visualization[]
     events: ThreadEvent[]
+    changed?: boolean
     unsubscribe?: Function
 }
 
@@ -182,7 +183,7 @@ const modeling: Reducer<ModelingState, RootAction> = (state = INITIAL_STATE, act
             let problem_statement_sub = {
                 ...state.problem_statement,
                 unsubscribe: action.unsubscribe
-            } as ProblemStatementDetails
+            } as ProblemStatement
             return {
                 ...state,
                 problem_statement: problem_statement_sub
@@ -192,7 +193,7 @@ const modeling: Reducer<ModelingState, RootAction> = (state = INITIAL_STATE, act
                 ...action.details,
                 changed: true,
                 unsubscribe: state.problem_statement!.unsubscribe
-            } as ProblemStatementDetails            
+            } as ProblemStatement            
             return {
                 ...state,
                 problem_statement: problem_statement
@@ -251,6 +252,7 @@ const modeling: Reducer<ModelingState, RootAction> = (state = INITIAL_STATE, act
         case THREAD_DETAILS:
             let thread = {
                 ...action.details,
+                changed: true,
                 unsubscribe: state.thread!.unsubscribe
             } as Thread            
             return {

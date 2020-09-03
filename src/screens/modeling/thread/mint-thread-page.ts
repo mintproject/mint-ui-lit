@@ -2,14 +2,14 @@ import { property } from "lit-element";
 import { RootState } from "../../../app/store";
 import { PageViewElement } from "../../../components/page-view-element";
 
-import { Thread, ProblemStatement } from "../reducers";
+import { Thread, ProblemStatementInfo } from "../reducers";
 import { getUISelectedThread } from "../../../util/state_functions";
 import { User } from "firebase";
 import { UserPreferences } from "app/reducers";
 
 export class MintThreadPage extends PageViewElement {
     @property({type: Object})
-    protected problem_statement!: ProblemStatement;
+    protected problem_statement!: ProblemStatementInfo;
     
     @property({type: Object})
     protected thread!: Thread

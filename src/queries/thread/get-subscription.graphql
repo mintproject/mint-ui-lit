@@ -16,8 +16,6 @@ subscription sub_thread($id: uuid!) {
                     selected
                     resource {
                         id
-                        name
-                        url
                     }
                 }
             }

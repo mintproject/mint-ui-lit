@@ -16,7 +16,7 @@ query model_types($regionId: String!) {
   ) {
 		model {
       id
-      original_model
+      model_name
     }
   }
 }

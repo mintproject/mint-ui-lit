@@ -2,6 +2,8 @@ query get_region_details($id:String!) {
   region_by_pk(id:$id) {
     id
     name
-    geojson_blob
+    geometries {
+      geometry
+    }
   }
 }

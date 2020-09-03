@@ -107,13 +107,13 @@ export class MintModels extends connect(store)(MintThreadPage) {
         },*/
         {
             name: "Target variable for parameter assignment/estimation",
-            fn: (model:Model) => model.target_variable_for_parameter_assignment ? 
-                    model.target_variable_for_parameter_assignment : html`<span style="color:#999">No specified<span>`
+            fn: (model:Model) => model.calibration_target_variable ? 
+                    model.calibration_target_variable : html`<span style="color:#999">No specified<span>`
         },
         {
             name: "Configuration region",
-            fn: (model:Model) => model.calibrated_region ?
-                    model.calibrated_region : html`<span style="color:#999">No specified<span>`
+            fn: (model:Model) => model.region_name ?
+                    model.region_name : html`<span style="color:#999">No specified<span>`
         },
         {
             name: "Spatial dimensionality",
@@ -528,7 +528,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
                     if (model.model_version) {
                         Object.values(this._allModels).forEach((mod:MCModel) => {
                             if ((mod.hasVersion || []).some((ver:SoftwareVersion) => ver.id === model.model_version))
-                                model.original_model = mod.id;
+                                model.model_name = mod.id;
                         });
                     }
             });

@@ -6,6 +6,8 @@ query list_top_regions {
   }) {
     id
     name
-    geojson_blob
+    geometries {
+      geometry
+    }
   }
 }

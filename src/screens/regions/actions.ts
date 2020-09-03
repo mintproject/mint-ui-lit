@@ -1,7 +1,6 @@
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "../../app/store";
 import { ActionCreator, Action } from "redux";
-import { EXAMPLE_REGION_DATA } from "../../offline_data/sample_scenarios";
 import { db } from "../../config/firebase";
 import { Region, BoundingBox, Point, RegionMap, RegionCategory } from "./reducers";
 import { OFFLINE_DEMO_MODE } from "../../app/actions";
@@ -105,7 +104,7 @@ export const listTopRegions: ActionCreator<ListRegionsThunkResult> = () => (disp
             let regions = {} as RegionMap;
             result.data.region.forEach((regionobj) => {
                 let region = regionFromGQL(regionobj);
-                region.bounding_box = _calculateBoundingBox(region.geojson_blob)
+                region.bounding_box = _calculateBoundingBox(region.geometries)
                 regions[region.id] = region;
             })
             dispatch({
@@ -116,30 +115,27 @@ export const listTopRegions: ActionCreator<ListRegionsThunkResult> = () => (disp
     });
 };
 
-const _calculateBoundingBox = (geojsonBlob: any) => {
-    let regionGeoJson = JSON.parse(geojsonBlob);
+const _calculateBoundingBox = (geometries: any[]) => {
     var xmin=99999, ymin=99999, xmax=-99999, ymax=-99999;
-    var geometry = regionGeoJson.features ? 
-      regionGeoJson.features[0].geometry :
-      regionGeoJson.geometry;
+    geometries.forEach((geometry) => {
+        let coords_list = geometry.coordinates;
+        if(geometry.type == "MultiPolygon") {
+            coords_list = coords_list.flat(1);
+        }
 
-    let coords_list = geometry.coordinates;
-    if(geometry.type == "MultiPolygon") {
-        coords_list = coords_list.flat(1);
-    }
-
-    coords_list.map((coords: any) => {
-        coords.map((c: any) => {
-            if(c[0] < xmin)
-                xmin = c[0];
-            if(c[1] < ymin)
-                ymin = c[1];
-            if(c[0] > xmax)
-                xmax = c[0];
-            if(c[1] > ymax)
-                ymax = c[1];
+        coords_list.map((coords: any) => {
+            coords.map((c: any) => {
+                if(c[0] < xmin)
+                    xmin = c[0];
+                if(c[1] < ymin)
+                    ymin = c[1];
+                if(c[0] > xmax)
+                    xmax = c[0];
+                if(c[1] > ymax)
+                    ymax = c[1];
+            })
         })
-    })
+    });
 
     return {
       xmin: xmin-0.01, 
@@ -166,7 +162,7 @@ export const listSubRegions: ActionCreator<SubRegionsThunkResult> = (regionid: s
             let regions = {} as RegionMap;
             result.data.region.forEach((regionobj) => {
                 let region = regionFromGQL(regionobj);
-                region.bounding_box = _calculateBoundingBox(region.geojson_blob)
+                region.bounding_box = _calculateBoundingBox(region.geometries)
                 regions[region.id] = region;
             })
             dispatch({
@@ -200,7 +196,7 @@ export const getRegionDetails = (regionid: string, subregionid: string) => {
             }
             else {
                 let region = regionFromGQL(result.data.region_by_pk);
-                region.bounding_box = _calculateBoundingBox(region.geojson_blob)
+                region.bounding_box = _calculateBoundingBox(region.geometries)
                 resolve(region);
             }
         });
