@@ -1,4 +1,4 @@
-mutation delete_problem_statement($id: uuid!) {
+mutation delete_problem_statement($id: String!) {
   delete_thread_provenance(where: {thread: {task: {problem_statement_id: {_eq: $id}}}}) {
     affected_rows
   }

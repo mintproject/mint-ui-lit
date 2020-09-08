@@ -6,7 +6,7 @@ import { SharedStyles } from "../../../styles/shared-styles";
 import { updateThread } from "../actions";
 import { renderNotifications } from "../../../util/ui_renders";
 import { showNotification } from "../../../util/ui_functions";
-import { Execution, Task, DataEnsembleMap, Visualization, ThreadEvent } from "../reducers";
+import { Execution, Task, ModelIOBindings, Visualization, ThreadEvent } from "../reducers";
 import { getUISelectedTask, getVisualizationURLs } from "../../../util/state_functions";
 import { MintThreadPage } from "./mint-thread-page";
 import { getVariableLongName } from "../../../offline_data/variable_list";
@@ -153,7 +153,7 @@ export class MintVisualize extends connect(store)(MintThreadPage) {
                             Datasets:
                             <ul>
                                 ${Object.keys(this.thread.model_ensembles!).map((modelid) => {
-                                    let model_ensemble = this.thread.model_ensembles![modelid] as DataEnsembleMap;
+                                    let model_ensemble = this.thread.model_ensembles![modelid].bindings as ModelIOBindings;
                                     let model = this.thread.models![modelid];
                                     return html`
                                     Datasets for model : ${model.name}
@@ -179,7 +179,7 @@ export class MintVisualize extends connect(store)(MintThreadPage) {
                             Setup:
                             <ul>
                                 ${Object.keys(this.thread.model_ensembles!).map((modelid) => {
-                                    let model_ensemble = this.thread.model_ensembles![modelid] as DataEnsembleMap;
+                                    let model_ensemble = this.thread.model_ensembles![modelid].bindings as ModelIOBindings;
                                     let model = this.thread.models![modelid];
                                     return html`
                                     Adjustment Variables for model : ${model.name}

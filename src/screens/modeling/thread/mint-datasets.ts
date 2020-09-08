@@ -4,11 +4,11 @@ import { store, RootState } from "../../../app/store";
 import datasets, { Dataset, ModelDatasets } from "../../datasets/reducers";
 import ReactGA from 'react-ga';
 
-import { DatasetMap, DataEnsembleMap, ModelEnsembleMap, ComparisonFeature, Task, ThreadEvent } from "../reducers";
+import { DatasetMap, ModelIOBindings, ModelEnsembleMap, ComparisonFeature, Task, ThreadEvent } from "../reducers";
 import { SharedStyles } from "../../../styles/shared-styles";
 import { Model, getPathFromModel } from "../../models/reducers";
 import { queryDatasetsByVariables, loadResourcesForDataset } from "../../datasets/actions";
-import { updateThread } from "../actions";
+import { updateThread, setThreadData } from "../actions";
 import { removeDatasetFromThread, matchVariables, getThreadDatasetsStatus, TASK_DONE, getUISelectedTask } from "../../../util/state_functions";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
 import { showNotification, showDialog, hideDialog } from "../../../util/ui_functions";
@@ -24,6 +24,7 @@ import { Region } from "screens/regions/reducers";
 import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
 import { getLatestEventOfType } from "util/event_utils";
 import { getCustomEvent } from "../../../util/graphql_adapter";
+import { uuidv4 } from "screens/models/configure/util";
 
 store.addReducers({
     datasets
@@ -154,7 +155,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                 let fixed_inputs = model.input_files.filter((input) => !!input.value);
                 
                 // Get any existing ensemble selection for the model
-                let ensembles:DataEnsembleMap = this.thread.model_ensembles![modelid] || {};
+                let ensembles:ModelIOBindings = this.thread.model_ensembles![modelid].bindings || {};
 
                 return html`
                     <wl-title level="4">
@@ -539,12 +540,13 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         this._selectResourcesDataset.resources.map((res) => {
             res.selected = resource_selected[res.id];
         })
+        /*
         this._selectionUpdate = true;
         if(this._selectResourcesImmediateUpdate) {
             let newthread = {...this.thread};  
             updateThread(newthread);
             showNotification("saveNotification", this.shadowRoot!);
-        }
+        }*/
         hideDialog("resourceSelectionDialog", this.shadowRoot);
     }
 
@@ -583,6 +585,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                 });
             })
         });
+        console.log("Loading Datasets...");
 
         Promise.all(Object.values(new_datasets)
                 .filter(ds => !ds.resources_loaded)
@@ -595,6 +598,9 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
     }
 
     _selectThreadDatasets() {
+        let datasets: DatasetMap = this.thread.datasets || {};
+        let model_ensembles: ModelEnsembleMap = this.thread.model_ensembles || {};
+
         Object.keys(this.thread.models!).map((modelid) => {
             let model = this.thread.models![modelid];
             model.input_files.filter((input) => !input.value).map((input) => {
@@ -626,47 +632,26 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                 })
         
                 // Now add the rest of the new datasets
-                let datasets: DatasetMap = this.thread.datasets || {};
-                let model_ensembles: ModelEnsembleMap = this.thread.model_ensembles || {};
+
                 Object.keys(new_datasets).map((dsid) => {
                     if(!model_ensembles[modelid])
-                        model_ensembles[modelid] = {};
+                        model_ensembles[modelid] = {
+                            id: uuidv4(),
+                            bindings: {}
+                        };
                     if(!model_ensembles[modelid][inputid])
-                        model_ensembles[modelid][inputid] = [];
-                    model_ensembles[modelid][inputid].push(dsid!);
+                        model_ensembles[modelid].bindings[inputid] = [];
+                    model_ensembles[modelid].bindings[inputid].push(dsid!);
                     datasets[dsid] = new_datasets[dsid];
-                });
-                // Create new thread
-                this.thread = {
-                    ...this.thread,
-                    datasets: datasets,
-                    model_ensembles: model_ensembles
-                }                        
+                });                 
             })
         });
         // Turn off edit mode
         this._editMode = false;
-
-        let newthread = {
-            ...this.thread
-        };
-
-        // Update notes
-        let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        newthread.events.push(getCustomEvent("SELECT_DATA", notes) as ThreadEvent);
-
-        // Update thread itself
-        //console.log(this.thread);
-        updateThread(newthread);
         showNotification("saveNotification", this.shadowRoot!);
-    }
 
-    _removeThreadDataset(modelid: string, inputid: string, datasetid:string) {
-        if(confirm("Are you sure you want to remove this dataset ?")) {
-            let newthread = {...this.thread};
-            newthread = removeDatasetFromThread(newthread, datasetid, modelid, inputid);
-            updateThread(newthread);
-        }
+        let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
+        setThreadData(datasets, model_ensembles, notes, this.thread);
     }
 
     firstUpdated() {
@@ -688,7 +673,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                     // Only query for model inputs that we haven't already made a selection for
                     // Unless we're in edit more, then get all datasets
                     if(!this.thread.model_ensembles![modelid] || 
-                            !this.thread.model_ensembles![modelid][input.id!] ||
+                            !this.thread.model_ensembles![modelid].bindings[input.id!] ||
                             this._editMode) {
                         //console.log("Querying datasets for model: " + modelid+", input: " + input.id);
                         store.dispatch(queryDatasetsByVariables(
@@ -698,7 +683,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                             loading: false,
                             datasets: []
                         };
-                        this.thread.model_ensembles![modelid][input.id!].map((datasetid) => {
+                        this.thread.model_ensembles![modelid].bindings[input.id!].map((datasetid) => {
                             let dataset = this.thread.datasets![datasetid];
                             this._queriedDatasets[modelid][input.id!].datasets.push(dataset);
                         });

@@ -3,16 +3,16 @@ import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 import ReactGA from 'react-ga';
 
-import { ModelMap, ModelEnsembleMap, ComparisonFeature, ExecutionSummary, ThreadEvent } from "../reducers";
+import { ModelMap, ModelEnsembleMap, ComparisonFeature } from "../reducers";
 import models, { VariableModels, Model, getPathFromModel } from "../../models/reducers";
 import { queryModelsByVariables, setupToOldModel } from "../../models/actions";
-import { setupGetAll, regionsGet, modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet,
-         sampleCollectionGet, sampleResourceGet, softwareImagesGet } from 'model-catalog/actions';
+import { setupGetAll, regionsGet, modelsGet, versionsGet, 
+    modelConfigurationsGet, softwareImagesGet } from 'model-catalog/actions';
 import { getId } from 'model-catalog/util';
 
 import { SharedStyles } from "../../../styles/shared-styles";
-import { updateThread, deleteAllThreadExecutionIds } from "../actions";
-import { removeDatasetFromThread, matchVariables, getUISelectedSubgoalRegion } from "../../../util/state_functions";
+import { cacheModelsFromCatalog, setThreadModels } from "../actions";
+import { getUISelectedSubgoalRegion } from "../../../util/state_functions";
 import { isSubregion } from "model-catalog/util";
 
 import "weightless/tooltip";
@@ -24,13 +24,11 @@ import { getVariableLongName } from "../../../offline_data/variable_list";
 import { MintThreadPage } from "./mint-thread-page";
 import { Region } from "screens/regions/reducers";
 import { IdMap } from "app/reducers";
-import { Model as MCModel, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, SampleCollection,
-         SampleResource } from '@mintproject/modelcatalog_client';
+import { Model as MCModel, SoftwareVersion, 
+    ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
 
 import 'components/loading-dots';
-import { ModelCatalogState } from "model-catalog/reducers";
 import { getLatestEventOfType } from "util/event_utils";
-import { getUpdateEvent, getCustomEvent } from "../../../util/graphql_adapter";
 
 store.addReducers({
     models
@@ -135,8 +133,8 @@ export class MintModels extends connect(store)(MintThreadPage) {
         },
         {
             name: "Minimum output time interval",
-            fn: (model:Model) => model.minimum_output_time_interval ?
-                    model.minimum_output_time_interval
+            fn: (model:Model) => model.output_time_interval ?
+                    model.output_time_interval
                     : html`<span style="color:#999">No specified<span>`
         }
     ]
@@ -202,12 +200,12 @@ export class MintModels extends connect(store)(MintThreadPage) {
                 html `
                 <div class="notepage">${renderLastUpdateText(latest_model_event)}</div>
                 `: html ``
-            }            
+            }
             ${latest_model_event?.notes ? 
                 html`
                 <fieldset class="notes">
                     <legend>Notes</legend>
-                    <div class="notepage">${latest_model_event}</div>
+                    <div class="notepage">${latest_model_event?.notes}</div>
                 </fieldset>
                 `: html``
             }         
@@ -378,7 +376,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
 
     private _getStoredModelURL (model:Model) {
         //console.log(model);
-        let uri =  this._regionid + '/models/explore' + getPathFromModel(model) + "/";
+        let uri =  this._regionid + '/models/explore' + getPathFromModel(model);
         return uri;
     }
 
@@ -461,166 +459,29 @@ export class MintModels extends connect(store)(MintThreadPage) {
           category: 'Thread',
           action: 'Models continue',
         });
-        let models = this._getSelectedModels();
-        //FIXME this is not necesary now.
-        Object.values(models).forEach((model) => {
-            if (model.hasRegion)
-                delete model.hasRegion;
-        });
-        let model_ensembles:ModelEnsembleMap = this.thread.model_ensembles || {};
-        let execution_summary:IdMap<ExecutionSummary> = this.thread.execution_summary || {};
-
-        if (Object.keys(models).length < 1) {
-            showNotification("selectOneModelNotification", this.shadowRoot!);
-            return;
-        }
-
-        // Check if any models have been removed
-        Object.keys(this.thread.models || {}).map((modelid) => {
-            if(!models[modelid]) {
-                // modelid has been removed. Remove it from the model and data ensembles
-                if(model_ensembles[modelid]) {
-                    let data_ensembles = { ...model_ensembles[modelid] };
-                    Object.keys(data_ensembles).map((inputid) => {
-                        let datasets = data_ensembles[inputid].slice();
-                        datasets.map((dsid) => {
-                            this.thread = removeDatasetFromThread(this.thread, dsid, modelid, inputid);
-                        })
-                    })
-                    delete model_ensembles[modelid];
-                }
-                if(execution_summary[modelid]) {
-                    // Delete ensemble ids
-                    deleteAllThreadExecutionIds(this.thread.id, modelid);
-                    // Remove executable summary
-                    delete execution_summary[modelid];
-                }
-            }
-        });
-
-        Object.keys(models || {}).map((modelid) => {
-            if(!model_ensembles[modelid]) {
-                model_ensembles[modelid] = {};
-            }
-        });
+        let modelmap = this._getSelectedModels();
+        let models = [];
 
         showNotification("saveNotification", this.shadowRoot!);
-        this._waiting = true;
-        // GET all data for the selected models.
-        //console.log("getting all info", models);
-        Promise.all(
-            Object.keys(models || {}).map((modelid) => setupGetAll(modelid))
-        ).then((setups) => {
-            let fixedModels = setups.map((setup) => setupToOldModel(setup, this._allSoftwareImages));
-            Object.values(fixedModels).forEach((model) => {
-                if (model.hasRegion)
-                    delete model.hasRegion;
-                    Object.values(this._allConfigs).forEach((cfg:ModelConfiguration) => {
-                        if ((cfg.hasSetup || []).some((setup:ModelConfigurationSetup) => setup.id === model.id))
-                            model.model_configuration = cfg.id;
-                    });
-                    if (model.model_configuration) {
-                        Object.values(this._allVersions).forEach((ver:SoftwareVersion) => {
-                            if ((ver.hasConfiguration || []).some((cfg:ModelConfiguration) => cfg.id === model.model_configuration))
-                                model.model_version = ver.id;
-                        });
-                    }
-                    if (model.model_version) {
-                        Object.values(this._allModels).forEach((mod:MCModel) => {
-                            if ((mod.hasVersion || []).some((ver:SoftwareVersion) => ver.id === model.model_version))
-                                model.model_name = mod.id;
-                        });
-                    }
-            });
-            /* The api does not return collections of inputs. FIXME */
-            let fixCollection = Promise.all( Object.values(fixedModels).map((model:Model) =>
-                Promise.all( model.input_files.map((input) => {
-                    if (input.value && input.value.id && input.value.resources && input.value.resources.length === 0) {
-                        console.log('Checking collection...', input.value.id);
-                        return new Promise((resolve, reject) => {
-                            let req : Promise<SampleCollection> = store.dispatch(sampleCollectionGet(input.value.id));
-                            req.then((sc:SampleCollection) => {
-                                if (sc.hasPart) {
-                                    console.log('hasPart:', sc.hasPart);
-                                    let pResources = Promise.all(sc.hasPart.map((sr:SampleResource) => 
-                                            store.dispatch(sampleResourceGet(sr.id))));
-                                    pResources.then((srs:SampleResource[]) => {
-                                        //console.log('all sample resources!');
-                                        input.value.resources = srs.map((sr:SampleResource) => {
-                                            return {
-                                                url: sr.value ? <unknown>sr.value[0] as string : "",
-                                                id: sr.id,
-                                                name: sr.label ? sr.label[0] : "",
-                                                selected: true
-                                            };
-                                        });
-                                        if (srs.length > 0 && srs[0].dataCatalogIdentifier) {
-                                            input.value.id = srs[0].dataCatalogIdentifier[0];
-                                        }
-                                        resolve();
-                                    });
-                                } else {
-                                    resolve();
-                                }
-                            });
-                            req.catch(resolve);
-                        });
 
-                    } else {
-                        return Promise.resolve();
-                    }
-                }) )
-            ) );
-
-            fixCollection.then(() => {
-
-                let mapModels = {}
-                fixedModels.forEach(model => mapModels[model.id] = model);
-
-                let newthread = {
-                    ...this.thread,
-                    models: mapModels,
-                    model_ensembles: model_ensembles
-                }
-                let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;                
-                newthread.events.push(getCustomEvent("SELECT_MODELS", notes) as ThreadEvent);     
-
-                this._waiting = false;
-                updateThread(newthread); 
-                
-                this._editMode = false;
-
-            })
-
-        })
-    }
-
-    _removeThreadModel(modelid:string) {
-        let newthread = { ...this.thread };
-        let model = newthread.models![modelid];
-        if(model) {
-            if(confirm("Are you sure you want to remove this model ?")) {
-                let models:ModelMap = newthread.models || {};
-                let model_ensembles:ModelEnsembleMap = newthread.model_ensembles || {};
-                delete models[modelid];
-                if(model_ensembles[modelid]) {
-                    let data_ensembles = { ...model_ensembles[modelid] };
-                    Object.keys(data_ensembles).map((inputid) => {
-                        let datasets = data_ensembles[inputid].slice();
-                        datasets.map((dsid) => {
-                            newthread = removeDatasetFromThread(newthread, dsid, modelid, inputid);
-                        })
-                    })
-                    delete model_ensembles[modelid];
-                }
-                newthread = {
-                    ...newthread,
-                    models: models,
-                    model_ensembles: model_ensembles
-                }
-                updateThread(newthread);                   
-            }
+        for(let modelid in modelmap) {
+            models.push(modelmap[modelid]);
         }
+        
+        // Cache models from Catalog
+        this._waiting = true;
+        await cacheModelsFromCatalog(models, 
+            this._allSoftwareImages, this._allConfigs, 
+            this._allVersions, this._allModels);
+
+        this._waiting = false;
+
+        let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
+        
+        // Mark selected models in thread
+        // NOTE: This deletes existing data & parameter selections. 
+        // FIXME: Warn user that this will delete existing data/parameter/runs ?
+        setThreadModels(models, notes, this.thread);
     }
 
     _queryModelCatalog() {

@@ -2,7 +2,7 @@
 #import "../fragments/task-info.graphql"
 #import "../fragments/thread-info.graphql"
 
-subscription sub_problem_statement($id: uuid!) {
+subscription sub_problem_statement($id: String!) {
     problem_statement_by_pk(id:$id) {
         ...problem_statement_info
         tasks {

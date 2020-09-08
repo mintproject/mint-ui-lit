@@ -156,7 +156,7 @@ export class TaskEditor extends connect(store)(LitElement) {
                             return html`
                             <option value="${cat.id}">${cat.name}</option>
                             ${subCategories.length > 0 ? subCategories.map((subcat: RegionCategory) => {
-                                if(this._categorizedRegions[subcat.id])
+                                if(this._categorizedRegions && this._categorizedRegions[subcat.id])
                                     return html`<option value="${subcat.id}">&nbsp;&nbsp;&nbsp;&nbsp;${subcat.name}</option>`;
                             }) : html`
                                 <option disabled>&nbsp;&nbsp;&nbsp;&nbsp;No subcategories</option>

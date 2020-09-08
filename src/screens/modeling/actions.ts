@@ -1,7 +1,7 @@
 import { Action, ActionCreator } from 'redux';
 import { ProblemStatementList, ProblemStatementInfo, 
     ProblemStatement,  Thread, Task, 
-    Execution, ThreadInfo, ThreadList, TaskList } from './reducers';
+    Execution, ThreadInfo, ThreadList, TaskList, ModelEnsembleMap, DatasetMap, ExecutionSummary } from './reducers';
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from '../../app/store';
 //import { db, fieldValue, auth } from '../../config/firebase';
@@ -17,26 +17,45 @@ import subscribeThreadsListGQL from '../../queries/thread/list-subscription.grap
 import subscribeProblemStatementGQL from '../../queries/problem-statement/get-subscription.graphql';
 import subscribeTaskGQL from '../../queries/task/get-subscription.graphql';
 import subscribeThreadGQL from '../../queries/thread/get-subscription.graphql';
+
 import newProblemStatementGQL from '../../queries/problem-statement/new.graphql';
 import newTaskGQL from '../../queries/task/new.graphql';
 import newThreadGQL from '../../queries/thread/new.graphql';
+
 import updateProblemStatementGQL from '../../queries/problem-statement/update.graphql';
 import updateTaskGQL from '../../queries/task/update.graphql';
-import updateThreadGQL from '../../queries/thread/update.graphql';
+import updateThreadModelGQL from '../../queries/thread/update-models.graphql';
+import updateThreadDataGQL from '../../queries/thread/update-datasets.graphql';
+import updateThreadParametersGQL from '../../queries/thread/update-parameters.graphql';
+import updateThreadInfoGQL from '../../queries/thread/update-info.graphql';
+
 import deleteProblemStatementGQL from '../../queries/problem-statement/delete.graphql';
 import deleteTaskGQL from '../../queries/task/delete.graphql';
 import deleteThreadGQL from '../../queries/thread/delete.graphql';
+
+import listExistingModelsGQL from '../../queries/model/list-in.graphql';
+import newModelsGQL from '../../queries/model/new.graphql';
+
 import executionIdsForThreadGQL from '../../queries/execution/executionids-for-thread.graphql';
 import subscribeExecutionsListGQL from '../../queries/execution/list-subscription.graphql';
 import listExecutionsListGQL from '../../queries/execution/list.graphql';
 
 import { problemStatementFromGQL, taskFromGQL, threadFromGQL, 
-    threadInfoFromGQL, taskToGQL, threadToGQL, problemStatementToGQL, 
-    executionFromGQL, taskUpdateToGQL, threadUpdateToGQL, 
-    problemStatementUpdateToGQL } from '../../util/graphql_adapter';
+    threadInfoFromGQL, taskToGQL, problemStatementToGQL, 
+    executionFromGQL, taskUpdateToGQL, 
+    problemStatementUpdateToGQL, 
+    threadInfoUpdateToGQL,
+    threadInfoToGQL,
+    threadModelsToGQL,
+    modelToGQL,
+    getCustomEvent,
+    threadDataBindingsToGQL,
+    threadParameterBindingsToGQL} from '../../util/graphql_adapter';
 import { postJSONResource } from 'util/mint-requests';
 import { isObject } from 'util';
 import { Md5 } from 'ts-md5';
+import { Model as MCModel, SoftwareImage, ModelConfiguration, SoftwareVersion } from '@mintproject/modelcatalog_client';
+import { fetchModelsFromCatalog } from 'screens/models/actions';
 
 export const PROBLEM_STATEMENTS_LIST = 'PROBLEM_STATEMENTS_LIST';
 export const PROBLEM_STATEMENTS_LIST_SUBSCRIPTION = 'PROBLEM_STATEMENTS_LIST_SUBSCRIPTION';
@@ -475,7 +494,7 @@ export const addTask = (problem_statement: ProblemStatementInfo, task: Task) : P
 // Add Task
 export const addTaskWithThread = (problem_statement: ProblemStatementInfo, task: Task, thread: ThreadInfo) : Promise<string[]> =>  {
     let taskobj = taskToGQL(task, problem_statement);
-    let threadobj = threadToGQL(thread, task);
+    let threadobj = threadInfoToGQL(thread, task.id, task.regionid);
     taskobj["threads"] = {
         data: [threadobj]
     }
@@ -500,8 +519,8 @@ export const addTaskWithThread = (problem_statement: ProblemStatementInfo, task:
 };
 
 // Add Thread
-export const addThread = (task:Task, thread: Thread | ThreadInfo) : Promise<string> =>  {
-    let threadobj = threadToGQL(thread, task);
+export const addThread = (task:Task, thread: ThreadInfo) : Promise<string> =>  {
+    let threadobj = threadInfoToGQL(thread, task.id, task.regionid);
     //console.log(threadobj);
     return APOLLO_CLIENT.mutate({
         mutation: newThreadGQL,
@@ -544,43 +563,76 @@ export const updateTask = (task: Task) =>  {
 };
 
 // Update Thread
-export const updateThread = (thread:Thread) =>  {
-    // Update everything about the thread ?
+export const updateThread = (thread:Thread) =>  { 
 };
 
 export const updateThreadInformation = (threadinfo: ThreadInfo) => {
-    let threadobj = threadUpdateToGQL(threadinfo);
+    let threadobj = threadInfoUpdateToGQL(threadinfo);
     return APOLLO_CLIENT.mutate({
-        mutation: updateThreadGQL,
+        mutation: updateThreadInfoGQL,
         variables: {
             object: threadobj
         }
     });
 }
 
-export const setThreadModels = (thread: Thread, model: Model) =>  {
-    // Delete all from thread_models for thread
-    // Delete all from thread_data for thread
-    // Delete all thread_executions for thread
-    // Delete thread_execution_summary for thread
-
-    // Add new models in thread_models
+export const setThreadModels = (models: Model[], notes: string, thread: Thread) =>  {
+    let threadmodelsobj = threadModelsToGQL(models, thread.id);
+    let event = getCustomEvent("SELECT_MODELS", notes);
+    let eventobj = event;
+    eventobj["thread_id"] = thread.id;
+    return APOLLO_CLIENT.mutate({
+        mutation: updateThreadModelGQL,
+        variables: {
+            threadId: thread.id,
+            threadModelIds: Object.values(thread.model_ensembles).map(tmap => tmap.id),
+            objects: threadmodelsobj,
+            event: eventobj
+        }
+    });
 };
 
-export const setThreadData = (thread: Thread, model: Model) =>  {
-    // Delete all from thread_data for thread
-    // Delete all thread_executions for thread
-    // Delete thread_execution_summary for thread
-
-    // Add new datasets in thread_data
-    // Add new data bindings in thread_models
+export const setThreadData = (datasets: DatasetMap, model_ensembles: ModelEnsembleMap, 
+        notes: string, thread: Thread) =>  {
+    let bindings = threadDataBindingsToGQL(datasets, model_ensembles, thread);
+    let event = getCustomEvent("SELECT_DATA", notes);
+    let eventobj = event;
+    eventobj["thread_id"] = thread.id;
+    return APOLLO_CLIENT.mutate({
+        mutation: updateThreadDataGQL,
+        variables: {
+            threadId: thread.id,
+            data: bindings.data,
+            threadModelIds: Object.values(thread.model_ensembles).map(tmap => tmap.id),
+            modelIO: bindings.model_io,
+            event: eventobj
+        }
+    });
 };
 
-export const setThreadParameters = (thread: Thread, model: Model) =>  {
-    // Delete all thread_executions for thread
-    // Delete thread_execution_summary for thread
-
-    // Add new parameter bindings in thread_models
+export const setThreadParameters = (model_ensembles: ModelEnsembleMap, 
+        execution_summary: IdMap<ExecutionSummary>,
+        notes: string, thread: Thread) =>  {
+    let bindings = threadParameterBindingsToGQL(model_ensembles, thread);
+    let event = getCustomEvent("SELECT_PARAMETERS", notes);
+    let eventobj = event;
+    eventobj["thread_id"] = thread.id;
+    let summaries = [];
+    Object.keys(execution_summary).forEach((modelid) => {
+        let summary = execution_summary[modelid];
+        summary["thread_model_id"] = model_ensembles[modelid].id;
+        summaries.push(summary);
+    })
+    return APOLLO_CLIENT.mutate({
+        mutation: updateThreadParametersGQL,
+        variables: {
+            threadId: thread.id,
+            threadModelIds: Object.values(thread.model_ensembles).map(tmap => tmap.id),
+            summaries: summaries,
+            modelParams: bindings,
+            event: eventobj
+        }
+    });
 };
 
 // Update Thread Executions
@@ -594,6 +646,49 @@ export const setThreadExecutions = (executions: Execution[]) => {
     })
     return batch.commit();*/
 }
+
+// Cache Models in GraphQL backend
+export const cacheModelsFromCatalog = async (
+    models: Model[], 
+    allSoftwareImages: IdMap<SoftwareImage>, 
+    allConfigs: ModelConfiguration[],
+    allVersions: SoftwareVersion[],
+    allModels: MCModel[] ) =>  {
+        // First check if any of these models are already in GraphQL
+        let result = await APOLLO_CLIENT.query({
+            query: listExistingModelsGQL,
+            variables: {
+                modelIds: models.map((m) => m.id)
+            }
+        });
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let uncached_models = {};
+            models.forEach(model => {
+                let found = false;
+                result.data.model.forEach(m => {
+                    if (m["id"] == model["id"])
+                        found = true;
+                });
+                if(!found) {
+                    uncached_models[model.id] = model;
+                }
+            });
+            if(Object.keys(uncached_models).length > 0) {
+                let full_models = await fetchModelsFromCatalog(uncached_models, 
+                    allSoftwareImages, allConfigs, allVersions, allModels); 
+                await APOLLO_CLIENT.mutate({
+                    mutation: newModelsGQL,
+                    variables: {
+                        objects: Object.values(full_models).map((fullmodel) => modelToGQL(fullmodel))
+                    }
+                });
+            }
+        }
+    }
 
 // Add Executions
 export const addThreadExecutions = (executions: Execution[]) => {

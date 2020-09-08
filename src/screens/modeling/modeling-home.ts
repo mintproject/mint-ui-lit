@@ -43,8 +43,11 @@ export class ModelingHome extends connect(store)(PageViewElement) {
     return html`
 
     <div>  
-      <problem-statements-list class="page fullpage" ?active="${this._subpage == 'home'}"></problem-statements-list>
-      <mint-problem-statement class="page fullpage" ?active="${this._subpage == 'problem_statement'}"></mint-problem-statement>   
+      <problem-statements-list class="page fullpage" 
+        ?active="${this._subpage == 'home'}"></problem-statements-list>
+      <mint-problem-statement class="page fullpage" 
+        ?active="${this._subpage == 'problem_statement' || this._subpage == 'scenario'}"
+        ></mint-problem-statement>   
     </div>
     `
   }

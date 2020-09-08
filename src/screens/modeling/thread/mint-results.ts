@@ -5,7 +5,7 @@ import ReactGA from 'react-ga';
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { BASE_HREF } from "../../../app/actions";
-import { matchVariables } from "../../../util/state_functions";
+import { matchVariables, getThreadParametersStatus, TASK_DONE } from "../../../util/state_functions";
 import { Execution, ModelExecutions, Thread } from "../reducers";
 import { updateThread, getAllThreadExecutionIds, listThreadExecutions, threadSummaryChanged, threadTotalRunsChanged, sendDataForIngestion } from "../actions";
 import { showNotification, hideDialog, showDialog } from "../../../util/ui_functions";
@@ -65,6 +65,17 @@ export class MintResults extends connect(store)(MintThreadPage) {
         if(!this.thread) {
             return html ``;
         }
+
+        let cando = (getThreadParametersStatus(this.thread) == TASK_DONE);
+        // If no parameters selected
+        if(!cando) {
+            return html `
+            <p>
+                This step is for monitoring model results.
+            </p>
+            Please setup and run some models first
+            `
+        }        
 
        // Group running executions
        let grouped_executions = {};
@@ -489,7 +500,8 @@ export class MintResults extends connect(store)(MintThreadPage) {
             this._executions = state.modeling.executions;
         }
 
-        if(runs_status_changed) {
+        let cando = this.thread && (getThreadParametersStatus(this.thread) == TASK_DONE);
+        if(runs_status_changed && cando) {
             if(runs_total_changed) {
                 this.threadModelExecutionIds = {};
             }

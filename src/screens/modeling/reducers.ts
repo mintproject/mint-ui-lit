@@ -63,9 +63,10 @@ export interface ProblemStatement extends ProblemStatementInfo {
 
 export interface ThreadInfo extends IdNameObject {
     dates?: DateRange
-    task_id: string,
+    task_id: string
     driving_variables: string[]
     response_variables: string[]
+    regionid?: string
     events?: ThreadEvent[]
 }
 
@@ -119,11 +120,16 @@ export interface Task extends IdNameObject {
 
 // Mapping of model id to data ensembles
 export interface ModelEnsembleMap {
-    [modelid: string]: DataEnsembleMap
+    [modelid: string]: ThreadModelMap
+}
+
+export interface ThreadModelMap {
+    id: string,
+    bindings: ModelIOBindings
 }
 
 // Mapping of model input to list of values (data ids or parameter values)
-export interface DataEnsembleMap {
+export interface ModelIOBindings {
     [inputid: string]: string[]
 }
 

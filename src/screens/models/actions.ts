@@ -4,8 +4,8 @@ import { RootState } from "../../app/store";
 import { Model, ModelParameter } from "./reducers";
 import { Dataset } from "../datasets/reducers";
 
-import { setupsSearchVariable } from 'model-catalog/actions';
-import { ModelConfigurationSetup, DatasetSpecification, SoftwareImage } from '@mintproject/modelcatalog_client';
+import { setupsSearchVariable, setupGetAll, sampleCollectionGet, getIdFromUri, getUser, sampleResourceGet } from 'model-catalog/actions';
+import { Model as MCModel, ModelConfigurationSetup, DatasetSpecification, SoftwareImage, ModelConfiguration, SoftwareVersion, SampleCollectionApi, SampleCollection, SampleResource, SampleResourceApi } from '@mintproject/modelcatalog_client';
 import { sortByPosition, getLabel } from 'model-catalog/util';
 
 import { getVariableProperty } from "offline_data/variable_list";
@@ -125,7 +125,7 @@ export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages:
         dimensionality: "",
         spatial_grid_type: "",
         spatial_grid_resolution: "",
-        minimum_output_time_interval: "",
+        output_time_interval: "",
         usage_notes: setup.hasUsageNotes ? setup.hasUsageNotes[0] : ""
     };
 
@@ -189,3 +189,88 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
         });
     })
 };
+
+
+export const fetchModelsFromCatalog = async (
+            models: IdMap<Model>, 
+            allSoftwareImages: IdMap<SoftwareImage>, 
+            allConfigs: ModelConfiguration[],
+            allVersions: SoftwareVersion[],
+            allModels: MCModel[] ) =>  {
+
+        // GET all data for the selected models.
+        //console.log("getting all info", models);
+        return Promise.all(
+            Object.keys(models || {}).map((modelid) => setupGetAll(modelid))
+        ).then(async (setups) => {
+            let fixedModels = setups.map((setup) => setupToOldModel(setup, allSoftwareImages));
+            Object.values(fixedModels).forEach((model) => {
+                if (model.hasRegion)
+                    delete model.hasRegion;
+                    Object.values(allConfigs).forEach((cfg:ModelConfiguration) => {
+                        if ((cfg.hasSetup || []).some((setup:ModelConfigurationSetup) => setup.id === model.id))
+                            model.model_configuration = cfg.id;
+                    });
+                    if (model.model_configuration) {
+                        Object.values(allVersions).forEach((ver:SoftwareVersion) => {
+                            if ((ver.hasConfiguration || []).some((cfg:ModelConfiguration) => cfg.id === model.model_configuration))
+                                model.model_version = ver.id;
+                        });
+                    }
+                    if (model.model_version) {
+                        Object.values(allModels).forEach((mod:MCModel) => {
+                            if ((mod.hasVersion || []).some((ver:SoftwareVersion) => ver.id === model.model_version))
+                                model.model_name = mod.id;
+                        });
+                    }
+            });
+            let sampleCollectionApi = new SampleCollectionApi();
+            let sampleResourceApi = new SampleResourceApi();
+
+            // The api does not return collections of inputs. FIXME
+            let fixCollection = Promise.all( Object.values(fixedModels).map((model:Model) =>
+                Promise.all( model.input_files.map((input) => {
+                    if (input.value && input.value.id && input.value.resources && input.value.resources.length === 0) {
+                        console.log('Checking collection...', input.value.id);
+                        return new Promise((resolve, reject) => {
+                            let id : string = getIdFromUri(input.value.id);
+                            let user : string = getUser();
+                            let api : SampleCollectionApi = new SampleCollectionApi();
+                            sampleCollectionApi.samplecollectionsIdGet({username: user, id: id})
+                            .then((sc:SampleCollection) => {
+                                if (sc.hasPart) {
+                                    //console.log('hasPart:', sc.hasPart);
+                                    let pResources = Promise.all(sc.hasPart.map((sr:SampleResource) => {
+                                        let srid : string = getIdFromUri(sr.id);
+                                        return sampleResourceApi.sampleresourcesIdGet({username: user, id: srid})
+                                    }));
+                                    pResources.then((srs:SampleResource[]) => {
+                                        //console.log('all sample resources!');
+                                        input.value.resources = srs.map((sr:SampleResource) => {
+                                            return {
+                                                url: sr.value ? <unknown>sr.value[0] as string : "",
+                                                id: sr.id,
+                                                name: sr.label ? sr.label[0] : "",
+                                                selected: true
+                                            };
+                                        });
+                                        if (srs.length > 0 && srs[0].dataCatalogIdentifier) {
+                                            input.value.id = srs[0].dataCatalogIdentifier[0];
+                                        }
+                                        resolve();
+                                    });
+                                } else {
+                                    resolve();
+                                }
+                            });
+                        });
+
+                    } else {
+                        return Promise.resolve();
+                    }
+                }) )
+            ) );
+            await fixCollection;
+            return fixedModels;
+        });
+}

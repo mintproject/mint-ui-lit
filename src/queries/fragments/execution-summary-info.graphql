@@ -1,4 +1,4 @@
-fragment execution_summary on thread_model {
+fragment execution_summary_info on thread_model_execution_summary {
     submitted_for_execution
     submitted_for_ingestion
     submitted_for_publishing

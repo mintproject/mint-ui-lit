@@ -56,3 +56,9 @@ export const toDateString = (date: Date) : string => {
         return null;
     return date.toISOString().split('T')[0]
 }
+
+export const toDateTimeString = (date: Date) : string => {
+    if(!date)
+        return null;
+    return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+}

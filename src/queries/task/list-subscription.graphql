@@ -1,6 +1,6 @@
 #import "../fragments/task-info.graphql"
 
-subscription sub_tasks($problem_statement_id: uuid!) {
+subscription sub_tasks($problem_statement_id: String!) {
     task(where:{problem_statement_id:{_eq:$problem_statement_id}}) {
         ...task_info
     }

@@ -3,12 +3,12 @@ import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 import ReactGA from 'react-ga';
 
-import { DataEnsembleMap, ModelEnsembleMap, Thread, ExecutionSummary, ThreadEvent } from "../reducers";
+import { ModelIOBindings, ModelEnsembleMap, Thread, ExecutionSummary, ThreadEvent } from "../reducers";
 import { SharedStyles } from "../../../styles/shared-styles";
 import { Model, ModelParameter } from "../../models/reducers";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
 import { TASK_DONE, getThreadParametersStatus } from "../../../util/state_functions";
-import { updateThread, deleteAllThreadExecutionIds } from "../actions";
+import { setThreadParameters } from "../actions";
 import { showNotification } from "../../../util/ui_functions";
 import { selectThreadSection } from "../../../app/ui-actions";
 import { MintThreadPage } from "./mint-thread-page";
@@ -17,7 +17,8 @@ import { getPathFromModel } from "../../models/reducers";
 
 import "weightless/progress-bar";
 import { getLatestEventOfType } from "util/event_utils";
-import { getUpdateEvent, getCustomEvent, getTotalConfigs } from "../../../util/graphql_adapter";
+import { getTotalConfigs } from "../../../util/graphql_adapter";
+import { uuidv4 } from "screens/models/configure/util";
 
 const MAX_PARAMETER_COMBINATIONS = 100000;
 
@@ -86,7 +87,7 @@ export class MintParameters extends connect(store)(MintThreadPage) {
                 let model = this.thread.models![modelid];
                 let url = this._regionid + '/models/explore' + getPathFromModel(model) + "/";
                 // Get any existing ensemble selection for the model
-                let ensembles:DataEnsembleMap = this.thread.model_ensembles![modelid] || {};
+                let ensembles:ModelIOBindings = this.thread.model_ensembles![modelid].bindings || {};
                 let input_parameters = model.input_parameters
                     .filter((input) => !input.value)
                     .sort((a, b) => {
@@ -327,18 +328,11 @@ export class MintParameters extends connect(store)(MintThreadPage) {
                 if(!this._editMode && current_parameter_ensemble && current_parameter_ensemble.length > 0) {
                     return;
                 }
-
                 let new_parameters = this._getParameterSelections(model, input);
-        
-                // Now add the rest of the new datasets
-                if(!model_ensembles[modelid])
-                    model_ensembles[modelid] = {};
-                if(!model_ensembles[modelid][inputid])
-                    model_ensembles[modelid][inputid] = [];
-                model_ensembles[modelid][inputid] = new_parameters;
+                model_ensembles[modelid].bindings[inputid] = new_parameters;
             })
 
-            let totalconfigs = getTotalConfigs(model, model_ensembles[modelid], this.thread);
+            let totalconfigs = getTotalConfigs(model, model_ensembles[modelid].bindings, this.thread);
             if(totalconfigs > MAX_PARAMETER_COMBINATIONS) {
                 alert("Too many parameter combinations (" + totalconfigs + ") for the model '" + model.name + "'");
                 allok = false;
@@ -356,28 +350,11 @@ export class MintParameters extends connect(store)(MintThreadPage) {
             return;
         }
 
-        // Update notes
-        let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;    
-        let newthread = {
-            ...this.thread
-        };
-        newthread.events.push(getCustomEvent("SELECT_PARAMETERS", notes) as ThreadEvent);
-
         this._editMode = false;
-
-        // Update thread
-        newthread = {
-            ...newthread,
-            model_ensembles: model_ensembles,
-            execution_summary: execution_summary
-        }
-
-        // Delete existing thread ensemble ids
-        deleteAllThreadExecutionIds(newthread.id, null).then(() => {
-            updateThread(newthread);
-        });
-
         showNotification("saveNotification", this.shadowRoot!);
+
+        let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
+        setThreadParameters(model_ensembles, execution_summary, notes, this.thread);
     }
 
     stateChanged(state: RootState) {

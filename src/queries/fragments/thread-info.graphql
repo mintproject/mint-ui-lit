@@ -2,7 +2,6 @@
 
 fragment thread_info on thread {
     id
-    oldid
     name
     task_id
     start_date

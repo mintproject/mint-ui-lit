@@ -16,7 +16,7 @@ import { IdMap } from "app/reducers";
 import { listThreadExecutions, getAllThreadExecutionIds, threadSummaryChanged, threadTotalRunsChanged } from "../actions";
 import { DataResource } from "screens/datasets/reducers";
 import { postJSONResource, getResource } from "util/mint-requests";
-import { getThreadRunsStatus, TASK_DONE } from "util/state_functions";
+import { getThreadRunsStatus, TASK_DONE, getThreadParametersStatus } from "util/state_functions";
 import { getPathFromModel } from "../../models/reducers";
 
 @customElement('mint-runs')
@@ -55,13 +55,14 @@ export class MintRuns extends connect(store)(MintThreadPage) {
             return html ``;
         }
         
-        // If no models selected
-        if(!this.thread.execution_summary) {
+        let cando = (getThreadParametersStatus(this.thread) == TASK_DONE);
+        // If no parameters selected
+        if(!cando) {
             return html `
             <p>
                 This step is for monitoring model runs.
             </p>
-            Please setup and run some models first
+            Please setup some models first
             `
         }
 
@@ -123,13 +124,13 @@ export class MintRuns extends connect(store)(MintThreadPage) {
 
                 //Count parameters:
                 let nParameters : number = model.input_parameters
-                        .map((param) => (this.thread.model_ensembles[modelid][param.id] || [0]).length)
+                        .map((param) => (this.thread.model_ensembles[modelid].bindings[param.id] || [0]).length)
                         .reduce((ac,len) => ac*len, 1);
 
                 //Count inputs:
                 let nInputs : number = model.input_files.map((input) => input.value ? 
                     (input.value.resources || []).filter(r => r.selected != false).length
-                    : (this.thread.model_ensembles[modelid][input.id] || [])
+                    : (this.thread.model_ensembles[modelid].bindings[input.id] || [])
                             .map((dsid) => this.thread.datasets[dsid].resources)
                             .map((dsres) => (dsres || []).filter((r) => r.selected).length)
                             .reduce((ac,len) => ac*len, 1)
@@ -444,8 +445,9 @@ export class MintRuns extends connect(store)(MintThreadPage) {
             this._task_id = state.ui.selected_task_id;
         }
 
+        let cando = this.thread && (getThreadParametersStatus(this.thread) == TASK_DONE);
         // If run status has changed, then reload all runs
-        if(runs_changed) {
+        if(runs_changed && cando) {
             this._initialSubmit = false;
             if(runs_total_changed) {
                 console.log("Total runs changed !");

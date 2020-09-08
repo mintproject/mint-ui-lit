@@ -25,7 +25,7 @@ import { PageViewElement } from '../../components/page-view-element';
 import { renderNotifications } from '../../util/ui_renders';
 import { formElementsComplete, showDialog, hideDialog, showNotification, resetForm, hideNotification } from '../../util/ui_functions';
 import { Region, RegionMap } from '../regions/reducers';
-import { toDateString } from 'util/date-utils';
+import { toDateString, toDateTimeString } from 'util/date-utils';
 import { getLatestEventOfType, getLatestEvent } from 'util/event_utils';
 import { getCreateEvent, getUpdateEvent } from '../../util/graphql_adapter';
 
@@ -92,7 +92,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
               <div slot="after" style="display:flex">
                 <div>
                   ${last_event?.userid}<br/>
-                  ${last_event?.timestamp.toDateString()}
+                  ${toDateTimeString(last_event?.timestamp)}
                 </div>
                 <div style="height: 24px; padding-left: 10px; display:flex">
                   <wl-icon @click="${this._editProblemStatementDialog}" data-problem_statement_id="${problem_statement.id}"

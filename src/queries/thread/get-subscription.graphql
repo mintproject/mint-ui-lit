@@ -2,7 +2,7 @@
 #import "../fragments/model-info.graphql"
 #import "../fragments/execution-summary-info.graphql"
 
-subscription sub_thread($id: uuid!) {
+subscription sub_thread($id: String!) {
     thread_by_pk(id:$id) {
         ...thread_info
         thread_data {
@@ -21,7 +21,10 @@ subscription sub_thread($id: uuid!) {
             }
         }
         thread_models {
-            ...execution_summary
+            id
+            execution_summary {
+                ...execution_summary_info
+            }
             model {
                ...model_info
             }
@@ -37,7 +40,7 @@ subscription sub_thread($id: uuid!) {
                     id
                     name
                 }
-              parameter_value
+                parameter_value
             }
         }
     }

@@ -1,4 +1,4 @@
-import { Thread, DatasetMap, ModelEnsembleMap, DataEnsembleMap, InputBindings, Execution, Task, ProblemStatementInfo } from "../screens/modeling/reducers";
+import { Thread, DatasetMap, ModelEnsembleMap, ModelIOBindings, InputBindings, Execution, Task, ProblemStatementInfo } from "../screens/modeling/reducers";
 import { RootState } from "../app/store";
 import { getVariableLongName } from "offline_data/variable_list";
 import { getLatestEventOfType } from "./event_utils";
@@ -10,10 +10,10 @@ export const removeDatasetFromThread = (thread: Thread,
     let model_ensembles: ModelEnsembleMap = thread.model_ensembles || {};
 
     // Remove dataset from ensemble
-    let dsindex = model_ensembles[modelid][inputid].indexOf(datasetid);
-    model_ensembles[modelid][inputid].splice(dsindex, 1);
-    if (model_ensembles[modelid][inputid].length == 0) {
-        delete model_ensembles[modelid][inputid];
+    let dsindex = model_ensembles[modelid].bindings[inputid].indexOf(datasetid);
+    model_ensembles[modelid].bindings[inputid].splice(dsindex, 1);
+    if (model_ensembles[modelid].bindings[inputid].length == 0) {
+        delete model_ensembles[modelid].bindings[inputid];
     }
     if (Object.keys(model_ensembles[modelid]).length == 0) {
         delete model_ensembles[modelid];
@@ -60,10 +60,6 @@ export const getThreadVariablesStatus = (thread:Thread) => {
 }
 
 export const getThreadModelsStatus = (thread:Thread) => {
-    let latest_event = getLatestEventOfType(["SELECT_MODELS"], thread.events);
-    if(latest_event) {
-        return TASK_DONE;
-    }
     // If there is no event, check if models have been selected
     if(Object.keys(thread.models).length > 0) {
         return TASK_DONE;
@@ -72,10 +68,6 @@ export const getThreadModelsStatus = (thread:Thread) => {
 }
 
 export const getThreadDatasetsStatus = (thread:Thread) => {
-    let latest_event = getLatestEventOfType(["SELECT_DATA"], thread.events);
-    if(latest_event) {
-        return TASK_DONE;
-    }
     if(getThreadModelsStatus(thread) == TASK_DONE) {
         // If there is no event, check if datasets are needed and have been selected
         let ok = true;
@@ -83,7 +75,7 @@ export const getThreadDatasetsStatus = (thread:Thread) => {
             let model = thread.models[modelid];
             let mensemble = thread.model_ensembles[modelid];
             model.input_files.forEach((input) => {
-                if(!input.value && !mensemble[input.id]) {
+                if(!input.value && !mensemble.bindings[input.id]) {
                     ok = false;
                 }
             })
@@ -96,18 +88,14 @@ export const getThreadDatasetsStatus = (thread:Thread) => {
 }
 
 export const getThreadParametersStatus = (thread:Thread) => {
-    let latest_event = getLatestEventOfType(["SELECT_PARAMETERS"], thread.events);
-    if(latest_event) {
-        return TASK_DONE;
-    }
     // If there is no event, check if parameters are needed and have been selected
-    if(getThreadModelsStatus(thread) == TASK_DONE) {
+    if(getThreadDatasetsStatus(thread) == TASK_DONE) {
         let ok = true;
         Object.keys(thread.model_ensembles).forEach((modelid) => {
             let model = thread.models[modelid];
             let mensemble = thread.model_ensembles[modelid];
             model.input_parameters.forEach((input) => {
-                if(!input.value && !mensemble[input.id]) {
+                if(!input.value && !mensemble.bindings[input.id]) {
                     ok = false;
                 }
             })
@@ -259,7 +247,7 @@ const _datasetUsedInOtherModel = (thread: Thread, datasetid: string, notmodelid:
     let inputid:string = "";
     for(modelid in thread.model_ensembles) {
         if(modelid != notmodelid) {
-            let data_ensembles: DataEnsembleMap = thread.model_ensembles![modelid];                
+            let data_ensembles: ModelIOBindings = thread.model_ensembles![modelid].bindings;                
             for(inputid in data_ensembles) {
                 if(data_ensembles[inputid].indexOf(datasetid) >= 0) {
                     return true;

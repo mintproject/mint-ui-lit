@@ -231,6 +231,9 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
         (modelid: string, inputid: string, driving_variables: string[], dates: DateRange, region: Region, 
             prefs:MintPreferences ) => (dispatch) => {
     
+    if(!region)
+        return;
+
     //START
     if (driving_variables.length == 0) {
         dispatch({

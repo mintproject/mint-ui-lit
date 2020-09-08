@@ -264,14 +264,14 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                     <h2>${this._selectedModel} Emulators</h2>
                     <table class="pure-table pure-table-bordered">
                         <thead>
-                            <tr><th>Area</th><th>Region</th><th>Time period</th><th>Input</th><th>Model Setup</th><th>Ensemble description (range of parameters)</th><th>Output summary (Ensemble)</th><th>JSON-Summary</th><th>URL to be shared</th><th>Results reviewed by modeler</th><th>Quality</th><th>Status</th><th>Validated?</th><th>Usage Notes</th><th>Comments</th></tr>
+                            <tr><th>Model Calibrated for Region</th><th>Executed for Region</th><th>Time period</th><th>Input</th><th>Model Setup</th><th>Ensemble description (range of parameters)</th><th>Output summary (Ensemble)</th><th>JSON-Summary</th><th>URL to be shared</th><th>Results reviewed by modeler</th><th>Quality</th><th>Status</th><th>Validated?</th><th>Usage Notes</th><th>Comments</th></tr>
                         </thead>
                         <tbody>
                         ${this._emulatorsLoading ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`:
                             (!this._emulators) ? 
                                 html`<tr><td colspan="10">Error: Could not load emulators</td></tr>` 
                                 : this._emulators.map((em) => {
-                                    let model_region = em.calibrated_region;
+                                    let model_region = em.region_name;
                                     let modelid = em.id;
                                     let modelname = em.name;
                                     let tms = em["thread_models"] as any[];

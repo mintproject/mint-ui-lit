@@ -20,7 +20,7 @@ import { getUISelectedTask} from "../../util/state_functions";
 import { goToPage } from "../../app/actions";
 import { renderNotifications } from "../../util/ui_renders";
 import { showDialog, showNotification, hideDialog } from "../../util/ui_functions";
-import { toDateString } from "util/date-utils";
+import { toDateString, toDateTimeString } from "util/date-utils";
 import { RegionMap } from "screens/regions/reducers";
 import { getVariableLongName } from "offline_data/variable_list";
 import { TaskEditor } from "components/task-editor";
@@ -136,8 +136,8 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
 
         let tasks = this._problem_statement.tasks;
         let taskids = Object.keys(tasks);
-        taskids = taskids.sort((a, b) => 
-            (getLatestEvent(tasks[a].events)?.timestamp < 
+        taskids.sort((a, b) => 
+            (getLatestEvent(tasks[a].events)?.timestamp >
             getLatestEvent(tasks[b].events)?.timestamp ? -1 : 1));
 
         let threads : string[] = []; //Threads id to show
@@ -145,8 +145,8 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         if (this._selectedTask && this._selectedTask.threads) {
             let allThreads = this._selectedTask.threads;
             let orderedKeys = Object.keys(allThreads);
-            orderedKeys = orderedKeys.sort((a, b) => 
-                (getLatestEvent(allThreads[a].events)?.timestamp < 
+            orderedKeys.sort((a, b) => 
+                (getLatestEvent(allThreads[a].events)?.timestamp > 
                 getLatestEvent(allThreads[b].events)?.timestamp ? -1 : 1));
 
             totalThreads = orderedKeys.length;
@@ -201,7 +201,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                 @click="${() => showDialog('tasksHelpDialog', this.shadowRoot)}">Read more</a>
                         </div>
                         <ul>
-                        ${Object.keys(this._problem_statement.tasks).map((taskid) => {
+                        ${taskids.map((taskid) => {
                             const task = this._problem_statement!.tasks[taskid];
                             if(task) {
                                 let last_event = getLatestEvent(task.events);
@@ -221,7 +221,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                             ${last_event ? 
                                             html`
                                             <div class='caption'>
-                                                ${last_event?.userid} on ${last_event?.timestamp.toDateString()}
+                                                ${last_event?.userid} on ${toDateTimeString(last_event?.timestamp)}
                                             </div>` : ""}                                            
                                         </div>
                                         <wl-icon @click="${this._editTaskDialog}" 
@@ -289,7 +289,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                             ${last_event ? 
                                             html`
                                             <div class='thread_caption'>
-                                                ${last_event?.userid} on ${last_event?.timestamp.toDateString()}
+                                                ${last_event?.userid} on ${toDateTimeString(last_event?.timestamp)}
                                             </div>` : ""}
                                             <wl-icon @click="${this._editThreadDialog}" 
                                                 data-threadid="${thread.id}"

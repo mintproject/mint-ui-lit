@@ -1,20 +1,26 @@
-import { Task, Thread, ProblemStatementInfo, ProblemStatement, ThreadInfo, MintEvent, ModelEnsembleMap, DataEnsembleMap, Execution, ExecutionSummary } from "../screens/modeling/reducers"
+import { Task, Thread, ProblemStatementInfo, ProblemStatement, ThreadInfo, MintEvent, ModelEnsembleMap, 
+    ModelIOBindings, Execution, ExecutionSummary, DatasetMap, ThreadModelMap } from "../screens/modeling/reducers"
 import { auth } from "config/firebase";
 import { Model, ModelIO, ModelParameter } from "screens/models/reducers";
 import { Dataset, DataResource } from "screens/datasets/reducers";
 import { Region } from "screens/regions/reducers";
-import { toDateString } from "./date-utils";
+import { toDateString, fromTimestampIntegerToDateString } from "./date-utils";
+import { uuidv4 } from "screens/models/configure/util";
+
+import * as crypto from 'crypto';
 
 export const regionToGQL = (region: Region) => {
     let regionobj = {
-        id: region.id,
         name: region.name,
         category_id: region.category_id,
         geometries: {
-            data: region.geometries
+            data: region.geometries.map((geom) => { return { "geometry": geom }})
         },
         model_catalog_uri: region.model_catalog_uri
     };
+    if (!region.id)
+        regionobj["id"] = getAutoID()
+
     return regionobj;
 }
 
@@ -51,6 +57,7 @@ export const eventFromGQL = (eventobj: any) : MintEvent => {
 
 export const problemStatementToGQL = (problem_statement: ProblemStatementInfo) => {
     let problemobj = {
+        id: getAutoID(),
         name: problem_statement.name,
         start_date: toDateString(problem_statement.dates.start_date),
         end_date: toDateString(problem_statement.dates.end_date),
@@ -101,6 +108,7 @@ export const problemStatementFromGQL = (problem: any) : ProblemStatement => {
 
 export const taskToGQL = (task: Task, problem_statement: ProblemStatementInfo) => {
     let taskGQL = {
+        id: getAutoID(),
         name: task.name,
         problem_statement_id: problem_statement.id,
         start_date: toDateString(task.dates.start_date),
@@ -159,14 +167,14 @@ export const taskFromGQL = (task: any) : Task => {
     return taskobj;
 }
 
-export const threadToGQL = (thread: Thread | ThreadInfo, task: Task) => {
+export const threadInfoToGQL = (thread: ThreadInfo, taskid: string, regionid: string) => {
     let threadobj = {
-        id: thread.id,
+        id: getAutoID(),
         name: thread.name,
-        task_id: task.id,
+        task_id: taskid,
         start_date: toDateString(thread.dates.start_date),
         end_date: toDateString(thread.dates.end_date),
-        region_id: task.regionid,
+        region_id: regionid,
         response_variable_id: thread.response_variables[0],
         driving_variable_id: thread.driving_variables.length > 0 ? thread.driving_variables[0] : null,
         events: {
@@ -176,7 +184,7 @@ export const threadToGQL = (thread: Thread | ThreadInfo, task: Task) => {
     return threadobj;
 }
 
-export const threadUpdateToGQL = (thread: Thread | ThreadInfo) => {
+export const threadInfoUpdateToGQL = (thread:  ThreadInfo) => {
     let threadobj = {
         id: thread.id,
         task_id: thread.task_id,
@@ -190,6 +198,22 @@ export const threadUpdateToGQL = (thread: Thread | ThreadInfo) => {
         }
     };
     return threadobj;
+}
+
+export const threadInfoFromGQL = (thread: any) => {
+    return {
+        id : thread["id"],
+        oldid : thread["oldid"],
+        name: thread["name"],
+        dates: {
+            start_date: new Date(thread["start_date"]),
+            end_date: new Date(thread["end_date"])
+        },
+        regionid: thread["region_id"],
+        driving_variables: thread.driving_variable_id != null ? [thread.driving_variable_id] : [],
+        response_variables: thread.response_variable_id != null ? [thread.response_variable_id] : [],
+        events: thread["events"].map(eventFromGQL),
+    } as ThreadInfo;
 }
 
 export const threadFromGQL = (thread: any) => {
@@ -221,35 +245,52 @@ export const threadFromGQL = (thread: any) => {
     thread["thread_models"].forEach((tm:any) => {
         let m = tm["model"];
         let model : Model = modelFromGQL(m);
-        // **************** TODO: FIXME: ****************** 
-        // Fix this. Store configuration in DB
-        model.model_configuration = model.model_version;
 
         fbthread.models[model.id] = model;
         let model_ensemble = modelEnsembleFromGQL(tm["data_bindings"], tm["parameter_bindings"]);
-        fbthread.model_ensembles[model.id] = model_ensemble;
+        fbthread.model_ensembles[model.id] = {
+            id: tm["id"],
+            bindings: model_ensemble
+        }
 
-        fbthread.execution_summary[model.id] = {
-            total_runs: tm["total_runs"],
-            submitted_runs: tm["submitted_runs"],
-            successful_runs: tm["successful_runs"],
-            failed_runs: tm["failed_runs"],
-            ingested_runs: tm["ingested_runs"],
-            registered_runs: tm["registered_runs"],
-            published_runs: tm["published_runs"],
-            submission_time: tm["submission_time"],
-            submitted_for_execution: tm["submitted_for_execution"],
-            fetched_run_outputs: tm["fetched_run_outputs"],
-            submitted_for_ingestion: tm["submitted_for_ingestion"],
-            submitted_for_publishing: tm["submitted_for_publishing"],
-            submitted_for_registration: tm["submitted_for_registration"]
-        } as ExecutionSummary
+        tm["execution_summary"].forEach((tmex) => {
+            fbthread.execution_summary[model.id] = {
+                total_runs: tmex["total_runs"],
+                submitted_runs: tmex["submitted_runs"],
+                successful_runs: tmex["successful_runs"],
+                failed_runs: tmex["failed_runs"],
+                ingested_runs: tmex["ingested_runs"],
+                registered_runs: tmex["registered_runs"],
+                published_runs: tmex["published_runs"],
+                submission_time: tmex["submission_time"],
+                submitted_for_execution: tmex["submitted_for_execution"],
+                fetched_run_outputs: tmex["fetched_run_outputs"],
+                submitted_for_ingestion: tmex["submitted_for_ingestion"],
+                submitted_for_publishing: tmex["submitted_for_publishing"],
+                submitted_for_registration: tmex["submitted_for_registration"]
+            } as ExecutionSummary
+        });
     })
 
     return fbthread;
 }
 
-export const getTotalConfigs = (model: Model, bindings: DataEnsembleMap, thread: Thread) => {
+export const threadModelsToGQL = (models: Model[], threadid: string) => {
+    return models.map((model) => {
+        return {
+            "thread_id": threadid,
+            "model": {
+                "data": modelToGQL(model),
+                "on_conflict": {
+                    "constraint": "model_pkey",
+                    "update_columns": ["name"]
+                }
+            }
+        };
+    });
+}
+
+export const getTotalConfigs = (model: Model, bindings: ModelIOBindings, thread: Thread) => {
     let totalconfigs = 1;
     model.input_files.map((io) => {
         if(!io.value) {
@@ -348,13 +389,13 @@ export const modelParameterFromGQL = (p: any) => {
         max: p["max"],
         min: p["min"],
         unit: p["unit"],
-        value: p["value"],
+        value: p["fixed_value"],
         position: p["position"]
     } as ModelParameter
 }
 
-export const modelEnsembleFromGQL = (dbs: any[], pbs: any[]): DataEnsembleMap => {
-    let bindings = {} as DataEnsembleMap;
+export const modelEnsembleFromGQL = (dbs: any[], pbs: any[]): ModelIOBindings => {
+    let bindings = {} as ModelIOBindings;
     dbs.forEach((db) => {
         let binding = bindings[db["model_io"]["id"]];
         if(!binding)
@@ -370,37 +411,6 @@ export const modelEnsembleFromGQL = (dbs: any[], pbs: any[]): DataEnsembleMap =>
         bindings[pb["model_parameter"]["id"]] = binding;        
     })
     return bindings;
-}
-
-export const threadInfoToGQL = (thread: ThreadInfo, taskid: string, regionid: string) => {
-    let threadobj = {
-        name: thread.name,
-        task_id: taskid,
-        start_date: toDateString(thread.dates.start_date),
-        end_date: toDateString(thread.dates.end_date),
-        region_id: regionid,
-        response_variable_id: thread.response_variables[0],
-        driving_variable_id: thread.driving_variables.length > 0 ? thread.driving_variables[0] : null,
-        events: {
-            data: thread.events.map(eventToGQL),
-        }
-    };
-    return threadobj;
-}
-
-export const threadInfoFromGQL = (thread: any) => {
-    return {
-        id : thread["id"],
-        oldid : thread["oldid"],
-        name: thread["name"],
-        dates: {
-            start_date: new Date(thread["start_date"]),
-            end_date: new Date(thread["end_date"])
-        },
-        driving_variables: thread.driving_variable_id != null ? [thread.driving_variable_id] : [],
-        response_variables: thread.response_variable_id != null ? [thread.response_variable_id] : [],
-        events: thread["events"].map(eventFromGQL),
-    } as ThreadInfo;
 }
 
 export const executionToGQL = (ex: Execution) => {
@@ -482,4 +492,339 @@ export const getCustomEvent = (event:string, notes: string) => {
         userid: auth.currentUser.email,
         notes: notes
     } as MintEvent;
+}
+
+
+const getNamespacedId = (namespace, id) => {
+    if(id.indexOf(namespace) == 0)
+        return id;
+    return namespace + id
+}
+
+export const modelToGQL = (m: Model) => {
+    let namespace = m.id.replace(/(^.*\/).*$/, "$1");
+    return {
+        "id": m.id,
+        "name": m.name,
+        "category": m.category,
+        "description": m.description,
+        "region_name": m.region_name,
+        "type": m.model_type,
+        "model_configuration": getNamespacedId(namespace, m.model_configuration),
+        "model_version": getNamespacedId(namespace, m.model_version),
+        "model_name": getNamespacedId(namespace, m.model_name),
+        "dimensionality": m.dimensionality,
+        "parameter_assignment": m.parameter_assignment,
+        "parameter_assignment_details": m.parameter_assignment_details,
+        "calibration_target_variable": m.calibration_target_variable,
+        "spatial_grid_resolution": m.spatial_grid_resolution,
+        "spatial_grid_type": m.spatial_grid_type,
+        "output_time_interval": m.output_time_interval,
+        "code_url": m.code_url,
+        "usage_notes": m.usage_notes,
+        "inputs": {
+            "data": m.input_files.map((input) => modelInputOutputToGQL(input)),
+            "on_conflict": {
+                "constraint": "model_input_pkey",
+                "update_columns": ["model_id"]
+            }
+        },
+        "parameters": {
+            "data": m.input_parameters.map((param) => modelParameterToGQL(param)),
+            "on_conflict": {
+                "constraint": "model_parameter_pkey",
+                "update_columns": ["model_id"]
+            }
+        },
+        "outputs": {
+            "data": m.output_files.map((output) => modelInputOutputToGQL(output)),
+            "on_conflict": {
+                "constraint": "model_output_pkey",
+                "update_columns": ["model_id"]
+            }
+        }
+    };
+}
+
+export const getAutoID = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let autoId = ''
+    for (let i = 0; i < 20; i++) {
+      autoId += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    return autoId;
+}
+
+const getMd5Hash = (str2hash) => {
+    return crypto.createHash('md5').update(str2hash).digest("hex");
+}
+
+const getModelIOFixedBindings = (io) => {
+    let fixed_bindings_data = []
+    if ("value" in io && "resources" in io["value"]) {
+        io["value"]["resources"].forEach((res: any) => {
+            if (!("name" in res)) {
+                res["name"] = res["url"].replace(/^.*\/(.*?)$/, "$1");
+                fixed_bindings_data.push({
+                    "resource": {
+                        "data": {
+                            "id": getMd5Hash(res["url"]),
+                            "name": res["name"],
+                            "url": res["url"]
+                        },
+                        "on_conflict": {
+                            "constraint": "resource_pkey",
+                            "update_columns": ["name"]
+                        }
+                    }
+                })
+            }
+        });
+    }
+    return {
+        "data": fixed_bindings_data,
+        "on_conflict": {
+            "constraint": "model_input_bindings_pkey",
+            "update_columns": ["resource_id"]
+        }
+    }
+}
+
+const getVariableData = (variableid) => {
+    return {
+        "data": {
+            "id": variableid
+        },
+        "on_conflict": {
+            "constraint": "variable_pkey",
+            "update_columns": ["id"]
+        }
+    }
+}
+
+const modelIOToGQL = (io: any) => {
+    let fixed_bindings = getModelIOFixedBindings(io)
+    return {
+        "id": io["id"],
+        "name": io["name"],
+        "type": io["type"],
+        "fixed_bindings": fixed_bindings,
+        "variables": {
+            "data": io["variables"].map((v) => { 
+                return { 
+                    "variable": getVariableData(v)
+                };
+            }),
+            "on_conflict": {
+                "constraint": "model_io_variable_pkey",
+                "update_columns": ["variable_id"]
+            }
+        }
+    }
+}
+
+const modelInputOutputToGQL = (io: any) => {
+    return {
+        "position": io["position"],
+        "model_io": {
+            "data": modelIOToGQL(io),
+            "on_conflict": {
+                "constraint": "model_io_pkey",
+                "update_columns": ["id"]
+            }
+        }
+    }
+}
+
+const modelParameterToGQL = (input: ModelParameter) => {
+    if ("default" in input && input["default"])
+        input["default"] = input["default"] + "";
+    if ("value" in input && input["value"])
+        input["fixed_value"] = input["value"] + "";
+    delete input["value"]
+    return input
+}
+
+const getModelDataBindings = (model, model_ensemble: ThreadModelMap, idmap) => {
+    let dataBindings = []
+    model["input_files"].forEach((ifile) => {
+        let inputid = ifile["id"]
+        if (inputid in model_ensemble.bindings) {
+            model_ensemble.bindings[inputid].forEach((dsid) => {
+                if (dsid in idmap) {
+                    let sliceid = idmap[dsid]
+                    dataBindings.push({
+                        "thread_model_id": model_ensemble.id,
+                        "model_io_id": inputid,
+                        "dataslice_id": sliceid
+                    })
+                }
+            });
+        }
+    });
+    return dataBindings;
+}
+
+const getModelParameterBindings = (model, model_ensemble: ThreadModelMap) => {
+    let parameterBindings = [];
+    model["input_parameters"].forEach((iparam) => {
+        let inputid = iparam["id"]
+        if (inputid in model_ensemble.bindings) {
+            model_ensemble.bindings[inputid].forEach((paramvalue) => {
+                parameterBindings.push({
+                    "thread_model_id": model_ensemble.id,
+                    "model_parameter_id": inputid,
+                    "parameter_value": paramvalue + ""
+                });
+            });
+        }
+    });
+    return parameterBindings
+}
+
+const getSpatialCoverageGeometry = (coverage) => {
+    if(!coverage)
+        return null;
+    let value = coverage["value"]
+    if (coverage["type"] == "Point") {
+        return {
+            "type": "Point",
+            "coordinates": [
+                parseFloat(value["x"]), parseFloat(value["y"])
+            ]
+        }
+    }
+    if (coverage["type"] == "BoundingBox") {
+        return {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [ parseFloat(value["xmin"]), parseFloat(value["ymin"]) ],
+                    [ parseFloat(value["xmax"]), parseFloat(value["ymin"]) ],
+                    [ parseFloat(value["xmax"]), parseFloat(value["ymax"]) ],
+                    [ parseFloat(value["xmin"]), parseFloat(value["ymax"]) ],
+                    [ parseFloat(value["xmin"]), parseFloat(value["ymin"]) ]
+                ]
+           ]
+        }
+    }
+}
+
+
+const getDates = (dates) => {
+    let start = dates["start_date"]
+    let end = dates["end_date"]
+    return {
+        "start_date" : toDateString(start),
+        "end_date": toDateString(end)
+    }
+}
+
+const getResourceData = (data) => {
+    let dates = getDates(data["time_period"])
+    return {
+        "data": {
+            "id": getMd5Hash(data["url"]),
+            "dcid": data["id"],
+            "name": data["name"],
+            "spatial_coverage": getSpatialCoverageGeometry(data["spatial_coverage"]),
+            "start_date": dates?.start_date,
+            "end_date": dates?.end_date,
+            "url": data["url"]
+        },
+        "on_conflict": {
+            "constraint": "resource_pkey",
+            "update_columns": ["id"]
+        }
+    }
+}
+
+const getDatasliceResourceData = (data) => {
+    return {
+        "resource": getResourceData(data),
+        "selected": data["selected"] ?? false
+    }
+}
+
+const getDatasliceData = (data: Dataset, thread: Thread) => {
+    let dsname = data.name;
+    let threadname = thread.name;
+
+    let slicename = dsname + " for thread: " + threadname;
+    let sliceid =  uuidv4(); // Change to using md5 hash of sorted resource ids
+    return {
+        "id": sliceid,
+        "name": slicename,
+        "region_id": thread.regionid,
+        "start_date": thread.dates?.start_date,
+        "end_date": thread.dates?.end_date,
+        "resource_count": data.resource_count,
+        "dataset": {
+            "data": {
+                "id": data.id,
+                "name": dsname,
+            },
+            "on_conflict": {
+                "constraint": "dataset_pkey",
+                "update_columns": ["id"]
+            }
+        },
+        "resources": {
+            "data": data.resources.map((res) => getDatasliceResourceData(res)),
+            "on_conflict": {
+                "constraint": "dataslice_resource_pkey",
+                "update_columns": ["dataslice_id"]
+            }
+        }
+    }
+}
+
+const getThreadDataslice = (data: Dataset, thread: Thread) => {
+    return {
+        "thread_id": thread.id,
+        "dataslice": {
+            "data": getDatasliceData(data, thread),
+            "on_conflict": {
+                "constraint": "dataslice_pkey",
+                "update_columns": ["id"]
+            }
+        }
+    }
+}
+
+export const threadDataBindingsToGQL = (datasets: DatasetMap, 
+        model_ensemble: ModelEnsembleMap, thread: Thread) => {
+    let idmap = {}
+    let dataslices = {}
+    Object.keys(datasets).map((dsid) => {
+        let ds = datasets[dsid];
+        let dataslice = getThreadDataslice(ds, thread)
+        let sliceid = dataslice["dataslice"]["data"]["id"]
+        idmap[ds["id"]] = sliceid
+        dataslices[ds["id"]] = dataslice
+    });
+    let thread_data = Object.keys(datasets).map((dsid) => dataslices[dsid]);
+
+    let thread_model_io = [];
+    Object.keys(model_ensemble).forEach((modelid) => {
+        let model = thread.models[modelid];
+        let tmio = getModelDataBindings(model, model_ensemble[modelid], idmap);
+        thread_model_io = thread_model_io.concat(tmio);
+    })
+    
+    return {
+        data: thread_data,
+        model_io: thread_model_io
+    }
+}
+
+export const threadParameterBindingsToGQL = (
+        model_ensemble: ModelEnsembleMap, thread: Thread) => {
+    let thread_model_params = [];
+    Object.keys(model_ensemble).forEach((modelid) => {
+        let model = thread.models[modelid];
+        let tmparams = getModelParameterBindings(model, model_ensemble[modelid]);
+        thread_model_params = thread_model_params.concat(tmparams);
+    })
+    return thread_model_params;
 }

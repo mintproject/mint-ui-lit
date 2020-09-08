@@ -1,4 +1,12 @@
-mutation update_thread_model($threadId: String!, $objects: [thread_model_insert_input!]!) {
+mutation update_thread_model(
+    $threadId: String!, 
+    $threadModelIds: [uuid!]!, 
+    $event: thread_provenance_insert_input!, 
+    $objects: [thread_model_insert_input!]!
+) {
+  delete_thread_model_execution_summary(where: {thread_model_id: {_in: $threadModelIds}}) {
+    affected_rows
+  }
   delete_thread_data(where: {thread_id: {_eq: $threadId}}) {
     affected_rows
   }
@@ -17,7 +25,13 @@ mutation update_thread_model($threadId: String!, $objects: [thread_model_insert_
 
   insert_thread_model (objects: $objects) {
     returning {
-        thread_model_id
+        id
     }
+  }
+
+  insert_thread_provenance_one (
+      object: $event
+  ) {
+    thread_id
   }
 }

@@ -305,7 +305,10 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         this._geojson_nameprop = null;
         this._newregions = [];
         let input:HTMLInputElement = this.shadowRoot!.querySelector<HTMLInputElement>("#geojson_file")!;
+        let subcategory = this.shadowRoot!.getElementById("subcategory-selector") as HTMLInputElement;
         input.value = null;
+        if(this._selectedSubcategory)
+            subcategory.value = this._selectedSubcategory;
 
         showDialog("addRegionDialog", this.shadowRoot);
     }
@@ -472,11 +475,11 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                                             <td>
                                                 <div class="input_full">
                                                     <input type="text" class="regionname"
-                                                        value="${this._geojson_nameprop ? 
-                                                            newgeometry.name + (newgeometry.geometries.length > 1 ? 
-                                                                ' (' + newgeometry.geometries.length +' parts)':  '')
-                                                                : ''}">
+                                                        value="${this._geojson_nameprop ? newgeometry.name : ''}">
                                                     </input>
+                                                    <span>
+                                                    ${(newgeometry.geometries.length > 1 ? 
+                                                                ' (' + newgeometry.geometries.length +' parts)':  '')}
                                                 </div>
                                             </td>
                                         </tr>

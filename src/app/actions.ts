@@ -109,7 +109,7 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
             if (accessToken) {
                 store.dispatch({type: FETCH_MODEL_CATALOG_ACCESS_TOKEN, accessToken: accessToken});
             } else {
-                console.error('No access token on local storage!')
+                console.info('No access token on local storage!')
                 // Should log out
             }
           } else if (state.app.prefs.modelCatalog.status === 'ERROR') {
@@ -258,7 +258,7 @@ const loadPage: ActionCreator<ThunkResult> =
           store.dispatch(selectThread(null));
         });
       }
-      else if(subpage == 'problem_statement') {
+      else if(subpage == 'problem_statement' || subpage == 'scenario') {
         // ProblemStatement passed in. Load problem_statement
         import('../screens/modeling/mint-problem-statement').then((_module) => {
           if(params.length > 0) {

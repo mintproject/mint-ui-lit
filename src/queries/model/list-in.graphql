@@ -1,0 +1,5 @@
+query list_existing_models($modelIds: [String!]!) {
+    model(where: {id: {_in: $modelIds}}) {
+        id
+    }
+}

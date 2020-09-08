@@ -3,7 +3,7 @@ import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 
 import { SharedStyles } from "../../../styles/shared-styles";
-import { Execution, Task, DataEnsembleMap } from "../reducers";
+import { Execution, Task, ModelIOBindings } from "../reducers";
 import { getUISelectedTask } from "../../../util/state_functions";
 import { MintThreadPage } from "./mint-thread-page";
 import { getVariableLongName } from "../../../offline_data/variable_list";
@@ -82,7 +82,7 @@ export class MintSummary extends connect(store)(MintThreadPage) {
                             Datasets:
                             <ul>
                                 ${Object.keys(this.thread.model_ensembles!).map((modelid) => {
-                                    let model_ensemble = this.thread.model_ensembles![modelid] as DataEnsembleMap;
+                                    let model_ensemble = this.thread.model_ensembles![modelid].bindings as ModelIOBindings;
                                     let model = this.thread.models![modelid];
                                     return html`
                                     Datasets for model : ${model.name}
@@ -108,7 +108,7 @@ export class MintSummary extends connect(store)(MintThreadPage) {
                             Setup:
                             <ul>
                                 ${Object.keys(this.thread.model_ensembles!).map((modelid) => {
-                                    let model_ensemble = this.thread.model_ensembles![modelid] as DataEnsembleMap;
+                                    let model_ensemble = this.thread.model_ensembles![modelid].bindings as ModelIOBindings;
                                     let model = this.thread.models![modelid];
                                     return html`
                                     Adjustment Variables for model : ${model.name}

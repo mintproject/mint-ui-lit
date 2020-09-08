@@ -26,7 +26,7 @@ export interface Model extends IdNameObject {
     dimensionality?: number|string,
     spatial_grid_type?: string,
     spatial_grid_resolution?: string,
-    minimum_output_time_interval?: string,
+    output_time_interval?: string,
     usage_notes?: string,
     hasRegion?: any
 };
@@ -48,7 +48,7 @@ export const getPathFromModel = (m:Model) => {
             let cfg = getLastPart(m.model_configuration)
             if (cfg) {
                 path += "/" + cfg;
-                if (m.localname) path += "/" + m.localname;
+                path += "/" + getLastPart(m.id);
             }
         }
     }

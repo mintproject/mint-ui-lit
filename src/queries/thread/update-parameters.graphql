@@ -1,0 +1,35 @@
+mutation update_thread_data(
+    $threadId: String!, 
+    $threadModelIds: [uuid!]!, 
+    $event: thread_provenance_insert_input!, 
+    $summaries: [thread_model_execution_summary_insert_input!]!,
+    $modelParams: [thread_model_parameter_insert_input!]!
+) {
+  delete_thread_model_execution_summary(where: {thread_model_id: {_in: $threadModelIds}}) {
+    affected_rows
+  }
+  delete_thread_model_parameter(where: {thread_model: {thread_id: {_eq: $threadId}}}) {
+    affected_rows
+  }
+  delete_thread_model_execution(where: {thread_model: {thread_id: {_eq: $threadId}}}) {
+    affected_rows
+  }
+
+  insert_thread_model_parameter (objects: $modelParams) {
+      returning {
+          model_parameter_id
+      }
+  }
+
+  insert_thread_model_execution_summary (objects: $summaries) {
+      returning {
+          thread_model_id
+      }
+  }
+
+  insert_thread_provenance_one (
+      object: $event
+  ) {
+    thread_id
+  }
+}
