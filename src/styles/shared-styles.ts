@@ -276,15 +276,15 @@ export const SharedStyles = css`
     color: #888;
     font-weight: normal;
   }
-  .caption {
-    color: #888;
-    font-size: 10px;
+  .cltmain .caption {
+    color: #aaa;
+    font-size: 11px;
     font-weight: normal;
     margin-left: 15px;
     margin-top: 5px;
   }
   .thread_caption {
-    color: #888;
+    color: #aaa;
     font-size: 10px;
     font-weight: normal;
     margin-right: 5px;

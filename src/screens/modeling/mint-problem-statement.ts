@@ -213,11 +213,9 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                         <div class="cltmain">
                                             ${this._getTaskVariablesText(task)}
                                             <div class='description'>
-                                            ${this._getTaskRegionText(task)}${task.name ? (": " + task.name) :  ""}
+                                                ${this._getTaskRegionTimeText(task)}
                                             </div>
-                                            <div class='description'>
-                                                ${this._getTaskTimeText(task)}
-                                            </div>
+                                            ${task.name ? html`<div class='description'>${task.name}</div>` :  ""}
                                             ${last_event ? 
                                             html`
                                             <div class='caption'>
@@ -383,7 +381,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         let dates = task.dates ? task.dates : this._problem_statement.dates;
         let startdate = toDateString(dates!.start_date);
         let enddate = toDateString(dates!.end_date);
-        return regionname + " : " + startdate + " to " + enddate;
+        return html`<b>${regionname}</b>:  <b>${startdate}</b> <span style='font-size:10px'>to</span> <b>${enddate}</b>`;
     }
 
     _getTaskRegionText(task: Task) {
@@ -397,7 +395,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         let dates = task.dates ? task.dates : this._problem_statement.dates;
         let startdate = toDateString(dates!.start_date);
         let enddate = toDateString(dates!.end_date);
-        return startdate + " to " + enddate;
+        return html`<b>${startdate}</b> - <b>${enddate}</b>`;
     }
 
     _renderHelpDialogs() {
