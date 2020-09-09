@@ -7,6 +7,7 @@ console.log("Initializing", process.env.NODE_ENV, "database");
 
 let firebaseConfig;
 
+console.log("> Using " + process.env.NODE_ENV + " server");
 if (process.env.NODE_ENV === "production") {
     firebaseConfig = FIREBASE_PROD_CONF;
 } else {
