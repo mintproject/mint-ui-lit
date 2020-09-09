@@ -10,7 +10,7 @@ RUN yarn install
 COPY . .
 COPY --chown=node:node . .
 USER node
-RUN /build.sh
+RUN yarn build
 
 VOLUME /home/node/app
 
