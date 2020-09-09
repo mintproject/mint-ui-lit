@@ -2,7 +2,7 @@ import { Reducer } from "redux";
 import { RootAction } from "../../app/store";
 import { PROBLEM_STATEMENTS_LIST, PROBLEM_STATEMENT_DETAILS, PROBLEM_STATEMENT_SUBSCRIPTION, THREAD_SUBSCRIPTION, THREAD_DETAILS, THREAD_EXECUTIONS_LIST, TASKS_LIST, THREADS_LIST, TASK_DETAILS, THREADS_LIST_SUBSCRIPTION, TASKS_LIST_SUBSCRIPTION } from "./actions";
 import { Model } from "../models/reducers";
-import { Dataset, DataResource } from "../datasets/reducers";
+import { Dataset, DataResource, Dataslice } from "../datasets/reducers";
 import { IdMap, IdNameObject } from "../../app/reducers";
 import { REGIONS_LIST_TOP_REGIONS } from "../regions/actions";
 
@@ -78,7 +78,7 @@ export interface ThreadList {
 
 export interface Thread extends ThreadInfo {
     models?: ModelMap
-    datasets?: DatasetMap
+    data?: DataMap
     model_ensembles?: ModelEnsembleMap
     execution_summary: IdMap<ExecutionSummary>
     visualizations?: Visualization[]
@@ -99,7 +99,7 @@ export interface ComparisonFeature {
 
 export type ModelMap = IdMap<Model>
 
-export type DatasetMap = IdMap<Dataset>
+export type DataMap = IdMap<Dataslice>
 
 export interface TaskList {
     task_ids: string[]

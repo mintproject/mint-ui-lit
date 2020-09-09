@@ -3,6 +3,9 @@ query model_executions($modelTypes: [String!], $regionId: String!) {
     id
     name
     region_name
+    model_name
+    model_version
+    model_configuration
     thread_models(order_by: {executions_aggregate: {count: desc}}, where: {thread: {task: {problem_statement: {region: {id: {_eq: $regionId}}}}}}) {
       thread {
         id

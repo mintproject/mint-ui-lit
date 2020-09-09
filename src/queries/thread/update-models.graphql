@@ -1,34 +1,47 @@
 mutation update_thread_model(
     $threadId: String!, 
-    $threadModelIds: [uuid!]!, 
     $event: thread_provenance_insert_input!, 
     $objects: [thread_model_insert_input!]!
 ) {
-  delete_thread_model_execution_summary(where: {thread_model_id: {_in: $threadModelIds}}) {
-    affected_rows
-  }
-  delete_thread_data(where: {thread_id: {_eq: $threadId}}) {
-    affected_rows
-  }
-  delete_thread_model_io(where: {thread_model: {thread_id: {_eq: $threadId}}}) {
-    affected_rows
-  }
-  delete_thread_model_parameter(where: {thread_model: {thread_id: {_eq: $threadId}}}) {
+  # Delete thread model executions
+  delete_thread_model_execution_summary(where: {thread_model: {thread_id: {_eq: $threadId}}}) {
     affected_rows
   }
   delete_thread_model_execution(where: {thread_model: {thread_id: {_eq: $threadId}}}) {
     affected_rows
   }
+
+  # Delete thread model data binding
+  delete_thread_model_io(where: {thread_model: {thread_id: {_eq: $threadId}}}) {
+    affected_rows
+  }
+  # Delete thread model parameter binding
+  delete_thread_model_parameter(where: {thread_model: {thread_id: {_eq: $threadId}}}) {
+    affected_rows
+  }
+
+  # Delete thread data
+  delete_dataslice_resource(where: {dataslice: {thread_data: {thread_id: {_eq: $threadId}}}}) {
+    affected_rows
+  }
+  delete_dataslice(where: {thread_data: {thread_id: {_eq: $threadId}}}) {
+    affected_rows
+  }
+  delete_thread_data(where: {thread_id: {_eq: $threadId}}) {
+    affected_rows
+  }
+
+  # Delete thread models
   delete_thread_model(where: {thread_id: {_eq: $threadId}}) {
     affected_rows
   }
 
+  # Add thread models
   insert_thread_model (objects: $objects) {
-    returning {
-        id
-    }
+    affected_rows
   }
 
+  # Add thread provenance
   insert_thread_provenance_one (
       object: $event
   ) {

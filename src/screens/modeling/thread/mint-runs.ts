@@ -131,7 +131,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                 let nInputs : number = model.input_files.map((input) => input.value ? 
                     (input.value.resources || []).filter(r => r.selected != false).length
                     : (this.thread.model_ensembles[modelid].bindings[input.id] || [])
-                            .map((dsid) => this.thread.datasets[dsid].resources)
+                            .map((dsid) => this.thread.data[dsid].resources)
                             .map((dsres) => (dsres || []).filter((r) => r.selected).length)
                             .reduce((ac,len) => ac*len, 1)
                 ).reduce((ac,len) => ac*len, 1);

@@ -90,7 +90,7 @@ export class MintSummary extends connect(store)(MintThreadPage) {
                                         ${model.input_files.filter((input) => !input.value).map((io) => {
                                             let bindings = model_ensemble[io.id!];
                                             let blist = bindings.map((binding) => {
-                                                let ds = this.thread.datasets![binding];
+                                                let ds = this.thread.data![binding];
                                                 return ds.name;
                                             }).join(", ");
 

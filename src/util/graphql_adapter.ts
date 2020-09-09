@@ -1,8 +1,8 @@
 import { Task, Thread, ProblemStatementInfo, ProblemStatement, ThreadInfo, MintEvent, ModelEnsembleMap, 
-    ModelIOBindings, Execution, ExecutionSummary, DatasetMap, ThreadModelMap } from "../screens/modeling/reducers"
+    ModelIOBindings, Execution, ExecutionSummary, DataMap, ThreadModelMap } from "../screens/modeling/reducers"
 import { auth } from "config/firebase";
 import { Model, ModelIO, ModelParameter } from "screens/models/reducers";
-import { Dataset, DataResource } from "screens/datasets/reducers";
+import { Dataset, DataResource, Dataslice } from "screens/datasets/reducers";
 import { Region } from "screens/regions/reducers";
 import { toDateString, fromTimestampIntegerToDateString } from "./date-utils";
 import { uuidv4 } from "screens/models/configure/util";
@@ -86,7 +86,6 @@ export const problemStatementUpdateToGQL = (problem_statement: ProblemStatementI
 export const problemStatementFromGQL = (problem: any) : ProblemStatement => {
     let details = {
         id : problem["id"],
-        oldid : problem["oldid"],
         regionid: problem["region_id"],
         name: problem["name"],
         dates: {
@@ -144,7 +143,6 @@ export const taskUpdateToGQL = (task: Task) => {
 export const taskFromGQL = (task: any) : Task => {
     let taskobj = {
         id : task["id"],
-        oldid : task["oldid"],
         problem_statement_id: task["problem_statement_id"],
         regionid: task["region_id"],
         name: task["name"],
@@ -203,7 +201,6 @@ export const threadInfoUpdateToGQL = (thread:  ThreadInfo) => {
 export const threadInfoFromGQL = (thread: any) => {
     return {
         id : thread["id"],
-        oldid : thread["oldid"],
         name: thread["name"],
         dates: {
             start_date: new Date(thread["start_date"]),
@@ -219,7 +216,6 @@ export const threadInfoFromGQL = (thread: any) => {
 export const threadFromGQL = (thread: any) => {
     let fbthread = {
         id : thread["id"],
-        oldid : thread["oldid"],
         task_id: thread["task_id"],
         regionid: thread["region_id"],
         name: thread["name"],
@@ -232,14 +228,14 @@ export const threadFromGQL = (thread: any) => {
         execution_summary: {},
         events: thread["events"].map(eventFromGQL),
         models: {},
-        datasets: {},
+        data: {},
         model_ensembles: {}
     } as Thread;
     
     thread["thread_data"].forEach((tm:any) => {
         let m = tm["dataslice"];
-        let data : Dataset = dataFromGQL(m);
-        fbthread.datasets[data.id] = data;
+        let dataslice : Dataslice = dataFromGQL(m);
+        fbthread.data[dataslice.id] = dataslice;
     })
 
     thread["thread_models"].forEach((tm:any) => {
@@ -271,7 +267,6 @@ export const threadFromGQL = (thread: any) => {
             } as ExecutionSummary
         });
     })
-
     return fbthread;
 }
 
@@ -299,7 +294,7 @@ export const getTotalConfigs = (model: Model, bindings: ModelIOBindings, thread:
             if(bindings[io.id]) {
                 let nensemble : any[] = [];
                 bindings[io.id].map((dsid) => {
-                    let ds = thread.datasets[dsid];
+                    let ds = thread.data[dsid];
                     let selected_resources = ds.resources.filter((res) => res.selected);
                     // Fix for older saved resources
                     if(selected_resources.length == 0) 
@@ -333,8 +328,16 @@ export const dataFromGQL = (d: any) => {
             res.selected = resobj["selected"];
             return res;
         }),
-        resource_count: d["resources"].length
-    } as Dataset;
+        time_period: {
+            start_date: ds["start_date"],
+            end_date: ds["end_date"]
+        },
+        resource_count: d["resources"].length,
+        dataset: {
+            id: ds["id"],
+            name: ds["name"]
+        } as Dataset
+    } as Dataslice;
 }
 
 export const modelFromGQL = (m: any) => {
@@ -362,7 +365,7 @@ export const modelIOFromGQL = (model_io: any) => {
             resources: io["fixed_bindings"].map((res:any) => {
                 return res["resource"]
             })
-        } as Dataset
+        } as Dataslice
         : null;
     return {
         id: io["id"],
@@ -645,20 +648,17 @@ const modelParameterToGQL = (input: ModelParameter) => {
     return input
 }
 
-const getModelDataBindings = (model, model_ensemble: ThreadModelMap, idmap) => {
+const getModelDataBindings = (model, model_ensemble: ThreadModelMap) => {
     let dataBindings = []
     model["input_files"].forEach((ifile) => {
         let inputid = ifile["id"]
         if (inputid in model_ensemble.bindings) {
-            model_ensemble.bindings[inputid].forEach((dsid) => {
-                if (dsid in idmap) {
-                    let sliceid = idmap[dsid]
-                    dataBindings.push({
-                        "thread_model_id": model_ensemble.id,
-                        "model_io_id": inputid,
-                        "dataslice_id": sliceid
-                    })
-                }
+            model_ensemble.bindings[inputid].forEach((sliceid) => {
+                dataBindings.push({
+                    "thread_model_id": model_ensemble.id,
+                    "model_io_id": inputid,
+                    "dataslice_id": sliceid
+                })
             });
         }
     });
@@ -746,22 +746,22 @@ const getDatasliceResourceData = (data) => {
     }
 }
 
-const getDatasliceData = (data: Dataset, thread: Thread) => {
+const getDatasliceData = (data: Dataslice, thread: Thread) => {
     let dsname = data.name;
     let threadname = thread.name;
 
     let slicename = dsname + " for thread: " + threadname;
-    let sliceid =  uuidv4(); // Change to using md5 hash of sorted resource ids
+    let sliceid =  data["id"] ?? uuidv4(); // Change to using md5 hash of sorted resource ids
     return {
         "id": sliceid,
         "name": slicename,
         "region_id": thread.regionid,
         "start_date": thread.dates?.start_date,
         "end_date": thread.dates?.end_date,
-        "resource_count": data.resource_count,
+        "resource_count": data.dataset.resource_count,
         "dataset": {
             "data": {
-                "id": data.id,
+                "id": data.dataset.id,
                 "name": dsname,
             },
             "on_conflict": {
@@ -779,7 +779,7 @@ const getDatasliceData = (data: Dataset, thread: Thread) => {
     }
 }
 
-const getThreadDataslice = (data: Dataset, thread: Thread) => {
+const getThreadDataslice = (data: Dataslice, thread: Thread) => {
     return {
         "thread_id": thread.id,
         "dataslice": {
@@ -792,28 +792,23 @@ const getThreadDataslice = (data: Dataset, thread: Thread) => {
     }
 }
 
-export const threadDataBindingsToGQL = (datasets: DatasetMap, 
+export const threadDataBindingsToGQL = (data: DataMap, 
         model_ensemble: ModelEnsembleMap, thread: Thread) => {
-    let idmap = {}
-    let dataslices = {}
-    Object.keys(datasets).map((dsid) => {
-        let ds = datasets[dsid];
-        let dataslice = getThreadDataslice(ds, thread)
-        let sliceid = dataslice["dataslice"]["data"]["id"]
-        idmap[ds["id"]] = sliceid
-        dataslices[ds["id"]] = dataslice
+    let dataslices = []
+    Object.keys(data).map((sliceid) => {
+        let dataslice = getThreadDataslice(data[sliceid], thread)
+        dataslices.push(dataslice);
     });
-    let thread_data = Object.keys(datasets).map((dsid) => dataslices[dsid]);
 
     let thread_model_io = [];
     Object.keys(model_ensemble).forEach((modelid) => {
         let model = thread.models[modelid];
-        let tmio = getModelDataBindings(model, model_ensemble[modelid], idmap);
+        let tmio = getModelDataBindings(model, model_ensemble[modelid]);
         thread_model_io = thread_model_io.concat(tmio);
     })
     
     return {
-        data: thread_data,
+        data: dataslices,
         model_io: thread_model_io
     }
 }

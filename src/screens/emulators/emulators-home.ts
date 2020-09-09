@@ -15,6 +15,7 @@ import 'components/loading-dots';
 import emulators from './reducers';
 import { goToPage } from 'app/actions';
 import { listEmulatorModelTypes, searchEmulatorsForModel } from './actions';
+import { getPathFromModel } from 'screens/models/reducers';
 
 store.addReducers({
     emulators
@@ -84,8 +85,10 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                 font-weight: bold;
             }
             td {
-                min-width:100px;
+                min-width:150px;
                 border: solid 1px;
+            }
+            td.nowrap {
                 white-space: nowrap;
             }
             `,
@@ -264,7 +267,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                     <h2>${this._selectedModel} Emulators</h2>
                     <table class="pure-table pure-table-bordered">
                         <thead>
-                            <tr><th>Model Calibrated for Region</th><th>Executed for Region</th><th>Time period</th><th>Input</th><th>Model Setup</th><th>Ensemble description (range of parameters)</th><th>Output summary (Ensemble)</th><th>JSON-Summary</th><th>URL to be shared</th><th>Results reviewed by modeler</th><th>Quality</th><th>Status</th><th>Validated?</th><th>Usage Notes</th><th>Comments</th></tr>
+                            <tr><th>Model Calibrated for Region</th><th>Executed for Region</th><th>Time period</th><th>Input</th><th>Model Setup</th><th>Ensemble description (range of parameters)</th><th>Output summary (Ensemble)</th></tr>
                         </thead>
                         <tbody>
                         ${this._emulatorsLoading ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`:
@@ -272,8 +275,8 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                 html`<tr><td colspan="10">Error: Could not load emulators</td></tr>` 
                                 : this._emulators.map((em) => {
                                     let model_region = em.region_name;
-                                    let modelid = em.id;
                                     let modelname = em.name;
+                                    let model_uri =  this._regionid + '/models/explore' + getPathFromModel(em);
                                     let tms = em["thread_models"] as any[];
                                     if (tms && tms.length > 0) {
                                         return tms.map((tm) => {
@@ -293,23 +296,15 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                                 let inputsHTML = this.getInputsHTML(inputs);                                        
                                                 return html`
                                                 <tr>
-                                                    <td>${model_region}</td>
-                                                    <td>${task["region"]["name"]}</td>
-                                                    <td>${thread["start_date"]} - ${thread["end_date"]}</td>
-                                                    <td>${inputsHTML}</td>
-                                                    <td><a href="${modelid}">${modelid}</a></td>
-                                                    <td>${paramsHTML}</td>
-                                                    <td>
+                                                    <td class='nowrap'>${model_region}</td>
+                                                    <td class='nowrap'>${task["region"]["name"]}</td>
+                                                    <td class='nowrap'>${thread["start_date"]} - ${thread["end_date"]}</td>
+                                                    <td class='nowrap'>${inputsHTML}</td>
+                                                    <td><a href="${model_uri}">${modelname}</a></td>
+                                                    <td class='nowrap'>${paramsHTML}</td>
+                                                    <td class='nowrap'>
                                                         <a href="${thread_uri}">${numexecutions} Executions</a>
                                                     </td>
-                                                    <td> - </td>
-                                                    <td> - </td>
-                                                    <td> - </td>
-                                                    <td> - </td>
-                                                    <td> - </td>
-                                                    <td> - </td>
-                                                    <td> - </td>
-                                                    <td> - </td>
                                                 </tr>`;
                                             }
                                         });

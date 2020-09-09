@@ -514,8 +514,10 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         if(this._selectedTask && threadid) {
             showNotification("deleteNotification", this.shadowRoot!);
             deleteThread(threadid);
-            if(this._selectedThreadId == threadid)
+            if(this._selectedThreadId == threadid) {
+                this._selectedThreadId = null;
                 goToPage("modeling/problem_statement/" + this._problem_statement!.id + "/" + this._selectedTask.id + "/");
+            }
         }
     }
 

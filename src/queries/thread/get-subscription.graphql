@@ -12,10 +12,16 @@ subscription sub_thread($id: String!) {
                     id
                     name
                 }
+                start_date
+                end_date
                 resources {
                     selected
                     resource {
                         id
+                        name
+                        url
+                        start_date
+                        end_date
                     }
                 }
             }

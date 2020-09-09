@@ -1,21 +1,21 @@
 import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
-import datasets, { Dataset, ModelDatasets } from "../../datasets/reducers";
+import datasets, { Dataset, ModelDatasets, Dataslice } from "../../datasets/reducers";
 import ReactGA from 'react-ga';
 
-import { DatasetMap, ModelIOBindings, ModelEnsembleMap, ComparisonFeature, Task, ThreadEvent } from "../reducers";
+import { ModelIOBindings, ModelEnsembleMap, ComparisonFeature, Task, DataMap } from "../reducers";
 import { SharedStyles } from "../../../styles/shared-styles";
 import { Model, getPathFromModel } from "../../models/reducers";
 import { queryDatasetsByVariables, loadResourcesForDataset } from "../../datasets/actions";
-import { updateThread, setThreadData } from "../actions";
-import { removeDatasetFromThread, matchVariables, getThreadDatasetsStatus, TASK_DONE, getUISelectedTask } from "../../../util/state_functions";
+import { setThreadData, selectThreadDataResources } from "../actions";
+import { matchVariables, getThreadDatasetsStatus, TASK_DONE } from "../../../util/state_functions";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
 import { showNotification, showDialog, hideDialog } from "../../../util/ui_functions";
 import { selectThreadSection } from "../../../app/ui-actions";
 import { MintThreadPage } from "./mint-thread-page";
 import { IdMap } from "../../../app/reducers";
-import { fromTimeStampToDateString, toDateString } from "util/date-utils";
+import { toDateString } from "util/date-utils";
 
 import "weightless/snackbar";
 import 'components/loading-dots';
@@ -23,7 +23,6 @@ import { Region } from "screens/regions/reducers";
 
 import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
 import { getLatestEventOfType } from "util/event_utils";
-import { getCustomEvent } from "../../../util/graphql_adapter";
 import { uuidv4 } from "screens/models/configure/util";
 
 store.addReducers({
@@ -57,7 +56,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
     task: Task;
 
     @property({type: Object})
-    private _selectResourcesDataset: Dataset;
+    private _selectResourcesData: Dataslice | Dataset;
 
     @property({type: Boolean})
     private _selectionUpdate: boolean;
@@ -219,23 +218,23 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                 <wl-title level="5">Input: ${input.name}</wl-title>
                                 <ul>
                                     ${bindings.map((binding) => {
-                                        let dataset = this.thread.datasets![binding];
-                                        let resources = dataset.resources || [];
-                                        let selected_resources = dataset.resources.filter((res) => res.selected);
+                                        let dataslice = this.thread.data![binding];
+                                        let resources = dataslice.resources || [];
+                                        let selected_resources = dataslice.resources.filter((res) => res.selected);
                                         // Fix for older saved resources
                                         if(selected_resources.length == 0) {
                                             resources.map((res) => { res.selected = true;});
-                                            selected_resources = dataset.resources.filter((res) => res.selected);
+                                            selected_resources = dataslice.resources.filter((res) => res.selected);
                                         }
                                         return html`
                                         <li>
-                                        <a target="_blank" href="${this._regionid}/datasets/browse/${dataset.id}/${this.getSubregionId()}">${dataset.name}</a>
+                                        <a target="_blank" href="${this._regionid}/datasets/browse/${dataslice.dataset.id}/${this.getSubregionId()}">${dataslice.dataset.name}</a>
                                         ${resources.length > 1 ?
                                             html`
                                                 <br />
                                                 ( ${selected_resources.length} / ${resources.length} files - 
                                                 <a style="cursor:pointer"
-                                                    @click="${() => this._selectDatasetResources(dataset, true)}">Change</a> )
+                                                    @click="${() => this._selectDataResources(dataslice, true)}">Change</a> )
                                             `
                                             : ""}
                                         </li>
@@ -280,7 +279,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                                 let matched = matchVariables(this.thread.driving_variables, dataset.variables, false); // Partial match
                                                 let resources = dataset.resources;
                                                 let selected_resources = dataset.resources.filter((res) => res.selected);
-                                                if(this._showAllDatasets || this._selectionUpdate || dtypeMatchingInputDatasets.indexOf(dataset) >=0) {
+                                                if(this._showAllDatasets || dtypeMatchingInputDatasets.indexOf(dataset) >=0) {
                                                     return html`
                                                     <tr>
                                                         <td><input class="${this._valid(modelid)}_${this._valid(input.id!)}_checkbox" 
@@ -295,13 +294,13 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                                                     : html`
                                                                     ${selected_resources.length} / ${resources.length} resources -  
                                                                     <a style="cursor:pointer"
-                                                                        @click="${() => this._selectDatasetResources(dataset, false)}">Change</a>
+                                                                        @click="${() => this._selectDataResources(dataset, false)}">Change</a>
                                                                 `)
                                                             : html`
                                                                 ${dataset.resource_count} total resources - 
                                                                 <a style="cursor:pointer" @click="${() => {
                                                                     this._loadDatasetResources(dataset);
-                                                                    this._selectDatasetResources(dataset, false);
+                                                                    this._selectDataResources(dataset, false);
                                                                 }}">Filter and select</a>
                                                             `})
 
@@ -445,7 +444,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                         </tr>
                     </thead>
                     <tbody>
-                        ${((this._selectResourcesDataset || {} as Dataset).resources || []).map((resource) => {
+                        ${((this._selectResourcesData || {} as Dataset).resources || []).map((resource) => {
                             return html`
                                 <tr>
                                     <td>
@@ -462,7 +461,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                         })}
                     </tbody>
                 </table>            
-                ${!(this._selectResourcesDataset||{})['resources_loaded'] ? html`
+                ${!(this._selectResourcesData||{})['resources_loaded'] ? html`
                     <div style="margin-top: 10px; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>
                 `:'' }
             </div>   
@@ -491,7 +490,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
     }
 
     _getDatasetSelections(modelid: string, inputid: string) {
-        let selected_datasets: DatasetMap = {};
+        let selected_datasets: DataMap = {};
         this.shadowRoot!.querySelectorAll("input."+
                 this._valid(modelid) + "_" + this._valid(inputid) +"_checkbox" )
                 .forEach((cbox) => {
@@ -500,7 +499,14 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                     if(cboxinput.checked) {
                         this._queriedDatasets[modelid!][inputid].datasets.map((dataset:Dataset) => {
                             if(dataset.id == datasetid) {
-                                selected_datasets[dataset.id!] = dataset;
+                                let sliceid = uuidv4();
+                                selected_datasets[sliceid] = {
+                                    id: sliceid,
+                                    resources: dataset.resources,
+                                    time_period: this.thread.dates,
+                                    name: dataset.name,
+                                    dataset: dataset
+                                } as Dataslice
                                 return;
                             }
                         });
@@ -521,8 +527,8 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         return req;
     }
 
-    _selectDatasetResources(dataset: Dataset, immediate_update: boolean) {
-        this._selectResourcesDataset = dataset;
+    _selectDataResources(dataslice: Dataslice | Dataset, immediate_update: boolean) {
+        this._selectResourcesData = dataslice;
         this._selectionUpdate = false;
         this._selectResourcesImmediateUpdate = immediate_update;
         showDialog("resourceSelectionDialog", this.shadowRoot!);
@@ -537,16 +543,14 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
             if(resid)
                 resource_selected[resid] = cboxinput.checked;
         });
-        this._selectResourcesDataset.resources.map((res) => {
+        this._selectResourcesData.resources.map((res) => {
             res.selected = resource_selected[res.id];
         })
-        /*
         this._selectionUpdate = true;
         if(this._selectResourcesImmediateUpdate) {
-            let newthread = {...this.thread};  
-            updateThread(newthread);
+            selectThreadDataResources(this._selectResourcesData.id, resource_selected, this.thread.id);
             showNotification("saveNotification", this.shadowRoot!);
-        }*/
+        }
         hideDialog("resourceSelectionDialog", this.shadowRoot);
     }
 
@@ -564,8 +568,8 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
     }
 
     _compareDatasets(modelid: string, inputid: string) {
-        let datasets = this._getDatasetSelections(modelid, inputid);
-        this._datasetsToCompare = Object.values(datasets);
+        let dataslices = this._getDatasetSelections(modelid, inputid);
+        this._datasetsToCompare = Object.values(dataslices).map((slice) => slice.dataset);
         showDialog("comparisonDialog", this.shadowRoot!);
     }
 
@@ -598,7 +602,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
     }
 
     _selectThreadDatasets() {
-        let datasets: DatasetMap = this.thread.datasets || {};
+        let data: DataMap = this.thread.data || {};
         let model_ensembles: ModelEnsembleMap = this.thread.model_ensembles || {};
 
         Object.keys(this.thread.models!).map((modelid) => {
@@ -612,28 +616,9 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                     return;
                 }
 
-                let new_datasets = this._getDatasetSelections(modelid, inputid);
-        
-                // Check if any datasets need to be removed
-                let datasets_to_be_removed: string[] = [];
-                (current_data_ensemble || []).map((dsid) => {
-                    if(!new_datasets[dsid]) {
-                        datasets_to_be_removed.push(dsid);
-                    }
-                    else {
-                        // Existing dataset is already present in the new list. So we don't need to add it again
-                        delete new_datasets[dsid];
-                    }
-                });
-                datasets_to_be_removed.map((dsid) => {
-                    //console.log("Removing dataset " + dsid);
-                    // If the existing dataset was removed, remove it from the thread
-                    this.thread = removeDatasetFromThread(this.thread, dsid, modelid, inputid);            
-                })
-        
-                // Now add the rest of the new datasets
+                let newdata = this._getDatasetSelections(modelid, inputid);
 
-                Object.keys(new_datasets).map((dsid) => {
+                Object.keys(newdata).map((sliceid) => {
                     if(!model_ensembles[modelid])
                         model_ensembles[modelid] = {
                             id: uuidv4(),
@@ -641,8 +626,8 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                         };
                     if(!model_ensembles[modelid][inputid])
                         model_ensembles[modelid].bindings[inputid] = [];
-                    model_ensembles[modelid].bindings[inputid].push(dsid!);
-                    datasets[dsid] = new_datasets[dsid];
+                    model_ensembles[modelid].bindings[inputid].push(sliceid!);
+                    data[sliceid] = newdata[sliceid];
                 });                 
             })
         });
@@ -651,7 +636,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         showNotification("saveNotification", this.shadowRoot!);
 
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        setThreadData(datasets, model_ensembles, notes, this.thread);
+        setThreadData(data, model_ensembles, notes, this.thread);
     }
 
     firstUpdated() {
@@ -683,9 +668,9 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                             loading: false,
                             datasets: []
                         };
-                        this.thread.model_ensembles![modelid].bindings[input.id!].map((datasetid) => {
-                            let dataset = this.thread.datasets![datasetid];
-                            this._queriedDatasets[modelid][input.id!].datasets.push(dataset);
+                        this.thread.model_ensembles![modelid].bindings[input.id!].map((datasliceid) => {
+                            let dataslice = this.thread.data![datasliceid];
+                            this._queriedDatasets[modelid][input.id!].datasets.push(dataslice);
                         });
                     }
                 });

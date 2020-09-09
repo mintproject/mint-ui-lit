@@ -20,7 +20,6 @@ export interface IdMap<T> {
 
 export interface IdNameObject {
   id?: string
-  oldid?:string
   name?: string
 }
 

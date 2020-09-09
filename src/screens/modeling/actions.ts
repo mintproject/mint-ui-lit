@@ -1,7 +1,7 @@
 import { Action, ActionCreator } from 'redux';
 import { ProblemStatementList, ProblemStatementInfo, 
     ProblemStatement,  Thread, Task, 
-    Execution, ThreadInfo, ThreadList, TaskList, ModelEnsembleMap, DatasetMap, ExecutionSummary } from './reducers';
+    Execution, ThreadInfo, ThreadList, TaskList, ModelEnsembleMap, DataMap, ExecutionSummary, ThreadEvent } from './reducers';
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from '../../app/store';
 //import { db, fieldValue, auth } from '../../config/firebase';
@@ -28,6 +28,8 @@ import updateThreadModelGQL from '../../queries/thread/update-models.graphql';
 import updateThreadDataGQL from '../../queries/thread/update-datasets.graphql';
 import updateThreadParametersGQL from '../../queries/thread/update-parameters.graphql';
 import updateThreadInfoGQL from '../../queries/thread/update-info.graphql';
+import addThreadEventGQL from '../../queries/thread/add-event.graphql';
+import setDatasliceResourcesGQL from '../../queries/thread/set-dataslice-resources.graphql';
 
 import deleteProblemStatementGQL from '../../queries/problem-statement/delete.graphql';
 import deleteTaskGQL from '../../queries/task/delete.graphql';
@@ -562,10 +564,6 @@ export const updateTask = (task: Task) =>  {
     });
 };
 
-// Update Thread
-export const updateThread = (thread:Thread) =>  { 
-};
-
 export const updateThreadInformation = (threadinfo: ThreadInfo) => {
     let threadobj = threadInfoUpdateToGQL(threadinfo);
     return APOLLO_CLIENT.mutate({
@@ -585,14 +583,13 @@ export const setThreadModels = (models: Model[], notes: string, thread: Thread) 
         mutation: updateThreadModelGQL,
         variables: {
             threadId: thread.id,
-            threadModelIds: Object.values(thread.model_ensembles).map(tmap => tmap.id),
             objects: threadmodelsobj,
             event: eventobj
         }
     });
 };
 
-export const setThreadData = (datasets: DatasetMap, model_ensembles: ModelEnsembleMap, 
+export const setThreadData = (datasets: DataMap, model_ensembles: ModelEnsembleMap, 
         notes: string, thread: Thread) =>  {
     let bindings = threadDataBindingsToGQL(datasets, model_ensembles, thread);
     let event = getCustomEvent("SELECT_DATA", notes);
@@ -603,7 +600,6 @@ export const setThreadData = (datasets: DatasetMap, model_ensembles: ModelEnsemb
         variables: {
             threadId: thread.id,
             data: bindings.data,
-            threadModelIds: Object.values(thread.model_ensembles).map(tmap => tmap.id),
             modelIO: bindings.model_io,
             event: eventobj
         }
@@ -627,9 +623,37 @@ export const setThreadParameters = (model_ensembles: ModelEnsembleMap,
         mutation: updateThreadParametersGQL,
         variables: {
             threadId: thread.id,
-            threadModelIds: Object.values(thread.model_ensembles).map(tmap => tmap.id),
             summaries: summaries,
             modelParams: bindings,
+            event: eventobj
+        }
+    });
+};
+
+export const selectThreadDataResources = (sliceid: string, resource_selections: any, threadid: string) => {
+    let slice_resources = Object.keys(resource_selections).map((resid) => {
+        return {
+            dataslice_id: sliceid,
+            resource_id: resid,
+            selected: resource_selections[resid]
+        };
+    })
+    return APOLLO_CLIENT.mutate({
+        mutation: setDatasliceResourcesGQL,
+        variables: {
+            datasliceId: sliceid,
+            threadId: threadid,
+            resources: slice_resources
+        }
+    });
+}
+
+export const addThreadEvent = (eventobj: ThreadEvent, thread: Thread) =>  {
+    eventobj["thread_id"] = thread.id;
+    return APOLLO_CLIENT.mutate({
+        mutation: addThreadEventGQL,
+        variables: {
+            threadId: thread.id,
             event: eventobj
         }
     });

@@ -352,7 +352,7 @@ export class TaskEditor extends connect(store)(LitElement) {
                         end_date: new Date(task_to)
                     },
                     models: {},
-                    datasets: {},
+                    data: {},
                     model_ensembles: {},
                     execution_summary: {},
                     events: [getCreateEvent("Default Thread Created") as ThreadEvent]

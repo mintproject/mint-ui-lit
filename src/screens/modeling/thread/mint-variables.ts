@@ -9,13 +9,13 @@ import "weightless/tooltip";
 import "weightless/popover-card";
 import "weightless/snackbar";
 
-import { updateThread } from "../actions";
 import { BASE_HREF } from "../../../app/actions";
 import { renderNotifications, renderResponseVariables, renderDrivingVariables, renderLastUpdateText } from "../../../util/ui_renders";
 import { formElementsComplete, showNotification, hideNotification } from "../../../util/ui_functions";
 import { selectThreadSection } from "../../../app/ui-actions";
 import { getVariableLongName } from "../../../offline_data/variable_list";
 import { MintThreadPage } from "./mint-thread-page";
+import { updateThreadInformation } from "../actions";
 
 @customElement('mint-variables')
 export class MintVariables extends connect(store)(MintThreadPage) {
@@ -187,7 +187,7 @@ export class MintVariables extends connect(store)(MintThreadPage) {
 
             // Update notes
             // let notes = (form.elements["notes"] as HTMLTextAreaElement).value;
-            updateThread(newthread);
+            updateThreadInformation(newthread);
             
             this._editMode = false;
             //hideDialog("variablesDialog", this.shadowRoot!);

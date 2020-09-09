@@ -3,7 +3,6 @@ import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 
 import { SharedStyles } from "../../../styles/shared-styles";
-import { updateThread } from "../actions";
 import { renderNotifications } from "../../../util/ui_renders";
 import { showNotification } from "../../../util/ui_functions";
 import { Execution, Task, ModelIOBindings, Visualization, ThreadEvent } from "../reducers";
@@ -14,6 +13,7 @@ import { getVariableLongName } from "../../../offline_data/variable_list";
 import "weightless/button";
 import { getLatestEventOfType, getLatestEvent } from "util/event_utils";
 import { getCustomEvent } from "../../../util/graphql_adapter";
+import { addThreadEvent } from "../actions";
 
 @customElement('mint-visualize')
 export class MintVisualize extends connect(store)(MintThreadPage) {
@@ -105,10 +105,8 @@ export class MintVisualize extends connect(store)(MintThreadPage) {
     }
 
     _saveNotes () {
-        let newthread = { ...this.thread };
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        newthread.events.push(getCustomEvent("VISUALIZE", notes) as ThreadEvent);
-        updateThread(newthread); 
+        addThreadEvent(getCustomEvent("VISUALIZE", notes) as ThreadEvent, this.thread)
         showNotification("saveNotification", this.shadowRoot!);
     }
 
@@ -161,7 +159,7 @@ export class MintVisualize extends connect(store)(MintThreadPage) {
                                         ${model.input_files.filter((input) => !input.value).map((io) => {
                                             let bindings = model_ensemble[io.id!];
                                             let blist = bindings.map((binding) => {
-                                                let ds = this.thread.datasets![binding];
+                                                let ds = this.thread.data![binding];
                                                 return ds.name;
                                             }).join(", ");
 

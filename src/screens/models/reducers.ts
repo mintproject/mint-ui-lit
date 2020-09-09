@@ -2,7 +2,7 @@ import { IdNameObject } from "../../app/reducers";
 import { Reducer } from "redux";
 import { RootAction } from "../../app/store";
 import { MODELS_VARIABLES_QUERY } from "./actions";
-import { Dataset } from "../datasets/reducers";
+import { Dataset, Dataslice } from "../datasets/reducers";
 
 
 export interface Model extends IdNameObject {
@@ -58,7 +58,7 @@ export const getPathFromModel = (m:Model) => {
 export interface ModelIO extends IdNameObject {
     type?: string,
     variables: string[],
-    value?: Dataset,
+    value?: Dataslice,
     position?: number
 }
 

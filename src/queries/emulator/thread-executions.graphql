@@ -5,6 +5,9 @@ query thread_executions($threadId: uuid!) {
       model {
         id
         name
+        model_name
+        model_version
+        model_configuration
       }
       executions {
         execution {

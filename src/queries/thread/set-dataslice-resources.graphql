@@ -1,0 +1,27 @@
+mutation set_dataslice_resources(
+    $threadId: String!,
+    $datasliceId: uuid!, 
+    $resources: [dataslice_resource_insert_input!]!
+) {
+  # Delete thread model executions
+  delete_thread_model_execution_summary(where: {thread_model: {thread_id: {_eq: $threadId}}}) {
+    affected_rows
+  }
+  delete_thread_model_execution(where: {thread_model: {thread_id: {_eq: $threadId}}}) {
+    affected_rows
+  }
+
+  # Delete thread model parameter binding
+  delete_thread_model_parameter(where: {thread_model: {thread_id: {_eq: $threadId}}}) {
+    affected_rows
+  }
+
+  delete_dataslice_resource(where: {dataslice_id: {_eq: $datasliceId}}) {
+    affected_rows
+  }
+  insert_dataslice_resource(objects: $resources) {
+    returning {
+      dataslice_id
+    }
+  }
+}

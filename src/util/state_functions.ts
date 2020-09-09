@@ -1,34 +1,7 @@
-import { Thread, DatasetMap, ModelEnsembleMap, ModelIOBindings, InputBindings, Execution, Task, ProblemStatementInfo } from "../screens/modeling/reducers";
+import { Thread, ModelIOBindings, InputBindings, Task, ProblemStatementInfo } from "../screens/modeling/reducers";
 import { RootState } from "../app/store";
 import { getVariableLongName } from "offline_data/variable_list";
-import { getLatestEventOfType } from "./event_utils";
 import { MintPreferences } from "app/reducers";
-
-export const removeDatasetFromThread = (thread: Thread,
-        datasetid: string, modelid: string, inputid: string) => {
-    let datasets: DatasetMap = thread.datasets || {};
-    let model_ensembles: ModelEnsembleMap = thread.model_ensembles || {};
-
-    // Remove dataset from ensemble
-    let dsindex = model_ensembles[modelid].bindings[inputid].indexOf(datasetid);
-    model_ensembles[modelid].bindings[inputid].splice(dsindex, 1);
-    if (model_ensembles[modelid].bindings[inputid].length == 0) {
-        delete model_ensembles[modelid].bindings[inputid];
-    }
-    if (Object.keys(model_ensembles[modelid]).length == 0) {
-        delete model_ensembles[modelid];
-    }
-
-    // Remove dataset from thread, if no other models are using it
-    if (!_datasetUsedInOtherModel(thread, datasetid, modelid)) {
-        delete datasets[datasetid];
-    }
-    return {
-        ...thread,
-        datasets: datasets,
-        model_ensembles: model_ensembles
-    };
-}
 
 export const matchVariables = (variables1: string[], variables2: string[], fullmatch: boolean) => {
     let matched = fullmatch ? true: false;
@@ -189,9 +162,9 @@ export const getVisualizationURLs = (thread: Thread, task: Task, problem_stateme
 
         let visualizations = [];
         let data = {
-            thread_id: thread.oldid ?? thread.id,
-            task_id: task.oldid ?? task.id,
-            problem_statement_id: problem_statement.oldid ?? problem_statement.id
+            thread_id: thread.id,
+            task_id: task.id,
+            problem_statement_id: problem_statement.id
         };
         let qs = new URLSearchParams(data);
         let query : string = qs.toString();
