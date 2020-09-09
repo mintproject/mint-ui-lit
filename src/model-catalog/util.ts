@@ -8,12 +8,12 @@ export const capitalizeFirstLetter = (s:string) : string => {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export const getURL = (model:Model|string, ver:SoftwareVersion|string, cfg:ModelConfiguration|string,
-        setup?:ModelConfigurationSetup|string) : string => {
+export const getURL = (model:Model|string, ver?:SoftwareVersion|string, 
+                       cfg?:ModelConfiguration|string, setup?:ModelConfigurationSetup|string) : string => {
     let modelid : string = typeof model === 'object' ? model.id : model;
-    let verid : string = typeof ver === 'object' ? ver.id : ver;
-    let cfgid : string = typeof cfg === 'object' ? cfg.id : cfg;
-    let setupid : string = typeof setup === 'object' ? setup.id : setup;
+    let verid : string = !!ver? (typeof ver === 'object' ? ver.id : ver) : '';
+    let cfgid : string = !!cfg? (typeof cfg === 'object' ? cfg.id : cfg) : '';
+    let setupid : string = !!setup? (typeof setup === 'object' ? setup.id : setup) : '';
     let url = uriToId(modelid);
     if (verid) {
         url += '/' + uriToId(verid);
