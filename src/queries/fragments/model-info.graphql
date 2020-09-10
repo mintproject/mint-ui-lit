@@ -1,6 +1,7 @@
 fragment model_info on model {
     id
     name
+    code_url
     description
     category
     region_name

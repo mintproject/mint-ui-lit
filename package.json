@@ -1,8 +1,11 @@
 {
   "name": "mint-ui-lit",
-  "version": "5.0.1",
+  "version": "6.0.0",
   "description": "MINT UI",
   "author": "Varun Ratnakar",
+  "contributors": [
+    "Hernan Vargas"
+  ],
   "license": "MIT",
   "private": true,
   "scripts": {

@@ -12,10 +12,7 @@ import { IdMap, UserPreferences } from '../../app/reducers';
 import { GraphQL } from 'config/graphql';
 
 import subscribeProblemStatementsListGQL from '../../queries/problem-statement/list-subscription.graphql';
-import subscribeTasksListGQL from '../../queries/task/list-subscription.graphql';
-import subscribeThreadsListGQL from '../../queries/thread/list-subscription.graphql';
 import subscribeProblemStatementGQL from '../../queries/problem-statement/get-subscription.graphql';
-import subscribeTaskGQL from '../../queries/task/get-subscription.graphql';
 import subscribeThreadGQL from '../../queries/thread/get-subscription.graphql';
 
 import newProblemStatementGQL from '../../queries/problem-statement/new.graphql';
