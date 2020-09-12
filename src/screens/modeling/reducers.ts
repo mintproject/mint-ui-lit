@@ -137,7 +137,7 @@ export interface ExecutionSummary {
     workflow_name: string
 
     submitted_for_execution: boolean
-    submission_time: number    
+    submission_time: Date    
     total_runs: number
     submitted_runs: number
     successful_runs: number
@@ -155,11 +155,12 @@ export interface ExecutionSummary {
 }
 
 export interface Execution {
-    id: string
+    id?: string
     modelid: string
     bindings: InputBindings
     runid?: string
-    submission_time: number
+    start_time: Date
+    end_time?: Date
     execution_engine?: "wings" | "localex"
     status: "FAILURE" | "SUCCESS" | "RUNNING" | "WAITING",
     run_progress?: number // 0 to 100 (percentage done)

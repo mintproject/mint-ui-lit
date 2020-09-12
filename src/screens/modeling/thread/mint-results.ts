@@ -486,6 +486,19 @@ export class MintResults extends connect(store)(MintThreadPage) {
         super.setRegionId(state);
 
         // Before resetting thread, check if the thread run status has changed
+        // **** FIXME : New runs reload algorithm *****
+        // - Subscribe to only the summary changes
+        // - When summary changes -> mark it as changed -> set a Timer (1 minute or so)
+        //                        -> if already marked -> ignore
+        // - When timer expires -> if marked as changed -> reload -> reset mark
+
+        // *** FIXME : New runs load query ***
+        // - Query with sort by, asc/desc, limit and offset
+        // - Set sort by, asc/desc by UI
+        // - Set offset when page changed
+
+        
+        // Before resetting thread, check if the thread run status has changed
         let runs_status_changed = threadSummaryChanged(this.thread, state.modeling.thread);
         let runs_total_changed = threadTotalRunsChanged(this.thread, state.modeling.thread);
 

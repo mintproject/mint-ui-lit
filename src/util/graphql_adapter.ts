@@ -425,7 +425,8 @@ export const executionFromGQL = (ex: any) : Execution => {
         id: ex.id,
         modelid: ex.model_id,
         status: ex.status,
-        submission_time: ex.start_time,
+        start_time: ex.start_time,
+        end_time: ex.end_time,
         execution_engine: ex.execution_engine,
         run_progress: ex.run_progress,
         runid: ex.run_id,
@@ -439,7 +440,7 @@ export const executionFromGQL = (ex: any) : Execution => {
         exobj.bindings[data.model_io_id] = data.resource as DataResource;
     });
     ex.results.forEach((data:any) => {
-        exobj.results[data.model_output_id] = data.resource as DataResource;
+        exobj.results[data.model_io_id] = data.resource as DataResource;
     });
     return exobj;
 }

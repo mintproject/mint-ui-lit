@@ -20,7 +20,7 @@ fragment execution_info on execution {
         }
     }
     results {
-        model_output_id
+        model_io_id
         resource {
             id
             name

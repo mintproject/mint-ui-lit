@@ -420,15 +420,6 @@ export const listThreadExecutions: ActionCreator<ListExecutionsThunkResult> =
     }
 };
 
-export const setThreadExecutionIds = (thread_id: string, modelid, ensembleids: string[]) : Promise<void> => {
-    // TODO
-    return null;
-}
-
-export const deleteAllThreadExecutionIds = async (thread_id: string, modelid: string) => {
-    // TODO
-}
-
 export const getAllThreadExecutionIds = async (thread_id: string, modelid: string) : Promise<string[]> => {
     return APOLLO_CLIENT.query({
         query: executionIdsForThreadGQL,
@@ -656,18 +647,6 @@ export const addThreadEvent = (eventobj: ThreadEvent, thread: Thread) =>  {
     });
 };
 
-// Update Thread Executions
-export const setThreadExecutions = (executions: Execution[]) => {
-    /*
-    let ensemblesRef = db.collection("ensembles");
-    let batch = db.batch();
-    let i = 0;
-    ensembles.map((ensemble) => {
-        batch.update(ensemblesRef.doc(ensemble.id), ensemble);
-    })
-    return batch.commit();*/
-}
-
 // Cache Models in GraphQL backend
 export const cacheModelsFromCatalog = async (
     models: Model[], 
@@ -711,27 +690,6 @@ export const cacheModelsFromCatalog = async (
         }
     }
 
-// Add Executions
-export const addThreadExecutions = (executions: Execution[]) => {
-    /*
-    let ensemblesRef = db.collection("ensembles");
-    // Read all docs (to check if they exist or not)
-    let readpromises = [];
-    ensembles.map((ensemble) => {
-        readpromises.push(ensemblesRef.doc(ensemble.id).get());
-    });
-    let batch = db.batch();
-    let i = 0;
-    return Promise.all(readpromises).then((docs) => {
-        docs.map((curdoc: firebase.firestore.DocumentSnapshot) => {
-            // If doc doesn't exist, write ensemble
-            let ensemble = ensembles[i++];
-            //if(!curdoc.exists)
-            batch.set(curdoc.ref, ensemble);
-        })
-        return batch.commit();
-    })*/
-}
 
 // Delete ProblemStatement
 export const deleteProblemStatement = (problem_statement_id: string) =>  {
