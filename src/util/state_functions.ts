@@ -2,6 +2,7 @@ import { Thread, ModelIOBindings, InputBindings, Task, ProblemStatementInfo } fr
 import { RootState } from "../app/store";
 import { getVariableLongName } from "offline_data/variable_list";
 import { MintPreferences } from "app/reducers";
+import { getLatestEventOfType } from "./event_utils";
 
 export const matchVariables = (variables1: string[], variables2: string[], fullmatch: boolean) => {
     let matched = fullmatch ? true: false;
@@ -33,7 +34,7 @@ export const getThreadVariablesStatus = (thread:Thread) => {
 }
 
 export const getThreadModelsStatus = (thread:Thread) => {
-    // If there is no event, check if models have been selected
+    // Check if any models have been selected
     if(Object.keys(thread.models).length > 0) {
         return TASK_DONE;
     }
@@ -43,6 +44,10 @@ export const getThreadModelsStatus = (thread:Thread) => {
 export const getThreadDatasetsStatus = (thread:Thread) => {
     if(getThreadModelsStatus(thread) == TASK_DONE) {
         // If there is no event, check if datasets are needed and have been selected
+        let event = getLatestEventOfType(["SELECT_DATA"], thread.events);
+        if (event == null) {
+            return TASK_NOT_STARTED;
+        }
         let ok = true;
         Object.keys(thread.model_ensembles).forEach((modelid) => {
             let model = thread.models[modelid];
@@ -63,6 +68,11 @@ export const getThreadDatasetsStatus = (thread:Thread) => {
 export const getThreadParametersStatus = (thread:Thread) => {
     // If there is no event, check if parameters are needed and have been selected
     if(getThreadDatasetsStatus(thread) == TASK_DONE) {
+        let event = getLatestEventOfType(["SELECT_PARAMETERS"], thread.events);
+        if (event == null) {
+            return TASK_NOT_STARTED;
+        }
+
         let ok = true;
         Object.keys(thread.model_ensembles).forEach((modelid) => {
             let model = thread.models[modelid];
