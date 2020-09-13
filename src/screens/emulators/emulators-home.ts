@@ -107,14 +107,14 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
         let parameters = {};
         model["parameters"].forEach((param: any) => {
             let name = param["name"];
-            if(!parameters[name] && param["value"] != null) {
+            if(!parameters[name] && param["fixed_value"] != null) {
                 parameters[name] = {
                     from_model: true,
                     value: []
                 }
             }
-            if(param["value"] != null)
-                parameters[name]["value"].push(param["value"]);
+            if(param["fixed_value"] != null)
+                parameters[name]["value"].push(param["fixed_value"]);
         });
         nodes.forEach((node) => {
             let name = node["model_parameter"]["name"];
@@ -338,29 +338,32 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         super.setRegionId(state);
         if(this._emulatorRegion != this._regionid && this._regionid) {
+            if(this._emulatorRegion) {
+                this._selectedModel = null;            
+                state.emulators.selected_model = null;
+            }
             this._emulatorRegion = this._regionid;
-            this._selectedModel = null;            
-            state.emulators.selected_model = null;
 
             this._modelTypes = null;
             state.emulators.models = null;
             store.dispatch(listEmulatorModelTypes(this._emulatorRegion));
-
-            if(this._selectedModel) {
-                this._emulators = null;
-                state.emulators.emulators = null;                
-                store.dispatch(searchEmulatorsForModel(this._selectedModel, this._emulatorRegion));
-            }
-        }
-        if(state.emulators && state.emulators.models && !this._modelTypes) {
-            this._typesLoading = state.models.loading;
-            if(!this._typesLoading) {
-                this._modelTypes = state.emulators.models;
-            }
         }
 
         if(state.emulators && state.emulators.selected_model) {
             this._selectedModel = state.emulators.selected_model;
+        }
+
+        if(state.emulators && state.emulators.models && !this._modelTypes) {
+            this._typesLoading = state.models.loading;
+            if(!this._typesLoading) {
+                this._modelTypes = state.emulators.models;
+                
+                if(this._selectedModel) {
+                    this._emulators = null;
+                    state.emulators.emulators = null;                
+                    store.dispatch(searchEmulatorsForModel(this._selectedModel, this._emulatorRegion));
+                }
+            }
         }
 
         if(state.emulators && state.emulators.emulators) {
