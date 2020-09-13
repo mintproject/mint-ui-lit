@@ -51,13 +51,12 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
     }
 
     protected render() {
-        return html`
-        <iframe class="datacatalog" src="https://data-catalog.mint.isi.edu"></iframe>
-        <!--div class="content">
-            <datasets-search class="page" ?active="{!this._dsid}"></datasets-search>
-            <dataset-detail class="page" ?active="{this._dsid}"></dataset-detail>
-        </div-->
-        `
+        if (this._dsid) return html`
+            <div class="content">
+                <dataset-detail class="page" ?active="${this._dsid}"></dataset-detail>
+            </div>`;
+        else return html`
+            <iframe class="datacatalog" src="https://data-catalog.mint.isi.edu"></iframe>`;
     }
 
     stateChanged(state: RootState) {

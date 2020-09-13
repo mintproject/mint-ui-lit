@@ -5,6 +5,7 @@ import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from 'app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from 'app/actions';
+import { CustomNotification } from 'components/notification';
 
 import './configure/resources/person';
 import './configure/resources/grid';
@@ -15,6 +16,7 @@ import { ModelCatalogGrid } from './configure/resources/grid';
 import { ModelCatalogFundingInformation } from './configure/resources/funding-information';
 import { ModelCatalogVisualization } from './configure/resources/visualization';
 import { ModelCatalogNumericalIndex } from './configure/resources/numerical-index';
+import { ModelCatalogModel } from './configure/resources/model';
 
 import { renderNotifications } from "util/ui_renders";
 import { showNotification } from 'util/ui_functions';
@@ -172,6 +174,8 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _model : Model;
 
+    private _iModel : ModelCatalogModel;
+
     private _inputAuthor : ModelCatalogPerson;
     private _inputContributor : ModelCatalogPerson;
     private _inputContactPerson : ModelCatalogPerson;
@@ -179,9 +183,12 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
     private _inputFunding : ModelCatalogFundingInformation;
     private _inputVisualization : ModelCatalogVisualization;
     private _inputIndex : ModelCatalogNumericalIndex;
+    private _notifications : CustomNotification;
 
     public constructor () {
         super();
+        this._iModel = new ModelCatalogModel();
+
         this._inputAuthor = new ModelCatalogPerson();
         this._inputContributor = new ModelCatalogPerson();
         this._inputContactPerson = new ModelCatalogPerson();
@@ -189,6 +196,7 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
         this._inputFunding = new ModelCatalogFundingInformation();
         this._inputVisualization = new ModelCatalogVisualization();
         this._inputIndex = new ModelCatalogNumericalIndex();
+        this._notifications = new CustomNotification();
 
         [this._inputAuthor, this._inputContributor, this._inputContactPerson, this._inputVisualization, this._inputIndex]
                 .forEach((input) => input.setActionMultiselect());
@@ -206,24 +214,31 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
             </div>
             <div class="${this._hideLateral ? 'right_full' : 'right'}">
                 <div class="card2">
-                    <div style="height: 24px;">
+                    <div style="height: 24px;" id="page-top">
                         <wl-icon @click="${() => this._hideLateral = !this._hideLateral}"
                             class="actionIcon bigActionIcon" style="float:right">
                             ${!this._hideLateral ? "fullscreen" : "fullscreen_exit"}
                         </wl-icon>
                     </div>
-                    ${this._renderStepForm()}
+                    ${this._iModel}
+                    <!--
+                    {this._renderStepForm()}
                     <div class="footer">
-                        <wl-button @click="${this._onContinueButtonClicked}" .disabled="${this._waiting}">
+                        <wl-button @click="{this._onContinueButtonClicked}" .disabled="{this._waiting}">
                             continue 
-                            ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 5px;"></loading-dots>` : ''}
+                            {this._waiting ? html<loading-dots style="--width: 20px; margin-left: 5px;"></loading-dots> : ''}
                         </wl-button>
-                    </div>
+                    </div-->
                 </div>
             </div>
         </div>
-        ${renderNotifications()}
+        ${this._notifications}
         `
+    }
+
+    private _scrollUp () {
+        let head = this.shadowRoot.getElementById('page-top');
+        if (head) head.scrollIntoView({behavior: "smooth", block: "start"})
     }
 
     private _renderSteps () {
@@ -254,16 +269,6 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
             <div class="step" ?active="${this._step == 3}" ?disabled="${this._step < 3}">
                 <div>
                     <wl-title level="3"> Step 3: </wl-title>
-                    <div>Make your model executable</div>
-                </div>
-                <div>
-                    <wl-icon>library_books</wl-icon>
-                </div>
-            </div>
-
-            <div class="step" ?active="${this._step == 4}" ?disabled="${this._step < 4}">
-                <div>
-                    <wl-title level="3"> Step 4: </wl-title>
                     <div>Register a initial version</div>
                 </div>
                 <div>
@@ -280,8 +285,6 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
             return this._renderStepTwo();
         } else if (this._step == 3) {
             return this._renderStepThree();
-        } else if (this._step == 4) {
-            return this._renderStepFour();
         }
     }
 
@@ -439,10 +442,6 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
     }
 
     private _renderStepThree () {
-        return html`TODO: STEP 3`
-    }
-
-    private _renderStepFour () {
         return html`
             <wl-title level="2">Register an initial version for your model</wl-title>
             ${this._model ? html`<wl-title level="3">${getLabel(this._model)}</wl-title>` : ''}
@@ -497,6 +496,12 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
                 author: this._inputAuthor.getResources()
             };
             return SoftwareVersionFromJSON(jsonRes);
+        } else {
+            this._scrollUp();
+            if (!label) (<any>inputLabel).onBlur();
+            if (!desc) (<any>inputDesc).onBlur();
+            if (!tag) (<any>inputTag).onBlur();
+            this._notifications.error("You must specify a name, description and tag for your initial version.");
         }
     }
 
@@ -547,8 +552,10 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
 
             return ModelFromJSON(jsonRes);
         } else {
+            this._scrollUp();
             if (!label) (<any>inputLabel).onBlur();
             if (!category) (<any>inputCategory).onBlur();
+            this._notifications.error("You must specify a name and category for your model.");
         }
     }
 
@@ -561,6 +568,9 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
             jsonRes['hasPurpose'] = [purpose];
             jsonRes['usefulForCalculatingIndex'] = this._inputIndex.getResources()
             return ModelFromJSON(jsonRes);
+        } else {
+            this._scrollUp();
+            this._notifications.error("You must specify a purpose for your model.");
         }
     }
 
@@ -568,45 +578,42 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
         if (this._step <= 1) {
             let newModel = this._getResourceFromForm();
             if (newModel) {
-                showNotification("saveNotification", this.shadowRoot!);
                 this._waiting = true;
                 let req = store.dispatch(modelPost(newModel));
                 req.then((model:Model) => {
                     this._waiting = false;
-                    console.log('new model!', model);
+                    this._notifications.save("Model saved");
                     let url = 'models/register/' + getId(model) + '/2';
                     goToPage(url);
+                });
+                req.catch((error) => {
+                    this._waiting = false;
+                    this._notifications.error("An error has ocurred trying to save the model.");
                 });
             }
         } else if (this._step == 2) {
             let step2Model = this._getStep2FromForm();
             if (step2Model) {
-                showNotification("saveNotification", this.shadowRoot!);
                 this._waiting = true;
                 let req = store.dispatch(modelPut(step2Model));
                 req.then((model:Model) => {
                     this._waiting = false;
-                    console.log('model edited!', model);
+                    this._notifications.save("Model updated");
                     let url = 'models/register/' + getId(model) + '/3';
                     goToPage(url);
                 });
             }
         } else if (this._step == 3) {
-            let url = 'models/register/' + getId(this._model) + '/4';
-            goToPage(url);
-        } else if (this._step == 4) {
             let newVer = this._getVersionFromForm();
             if (newVer) {
-                showNotification("saveNotification", this.shadowRoot!);
                 this._waiting = true;
                 let req = store.dispatch(versionPost(newVer));
                 req.then((ver: SoftwareVersion) => {
-                    console.log('version added!', newVer);
-                    let newModel = { ...this._model };
-                    newModel['hasVersion'] = [newVer];
-                    store.dispatch(modelPut(newModel)).then((model:Model) => {
+                    this._notifications.save("Version saved");
+                    let newModel = { ...this._model, hasVersion: [ver]};
+                    let req2 = store.dispatch(modelPut(newModel)).then((model:Model) => {
                         this._waiting = false;
-                        console.log('model edited!', model);
+                        this._notifications.save("Model updated");
                         let url = 'models/explore/' + getId(model);
                         goToPage(url);
                     });
@@ -618,29 +625,6 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
     private _setModelStepOne () {
         let m = this._model;
         if (m) {
-            /*let inputLabel : Textfield = this.shadowRoot.getElementById('m-name') as Textfield;
-            let inputCategory : Select = this.shadowRoot.getElementById('m-category') as Select;
-            let inputShortDesc : Textarea = this.shadowRoot.getElementById("m-short-desc") as Textarea;
-            let inputDesc : Textarea = this.shadowRoot.getElementById("m-desc") as Textarea;
-            let inputExample : Textarea = this.shadowRoot.getElementById("m-example") as Textarea;
-            let inputKeywords : Textfield = this.shadowRoot.getElementById("m-keywords") as Textfield;
-            let inputLicense : Textarea = this.shadowRoot.getElementById("m-license") as Textarea;
-            let inputCitation : Textarea = this.shadowRoot.getElementById("m-citation") as Textarea;
-            let inputWebsite : Textfield = this.shadowRoot.getElementById("m-website") as Textfield;
-            let inputDocumentation : Textfield = this.shadowRoot.getElementById("m-documentation") as Textfield;
-
-            if (inputLabel && m.label && m.label.length > 0) inputLabel.value = m.label[0];
-            if (inputCategory && m.hasModelCategory && m.hasModelCategory.length > 0) inputCategory.value = m.hasModelCategory[0];
-            if (inputShortDesc && m.shortDescription && m.shortDescription.length > 0) inputShortDesc.value = m.shortDescription[0];
-            if (inputDesc && m.description && m.description.length > 0) inputDesc.value = m.description[0];
-            if (inputExample && m.hasExample && m.hasExample.length > 0) inputExample.value = m.hasExample[0];
-            if (inputKeywords && m.keywords && m.keywords.length > 0) inputKeywords.value = m.keywords[0];
-            if (inputLicense && m.license && m.license.length > 0) inputLicense.value = m.license[0];
-            if (inputCitation && m.citation && m.citation.length > 0) inputCitation.value = m.citation[0];
-            if (inputWebsite && m.website && m.website.length > 0) inputWebsite = m.website[0];
-            if (inputDocumentation && m.hasDocumentation && m.hasDocumentation.length > 0) inputDocumentation = m.hasDocumentation[0];
-            */
-
             if (m.contributor && m.contributor.length > 0)                          this._inputContributor.setResources(m.contributor);
             if (m.hasContactPerson && m.hasContactPerson.length > 0)                this._inputContactPerson.setResources(m.hasContactPerson);
             if (m.author && m.author.length > 0)                                    this._inputAuthor.setResources(m.author);
@@ -682,13 +666,16 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         if (state.app) {
             if (state.app.subpage === 'register') {
-                if (this._shouldClear) this._clearForms();
+                if (this._shouldClear) {
+                    this._iModel.enableSingleResourceCreation();
+                    //this._clearForms();
+                }
             } else {
                 this._shouldClear = true;
             }
         } 
 
-        if (state.explorerUI) {
+        /*if (state.explorerUI) {
             let ui = state.explorerUI;
             let db = state.modelCatalog;
             this._modelid = ui.selectedModel;
@@ -705,10 +692,10 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
                     /*store.dispatch(modelGet(this._modelid)).then((model:Model) => {
                         this._model = model;
                         console.log('loading');
-                    });*/
+                    });
                 }
             }
-        }
+        }*/
 
     }
 }

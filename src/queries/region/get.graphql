@@ -2,6 +2,7 @@ query get_region_details($id:String!) {
   region_by_pk(id:$id) {
     id
     name
+    model_catalog_uri
     geometries {
       geometry
     }

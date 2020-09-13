@@ -14,6 +14,8 @@ import { selectThreadSection } from "../../../app/ui-actions";
 import { MintThreadPage } from "./mint-thread-page";
 import { IdMap } from "../../../app/reducers";
 import { getPathFromModel } from "../../models/reducers";
+import { getLabel } from "model-catalog/util";
+import { DataTransformation, Parameter } from '@mintproject/modelcatalog_client';
 
 import "weightless/progress-bar";
 import { getLatestEventOfType } from "util/event_utils";
@@ -206,51 +208,118 @@ export class MintParameters extends connect(store)(MintThreadPage) {
             })}
             </ul>
 
+            ${Object.values(this.thread.data_transformations || {}).length > 0 ? 
+                html`
+                <wl-title level="3">
+                    Setup Data Transformations
+                    <wl-icon @click="${() => this._setEditMode(true)}" 
+                        class="actionIcon editIcon"
+                        id="editParametersIcon">edit</wl-icon>
+                </wl-title>
+                <ul>
+                    ${Object.values(this.thread.data_transformations || {}).map((dt:DataTransformation) => html`
+                    <li>
+                        <wl-title level="4">
+                            Data transformation:
+                            ${getLabel(dt)}
+                        </wl-title>
+                        <ul>
+                            <li>
+                                <table class="pure-table pure-table-striped">
+                                    <thead>
+                                        <th><b>Adjustable Parameter</b></th>
+                                        <th>Values</th>
+                                    </thead>
+                                    <tbody> 
+                                        ${Object.values(dt.hasParameter).map((p:Parameter) => html`
+                                        <tr>
+                                            <td style="width:60%">
+                                                <wl-title level="5">${getLabel(p).replace(/_/g, ' ')}</wl-title>
+                                                <div class="caption">${p.description ? p.description[0] : ''}.</div>
+                                            </td>
+                                            <td>
+                                                <div class="input_full">
+                                                    <input type="text" name="${p.id}" 
+                                                        value="${this._getDTParameterValue(p)}"></input>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        `)}
+                                    </tbody>
+                                </table>
+                            </li>
+                        </ul>
+                    </li>
+                    `)}
+                </ul>` : ""
+            }
+
             ${!done || this._editMode ? 
                 html`
-                <div class="footer">
-                    ${this._editMode ? 
-                        html`
-                            <wl-button flat inverted
-                                @click="${() => this._setEditMode(false)}">CANCEL</wl-button>
-                            <wl-button type="button" class="submit" 
-                                @click="${() => this._setThreadParameters()}">Select &amp; Continue</wl-button>                            
-                        `
-                        : 
-                        html`
-                            <wl-button type="button" class="submit" 
-                                @click="${() => store.dispatch(selectThreadSection("runs"))}">Continue</wl-button>                        
-                        `
-                        }
-                </div>
-                <fieldset class="notes">
-                    <legend>Notes</legend>
-                    <textarea id="notes">${latest_parameter_event?.notes ? latest_parameter_event.notes : ""}</textarea>
-                </fieldset>
-                `: 
-                html`
-                <div class="footer">
-                    <wl-button type="button" class="submit" @click="${() => store.dispatch(selectThreadSection("runs"))}">Continue</wl-button>
-                </div>
-                ${latest_parameter_event?.notes ? 
-                    html `
-                    <div class="notepage">${renderLastUpdateText(latest_parameter_event)}</div>
-                    `: html ``
-                }
-                ${latest_update_event?.notes ? 
-                    html`
+                    <div class="footer">
+                        ${this._editMode ? 
+                            html`
+                                <wl-button flat inverted
+                                    @click="${() => this._setEditMode(false)}">CANCEL</wl-button>
+                                <wl-button type="button" class="submit" 
+                                    @click="${() => this._setThreadParameters()}">Select &amp; Continue</wl-button>                            
+                            `
+                            : 
+                            html`
+                                <wl-button type="button" class="submit" 
+                                    @click="${() => store.dispatch(selectThreadSection("runs"))}">Continue</wl-button>                        
+                            `
+                            }
+                    </div>
                     <fieldset class="notes">
                         <legend>Notes</legend>
-                        <div class="notepage">${latest_update_event.notes}</div>
+                        <textarea id="notes">${latest_parameter_event?.notes ? latest_parameter_event.notes : ""}</textarea>
                     </fieldset>
-                    `: html``
-                }             
+                `: 
+                html`
+                    <div class="footer">
+                        <wl-button type="button" class="submit" @click="${() => store.dispatch(selectThreadSection("runs"))}">Continue</wl-button>
+                    </div>
+                    ${latest_parameter_event?.notes ? 
+                        html `
+                        <div class="notepage">${renderLastUpdateText(latest_parameter_event)}</div>
+                        `: html ``
+                    }
+                    ${latest_update_event?.notes ? 
+                        html`
+                        <fieldset class="notes">
+                            <legend>Notes</legend>
+                            <div class="notepage">${latest_update_event.notes}</div>
+                        </fieldset>
+                        `: html``
+                    }
                 `
-            }        
-        </div>
-
-        ${renderNotifications()}
+            }
+            ${renderNotifications()}
         `;
+    }
+
+    _getDTParameterValue (r:Parameter) {
+        let additionalType : string = r.type && r.type.length > 1 ?
+                r.type.filter((p:string) => p != 'Parameter')[0] : '';
+        if (additionalType == "https://w3id.org/wings/export/MINT#StartDate" && 
+                this.problem_statement.dates &&
+                this.problem_statement.dates.start_date) {
+            return this._getFormattedDate(this.problem_statement.dates.start_date);
+        } else if (additionalType == "https://w3id.org/wings/export/MINT#EndDate" &&
+                this.problem_statement.dates &&
+                this.problem_statement.dates.end_date ) {
+            return this._getFormattedDate(this.problem_statement.dates.end_date);
+        }
+        return "";
+    }
+ 
+    _getFormattedDate (ts) {
+        let date = ts.toDate();
+        let year = date.getFullYear();
+        let month = (1 + date.getMonth()).toString().padStart(2, '0');
+        let day = date.getDate().toString().padStart(2, '0');
+        return month + '/' + day + '/' + year;
     }
 
     _validateInput(model: Model, input: ModelParameter) {

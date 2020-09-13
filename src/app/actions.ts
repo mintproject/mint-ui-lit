@@ -340,6 +340,20 @@ const loadPage: ActionCreator<ThunkResult> =
             } else {
                 store.dispatch(explorerClearModel());
             }
+        } else if (subpage == 'edit') {
+            if (params[params.length -1] === 'edit' || params[params.length -1] === 'new') {
+                store.dispatch(explorerSetMode(params.pop()));
+            } else {
+                store.dispatch(explorerSetMode('view'));
+            }
+            if(params.length > 0) {
+                store.dispatch(explorerSetModel(params[0]));
+                if (params.length > 1) {
+                    store.dispatch(explorerSetVersion(params[1]));
+                }
+            } else {
+                store.dispatch(explorerClearModel());
+            }
         }
         break;
     case 'regions':

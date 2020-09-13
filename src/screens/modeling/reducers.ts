@@ -5,6 +5,7 @@ import { Model } from "../models/reducers";
 import { Dataset, DataResource, Dataslice } from "../datasets/reducers";
 import { IdMap, IdNameObject } from "../../app/reducers";
 import { REGIONS_LIST_TOP_REGIONS } from "../regions/actions";
+import { DataTransformation } from '@mintproject/modelcatalog_client';
 
 export interface ModelingState {
     problem_statements?: ProblemStatementList
@@ -80,6 +81,8 @@ export interface Thread extends ThreadInfo {
     models?: ModelMap
     data?: DataMap
     model_ensembles?: ModelEnsembleMap
+    data_transformations? : IdMap<DataTransformation>
+    model_dt_ensembles?: ModelEnsembleMap
     execution_summary: IdMap<ExecutionSummary>
     visualizations?: Visualization[]
     events: ThreadEvent[]

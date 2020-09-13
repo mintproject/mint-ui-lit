@@ -6,6 +6,7 @@ query list_sub_regions($regionId: String!) {
   }) {
     id
     name
+    model_catalog_uri
     geometries {
       geometry
     }
