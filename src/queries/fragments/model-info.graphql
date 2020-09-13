@@ -1,0 +1,65 @@
+fragment model_info on model {
+    id
+    name
+    code_url
+    description
+    category
+    region_name
+    dimensionality
+    type
+    model_version
+    model_name
+    model_configuration
+    parameter_assignment
+    parameter_assignment_details
+    calibration_target_variable
+    spatial_grid_type
+    spatial_grid_resolution
+    inputs {
+        position
+        model_io {
+            id
+            name
+            type
+            variables {
+                variable {
+                    id
+                }
+            }
+            fixed_bindings {
+                resource {
+                    id
+                    name
+                    url
+                }
+            }
+        }
+    }
+    outputs {
+        position
+        model_io {
+            id
+            name
+            type
+            variables {
+                variable {
+                    id
+                }
+            }
+        }
+    }        
+    parameters {
+        id
+        name
+        description
+        type
+        min
+        max
+        unit
+        fixed_value
+        position
+        accepted_values
+        adjustment_variable
+        default
+    }
+}

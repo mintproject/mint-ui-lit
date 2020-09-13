@@ -1,0 +1,7 @@
+mutation new_problem_statement ($object: problem_statement_insert_input!) {
+    insert_problem_statement (objects: [$object]) {
+        returning {
+            id
+        }
+    }
+}

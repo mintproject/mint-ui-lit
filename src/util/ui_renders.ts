@@ -1,5 +1,5 @@
 import { html } from "lit-element";
-import { StepUpdateInformation } from "../screens/modeling/reducers";
+import { MintEvent } from "../screens/modeling/reducers";
 import { VARIABLES } from "../offline_data/variable_list";
 
 export const renderVariables = (readonly: boolean, response_callback: Function, driving_callback: Function) => {
@@ -8,16 +8,15 @@ export const renderVariables = (readonly: boolean, response_callback: Function, 
         Indicators are the variables or index that indicates the state of the system being modeled.
         Adjustable parameters are the variables and interventions you are interested in changing to explore outcomes on the indicator.
         </p>
-        <div class="formRow">
-            <div class="input_half">
-                <label>Indicators/Response of interest</label>
-                ${renderResponseVariables("", readonly, response_callback)}
-            </div>  
-            <div class="input_half">
-                <label>Adjustable Variables</label>
-                ${renderDrivingVariables("", readonly, driving_callback)}
-            </div>                            
-        </div>     
+        <div class="input_full">
+            <label>Indicators/Response of interest</label>
+            ${renderResponseVariables("", readonly, response_callback)}
+        </div>  
+        <br />
+        <div class="input_full">
+            <label>Adjustable Variables</label>
+            ${renderDrivingVariables("", readonly, driving_callback)}
+        </div>                            
     `;
 }
 
@@ -27,15 +26,15 @@ export const renderNotifications = () => {
         <wl-icon slot="icon">error</wl-icon>
         <span>Please fill in all the required values.</span>
     </wl-snackbar>
-    <wl-snackbar id="saveNotification" hideDelay="2000" fixed backdrop disableFocusTrap>
+    <wl-snackbar id="saveNotification" hideDelay="1000" fixed backdrop disableFocusTrap>
         <wl-icon slot="icon">save</wl-icon>
         <span>Saving...</span>
     </wl-snackbar>
-    <wl-snackbar id="deleteNotification" hideDelay="2000" fixed backdrop disableFocusTrap>
+    <wl-snackbar id="deleteNotification" hideDelay="1000" fixed backdrop disableFocusTrap>
         <wl-icon slot="icon">delete</wl-icon>
         <span>Deleting...</span>
     </wl-snackbar>   
-    <wl-snackbar id="runNotification" hideDelay="2000" fixed backdrop>
+    <wl-snackbar id="runNotification" hideDelay="1000" fixed backdrop>
         <wl-icon slot="icon">settings</wl-icon>
         <span>Sending runs...Please wait</span>
     </wl-snackbar>       
@@ -101,10 +100,10 @@ export const renderDrivingVariables = (variableid: string, readonly: boolean, ca
     `;
 } 
 
-export const renderLastUpdateText = (info: StepUpdateInformation) => {
-    let date = new Date(info.time);
+export const renderLastUpdateText = (info: MintEvent) => {
+    let date = info.timestamp;
     return html `
-        <div class="information">Last updated by ${info.user} on ${date.toString()}</div>
+        <div class="information">Last updated by ${info.userid} on ${date.toString()}</div>
     `;
 }
 

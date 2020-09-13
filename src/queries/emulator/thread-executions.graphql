@@ -1,0 +1,42 @@
+query thread_executions($threadId: uuid!) {
+  thread(where: {id: {_eq: $threadId}}) {
+    id
+    thread_models {
+      model {
+        id
+        name
+        model_name
+        model_version
+        model_configuration
+      }
+      executions {
+        execution {
+          parameter_bindings {
+            model_parameter {
+              name
+            }
+            parameter_value
+          }
+          data_bindings {
+            model_io {
+              name
+            }
+            resource {
+              name
+              url
+            }
+          }
+          results {
+            model_output {
+              name
+            }
+            resource {
+              name
+              url
+            }
+          }
+        }
+      }
+    }
+  }
+}

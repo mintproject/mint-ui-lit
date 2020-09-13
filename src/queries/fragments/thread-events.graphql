@@ -1,0 +1,8 @@
+fragment thread_events on thread {
+  events {
+    event
+    timestamp
+    userid
+    notes
+  }
+}

@@ -2,6 +2,7 @@ import { GoogleMap } from '../thirdparty/google-map/src/google-map';
 import { customElement } from 'lit-element';
 import { Region, BoundingBox, Point } from 'screens/regions/reducers';
 import { calculateMapDetails, calculateMapDetailsForPoints } from 'screens/regions/actions';
+import { geometriesToGeoJson } from 'util/geometry_functions';
 
 @customElement('google-map-custom')
 export class GoogleMapCustom extends GoogleMap {
@@ -49,7 +50,7 @@ export class GoogleMapCustom extends GoogleMap {
     }
 
     public addRegion(region: Region) {
-        let features = this.map.data.addGeoJson(JSON.parse(region.geojson_blob));
+        let features = this.map.data.addGeoJson(geometriesToGeoJson(region.geometries));
         // TODO: Add click handlers for the region
         this.setFeatureProperties(region, features);
     }

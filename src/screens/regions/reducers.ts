@@ -1,30 +1,28 @@
 import { IdMap, IdNameObject } from "../../app/reducers";
 import { RootAction } from "../../app/store";
 import { Reducer } from "redux";
-import { REGIONS_LIST_TOP_REGIONS, REGIONS_LIST_SUB_REGIONS, REGIONS_SET_PREVIEW } from "./actions";
+import { REGIONS_LIST_TOP_REGIONS, REGIONS_LIST_SUB_REGIONS, REGIONS_SET_PREVIEW, REGIONS_LIST_CATEGORIES } from "./actions";
 
 export type RegionMap = IdMap<Region>;
 
 export interface Region extends IdNameObject {
-    geojson_blob?: string, // This contains the whole geojson itself
-    region_type?: string,
     bounding_box?: BoundingBox,
     model_catalog_uri?: string,
-    categories?: RegionCategory[],
-    subcategories?: IdMap<RegionCategory[]>
+    category_id: string,
+    geometries: any[]
 }
 
 export interface RegionsState {
     regions?: RegionMap,
     top_region_ids?: string[],
     sub_region_ids?: IdMap<string[]>,
+    categories?: IdMap<RegionCategory>
     bbox_preview?: BoundingBox[]
 }
 
-export interface RegionCategory {
-    id: string,
-    description: string,
-    citation?: string
+export interface RegionCategory extends IdNameObject {
+    citation?: string,
+    subcategories?: RegionCategory[]
 }
 
 export interface BoundingBox {
@@ -43,6 +41,13 @@ const INITIAL_STATE: RegionsState = {};
 
 const regions: Reducer<RegionsState, RootAction> = (state = INITIAL_STATE, action) => {
     switch (action.type) {
+        case REGIONS_LIST_CATEGORIES:
+            state.categories = {
+                ...action.categories
+            }
+            return {
+                ...state
+            }
         case REGIONS_LIST_TOP_REGIONS:
             state.regions = {
                 ...state.regions,
