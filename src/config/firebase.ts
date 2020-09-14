@@ -12,9 +12,6 @@ let firebaseConfig = {
     "appId": process.env.FIREBASE_APP_ID,
 }
 
-//FIXME: remove this!!!!
-console.log('config', firebaseConfig);
-
 export const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 export const app = firebase.initializeApp(firebaseConfig);
 export const auth = firebase.auth(app);
