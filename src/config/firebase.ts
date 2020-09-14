@@ -4,6 +4,7 @@ import "firebase/firestore";
 import { FIREBASE_PROD_CONF, FIREBASE_DEV_CONF } from "./google-api-key";
 
 console.log("Initializing", process.env.NODE_ENV, "database");
+console.log("VAR>", process.env.DEV_AUTH_DOMAIN, "AUTH DOM");
 
 let firebaseConfig;
 
