@@ -14,7 +14,7 @@ import "components/google-map-custom";
 
 import { ComparisonFeature } from 'screens/modeling/reducers';
 import { fromTimeStampToDateString } from 'util/date-utils';
-import { GOOGLE_API_KEY } from 'config/google-api-key';
+import { GOOGLE_API_KEY } from 'config/firebase';
 import { BoundingBox, Point, Region } from 'screens/regions/reducers';
 import { queryDatasetResources } from './actions';
 import { GoogleMapCustom } from 'components/google-map-custom';
