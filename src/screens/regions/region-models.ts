@@ -149,8 +149,14 @@ export class RegionModels extends connect(store)(PageViewElement)  {
             [bbox.xmax, bbox.ymin],
             [bbox.xmax, bbox.ymax]
         ];
-        let poly = JSON.parse(region.geojson_blob).geometry.coordinates[0][0];
-        return points.some((point) => this._pointInPolygon(point, poly));
+        
+        for(let index in region.geometries) {
+            let geometry: any = region.geometries[index];
+            let poly = geometry.coordinates[0][0];
+            if(points.some((point) => this._pointInPolygon(point, poly)))
+                return true;
+        }
+        return false;
     }
 
     private _getMatchingModels() {
