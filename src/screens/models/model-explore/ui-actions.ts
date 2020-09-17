@@ -11,7 +11,7 @@ export const EXPLORER_SELECT_CALIBRATION = 'EXPLORER_SELECT_CALIBRATION'
 export const REGISTER_SET_STEP = 'REGISTER_SET_STEP'
 
 export const EXPLORER_SET_MODE = 'EXPLORER_SET_MODE';
-export const ADD_MODEL_TO_COMPARE = 'ADD_MODEL_TO_COMPARE';
+export const ADD_MODELS_TO_COMPARE = 'ADD_MODELS_TO_COMPARE';
 export const CLEAR_COMPARE = 'CLEAR_COMPARE';
 
 interface ActionSelectUri<T> extends Action<T> { uri: string };
@@ -24,7 +24,7 @@ export interface ExplorerActionSelectCalibration extends ActionSelectUri<'EXPLOR
 export interface ExplorerActionSetMode extends Action<'EXPLORER_SET_MODE'> {mode: string};
 export interface ExplorerActionSetStep extends Action<'REGISTER_SET_STEP'> {step: number};
 
-export interface CompareActionAdd extends Action<'ADD_MODEL_TO_COMPARE'> { comparison: ComparisonEntry };
+export interface CompareActionAdd extends Action<'ADD_MODELS_TO_COMPARE'> { comparisons: ComparisonEntry[] };
 export interface CompareActionClear extends Action<'CLEAR_COMPARE'> {};
 
 export type ExplorerUIAction = ExplorerActionSelectModel | ExplorerActionSelectVersion | ExplorerActionSelectConfig | 
@@ -78,13 +78,25 @@ export const explorerSetMode: ActionCreator<ExplorerThunkResult> = (mode:string)
     dispatch({ type: EXPLORER_SET_MODE, mode: mode})
 };
 
-export const addModelToCompare: ActionCreator<ExplorerThunkResult> = (id:string) => (dispatch) => {
+export const addModelToCompare: ActionCreator<ExplorerThunkResult> = (models:string) => (dispatch) => {
+    //models is a string with the following format:
+    // model=model_id&config=config_id&version=version_id&setup=setup_id
+    
+    let compare : ComparisonEntry[] = [];
+    models.split('&').forEach((code:string) => {
+        let [t, id] = code.split("=");
+        let entry : ComparisonEntry = {type:"Model", uri:""};
+        if (t === "model") entry.type = "Model";
+        else if (t === "version") entry.type = "SoftwareVersion";
+        else if (t === "config") entry.type = "ModelConfiguration";
+        else if (t === "setup") entry.type = "ModelConfigurationSetup";
+        entry.uri = PREFIX_URI + id;
+        compare.push(entry);
+    });
+
     dispatch({
-        type: ADD_MODEL_TO_COMPARE,
-        comparison: {
-            uri: PREFIX_URI + id,
-            type: 'ModelConfigurationSetup' //FIXME
-        } as ComparisonEntry
+        type: ADD_MODELS_TO_COMPARE,
+        comparisons: compare
     });
 }
 

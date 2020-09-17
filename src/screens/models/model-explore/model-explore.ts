@@ -231,7 +231,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             this._notifications.custom(msg, icon);
         } else {
             let buttonName : string = "Compare";
-            let url : string = 'models/compare/' + this._comparisonList.join('/');
+            let url : string = 'models/compare/model=' + this._comparisonList.join('&model=');
             let me = this;
             let buttonFn = function () {
                 me._comparisonList = [];
