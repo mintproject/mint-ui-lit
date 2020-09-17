@@ -430,6 +430,10 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
+    _editModel () {
+        goToPage('models/edit/' + getURL(this._selectedModel));
+    }
+
     _goToEdit (configUri: string, setupUri?:string) {
         goToPage('models/configure/' + getURL(this._selectedModel, this._selectedVersion, configUri, setupUri));
     }
@@ -648,7 +652,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 <span class="rdf-icon">
                             </wl-button>
                         </a>
-                        ${this._model.label}
+                        <span>${getLabel(this._model)}</span>
+                        <wl-button style="--button-font-size: 16px; --button-padding: 8px; float: right;" flat inverted 
+                                @click="${() => this._editModel()}">
+                            <wl-icon>edit</wl-icon>
+                        </wl-button>
                     </wl-title>
                 </div>
                 <div class="col-img text-centered">
@@ -1814,6 +1822,33 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     private _renderAuthors (authorArray: (Person|Organization)[]) {
+        //HACK
+        if (this._selectedModel === "https://w3id.org/okn/i/mint/CYCLES") {
+            console.log(authorArray);
+            authorArray = [
+                {
+                    id: "https://w3id.org/okn/i/mint/kemanian_armen",
+                    label: ["Armen Kemanian"],
+                    type: ["Person", "Thing"]
+                } as Person,
+                {
+                    id: "https://w3id.org/okn/i/mint/shi_yuning",
+                    label: ["Yuning Shi"],
+                    type: ["Person", "Thing"]
+                } as Person,
+                {
+                    id: "https://w3id.org/okn/i/mint/white_charlie",
+                    label: ["Charlie M. White"],
+                    type: ["Person", "Thing"]
+                } as Person,
+                {
+                    id: "https://w3id.org/okn/i/mint/stockle_claudio",
+                    label: ["Claudio O. Stockle"],
+                    type: ["Person", "Thing"]
+                } as Person
+            ]
+        }
+
         return (authorArray || []).map((author:Person|Organization) => {
             if (this._loading[author.id]) {
                 return html`${getId(author)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
