@@ -201,12 +201,6 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
                 ` : ''}
             </li>
             `)}
-            <li>
-                <a class="inline-new-button config" @click="${() => {this._selectNew()}}">
-                    <wl-icon>add_circle_outline</wl-icon>
-                    Add new Model
-                </a>
-            </li>
         </ul>
         `;
     }

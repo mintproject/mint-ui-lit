@@ -28,6 +28,7 @@ export interface Model extends IdNameObject {
     spatial_grid_resolution?: string,
     minimum_output_time_interval?: string,
     usage_notes?: string,
+    indicators?: string,
     hasRegion?: any
 };
 

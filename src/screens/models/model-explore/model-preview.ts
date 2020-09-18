@@ -228,7 +228,6 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                     <span class="title">${this._model.label}</span>
                     <span class="icon">
                         <slot name="extra-icon"></slot>
-                        <!--wl-icon @click="{()=>{this._addToComparisonList(this._model.id)}}">compare_arrows</wl-icon-->
                     </span>
                     <span class="ver-conf-text">
                     ${this._nVersions > 0 ? this._nVersions.toString() + ' version' + (this._nVersions > 1? 's' :'') : 'No versions'},
