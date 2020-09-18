@@ -740,8 +740,13 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             } else if (this._action === Action.SELECT) {
                 this._selectedResourceId = r.id;
             }
+            this._postSave(r);
         });
         return req;
+    }
+
+    protected _postSave (r:T) {
+        return null;
     }
 
     private _addToSaveQueue (resource:T) {

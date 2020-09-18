@@ -220,7 +220,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                 </wl-title>
                 <p>
                     The models below generate data that includes the indicator that you selected earlier: 
-                    "${this.pathway.response_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
+                    <b>"${this.pathway.response_variables.map((variable) => getVariableLongName(variable)).join(", ")}"</b>.
                     Other models that are available in the system do not generate that kind of result.
                     ${this.pathway.driving_variables.length ? 
                         html`
@@ -242,7 +242,8 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                                     <th></th>
                                     <th><b>Model</b></th>
                                     <th>Category</th>
-                                    <th>Calibration Region</th>
+                                    <th>Region</th>
+                                    <th>Indicator</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -250,7 +251,6 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                                     availableModels.map((model: Model) => {
                                         if(!model)
                                             return;
-                                        console.log('>>', model);
                                         if(this._showAllModels || regionModels.indexOf(model) >=0) {
                                             return html`
                                             <tr>
@@ -268,6 +268,9 @@ export class MintModels extends connect(store)(MintPathwayPage) {
                                                     html`${this._allRegions[region.id].label[0]}` : ''
                                                 ) : ''}
                                                 </td>
+                                                <td>
+                                                    ${model.indicators ? html`<div>${model.indicators}</div>` : ''}
+                                                </td> 
                                             </tr>
                                             `;
                                         }
@@ -329,7 +332,7 @@ export class MintModels extends connect(store)(MintPathwayPage) {
     }
 
     _renderDialogs() {
-        let compUrl : string = this._regionid + '/models/compare/' + this._modelsToCompare.map(getId).join('/');
+        let compUrl : string = this._regionid + '/models/compare/setup=' + this._modelsToCompare.map(getId).join('&setup=');
         let loading : boolean = this._modelsToCompare.some((m:Model) => !this._loadedModels[m.id]);
         return html`
         <wl-dialog class="comparison" fixed backdrop blockscrolling id="comparisonDialog">

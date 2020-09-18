@@ -17,6 +17,8 @@ import { ModelCatalogNumericalIndex } from './numerical-index';
 import { ModelCatalogFundingInformation } from './funding-information';
 import { ModelCatalogVisualization } from './visualization';
 
+import { goToPage } from 'app/actions';
+
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
@@ -537,6 +539,12 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 this._notification.error("You must enter a description");
             }
         }
+    }
+
+    protected _postSave (r:Model) {
+        let url = "models/explore/" + r.id.split('/').pop();
+        goToPage(url);
+        return null
     }
 
     protected _getDBResources () {

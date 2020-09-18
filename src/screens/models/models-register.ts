@@ -160,7 +160,7 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
     }
 
     @property({type: Boolean})
-    private _hideLateral : boolean = false;
+    private _hideLateral : boolean = true;
 
     @property({type: Boolean})
     private _waiting : boolean = false;
@@ -188,6 +188,7 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
     public constructor () {
         super();
         this._iModel = new ModelCatalogModel();
+        this._iModel.enableSingleResourceCreation();
 
         this._inputAuthor = new ModelCatalogPerson();
         this._inputContributor = new ModelCatalogPerson();
@@ -220,6 +221,9 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
                             ${!this._hideLateral ? "fullscreen" : "fullscreen_exit"}
                         </wl-icon>
                     </div>
+                    <wl-title level="4">
+                        To register a new model, please fill the following form:
+                    </wl-title>
                     ${this._iModel}
                     <!--
                     {this._renderStepForm()}
