@@ -91,7 +91,7 @@ export const addModelToCompare: ActionCreator<ExplorerThunkResult> = (models:str
         else if (t === "config") entry.type = "ModelConfiguration";
         else if (t === "setup") entry.type = "ModelConfigurationSetup";
         entry.uri = PREFIX_URI + id;
-        compare.push(entry);
+        if (id) compare.push(entry);
     });
 
     dispatch({

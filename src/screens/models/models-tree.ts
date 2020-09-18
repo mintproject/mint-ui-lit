@@ -280,7 +280,6 @@ export class ModelsTree extends connect(store)(PageViewElement) {
         `;
     }
 
-
     private _renderTag (tag : string[]) {
         if (!tag || tag.length == 0)
             return '';

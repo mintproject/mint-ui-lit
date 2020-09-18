@@ -1824,7 +1824,6 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _renderAuthors (authorArray: (Person|Organization)[]) {
         //HACK
         if (this._selectedModel === "https://w3id.org/okn/i/mint/CYCLES") {
-            console.log(authorArray);
             authorArray = [
                 {
                     id: "https://w3id.org/okn/i/mint/kemanian_armen",
