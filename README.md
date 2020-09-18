@@ -63,11 +63,19 @@ You can see that the actual version is v0.0.1
 yarn install
 ```
 
-You will need to create a configuration file with your google maps API key and your firestore API key.
+You will need to set the configuration for firebase through enviroment variables:
 ```
-cp src/config/google-api-key.ts.example src/config/google-api-key.ts
+export FIREBASE_API_KEY=
+export FIREBASE_AUTH_DOMAIN=
+export FIREBASE_DATABASE_URL=
+export FIREBASE_PROJECT_ID=
+export FIREBASE_STORAGE_BUCKET=
+export FIREBASE_MESSAGING_SENDER_ID=
+export FIREBASE_APP_ID=
+export GOOGLE_MAPS_API_KEY=
 ```
-Check that file for more information.
+
+If you want to add new variables, please check `webpack/base.config.ts`
 
 ## BUILDING
 
