@@ -16,7 +16,7 @@ VOLUME /home/node/app
 
 FROM nginx:1.13.0-alpine
 WORKDIR /usr/share/nginx/html
-COPY --from=build-env /home/node/app/build/es6/ ./
+COPY --from=build-env /home/node/app/build/ ./
 RUN sed -i "s/es6\///g" index.html
 
 EXPOSE 80
