@@ -34,6 +34,7 @@ import { ModelCatalogSoftwareImage } from './configure/resources/software-image'
 import { ModelCatalogTimeInterval } from './configure/resources/time-interval';
 
 import { TreeNode } from 'components/tree-node';
+import { TreeRoot } from 'components/tree-root';
 
 import "weightless/progress-spinner";
 import '../../components/loading-dots'
@@ -486,7 +487,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
     private _visible : IdMap<boolean> = {};
 
     protected firstUpdated () {
-        this._modelTree = new TreeNode();
+        this._modelTree = new TreeRoot();
         store.dispatch(modelsGet()).then((models:IdMap<Model>) => {
             this._loadingAllModels = false;
             this._allModels = models;
@@ -515,7 +516,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         })
     }
 
-    private _modelTree : TreeNode;
+    private _modelTree : TreeRoot;
     private _nodes : IdMap<TreeNode> = {};
 
     private _calculateTree () {
@@ -535,6 +536,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                 this._nodes[m.id].getName = () => getLabel(m);
                 this._nodes[m.id].onClick = () => {
                     console.log(getId(m));
+                    this._addToComparison({type:'Model', uri:m.id});
                 };
             }
             let nodeModel : TreeNode = this._nodes[m.id];
@@ -555,6 +557,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                     };
                     this._nodes[v.id].onClick = () => {
                         console.log(getId(m) + '/' + getId(v));
+                        this._addToComparison({type:'SoftwareVersion', uri:v.id});
                     };
                 }
                 let nodeVersion : TreeNode = this._nodes[v.id];
@@ -575,6 +578,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                             }
                             this._nodes[c.id].onClick = () => {
                                 console.log(getId(m) + '/' + getId(v) + '/' + getId(c));
+                                this._addToComparison({type:'ModelConfiguration', uri:c.id});
                             };
                         }
                         let nodeConfig : TreeNode = this._nodes[c.id];
@@ -595,6 +599,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                                     }
                                     this._nodes[s.id].onClick = () => {
                                         console.log(getId(m) + '/' + getId(v) + '/' + getId(c) + '/' + getId(s));
+                                        this._addToComparison({type:'ModelConfigurationSetup', uri:s.id});
                                     };
                                 }
                                 let nodeSetup : TreeNode = this._nodes[s.id];
@@ -605,6 +610,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                 }
             });
         });
+        this._modelTree.refresh();
     }
 
     private _renderComparisonTree () {
