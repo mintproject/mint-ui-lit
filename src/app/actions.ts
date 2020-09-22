@@ -187,7 +187,6 @@ const modelCatalogLogin = (username: string, password: string) => {
         let accessToken : string = JSON.parse(data)['access_token'];
         if (accessToken) {
             localStorage.setItem('accessToken', accessToken);
-            console.log('NEW TOKEN:', accessToken);
             store.dispatch({type: FETCH_MODEL_CATALOG_ACCESS_TOKEN, accessToken: accessToken});
         } else {
             store.dispatch({type: STATUS_MODEL_CATALOG_ACCESS_TOKEN, status: 'ERROR'})
