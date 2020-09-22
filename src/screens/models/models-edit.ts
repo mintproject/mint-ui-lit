@@ -219,11 +219,7 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
 
             if (this._creating) {
                 if (this._model) {
-                    if (!this._iVersion.isCreating())
-                        this._iVersion.enableSingleResourceCreation(this._model);
-                } else {
-                    if (!this._iModel.isCreating())
-                        this._iModel.enableSingleResourceCreation();
+                    this._iVersion.enableSingleResourceCreation(this._model);
                 }
             }
 

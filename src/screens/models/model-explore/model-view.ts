@@ -1744,16 +1744,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                         (setup.hasSoftwareImage || []).forEach((si:SoftwareImage) => {
                             this._softwareImages[si.id] = si;
                         });
-                        // Save parameters
-                        (setup.hasParameter || []).forEach((parameter:Parameter) => {
-                            //FIXME: this does not return relevantForIntervention (id=undefined)
-                            if (!this._parameters[parameter.id]) this._parameters[parameter.id] = parameter;
-                        });
-                        // Save IO
-                        (setup.hasInput || []).concat(setup.hasOutput || []).forEach((ds:DatasetSpecification) => {
-                            //FIXME: this does not return hasFixedValue -> hasPart
-                            this._datasetSpecifications[ds.id] = ds;
-                        });
+
+                        // Req does not return all info so requestion params and id again.
+                        if (setup.hasParameter) this._loadParameters(setup.hasParameter, db);
+                        if (setup.hasInput) this._loadDatasetSpecifications(setup.hasInput, db);
+                        if (setup.hasOutput) this._loadDatasetSpecifications(setup.hasOutput, db);
                         
                         this._setup = setup;
                         //console.log('setup', setup);
