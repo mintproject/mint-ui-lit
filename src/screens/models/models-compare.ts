@@ -33,6 +33,9 @@ import { ModelCatalogParameter } from './configure/resources/parameter';
 import { ModelCatalogSoftwareImage } from './configure/resources/software-image';
 import { ModelCatalogTimeInterval } from './configure/resources/time-interval';
 
+import { TreeNode } from 'components/tree-node';
+import { TreeRoot } from 'components/tree-root';
+
 import "weightless/progress-spinner";
 import '../../components/loading-dots'
 
@@ -484,6 +487,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
     private _visible : IdMap<boolean> = {};
 
     protected firstUpdated () {
+        this._modelTree = new TreeRoot();
         store.dispatch(modelsGet()).then((models:IdMap<Model>) => {
             this._loadingAllModels = false;
             this._allModels = models;
@@ -491,14 +495,17 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         store.dispatch(versionsGet()).then((versions:IdMap<SoftwareVersion>) => {
             this._loadingAllVersions = false;
             this._allVersions = versions;
+            Object.keys(versions).forEach((vid:string) => !!this._nodes[vid] && this._nodes[vid].refresh());
         });
         store.dispatch(modelConfigurationsGet()).then((cfgs:IdMap<ModelConfiguration>) => {
             this._loadingAllConfigs = false;
             this._allConfigs = cfgs;
+            Object.keys(cfgs).forEach((cid:string) => !!this._nodes[cid] && this._nodes[cid].refresh());
         });
         let setupReq = store.dispatch(modelConfigurationSetupsGet())
         setupReq.then((setups:IdMap<ModelConfigurationSetup>) => {
             this._allSetups = setups;
+            Object.keys(setups).forEach((sid:string) => !!this._nodes[sid] && this._nodes[sid].refresh());
         });
         let regionReq = store.dispatch(regionsGet());
         regionReq.then((regions:IdMap<Region>) => {
@@ -507,6 +514,103 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         Promise.all([setupReq, regionReq]).then(() => {
             this._loadingAllSetups = false;
         })
+    }
+
+    private _modelTree : TreeRoot;
+    private _nodes : IdMap<TreeNode> = {};
+
+    private _calculateTree () {
+        Object.values(this._allModels).forEach((m:Model) => {
+            let category : string = m.hasModelCategory && m.hasModelCategory.length > 0 ?
+                    m.hasModelCategory[0] : 'Uncategorized';
+            if (!this._nodes[category]) {
+                this._nodes[category] = new TreeNode();
+                this._nodes[category].getName = () => this._nodes[category].isExpanded() ? html`<b>${category}</b>` : category;
+                
+                this._nodes[category].onClick = this._nodes[category].toggle;
+            }
+            let nodeCat: TreeNode = this._nodes[category];
+
+            if (!this._nodes[m.id]) {
+                this._nodes[m.id] = new TreeNode();
+                this._nodes[m.id].getName = () => getLabel(m);
+                this._nodes[m.id].onClick = () => {
+                    console.log(getId(m));
+                    this._addToComparison({type:'Model', uri:m.id});
+                };
+            }
+            let nodeModel : TreeNode = this._nodes[m.id];
+            if (!nodeCat.hasNode(nodeModel)) nodeCat.addChild(nodeModel);
+            if (!this._modelTree.hasNode(nodeCat)) this._modelTree.addChild(nodeCat);
+
+            (m.hasVersion||[]).forEach((v:SoftwareVersion) => {
+                if (!this._nodes[v.id]) {
+                    this._nodes[v.id] = new TreeNode();
+                    this._nodes[v.id].getName = () => {
+                        if (this._allVersions[v.id]) {
+                            return getLabel(this._allVersions[v.id]);
+                        } else {
+                            return html`${getId(v)}
+                                <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>
+                            `
+                        }
+                    };
+                    this._nodes[v.id].onClick = () => {
+                        console.log(getId(m) + '/' + getId(v));
+                        this._addToComparison({type:'SoftwareVersion', uri:v.id});
+                    };
+                }
+                let nodeVersion : TreeNode = this._nodes[v.id];
+                if (!nodeModel.hasNode(nodeVersion)) nodeModel.addChild(nodeVersion);
+
+                if (this._allVersions[v.id] && this._allVersions[v.id].hasConfiguration) {
+                    Object.values(this._allVersions[v.id].hasConfiguration).forEach((c:ModelConfiguration) => {
+                        if (!this._nodes[c.id]) {
+                            this._nodes[c.id] = new TreeNode();
+                            this._nodes[c.id].getName = () => {
+                                if (this._allConfigs[c.id]) {
+                                    return getLabel(this._allConfigs[c.id]);
+                                } else {
+                                    return html`${getId(c)}
+                                        <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>
+                                    `
+                                }
+                            }
+                            this._nodes[c.id].onClick = () => {
+                                console.log(getId(m) + '/' + getId(v) + '/' + getId(c));
+                                this._addToComparison({type:'ModelConfiguration', uri:c.id});
+                            };
+                        }
+                        let nodeConfig : TreeNode = this._nodes[c.id];
+                        if (!nodeVersion.hasNode(nodeConfig)) nodeVersion.addChild(nodeConfig);
+
+                        if (this._allConfigs[c.id] && this._allConfigs[c.id].hasSetup) {
+                            Object.values(this._allConfigs[c.id].hasSetup).forEach((s:ModelConfigurationSetup) => {
+                                if (!this._nodes[s.id]) {
+                                    this._nodes[s.id] = new TreeNode();
+                                    this._nodes[s.id].getName = () => {
+                                        if (this._allSetups[s.id]) {
+                                            return getLabel(this._allSetups[s.id]);
+                                        } else {
+                                            return html`${getId(s)}
+                                                <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>
+                                            `
+                                        }
+                                    }
+                                    this._nodes[s.id].onClick = () => {
+                                        console.log(getId(m) + '/' + getId(v) + '/' + getId(c) + '/' + getId(s));
+                                        this._addToComparison({type:'ModelConfigurationSetup', uri:s.id});
+                                    };
+                                }
+                                let nodeSetup : TreeNode = this._nodes[s.id];
+                                if (!nodeConfig.hasNode(nodeSetup)) nodeConfig.addChild(nodeSetup);
+                            });
+                        }
+                    });
+                }
+            });
+        });
+        this._modelTree.refresh();
     }
 
     private _renderComparisonTree () {
@@ -528,7 +632,10 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
             }*/
         });
 
+        this._calculateTree();
+
         return html`
+        ${this._modelTree}
         <ul>
             ${Object.keys(categoryModels).map((category:string) => html`
             <li ?selected="${this._visible[category]}">
