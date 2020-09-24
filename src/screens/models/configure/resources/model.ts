@@ -567,21 +567,20 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         let inputDownload : Textfield = this.shadowRoot.getElementById("i-download") as Textfield;
         let inputInstallInstructions : Textfield = this.shadowRoot.getElementById("i-install-instructions") as Textfield;
 
-        // VALIDATE
-        inputLabel.value = ''; 
-        inputCategory.value = ''; 
-        inputKeywords.value = ''; 
-        inputShortDesc.value = ''; 
-        inputDesc.value = ''; 
-        inputLicense.value = ''; 
-        inputCitation.value = ''; 
-        inputPurpose.value = ''; 
-        inputExample.value = ''; 
-        inputUsageNotes.value = ''; 
-        inputWebsite.value = ''; 
-        inputDocumentation.value = ''; 
-        inputDownload.value = ''; 
-        inputInstallInstructions.value = ''; 
+        if ( inputLabel )                inputLabel.value = '';
+        if ( inputCategory )             inputCategory.value = '';
+        if ( inputKeywords )             inputKeywords.value = '';
+        if ( inputShortDesc )            inputShortDesc.value = '';
+        if ( inputDesc )                 inputDesc.value = '';
+        if ( inputLicense )              inputLicense.value = '';
+        if ( inputCitation )             inputCitation.value = '';
+        if ( inputPurpose )              inputPurpose.value = '';
+        if ( inputExample )              inputExample.value = '';
+        if ( inputUsageNotes )           inputUsageNotes.value = '';
+        if ( inputWebsite )              inputWebsite.value = '';
+        if ( inputDocumentation )        inputDocumentation.value = '';
+        if ( inputDownload )             inputDownload.value = '';
+        if ( inputInstallInstructions )  inputInstallInstructions.value = '';
     }
 
 
