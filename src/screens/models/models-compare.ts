@@ -164,7 +164,8 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         {
             name: "Component Location",
             fn: (setup:ModelConfigurationSetup) => setup.hasComponentLocation && setup.hasComponentLocation.length > 0 ?
-                    setup.hasComponentLocation[setup.hasComponentLocation.length -1] : html`<span style="color:#999">None specified<span>`
+                    html`<span style="word-break: break-all;">${setup.hasComponentLocation[setup.hasComponentLocation.length -1]}</span>`
+                    : html`<span style="color:#999">None specified<span>`
         },
         {
             name: "Software Image",
@@ -228,6 +229,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
 
     static get styles() {
         return [ExplorerStyles,
+            SharedStyles,
             css `
             .card2 {
                 margin: 0px;
@@ -304,26 +306,27 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                 background: forestgreen;
                 color: white;
             }
+
+            .horizontal-table {
+                table-layout:fixed;
+                width: fit-content;
+                overflow-x: auto;
+            }
             `,
-            SharedStyles
         ];
     }
 
     protected render() {
+        this._calculateTree();
         return html`
         <div class="twocolumns">
             <div class="${this._hideLateral ? 'left_closed' : 'left'}">
                 <div class="clt">
-                    <!--wl-title level="4" style="margin: 4px; padding: 10px;">Comparison options:</wl-title>
-                    <div style="margin-left: 10px;">
-                      <input type="checkbox" id="showDiff" name="showDiff">
-                      <label for="scales">Show only differences</label>
-                    </div-->
                     <wl-title level="4" style="margin: 4px; padding: 10px;">Select models:</wl-title>
-                    <!--wl-textfield label="Search models:" style="padding: 0px 10px;">
-                        <wl-icon slot="after">search</wl-icon>
-                    </wl-textfield-->
-                    ${ this._renderComparisonTree() }
+                    ${(this._loadingAllModels)  ? 
+                        html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`
+                        : this._modelTree
+                    }
                 </div>
             </div>
 
@@ -346,15 +349,16 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
     }
 
     private _renderTable () {
+        let bigTable : boolean = this._compare.length > 3;
         return html`
-            <table class="pure-table pure-table-striped">
+            <table class="pure-table pure-table-striped ${bigTable? 'horizontal-table' : ''}">
                 <thead>
-                    <th style="border-right:1px solid #EEE; font-size: 14px;">
+                    <th style="border-right:1px solid #EEE; font-size: 14px; width:140px">
                     Model details
                     </th>
                     ${this._compare.map((c:ComparisonEntry) => {
                         return html`
-                            <th .style="width:${100/(this._compare.length)}%">
+                            <th .style="width:${bigTable ? '380px' : (100/this._compare.length).toString() + '%' }">
                             ${this._loading[c.uri] ? 
                                 html`${uriToId(c.uri)}
                                 <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`
@@ -387,6 +391,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
 
     _removeFromComparison (c:ComparisonEntry) {
         let newC : ComparisonEntry[] = this._compare.filter((ce:ComparisonEntry) => ce.uri !== c.uri);
+        if (this._nodes[c.uri]) this._nodes[c.uri].unselect();
         if (this._iPerson[c.uri]) delete this._iPerson[c.uri];
         if (this._iRegion[c.uri]) delete this._iRegion[c.uri];
         if (this._iGrid[c.uri]) delete this._iGrid[c.uri];
@@ -425,7 +430,6 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         if (state.explorerUI) {
             this._compare = state.explorerUI.compare;
             this._compare.forEach((c:ComparisonEntry) => {
-                console.log('>', c);
                 if (!this._loading[c.uri] && !this._dbs[c.type][c.uri]) {
                     let get = this._gets[c.type];
                     let db = this._dbs[c.type];
@@ -520,226 +524,116 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
     private _nodes : IdMap<TreeNode> = {};
 
     private _calculateTree () {
+        const visibleSetup = (setup: ModelConfigurationSetup) =>
+            !!setup && (!setup.hasRegion || (setup.hasRegion||[]).some((region:Region) =>
+                    isSubregion(this._region.model_catalog_uri, this._allRegions[region.id])));
+
         Object.values(this._allModels).forEach((m:Model) => {
+            // Model nodes.
             let category : string = m.hasModelCategory && m.hasModelCategory.length > 0 ?
                     m.hasModelCategory[0] : 'Uncategorized';
             if (!this._nodes[category]) {
-                this._nodes[category] = new TreeNode();
-                this._nodes[category].getName = () => this._nodes[category].isExpanded() ? html`<b>${category}</b>` : category;
-                
-                this._nodes[category].onClick = this._nodes[category].toggle;
+                let newNode : TreeNode = new TreeNode();
+                newNode.setName(category);
+                newNode.selectIcon = false;
+                newNode.select();
+                newNode.onClick = newNode.toggle;
+                newNode.contract();
+                this._nodes[category] = newNode;
             }
             let nodeCat: TreeNode = this._nodes[category];
 
             if (!this._nodes[m.id]) {
-                this._nodes[m.id] = new TreeNode();
-                this._nodes[m.id].getName = () => getLabel(m);
-                this._nodes[m.id].onClick = () => {
-                    console.log(getId(m));
+                let newNode : TreeNode = new TreeNode();
+                newNode.setName(getLabel(m));
+                newNode.onClick = () => {
                     this._addToComparison({type:'Model', uri:m.id});
                 };
+                newNode.contract();
+                this._nodes[m.id] = newNode;
             }
             let nodeModel : TreeNode = this._nodes[m.id];
             if (!nodeCat.hasNode(nodeModel)) nodeCat.addChild(nodeModel);
             if (!this._modelTree.hasNode(nodeCat)) this._modelTree.addChild(nodeCat);
 
-            (m.hasVersion||[]).forEach((v:SoftwareVersion) => {
-                if (!this._nodes[v.id]) {
-                    this._nodes[v.id] = new TreeNode();
-                    this._nodes[v.id].getName = () => {
-                        if (this._allVersions[v.id]) {
-                            return getLabel(this._allVersions[v.id]);
-                        } else {
-                            return html`${getId(v)}
-                                <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>
-                            `
-                        }
-                    };
-                    this._nodes[v.id].onClick = () => {
-                        console.log(getId(m) + '/' + getId(v));
-                        this._addToComparison({type:'SoftwareVersion', uri:v.id});
-                    };
-                }
-                let nodeVersion : TreeNode = this._nodes[v.id];
-                if (!nodeModel.hasNode(nodeVersion)) nodeModel.addChild(nodeVersion);
-
-                if (this._allVersions[v.id] && this._allVersions[v.id].hasConfiguration) {
-                    Object.values(this._allVersions[v.id].hasConfiguration).forEach((c:ModelConfiguration) => {
-                        if (!this._nodes[c.id]) {
-                            this._nodes[c.id] = new TreeNode();
-                            this._nodes[c.id].getName = () => {
-                                if (this._allConfigs[c.id]) {
-                                    return getLabel(this._allConfigs[c.id]);
-                                } else {
-                                    return html`${getId(c)}
-                                        <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>
-                                    `
-                                }
-                            }
-                            this._nodes[c.id].onClick = () => {
-                                console.log(getId(m) + '/' + getId(v) + '/' + getId(c));
-                                this._addToComparison({type:'ModelConfiguration', uri:c.id});
-                            };
-                        }
-                        let nodeConfig : TreeNode = this._nodes[c.id];
-                        if (!nodeVersion.hasNode(nodeConfig)) nodeVersion.addChild(nodeConfig);
-
-                        if (this._allConfigs[c.id] && this._allConfigs[c.id].hasSetup) {
-                            Object.values(this._allConfigs[c.id].hasSetup).forEach((s:ModelConfigurationSetup) => {
-                                if (!this._nodes[s.id]) {
-                                    this._nodes[s.id] = new TreeNode();
-                                    this._nodes[s.id].getName = () => {
-                                        if (this._allSetups[s.id]) {
-                                            return getLabel(this._allSetups[s.id]);
-                                        } else {
-                                            return html`${getId(s)}
-                                                <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>
-                                            `
-                                        }
-                                    }
-                                    this._nodes[s.id].onClick = () => {
-                                        console.log(getId(m) + '/' + getId(v) + '/' + getId(c) + '/' + getId(s));
-                                        this._addToComparison({type:'ModelConfigurationSetup', uri:s.id});
-                                    };
-                                }
-                                let nodeSetup : TreeNode = this._nodes[s.id];
-                                if (!nodeConfig.hasNode(nodeSetup)) nodeConfig.addChild(nodeSetup);
-                            });
-                        }
-                    });
-                }
-            });
-        });
-        this._modelTree.refresh();
-    }
-
-    private _renderComparisonTree () {
-        if (this._loadingAllModels) 
-            return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
-
-        const visibleSetup = (setup: ModelConfigurationSetup) =>
-            !!setup && (!setup.hasRegion || (setup.hasRegion||[]).some((region:Region) =>
-                    isSubregion(this._region.model_catalog_uri, this._allRegions[region.id])));
-
-        let categoryModels = {};
-        Object.values(this._allModels).forEach((m:Model) => {
-            let category : string = m.hasModelCategory && m.hasModelCategory.length > 0 ?
-                    m.hasModelCategory[0] : 'Uncategorized';
-            if (!categoryModels[category]) categoryModels[category] = [];
-            categoryModels[category].push(m);
-            /*if (this._selectedModel === m.id) {
-                this._visible[category] = true;
-            }*/
-        });
-
-        this._calculateTree();
-
-        return html`
-        ${this._modelTree}
-        <ul>
-            ${Object.keys(categoryModels).map((category:string) => html`
-            <li ?selected="${this._visible[category]}">
-                <span @click="${() => {
-                    this._visible[category] = !this._visible[category];
-                    this.requestUpdate();
-                }}">
-                    <wl-icon>${this._visible[category] ? 'expand_more' : 'expand_less'}</wl-icon>
-                    <span style="font-size: 15px;">
-                        ${category}
-                    </span>
-                </span>
-                ${this._visible[category] ? html`
-                <ul>
-            ${categoryModels[category]
-                .filter((model: Model) => !!model.hasVersion)
-                .map((model: Model) => html`
-            <li>
-                <span>
-                    <wl-icon @click="${() => {
-                        this._visible[model.id] = !this._visible[model.id];
-                        this.requestUpdate();
-                    }}">
-                        ${this._visible[model.id] ? 'expand_more' : 'expand_less'}
-                    </wl-icon>
-                    <span @click="${()=>this._addToComparison({type:'Model', uri:model.id})}">
-                        ${model.label}
-                    </span>
-                </span>
-                ${this._visible[model.id] ? html`
-                ${this._loadingAllVersions ? html`<loading-dots style="--width: 20px;"></loading-dots>` : html`
-                <ul>
-                    ${model.hasVersion
-                        .filter((v:any) => !!this._allVersions[v.id])
-                        .map((v:any) => this._allVersions[v.id])
+            if (this._loadingAllVersions) {
+                //TODO: show a loading thing
+            } else {
+                (m.hasVersion||[])
+                        .map((v:SoftwareVersion) => this._allVersions[v.id])
                         .sort(sortVersions)
-                        .map((version : SoftwareVersion) => html`
-                    <li>
-                        <span>
-                            <wl-icon @click=${() => {
-                             this._visible[version.id] = !this._visible[version.id];
-                             this.requestUpdate();
-                            }}>
-                                ${this._visible[version.id] ? 'expand_more' : 'expand_less'}
-                            </wl-icon>
-                            ${this._renderTag(version['tag'])}
-                            <span @click="${()=>this._addToComparison({type:'SoftwareVersion', uri:version.id})}">
-                                ${version.label ? version.label : getId(version)}
-                            </span>
-                        </span>
-                        ${this._visible[version.id] ? html`
-                        ${this._loadingAllConfigs ? html`<loading-dots style="--width: 20px;"></loading-dots>` : html`
-                        <ul style="padding-left: 30px;">
-                            ${(version.hasConfiguration || [])
-                                .filter(c => !!c.id)
-                                .map((c) => this._allConfigs[c.id])
-                                .filter(c => (c && c.id))
+                        .forEach((v:SoftwareVersion) => {
+                    if (!this._nodes[v.id]) {
+                        let newNode = new TreeNode();
+                        newNode.setName(getLabel(v));
+                        let tag : string[] = v['tag'];
+                        if (tag && tag.length > 0) {
+                            if (tag[0] == "preferred") newNode.setTagIcon('start');
+                            else {
+                                if (tag[0] == "deprecated") newNode.style.cssText = "--tag-background-color: chocolate;";
+                                else if (tag[0] == "latest") newNode.style.cssText = "--tag-background-color: forestgreen;";
+                                newNode.setTag(tag[0])
+                            }
+                        }
+                        newNode.onClick = () => {
+                            this._addToComparison({type:'SoftwareVersion', uri:v.id});
+                        };
+                        this._nodes[v.id] = newNode;
+                    }
+
+                    let nodeVersion : TreeNode = this._nodes[v.id];
+                    if (!nodeModel.hasNode(nodeVersion)) nodeModel.addChild(nodeVersion);
+
+                    if (this._loadingAllConfigs) {
+                        //TODO: loading...
+                    } else {
+                        (v.hasConfiguration || [])
+                                .map((c:ModelConfiguration) => this._allConfigs[c.id])
                                 .sort(sortConfigurations)
-                                .map((config : ModelConfiguration) => html`
-                            <li>
-                                ${this._renderTag(config.tag)}
-                                <a class="config"
-                                    @click="${()=>this._addToComparison({type:'ModelConfiguration', uri:config.id})}">
-                                    ${config ? config.label : getId(config)}
-                                </a>
-                                <ul>
-                                    ${(config.hasSetup || [])
-                                        .map((s:any) => this._allSetups[s.id])
+                                .forEach((c:ModelConfiguration) => {
+                            if (!this._nodes[c.id]) {
+                                let newNode = new TreeNode();
+                                newNode.setName(getLabel(c))
+                                newNode.style.cssText = "--text-color: rgb(6, 108, 67);";
+                                newNode.onClick = () => {
+                                    this._addToComparison({type:'ModelConfiguration', uri:c.id});
+                                };
+                                this._nodes[c.id] = newNode;
+                            }
+                            let nodeConfig : TreeNode = this._nodes[c.id];
+                            if (!nodeVersion.hasNode(nodeConfig)) nodeVersion.addChild(nodeConfig);
+
+                            if (this._loadingAllSetups) {
+                                //TODO: loading...
+                            } else {
+                                (c.hasSetup || [])
+                                        .map((s:ModelConfigurationSetup) => this._allSetups[s.id])
                                         .filter(visibleSetup)
                                         .sort(sortSetups)
-                                        .map((setup : ModelConfigurationSetup) => html`
-                                    <li style="list-style:disc">
-                                        ${this._renderTag(setup.tag)}
-                                        <a class="setup"
-                                            @click="${()=>this._addToComparison({type:'ModelConfigurationSetup', uri:setup.id})}">
-                                            ${setup ? setup.label : getId(setup)}
-                                        </a>
-                                    </li>
-                                    `)}
-                                </ul>
-                            </li>
-                            `)}
-                        </ul>`}
-                        ` : ''}
-                    </li>`)}
-                </ul>
-                `}
-                ` : ''}
-            </li>
-        `)}
-                </ul>
-                ` : ''}
-            </li>
-            `)}
-        </ul>
-        `;
-    }
+                                        .forEach((s:ModelConfigurationSetup) => {
+                                    if (!this._nodes[s.id]) {
+                                        let newNode : TreeNode = new TreeNode();
+                                        newNode.setName(getLabel(s));
+                                        newNode.style.cssText = "--text-color: rgb(6, 67, 108);";
+                                        newNode.onClick = () => {
+                                            this._addToComparison({type:'ModelConfigurationSetup', uri:s.id});
+                                        };
+                                        this._nodes[s.id] = newNode;
+                                    }
+                                    let nodeSetup : TreeNode = this._nodes[s.id];
+                                    if (!nodeConfig.hasNode(nodeSetup)) nodeConfig.addChild(nodeSetup);
+                                });
 
-    //FIXME: this is a copy from models-tree
-    private _renderTag (tag : string[]) {
-        if (!tag || tag.length == 0)
-            return '';
-        if (tag[0] == "preferred") 
-            return html`<span tip="Preferred" class="tooltip"><wl-icon style="width: 20px;">start</wl-icon></span>`;
-        return html`<span class="tag ${tag[0]}">${tag[0]}</span>`;
+                            }
+                        });
+                    }
+                });
+            }
+        });
+
+        Object.values(this._nodes).forEach((n:TreeNode) => n.unselect());
+        this._compare.forEach((c:ComparisonEntry) => {
+            if (this._nodes[c.uri]) this._nodes[c.uri].select();
+        });
     }
 }
