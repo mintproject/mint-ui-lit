@@ -5,7 +5,7 @@ import { ProblemStatementList, ProblemStatementInfo,
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from '../../app/store';
 //import { db, fieldValue, auth } from '../../config/firebase';
-import { Dataset, DataResource } from '../datasets/reducers';
+import { Dataset, DataResource, Dataslice } from '../datasets/reducers';
 import { Model } from '../models/reducers';
 import { IdMap, UserPreferences } from '../../app/reducers';
 
@@ -27,6 +27,7 @@ import updateThreadParametersGQL from '../../queries/thread/update-parameters.gr
 import updateThreadInfoGQL from '../../queries/thread/update-info.graphql';
 import addThreadEventGQL from '../../queries/thread/add-event.graphql';
 import setDatasliceResourcesGQL from '../../queries/thread/set-dataslice-resources.graphql';
+import getDatasliceResourcesGQL from '../../queries/thread/get-dataslice-resources.graphql';
 
 import deleteProblemStatementGQL from '../../queries/problem-statement/delete.graphql';
 import deleteTaskGQL from '../../queries/task/delete.graphql';
@@ -49,12 +50,13 @@ import { problemStatementFromGQL, taskFromGQL, threadFromGQL,
     modelToGQL,
     getCustomEvent,
     threadDataBindingsToGQL,
-    threadParameterBindingsToGQL} from '../../util/graphql_adapter';
+    threadParameterBindingsToGQL, datasliceFromGQL} from '../../util/graphql_adapter';
 import { postJSONResource } from 'util/mint-requests';
 import { isObject } from 'util';
 import { Md5 } from 'ts-md5';
 import { Model as MCModel, SoftwareImage, ModelConfiguration, SoftwareVersion } from '@mintproject/modelcatalog_client';
 import { fetchModelsFromCatalog } from 'screens/models/actions';
+import { auth } from 'config/firebase';
 
 export const PROBLEM_STATEMENTS_LIST = 'PROBLEM_STATEMENTS_LIST';
 export const PROBLEM_STATEMENTS_LIST_SUBSCRIPTION = 'PROBLEM_STATEMENTS_LIST_SUBSCRIPTION';
@@ -170,12 +172,10 @@ export type ThreadAction = ThreadVariablesActionAdd | ThreadVariablesActionRemov
 
 export type ModelingAction =  ProblemStatementsAction | TasksAction | ThreadsAction | ThreadAction ;
 
-const APOLLO_CLIENT = GraphQL.instance();
-
 // List ProblemStatements
 type ProblemListThunkResult = ThunkAction<void, RootState, undefined, ProblemStatementsActionList | ProblemStatementsActionListSubscription>;
 export const subscribeProblemStatementsList: ActionCreator<ProblemListThunkResult> = (regionid: string) => (dispatch) => {
-
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     let subscription = APOLLO_CLIENT.subscribe({
         query: subscribeProblemStatementsListGQL,
         variables: {
@@ -298,6 +298,7 @@ export const subscribeThreadsList: ActionCreator<ListThreadsThunkResult> = (task
 // Get ProblemStatement details
 type ProblemDetailsThunkResult = ThunkAction<void, RootState, undefined, ProblemStatementsActionDetails | ProblemStatementsActionSubscription>;
 export const subscribeProblemStatement: ActionCreator<ProblemDetailsThunkResult> = (problem_statement_id: string) => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     let subscription = APOLLO_CLIENT.subscribe({
         query: subscribeProblemStatementGQL,
         variables: {
@@ -365,6 +366,7 @@ export const subscribeTask: ActionCreator<TaskDetailsThunkResult> = (task_id: st
 // Get Thread details
 type ThreadDetailsThunkResult = ThunkAction<void, RootState, undefined, ThreadsActionDetails | ThreadsActionSubscription>;
 export const subscribeThread: ActionCreator<ThreadDetailsThunkResult> = (threadid: string) => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     let subscription = APOLLO_CLIENT.subscribe({
         query: subscribeThreadGQL,
         variables: {
@@ -421,6 +423,7 @@ export const listThreadExecutions: ActionCreator<ListExecutionsThunkResult> =
 };
 
 export const getAllThreadExecutionIds = async (thread_id: string, modelid: string) : Promise<string[]> => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     return APOLLO_CLIENT.query({
         query: executionIdsForThreadGQL,
         variables: {
@@ -442,6 +445,7 @@ export const getAllThreadExecutionIds = async (thread_id: string, modelid: strin
 
 // Add ProblemStatement
 export const addProblemStatement = (problem_statement:ProblemStatementInfo) : Promise<string> =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     let problemobj = problemStatementToGQL(problem_statement);
     //console.log(problemobj);
     return APOLLO_CLIENT.mutate({
@@ -463,6 +467,7 @@ export const addProblemStatement = (problem_statement:ProblemStatementInfo) : Pr
 
 // Add Task
 export const addTask = (problem_statement: ProblemStatementInfo, task: Task) : Promise<string> =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     let taskobj = taskToGQL(task, problem_statement);
     return APOLLO_CLIENT.mutate({
         mutation: newTaskGQL,
@@ -483,6 +488,7 @@ export const addTask = (problem_statement: ProblemStatementInfo, task: Task) : P
 
 // Add Task
 export const addTaskWithThread = (problem_statement: ProblemStatementInfo, task: Task, thread: ThreadInfo) : Promise<string[]> =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     let taskobj = taskToGQL(task, problem_statement);
     let threadobj = threadInfoToGQL(thread, task.id, task.regionid);
     taskobj["threads"] = {
@@ -510,6 +516,7 @@ export const addTaskWithThread = (problem_statement: ProblemStatementInfo, task:
 
 // Add Thread
 export const addThread = (task:Task, thread: ThreadInfo) : Promise<string> =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     let threadobj = threadInfoToGQL(thread, task.id, task.regionid);
     //console.log(threadobj);
     return APOLLO_CLIENT.mutate({
@@ -532,6 +539,7 @@ export const addThread = (task:Task, thread: ThreadInfo) : Promise<string> =>  {
 
 // Update ProblemStatement
 export const updateProblemStatement = (problem_statement: ProblemStatementInfo) =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     let problemobj = problemStatementUpdateToGQL(problem_statement);
     return APOLLO_CLIENT.mutate({
         mutation: updateProblemStatementGQL,
@@ -543,6 +551,7 @@ export const updateProblemStatement = (problem_statement: ProblemStatementInfo) 
 
 // Update Task
 export const updateTask = (task: Task) =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     let taskobj = taskUpdateToGQL(task);
     return APOLLO_CLIENT.mutate({
         mutation: updateTaskGQL,
@@ -553,6 +562,7 @@ export const updateTask = (task: Task) =>  {
 };
 
 export const updateThreadInformation = (threadinfo: ThreadInfo) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     let threadobj = threadInfoUpdateToGQL(threadinfo);
     return APOLLO_CLIENT.mutate({
         mutation: updateThreadInfoGQL,
@@ -563,7 +573,13 @@ export const updateThreadInformation = (threadinfo: ThreadInfo) => {
 }
 
 export const setThreadModels = (models: Model[], notes: string, thread: Thread) =>  {
-    let threadmodelsobj = threadModelsToGQL(models, thread.id);
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let threadmodelsobj = models.map((model) => {
+        return {
+            model_id: model.id,
+            thread_id: thread.id
+        };
+    });
     let event = getCustomEvent("SELECT_MODELS", notes);
     let eventobj = event;
     eventobj["thread_id"] = thread.id;
@@ -579,6 +595,7 @@ export const setThreadModels = (models: Model[], notes: string, thread: Thread) 
 
 export const setThreadData = (datasets: DataMap, model_ensembles: ModelEnsembleMap, 
         notes: string, thread: Thread) =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     let bindings = threadDataBindingsToGQL(datasets, model_ensembles, thread);
     let event = getCustomEvent("SELECT_DATA", notes);
     let eventobj = event;
@@ -607,6 +624,7 @@ export const setThreadParameters = (model_ensembles: ModelEnsembleMap,
         summary["thread_model_id"] = model_ensembles[modelid].id;
         summaries.push(summary);
     })
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     return APOLLO_CLIENT.mutate({
         mutation: updateThreadParametersGQL,
         variables: {
@@ -618,6 +636,24 @@ export const setThreadParameters = (model_ensembles: ModelEnsembleMap,
     });
 };
 
+export const getThreadDataResources = (sliceid: string): Promise<Dataslice> => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    return APOLLO_CLIENT.query({
+        query: getDatasliceResourcesGQL,
+        variables: {
+            id: sliceid,
+        }
+    }).then((result) => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            return datasliceFromGQL(result.data.dataslice_by_pk);
+        }
+    });
+}
+
 export const selectThreadDataResources = (sliceid: string, resource_selections: any, threadid: string) => {
     let slice_resources = Object.keys(resource_selections).map((resid) => {
         return {
@@ -626,18 +662,26 @@ export const selectThreadDataResources = (sliceid: string, resource_selections: 
             selected: resource_selections[resid]
         };
     })
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     return APOLLO_CLIENT.mutate({
         mutation: setDatasliceResourcesGQL,
         variables: {
             datasliceId: sliceid,
             threadId: threadid,
             resources: slice_resources
-        }
+        },
+        refetchQueries: [{
+            query: getDatasliceResourcesGQL,
+            variables: {
+                id: sliceid
+            }
+        }]
     });
 }
 
 export const addThreadEvent = (eventobj: ThreadEvent, thread: Thread) =>  {
     eventobj["thread_id"] = thread.id;
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     return APOLLO_CLIENT.mutate({
         mutation: addThreadEventGQL,
         variables: {
@@ -654,6 +698,7 @@ export const cacheModelsFromCatalog = async (
     allConfigs: ModelConfiguration[],
     allVersions: SoftwareVersion[],
     allModels: MCModel[] ) =>  {
+        let APOLLO_CLIENT = GraphQL.instance(auth);
         // First check if any of these models are already in GraphQL
         let result = await APOLLO_CLIENT.query({
             query: listExistingModelsGQL,
@@ -693,6 +738,7 @@ export const cacheModelsFromCatalog = async (
 
 // Delete ProblemStatement
 export const deleteProblemStatement = (problem_statement_id: string) =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     return APOLLO_CLIENT.mutate({
         mutation: deleteProblemStatementGQL,
         variables: {
@@ -703,6 +749,7 @@ export const deleteProblemStatement = (problem_statement_id: string) =>  {
 
 // Delete Task
 export const deleteTask = (taskid: string) =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     return APOLLO_CLIENT.mutate({
         mutation: deleteTaskGQL,
         variables: {
@@ -713,6 +760,7 @@ export const deleteTask = (taskid: string) =>  {
 
 // Delete Thread
 export const deleteThread = (threadid: string) =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     return APOLLO_CLIENT.mutate({
         mutation: deleteThreadGQL,
         variables: {
@@ -741,6 +789,7 @@ const _deleteCollection = (collRef: firebase.firestore.CollectionReference, subC
 
 // List Executions
 export const listExecutions = (executionids: string[]) : Promise<Execution[]> => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     return APOLLO_CLIENT.query({
         query: listExecutionsListGQL,
         variables: {

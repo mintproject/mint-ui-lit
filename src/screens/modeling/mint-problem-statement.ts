@@ -26,6 +26,7 @@ import { getVariableLongName } from "offline_data/variable_list";
 import { TaskEditor } from "components/task-editor";
 import { ThreadEditor } from "components/thread-editor";
 import { getLatestEvent } from "util/event_utils";
+import { getUserPermission } from "util/permission_utils";
 
 
 @customElement('mint-problem-statement')
@@ -169,6 +170,10 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                 threads = orderedKeys;
             }
         }
+        let problem_permissions = getUserPermission(this._problem_statement.permissions, 
+            this._problem_statement.events);
+        let selected_task_permissions = getUserPermission(this._selectedTask?.permissions ?? [], 
+            this._selectedTask?.events ?? []);
         return html`
             <!-- Top ProblemStatement Heading -->
             <div class="cltrow problem_statementrow">
@@ -183,7 +188,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
             <!-- Two Columns Section -->
             <div class="twocolumns">
 
-                <!-- Left Column : Tree of Objectives/Subobjectives -->
+                <!-- Left Column : List of Tasks -->
                 <div class="${this._hideTasks ? 'left_closed' : 'left'}">
                     <div class="clt">
                         <div class="cltrow_padded problem_statementrow">
@@ -192,8 +197,10 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                     TASKS
                                 </wl-title>
                             </div>
-                            <wl-icon @click="${this._addTaskDialog}" 
-                                class="actionIcon addIcon">note_add</wl-icon>
+                            ${problem_permissions.write ? html`
+                                <wl-icon @click="${this._addTaskDialog}" 
+                                    class="actionIcon addIcon">note_add</wl-icon>`
+                                : ""}
                         </div>
                         <div style="font-size:12.5px; color: #888; padding:5px; padding-left: 10px; padding-top:0px;">
                             Several modeling tasks can be created for a given problem statement. 
@@ -203,6 +210,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                         <ul>
                         ${taskids.map((taskid) => {
                             const task = this._problem_statement!.tasks[taskid];
+                            let task_permission = getUserPermission(task.permissions, task.events);
                             if(task) {
                                 let last_event = getLatestEvent(task.events);
                                 return html`
@@ -222,12 +230,14 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                                 ${last_event?.userid} on ${toDateTimeString(last_event?.timestamp)}
                                             </div>` : ""}                                            
                                         </div>
-                                        <wl-icon @click="${this._editTaskDialog}" 
-                                            data-taskid="${task.id}"
-                                            class="actionIcon editIcon">edit</wl-icon>
-                                        <wl-icon @click="${this._onDeleteTask}" 
-                                            data-taskid="${task.id}"
-                                            class="actionIcon deleteIcon">delete</wl-icon>
+                                        ${task_permission.write ? html`
+                                            <wl-icon @click="${this._editTaskDialog}" 
+                                                data-taskid="${task.id}"
+                                                class="actionIcon editIcon">edit</wl-icon>`: ""}
+                                        ${task_permission.delete ? html`
+                                            <wl-icon @click="${this._onDeleteTask}" 
+                                                data-taskid="${task.id}"
+                                                class="actionIcon deleteIcon">delete</wl-icon>`: ""}
                                     </div>
                                 </li>
                                 `
@@ -256,8 +266,9 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                             ${!this._hideTasks ? "fullscreen" : "fullscreen_exit"}</wl-icon>
                                     </wl-title>
                                 </div>
-                                <wl-icon @click="${this._editThreadDialog}" 
-                                    class="actionIcon addIcon">note_add</wl-icon>
+                                ${selected_task_permissions.write ? html`
+                                    <wl-icon @click="${this._editThreadDialog}" 
+                                        class="actionIcon addIcon">note_add</wl-icon>`: ""}
                             </div>
                             ${this._hideTasks ? '' : html`
                             <div style="font-size:12.5px; color: #888; padding: 5px; padding-top: 0px">
@@ -273,6 +284,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                 }
                                 let pname = thread.name ? thread.name : this._selectedTask.name;
                                 let last_event = getLatestEvent(thread.events);
+                                let thread_permission = getUserPermission(thread.permissions, thread.events);
                                 return html`
                                     <li class="active ${this._getThreadClass(thread.id!)}">
                                         <div class="cltrow taskrow" id="thread_${thread.id}"
@@ -289,12 +301,15 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                             <div class='thread_caption'>
                                                 ${last_event?.userid} on ${toDateTimeString(last_event?.timestamp)}
                                             </div>` : ""}
-                                            <wl-icon @click="${this._editThreadDialog}" 
-                                                data-threadid="${thread.id}"
-                                                class="actionIcon editIcon">edit</wl-icon>
-                                            <wl-icon @click="${this._onDeleteThread}" 
-                                                data-threadid="${thread.id}"
-                                                class="actionIcon deleteIcon">delete</wl-icon>`
+                                            ${thread_permission.write ? html`
+                                                <wl-icon @click="${this._editThreadDialog}" 
+                                                    data-threadid="${thread.id}"
+                                                    class="actionIcon editIcon">edit</wl-icon>`: ""}
+                                            ${thread_permission.delete ? html`
+                                                <wl-icon @click="${this._onDeleteThread}" 
+                                                    data-threadid="${thread.id}"
+                                                    class="actionIcon deleteIcon">delete</wl-icon>`: ""}
+                                            `
                                             : html`
                                             <a @click="${(e) => {e.stopPropagation(); this._threadListExpanded = true}}">
                                                 <b>(Show more)</b>

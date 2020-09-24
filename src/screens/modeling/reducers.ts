@@ -20,6 +20,14 @@ export interface ExecutionsWithStatus {
 }
 export type ModelExecutions = Map<string, ExecutionsWithStatus[]>
 
+export interface MintPermission {
+    userid: string,
+    read: boolean,
+    write: boolean,
+    delete: boolean,
+    execute: boolean
+}
+
 export interface MintEvent {
     event: string,
     userid: string
@@ -48,7 +56,8 @@ export interface ProblemStatementList {
 export interface ProblemStatementInfo extends IdNameObject {
     regionid: string
     dates: DateRange
-    events: ProblemStatementEvent[]
+    events?: ProblemStatementEvent[]
+    permissions?: MintPermission[]
 }
 
 export interface DateRange {
@@ -69,6 +78,7 @@ export interface ThreadInfo extends IdNameObject {
     response_variables: string[]
     regionid?: string
     events?: ThreadEvent[]
+    permissions?: MintPermission[]
 }
 
 export interface ThreadList {
@@ -117,7 +127,8 @@ export interface Task extends IdNameObject {
     driving_variables: string[],
     regionid?: string,
     threads?: IdMap<ThreadInfo>
-    events: TaskEvent[]
+    events?: TaskEvent[]
+    permissions?: MintPermission[]
     unsubscribe?: Function
 }
 

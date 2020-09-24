@@ -8,7 +8,7 @@ import { ModelIOBindings, ModelEnsembleMap, ComparisonFeature, Task, DataMap } f
 import { SharedStyles } from "../../../styles/shared-styles";
 import { Model, getPathFromModel } from "../../models/reducers";
 import { queryDatasetsByVariables, loadResourcesForDataset } from "../../datasets/actions";
-import { setThreadData, selectThreadDataResources } from "../actions";
+import { setThreadData, selectThreadDataResources, getThreadDataResources } from "../actions";
 import { matchVariables, getThreadDatasetsStatus, TASK_DONE } from "../../../util/state_functions";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
 import { showNotification, showDialog, hideDialog } from "../../../util/ui_functions";
@@ -244,22 +244,18 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                 <ul>
                                     ${bindings.map((binding) => {
                                         let dataslice = this.thread.data![binding];
-                                        let resources = dataslice.resources || [];
-                                        let selected_resources = dataslice.resources.filter((res) => res.selected);
-                                        // Fix for older saved resources
-                                        if(selected_resources.length == 0) {
-                                            resources.map((res) => { res.selected = true;});
-                                            selected_resources = dataslice.resources.filter((res) => res.selected);
-                                        }
+                                        let num_selected_resources = dataslice.selected_resources ?? 0;
+                                        let num_total_resources = dataslice.total_resources ?? 0;
                                         return html`
                                         <li>
                                         <a target="_blank" href="${this._regionid}/datasets/browse/${dataslice.dataset.id}/${this.getSubregionId()}">${dataslice.dataset.name}</a>
-                                        ${resources.length > 1 ?
+                                        ${num_total_resources > 1 ?
                                             html`
                                                 <br />
-                                                ( ${selected_resources.length} / ${resources.length} files - 
-                                                <a style="cursor:pointer"
-                                                    @click="${() => this._selectDataResources(dataslice, true)}">Change</a> )
+                                                ( ${num_selected_resources} / ${num_total_resources} files - 
+                                                <a style="cursor:pointer" @click="${() => {
+                                                    this._loadDatasliceResources(dataslice);
+                                                    this._selectDataResources(dataslice, true);}}">Change</a> )
                                             `
                                             : ""}
                                         </li>
@@ -437,7 +433,11 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                 html`
 
                 <div class="footer">
-                    <wl-button type="button" class="submit" @click="${() => store.dispatch(selectThreadSection("parameters"))}">Continue</wl-button>
+                    <wl-button type="button" class="submit" ?disabled="${this._waiting}"
+                            @click="${() => store.dispatch(selectThreadSection("parameters"))}">
+                        Continue
+                        ${this._waiting? html`<loading-dots style="--width: 20px"></loading-dots>` : ''}
+                    </wl-button>
                 </div>
 
                 ${latest_data_event?.notes ? 
@@ -541,8 +541,13 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
             </div>   
 
             <div slot="footer">
-                <wl-button @click="${this._closeResourceSelectionDialog}" inverted flat>Close</wl-button>
-                <wl-button @click="${this._submitDatasetResources}" class="submit">Submit</wl-button>
+                <wl-button ?disabled="${this._waiting}" 
+                        @click="${this._closeResourceSelectionDialog}" inverted flat>Close</wl-button>
+                <wl-button type="button" class="submit" ?disabled="${this._waiting}"
+                        @click="${this._submitDatasetResources}">
+                    Submit
+                    ${this._waiting? html`<loading-dots style="--width: 20px"></loading-dots>` : ''}
+                </wl-button>
             </div>
         </wl-dialog>
         `;
@@ -576,10 +581,13 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                 let sliceid = uuidv4();
                                 selected_datasets[sliceid] = {
                                     id: sliceid,
+                                    total_resources: dataset.resources.length,
+                                    selected_resources: dataset.resources.filter((res)=>res.selected).length,
                                     resources: dataset.resources,
                                     time_period: this.thread.dates,
                                     name: dataset.name,
-                                    dataset: dataset
+                                    dataset: dataset,
+                                    resources_loaded: dataset.resources_loaded
                                 } as Dataslice
                                 return;
                             }
@@ -620,24 +628,48 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
 
     _loadDatasetResources(dataset: Dataset) {
         let dates = this.thread.dates || this.task.dates || this.problem_statement.dates;
-        let req = loadResourcesForDataset(dataset.id, dates, this._task_region, this.prefs.mint)
-        req.then((resources) => {
-            dataset.resources = resources;
-            dataset.resources_loaded = true;
-            dataset.resources.forEach(r => {r.selected = true})
+        if(!dataset.resources_loaded) {
+            let req = loadResourcesForDataset(dataset.id, dates, this._task_region, this.prefs.mint)
+            req.then((resources) => {
+                dataset.resources = resources;
+                dataset.resources = dataset.resources.sort((ra, rb) => 
+                    ra.name < rb.name ? -1 : ra.name > rb.name ? 1 : 0);                
+                dataset.resources_loaded = true;
+                dataset.resources.forEach(r => {r.selected = true})
+                this.requestUpdate();
+            });
+            return req;
+        }
+        else {
             this.requestUpdate();
-        });
-        return req;
+        }
+    }
+
+    _loadDatasliceResources(dataslice: Dataslice) {
+        if(!dataslice.resources_loaded) {
+            let req = getThreadDataResources(dataslice.id);
+            req.then((slice) => {
+                dataslice.resources = slice.resources;
+                dataslice.resources = dataslice.resources.sort((ra, rb) => 
+                    ra.name < rb.name ? -1 : ra.name > rb.name ? 1 : 0);
+                dataslice.resources_loaded = true;
+                this.requestUpdate();
+            });
+            return req;
+        }
+        else {
+            this.requestUpdate();
+        }
     }
 
     _selectDataResources(dataslice: Dataslice | Dataset, immediate_update: boolean) {
-        this._selectResourcesData = dataslice;
+        this._selectResourcesData = dataslice;                
         this._selectionUpdate = false;
         this._selectResourcesImmediateUpdate = immediate_update;
         showDialog("resourceSelectionDialog", this.shadowRoot!);
     }
 
-    _submitDatasetResources() {
+    async _submitDatasetResources() {
         let dialog = this.shadowRoot.getElementById("resourceSelectionDialog");
         let resource_selected = {};
         dialog.querySelectorAll("input.checkbox").forEach((cbox) => {
@@ -651,10 +683,12 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         })
         this._selectionUpdate = true;
         if(this._selectResourcesImmediateUpdate) {
-            selectThreadDataResources(this._selectResourcesData.id, resource_selected, this.thread.id);
-            showNotification("saveNotification", this.shadowRoot!);
+            this._waiting = true;
+            showNotification("saveNotification", this.shadowRoot!);            
+            await selectThreadDataResources(this._selectResourcesData.id, resource_selected, this.thread.id);
+            this._waiting = false;
         }
-        hideDialog("resourceSelectionDialog", this.shadowRoot);
+        hideDialog("resourceSelectionDialog", this.shadowRoot);        
     }
 
     _selectAllResources() {
@@ -704,7 +738,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
 
     }
 
-    _selectThreadDatasets() {
+    async _selectThreadDatasets() {
         let data: DataMap = this.thread.data || {};
         let model_ensembles: ModelEnsembleMap = this.thread.model_ensembles || {};
 
@@ -756,7 +790,10 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         showNotification("saveNotification", this.shadowRoot!);
 
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        setThreadData(data, model_ensembles, notes, this.thread);
+
+        this._waiting = true;
+        await setThreadData(data, model_ensembles, notes, this.thread);
+        this._waiting = false;
     }
 
     firstUpdated() {

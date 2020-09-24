@@ -300,6 +300,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
                 state.modeling.thread.unsubscribe();
             }
             state.modeling.thread = null;
+            this.thread = null;
         }        
 
         if(!this.user && state.modeling.thread) {
@@ -309,6 +310,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
                 state.modeling.thread.unsubscribe();
             }
             state.modeling.thread = undefined;
+            this.thread = null;
         }
     }
 

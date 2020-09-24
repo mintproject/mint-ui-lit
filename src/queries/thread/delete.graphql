@@ -1,5 +1,8 @@
 mutation delete_thread($id: String!) {
   # Delete thread provenance
+  delete_thread_permission(where: {thread_id: {_eq: $id}}) {
+    affected_rows
+  }
   delete_thread_provenance(where: {thread_id: {_eq: $id}}) {
     affected_rows
   }

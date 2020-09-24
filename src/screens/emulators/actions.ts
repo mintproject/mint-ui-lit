@@ -7,6 +7,7 @@ import { Emulator } from "@mintproject/modelcatalog_client";
 import modelTypesQuery from "../../queries/emulator/model-types.graphql";
 import modelExecutionsQuery from "../../queries/emulator/model-executions.graphql";
 import threadExecutionsQuery from "../../queries/emulator/thread-executions.graphql";
+import { auth } from "config/firebase";
 
 export const EMULATORS_LIST = 'EMULATORS_LIST_MODELS';
 export const EMULATORS_SELECT_MODEL = 'EMULATORS_SELECT_MODEL';
@@ -35,10 +36,9 @@ export type EmulatorsAction = EmulatorsActionListModels | EmulatorsActionListEmu
 
 const MODEL_PREFIX = "https://w3id.org/okn/i/mint/";
 
-const APOLLO_CLIENT = GraphQL.instance();
-
 type ListModelsThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListModels>;
 export const listEmulatorModelTypes: ActionCreator<ListModelsThunkAction> = (regionid) => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     APOLLO_CLIENT.query({
         query: modelTypesQuery,
         variables: {
@@ -72,6 +72,7 @@ export const listEmulatorModelTypes: ActionCreator<ListModelsThunkAction> = (reg
 type ListEmulatorsThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListEmulatorsForModel>;
 export const searchEmulatorsForModel: ActionCreator<ListEmulatorsThunkAction> = 
         (model: string, regionid: string) => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     APOLLO_CLIENT.query({
         query: modelExecutionsQuery,
         variables: {
@@ -114,6 +115,7 @@ export const selectEmulatorModel: ActionCreator<EmulatorsActionSelectModel> = (m
 type ListExecutionsJsonThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListThreadExecutionsJson>;
 export const getThreadExecutionsJSON: ActionCreator<ListExecutionsJsonThunkAction> = 
         (threadid: string) => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     APOLLO_CLIENT.query({
         query: threadExecutionsQuery,
         variables: {

@@ -1,8 +1,17 @@
 mutation delete_problem_statement($id: String!) {
+  delete_thread_permission(where: {thread: {task: {problem_statement_id: {_eq: $id}}}}) {
+    affected_rows
+  }
   delete_thread_provenance(where: {thread: {task: {problem_statement_id: {_eq: $id}}}}) {
     affected_rows
   }
+  delete_task_permission(where: {task: {problem_statement_id: {_eq: $id}}}) {
+    affected_rows
+  }  
   delete_task_provenance(where: {task: {problem_statement_id: {_eq: $id}}}) {
+    affected_rows
+  }
+  delete_problem_statement_permission(where: {problem_statement_id: {_eq: $id}}) {
     affected_rows
   }
   delete_problem_statement_provenance(where: {problem_statement_id: {_eq: $id}}) {

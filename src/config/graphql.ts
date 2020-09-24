@@ -17,12 +17,14 @@ declare global {
 
 export class GraphQL {
   static client : ApolloClient<NormalizedCacheObject>;
+  static userId;
 
+  static instance = (auth) => {
 
-  static instance = () => {
-    if(GraphQL.client != null)
+    if(GraphQL.client != null && auth.currentUser?.email == GraphQL.userId)
       return GraphQL.client
-    
+    GraphQL.userId = auth.currentUser?.email;
+
     const splitLink = split(
       ({ query }) => {
         const definition = getMainDefinition(query);
@@ -54,7 +56,9 @@ export class GraphQL {
         lazy: true,
         connectionParams: {
           headers: {
-            "X-Hasura-Admin-Secret": SECRET
+            "X-Hasura-Admin-Secret": SECRET,
+            "X-Hasura-User-Id": GraphQL.userId,
+            "X-Hasura-Role": "user"
           }
         }
       }
@@ -69,7 +73,9 @@ export class GraphQL {
     return createHttpLink({
       uri: "https://" + ENDPOINT,
       headers: {
-        "X-Hasura-Admin-Secret": SECRET
+        "X-Hasura-Admin-Secret": SECRET,
+        "X-Hasura-User-Id": GraphQL.userId,
+        "X-Hasura-Role": "user"
       }
     });
   }

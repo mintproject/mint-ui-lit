@@ -29,3 +29,12 @@ export const getLatestEvent = (events: MintEvent[]) : MintEvent => {
     })
     return latestEvent;
 }
+
+export const getCreator = (events: MintEvent[]) : String => {
+    let creator = null;
+    events.forEach((event) => {
+        if(event.event == "CREATE")
+            creator = event.userid
+    })
+    return creator;
+}

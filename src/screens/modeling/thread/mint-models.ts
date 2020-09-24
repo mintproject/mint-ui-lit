@@ -474,14 +474,15 @@ export class MintModels extends connect(store)(MintThreadPage) {
             this._allSoftwareImages, this._allConfigs, 
             this._allVersions, this._allModels);
 
-        this._waiting = false;
-
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
         
         // Mark selected models in thread
         // NOTE: This deletes existing data & parameter selections. 
         // FIXME: Warn user that this will delete existing data/parameter/runs ?
-        setThreadModels(models, notes, this.thread);
+
+        await setThreadModels(models, notes, this.thread);
+
+        this._waiting = false;
     }
 
     _queryModelCatalog() {

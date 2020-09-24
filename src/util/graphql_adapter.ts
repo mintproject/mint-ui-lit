@@ -1,5 +1,5 @@
 import { Task, Thread, ProblemStatementInfo, ProblemStatement, ThreadInfo, MintEvent, ModelEnsembleMap, 
-    ModelIOBindings, Execution, ExecutionSummary, DataMap, ThreadModelMap } from "../screens/modeling/reducers"
+    ModelIOBindings, Execution, ExecutionSummary, DataMap, ThreadModelMap, MintPermission } from "../screens/modeling/reducers"
 import { auth } from "config/firebase";
 import { Model, ModelIO, ModelParameter } from "screens/models/reducers";
 import { Dataset, DataResource, Dataslice } from "screens/datasets/reducers";
@@ -29,7 +29,7 @@ export const regionFromGQL = (regionobj: any) : Region => {
         id: regionobj.id,
         name: regionobj.name,
         category_id: regionobj.category_id,
-        geometries: regionobj.geometries.map((geoobj) => geoobj["geometry"]),
+        geometries: (regionobj.geometries ?? []).map((geoobj) => geoobj["geometry"]),
         model_catalog_uri: regionobj.model_catalog_uri
     } as Region;
     return region;
@@ -53,6 +53,16 @@ export const eventFromGQL = (eventobj: any) : MintEvent => {
         notes: eventobj.notes
     } as MintEvent;
     return event;
+}
+
+export const permissionFromGQL = (permobj: any) : MintPermission => {
+    let permission = {
+        userid: permobj.user_id,
+        read: permobj.read ?? false,
+        write: permobj.write ?? false,
+        execute: permobj?.execute ?? false
+    } as MintPermission;
+    return permission;
 }
 
 export const problemStatementToGQL = (problem_statement: ProblemStatementInfo) => {
@@ -93,6 +103,7 @@ export const problemStatementFromGQL = (problem: any) : ProblemStatement => {
             end_date: new Date(problem["end_date"])
         },
         events: problem["events"].map(eventFromGQL),
+        permissions: problem["permissions"].map(permissionFromGQL),
         tasks: {}
     } as ProblemStatement;
     if(problem["tasks"]) {
@@ -154,6 +165,7 @@ export const taskFromGQL = (task: any) : Task => {
         driving_variables: task.driving_variable_id != null ? [task.driving_variable_id] : [],
         response_variables: task.response_variable_id != null ? [task.response_variable_id] : [],
         events: task["events"].map(eventFromGQL),
+        permissions: task["permissions"].map(permissionFromGQL)
     } as Task;
     if(task["threads"]) {
         task["threads"].forEach((thread:any) => {
@@ -210,6 +222,7 @@ export const threadInfoFromGQL = (thread: any) => {
         driving_variables: thread.driving_variable_id != null ? [thread.driving_variable_id] : [],
         response_variables: thread.response_variable_id != null ? [thread.response_variable_id] : [],
         events: thread["events"].map(eventFromGQL),
+        permissions: thread["permissions"].map(permissionFromGQL)
     } as ThreadInfo;
 }
 
@@ -234,7 +247,7 @@ export const threadFromGQL = (thread: any) => {
     
     thread["thread_data"].forEach((tm:any) => {
         let m = tm["dataslice"];
-        let dataslice : Dataslice = dataFromGQL(m);
+        let dataslice : Dataslice = datasliceFromGQL(m);
         fbthread.data[dataslice.id] = dataslice;
     })
 
@@ -318,21 +331,24 @@ export const getTotalConfigs = (model: Model, bindings: ModelIOBindings, thread:
     return totalconfigs;
 }
 
-export const dataFromGQL = (d: any) => {
+export const datasliceFromGQL = (d: any) => {
     let ds = d["dataset"];
     return {
         id: d["id"],
         name: ds["name"],
-        resources: d["resources"].map((resobj:any) => {
+        total_resources: d["total_resources"]?.aggregate?.count ?? 0,
+        selected_resources: d["selected_resources"]?.aggregate?.count ?? 0,
+        resources: (d["resources"] ?? []).map((resobj:any) => {
             let res = resourceFromGQL(resobj["resource"]);
             res.selected = resobj["selected"];
             return res;
         }),
+        resources_loaded: (d["resources"]?.length > 0) ? true : false,
         time_period: {
             start_date: ds["start_date"],
             end_date: ds["end_date"]
         },
-        resource_count: d["resources"].length,
+        resource_count: ds["resource_count"],
         dataset: {
             id: ds["id"],
             name: ds["name"]
@@ -601,7 +617,7 @@ const getVariableData = (variableid) => {
         },
         "on_conflict": {
             "constraint": "variable_pkey",
-            "update_columns": ["id"]
+            "update_columns": ["description"]
         }
     }
 }
@@ -735,7 +751,7 @@ const getResourceData = (data) => {
         },
         "on_conflict": {
             "constraint": "resource_pkey",
-            "update_columns": ["id"]
+            "update_columns": ["name"]
         }
     }
 }
@@ -767,7 +783,7 @@ const getDatasliceData = (data: Dataslice, thread: Thread) => {
             },
             "on_conflict": {
                 "constraint": "dataset_pkey",
-                "update_columns": ["id"]
+                "update_columns": ["name"]
             }
         },
         "resources": {

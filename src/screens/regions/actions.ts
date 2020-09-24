@@ -1,7 +1,7 @@
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "../../app/store";
 import { ActionCreator, Action } from "redux";
-import { db } from "../../config/firebase";
+import { db, auth } from "../../config/firebase";
 import { Region, BoundingBox, Point, RegionMap, RegionCategory } from "./reducers";
 import { OFFLINE_DEMO_MODE } from "../../app/actions";
 import { GraphQL } from "config/graphql";
@@ -49,11 +49,10 @@ export const setPreview: ActionCreator<BBoxPreviewThunkResult> = (bbox: Bounding
     });
 };
 
-export const APOLLO_CLIENT = GraphQL.instance();
-
 // List Region Categories
 type ListCategoriesThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListCategories>;
 export const listRegionCategories: ActionCreator<ListCategoriesThunkResult> = () => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     APOLLO_CLIENT.query({
         query: listRegionCategoriesGQL
     }).then(result => {
@@ -93,6 +92,7 @@ export const listRegionCategories: ActionCreator<ListCategoriesThunkResult> = ()
 // List Regions
 type ListRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListTopRegions>;
 export const listTopRegions: ActionCreator<ListRegionsThunkResult> = () => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     APOLLO_CLIENT.query({
         query: listTopRegionsGQL
     }).then(result => {
@@ -148,6 +148,7 @@ const _calculateBoundingBox = (geometries: any[]) => {
 // Query for Sub Regions
 type SubRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListSubRegions>;
 export const listSubRegions: ActionCreator<SubRegionsThunkResult> = (regionid: string) => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     APOLLO_CLIENT.query({
         query: listSubRegionsGQL,
         variables: {
@@ -182,6 +183,7 @@ export const filterRegionsOfType = (regionids: string[], regions: RegionMap, typ
 
 // Get details about a particular region/subregion
 export const getRegionDetails = (regionid: string, subregionid: string) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     return new Promise<Region>((resolve, reject) => {
         APOLLO_CLIENT.query({
             query: getRegionDetailsGQL,
@@ -215,6 +217,7 @@ function chunkRegions(array: Region[], size: number) {
 }
 
 export const addRegions = (parent_regionid: string, regions: Region[]) : Promise<any[]> =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
     let chunks = chunkRegions(regions, 500);
     return Promise.all(chunks.map((regionlist) => {
         let objects = regionlist.map((region: Region) => {

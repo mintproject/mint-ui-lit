@@ -1,0 +1,7 @@
+fragment task_permissions on task {
+  permissions {
+    user_id
+    read
+    write
+  }
+}

@@ -1,4 +1,5 @@
 #import "../fragments/thread-events.graphql"
+#import "../fragments/thread-permissions.graphql"
 
 fragment thread_info on thread {
     id
@@ -10,4 +11,5 @@ fragment thread_info on thread {
     driving_variable_id
     response_variable_id
     ...thread_events
+    ...thread_permissions
 }

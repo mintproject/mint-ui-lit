@@ -17,10 +17,12 @@ import { selectProblemStatement, selectThread, selectTask, selectThreadSection, 
          selectDataTransformation } from './ui-actions';
 import { auth, db } from '../config/firebase';
 import { User } from 'firebase';
-import { UserPreferences, MintPreferences, UserProfile } from './reducers';
+import { MintPreferences, UserProfile } from './reducers';
 import { DefaultApi } from '@mintproject/modelcatalog_client';
 import { dexplorerSelectDataset, dexplorerSelectDatasetArea } from 'screens/datasets/ui-actions';
 import { selectEmulatorModel } from 'screens/emulators/actions';
+
+import * as mintConfig from '../config/config.json';
 
 import ReactGA from 'react-ga';
 
@@ -133,30 +135,27 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
 
 type UserPrefsThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchMintConfig>;
 export const fetchMintConfig: ActionCreator<UserPrefsThunkResult> = () => (dispatch) => {
-  db.doc("configs/main").get().then((doc) => {
-    let prefs = doc.data() as MintPreferences;
-    if(prefs.execution_engine == "wings") {
-      fetch(prefs.wings.server + "/config").then((res) => {
-        res.json().then((wdata) => {
-          prefs.wings.export_url = wdata["internal_server"]
-          prefs.wings.storage = wdata["storage"];
-          prefs.wings.dotpath = wdata["dotpath"];
-          prefs.wings.onturl = wdata["ontology"];
-          dispatch({
-            type: FETCH_MINT_CONFIG,
-            prefs: prefs
-          });
-        })
+  let prefs = mintConfig as MintPreferences;
+  if(prefs.execution_engine == "wings") {
+    fetch(prefs.wings.server + "/config").then((res) => {
+      res.json().then((wdata) => {
+        prefs.wings.export_url = wdata["internal_server"]
+        prefs.wings.storage = wdata["storage"];
+        prefs.wings.dotpath = wdata["dotpath"];
+        prefs.wings.onturl = wdata["ontology"];
+        dispatch({
+          type: FETCH_MINT_CONFIG,
+          prefs: prefs
+        });
       })
-    }
-    else {
-      dispatch({
-        type: FETCH_MINT_CONFIG,
-        prefs: prefs
-      });
-    }
-  })
-  return;
+    })
+  }
+  else {
+    dispatch({
+      type: FETCH_MINT_CONFIG,
+      prefs: prefs
+    });
+  }
 };
 
 export const signIn = (email: string, password: string) => {
@@ -261,16 +260,21 @@ const loadPage: ActionCreator<ThunkResult> =
       else if(subpage == 'problem_statement' || subpage == 'scenario') {
         // ProblemStatement passed in. Load problem_statement
         import('../screens/modeling/mint-problem-statement').then((_module) => {
-          if(params.length > 0) {
+          if(params.length > 0 && params[0]) {
             store.dispatch(selectProblemStatement(params[0]));
-            if(params.length > 1) {
+            if(params.length > 1 && params[1]) {
               store.dispatch(selectTask(params[1]));
-              if(params.length > 2) {
+              if(params.length > 2 && params[2]) {
                 store.dispatch(selectThread(params[2]));
-                if(params.length > 3) {
+                if(params.length > 3 && params[3]) {
                   store.dispatch(selectThreadSection(params[3]));
                 }
+              } else {
+                store.dispatch(selectThread(null));
               }
+            }
+            else {
+              store.dispatch(selectTask(null));
             }
           } else {
             store.dispatch(selectProblemStatement(null));

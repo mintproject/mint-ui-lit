@@ -28,6 +28,7 @@ import { Region, RegionMap } from '../regions/reducers';
 import { toDateString, toDateTimeString } from 'util/date-utils';
 import { getLatestEventOfType, getLatestEvent } from 'util/event_utils';
 import { getCreateEvent, getUpdateEvent } from '../../util/graphql_adapter';
+import { getUserPermission } from 'util/permission_utils';
 
 @customElement('problem-statements-list')
 export class ProblemStatementsList extends connect(store)(PageViewElement) {
@@ -82,6 +83,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
     ${this._list && this._list.problem_statement_ids.map((problem_statement_id) => {
         let problem_statement = this._list.problem_statements[problem_statement_id];
         let last_event = getLatestEvent(problem_statement.events);
+        let permissions = getUserPermission(problem_statement.permissions, problem_statement.events);
         //let region = this._regions[problem_statement.regionid];
         if(problem_statement.regionid == this._top_regionid) {
           return html`
@@ -94,11 +96,15 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
                   ${last_event?.userid}<br/>
                   ${toDateTimeString(last_event?.timestamp)}
                 </div>
-                <div style="height: 24px; padding-left: 10px; display:flex">
-                  <wl-icon @click="${this._editProblemStatementDialog}" data-problem_statement_id="${problem_statement.id}"
-                      id="editProblemStatementIcon" class="actionIcon editIcon">edit</wl-icon>
-                  <wl-icon @click="${this._onDeleteProblemStatement}" data-problem_statement_id="${problem_statement.id}"
-                      id="delProblemStatementIcon" class="actionIcon deleteIcon">delete</wl-icon>
+                <div style="height: 24px; width: 40px; padding-left: 10px; display:flex">
+                  ${permissions.write ? html`
+                    <wl-icon @click="${this._editProblemStatementDialog}" data-problem_statement_id="${problem_statement.id}"
+                        id="editProblemStatementIcon" class="actionIcon editIcon">edit</wl-icon>
+                    `: ""}
+                  ${permissions.delete ? html`
+                    <wl-icon @click="${this._onDeleteProblemStatement}" data-problem_statement_id="${problem_statement.id}"
+                        id="delProblemStatementIcon" class="actionIcon deleteIcon">delete</wl-icon>
+                    `: ""}
                 </div>
               </div>
               <wl-title level="4" style="margin: 0">${problem_statement.name}</wl-title>

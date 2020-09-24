@@ -1,4 +1,5 @@
 #import "../fragments/task-events.graphql"
+#import "../fragments/task-permissions.graphql"
 
 fragment task_info on task {
     id
@@ -10,4 +11,5 @@ fragment task_info on task {
     driving_variable_id
     response_variable_id
     ...task_events
+    ...task_permissions
 }
