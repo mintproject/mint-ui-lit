@@ -164,22 +164,24 @@ export class MintResults extends connect(store)(MintThreadPage) {
                return html`
                <li>
                     <wl-title level="4"><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></wl-title>
-                    <p>
-                        Below are the results of all the model executions that run successfully and were completed. 
-                        The results are shown on the left. The file can be downloaded/viewed by clicking on the link. 
-                        Click on the RELOAD button if you are waiting for more runs to complete
-                    </p>
-                    <p>
-                    The parameter settings you selected required ${summary.total_runs} runs. 
-                    ${!finished ? "So far, " : ""} ${summary.submitted_runs} model runs
-                    ${!finished ? "have been" : "were"} submitted, out of which 
-                    ${summary.successful_runs} succeeded and produced results, while ${summary.failed_runs} failed.
-                    ${running > 0 ? html `${running} are currently running` : ""}
-                    ${running > 0 && pending > 0 ? ', and ' : ''}
-                    ${pending > 0 ? html `${pending} are waiting to be run` : ""}
-                    </p>
+                    ${submitted ? html `
+                        <p>
+                            Below are the results of all the model executions that run successfully and were completed. 
+                            The results are shown on the left. The file can be downloaded/viewed by clicking on the link. 
+                            Click on the RELOAD button if you are waiting for more runs to complete
+                        </p>
+                        <p>
+                        The parameter settings you selected required ${summary.total_runs} runs. 
+                        ${!finished ? "So far, " : ""} ${summary.submitted_runs} model runs
+                        ${!finished ? "have been" : "were"} submitted, out of which 
+                        ${summary.successful_runs} succeeded and produced results, while ${summary.failed_runs} failed.
+                        ${running > 0 ? html `${running} are currently running` : ""}
+                        ${running > 0 && pending > 0 ? ', and ' : ''}
+                        ${pending > 0 ? html `${pending} are waiting to be run` : ""}
+                        </p>`
+                    : html `Please execute some runs first`}
 
-                    ${finished && !submitted ? 
+                    ${finished && !submitted && this.permission.write ? 
                         html` <wl-button class="submit"
                         @click="${() => this._publishAllResults(model.id)}">Save all results</wl-button>`
                         : 

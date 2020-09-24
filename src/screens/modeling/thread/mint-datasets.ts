@@ -159,18 +159,20 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         <p>
             This step is for selecting datasets for each of the models that you selected earlier.
         </p>
-        ${done && !this._editMode ? html`<p>Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes.</p>`: html``}
+        ${done && this.permission.write && !this._editMode ? html`<p>Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes.</p>`: html``}
         <div class="clt">
             <wl-title level="3">Datasets
-                <wl-icon @click="${() => this._setEditMode(true)}" 
-                    class="actionIcon editIcon"
-                    id="editDatasetsIcon">edit</wl-icon>
+                ${this.permission.write ? html`
+                    <wl-icon @click="${() => this._setEditMode(true)}" 
+                        class="actionIcon editIcon"
+                        id="editDatasetsIcon">edit</wl-icon>` : ""}
             </wl-title>
-            <wl-tooltip anchor="#editDatasetsIcon" 
-                .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
-                anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
-                Change Datasets Selection
-            </wl-tooltip>
+            ${this.permission.write ? html`
+                <wl-tooltip anchor="#editDatasetsIcon" 
+                    .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
+                    anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
+                    Change Datasets Selection
+                </wl-tooltip>`: ""}
 
             ${(Object.keys(this.thread.models) || []).map((modelid) => {
                 let model = this.thread.models![modelid];
@@ -252,10 +254,12 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                         ${num_total_resources > 1 ?
                                             html`
                                                 <br />
-                                                ( ${num_selected_resources} / ${num_total_resources} files - 
+                                                ( ${num_selected_resources} / ${num_total_resources} files 
+                                                ${this.permission.write ? html `
+                                                - 
                                                 <a style="cursor:pointer" @click="${() => {
                                                     this._loadDatasliceResources(dataslice);
-                                                    this._selectDataResources(dataslice, true);}}">Change</a> )
+                                                    this._selectDataResources(dataslice, true);}}">Change</a>` : ""} )
                                             `
                                             : ""}
                                         </li>
@@ -411,7 +415,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                 </ul>
                 `;
             })}
-            ${!done || this._editMode ? 
+            ${this.permission.write && (!done || this._editMode) ? 
                 html`
                 <div class="footer">
                     ${this._editMode ? 
@@ -558,6 +562,8 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
     }
     
     _setEditMode(mode: Boolean) {
+        if(!this.permission.write)
+            mode = false;
         this._editMode = mode;
         if(mode) {
             this.queryDataCatalog();

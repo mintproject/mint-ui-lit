@@ -37,15 +37,17 @@ export interface UserPreferences {
 }
 
 export interface MintPreferences {
-  wings: WingsPreferences,
-  localex?: LocalExecutionPreferences,
-  execution_engine?: "wings" | "localex",
-  wings_api: string,
+  data_catalog_api: string,
+  //model_catalog_api?: string  // Model Catalog API isn't used from here any more
   ensemble_manager_api: string,
   ingestion_api: string,
-  visualization_url: string,
-  data_catalog_api: string,
-  model_catalog_api: string
+  visualization_url: string,  
+  execution_engine?: "wings" | "localex",  
+  // Local Execution
+  localex?: LocalExecutionPreferences,
+  // Wings Execution  
+  wings?: WingsPreferences,  
+  wings_api?: string
 }
 
 export interface WingsPreferences {

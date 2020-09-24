@@ -169,8 +169,10 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                             ${model.output_files.length * summary.total_runs} output files will be generated
                             (${model.output_files.length} outputs x ${summary.total_runs} runs).
                         </p>
-                        <wl-button class="submit"
-                            @click="${() => this._submitRuns(model.id)}">Send Runs</wl-button>
+                        ${this.permission.execute && this.permission.write ? html`
+                            <wl-button class="submit"
+                                @click="${() => this._submitRuns(model.id)}">Send Runs</wl-button>`
+                            : html `You don't have permission to send runs on this thread`}
                     `;
                 }
 

@@ -135,7 +135,7 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
 
 type UserPrefsThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchMintConfig>;
 export const fetchMintConfig: ActionCreator<UserPrefsThunkResult> = () => (dispatch) => {
-  let prefs = mintConfig as MintPreferences;
+  let prefs = mintConfig["default"] as MintPreferences;
   if(prefs.execution_engine == "wings") {
     fetch(prefs.wings.server + "/config").then((res) => {
       res.json().then((wdata) => {

@@ -166,21 +166,23 @@ export class MintModels extends connect(store)(MintThreadPage) {
         <p>
             The models below are appropriate for the indicators of interest. You can select multiple calibrated models and compare them.  
         </p>
-        ${done && !this._editMode ? html`<p>Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes.</p>`: html``}
+        ${done && this.permission.write && !this._editMode ? html`<p>Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes.</p>`: html``}
         ${(done && !this._editMode) ?
             // Models chosen already
             html`
             <div class="clt">
                 <wl-title level="3">
                     Models
-                    <wl-icon @click="${() => { this._setEditMode(true) } }" 
-                        id="editModelsIcon" class="actionIcon editIcon">edit</wl-icon>
+                    ${this.permission.write ? html`
+                        <wl-icon @click="${() => { this._setEditMode(true) } }" 
+                            id="editModelsIcon" class="actionIcon editIcon">edit</wl-icon>`: ""}
                 </wl-title>
-                <wl-tooltip anchor="#editModelsIcon" 
-                    .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
-                    anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
-                    Change Model Selection
-                </wl-tooltip>
+                ${this.permission.write ? html`
+                    <wl-tooltip anchor="#editModelsIcon" 
+                        .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
+                        anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
+                        Change Model Selection
+                    </wl-tooltip>`: ""}
                 <ul>
                     ${modelids.map((modelid) => {
                         let model = this.thread.models![modelid];
@@ -425,6 +427,8 @@ export class MintModels extends connect(store)(MintThreadPage) {
     }
 
     _setEditMode(mode: Boolean) {
+        if(!this.permission.write)
+            mode = false;
         this._editMode = mode;
         if(mode) {
             this._queryModelCatalog();

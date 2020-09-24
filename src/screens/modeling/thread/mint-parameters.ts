@@ -71,19 +71,21 @@ export class MintParameters extends connect(store)(MintThreadPage) {
         <p>
             This step is for specifying values for the adjustable parameters of the models that you selected earlier.
         </p>
-        ${done && !this._editMode ? html`<p>Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes and run the model.</p>`: html``}
+        ${done && this.permission.write && !this._editMode ? html`<p>Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes and run the model.</p>`: html``}
         <div class="clt">
             <wl-title level="3">
                 Setup Models
-                <wl-icon @click="${() => this._setEditMode(true)}" 
-                    class="actionIcon editIcon"
-                    id="editParametersIcon">edit</wl-icon>
+                ${this.permission.write ? html`
+                    <wl-icon @click="${() => this._setEditMode(true)}" 
+                        class="actionIcon editIcon"
+                        id="editParametersIcon">edit</wl-icon>`: ""}
             </wl-title>
-            <wl-tooltip anchor="#editParametersIcon" 
-                .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
-                anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
-                Change Adjustable Parameter Values
-            </wl-tooltip>
+            ${this.permission.write ? html`
+                <wl-tooltip anchor="#editParametersIcon" 
+                    .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
+                    anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
+                    Change Adjustable Parameter Values
+                </wl-tooltip>`: ""}
             <ul>
             ${(Object.keys(this.thread.models) || []).map((modelid) => {
                 let model = this.thread.models![modelid];
@@ -254,10 +256,10 @@ export class MintParameters extends connect(store)(MintThreadPage) {
                 </ul>` : ""
             }
 
-            ${!done || this._editMode ? 
+            ${this.permission.write && (!done || this._editMode) ? 
                 html`
                     <div class="footer">
-                        ${this._editMode ? 
+                        ${this.permission.write && this._editMode ? 
                             html`
                                 <wl-button flat inverted
                                     @click="${() => this._setEditMode(false)}">CANCEL</wl-button>
@@ -362,6 +364,8 @@ export class MintParameters extends connect(store)(MintThreadPage) {
     }
     
     _setEditMode(mode: Boolean) {
+        if(this.permission.write)
+            mode = false;
         this._editMode = mode;
     }
 

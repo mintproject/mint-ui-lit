@@ -1,7 +1,6 @@
 {
     "data_catalog_api": "https://api.mint-data-catalog.org",
-    "model_catalog_api": "https://query.mint.isi.edu/api/dgarijo/MINT-ModelCatalogQueries",    
-    "ensemble_manager_api": "https://ensemble.mint.isi.edu/v1",
+    "ensemble_manager_api": "https://dev.ensemble.mint.isi.edu/v1",
     "execution_engine": "localex",
     "localex": {
         "codedir":"/data/storage/mint/local-execution/code",
@@ -10,17 +9,7 @@
         "logdir": "/data/storage/mint/data-catalog/production/local-execution/logs",
         "logurl": "https://data.mint.isi.edu/files/local-execution/logs",
         "parallelism": 50
-    },
-    "wings": {
-        "datadir": "/data/projects/wings/dev/storage/default/users",
-        "dataurl": "https://data.mint.isi.edu/files/wings-dev",
-        "domain": "mint-test",
-        "password": "Seozie3Eif5tol",
-        "server": "https://dev.wings.mint.isi.edu",
-        "username": "mint"
-    },
-    "wings_api": "https://api.wings.mint.isi.edu/v1.0.",    
+    }, 
     "visualization_url": "https://dev.viz.mint.isi.edu",
     "ingestion_api": "https://node1.ingestion.mint.isi.edu/v1.3.0"    
 }
- 
