@@ -6,7 +6,7 @@ import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
 import { addRegions, addSubcategory } from './actions';
-import { GOOGLE_API_KEY } from 'config/google-api-key';
+import { GOOGLE_API_KEY } from 'config/firebase';
 import { IdMap } from 'app/reducers';
 import { Region, RegionCategory } from './reducers';
 

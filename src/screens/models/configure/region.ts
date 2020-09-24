@@ -3,7 +3,7 @@ import { PageViewElement } from 'components/page-view-element';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../model-explore/explorer-styles'
-import { GOOGLE_API_KEY } from 'config/google-api-key';
+import { GOOGLE_API_KEY } from 'config/firebase';
 import { GoogleMapCustom } from 'components/google-map-custom';
 
 import { store, RootState } from 'app/store';
