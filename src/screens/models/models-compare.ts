@@ -538,7 +538,6 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                 newNode.selectIcon = false;
                 newNode.select();
                 newNode.onClick = newNode.toggle;
-                newNode.contract();
                 this._nodes[category] = newNode;
             }
             let nodeCat: TreeNode = this._nodes[category];

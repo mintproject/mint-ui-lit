@@ -423,7 +423,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         if (this._status === Status.CREATE || this._status === Status.EDIT) {
             return html`
                 <div style="float:right; margin-top: 1em;">
-                    <wl-button @click="${() => this._clearStatus()}" style="margin-right: 1em;" flat inverted>
+                    <wl-button @click="${this._onCancelButtonClicked}" style="margin-right: 1em;" flat inverted>
                         <wl-icon>cancel</wl-icon>&ensp;Discard changes
                     </wl-button>
                     <wl-button @click="${this._onSaveButtonClicked}">
@@ -442,6 +442,11 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     </wl-button>
                 </div>`
         }
+    }
+
+    private _onCancelButtonClicked () {
+        this._clearStatus();
+        this._eventCancel();
     }
 
     _searchPromise = null;
@@ -741,12 +746,39 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 this._selectedResourceId = r.id;
             }
             this._postSave(r);
+            this._eventSave(r);
         });
         return req;
     }
 
     protected _postSave (r:T) {
         return null;
+    }
+
+    private _eventSave (r:T) {
+        let event : CustomEvent = new CustomEvent('model-catalog-save', {
+            bubbles: true,
+            composed: true,
+            detail: r
+        });
+        this.dispatchEvent(event);
+    }
+
+    private _eventDelete (r:T) {
+        let event : CustomEvent = new CustomEvent('model-catalog-delete', {
+            bubbles: true,
+            composed: true,
+            detail: r
+        });
+        this.dispatchEvent(event);
+    }
+
+    private _eventCancel () {
+        let event : CustomEvent = new CustomEvent('model-catalog-cancel', {
+            bubbles: true,
+            composed: true,
+        });
+        this.dispatchEvent(event);
     }
 
     private _addToSaveQueue (resource:T) {
@@ -867,6 +899,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             }
             store.dispatch(this.resourceDelete(r)).then(() => {
                 this._notification.save(this.name + " deleted")
+                this._eventDelete(r);
             });
         }
     }
