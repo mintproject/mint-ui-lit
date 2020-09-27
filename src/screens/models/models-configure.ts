@@ -145,7 +145,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     `: ''}
                     <div class="cltrow_padded">
                         <div class="cltmain">
-                            <wl-title level="3" style="margin: 0px; ${(this._config&&!this._setup)? 'color:rgb(6, 108, 67);':''}">
+                            <wl-title level="3" .style="margin: 0px; ${(this._config&&!this._setup)? 'color:rgb(6, 108, 67);':''}">
                                 ${this._creating ? html`<span class="title-prefix">
                                     CREATING A NEW ${this._config? 'SETUP' : 'CONFIGURATION'} FOR
                                 </span>` 

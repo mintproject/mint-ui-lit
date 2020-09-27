@@ -38,6 +38,9 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     @property({type: String})
     private _log: string;
 
+    @property({type: Boolean})
+    private _waiting: Boolean = false;    
+
     private _initialSubmit: boolean = false;
 
     private threadModelExecutionIds: IdMap<string[]> = {};
@@ -170,8 +173,11 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                             (${model.output_files.length} outputs x ${summary.total_runs} runs).
                         </p>
                         ${this.permission.execute && this.permission.write ? html`
-                            <wl-button class="submit"
-                                @click="${() => this._submitRuns(model.id)}">Send Runs</wl-button>`
+                            <wl-button class="submit" ?disabled="${this._waiting}"
+                                @click="${() => this._submitRuns(model.id)}">
+                                Send Runs
+                                ${this._waiting? html`<loading-dots style="--width: 20px"></loading-dots>` : ''}
+                            </wl-button>`
                             : html `You don't have permission to send runs on this thread`}
                     `;
                 }
@@ -315,20 +321,21 @@ export class MintRuns extends connect(store)(MintThreadPage) {
         });
         let mint = this.prefs.mint;
         let data = {
-            problem_statement_id: this.problem_statement.id,
-            task_id: this._task_id,
             thread_id: this.thread.id,
             model_id: modelid
         };
         this._initialSubmit = true;
         showNotification("runNotification", this.shadowRoot);
         let me = this;
+        this._waiting = true;
         postJSONResource({
             url: mint.ensemble_manager_api + "/executions" + (mint.execution_engine == "localex" ? "Local" : ""),
             onLoad: function(e: any) {
+                this._waiting = false;
                 hideNotification("runNotification", me.shadowRoot);
             },
             onError: function() {
+                this._waiting = false;
                 hideNotification("runNotification", me.shadowRoot);
                 alert("Could not connect to the Execution Manager!");
             }

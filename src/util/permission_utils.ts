@@ -4,7 +4,7 @@ import { getCreator } from "./event_utils";
 
 export const getAllUsersPermission = (permissions: MintPermission[]) => {
     let allUsersPermission = {
-        read: false, write: false, execute: false, delete: false, userid: "*"
+        read: false, write: false, execute: false, owner: false, userid: "*"
     } as MintPermission;
     permissions.forEach((permission) => {
         if(permission.userid == "*") {
@@ -19,7 +19,7 @@ export const getUserPermission = (permissions: MintPermission[], events: MintEve
     let creator = getCreator(events);
     if(creator == userid) {
         return {
-            read: true, write: true, execute: true, delete: true, userid: creator
+            read: true, write: true, execute: true, owner: true, userid: creator
         } as MintPermission;
     }
     let userPermission = getAllUsersPermission(permissions);

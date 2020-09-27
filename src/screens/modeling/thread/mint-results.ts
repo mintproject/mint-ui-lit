@@ -147,6 +147,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                let grouped_ensemble = grouped_executions[modelid];
                this.totalPages[modelid] = Math.ceil(summary.total_runs/this.pageSize);
                let finished_runs = summary.successful_runs + summary.failed_runs;
+               let submitted_runs = summary.submitted_for_execution;
                let submitted = summary.submitted_for_ingestion;
                let finished_ingestion = (summary.ingested_runs == summary.total_runs);
                let finished = (finished_runs == summary.total_runs);
@@ -164,7 +165,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                return html`
                <li>
                     <wl-title level="4"><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></wl-title>
-                    ${submitted ? html `
+                    ${submitted_runs ? html `
                         <p>
                             Below are the results of all the model executions that run successfully and were completed. 
                             The results are shown on the left. The file can be downloaded/viewed by clicking on the link. 

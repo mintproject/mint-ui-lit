@@ -33,6 +33,9 @@ export class MintParameters extends connect(store)(MintThreadPage) {
     @property({type: Boolean})
     private _editMode: Boolean = false;
 
+    @property({type: Boolean})
+    private _waiting: Boolean = false;
+
     static get styles() {
         return [
           SharedStyles,
@@ -263,8 +266,10 @@ export class MintParameters extends connect(store)(MintThreadPage) {
                             html`
                                 <wl-button flat inverted
                                     @click="${() => this._setEditMode(false)}">CANCEL</wl-button>
-                                <wl-button type="button" class="submit" 
-                                    @click="${() => this._setThreadParameters()}">Select &amp; Continue</wl-button>                            
+                                <wl-button type="button" class="submit" ?disabled="${this._waiting}"
+                                    @click="${() => this._setThreadParameters()}">Select &amp; Continue
+                                    ${this._waiting? html`<loading-dots style="--width: 20px"></loading-dots>` : ''}
+                                </wl-button>                            
                             `
                             : 
                             html`
@@ -364,7 +369,7 @@ export class MintParameters extends connect(store)(MintThreadPage) {
     }
     
     _setEditMode(mode: Boolean) {
-        if(this.permission.write)
+        if(!this.permission.write)
             mode = false;
         this._editMode = mode;
     }
@@ -377,7 +382,7 @@ export class MintParameters extends connect(store)(MintThreadPage) {
         return inputField.value.split(/\s*,\s*/);
     }
 
-    _setThreadParameters() {
+    async _setThreadParameters() {
         ReactGA.event({
           category: 'Thread',
           action: 'Parameters continue',
@@ -427,7 +432,9 @@ export class MintParameters extends connect(store)(MintThreadPage) {
         showNotification("saveNotification", this.shadowRoot!);
 
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-        setThreadParameters(model_ensembles, execution_summary, notes, this.thread);
+        this._waiting = true;
+        await setThreadParameters(model_ensembles, execution_summary, notes, this.thread);
+        this._waiting = false;
     }
 
     stateChanged(state: RootState) {

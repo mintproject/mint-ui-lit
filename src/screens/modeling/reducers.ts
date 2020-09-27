@@ -24,8 +24,8 @@ export interface MintPermission {
     userid: string,
     read: boolean,
     write: boolean,
-    delete: boolean,
-    execute: boolean
+    execute: boolean,
+    owner: boolean
 }
 
 export interface MintEvent {

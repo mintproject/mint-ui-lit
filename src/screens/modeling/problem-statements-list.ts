@@ -84,6 +84,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
         let problem_statement = this._list.problem_statements[problem_statement_id];
         let last_event = getLatestEvent(problem_statement.events);
         let permissions = getUserPermission(problem_statement.permissions, problem_statement.events);
+        let create_event = getLatestEventOfType(["CREATE"], problem_statement.events);
         //let region = this._regions[problem_statement.regionid];
         if(problem_statement.regionid == this._top_regionid) {
           return html`
@@ -92,16 +93,16 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
               data-problem_statement_id="${problem_statement.id}">
               <wl-icon slot="before">label_important</wl-icon>
               <div slot="after" style="display:flex">
-                <div>
-                  ${last_event?.userid}<br/>
+                <div class="caption">
+                  Last updated by: ${last_event?.userid}<br/>
                   ${toDateTimeString(last_event?.timestamp)}
                 </div>
-                <div style="height: 24px; width: 40px; padding-left: 10px; display:flex">
+                <div style="height: 24px; width: 40px; padding-left: 10px; display:flex; justify-content: end">
                   ${permissions.write ? html`
                     <wl-icon @click="${this._editProblemStatementDialog}" data-problem_statement_id="${problem_statement.id}"
                         id="editProblemStatementIcon" class="actionIcon editIcon">edit</wl-icon>
-                    `: ""}
-                  ${permissions.delete ? html`
+                    `: html`<div style='width:20px'>&nbsp;</div><wl-icon class="smallIcon">lock</wl-icon>`} 
+                  ${permissions.owner ? html`
                     <wl-icon @click="${this._onDeleteProblemStatement}" data-problem_statement_id="${problem_statement.id}"
                         id="delProblemStatementIcon" class="actionIcon deleteIcon">delete</wl-icon>
                     `: ""}
@@ -112,6 +113,9 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
               <div>
                 Time Period: ${toDateString(problem_statement.dates.start_date)} to 
                 ${toDateString(problem_statement.dates.end_date)}
+              </div>
+              <div class="caption">
+                  Created by: ${create_event?.userid} at ${toDateTimeString(create_event?.timestamp)}
               </div>
           </wl-list-item>
           `

@@ -141,6 +141,13 @@ export const SharedStyles = css`
     text-decoration: underline;
   }
 
+  .smallIcon {
+    font-size: 16px;
+    width: 16px;
+    padding: 2px;
+    color: #909090;
+  }
+
   .actionIcon {
     font-size: 16px;
     width: 16px;

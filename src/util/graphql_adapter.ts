@@ -305,16 +305,12 @@ export const getTotalConfigs = (model: Model, bindings: ModelIOBindings, thread:
             // Expand a dataset to it's constituent resources
             // FIXME: Create a collection if the model input has dimensionality of 1
             if(bindings[io.id]) {
-                let nensemble : any[] = [];
+                let numresources = 0;
                 bindings[io.id].map((dsid) => {
                     let ds = thread.data[dsid];
-                    let selected_resources = ds.resources.filter((res) => res.selected);
-                    // Fix for older saved resources
-                    if(selected_resources.length == 0) 
-                        selected_resources = ds.resources;
-                    nensemble = nensemble.concat(selected_resources);
+                    numresources += ds.selected_resources;
                 });
-                totalconfigs *= nensemble.length;
+                totalconfigs *= numresources;
             }
         }
         else {
@@ -438,7 +434,7 @@ export const executionToGQL = (ex: Execution) => {
 
 export const executionFromGQL = (ex: any) : Execution => {
     let exobj = {
-        id: ex.id,
+        id: ex.id.replace(/\-/g,''),
         modelid: ex.model_id,
         status: ex.status,
         start_time: ex.start_time,

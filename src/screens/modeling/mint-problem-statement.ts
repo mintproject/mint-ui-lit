@@ -200,7 +200,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                             ${problem_permissions.write ? html`
                                 <wl-icon @click="${this._addTaskDialog}" 
                                     class="actionIcon addIcon">note_add</wl-icon>`
-                                : ""}
+                                : html`<wl-icon class="smallIcon">lock</wl-icon>`}
                         </div>
                         <div style="font-size:12.5px; color: #888; padding:5px; padding-left: 10px; padding-top:0px;">
                             Several modeling tasks can be created for a given problem statement. 
@@ -233,8 +233,9 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                         ${task_permission.write ? html`
                                             <wl-icon @click="${this._editTaskDialog}" 
                                                 data-taskid="${task.id}"
-                                                class="actionIcon editIcon">edit</wl-icon>`: ""}
-                                        ${task_permission.delete ? html`
+                                                class="actionIcon editIcon">edit</wl-icon>`: 
+                                            html`<wl-icon class="smallIcon">lock</wl-icon>`} 
+                                        ${task_permission.owner ? html`
                                             <wl-icon @click="${this._onDeleteTask}" 
                                                 data-taskid="${task.id}"
                                                 class="actionIcon deleteIcon">delete</wl-icon>`: ""}
@@ -304,8 +305,9 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                             ${thread_permission.write ? html`
                                                 <wl-icon @click="${this._editThreadDialog}" 
                                                     data-threadid="${thread.id}"
-                                                    class="actionIcon editIcon">edit</wl-icon>`: ""}
-                                            ${thread_permission.delete ? html`
+                                                    class="actionIcon editIcon">edit</wl-icon>`: 
+                                                html`<wl-icon class="smallIcon">lock</wl-icon>`} 
+                                            ${thread_permission.owner ? html`
                                                 <wl-icon @click="${this._onDeleteThread}" 
                                                     data-threadid="${thread.id}"
                                                     class="actionIcon deleteIcon">delete</wl-icon>`: ""}
