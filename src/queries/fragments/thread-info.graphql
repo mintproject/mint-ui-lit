@@ -1,0 +1,15 @@
+#import "../fragments/thread-events.graphql"
+#import "../fragments/thread-permissions.graphql"
+
+fragment thread_info on thread {
+    id
+    name
+    task_id
+    start_date
+    end_date
+    region_id
+    driving_variable_id
+    response_variable_id
+    ...thread_events
+    ...thread_permissions
+}

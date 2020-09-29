@@ -583,7 +583,6 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         if ( inputInstallInstructions )  inputInstallInstructions.value = '';
     }
 
-
     protected _getDBResources () {
         let db = (store.getState() as RootState).modelCatalog;
         return db.models;

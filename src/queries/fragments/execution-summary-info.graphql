@@ -1,0 +1,14 @@
+fragment execution_summary_info on thread_model_execution_summary {
+    submitted_for_execution
+    submitted_for_ingestion
+    submitted_for_publishing
+    submitted_for_registration
+    submission_time
+    total_runs
+    submitted_runs
+    successful_runs
+    failed_runs
+    ingested_runs
+    registered_runs
+    published_runs
+}

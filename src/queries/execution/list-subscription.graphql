@@ -1,0 +1,6 @@
+#import "../fragments/execution-info.graphql"
+subscription sub_executions($ids: [uuid!]!) {
+    execution(where:{id:{_in:$ids}}) {
+        ...execution_info
+    }
+}

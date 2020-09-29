@@ -1,0 +1,13 @@
+mutation update_task ($object: task_insert_input!) {
+    insert_task (
+        objects: [$object],
+        on_conflict: {
+            constraint: task_pkey,
+            update_columns: [ name, start_date, end_date, region_id, driving_variable_id, response_variable_id ]
+        }
+    ) {
+        returning {
+            id
+        }
+    }
+}

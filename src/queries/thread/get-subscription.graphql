@@ -1,0 +1,49 @@
+#import "../fragments/thread-info.graphql"
+#import "../fragments/model-info.graphql"
+#import "../fragments/execution-summary-info.graphql"
+
+subscription sub_thread($id: String!) {
+    thread_by_pk(id:$id) {
+        ...thread_info
+        thread_data {
+            dataslice {
+                id
+                dataset {
+                    id
+                    name
+                }
+                start_date
+                end_date
+                selected_resources: resources_aggregate(where:{selected:{_eq:true}}) {
+                    aggregate { count }
+                }
+                total_resources: resources_aggregate {
+                    aggregate { count }
+                }
+            }
+        }
+        thread_models {
+            id
+            execution_summary {
+                ...execution_summary_info
+            }
+            model {
+               ...model_info
+            }
+            data_bindings {
+                model_io {
+                    id
+                    name
+                }
+                dataslice_id
+            }
+            parameter_bindings {
+                model_parameter {
+                    id
+                    name
+                }
+                parameter_value
+            }
+        }
+    }
+}

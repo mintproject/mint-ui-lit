@@ -1,0 +1,15 @@
+#import "../fragments/task-events.graphql"
+#import "../fragments/task-permissions.graphql"
+
+fragment task_info on task {
+    id
+    name
+    problem_statement_id
+    start_date
+    end_date
+    region_id
+    driving_variable_id
+    response_variable_id
+    ...task_events
+    ...task_permissions
+}

@@ -1,0 +1,18 @@
+query get_dataslice_resources($id:uuid!) {
+    dataslice_by_pk(id:$id) {
+        dataset {
+            id
+            name
+        }
+        resources {
+            selected
+            resource {
+                id
+                name
+                url
+                start_date
+                end_date
+            }
+        }
+    }
+}

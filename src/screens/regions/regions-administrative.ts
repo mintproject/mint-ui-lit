@@ -35,7 +35,7 @@ export class RegionsAdministrative extends PageViewElement {
         <div class="content">
             <regions-editor active
                 style="--map-height: 320px;"
-                regionType="Administrative"
+                regionType="administrative"
             ></regions-editor>
         </div>
         `;

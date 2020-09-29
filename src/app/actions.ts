@@ -13,14 +13,16 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from './store';
 import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetConfig, addModelToCompare, clearCompare,
          explorerSetCalibration, explorerSetMode, registerSetStep } from '../screens/models/model-explore/ui-actions';
-import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread,
+import { selectProblemStatement, selectThread, selectTask, selectThreadSection, selectTopRegion,
          selectDataTransformation } from './ui-actions';
 import { auth, db } from '../config/firebase';
 import { User } from 'firebase';
-import { UserPreferences, MintPreferences, UserProfile } from './reducers';
+import { MintPreferences, UserProfile } from './reducers';
 import { DefaultApi } from '@mintproject/modelcatalog_client';
 import { dexplorerSelectDataset, dexplorerSelectDatasetArea } from 'screens/datasets/ui-actions';
 import { selectEmulatorModel } from 'screens/emulators/actions';
+
+import * as mintConfig from '../config/config.json';
 
 import ReactGA from 'react-ga';
 
@@ -109,7 +111,7 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
             if (accessToken) {
                 store.dispatch({type: FETCH_MODEL_CATALOG_ACCESS_TOKEN, accessToken: accessToken});
             } else {
-                console.error('No access token on local storage!')
+                console.info('No access token on local storage!')
                 // Should log out
             }
           } else if (state.app.prefs.modelCatalog.status === 'ERROR') {
@@ -133,30 +135,27 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
 
 type UserPrefsThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchMintConfig>;
 export const fetchMintConfig: ActionCreator<UserPrefsThunkResult> = () => (dispatch) => {
-  db.doc("configs/main").get().then((doc) => {
-    let prefs = doc.data() as MintPreferences;
-    if(prefs.execution_engine == "wings") {
-      fetch(prefs.wings.server + "/config").then((res) => {
-        res.json().then((wdata) => {
-          prefs.wings.export_url = wdata["internal_server"]
-          prefs.wings.storage = wdata["storage"];
-          prefs.wings.dotpath = wdata["dotpath"];
-          prefs.wings.onturl = wdata["ontology"];
-          dispatch({
-            type: FETCH_MINT_CONFIG,
-            prefs: prefs
-          });
-        })
+  let prefs = mintConfig["default"] as MintPreferences;
+  if(prefs.execution_engine == "wings") {
+    fetch(prefs.wings.server + "/config").then((res) => {
+      res.json().then((wdata) => {
+        prefs.wings.export_url = wdata["internal_server"]
+        prefs.wings.storage = wdata["storage"];
+        prefs.wings.dotpath = wdata["dotpath"];
+        prefs.wings.onturl = wdata["ontology"];
+        dispatch({
+          type: FETCH_MINT_CONFIG,
+          prefs: prefs
+        });
       })
-    }
-    else {
-      dispatch({
-        type: FETCH_MINT_CONFIG,
-        prefs: prefs
-      });
-    }
-  })
-  return;
+    })
+  }
+  else {
+    dispatch({
+      type: FETCH_MINT_CONFIG,
+      prefs: prefs
+    });
+  }
 };
 
 export const signIn = (email: string, password: string) => {
@@ -249,28 +248,34 @@ const loadPage: ActionCreator<ThunkResult> =
       break;    
     case 'modeling':
       if(subpage == 'home') {
-        // No parameters. Load Modeling Home (List of Scenarios)
+        // No parameters. Load Modeling Home (List of ProblemStatements)
         import('../screens/modeling/modeling-home').then((_module) => {
-          store.dispatch(selectScenario(null));
-          store.dispatch(selectPathway(null));
+          store.dispatch(selectProblemStatement(null));
+          store.dispatch(selectTask(null));
+          store.dispatch(selectThread(null));
         });
       }
-      else if(subpage == 'scenario') {
-        // Scenario passed in. Load scenario
-        import('../screens/modeling/mint-scenario').then((_module) => {
-          if(params.length > 0) {
-            store.dispatch(selectScenario(params[0]));
-            if(params.length > 1) {
-              store.dispatch(selectSubgoal(params[1]));
-              if(params.length > 2) {
-                store.dispatch(selectPathway(params[2]));
-                if(params.length > 3) {
-                  store.dispatch(selectPathwaySection(params[3]));
+      else if(subpage == 'problem_statement' || subpage == 'scenario') {
+        // ProblemStatement passed in. Load problem_statement
+        import('../screens/modeling/mint-problem-statement').then((_module) => {
+          if(params.length > 0 && params[0]) {
+            store.dispatch(selectProblemStatement(params[0]));
+            if(params.length > 1 && params[1]) {
+              store.dispatch(selectTask(params[1]));
+              if(params.length > 2 && params[2]) {
+                store.dispatch(selectThread(params[2]));
+                if(params.length > 3 && params[3]) {
+                  store.dispatch(selectThreadSection(params[3]));
                 }
+              } else {
+                store.dispatch(selectThread(null));
               }
             }
+            else {
+              store.dispatch(selectTask(null));
+            }
           } else {
-            store.dispatch(selectScenario(null));
+            store.dispatch(selectProblemStatement(null));
           }
         });   
       }
@@ -363,28 +368,27 @@ const loadPage: ActionCreator<ThunkResult> =
     case 'emulators':
       import('../screens/emulators/emulators-home').then((_module) => {
         let model = subpage;
-        if(model == "home")
-          model = "pihm";
-        store.dispatch(selectEmulatorModel(model))
+        if(model != "home")
+          store.dispatch(selectEmulatorModel(model))
       });
       break;
     case 'analysis':
         if (subpage == 'home') {
             import('../screens/analysis/analysis-home').then((_module) => {
-                store.dispatch(selectScenario(null));
+                store.dispatch(selectProblemStatement(null));
             });
         } else if (subpage == 'report') {
             import('../screens/analysis/analysis-report').then((_module) => {
               if(params.length > 0) {
-                store.dispatch(selectScenario(params[0]));
+                store.dispatch(selectProblemStatement(params[0]));
                 if(params.length > 1) {
-                  store.dispatch(selectSubgoal(params[1]));
+                  store.dispatch(selectTask(params[1]));
                   if(params.length > 2) {
-                    store.dispatch(selectPathway(params[2]));
+                    store.dispatch(selectThread(params[2]));
                   }
                 }
               } else {
-                store.dispatch(selectScenario(null));
+                store.dispatch(selectProblemStatement(null));
               }
             });
         }
@@ -425,12 +429,12 @@ const loadPage: ActionCreator<ThunkResult> =
         break;
     case 'messages':
         if(subpage == 'home') {
-          // No parameters. Load Modeling Home (List of Scenarios)
+          // No parameters. Load Modeling Home (List of ProblemStatements)
           import('../screens/messages/messages-home').then((_module) => {
           });
         }
         else if(subpage == "thread") {
-          // Scenario passed in. Load scenario
+          // ProblemStatement passed in. Load problem_statement
           import('../screens/messages/messages-thread').then((_module) => {
             if(params.length > 0) {
               store.dispatch(selectThread(params[0]));

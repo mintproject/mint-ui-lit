@@ -30,6 +30,9 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
             datasets-browse {
                 height: calc(100% - 40px)
             }
+            .scrollable {
+                overflow: scroll;
+            }
             `,
             SharedStyles
         ];
@@ -87,7 +90,7 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
                 </a>
             </div>
 
-            <datasets-browse class="page" ?active="${this._subpage == 'browse'}"></datasets-browse>
+            <datasets-browse class="page ${this._dsid? 'scrollable' : ''}" ?active="${this._subpage == 'browse'}"></datasets-browse>
             <data-transformation-list class="page" ?active="${this._subpage == 'data-transformations'}"></data-transformation-list>
             <!--datasets-register class="page" ?active="{this._subpage == 'register'}"></datasets-register-->
             <datasets-quality-workflows class="page" ?active="${this._subpage == 'quality-workflows'}"></datasets-quality-workflows>

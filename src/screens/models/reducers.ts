@@ -2,31 +2,31 @@ import { IdNameObject } from "../../app/reducers";
 import { Reducer } from "redux";
 import { RootAction } from "../../app/store";
 import { MODELS_VARIABLES_QUERY } from "./actions";
-import { Dataset } from "../datasets/reducers";
+import { Dataset, Dataslice } from "../datasets/reducers";
 
 
 export interface Model extends IdNameObject {
     localname?: string,
-    calibrated_region: string,
+    region_name: string,
     description?: string,
     category: string,
     input_files: ModelIO[],
     input_parameters: ModelParameter[],
     output_files: ModelIO[],
-    wcm_uri?: string,
+    code_url?: string,
     model_type?: string,
-    original_model?: string,
+    model_name?: string,
     model_version?: string,
     model_configuration?:string,
     parameter_assignment?: string,
     parameter_assignment_details?: string,
     software_image?: string,
-    target_variable_for_parameter_assignment?: string,
+    calibration_target_variable?: string,
     modeled_processes?: string[],
     dimensionality?: number|string,
     spatial_grid_type?: string,
     spatial_grid_resolution?: string,
-    minimum_output_time_interval?: string,
+    output_time_interval?: string,
     usage_notes?: string,
     indicators?: string,
     hasRegion?: any
@@ -40,7 +40,7 @@ const getLastPart = (s:string) => {
 
 export const getPathFromModel = (m:Model) => {
     let path = "";
-    let model = getLastPart(m.original_model);
+    let model = getLastPart(m.model_name);
     if (model) {
         path += "/" + model;
         let version = getLastPart(m.model_version);
@@ -49,7 +49,7 @@ export const getPathFromModel = (m:Model) => {
             let cfg = getLastPart(m.model_configuration)
             if (cfg) {
                 path += "/" + cfg;
-                if (m.localname) path += "/" + m.localname;
+                path += "/" + getLastPart(m.id);
             }
         }
     }
@@ -59,7 +59,7 @@ export const getPathFromModel = (m:Model) => {
 export interface ModelIO extends IdNameObject {
     type?: string,
     variables: string[],
-    value?: Dataset,
+    value?: Dataslice,
     position?: number
 }
 

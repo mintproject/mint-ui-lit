@@ -1,0 +1,13 @@
+mutation update_thread ($object: thread_insert_input!) {
+    insert_thread (
+        objects: [$object],
+        on_conflict: {
+            constraint: thread_pkey,
+            update_columns: [ name, start_date, end_date, region_id, driving_variable_id, response_variable_id ]
+        }
+    ) {
+        returning {
+            id
+        }
+    }
+}
