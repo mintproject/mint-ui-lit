@@ -128,6 +128,15 @@ export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages:
         output_time_interval: "",
         usage_notes: setup.hasUsageNotes ? setup.hasUsageNotes[0] : ""
     };
+    
+    if (setup.usefulForCalculatingIndex && setup.usefulForCalculatingIndex.length >0) {
+        model.indicators = setup.usefulForCalculatingIndex
+                .map(index => index.id)
+                .map(id => id.split('/').pop())
+                .map(name => name.replace('_',' '))
+                .map(name => name.length > 0 ? name.charAt(0).toUpperCase() + name.slice(1) : name)
+                .join(", ");
+    }
 
     if (setup.hasGrid && setup.hasGrid.length > 0) {
         let grid = setup.hasGrid[0];

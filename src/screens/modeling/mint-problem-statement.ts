@@ -597,7 +597,6 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
             if(!this._dispatched && (!state.modeling.problem_statement || (state.modeling.problem_statement.id != problem_statement_id))) {
                 // Reset the problem_statement details
                 this._problem_statement = null;
-                this._problem_statement = null;
                 this._selectedTask = null;
                 this._selectedThreadId = null;
                 this._dispatched = true;

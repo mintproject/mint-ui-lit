@@ -105,10 +105,8 @@ export class ModelCatalogSoftwareVersion extends connect(store)(ModelCatalogReso
     }
 
     public setResource (r:SoftwareVersion) {
-        console.log('set', r);
         let req = super.setResource(r);
         req.then((ver:SoftwareVersion) => {
-            console.log('>>', ver);
             if (ver) {
                 this._inputAuthor.setResources(ver.author);
             }

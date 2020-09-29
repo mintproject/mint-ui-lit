@@ -169,11 +169,30 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
 
     private _goToCatalog () {
         let url = 'models/explore/' + getURL(this._model, this._version);
-        /*        + this._selectedModel.split('/').pop();
-        if (this._selectedVersion) {
-            url += '/' + this._selectedVersion.split('/').pop() + '/';
-        }*/
         goToPage(url)
+    }
+
+    firstUpdated () {
+        this.addEventListener('model-catalog-save', (e:Event) => {
+            let detail : SoftwareVersion = e['detail'];
+            if (this._creating && this._model && detail) {
+                if (detail.type && detail.type.indexOf("SoftwareVersion") >= 0)
+                    goToPage('models/edit/' + getURL(this._model, detail));
+            }
+        })
+        this.addEventListener('model-catalog-delete', (e:Event) => {
+            let detail : Model | SoftwareVersion = e['detail'];
+            if (detail && detail.type && 
+                    (detail.type.indexOf("SoftwareVersion") >= 0 ||
+                     detail.type.indexOf("Model") >= 0)) {
+                if (this._selectedVersion) goToPage('models/edit/' + getURL(this._model));
+                else if (this._selectedModel) goToPage('models/edit/');
+            }
+        });
+        this.addEventListener('model-catalog-cancel', () => {
+            if (this._creating && this._model) 
+                this._iVersion.enableSingleResourceCreation(this._model);
+        });
     }
 
     stateChanged(state: RootState) {
@@ -219,11 +238,7 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
 
             if (this._creating) {
                 if (this._model) {
-                    if (!this._iVersion.isCreating())
-                        this._iVersion.enableSingleResourceCreation(this._model);
-                } else {
-                    if (!this._iModel.isCreating())
-                        this._iModel.enableSingleResourceCreation();
+                    this._iVersion.enableSingleResourceCreation(this._model);
                 }
             }
 

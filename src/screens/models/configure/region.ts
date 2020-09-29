@@ -166,7 +166,7 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
             <div slot="content">
                 <wl-tab-group align="center" value="${this._tab}">
                     <wl-tab ?checked="${this._tab === ''}" @click="${() => {this._changeTab('')}}">Search Region</wl-tab>
-                    <wl-tab ?checked="${this._tab === 'map'}" @click="${() => {this._changeTab('map')}}">Map</wl-tab>
+                    <wl-tab ?checked="${this._tab === 'map'}" @click="${() => {this._changeTab('map')}}" disabled>Map</wl-tab>
                 </wl-tab-group>
                 ${this._tab === '' ? this._renderSelectTab() : ''}
                 ${this._tab === 'map' ? this._renderMapTab() : ''}
@@ -209,7 +209,9 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
     }
 
     _renderMapTab () {
-        return html`
+        //FIXME: Add region->category->subcategory relations.
+        return html`DISABLED`;
+        /*return html`
             <form id="regionForm">
                 <div class="input_half">
                     <label>Region category</label>
@@ -244,7 +246,7 @@ export class ModelsConfigureRegion extends connect(store)(PageViewElement) {
             <b>Bounding Box:</b>
                 ${ this._selectedMapRegion.bounding_box.xmin.toFixed(4) + ',' + this._selectedMapRegion.bounding_box.ymin.toFixed(4) }
                 ${ this._selectedMapRegion.bounding_box.xmax.toFixed(4) + ',' + this._selectedMapRegion.bounding_box.ymax.toFixed(4) }
-            ` : ''}`
+            ` : ''}`*/
     }
 
     _onRegionCategoryChange () {

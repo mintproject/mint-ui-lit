@@ -186,7 +186,6 @@ const modelCatalogLogin = (username: string, password: string) => {
         let accessToken : string = JSON.parse(data)['access_token'];
         if (accessToken) {
             localStorage.setItem('accessToken', accessToken);
-            console.log('NEW TOKEN:', accessToken);
             store.dispatch({type: FETCH_MODEL_CATALOG_ACCESS_TOKEN, accessToken: accessToken});
         } else {
             store.dispatch({type: STATUS_MODEL_CATALOG_ACCESS_TOKEN, status: 'ERROR'})
@@ -215,7 +214,6 @@ export const goToRegionPage = (regionid: string, page:string) => {
 }
 
 export const navigate: ActionCreator<ThunkResult> = (path: string) => (dispatch) => {
-  //console.log(path);
   ReactGA.pageview(path);
   // Extract the page name from path.
   let cpath = path === BASE_HREF ? '/home' : path.slice(BASE_HREF.length);
@@ -329,8 +327,8 @@ const loadPage: ActionCreator<ThunkResult> =
         } else if (subpage == 'compare') {
             import('../screens/models/models-compare').then((_module) => {
                 store.dispatch(clearCompare());
-                for (let i = 0; i < params.length; i++) {
-                    store.dispatch(addModelToCompare(params[i]));
+                if (params.length > 0) {
+                    store.dispatch(addModelToCompare(params[0]));
                 }
             });
         } else if (subpage == 'register') {

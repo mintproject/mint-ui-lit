@@ -26,7 +26,6 @@ import { DatasetSpecification, DataTransformation } from '@mintproject/modelcata
 
 //import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
 import { ModelCatalogParameter } from 'screens/models/configure/resources/parameter';
-import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
 import { getLatestEventOfType } from "util/event_utils";
 import { uuidv4 } from "screens/models/configure/util";
 

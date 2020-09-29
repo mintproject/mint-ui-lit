@@ -142,6 +142,10 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <wl-icon>edit</wl-icon>
                     <div>Edit Models</div>
                 </a>
+                <a href="${this._regionid}/models/compare">
+                    <wl-icon>compare</wl-icon>
+                    <div>Compare Models</div>
+                </a>
                 <a href="${this._regionid}/models/configure">
                     <wl-icon>perm_data_settings</wl-icon>
                     <div>Configure Models</div>

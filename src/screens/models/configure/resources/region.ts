@@ -216,7 +216,7 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
         return html`
             <wl-tab-group align="center">
                 <wl-tab ?checked="${!this._tabMap}" @click="${() => {this._tabMap = false;}}">Search Region</wl-tab>
-                <wl-tab ?checked="${this._tabMap}" @click="${this._enableMap}">Map</wl-tab>
+                <wl-tab ?checked="${this._tabMap}" @click="${this._enableMap}" disabled>Map</wl-tab>
             </wl-tab-group>
         `;
     }
@@ -229,7 +229,9 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
     }
 
     private _renderMapTab () {
-        return html`
+        //FIXME: Add region->category->subcategory relations.
+        return html`Disabled`;
+        /*return html`
             <form id="regionForm">
                 <div class="input_half">
                     <label>Region category</label>
@@ -264,10 +266,10 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
             <b>Bounding Box:</b>
                 ${ this._selectedMapRegion.bounding_box.xmin.toFixed(4) + ',' + this._selectedMapRegion.bounding_box.ymin.toFixed(4) }
                 ${ this._selectedMapRegion.bounding_box.xmax.toFixed(4) + ',' + this._selectedMapRegion.bounding_box.ymax.toFixed(4) }
-            ` : ''}`
+            ` : ''}`*/
     }
 
-    private _onRegionCategoryChange () {
+    /*private _onRegionCategoryChange () {
         let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#regionForm")!;
         let category = (form.elements["category-selector"] as HTMLSelectElement).value;
         if (category != this._selectedCategory) {
@@ -291,7 +293,7 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
               })
             }
         }
-    }
+    }*/
 
     private _handleMapClick(ev: any) {
         if(ev.detail && ev.detail.id) {
