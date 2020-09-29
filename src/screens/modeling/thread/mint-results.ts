@@ -533,7 +533,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
         }
 
         // Fetch runs for a model if any execution summary has changed
-        for(let modelid in this.thread.execution_summary) {
+        for(let modelid in this.thread?.execution_summary ?? {}) {
             let summary : ExecutionSummary = this.thread.execution_summary[modelid];
             if(summary.changed) {
                 // If the execution summary has changed, then fetch runs

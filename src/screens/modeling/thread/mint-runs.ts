@@ -496,14 +496,15 @@ export class MintRuns extends connect(store)(MintThreadPage) {
         // If run status has changed, then reload all runs
         if(state.modeling.execution_summaries && this.thread) {
             this.thread.execution_summary = state.modeling.execution_summaries;
-            for(let modelid in this.thread.execution_summary) {
-                let summary : ExecutionSummary = this.thread.execution_summary[modelid];
-                if(summary.changed) {
-                    // If the execution summary has changed, then fetch runs
-                    // TODO: Batch fetching of runs (otherwise it refreshes too much)
-                    summary.changed = false;
-                    this._fetchRuns(modelid);
-                }
+        }
+
+        for(let modelid in this.thread?.execution_summary ?? {}) {
+            let summary : ExecutionSummary = this.thread.execution_summary[modelid];
+            if(summary.changed) {
+                // If the execution summary has changed, then fetch runs
+                // TODO: Batch fetching of runs (otherwise it refreshes too much)
+                summary.changed = false;
+                this._fetchRuns(modelid);
             }
         }
 
