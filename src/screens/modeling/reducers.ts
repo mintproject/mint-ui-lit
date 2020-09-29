@@ -1,95 +1,108 @@
 import { Reducer } from "redux";
 import { RootAction } from "../../app/store";
-import { SCENARIOS_LIST, SCENARIO_DETAILS, SCENARIO_SUBSCRIPTION, PATHWAY_SUBSCRIPTION, PATHWAY_DETAILS, PATHWAY_ENSEMBLES_LIST } from "./actions";
+import { PROBLEM_STATEMENTS_LIST, PROBLEM_STATEMENT_DETAILS, PROBLEM_STATEMENT_SUBSCRIPTION, THREAD_SUBSCRIPTION, THREAD_DETAILS, THREAD_EXECUTIONS_LIST, TASKS_LIST, THREADS_LIST, TASK_DETAILS, THREADS_LIST_SUBSCRIPTION, TASKS_LIST_SUBSCRIPTION } from "./actions";
 import { Model } from "../models/reducers";
-import { Dataset, DataResource } from "../datasets/reducers";
+import { Dataset, DataResource, Dataslice } from "../datasets/reducers";
 import { IdMap, IdNameObject } from "../../app/reducers";
 import { REGIONS_LIST_TOP_REGIONS } from "../regions/actions";
 import { DataTransformation } from '@mintproject/modelcatalog_client';
 
 export interface ModelingState {
-    scenarios?: ScenarioList
-    scenario?: ScenarioDetails
-    pathway?: Pathway
-    ensembles?: ModelEnsembles
+    problem_statements?: ProblemStatementList
+    problem_statement?: ProblemStatement
+    thread?: Thread
+    executions?: ModelExecutions
 }
 
-export interface EnsemblesWithStatus {
+export interface ExecutionsWithStatus {
     loading: boolean,
-    ensembles: ExecutableEnsemble[]
+    executions: Execution[]
 }
-export type ModelEnsembles = Map<string, EnsemblesWithStatus[]>
+export type ModelExecutions = Map<string, ExecutionsWithStatus[]>
 
-export interface ScenarioList {
-    scenarioids: string[]
-    scenarios: IdMap<Scenario>
-}
-
-export interface Scenario extends IdNameObject {
-    regionid: string
-    subregionid?: string
-    dates: DateRange
-    last_update?: string
-    last_update_user?: string
-    notes?: string
+export interface MintPermission {
+    userid: string,
+    read: boolean,
+    write: boolean,
+    execute: boolean,
+    owner: boolean
 }
 
-export interface DateRange {
-    start_date: firebase.firestore.Timestamp
-    end_date: firebase.firestore.Timestamp
+export interface MintEvent {
+    event: string,
+    userid: string
+    timestamp: Date
+    notes: string
 }
 
-export interface ScenarioDetails extends Scenario {
-    goals: IdMap<Goal>
-    subgoals: IdMap<SubGoal>
+export interface ProblemStatementEvent extends MintEvent {
+    event: "CREATE" | "UPDATE" | "ADD_TASK" | "DELETE_TASK"
+}
+
+export interface TaskEvent extends MintEvent {
+    event: "CREATE" | "UPDATE" | "ADD_THREAD" | "DELETE_THREAD"
+}
+
+export interface ThreadEvent extends MintEvent {
+    event: "CREATE" | "UPDATE" | "SELECT_DATA" | "SELECT_MODELS" | "SELECT_PARAMETERS" | "EXECUTE" | "INGEST" | "VISUALIZE"
+}
+
+export interface ProblemStatementList {
+    problem_statement_ids: string[]
+    problem_statements: IdMap<ProblemStatementInfo>
     unsubscribe?: Function
 }
 
-
-export interface PathwayInfo extends IdNameObject {
-    dates?: DateRange
+export interface ProblemStatementInfo extends IdNameObject {
+    regionid: string
+    dates: DateRange
+    events?: ProblemStatementEvent[]
+    permissions?: MintPermission[]
 }
 
-export interface Pathway extends PathwayInfo {
+export interface DateRange {
+    start_date: Date
+    end_date: Date
+}
+
+export interface ProblemStatement extends ProblemStatementInfo {
+    tasks: IdMap<Task>
+    changed?: boolean
+    unsubscribe?: Function
+}
+
+export interface ThreadInfo extends IdNameObject {
+    dates?: DateRange
+    task_id: string
     driving_variables: string[]
     response_variables: string[]
+    regionid?: string
+    events?: ThreadEvent[]
+    permissions?: MintPermission[]
+}
+
+export interface ThreadList {
+    thread_ids: string[]
+    threads: IdMap<ThreadInfo>
+    unsubscribe?: Function
+}
+
+export interface Thread extends ThreadInfo {
     models?: ModelMap
-    datasets?: DatasetMap
+    data?: DataMap
+    model_ensembles?: ModelEnsembleMap
     data_transformations? : IdMap<DataTransformation>
     model_dt_ensembles?: ModelEnsembleMap
-    model_ensembles?: ModelEnsembleMap
-    executable_ensemble_summary: IdMap<ExecutableEnsembleSummary>
-    notes?: Notes
-    last_update?: PathwayUpdateInformation
+    execution_summary: IdMap<ExecutionSummary>
     visualizations?: Visualization[]
+    events: ThreadEvent[]
+    changed?: boolean
     unsubscribe?: Function
 }
 
 export interface Visualization {
     type: string,
     url: string
-}
-
-export interface Notes {
-    variables: string,
-    models: string,
-    datasets: string,
-    parameters: string,
-    visualization: string,
-    results: string
-}
-
-export interface PathwayUpdateInformation {
-    variables: StepUpdateInformation
-    models: StepUpdateInformation
-    datasets: StepUpdateInformation
-    parameters: StepUpdateInformation
-    results: StepUpdateInformation
-}
-
-export interface StepUpdateInformation {
-    time: number
-    user: string
 }
 
 export interface ComparisonFeature {
@@ -99,41 +112,50 @@ export interface ComparisonFeature {
 
 export type ModelMap = IdMap<Model>
 
-export type DatasetMap = IdMap<Dataset>
+export type DataMap = IdMap<Dataslice>
 
-export interface Goal extends IdNameObject {
-    subgoalids?: string[]
+export interface TaskList {
+    task_ids: string[]
+    tasks: IdMap<Task>
+    unsubscribe?: Function
 }
 
-export interface SubGoal extends IdNameObject {
+export interface Task extends IdNameObject {
+    problem_statement_id: string,
     dates?: DateRange,
     response_variables: string[],
     driving_variables: string[],
-    subregionid?: string,
-    notes?: string,
-    pathways?: IdMap<PathwayInfo>
+    regionid?: string,
+    threads?: IdMap<ThreadInfo>
+    events?: TaskEvent[]
+    permissions?: MintPermission[]
+    unsubscribe?: Function
 }
 
 // Mapping of model id to data ensembles
 export interface ModelEnsembleMap {
-    [modelid: string]: DataEnsembleMap
+    [modelid: string]: ThreadModelMap
+}
+
+export interface ThreadModelMap {
+    id: string,
+    bindings: ModelIOBindings
 }
 
 // Mapping of model input to list of values (data ids or parameter values)
-export interface DataEnsembleMap {
+export interface ModelIOBindings {
     [inputid: string]: string[]
 }
 
-export interface ExecutableEnsembleSummary {
+export interface ExecutionSummary {
     workflow_name: string
 
     submitted_for_execution: boolean
-    submission_time: number    
+    submission_time: Date    
     total_runs: number
     submitted_runs: number
     successful_runs: number
     failed_runs: number
-
 
     submitted_for_ingestion: boolean
     fetched_run_outputs: number // Run data fetched for ingestion
@@ -146,12 +168,13 @@ export interface ExecutableEnsembleSummary {
     published_runs: number // Published in the provenance catalog
 }
 
-export interface ExecutableEnsemble {
-    id: string
+export interface Execution {
+    id?: string
     modelid: string
     bindings: InputBindings
     runid?: string
-    submission_time: number
+    start_time: Date
+    end_time?: Date
     execution_engine?: "wings" | "localex"
     status: "FAILURE" | "SUCCESS" | "RUNNING" | "WAITING",
     run_progress?: number // 0 to 100 (percentage done)
@@ -172,53 +195,97 @@ const modeling: Reducer<ModelingState, RootAction> = (state = INITIAL_STATE, act
                 ...state,
                 regions: action.regions
             }        
-        case SCENARIOS_LIST:
+        case PROBLEM_STATEMENTS_LIST:
             return {
                 ...state,
-                scenarios: action.list
+                problem_statements: action.list
             }
-        case SCENARIO_SUBSCRIPTION: 
-            let scenario_sub = {
-                ...state.scenario,
+        case PROBLEM_STATEMENT_SUBSCRIPTION: 
+            let problem_statement_sub = {
+                ...state.problem_statement,
                 unsubscribe: action.unsubscribe
-            } as ScenarioDetails
+            } as ProblemStatement
             return {
                 ...state,
-                scenario: scenario_sub
+                problem_statement: problem_statement_sub
             }
-        case SCENARIO_DETAILS:
-            let scenario = {
+        case PROBLEM_STATEMENT_DETAILS:
+            let problem_statement = {
                 ...action.details,
-                unsubscribe: state.scenario!.unsubscribe
-            } as ScenarioDetails            
+                changed: true,
+                unsubscribe: state.problem_statement!.unsubscribe
+            } as ProblemStatement            
             return {
                 ...state,
-                scenario: scenario
+                problem_statement: problem_statement
             }
-        case PATHWAY_SUBSCRIPTION: 
-            let pathway_sub = {
-                ...state.pathway,
+        /*
+        case TASKS_LIST_SUBSCRIPTION: 
+            let tasks_list_sub = {
+                ...state.tasks,
                 unsubscribe: action.unsubscribe
-            } as Pathway
+            } as TaskList
             return {
                 ...state,
-                pathway: pathway_sub
+                tasks: tasks_list_sub
             }
-        case PATHWAY_DETAILS:
-            let pathway = {
+        case TASKS_LIST:
+            let tasks = {
+                ...action.list,
+                unsubscribe: state.tasks!.unsubscribe
+            } as TaskList    
+            return {
+                ...state,
+                tasks: tasks
+            }
+        case TASK_DETAILS:          
+            return {
+                ...state,
+                task: action.details
+            }
+        case THREADS_LIST_SUBSCRIPTION: 
+            let threads_list_sub = {
+                ...state.threads,
+                unsubscribe: action.unsubscribe
+            } as ThreadList
+            return {
+                ...state,
+                threads: threads_list_sub
+            }
+        case THREADS_LIST:
+            let threads = {
+                ...action.list,
+                unsubscribe: state.threads!.unsubscribe
+            } as ThreadList    
+            return {
+                ...state,
+                threads: threads
+            }*/
+        case THREAD_SUBSCRIPTION: 
+            let thread_sub = {
+                ...state.thread,
+                unsubscribe: action.unsubscribe
+            } as Thread
+            return {
+                ...state,
+                thread: thread_sub
+            }
+        case THREAD_DETAILS:
+            let thread = {
                 ...action.details,
-                unsubscribe: state.pathway!.unsubscribe
-            } as Pathway            
+                changed: true,
+                unsubscribe: state.thread!.unsubscribe
+            } as Thread            
             return {
                 ...state,
-                pathway: pathway
+                thread: thread
             }
-        case PATHWAY_ENSEMBLES_LIST: 
-            state.ensembles = { ...state.ensembles };
-            state.ensembles[action.modelid] = state.ensembles[action.modelid] || [];
-            state.ensembles[action.modelid] = {
+        case THREAD_EXECUTIONS_LIST: 
+            state.executions = { ...state.executions };
+            state.executions[action.modelid] = state.executions[action.modelid] || [];
+            state.executions[action.modelid] = {
                 loading: action.loading,
-                ensembles: action.ensembles
+                executions: action.executions
             }
             return {
                 ...state

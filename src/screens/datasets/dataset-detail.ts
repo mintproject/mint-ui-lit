@@ -178,8 +178,8 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                                             ${res.time_period && res.time_period.start_date ?
                                             html`
                                             <li>
-                                                Time: ${fromTimeStampToDateString(res.time_period.start_date)} to 
-                                                ${fromTimeStampToDateString(res.time_period.end_date)}
+                                                Time: ${res.time_period.start_date.toLocaleDateString("en-US")} to 
+                                                ${res.time_period.end_date.toLocaleDateString("en-US")}
                                             </li>
                                             ` : ""}
                                         </ul>

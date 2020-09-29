@@ -1,0 +1,7 @@
+mutation new_models ($objects: [model_insert_input!]!) {
+    insert_model (objects: $objects) {
+        returning {
+            id
+        }
+    }
+}

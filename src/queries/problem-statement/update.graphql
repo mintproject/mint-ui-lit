@@ -1,0 +1,13 @@
+mutation update_problem_statement ($object: problem_statement_insert_input!) {
+    insert_problem_statement (
+        objects: [$object],
+        on_conflict: {
+            constraint: problem_statement_pkey,
+            update_columns: [ name, start_date, end_date, region_id ]
+        }
+    ) {
+        returning {
+            id
+        }
+    }
+}

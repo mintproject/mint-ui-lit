@@ -139,6 +139,8 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         if (this._inputIndex) this._inputIndex.unsetAction();
         if (this._inputFunding) this._inputFunding.unsetAction();
         if (this._inputVisualization) this._inputVisualization.unsetAction();
+        this.scrollUp();
+        this.clearForm();
     }
 
     public enableSingleResourceCreation () {
@@ -292,9 +294,16 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
             </table>`
     }
 
+    public scrollUp () {
+        let head = this.shadowRoot.getElementById('page-top');
+        if (head) 
+            head.scrollIntoView({behavior: "smooth", block: "start"})
+    }
+
     protected _renderFullForm () {
         let edResource = this._getEditingResource();
         return html`
+            <div id="page-top"></div>
             <table class="details-table">
                 <colgroup width="150px">
                 <tr>
@@ -536,15 +545,42 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 this._notification.error("You must enter a category");
             }
             if (!desc) {
-                this._notification.error("You must enter a description");
+                this._notification.error("You must enter a full description");
             }
         }
     }
 
-    protected _postSave (r:Model) {
-        let url = "models/explore/" + r.id.split('/').pop();
-        goToPage(url);
-        return null
+    public clearForm () {
+        // GET ELEMENTS
+        let inputLabel : Textfield = this.shadowRoot.getElementById("i-label") as Textfield;
+        let inputCategory : Select = this.shadowRoot.getElementById("i-category") as Select;
+        let inputKeywords : Textfield = this.shadowRoot.getElementById("i-keywords") as Textfield;
+        let inputShortDesc : Textarea = this.shadowRoot.getElementById("i-short-desc") as Textarea;
+        let inputDesc : Textarea = this.shadowRoot.getElementById("i-desc") as Textarea;
+        let inputLicense : Textarea = this.shadowRoot.getElementById("i-license") as Textarea;
+        let inputCitation : Textarea = this.shadowRoot.getElementById("i-citation") as Textarea;
+        let inputPurpose : Textarea = this.shadowRoot.getElementById("i-purpose") as Textarea;
+        let inputExample : Textarea = this.shadowRoot.getElementById("i-example") as Textarea;
+        let inputUsageNotes : Textarea = this.shadowRoot.getElementById("i-usage-notes") as Textarea;
+        let inputWebsite : Textfield = this.shadowRoot.getElementById("i-website") as Textfield;
+        let inputDocumentation : Textfield = this.shadowRoot.getElementById("i-documentation") as Textfield;
+        let inputDownload : Textfield = this.shadowRoot.getElementById("i-download") as Textfield;
+        let inputInstallInstructions : Textfield = this.shadowRoot.getElementById("i-install-instructions") as Textfield;
+
+        if ( inputLabel )                inputLabel.value = '';
+        if ( inputCategory )             inputCategory.value = '';
+        if ( inputKeywords )             inputKeywords.value = '';
+        if ( inputShortDesc )            inputShortDesc.value = '';
+        if ( inputDesc )                 inputDesc.value = '';
+        if ( inputLicense )              inputLicense.value = '';
+        if ( inputCitation )             inputCitation.value = '';
+        if ( inputPurpose )              inputPurpose.value = '';
+        if ( inputExample )              inputExample.value = '';
+        if ( inputUsageNotes )           inputUsageNotes.value = '';
+        if ( inputWebsite )              inputWebsite.value = '';
+        if ( inputDocumentation )        inputDocumentation.value = '';
+        if ( inputDownload )             inputDownload.value = '';
+        if ( inputInstallInstructions )  inputInstallInstructions.value = '';
     }
 
     protected _getDBResources () {

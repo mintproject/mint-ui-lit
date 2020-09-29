@@ -1,0 +1,8 @@
+fragment thread_permissions on thread {
+  permissions {
+    user_id
+    read
+    write
+    execute
+  }
+}

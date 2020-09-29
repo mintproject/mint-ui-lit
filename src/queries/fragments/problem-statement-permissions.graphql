@@ -1,0 +1,7 @@
+fragment problem_statement_permissions on problem_statement {
+  permissions {
+    user_id
+    read
+    write
+  }
+}

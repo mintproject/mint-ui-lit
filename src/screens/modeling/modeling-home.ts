@@ -18,8 +18,8 @@ import { store, RootState } from '../../app/store';
 // Actions needed by this element
 import modeling from './reducers';
 
-import "./scenarios-list";
-import "./mint-scenario";
+import "./problem-statements-list";
+import "./mint-problem-statement";
 
 import { PageViewElement } from '../../components/page-view-element';
 
@@ -43,8 +43,11 @@ export class ModelingHome extends connect(store)(PageViewElement) {
     return html`
 
     <div>  
-      <scenarios-list class="page fullpage" ?active="${this._subpage == 'home'}"></scenarios-list>
-      <mint-scenario class="page fullpage" ?active="${this._subpage == 'scenario'}"></mint-scenario>   
+      <problem-statements-list class="page fullpage" 
+        ?active="${this._subpage == 'home'}"></problem-statements-list>
+      <mint-problem-statement class="page fullpage" 
+        ?active="${this._subpage == 'problem_statement' || this._subpage == 'scenario'}"
+        ></mint-problem-statement>   
     </div>
     `
   }

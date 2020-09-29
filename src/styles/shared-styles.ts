@@ -141,6 +141,13 @@ export const SharedStyles = css`
     text-decoration: underline;
   }
 
+  .smallIcon {
+    font-size: 16px;
+    width: 16px;
+    padding: 2px;
+    color: #909090;
+  }
+
   .actionIcon {
     font-size: 16px;
     width: 16px;
@@ -275,6 +282,20 @@ export const SharedStyles = css`
     margin-top: 5px;
     color: #888;
     font-weight: normal;
+  }
+  .cltmain .caption {
+    color: #aaa;
+    font-size: 11px;
+    font-weight: normal;
+    margin-left: 15px;
+    margin-top: 5px;
+  }
+  .thread_caption {
+    color: #aaa;
+    font-size: 10px;
+    font-weight: normal;
+    margin-right: 5px;
+    margin-left: 5px;
   }
   .clt ul {
       list-style: none;

@@ -1,0 +1,10 @@
+mutation add_thread_event(
+    $threadId: String!, 
+    $event: thread_provenance_insert_input!
+) {
+  insert_thread_provenance_one (
+      object: $event
+  ) {
+    thread_id
+  }
+}
