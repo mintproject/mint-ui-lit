@@ -1,0 +1,18 @@
+#import "../fragments/execution-info.graphql"
+
+query executions_for_thread_model( 
+  $threadModelId: uuid!,
+  $start: Int!,
+  $limit: Int!,
+  $orderBy: [execution_order_by!]) {
+	execution (
+        offset:$start, limit:$limit, order_by:$orderBy,
+        where: {
+            thread_model_executions: {
+                thread_model_id:{_eq: $threadModelId}
+            }
+        }
+    ) {
+        ...execution_info
+    }
+}

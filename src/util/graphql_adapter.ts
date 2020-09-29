@@ -260,27 +260,33 @@ export const threadFromGQL = (thread: any) => {
         fbthread.model_ensembles[model.id] = {
             id: tm["id"],
             bindings: model_ensemble
-        }
+        };
 
-        tm["execution_summary"].forEach((tmex) => {
-            fbthread.execution_summary[model.id] = {
-                total_runs: tmex["total_runs"],
-                submitted_runs: tmex["submitted_runs"],
-                successful_runs: tmex["successful_runs"],
-                failed_runs: tmex["failed_runs"],
-                ingested_runs: tmex["ingested_runs"],
-                registered_runs: tmex["registered_runs"],
-                published_runs: tmex["published_runs"],
-                submission_time: tmex["submission_time"],
-                submitted_for_execution: tmex["submitted_for_execution"],
-                fetched_run_outputs: tmex["fetched_run_outputs"],
-                submitted_for_ingestion: tmex["submitted_for_ingestion"],
-                submitted_for_publishing: tmex["submitted_for_publishing"],
-                submitted_for_registration: tmex["submitted_for_registration"]
-            } as ExecutionSummary
+        (tm["execution_summary"] ?? []).forEach((tmex) => {
+            fbthread.execution_summary[model.id] = threadModelExecutionSummaryFromGQL(tmex);
+            // Set summary changed to true, to load the executions initially
+            fbthread.execution_summary[model.id].changed = true;
         });
     })
     return fbthread;
+}
+
+export const threadModelExecutionSummaryFromGQL = (tmex: any) => {
+    return {
+        total_runs: tmex["total_runs"],
+        submitted_runs: tmex["submitted_runs"],
+        successful_runs: tmex["successful_runs"],
+        failed_runs: tmex["failed_runs"],
+        ingested_runs: tmex["ingested_runs"],
+        registered_runs: tmex["registered_runs"],
+        published_runs: tmex["published_runs"],
+        submission_time: tmex["submission_time"],
+        submitted_for_execution: tmex["submitted_for_execution"],
+        fetched_run_outputs: tmex["fetched_run_outputs"],
+        submitted_for_ingestion: tmex["submitted_for_ingestion"],
+        submitted_for_publishing: tmex["submitted_for_publishing"],
+        submitted_for_registration: tmex["submitted_for_registration"]
+    } as ExecutionSummary;
 }
 
 export const threadModelsToGQL = (models: Model[], threadid: string) => {
@@ -437,8 +443,8 @@ export const executionFromGQL = (ex: any) : Execution => {
         id: ex.id.replace(/\-/g,''),
         modelid: ex.model_id,
         status: ex.status,
-        start_time: ex.start_time,
-        end_time: ex.end_time,
+        start_time: new Date(ex.start_time),
+        end_time: ex.end_time ? new Date(ex.end_time) : null,
         execution_engine: ex.execution_engine,
         run_progress: ex.run_progress,
         runid: ex.run_id,
