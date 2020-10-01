@@ -506,14 +506,16 @@ export class MintResults extends connect(store)(MintThreadPage) {
                 console.log("Subscribing to model execution summaries for "+this._thread_id);
                 for(let modelid in state.modeling.thread.model_ensembles) {
                     let current_summary = this.thread.execution_summary[modelid];
-                    if(current_summary.total_runs != 
-                        (current_summary.failed_runs + current_summary.successful_runs)) {
-                        // If the ensemble is currently running, subscribe to changes in the summary
-                        delete state.modeling.execution_summaries[modelid];
-                        delete state.modeling.executions[modelid];                        
-                        store.dispatch(subscribeThreadExecutionSummary(modelid, 
-                            state.modeling.thread.model_ensembles[modelid].id));
-                    }              
+                    if(current_summary) {
+                        if(current_summary.total_runs != 
+                            (current_summary.failed_runs + current_summary.successful_runs)) {
+                            // If the ensemble is currently running, subscribe to changes in the summary
+                            delete state.modeling.execution_summaries[modelid];
+                            delete state.modeling.executions[modelid];                        
+                            store.dispatch(subscribeThreadExecutionSummary(modelid, 
+                                state.modeling.thread.model_ensembles[modelid].id));
+                        }
+                    }           
                 }
                 return;
             }

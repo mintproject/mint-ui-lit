@@ -67,7 +67,7 @@ query model_executions($modelTypes: [String!], $regionId: String!) {
           parameter_value
         }
       }
-      executions_aggregate {
+      executions_aggregate(where: {execution: {status: {_eq: "SUCCESS"}}}) {
         aggregate {
           count
         }
