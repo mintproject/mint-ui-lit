@@ -476,8 +476,10 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                         if(current_summary.total_runs != 
                             (current_summary.failed_runs + current_summary.successful_runs)) {
                             // If the ensemble is currently running, subscribe to changes in the summary
-                            delete state.modeling.execution_summaries[modelid];
-                            delete state.modeling.executions[modelid];
+                            if(state.modeling.execution_summaries) {
+                                delete state.modeling.execution_summaries[modelid];
+                                delete state.modeling.executions[modelid];
+                            }
                             store.dispatch(subscribeThreadExecutionSummary(modelid, 
                                 state.modeling.thread.model_ensembles[modelid].id));
                         }
