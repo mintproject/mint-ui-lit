@@ -65,6 +65,15 @@ export const permissionFromGQL = (permobj: any) : MintPermission => {
     return permission;
 }
 
+export const permissionToGQL = (permission: MintPermission) => {
+    let permissionobj = {
+        user_id: permission.userid,
+        read: permission.read ?? false,
+        write: permission.write ?? false
+    };
+    return permissionobj;
+}
+
 export const problemStatementToGQL = (problem_statement: ProblemStatementInfo) => {
     let problemobj = {
         id: getAutoID(),
@@ -74,6 +83,13 @@ export const problemStatementToGQL = (problem_statement: ProblemStatementInfo) =
         region_id: problem_statement.regionid,
         events: {
             data: problem_statement.events.map(eventToGQL)
+        },
+        permissions: {
+            data: (problem_statement.permissions || []).map(permissionToGQL),
+            on_conflict: {
+                constraint: "problem_statement_permission_pkey",
+                update_columns: ["read", "write"]
+            }
         }
     };
     return problemobj;
@@ -88,6 +104,13 @@ export const problemStatementUpdateToGQL = (problem_statement: ProblemStatementI
         region_id: problem_statement.regionid,
         events: {
             data: problem_statement.events.map(eventToGQL)
+        },
+        permissions: {
+            data: (problem_statement.permissions || []).map(permissionToGQL),
+            on_conflict: {
+                constraint: "problem_statement_permission_pkey",
+                update_columns: ["read", "write"]
+            }
         }
     };
     return problemobj;
@@ -128,6 +151,13 @@ export const taskToGQL = (task: Task, problem_statement: ProblemStatementInfo) =
         driving_variable_id: task.driving_variables.length > 0 ? task.driving_variables[0] : null,
         events: {
             data: task.events.map(eventToGQL),
+        },
+        permissions: {
+            data: (task.permissions || []).map(permissionToGQL),
+            on_conflict: {
+                constraint: "task_permission_pkey",
+                update_columns: ["read", "write"]
+            }
         }
     };
     return taskGQL;
@@ -145,6 +175,13 @@ export const taskUpdateToGQL = (task: Task) => {
         driving_variable_id: task.driving_variables.length > 0 ? task.driving_variables[0] : null,
         events: {
             data: task.events.map(eventToGQL),
+        },
+        permissions: {
+            data: (task.permissions || []).map(permissionToGQL),
+            on_conflict: {
+                constraint: "task_permission_pkey",
+                update_columns: ["read", "write"]
+            }
         }
     };
     
@@ -189,6 +226,13 @@ export const threadInfoToGQL = (thread: ThreadInfo, taskid: string, regionid: st
         driving_variable_id: thread.driving_variables.length > 0 ? thread.driving_variables[0] : null,
         events: {
             data: thread.events.map(eventToGQL),
+        },
+        permissions: {
+            data: (thread.permissions || []).map(permissionToGQL),
+            on_conflict: {
+                constraint: "thread_permission_pkey",
+                update_columns: ["read", "write"]
+            }
         }
     };
     return threadobj;
@@ -205,6 +249,13 @@ export const threadInfoUpdateToGQL = (thread:  ThreadInfo) => {
         driving_variable_id: thread.driving_variables.length > 0 ? thread.driving_variables[0] : null,
         events: {
             data: thread.events.map(eventToGQL),
+        },
+        permissions: {
+            data: (thread.permissions || []).map(permissionToGQL),
+            on_conflict: {
+                constraint: "thread_permission_pkey",
+                update_columns: ["read", "write"]
+            }
         }
     };
     return threadobj;
