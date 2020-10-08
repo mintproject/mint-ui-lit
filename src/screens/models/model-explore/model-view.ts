@@ -1245,22 +1245,18 @@ export class ModelView extends connect(store)(PageViewElement) {
                             <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no inputs.</div>
                         </td>
                     </tr>` : html`
-                    ${resource.hasInput.filter((ds:DatasetSpecification) => !this._loading[ds.id])
+                    ${resource.hasInput
+                            .filter((ds:DatasetSpecification) => !this._loading[ds.id])
                             .map((ds:DatasetSpecification) => this._datasetSpecifications[ds.id])
-                            .sort(sortByPosition).map((ds:DatasetSpecification) => html`
+                            .sort(sortByPosition)
+                            .map((ds:DatasetSpecification) => html`
                     <tr>
                         <td></td>
                         <td><span class="monospaced">${getLabel(ds)}</span></td>
                         <td>${ds.description && ds.description.length > 0 ? ds.description : ''}</td>
                         ${isSetup? html`
                         <td style="text-align: right;">
-                            ${ds.hasFixedResource && ds.hasFixedResource.length > 0 &&
-                              ds.hasFixedResource[0].value && ds.hasFixedResource[0].value.length > 0 ? html`
-                                <a target="_blank" href="${ds.hasFixedResource[0].value[0]}">
-                                    ${(<unknown>ds.hasFixedResource[0].value[0] as string).split('/').pop()}
-                                    <!-- FIXME: The model catalog defines hasFixedResource as Object -->
-                                </a>
-                            `: html`<span style="color:#999999;">-</span>`}
+                            ${this._renderFixedResource(ds)}
                         </td>` : ''}
                         <td style="text-align: right;" class="number">
                             ${ds.hasFormat && ds.hasFormat.length > 0 ? ds.hasFormat[0] : ''}
@@ -1317,6 +1313,18 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
                 </tbody>
             </table>`
+    }
+
+    private _renderFixedResource (ds: DatasetSpecification) {
+        return html`
+            ${ds.hasFixedResource && ds.hasFixedResource.length > 0 &&
+              ds.hasFixedResource[0].value && ds.hasFixedResource[0].value.length > 0 ? html`
+                <a target="_blank" href="${ds.hasFixedResource[0].value[0]}">
+                    ${(<unknown>ds.hasFixedResource[0].value[0] as string).split('/').pop()}
+                    <!-- FIXME: The model catalog defines hasFixedResource as Object -->
+                </a>
+            `: html`<span style="color:#999999;">-</span>`}
+        `;
     }
 
     private _renderTabExample () {
@@ -1747,8 +1755,14 @@ export class ModelView extends connect(store)(PageViewElement) {
 
                         // Req does not return all info so requestion params and id again.
                         if (setup.hasParameter) this._loadParameters(setup.hasParameter, db);
-                        if (setup.hasInput) this._loadDatasetSpecifications(setup.hasInput, db);
-                        if (setup.hasOutput) this._loadDatasetSpecifications(setup.hasOutput, db);
+                        //if (setup.hasInput) this._loadDatasetSpecifications(setup.hasInput, db);
+                        //if (setup.hasOutput) this._loadDatasetSpecifications(setup.hasOutput, db);
+                        (setup.hasInput || []).forEach((ds:DatasetSpecification) => {
+                            this._datasetSpecifications[ds.id] = ds;
+                        });
+                        (setup.hasOutput || []).forEach((ds:DatasetSpecification) => {
+                            this._datasetSpecifications[ds.id] = ds;
+                        });
                         
                         this._setup = setup;
                         //console.log('setup', setup);
