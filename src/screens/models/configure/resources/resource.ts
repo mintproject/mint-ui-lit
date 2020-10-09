@@ -7,6 +7,7 @@ import { store, RootState } from 'app/store';
 import { CustomNotification } from 'components/notification';
 import { IdMap } from "app/reducers";
 import { showDialog, hideDialog } from 'util/ui_functions';
+import { PREFIX_URI } from 'config/default-graph';
 
 import "weightless/progress-spinner";
 import "weightless/textfield";
@@ -990,7 +991,12 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._resources = [...r];
         let shouldLoad : string[] = this._resources
                 .map((r:T) => r.id)
-                .filter((id:string) => !this._loading[id] || !this._loadedResources[id]);
+                .filter((id:string) => id.includes(PREFIX_URI) && (!this._loading[id] || !this._loadedResources[id]));
+
+        //External resources
+        this._resources.map((r:T) => {
+            if (!r.id.includes(PREFIX_URI)) this._loadedResources[r.id] = { ...r };
+        });
 
         if (shouldLoad.length > 0) {
             let dbResources : IdMap<T> = this._getDBResources();
@@ -1084,8 +1090,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected _loadAllResources () {
         this._allResourcesLoading = true;
         store.dispatch(this.resourcesGet()).then((resources:IdMap<T>) => {
+            let nonDCResources = Object.values(this._loadedResources).filter((r:T) => !r.id.includes(PREFIX_URI))
             this._allResourcesLoading = false;
             this._loadedResources = resources;
+            nonDCResources.forEach((r:T) => this._loadedResources[r.id] = r);
             this._allResourcesLoaded = true;
         });
     }

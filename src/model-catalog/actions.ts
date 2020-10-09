@@ -30,6 +30,7 @@ import { ModelCatalogVariablePresentationAction } from './variable-presentation-
 import { ModelCatalogNumericalIndexAction } from './numerical-index-actions';
 import { ModelCatalogDataTransformationAction } from './data-transformation-actions';
 import { ModelCatalogDataTransformationSetupAction } from './data-transformation-setup-actions';
+import { ModelCatalogStandardVariableAction } from './standard-variable-actions';
 
 export type ActionThunk<R,A extends Action> = ActionCreator<ThunkAction<R, RootState, undefined, A>>
 interface IdObject { id?: string };
@@ -106,7 +107,7 @@ export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAc
         ModelCatalogDatasetSpecificationAction | ModelCatalogSampleResourceAction | ModelCatalogSampleCollectionAction |
         ModelCatalogImageAction | ModelCatalogVisualizationAction | ModelCatalogOrganizationAction | 
         ModelCatalogFundingInformationAction | ModelCatalogSourceCodeAction | ModelCatalogInterventionAction |
-        ModelCatalogVariablePresentationAction | ModelCatalogNumericalIndexAction |
+        ModelCatalogVariablePresentationAction | ModelCatalogNumericalIndexAction | ModelCatalogStandardVariableAction |
         ModelCatalogDataTransformationAction | ModelCatalogDataTransformationSetupAction; 
 
 //FIXME: The API is returning only one model (void), doing the fetch instead.
@@ -203,3 +204,4 @@ export * from './variable-presentation-actions';
 export * from './numerical-index-actions';
 export * from './data-transformation-actions';
 export * from './data-transformation-setup-actions';
+export * from './standard-variable';

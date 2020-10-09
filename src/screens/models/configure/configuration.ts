@@ -308,8 +308,9 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                 <td>Usage notes:</td>
                 <td>
                     ${this._editing ? html`
-                    <textarea id="form-config-usage-notes" rows="6">${this._config.hasUsageNotes}</textarea>
-                ` : this._config.hasUsageNotes}
+                        <textarea id="form-config-usage-notes" rows="6">${this._config && this._config.hasUsageNotes ?
+                                this._config.hasUsageNotes : ''}</textarea>
+                ` : this._config && this._config.hasUsageNotes ? this._config.hasUsageNotes : ''}
                 </td>
             </tr>
 
