@@ -129,6 +129,10 @@ export const VARIABLES = {
             "var12": {
                 "long_name": "Evaporation volume flux index",
                 "SVO_name": "evaporation_volume_flux_index"
+            },
+            "var13": {
+                "long_name": "Break through curve",
+                "SVO_name": "break_through_curve"
             }
         }
     }

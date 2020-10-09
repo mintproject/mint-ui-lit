@@ -134,7 +134,6 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
 
     protected _renderForm () {
         let edResource = this._getEditingResource();
-        console.log('>>', edResource);
         return html`
         <form>
             <wl-textfield id="ds-label" label="Name" required
