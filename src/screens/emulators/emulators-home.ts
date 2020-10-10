@@ -13,11 +13,13 @@ import "weightless/button";
 
 import 'components/loading-dots';
 
-import emulators, { EmulatorModelInput, EmulatorSearchConstraint, EmulatorsList, EmulatorsListWithStatus } from './reducers';
+import emulators, { EmulatorModelIO, EmulatorSearchConstraint, EmulatorsList, EmulatorsListWithStatus } from './reducers';
 import { goToPage } from 'app/actions';
-import { listEmulatorModelTypes, listModelTypeInputDataValues, listModelTypeInputParamValues, listModelTypeInputs, getNumEmulatorsForFilter, searchEmulatorsForModel } from './actions';
+import { listEmulatorModelTypes, listModelTypeInputDataValues, listModelTypeInputParamValues, listModelTypeIO, getNumEmulatorsForFilter, searchEmulatorsForModel, searchEmulatorsForFilter } from './actions';
 import { getPathFromModel } from 'screens/models/reducers';
 import { Emulator } from '@mintproject/modelcatalog_client';
+import { Execution } from 'screens/modeling/reducers';
+import { DataResource } from 'screens/datasets/reducers';
 
 store.addReducers({
     emulators
@@ -50,18 +52,21 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
     private _filteredEmulatorsLoading : boolean = false;
 
     @property({type: Array})
-    private _modelInputs : EmulatorModelInput[];
+    private _modelIO : EmulatorModelIO[];
 
     @property({type: Boolean})
     private _modelInputsLoading : boolean = false;
 
     @property({type: Object})
-    private _selectedModelInput : EmulatorModelInput;
+    private _selectedModelInput : EmulatorModelIO;
 
     @property({type: Array})
     private _searchConstraints : EmulatorSearchConstraint[] = [];
 
     private _dispatched: boolean = false;
+
+    private currentPage: number = 1;
+    private pageSize: number = 100;
     
     static get styles() {
         return [
@@ -136,7 +141,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
         this._emulators = null;
         this._selectedModelInput = null;
         store.dispatch(searchEmulatorsForModel(model, this._regionid));
-        store.dispatch(listModelTypeInputs(this._selectedModel, this._emulatorRegion));
+        store.dispatch(listModelTypeIO(this._selectedModel, this._emulatorRegion));
         goToPage("emulators/" + model);
     }
 
@@ -281,7 +286,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
         let iname = e.target.value;
 
         let input = null;
-        this._modelInputs.forEach((ip) => {
+        this._modelIO.forEach((ip) => {
             if(ip.name == iname)
                 input = ip;
         });
@@ -289,7 +294,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
             this._selectedModelInput = input;
 
             if(!input.values) {
-                if(input.type == "data") {
+                if(input.type != "parameter") {
                     console.log(input.name + ": Dispatching input data values for " + this._emulatorRegion);
                     store.dispatch(listModelTypeInputDataValues(
                         this._selectedModel, input, this._emulatorRegion));
@@ -303,13 +308,13 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
 
     private _addSearchConstraint() {
         let inputname = this.shadowRoot.querySelector<HTMLSelectElement>("#model_input").value;
-        let input = this._modelInputs.find((input) => input.name==inputname);
+        let input = this._modelIO.find((input) => input.name==inputname);
                 
         let options = this.shadowRoot.querySelector<HTMLSelectElement>("#model_input_values").selectedOptions;
         let inputvalues = [];
         for(let i=0; i<options.length; i++) {
             let itemval = options.item(i).value;
-            if(input.type == "data")
+            if(input.type != "parameter")
                 inputvalues.push(input.values.find((val) => val.id == itemval));
             else
                 inputvalues.push(itemval);
@@ -320,17 +325,45 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
             model: this._selectedModel,
             values: inputvalues
         });
+        this._selectedModelInput = null;
         store.dispatch(getNumEmulatorsForFilter(this._selectedModel, this._emulatorRegion, this._searchConstraints));
+        store.dispatch(searchEmulatorsForFilter(this._selectedModel, this._emulatorRegion, this._searchConstraints));
+    }
+
+    _nextPage(offset:  number) {
+        this.currentPage += offset;
+        this._fetchRuns()
+    }
+
+
+    async _fetchRuns () {
+        if(!this.currentPage)
+            this.currentPage = 1;        
+        let start = (this.currentPage - 1)*this.pageSize;
+        let limit = this.pageSize;
+        let orderBy = null;
+        //orderBy[this.orderBy] = this.orderByDesc ? "desc" : "asc";
+        store.dispatch(getNumEmulatorsForFilter(
+            this._selectedModel, this._emulatorRegion, this._searchConstraints,
+            start, limit, orderBy));
+        store.dispatch(searchEmulatorsForFilter(
+            this._selectedModel, this._emulatorRegion, this._searchConstraints,
+            start, limit, orderBy));
     }
 
     private _deleteConstraint(e) {
         let index = e.target.dataset['index'];
         this._searchConstraints.splice(index, 1);
         store.dispatch(getNumEmulatorsForFilter(this._selectedModel, this._emulatorRegion, this._searchConstraints));        
+        store.dispatch(searchEmulatorsForFilter(this._selectedModel, this._emulatorRegion, this._searchConstraints));
     }
 
     protected render() {
         let nav = [{label:'Model Products / Emulators', url:'emulators'}] 
+        let inputs = (this._modelIO || []).filter((io)=>io.type == "input");
+        let params = (this._modelIO || []).filter((io)=>io.type == "parameter");
+        let outputs = (this._modelIO || []).filter((io)=>io.type == "output");
+
         return html`
         <nav-title .nav="${nav}"></nav-title>
 
@@ -350,166 +383,259 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
         <div class="emulators">
             <!-- Emulators Heading -->
             ${this._typesLoading ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>` :
-                (this._selectedModel ? 
+                (!this._selectedModel ? 
+                    (this._modelIO ? html`<center><br />Please select a model</center>` : "") :
                     html`
                     <!-- Emulator Executions -->
                     <h2>${this._selectedModel} Emulators</h2>
-                        ${this._modelInputsLoading ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`:
-                            (!this._modelInputs) ? 
-                                "" : 
-                                html`
-                                <h4>Filter All ${this._selectedModel} Executions</h4>
-                                <table class="pure-table halfnhalf" style="width: 100%">
-                                    <tbody>
-                                    <tr>
-                                    <td>
-                                        <table class="pure-table pure-table-bordered" style="width: 100%">
-                                            <thead>
+                    ${this._modelInputsLoading ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`:
+                        (!this._modelIO ? 
+                            "" : 
+                            html`
+                            <h4>Filter All ${this._selectedModel} Executions</h4>
+                            <table class="pure-table halfnhalf" style="width: 100%">
+                                <tbody>
+                                <tr>
+                                <td>
+                                    <table class="pure-table pure-table-bordered" style="width: 100%">
+                                        <thead>
+                                            <tr>
+                                                <th>Input</th>
+                                                <th>Value</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${this._searchConstraints.map((constraint, index) => {
+                                                return html`
                                                 <tr>
-                                                    <th>Input</th>
-                                                    <th>Value</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                ${this._searchConstraints.map((constraint, index) => {
-                                                    return html`
-                                                    <tr>
-                                                        <td>${constraint.input}</td>
-                                                        <td>
-                                                        ${constraint.inputtype == "data" ? 
-                                                            constraint.values.map((v) => v.name).join(", ") :
-                                                            constraint.values.join(", ")
-                                                        }
-                                                        <div style="float:right;width:20px">
-                                                            <wl-icon @click="${this._deleteConstraint}" 
-                                                                data-index="${index}" class="actionIcon deleteIcon">delete</wl-icon>
-                                                        </div>
-                                                        </td>
-                                                        
-                                                    </tr>
-                                                    `;
-                                                })}
-                                                <tr>
-                                                    <td colspan="3">Add New Filter</td>
-                                                </tr>
-                                                <tr>
+                                                    <td>${constraint.input}</td>
                                                     <td>
-                                                        <select id="model_input" @change="${this._selectConstraintInput}">
-                                                            <option value="">Select an input</option>
-                                                        ${this._modelInputs.map((input) => {
-                                                            if(input.name == this._selectedModelInput?.name) {
-                                                                return html`<option value="${input.name}" selected="true"
-                                                                >${input.name}</option>`;
-                                                            }
-                                                            else {
-                                                                return html`<option value="${input.name}">${input.name}</option>`;
+                                                    ${constraint.inputtype != "parameter" ? 
+                                                        constraint.values.map((v) => v.name).join(", ") :
+                                                        constraint.values.join(", ")
+                                                    }
+                                                    <div style="float:right;width:20px">
+                                                        <wl-icon @click="${this._deleteConstraint}" 
+                                                            data-index="${index}" class="actionIcon deleteIcon">delete</wl-icon>
+                                                    </div>
+                                                    </td>
+                                                    
+                                                </tr>
+                                                `;
+                                            })}
+                                            <tr>
+                                                <td colspan="3">Add New Filter</td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <select id="model_input" @change="${this._selectConstraintInput}">
+                                                        <option value="">Select an input</option>
+                                                    ${this._modelIO.filter((input) => {
+                                                        if(input.type == "output") 
+                                                            return false;
+                                                        let alreadyUsed = this._searchConstraints.find((cons) => 
+                                                            cons.input == input.name);
+                                                        if(alreadyUsed)
+                                                            return false;
+                                                        return true;
+                                                    }).map((input) => {
+                                                        if(input.name == this._selectedModelInput?.name) {
+                                                            return html`<option value="${input.name}" selected="true"
+                                                            >${input.name}</option>`;
+                                                        }
+                                                        else {
+                                                            return html`<option value="${input.name}">${input.name}</option>`;
+                                                        }
+                                                    })}
+                                                    </select>
+                                                    ${this._selectedModelInput && this._selectedModelInput.values ? 
+                                                    html`
+                                                        <div>
+                                                            <br />
+                                                            <wl-button class="submit"
+                                                                @click="${this._addSearchConstraint}"
+                                                                >Add Filter</wl-button>
+                                                        </div>
+                                                    `
+                                                    : ""
+                                                    }
+                                                </td>
+                                                <td>
+                                                ${!this._selectedModelInput ? "" : 
+                                                    (!this._selectedModelInput.values ?
+                                                        html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>` :
+                                                        html`
+                                                        <select id="model_input_values" multiple="true">
+                                                        ${(this._selectedModelInput.values || []).map((value) => {
+                                                            if(this._selectedModelInput.type == "parameter") {
+                                                                return html`
+                                                                <option value="${value}">${value}</option>
+                                                                `;
+                                                            } else {
+                                                                return html`
+                                                                <option value="${value.id}">${value.name}</option>
+                                                                `;
                                                             }
                                                         })}
-                                                        </select>
-                                                        ${this._selectedModelInput && this._selectedModelInput.values ? 
-                                                        html`
-                                                            <div>
-                                                                <br />
-                                                                <wl-button class="submit"
-                                                                    @click="${this._addSearchConstraint}"
-                                                                    >Add Filter</wl-button>
-                                                            </div>
-                                                        `
-                                                        : ""
-                                                        }
-                                                    </td>
-                                                    <td>
-                                                    ${!this._selectedModelInput ? "" : 
-                                                        (!this._selectedModelInput.values ?
-                                                            html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>` :
-                                                            html`
-                                                            <select id="model_input_values" multiple="true">
-                                                            ${(this._selectedModelInput.values || []).map((value) => {
-                                                                if(this._selectedModelInput.type == "parameter") {
-                                                                    return html`
-                                                                    <option value="${value}">${value}</option>
-                                                                    `;
-                                                                } else {
-                                                                    return html`
-                                                                    <option value="${value.id}">${value.name}</option>
-                                                                    `;
-                                                                }
-                                                            })}
-                                                            </select>`
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        ${!this._filtered_emulators ? "" :
-                                        this._filteredEmulatorsLoading ? 
-                                            html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`:
-                                            html`
-                                                <h4>Total Executions: ${this._filtered_emulators?.total}</h4>
-                                                <wl-button class="submit">Download</wl-button>
-                                            `
-                                        }
-                                    </td>
-                                    </tr>
-                                    </tbody>
-                                </table>
-                                `
+                                                        </select>`
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                                <td>
+                                </td>
+                                </tr>
+                                </tbody>
+                            </table>
+
+                        <div style="width:100%; border:1px solid #EEE;border-bottom:0px;">
+                        ${this._filtered_emulators && this._filtered_emulators.total && !this._filtered_emulators.loading ? 
+                        html`
+                        ${this.currentPage > 1 ? 
+                            html `<wl-button flat inverted @click=${() => this._nextPage(-1)}>Back</wl-button>` :
+                            html `<wl-button flat inverted disabled>Back</wl-button>`
                         }
-                        
-                        ${this._emulatorsLoading ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`:
-                            (!this._emulators ? 
-                                html`<div>Error: Could not load executions by thread</div>` 
-                                : 
-                                html`
-                                <h4>${this._selectedModel} Executions Grouped by Thread</h4>
-                                <table class="pure-table pure-table-bordered">
+                        Page ${this.currentPage} of ${this._filtered_emulators.total}
+                        ${this.currentPage < this._filtered_emulators.total ? 
+                            html `<wl-button flat inverted @click=${() => this._nextPage(1)}>Next</wl-button>` :
+                            html `<wl-button flat inverted disabled>Next</wl-button>`
+                        }
+                        <wl-button type="button" flat inverted  style="float:right"
+                            @click="${() =>(this.currentPage = 1) && this._fetchRuns()}">Reload</wl-button>
+                        ` : ""
+                        }
+                        </div>
+                        <div style="height:400px;overflow:auto;width:100%;border:1px solid #EEE">                        
+                        <!-- Filter Executions -->
+                        ${!this._filtered_emulators?.list ? "" :
+                        (this._filteredEmulatorsLoading ? 
+                            html`<wl-progress-spinner class="loading"></wl-progress-spinner>` :
+                            html`
+                            <table class="pure-table pure-table-striped results_table">
+                                    <!-- Heading -->
+                                    ${inputs.length > 0 ? 
+                                        html `<colgroup span="${inputs.length}"></colgroup>` : ""} <!-- Inputs -->
+                                    ${params.length > 0 ? 
+                                        html `<colgroup span="${params.length}"></colgroup>` : ""} <!-- Parameters -->
+                                    ${outputs.length > 0 ? 
+                                        html `<colgroup span="${outputs.length}"></colgroup>` : ""} <!-- Outputs -->
                                     <thead>
-                                        <tr><th>Model Calibrated for Region</th><th>Executed for Region</th><th>Time period</th><th>Input</th><th>Model Setup</th><th>Ensemble description (range of parameters)</th><th>Output summary (Ensemble)</th></tr>
+                                        <tr>
+                                            ${inputs.length > 0 ? 
+                                                html `<th colspan="${inputs.length}">Inputs</th>` : ""} <!-- Inputs -->
+                                            ${params.length > 0 ? 
+                                                html `<th colspan="${params.length}">Parameters</th>` : ""} <!-- Parameters -->
+                                            ${outputs.length > 0 ? 
+                                                html `<th colspan="${outputs.length}">Outputs</th>` : ""} <!-- Outputs -->
+                                        </tr>
+                                        <tr>
+                                            ${inputs.map((inf) => html`<th scope="col">${inf.name.replace(/(-|_)/g, ' ')}</th>` )}
+                                            ${params.map((param) => html`<th scope="col">${param.name.replace(/(-|_)/g, ' ')}</th>` )}
+                                            ${outputs.map((outf) => html`<th scope="col">${outf.name.replace(/(-|_)/g, ' ')}</th>` )}                                                        
+                                        </tr>
                                     </thead>
+                                    <!-- Body -->
                                     <tbody>
-                                    ${this._emulators.list.map((em) => {
-                                        let model_region = em.region_name;
-                                        let modelname = em.name;
-                                        let model_uri =  this._regionid + '/models/explore' + getPathFromModel(em);
-                                        let tms = em["thread_models"] as any[];
-                                        if (tms && tms.length > 0) {
-                                            return tms.map((tm) => {
-                                                let thread = tm["thread"];
-                                                let task = thread["task"];
-                                                let problem = task["problem_statement"];
-                                                let numexecutions = tm["executions_aggregate"]["aggregate"]["count"];
-                                                if(numexecutions > 0) {
-                                                    let thread_uri = `/${this._regionid}/modeling/problem_statement/${problem["id"]}/${task["id"]}/${thread["id"]}`;
-                                                    let params = this.getParameters(
-                                                        tm["model"], 
-                                                        tm["parameter_bindings_aggregate"]["nodes"]);
-                                                    let inputs = this.getInputs(
-                                                        tm["model"], 
-                                                        tm["data_bindings_aggregate"]["nodes"]);
-                                                    let paramsHTML = this.getParamsHTML(params);
-                                                    let inputsHTML = this.getInputsHTML(inputs);                                        
-                                                    return html`
-                                                    <tr>
-                                                        <td class='nowrap'>${model_region}</td>
-                                                        <td class='nowrap'>${task["region"]["name"]}</td>
-                                                        <td class='nowrap'>${thread["start_date"]} - ${thread["end_date"]}</td>
-                                                        <td class='nowrap'>${inputsHTML}</td>
-                                                        <td><a href="${model_uri}">${modelname}</a></td>
-                                                        <td class='nowrap'>${paramsHTML}</td>
-                                                        <td class='nowrap'>
-                                                            <a href="${thread_uri}">${numexecutions} Executions</a>
-                                                        </td>
-                                                    </tr>`;
-                                                }
-                                            });
-                                        }
+                                    ${Object.keys(this._filtered_emulators?.list || []).length == 0 ? 
+                                        html`
+                                        <tr><td colspan="${inputs.length + 
+                                                params.length + outputs.length + 1}">
+                                            - No results available -
+                                        </td></tr>` : ""
+                                    }
+                                    ${Object.keys(this._filtered_emulators?.list || []).map((index) => {
+                                        let ensemble: Execution = this._filtered_emulators.list[index];
+                                        return html`
+                                            <tr>
+                                                ${inputs.map((input) => {
+                                                    let res = ensemble.bindings[input.name] as DataResource;
+                                                    if(res) {
+                                                        // FIXME: This could be resolved to a collection of resources
+                                                        return html`
+                                                            <td><a href="${res.url}">${res.name}</a></td>
+                                                        `;
+                                                    }
+                                                    else {
+                                                        return html`<td></td>`;
+                                                    }
+                                                })}
+                                                ${params.map((param) => html`<td>
+                                                    ${ensemble.bindings[param.name]}
+                                                </td>`
+                                                )}
+                                                ${outputs.map((output:any) => {
+                                                    let result = ensemble.results[output.name];
+                                                    if(result) {
+                                                        let furl = result?.url;
+                                                        let fname = result?.name;
+                                                        return html`<td><a href="${furl}">${fname}</a></td>`;
+                                                    }
+                                                    else {
+                                                        return html`<td></td>`;
+                                                    }
+                                                })}                                                            
+                                            </tr>
+                                        `;
                                     })}
                                     </tbody>
-                                </table>`)
-                        }`
-            : this._modelInputs ? html`<center><br />Please select a model</center>` : ""
+                            </table>`
+                        )}                            
+                        </div>`
+                    )}
+                        
+                    ${this._emulatorsLoading ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`:
+                        (!this._emulators ? 
+                            html`<div>Error: Could not load executions by thread</div>` 
+                            : 
+                            html`
+                            <h4>${this._selectedModel} Executions Grouped by Thread</h4>
+                            <table class="pure-table pure-table-bordered">
+                                <thead>
+                                    <tr><th>Model Calibrated for Region</th><th>Executed for Region</th><th>Time period</th><th>Input</th><th>Model Setup</th><th>Ensemble description (range of parameters)</th><th>Output summary (Ensemble)</th></tr>
+                                </thead>
+                                <tbody>
+                                ${this._emulators.list.map((em) => {
+                                    let model_region = em.region_name;
+                                    let modelname = em.name;
+                                    let model_uri =  this._regionid + '/models/explore' + getPathFromModel(em);
+                                    let tms = em["thread_models"] as any[];
+                                    if (tms && tms.length > 0) {
+                                        return tms.map((tm) => {
+                                            let thread = tm["thread"];
+                                            let task = thread["task"];
+                                            let problem = task["problem_statement"];
+                                            let numexecutions = tm["executions_aggregate"]["aggregate"]["count"];
+                                            if(numexecutions > 0) {
+                                                let thread_uri = `/${this._regionid}/modeling/problem_statement/${problem["id"]}/${task["id"]}/${thread["id"]}`;
+                                                let params = this.getParameters(
+                                                    tm["model"], 
+                                                    tm["parameter_bindings_aggregate"]["nodes"]);
+                                                let inputs = this.getInputs(
+                                                    tm["model"], 
+                                                    tm["data_bindings_aggregate"]["nodes"]);
+                                                let paramsHTML = this.getParamsHTML(params);
+                                                let inputsHTML = this.getInputsHTML(inputs);                                        
+                                                return html`
+                                                <tr>
+                                                    <td class='nowrap'>${model_region}</td>
+                                                    <td class='nowrap'>${task["region"]["name"]}</td>
+                                                    <td class='nowrap'>${thread["start_date"]} - ${thread["end_date"]}</td>
+                                                    <td class='nowrap'>${inputsHTML}</td>
+                                                    <td><a href="${model_uri}">${modelname}</a></td>
+                                                    <td class='nowrap'>${paramsHTML}</td>
+                                                    <td class='nowrap'>
+                                                        <a href="${thread_uri}">${numexecutions} Executions</a>
+                                                    </td>
+                                                </tr>`;
+                                            }
+                                        });
+                                    }
+                                })}
+                                </tbody>
+                            </table>`)
+                    }`
             )}
         </div>`;
     }
@@ -526,11 +652,11 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
             this._modelTypes = null;
             this._emulators = null;
             this._filtered_emulators = null;
-            this._modelInputs = null;
+            this._modelIO = null;
             state.emulators.models = null;            
             state.emulators.emulators = null;
             state.emulators.filtered_emulators = null;
-            state.emulators.model_inputs = null; 
+            state.emulators.model_io = null; 
             console.log("Dispatching model types for region: "+this._emulatorRegion);
             store.dispatch(listEmulatorModelTypes(this._emulatorRegion));
         }
@@ -554,7 +680,21 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
             if(state.emulators.filtered_emulators && state.emulators.filtered_emulators[this._selectedModel]) {
                 this._filteredEmulatorsLoading = state.emulators.filtered_emulators[this._selectedModel].loading;
                 if(!this._filteredEmulatorsLoading) {
-                    this._filtered_emulators = state.emulators.filtered_emulators[this._selectedModel];
+                    let _filtered_emulators = state.emulators.filtered_emulators[this._selectedModel];
+                    if(_filtered_emulators?.total) {
+                        this._filtered_emulators = {
+                            loading: false,
+                            total: _filtered_emulators.total,
+                            list: this._filtered_emulators?.list
+                        }
+                    }
+                    else if(_filtered_emulators?.list) {
+                        this._filtered_emulators = {
+                            loading: false,
+                            total: this._filtered_emulators?.total,
+                            list: _filtered_emulators.list
+                        }
+                    }
                 }
             }
             // If the selected model has changed
@@ -564,27 +704,31 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
 
                 // Fetch model inputs and executions by thread
                 this._emulators = null;
-                this._modelInputs = null;
+                this._modelIO = null;
+                this._filtered_emulators = null;
                 state.emulators.emulators = null;
-                state.emulators.model_inputs = null;
+                state.emulators.filtered_emulators = null;
+                state.emulators.model_io = null;
                 this._dispatched = true;
                 store.dispatch(searchEmulatorsForModel(this._selectedModel, this._emulatorRegion));
-                store.dispatch(listModelTypeInputs(this._selectedModel, this._emulatorRegion));
+                store.dispatch(listModelTypeIO(this._selectedModel, this._emulatorRegion));
+                store.dispatch(getNumEmulatorsForFilter(this._selectedModel, this._emulatorRegion, this._searchConstraints));        
+                store.dispatch(searchEmulatorsForFilter(this._selectedModel, this._emulatorRegion, this._searchConstraints));                
             }
             
             if(this._selectedModel) {
                 // Get model inputs (and possible values) for selected model
-                if(state.emulators.model_inputs && state.emulators.model_inputs[this._selectedModel]) {
-                    this._modelInputsLoading = state.emulators.model_inputs[this._selectedModel].loading;
+                if(state.emulators.model_io && state.emulators.model_io[this._selectedModel]) {
+                    this._modelInputsLoading = state.emulators.model_io[this._selectedModel].loading;
                     if(!this._modelInputsLoading) {
-                        this._modelInputs = state.emulators.model_inputs[this._selectedModel].list;
+                        this._modelIO = state.emulators.model_io[this._selectedModel].list;
                         this._dispatched = false;
                     }
                     
-                    if(this._modelInputs) {
+                    if(this._modelIO) {
                         // Check if any input has been changed (i.e. values filled up)
                         // - If so, request update of UI
-                        let ip = this._modelInputs.find((input) => input.changed)
+                        let ip = this._modelIO.find((input) => input.changed)
                         if(ip) {
                             ip.changed = false;
                             this.requestUpdate();

@@ -489,7 +489,7 @@ export const executionToGQL = (ex: Execution) => {
     return null;
 }
 
-export const executionFromGQL = (ex: any) : Execution => {
+export const executionFromGQL = (ex: any, emulator=false) : Execution => {
     let exobj = {
         id: ex.id.replace(/\-/g,''),
         modelid: ex.model_id,
@@ -503,13 +503,13 @@ export const executionFromGQL = (ex: any) : Execution => {
         results: {}
     } as Execution;
     ex.parameter_bindings.forEach((param:any) => {
-        exobj.bindings[param.model_parameter_id] = param.parameter_value;
+        exobj.bindings[(emulator ? param.model_parameter.name : param.model_parameter_id)] = param.parameter_value;
     });
     ex.data_bindings.forEach((data:any) => {
-        exobj.bindings[data.model_io_id] = data.resource as DataResource;
+        exobj.bindings[(emulator ? data.model_io.name : data.model_io_id)] = data.resource as DataResource;
     });
     ex.results.forEach((data:any) => {
-        exobj.results[data.model_io_id] = data.resource as DataResource;
+        exobj.results[(emulator ? data.model_output.name : data.model_io_id)] = data.resource as DataResource;
     });
     return exobj;
 }

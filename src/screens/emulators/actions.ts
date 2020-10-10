@@ -8,24 +8,25 @@ import modelTypesQuery from "../../queries/emulator/model-types.graphql";
 import modelExecutionsQuery from "../../queries/emulator/model-executions.graphql";
 import threadExecutionsQuery from "../../queries/emulator/thread-executions.graphql";
 
-import modelTypeInputsQuery from "../../queries/emulator/get-model-type-inputs.graphql";
+import modelTypeIOQuery from "../../queries/emulator/get-model-type-io.graphql";
 import modelTypeInputValuesQuery from "../../queries/emulator/get-model-input-values.graphql";
 import modelTypeParameterValuesQuery from "../../queries/emulator/get-model-parameter-values.graphql";
 
+import executionInfoFragment from "../../queries/fragments/emulator-execution-info.graphql";
 import modelTypeConfigsQuery from "../../queries/emulator/get-model-type-configs.graphql";
 import modelConfigInputsQuery from "../../queries/emulator/get-model-config-inputs.graphql";
 
 import { auth } from "config/firebase";
-import { EmulatorModelInput, EmulatorSearchConstraint } from "./reducers";
+import { EmulatorModelIO, EmulatorSearchConstraint } from "./reducers";
 import { DataResource } from "screens/datasets/reducers";
-import { resourceFromGQL } from "util/graphql_adapter";
+import { executionFromGQL, resourceFromGQL } from "util/graphql_adapter";
 import { gql } from "@apollo/client";
 
 export const EMULATORS_LIST = 'EMULATORS_LIST_MODELS';
 export const EMULATORS_SELECT_MODEL = 'EMULATORS_SELECT_MODEL';
 export const EMULATORS_LIST_EXECUTIONS_FOR_MODEL = 'EMULATORS_LIST_EXECUTIONS_FOR_MODEL';
 export const EMULATORS_LIST_THREAD_EXECUTIONS_JSON = 'EMULATORS_LIST_THREAD_EXECUTIONS_JSON';
-export const EMULATORS_LIST_MODEL_INPUTS = 'EMULATORS_LIST_MODEL_INPUTS';
+export const EMULATORS_LIST_MODEL_IO = 'EMULATORS_LIST_MODEL_IO';
 export const EMULATORS_LIST_MODEL_INPUT_DATA_VALUES = 'EMULATORS_LIST_MODEL_INPUT_DATA_VALUES';
 export const EMULATORS_LIST_MODEL_INPUT_PARAM_VALUES = 'EMULATORS_LIST_MODEL_INPUT_PARAM_VALUES';
 export const EMULATORS_LIST_EXECUTIONS_FOR_FILTER = 'EMULATORS_LIST_EXECUTIONS_FOR_FILTER';
@@ -58,10 +59,10 @@ export interface EmulatorsActionListThreadExecutionsJson extends Action<'EMULATO
     loading: boolean,
     json: string
 };
-export interface EmulatorsActionListModelInputs extends Action<'EMULATORS_LIST_MODEL_INPUTS'> {
+export interface EmulatorsActionListModelIO extends Action<'EMULATORS_LIST_MODEL_IO'> {
     model: string,
     loading: boolean,
-    inputs?: EmulatorModelInput[]
+    inputs?: EmulatorModelIO[]
 };
 export interface EmulatorsActionListModelInputDataValues extends Action<'EMULATORS_LIST_MODEL_INPUT_DATA_VALUES'> {
     model: string,
@@ -79,7 +80,7 @@ export interface EmulatorsActionListModelInputParamValues extends Action<'EMULAT
 export type EmulatorsAction = EmulatorsActionListModels | EmulatorsActionListEmulatorsForModel | 
     EmulatorsActionListEmulatorsForFilter | EmulatorsActionNumEmulatorsForFilter | 
     EmulatorsActionSelectModel | 
-    EmulatorsActionListThreadExecutionsJson | EmulatorsActionListModelInputs | 
+    EmulatorsActionListThreadExecutionsJson | EmulatorsActionListModelIO | 
     EmulatorsActionListModelInputDataValues | EmulatorsActionListModelInputParamValues;
 
 const MODEL_PREFIX = "https://w3id.org/okn/i/mint/";
@@ -159,13 +160,9 @@ export const searchEmulatorsForModel: ActionCreator<ListEmulatorsThunkAction> =
     });
 }
 
-type NumFilteredEmulatorsThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionNumEmulatorsForFilter>;
-export const getNumEmulatorsForFilter: ActionCreator<NumFilteredEmulatorsThunkAction> = 
-        (model: string, regionid: string, filters: EmulatorSearchConstraint[]) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
-    // Create a dynamic query based on the filters
-    let query = "query executions_for_parameter_values($regionId:String!, $modelType:String!) { \n" +
-            " execution_aggregate ( where: {";
+const getExecutionWhereClauseForFilter = (filters: EmulatorSearchConstraint[]) => {
+    let query = " where: {";
+    query += "status: {_eq: \"SUCCESS\"}\n"
     query += "thread_model_executions: {thread_model: {model: {model_name: {_eq: $modelType}}, thread: {_or: [{region_id: {_eq: $regionId}}, {region: {parent_region_id: {_eq: $regionId}}}]}}}";
     query += "_and: [ ";
     query += filters.filter((filter) => filter.inputtype == "parameter").map((filter) => {
@@ -180,7 +177,7 @@ export const getNumEmulatorsForFilter: ActionCreator<NumFilteredEmulatorsThunkAc
             "}}}\n" +
             "]}\n";
     });
-    query += filters.filter((filter) => filter.inputtype == "data").map((filter) => {
+    query += filters.filter((filter) => filter.inputtype == "input").map((filter) => {
         return "{  _or: [ " + 
         "{ data_bindings: {" + 
         " model_io: { name: { _eq: \"" + filter.input +"\"} }" +
@@ -193,8 +190,21 @@ export const getNumEmulatorsForFilter: ActionCreator<NumFilteredEmulatorsThunkAc
         "]}\n";
     });
     query += " ]\n";
-    query += "} ) { aggregate { count } } }";
-    //console.log(query);
+    query += "}\n";
+    return query;
+}
+
+type NumFilteredEmulatorsThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionNumEmulatorsForFilter>;
+export const getNumEmulatorsForFilter: ActionCreator<NumFilteredEmulatorsThunkAction> = 
+        (model: string, regionid: string, filters: EmulatorSearchConstraint[]) => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    // Create a dynamic query based on the filters
+    let query = "query executions_for_parameter_values($regionId:String!, $modelType:String!) { \n" +
+            " execution_aggregate ( \n" + 
+            getExecutionWhereClauseForFilter(filters) + 
+            " ) {\n" +
+            " aggregate { count }\n" +
+            "}}\n";
     APOLLO_CLIENT.query({
         query: gql`${query}`,
         variables: {
@@ -224,6 +234,57 @@ export const getNumEmulatorsForFilter: ActionCreator<NumFilteredEmulatorsThunkAc
         loading: true,
         model: model,
         num_filtered_emulators: 0
+    });
+}
+
+type ListFilteredEmulatorsThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListEmulatorsForFilter>;
+export const searchEmulatorsForFilter: ActionCreator<ListFilteredEmulatorsThunkAction> = 
+        (model: string, regionid: string, filters: EmulatorSearchConstraint[], 
+            start: number, limit: number, order_by: string) => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    // Create a dynamic query based on the filters
+    let fragment = executionInfoFragment;
+    let queryString = fragment.loc.source.body + "\n" + 
+            "query executions_for_parameter_values($regionId:String!, $modelType:String!) { \n" +
+            " execution ( \n" + 
+            " limit: " + (limit ? limit : 100) + "\n" +
+            " offset: " + (start ? start : 0) + "\n" +
+            (order_by ? " order_by: [ " + order_by + " ]\n" : "") +
+            getExecutionWhereClauseForFilter(filters) + "\n" +
+            " ) {\n" +
+            " ...emulator_execution_info \n" +
+            "}}\n";
+    let query = gql`${queryString}`;
+    APOLLO_CLIENT.query({
+        query: query,
+        variables: {
+            modelType: MODEL_PREFIX + model,
+            regionId: regionid
+        }
+    }).then((result) => {
+        if(result.error) {
+            dispatch({
+                type: EMULATORS_LIST_EXECUTIONS_FOR_FILTER,
+                filtered_emulators: null,
+                model: model,
+                loading: false
+            });
+        }
+        else {
+            let executions = result.data.execution.map((ex:any) => executionFromGQL(ex, true));
+            dispatch({
+                type: EMULATORS_LIST_EXECUTIONS_FOR_FILTER,
+                model: model,
+                filtered_emulators: executions,
+                loading: false
+            });
+        }
+    });
+    dispatch({
+        type: EMULATORS_LIST_EXECUTIONS_FOR_FILTER,
+        loading: true,
+        model: model,
+        filtered_emulators: null
     });
 }
 
@@ -270,12 +331,12 @@ export const getThreadExecutionsJSON: ActionCreator<ListExecutionsJsonThunkActio
     });
 }
 
-type ListModelInputsThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListModelInputs>;
-export const listModelTypeInputs: ActionCreator<ListModelInputsThunkAction> = 
+type ListModelIOThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListModelIO>;
+export const listModelTypeIO: ActionCreator<ListModelIOThunkAction> = 
         (model: string, regionid: string) => (dispatch) => {
     let APOLLO_CLIENT = GraphQL.instance(auth);
     APOLLO_CLIENT.query({
-        query: modelTypeInputsQuery,
+        query: modelTypeIOQuery,
         variables: {
             regionId: regionid,
             modelType: MODEL_PREFIX + model
@@ -284,39 +345,46 @@ export const listModelTypeInputs: ActionCreator<ListModelInputsThunkAction> =
         if(result.error) {
             console.log(result.error);
             dispatch({
-                type: EMULATORS_LIST_MODEL_INPUTS,
+                type: EMULATORS_LIST_MODEL_IO,
                 loading: false,
                 model: model,
                 inputs: null
             });
         }
         else {
-            let modelInputs : EmulatorModelInput[] = [];
-            result.data.model_io.forEach((io) => {
-                modelInputs.push({
+            let modelIO : EmulatorModelIO[] = [];
+            result.data.model_inputs.forEach((io) => {
+                modelIO.push({
                     name: io["name"],
                     datatype: io["type"],
-                    type: "data"
+                    type: "input"
+                });
+            })
+            result.data.model_outputs.forEach((io) => {
+                modelIO.push({
+                    name: io["name"],
+                    datatype: io["type"],
+                    type: "output"
                 });
             })
             result.data.model_parameter.forEach((param) => {
-                modelInputs.push({
+                modelIO.push({
                     name: param["name"],
                     datatype: param["datatype"],
                     type: "parameter"
                 });
             })
             dispatch({
-                type: EMULATORS_LIST_MODEL_INPUTS,
+                type: EMULATORS_LIST_MODEL_IO,
                 loading: false,
                 model: model,
-                inputs: modelInputs
+                inputs: modelIO
             });
         }
     });
 
     dispatch({
-        type: EMULATORS_LIST_MODEL_INPUTS,
+        type: EMULATORS_LIST_MODEL_IO,
         loading: true,
         model: model,
         inputs: null
@@ -340,7 +408,7 @@ const convertType = (value: string, type: string) => {
 
 type ListModelInputParamValuesThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListModelInputParamValues>;
 export const listModelTypeInputParamValues: ActionCreator<ListModelInputParamValuesThunkAction> = 
-        (model: string, input: EmulatorModelInput, regionid: string) => (dispatch) => {
+        (model: string, input: EmulatorModelIO, regionid: string) => (dispatch) => {
     let APOLLO_CLIENT = GraphQL.instance(auth);
     APOLLO_CLIENT.query({
         query: modelTypeParameterValuesQuery,
@@ -398,7 +466,7 @@ export const listModelTypeInputParamValues: ActionCreator<ListModelInputParamVal
 
 type ListModelInputDataValuesThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListModelInputDataValues>;
 export const listModelTypeInputDataValues: ActionCreator<ListModelInputDataValuesThunkAction> = 
-        (model: string, input: EmulatorModelInput, regionid: string) => (dispatch) => {
+        (model: string, input: EmulatorModelIO, regionid: string) => (dispatch) => {
     let APOLLO_CLIENT = GraphQL.instance(auth);
     APOLLO_CLIENT.query({
         query: modelTypeInputValuesQuery,
