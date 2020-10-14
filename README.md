@@ -93,3 +93,8 @@ Or build the development version with:
 ```
 yarn create-build-dev
 ```
+
+Or build the wildfire version with:
+```bash
+yarn create-build-wildfire
+```
