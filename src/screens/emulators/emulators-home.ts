@@ -142,6 +142,8 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
         this._selectedModelInput = null;
         store.dispatch(searchEmulatorsForModel(model, this._regionid));
         store.dispatch(listModelTypeIO(this._selectedModel, this._emulatorRegion));
+        store.dispatch(getNumEmulatorsForFilter(this._selectedModel, this._emulatorRegion, this._searchConstraints));        
+        store.dispatch(searchEmulatorsForFilter(this._selectedModel, this._emulatorRegion, this._searchConstraints));         
         goToPage("emulators/" + model);
     }
 
@@ -364,6 +366,8 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
         let params = (this._modelIO || []).filter((io)=>io.type == "parameter");
         let outputs = (this._modelIO || []).filter((io)=>io.type == "output");
 
+        let totalPages = Math.ceil(this._filtered_emulators.total / this.pageSize);
+
         return html`
         <nav-title .nav="${nav}"></nav-title>
 
@@ -497,8 +501,8 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                             html `<wl-button flat inverted @click=${() => this._nextPage(-1)}>Back</wl-button>` :
                             html `<wl-button flat inverted disabled>Back</wl-button>`
                         }
-                        Page ${this.currentPage} of ${this._filtered_emulators.total}
-                        ${this.currentPage < this._filtered_emulators.total ? 
+                        Page ${this.currentPage} of ${totalPages}
+                        ${this.currentPage < totalPages ? 
                             html `<wl-button flat inverted @click=${() => this._nextPage(1)}>Next</wl-button>` :
                             html `<wl-button flat inverted disabled>Next</wl-button>`
                         }
@@ -642,7 +646,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
 
     stateChanged(state: RootState) {
         super.setRegionId(state);
-        if(state.app.user && this._emulatorRegion != this._regionid && this._regionid) {
+        if(this._emulatorRegion != this._regionid && this._regionid) {
             if(this._emulatorRegion) {
                 this._selectedModel = null;            
                 state.emulators.selected_model = null;
