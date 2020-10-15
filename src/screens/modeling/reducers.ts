@@ -1,6 +1,6 @@
 import { Reducer } from "redux";
 import { RootAction } from "../../app/store";
-import { PROBLEM_STATEMENTS_LIST, PROBLEM_STATEMENT_DETAILS, PROBLEM_STATEMENT_SUBSCRIPTION, THREAD_SUBSCRIPTION, THREAD_DETAILS, THREAD_EXECUTIONS_LIST, TASKS_LIST, THREADS_LIST, TASK_DETAILS, THREADS_LIST_SUBSCRIPTION, TASKS_LIST_SUBSCRIPTION } from "./actions";
+import { PROBLEM_STATEMENTS_LIST, PROBLEM_STATEMENT_DETAILS, PROBLEM_STATEMENT_SUBSCRIPTION, THREAD_SUBSCRIPTION, THREAD_DETAILS, THREAD_EXECUTIONS_LIST, TASKS_LIST, THREADS_LIST, TASK_DETAILS, THREADS_LIST_SUBSCRIPTION, TASKS_LIST_SUBSCRIPTION, THREAD_EXECUTION_SUMMARY_SUBSCRIPTION } from "./actions";
 import { Model } from "../models/reducers";
 import { Dataset, DataResource, Dataslice } from "../datasets/reducers";
 import { IdMap, IdNameObject } from "../../app/reducers";
@@ -11,14 +11,24 @@ export interface ModelingState {
     problem_statements?: ProblemStatementList
     problem_statement?: ProblemStatement
     thread?: Thread
+    execution_summaries?: ModelExecutionSummary
     executions?: ModelExecutions
 }
 
 export interface ExecutionsWithStatus {
     loading: boolean,
+    changed: boolean,
+    unsubscribe: Function,
     executions: Execution[]
 }
-export type ModelExecutions = Map<string, ExecutionsWithStatus[]>
+
+export type ModelExecutions = {
+    [modelid: string] : ExecutionsWithStatus
+}
+
+export type ModelExecutionSummary = {
+    [modelid: string]: ExecutionSummary
+}
 
 export interface MintPermission {
     userid: string,
@@ -148,7 +158,9 @@ export interface ModelIOBindings {
 }
 
 export interface ExecutionSummary {
-    workflow_name: string
+    workflow_name?: string
+    changed?: boolean
+    unsubscribe?: Function
 
     submitted_for_execution: boolean
     submission_time: Date    
@@ -282,14 +294,21 @@ const modeling: Reducer<ModelingState, RootAction> = (state = INITIAL_STATE, act
             }
         case THREAD_EXECUTIONS_LIST: 
             state.executions = { ...state.executions };
-            state.executions[action.modelid] = state.executions[action.modelid] || [];
-            state.executions[action.modelid] = {
+            state.executions[action.model_id] = {
                 loading: action.loading,
+                unsubscribe: action.unsubscribe,
+                changed: true,
                 executions: action.executions
             }
             return {
                 ...state
             };   
+        case THREAD_EXECUTION_SUMMARY_SUBSCRIPTION: 
+            state.execution_summaries = { ...state.execution_summaries };
+            state.execution_summaries[action.model_id] = action.execution_summary;
+            return {
+                ...state
+            };
         default:
             return state;
     }

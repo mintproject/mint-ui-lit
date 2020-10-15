@@ -38,6 +38,8 @@ import newModelsGQL from '../../queries/model/new.graphql';
 
 import executionIdsForThreadGQL from '../../queries/execution/executionids-for-thread.graphql';
 import subscribeExecutionsListGQL from '../../queries/execution/list-subscription.graphql';
+import listThreadModelExecutionsListGQL from '../../queries/execution/executions-for-thread-model.graphql';
+import subscribeThreadExecutionSummaryListGQL from '../../queries/execution/thread-execution-summary-subscription.graphql';
 import listExecutionsListGQL from '../../queries/execution/list.graphql';
 
 import { problemStatementFromGQL, taskFromGQL, threadFromGQL, 
@@ -50,7 +52,7 @@ import { problemStatementFromGQL, taskFromGQL, threadFromGQL,
     modelToGQL,
     getCustomEvent,
     threadDataBindingsToGQL,
-    threadParameterBindingsToGQL, datasliceFromGQL} from '../../util/graphql_adapter';
+    threadParameterBindingsToGQL, datasliceFromGQL, threadModelExecutionSummaryFromGQL} from '../../util/graphql_adapter';
 import { postJSONResource } from 'util/mint-requests';
 import { isObject } from 'util';
 import { Md5 } from 'ts-md5';
@@ -92,6 +94,7 @@ export const THREAD_EXECUTIONS_LIST = 'THREAD_EXECUTIONS_LIST';
 export const THREAD_EXECUTIONS_ADD = 'THREAD_EXECUTIONS_ADD';
 export const THREAD_EXECUTIONS_REMOVE = 'THREAD_EXECUTIONS_REMOVE';
 export const THREAD_EXECUTIONS_RUN = 'THREAD_EXECUTIONS_RUN';
+export const THREAD_EXECUTION_SUMMARY_SUBSCRIPTION = 'THREAD_EXECUTION_SUMMARY_SUBSCRIPTION';
 
 export interface ProblemStatementsActionList extends Action<'PROBLEM_STATEMENTS_LIST'> { list: ProblemStatementList };
 export interface ProblemStatementsActionListSubscription extends Action<'PROBLEM_STATEMENTS_LIST_SUBSCRIPTION'> { unsubscribe: Function };
@@ -127,6 +130,7 @@ export interface ThreadsActionSubscription extends Action<'THREAD_SUBSCRIPTION'>
 export type ThreadsAction = ThreadsActionList | ThreadsActionAdd | ThreadsActionRemove 
     | ThreadsActionUpdate | ThreadsActionDetails | ThreadsActionSubscription | ThreadsActionListSubscription;
 
+
 export interface ThreadVariablesActionAdd extends Action<'THREAD_VARIABLES_ADD'> { 
     item: string, thread_id: string
 };
@@ -149,11 +153,20 @@ export interface ThreadDatasetsActionRemove extends Action<'THREAD_DATASETS_REMO
 };
 
 export interface ThreadExecutionsActionList extends Action<'THREAD_EXECUTIONS_LIST'> { 
-    thread_id: string
-    modelid: string
+    thread_model_id: string
+    model_id: string
     loading: boolean
+    unsubscribe?: Function
     executions: Execution[] 
 };
+
+export interface ThreadExecutionSummaryActionSubscription extends Action<'THREAD_EXECUTION_SUMMARY_SUBSCRIPTION'> { 
+    thread_model_id?: string
+    model_id: string
+    execution_summary?: ExecutionSummary,
+    unsubscribe?: Function 
+};
+
 export interface ThreadExecutionsActionAdd extends Action<'THREAD_EXECUTIONS_ADD'> { 
     item: Execution, thread_id: string
 };
@@ -168,7 +181,7 @@ export type ThreadAction = ThreadVariablesActionAdd | ThreadVariablesActionRemov
     ThreadModelsActionAdd | ThreadModelsActionRemove | 
     ThreadDatasetsActionAdd | ThreadDatasetsActionRemove |
     ThreadExecutionsActionAdd | ThreadExecutionsActionRemove | ThreadExecutionsActionRun | 
-    ThreadExecutionsActionList | ThreadsActionListSubscription;
+    ThreadExecutionsActionList | ThreadsActionListSubscription | ThreadExecutionSummaryActionSubscription;
 
 export type ModelingAction =  ProblemStatementsAction | TasksAction | ThreadsAction | ThreadAction ;
 
@@ -397,29 +410,79 @@ export const subscribeThread: ActionCreator<ThreadDetailsThunkResult> = (threadi
     });
 };
 
+// List ProblemStatements
+type ThreadExecutionSummaryThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionSummaryActionSubscription>;
+export const subscribeThreadExecutionSummary: ActionCreator<ThreadExecutionSummaryThunkResult> = 
+        (model_id: string, thread_model_id: string) => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let subscription = APOLLO_CLIENT.subscribe({
+        query: subscribeThreadExecutionSummaryListGQL,
+        variables: {
+            threadModelId: thread_model_id,
+        }
+    }).subscribe(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let tmsummary = result.data.thread_model_execution_summary;
+            let summary = threadModelExecutionSummaryFromGQL(tmsummary[0] ?? {});
+            summary.changed = true;
+            summary.unsubscribe = subscription.unsubscribe;
+            dispatch({
+                type: THREAD_EXECUTION_SUMMARY_SUBSCRIPTION,
+                model_id: model_id,
+                thread_model_id: thread_model_id,
+                execution_summary: summary,
+            })
+        }
+    });
+};
+
+
 // List Thread Runs
 type ListExecutionsThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionsActionList>;
-export const listThreadExecutions: ActionCreator<ListExecutionsThunkResult> = 
-        (thread_id: string, modelid: string, executionids: string[]) => (dispatch) => {
-    if(executionids && executionids.length > 0) {
-        dispatch({
-            type: THREAD_EXECUTIONS_LIST,
-            thread_id: thread_id,
-            modelid: modelid,
-            executions: null,
-            loading: true
-        });
+export const listThreadModelExecutionsAction: ActionCreator<ListExecutionsThunkResult> = 
+        (model_id: string, thread_model_id: string, 
+            start: number, limit: number, order_by: string,
+            ) => (dispatch) => {
 
-        listExecutions(executionids).then((executions) => {
+    dispatch({
+        type: THREAD_EXECUTIONS_LIST,
+        model_id: model_id,
+        thread_model_id: thread_model_id,
+        executions: null,
+        loading: true
+    });
+
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    APOLLO_CLIENT.query({
+        query: listThreadModelExecutionsListGQL,
+        variables: {
+            threadModelId: thread_model_id,
+            start: start,
+            limit: limit,
+            orderBy: order_by ? [order_by] : []
+        },
+        fetchPolicy: "no-cache"
+    }).then((result) => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let executions = result.data.execution.map((ex:any) => executionFromGQL(ex));
             dispatch({
                 type: THREAD_EXECUTIONS_LIST,
-                thread_id: thread_id,
-                modelid: modelid,
+                model_id: model_id,
+                thread_model_id: thread_model_id,
+                //unsubscribe: subscription.unsubscribe,
                 loading: false,
                 executions
             })
-        });
-    }
+        }
+    });
 };
 
 export const getAllThreadExecutionIds = async (thread_id: string, modelid: string) : Promise<string[]> => {
@@ -787,26 +850,6 @@ const _deleteCollection = (collRef: firebase.firestore.CollectionReference, subC
 
 /* Execution Functions */
 
-// List Executions
-export const listExecutions = (executionids: string[]) : Promise<Execution[]> => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
-    return APOLLO_CLIENT.query({
-        query: listExecutionsListGQL,
-        variables: {
-            ids: executionids
-        }
-    }).then((result) => {
-        if(result.errors && result.errors.length > 0) {
-            console.log("ERROR");
-            console.log(result);
-        }
-        else {
-            return result.data.execution.map((ex:any) => executionFromGQL(ex));
-        }
-        return null;        
-    });
-};
-
 export const getMatchingEnsemble = (ensembles: Execution[], execution: Execution, hashes: string[]) => {
     let hash = getEnsembleHash(execution);
     let index = hashes.indexOf(hash);
@@ -827,10 +870,8 @@ export const getEnsembleHash = (ensemble: Execution) : string => {
     return Md5.hashStr(str).toString();
 }
 
-export const sendDataForIngestion = (problem_statement_id: string, task_id: string, threadid: string, prefs: UserPreferences) => {
+export const sendDataForIngestion = (threadid: string, prefs: UserPreferences) => {
     let data = {
-        problem_statement_id: problem_statement_id,
-        task_id: task_id,
         thread_id: threadid
     };
     return new Promise<void>((resolve, reject) => {
@@ -861,35 +902,4 @@ export const threadTotalRunsChanged = (oldthread: Thread, newthread: Thread) => 
         newtotal += newthread.execution_summary[modelid].total_runs;
     })
     return oldtotal != newtotal;
-}
-
-
-export const threadSummaryChanged = (oldthread: Thread, newthread: Thread) => {
-    if(oldthread == null && newthread != null)
-        return true;
-    if(newthread == null)
-        return false;
-
-    let oldsummary = _stringify_ensemble_summary(oldthread.execution_summary);
-    let newsummary = _stringify_ensemble_summary(newthread.execution_summary);
-    return oldsummary != newsummary;
-}
-
-const _stringify_ensemble_summary = (obj: Object) => {
-    if(!obj) {
-        return "";
-    }
-    let keys = Object.keys(obj);
-    keys = keys.sort();
-    let str = "";
-    keys.map((key) => {
-        if(key.match(/ingested_runs/) 
-            || key.match(/fetched_run_outputs/) 
-            || key.match(/submitted_for_ingestion/)) {
-            return;
-        }
-        let binding = isObject(obj[key]) ? _stringify_ensemble_summary(obj[key]) : obj[key];
-        str += key + "=" + binding + "&";
-    })
-    return str;
 }

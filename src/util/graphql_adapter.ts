@@ -65,6 +65,15 @@ export const permissionFromGQL = (permobj: any) : MintPermission => {
     return permission;
 }
 
+export const permissionToGQL = (permission: MintPermission) => {
+    let permissionobj = {
+        user_id: permission.userid,
+        read: permission.read ?? false,
+        write: permission.write ?? false
+    };
+    return permissionobj;
+}
+
 export const problemStatementToGQL = (problem_statement: ProblemStatementInfo) => {
     let problemobj = {
         id: getAutoID(),
@@ -74,6 +83,13 @@ export const problemStatementToGQL = (problem_statement: ProblemStatementInfo) =
         region_id: problem_statement.regionid,
         events: {
             data: problem_statement.events.map(eventToGQL)
+        },
+        permissions: {
+            data: (problem_statement.permissions || []).map(permissionToGQL),
+            on_conflict: {
+                constraint: "problem_statement_permission_pkey",
+                update_columns: ["read", "write"]
+            }
         }
     };
     return problemobj;
@@ -88,6 +104,13 @@ export const problemStatementUpdateToGQL = (problem_statement: ProblemStatementI
         region_id: problem_statement.regionid,
         events: {
             data: problem_statement.events.map(eventToGQL)
+        },
+        permissions: {
+            data: (problem_statement.permissions || []).map(permissionToGQL),
+            on_conflict: {
+                constraint: "problem_statement_permission_pkey",
+                update_columns: ["read", "write"]
+            }
         }
     };
     return problemobj;
@@ -128,6 +151,13 @@ export const taskToGQL = (task: Task, problem_statement: ProblemStatementInfo) =
         driving_variable_id: task.driving_variables.length > 0 ? task.driving_variables[0] : null,
         events: {
             data: task.events.map(eventToGQL),
+        },
+        permissions: {
+            data: (task.permissions || []).map(permissionToGQL),
+            on_conflict: {
+                constraint: "task_permission_pkey",
+                update_columns: ["read", "write"]
+            }
         }
     };
     return taskGQL;
@@ -145,6 +175,13 @@ export const taskUpdateToGQL = (task: Task) => {
         driving_variable_id: task.driving_variables.length > 0 ? task.driving_variables[0] : null,
         events: {
             data: task.events.map(eventToGQL),
+        },
+        permissions: {
+            data: (task.permissions || []).map(permissionToGQL),
+            on_conflict: {
+                constraint: "task_permission_pkey",
+                update_columns: ["read", "write"]
+            }
         }
     };
     
@@ -189,6 +226,13 @@ export const threadInfoToGQL = (thread: ThreadInfo, taskid: string, regionid: st
         driving_variable_id: thread.driving_variables.length > 0 ? thread.driving_variables[0] : null,
         events: {
             data: thread.events.map(eventToGQL),
+        },
+        permissions: {
+            data: (thread.permissions || []).map(permissionToGQL),
+            on_conflict: {
+                constraint: "thread_permission_pkey",
+                update_columns: ["read", "write"]
+            }
         }
     };
     return threadobj;
@@ -205,6 +249,13 @@ export const threadInfoUpdateToGQL = (thread:  ThreadInfo) => {
         driving_variable_id: thread.driving_variables.length > 0 ? thread.driving_variables[0] : null,
         events: {
             data: thread.events.map(eventToGQL),
+        },
+        permissions: {
+            data: (thread.permissions || []).map(permissionToGQL),
+            on_conflict: {
+                constraint: "thread_permission_pkey",
+                update_columns: ["read", "write"]
+            }
         }
     };
     return threadobj;
@@ -260,27 +311,33 @@ export const threadFromGQL = (thread: any) => {
         fbthread.model_ensembles[model.id] = {
             id: tm["id"],
             bindings: model_ensemble
-        }
+        };
 
-        tm["execution_summary"].forEach((tmex) => {
-            fbthread.execution_summary[model.id] = {
-                total_runs: tmex["total_runs"],
-                submitted_runs: tmex["submitted_runs"],
-                successful_runs: tmex["successful_runs"],
-                failed_runs: tmex["failed_runs"],
-                ingested_runs: tmex["ingested_runs"],
-                registered_runs: tmex["registered_runs"],
-                published_runs: tmex["published_runs"],
-                submission_time: tmex["submission_time"],
-                submitted_for_execution: tmex["submitted_for_execution"],
-                fetched_run_outputs: tmex["fetched_run_outputs"],
-                submitted_for_ingestion: tmex["submitted_for_ingestion"],
-                submitted_for_publishing: tmex["submitted_for_publishing"],
-                submitted_for_registration: tmex["submitted_for_registration"]
-            } as ExecutionSummary
+        (tm["execution_summary"] ?? []).forEach((tmex) => {
+            fbthread.execution_summary[model.id] = threadModelExecutionSummaryFromGQL(tmex);
+            // Set summary changed to true, to load the executions initially
+            fbthread.execution_summary[model.id].changed = true;
         });
     })
     return fbthread;
+}
+
+export const threadModelExecutionSummaryFromGQL = (tmex: any) => {
+    return {
+        total_runs: tmex["total_runs"],
+        submitted_runs: tmex["submitted_runs"],
+        successful_runs: tmex["successful_runs"],
+        failed_runs: tmex["failed_runs"],
+        ingested_runs: tmex["ingested_runs"],
+        registered_runs: tmex["registered_runs"],
+        published_runs: tmex["published_runs"],
+        submission_time: tmex["submission_time"],
+        submitted_for_execution: tmex["submitted_for_execution"],
+        fetched_run_outputs: tmex["fetched_run_outputs"],
+        submitted_for_ingestion: tmex["submitted_for_ingestion"],
+        submitted_for_publishing: tmex["submitted_for_publishing"],
+        submitted_for_registration: tmex["submitted_for_registration"]
+    } as ExecutionSummary;
 }
 
 export const threadModelsToGQL = (models: Model[], threadid: string) => {
@@ -432,13 +489,13 @@ export const executionToGQL = (ex: Execution) => {
     return null;
 }
 
-export const executionFromGQL = (ex: any) : Execution => {
+export const executionFromGQL = (ex: any, emulator=false) : Execution => {
     let exobj = {
         id: ex.id.replace(/\-/g,''),
         modelid: ex.model_id,
         status: ex.status,
-        start_time: ex.start_time,
-        end_time: ex.end_time,
+        start_time: new Date(ex.start_time),
+        end_time: ex.end_time ? new Date(ex.end_time) : null,
         execution_engine: ex.execution_engine,
         run_progress: ex.run_progress,
         runid: ex.run_id,
@@ -446,13 +503,13 @@ export const executionFromGQL = (ex: any) : Execution => {
         results: {}
     } as Execution;
     ex.parameter_bindings.forEach((param:any) => {
-        exobj.bindings[param.model_parameter_id] = param.parameter_value;
+        exobj.bindings[(emulator ? param.model_parameter.name : param.model_parameter_id)] = param.parameter_value;
     });
     ex.data_bindings.forEach((data:any) => {
-        exobj.bindings[data.model_io_id] = data.resource as DataResource;
+        exobj.bindings[(emulator ? data.model_io.name : data.model_io_id)] = data.resource as DataResource;
     });
     ex.results.forEach((data:any) => {
-        exobj.results[data.model_io_id] = data.resource as DataResource;
+        exobj.results[(emulator ? data.model_output.name : data.model_io_id)] = data.resource as DataResource;
     });
     return exobj;
 }

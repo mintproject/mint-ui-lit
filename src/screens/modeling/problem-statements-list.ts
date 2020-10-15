@@ -19,6 +19,7 @@ import "weightless/popover-card";
 import "weightless/snackbar";
 
 import "./mint-problem-statement";
+import "../../components/permissions-editor";
 
 import { goToPage } from '../../app/actions';
 import { PageViewElement } from '../../components/page-view-element';
@@ -28,7 +29,8 @@ import { Region, RegionMap } from '../regions/reducers';
 import { toDateString, toDateTimeString } from 'util/date-utils';
 import { getLatestEventOfType, getLatestEvent } from 'util/event_utils';
 import { getCreateEvent, getUpdateEvent } from '../../util/graphql_adapter';
-import { getUserPermission } from 'util/permission_utils';
+import { getUserPermission } from '../../util/permission_utils';
+import { PermissionsEditor } from '../../components/permissions-editor';
 
 @customElement('problem-statements-list')
 export class ProblemStatementsList extends connect(store)(PageViewElement) {
@@ -98,10 +100,13 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
                   ${toDateTimeString(last_event?.timestamp)}
                 </div>
                 <div style="height: 24px; width: 40px; padding-left: 10px; display:flex; justify-content: end">
-                  ${permissions.write ? html`
+                  ${permissions.owner ? html`
                     <wl-icon @click="${this._editProblemStatementDialog}" data-problem_statement_id="${problem_statement.id}"
                         id="editProblemStatementIcon" class="actionIcon editIcon">edit</wl-icon>
-                    `: html`<div style='width:20px'>&nbsp;</div><wl-icon class="smallIcon">lock</wl-icon>`} 
+                    `: 
+                    !permissions.write ? html`<div style='width:20px'>&nbsp;</div><wl-icon class="smallIcon">lock</wl-icon>`
+                    : ""
+                  } 
                   ${permissions.owner ? html`
                     <wl-icon @click="${this._onDeleteProblemStatement}" data-problem_statement_id="${problem_statement.id}"
                         id="delProblemStatementIcon" class="actionIcon deleteIcon">delete</wl-icon>
@@ -189,6 +194,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
           <div class="input_full">
             <textarea style="color:unset; font: unset;" name="problem_statement_notes" rows="4"></textarea>
           </div>
+          <permissions-editor id="problem_statement_permissions"></permissions-editor>
         </form>
       </div>
       <div slot="footer">
@@ -206,6 +212,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
     (form.elements["problem_statement_notes"] as HTMLInputElement).value = "";
     (form.elements["problem_statement_from"] as HTMLInputElement).value = "";
     (form.elements["problem_statement_to"] as HTMLInputElement).value = "";
+    (form.querySelector("#problem_statement_permissions") as PermissionsEditor).setPermissions([]);
 
     showDialog("problem_statementDialog", this.shadowRoot!);
   }
@@ -220,6 +227,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
         let problem_statement_from = (form.elements["problem_statement_from"] as HTMLInputElement).value;
         let problem_statement_to = (form.elements["problem_statement_to"] as HTMLInputElement).value;
         let problem_statement_notes = (form.elements["problem_statement_notes"] as HTMLInputElement).value;
+        let problem_statement_permissions = (form.querySelector("#problem_statement_permissions") as PermissionsEditor).permissions;
 
         let problem_statement = {
           name: problem_statement_name,
@@ -230,7 +238,8 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
             end_date: new Date(problem_statement_to)
           },
           notes: problem_statement_notes,
-          events: []
+          events: [],
+          permissions: problem_statement_permissions
         } as ProblemStatementInfo;
 
         showNotification("saveNotification", this.shadowRoot!);
@@ -271,6 +280,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
             (form.elements["problem_statement_from"] as HTMLInputElement).value = toDateString(dates.start_date);
             (form.elements["problem_statement_to"] as HTMLInputElement).value = toDateString(dates.end_date);
             (form.elements["problem_statement_notes"] as HTMLInputElement).value = last_event?.notes ? last_event.notes : "";
+            (form.querySelector("#problem_statement_permissions") as PermissionsEditor).setPermissions(problem_statement.permissions);
             showDialog("problem_statementDialog", this.shadowRoot!);
         }
     }
@@ -300,7 +310,6 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
   }
 
   _showProblemStatements() {
-    console.log('here');
     var item = this.shadowRoot!.getElementById("problem_statementsTab");
     var item2 = this.shadowRoot!.getElementById("datasetsTab");
     item!.className = "middle2 active";

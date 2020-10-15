@@ -1,0 +1,25 @@
+query model_inputs_for_model($regionId: String!, $inputName: String!, $modelType: String!) {
+  model_io(where: {name: {_eq: $inputName}, model_inputs: {model: {model_name: {_eq: $modelType}, thread_models: {thread: {_or: [{region_id: {_eq: $regionId}}, {region: {parent_region_id: {_eq: $regionId}}}]}}}}}) {
+    fixed_bindings {
+      resource {
+        id
+        name
+        url
+      }
+    }
+    execution_data_bindings(
+      where: {
+        execution: {
+          status: {_eq: "SUCCESS"}
+          model: {model_name: {_eq: $modelType}, thread_models: {thread: {_or: [{region_id: {_eq: $regionId}}, {region: {parent_region_id: {_eq: $regionId}}}]}}}
+        }
+      }
+      distinct_on: resource_id) {
+      resource {
+        id
+        name
+        url
+      }
+    }
+  }
+}
