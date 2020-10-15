@@ -224,7 +224,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
                 </wl-title>
                 <p>
                     The models below generate data that includes the indicator that you selected earlier: 
-                    <b>"${this.thread.response_variables.map((variable) => getVariableLongName(variable)).join(", ")}"</b>.
+                    "${this.thread.response_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
                     Other models that are available in the system do not generate that kind of result.
                     ${this.thread.driving_variables.length ? 
                         html`
@@ -246,8 +246,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
                                     <th></th>
                                     <th><b>Model</b></th>
                                     <th>Category</th>
-                                    <th>Region</th>
-                                    <th>Indicator</th>
+                                    <th>Calibration Region</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -255,6 +254,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
                                     availableModels.map((model: Model) => {
                                         if(!model)
                                             return;
+                                        //console.log('>>', model);
                                         if(this._showAllModels || regionModels.indexOf(model) >=0) {
                                             return html`
                                             <tr>
@@ -272,9 +272,6 @@ export class MintModels extends connect(store)(MintThreadPage) {
                                                     html`${this._allRegions[region.id].label[0]}` : ''
                                                 ) : ''}
                                                 </td>
-                                                <td>
-                                                    ${model.indicators ? html`<div>${model.indicators}</div>` : ''}
-                                                </td> 
                                             </tr>
                                             `;
                                         }
@@ -336,7 +333,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
     }
 
     _renderDialogs() {
-        let compUrl : string = this._regionid + '/models/compare/setup=' + this._modelsToCompare.map(getId).join('&setup=');
+        let compUrl : string = this._regionid + '/models/compare/' + this._modelsToCompare.map(getId).join('/');
         let loading : boolean = this._modelsToCompare.some((m:Model) => !this._loadedModels[m.id]);
         return html`
         <wl-dialog class="comparison" fixed backdrop blockscrolling id="comparisonDialog">

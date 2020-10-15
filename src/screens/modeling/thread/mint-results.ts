@@ -5,14 +5,13 @@ import ReactGA from 'react-ga';
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { matchVariables, getThreadParametersStatus, TASK_DONE } from "../../../util/state_functions";
-import { Execution, ModelExecutions, Thread } from "../reducers";
-import { getAllThreadExecutionIds, listThreadExecutions, threadSummaryChanged, threadTotalRunsChanged, sendDataForIngestion } from "../actions";
+import { Execution, ExecutionSummary, ModelExecutions, Thread } from "../reducers";
+import { sendDataForIngestion, subscribeThreadExecutionSummary, listThreadModelExecutionsAction } from "../actions";
 import { showNotification } from "../../../util/ui_functions";
 import { selectThreadSection } from "../../../app/ui-actions";
 import { renderLastUpdateText, renderNotifications } from "../../../util/ui_renders";
 import { MintThreadPage } from "./mint-thread-page";
 import { Model } from "screens/models/reducers";
-import { IdMap } from "app/reducers";
 import { DataResource } from "screens/datasets/reducers";
 import { downloadFile } from "util/ui_functions";
 import { getPathFromModel } from "../../models/reducers";
@@ -31,25 +30,18 @@ export class MintResults extends connect(store)(MintThreadPage) {
     private _showAllResults: Boolean = true;
 
     @property({type: Object})
-    private _progress_item: Model;
-    @property({type: Number})
-    private _progress_total : number;
-    @property({type: Number})
-    private _progress_number : number;
-    @property({type: Boolean})
-    private _progress_abort: boolean;
-
-    @property({type: Object})
     private totalPages : Map<string, number> = {} as Map<string, number>;
     @property({type: Object})
     private currentPage : Map<string, number> = {} as Map<string, number>;
     @property({type: Number})
     private pageSize = 100;
+    @property({type: String})
+    private orderBy = "start_time";
+    @property({type: Boolean})
+    private orderByDesc = false;
 
     @property({type: String})
-    private task_id: string;
-
-    private threadModelExecutionIds: IdMap<string[]> = {};
+    private _thread_id: string;
     
     static get styles() {
         return [
@@ -79,6 +71,8 @@ export class MintResults extends connect(store)(MintThreadPage) {
        let grouped_executions = {};
        Object.keys(this._executions || {}).map((modelid) => {
             let model = this.thread.models![modelid];
+            if(!model) 
+                return;
             let loading = this._executions[modelid].loading;
             grouped_executions[model.id] = {
                 executions: {},
@@ -225,7 +219,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                         }
                         ${!grouped_ensemble || !grouped_ensemble.loading ?
                         html`<wl-button type="button" flat inverted  style="float:right"
-                            @click="${() => this._fetchRuns(model.id, 1, this.pageSize)}">Reload</wl-button>`: ""
+                            @click="${() =>(this.currentPage[model.id] = 1) && this._fetchRuns(model.id)}">Reload</wl-button>`: ""
                         }
                     </div>
                     <div style="height:400px;overflow:auto;width:100%;border:1px solid #EEE">
@@ -420,18 +414,26 @@ export class MintResults extends connect(store)(MintThreadPage) {
         downloadFile(csv, 'results.csv', 'text/csv;encoding:utf-8');
     }
 
-    _nextPage(modelid: string, offset:  number) {
-        this._fetchRuns(modelid, this.currentPage[modelid] + offset, this.pageSize)
+    _orderBy(modelid: string, orderBy: string) {
+        this.orderBy = orderBy;
+        this._fetchRuns(modelid)
     }
 
-    async _fetchRuns (modelid: string, currentPage: number, pageSize: number) {
-        this.currentPage[modelid] = currentPage;
-        
-        if(!this.threadModelExecutionIds[modelid])
-            this.threadModelExecutionIds[modelid] =  await getAllThreadExecutionIds(this.thread.id, modelid);
-        
-        let ensembleids = this.threadModelExecutionIds[modelid].slice((currentPage - 1)*pageSize, currentPage*pageSize);
-        store.dispatch(listThreadExecutions(this.thread.id, modelid, ensembleids));
+    _nextPage(modelid: string, offset:  number) {
+        this.currentPage[modelid] += offset;
+        this._fetchRuns(modelid)
+    }
+
+    async _fetchRuns (modelid: string) {
+        if(!this.currentPage[modelid])
+            this.currentPage[modelid] = 1;        
+        let start = (this.currentPage[modelid] - 1)*this.pageSize;
+        let limit = this.pageSize;
+        let orderBy = {};
+        orderBy[this.orderBy] = this.orderByDesc ? "desc" : "asc";
+        store.dispatch(listThreadModelExecutionsAction(
+            modelid, this.thread.model_ensembles[modelid].id, 
+            start, limit, orderBy));
     }
     
     _getModelURL (model:Model) {
@@ -468,7 +470,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
         */
         showNotification("saveNotification", this.shadowRoot);       
         
-        sendDataForIngestion(this.problem_statement.id, this.task_id, this.thread.id, this.prefs);
+        sendDataForIngestion(this.thread.id, this.prefs);
         
         this.thread.execution_summary[modelid].submitted_for_ingestion = true;
     }
@@ -479,7 +481,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
             if(!this.currentPage[modelid])
                 this.currentPage[modelid] = 1;
             console.log("Fetch runs for model " + modelid);
-            promises.push(this._fetchRuns(modelid, this.currentPage[modelid] , this.pageSize));
+            promises.push(this._fetchRuns(modelid));
         })
         await Promise.all(promises);
     }
@@ -487,39 +489,66 @@ export class MintResults extends connect(store)(MintThreadPage) {
     stateChanged(state: RootState) {
         super.setUser(state);
         super.setRegionId(state);
-
-        // Before resetting thread, check if the thread run status has changed
-        // **** FIXME : New runs reload algorithm *****
-        // - Subscribe to only the summary changes
-        // - When summary changes -> mark it as changed -> set a Timer (1 minute or so)
-        //                        -> if already marked -> ignore
-        // - When timer expires -> if marked as changed -> reload -> reset mark
-
-        // *** FIXME : New runs load query ***
-        // - Query with sort by, asc/desc, limit and offset
-        // - Set sort by, asc/desc by UI
-        // - Set offset when page changed
-
-        
-        // Before resetting thread, check if the thread run status has changed
-        let runs_status_changed = threadSummaryChanged(this.thread, state.modeling.thread);
-        let runs_total_changed = threadTotalRunsChanged(this.thread, state.modeling.thread);
-
         super.setThread(state);
 
-        if(state.ui) {
-            this.task_id = state.ui.selected_task_id
-        }
-        if(state.modeling.executions) {
-            this._executions = state.modeling.executions;
+        let thread_id = this.thread?.id
+        // If a thread has been selected, fetch thread details
+        if(thread_id && this.user) {
+            if(!this._thread_id || (this._thread_id != thread_id)) {
+                this._thread_id = thread_id;
+                // Unsubscribe to any existing thread executions listeners
+                console.log("Unsubscribing to model execution summary");
+                for(let modelid in state.modeling.execution_summaries) {
+                    let summary : ExecutionSummary = state.modeling.execution_summaries[modelid];
+                    summary.unsubscribe();
+                }
+                // Make a subscription call for the new thread models
+                console.log("Subscribing to model execution summaries for "+this._thread_id);
+                for(let modelid in state.modeling.thread.model_ensembles) {
+                    let current_summary = this.thread.execution_summary[modelid];
+                    if(current_summary) {
+                        if(current_summary.total_runs != 
+                            (current_summary.failed_runs + current_summary.successful_runs)) {
+                            // If the ensemble is currently running, subscribe to changes in the summary
+                            if(state.modeling.execution_summaries) {
+                                delete state.modeling.execution_summaries[modelid];
+                                delete state.modeling.executions[modelid];
+                            }
+                            store.dispatch(subscribeThreadExecutionSummary(modelid, 
+                                state.modeling.thread.model_ensembles[modelid].id));
+                        }
+                    }           
+                }
+                return;
+            }
         }
 
-        let cando = this.thread && (getThreadParametersStatus(this.thread) == TASK_DONE);
-        if(runs_status_changed && cando) {
-            if(runs_total_changed) {
-                this.threadModelExecutionIds = {};
+        if(state.modeling && state.ui && state.ui.selected_thread_id == null) {
+            console.log("Unsubscribing to model execution summary");
+            for(let modelid in state.modeling.execution_summaries) {
+                let summary : ExecutionSummary = state.modeling.execution_summaries[modelid];
+                summary.unsubscribe();
             }
-            this._reloadAllRuns();
+        }
+
+        // If run status has changed, then reload all runs
+        if(state.modeling.execution_summaries && this.thread) {
+            this.thread.execution_summary = state.modeling.execution_summaries;
+        }
+
+        // Fetch runs for a model if any execution summary has changed
+        for(let modelid in this.thread?.execution_summary ?? {}) {
+            let summary : ExecutionSummary = this.thread.execution_summary[modelid];
+            if(summary.changed) {
+                // If the execution summary has changed, then fetch runs
+                // TODO: Batch fetching of runs (otherwise it refreshes too much)
+                summary.changed = false;
+                this._fetchRuns(modelid);
+            }
+        }
+
+        if(state.modeling.executions) {
+            this._executions = state.modeling.executions; 
         }
     }
 }

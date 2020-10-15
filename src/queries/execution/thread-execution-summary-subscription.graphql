@@ -1,0 +1,12 @@
+#import "../fragments/execution-summary-info.graphql"
+
+subscription execution_summary(
+  $threadModelId: uuid!) {
+	thread_model_execution_summary (
+    where: {
+        thread_model_id:{_eq: $threadModelId}
+    }
+  ) {
+    ...execution_summary_info
+  }
+}

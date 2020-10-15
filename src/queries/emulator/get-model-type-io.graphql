@@ -1,0 +1,14 @@
+query model_inputs_for_model($regionId: String!, $modelType: String!) {
+  model_parameter(distinct_on: name, where: {model: {model_name: {_eq: $modelType}, thread_models: {thread: {_or: [{region_id: {_eq: $regionId}}, {region: {parent_region_id: {_eq: $regionId}}}]}}}}) {
+    name
+    datatype
+  }
+  model_inputs: model_io(distinct_on: name, where: {model_inputs: {model: {model_name: {_eq: $modelType}, thread_models: {thread: {_or: [{region_id: {_eq: $regionId}}, {region: {parent_region_id: {_eq: $regionId}}}]}}}}}) {
+    name
+    type
+  }
+  model_outputs: model_io(distinct_on: name, where: {model_outputs: {model: {model_name: {_eq: $modelType}, thread_models: {thread: {_or: [{region_id: {_eq: $regionId}}, {region: {parent_region_id: {_eq: $regionId}}}]}}}}}) {
+    name
+    type
+  }
+}

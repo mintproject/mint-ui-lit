@@ -283,6 +283,13 @@ export const SharedStyles = css`
     color: #888;
     font-weight: normal;
   }
+
+  .pure-table td.caption {
+    color: #aaa;
+    font-size: 11px;
+    font-weight: normal;
+  }
+
   .cltmain .caption {
     color: #aaa;
     font-size: 11px;

@@ -8,6 +8,9 @@ import { getUpdateEvent, getCreateEvent } from "util/graphql_adapter";
 import { updateThreadInformation, addThread } from "screens/modeling/actions";
 import { toDateString } from "util/date-utils";
 import { getLatestEventOfType } from "util/event_utils";
+import { PermissionsEditor } from "./permissions-editor";
+
+import "./permissions-editor";
 
 @customElement('thread-editor')
 export class ThreadEditor extends LitElement {
@@ -116,6 +119,7 @@ export class ThreadEditor extends LitElement {
                     </div>
                 </div>
                 <br />
+                <permissions-editor id="thread_permissions"></permissions-editor>
                 </form>
             </div>
             <div slot="footer">
@@ -128,12 +132,13 @@ export class ThreadEditor extends LitElement {
 
     _onEditThreadSubmit() {
         let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#threadForm")!;
-        if(formElementsComplete(form, ["thread_name"])) {
+        //if(formElementsComplete(form, ["thread_name"])) {
             let threadid = (form.elements["threadid"] as HTMLInputElement).value;
             let thread_name = (form.elements["thread_name"] as HTMLInputElement).value;
             let thread_from = (form.elements["thread_from"] as HTMLInputElement).value;
             let thread_to = (form.elements["thread_to"] as HTMLInputElement).value;
             let thread_notes = (form.elements["thread_notes"] as HTMLInputElement).value;
+            let thread_permissions = (form.querySelector("#thread_permissions") as PermissionsEditor).permissions;
 
             showNotification("saveNotification", this.shadowRoot!);
             
@@ -147,6 +152,7 @@ export class ThreadEditor extends LitElement {
                     end_date: new Date(thread_to)
                 };
                 thread.events = [getUpdateEvent(thread_notes) as ThreadEvent];
+                thread.permissions = thread_permissions;
                 updateThreadInformation(thread);
             }
             else {
@@ -164,16 +170,17 @@ export class ThreadEditor extends LitElement {
                     datasets: {},
                     model_ensembles: {},
                     execution_summary: {},
-                    events: [getCreateEvent(thread_notes)]
+                    events: [getCreateEvent(thread_notes)],
+                    permissions: thread_permissions
                 } as ThreadInfo;
 
                 addThread(this.task, thread);
             }
             hideDialog("threadDialog", this.shadowRoot!);
-        }
+        /*}
         else {
             showNotification("formValuesIncompleteNotification", this.shadowRoot!);
-        }
+        }*/
     }
 
     _onEditThreadCancel() {
@@ -198,6 +205,7 @@ export class ThreadEditor extends LitElement {
         (form.elements["thread_from"] as HTMLInputElement).value = toDateString(dates.start_date);
         (form.elements["thread_to"] as HTMLInputElement).value = toDateString(dates.end_date);
         (form.elements["thread_notes"] as HTMLInputElement).value = "";
+        (form.querySelector("#thread_permissions") as PermissionsEditor).setPermissions([]);
     }
 
     setThread(thread: ThreadInfo) {
@@ -214,6 +222,7 @@ export class ThreadEditor extends LitElement {
             (form.elements["thread_from"] as HTMLInputElement).value = toDateString(dates.start_date);
             (form.elements["thread_to"] as HTMLInputElement).value = toDateString(dates.end_date);
             (form.elements["thread_notes"] as HTMLInputElement).value = notes;
+            (form.querySelector("#thread_permissions") as PermissionsEditor).setPermissions(thread.permissions);
         } 
     }
 }
