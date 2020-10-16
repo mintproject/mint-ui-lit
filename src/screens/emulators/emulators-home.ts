@@ -366,7 +366,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
         let params = (this._modelIO || []).filter((io)=>io.type == "parameter");
         let outputs = (this._modelIO || []).filter((io)=>io.type == "output");
 
-        let totalPages = Math.ceil(this._filtered_emulators.total / this.pageSize);
+        let totalPages = Math.ceil((this._filtered_emulators?.total ?? 0) / this.pageSize);
 
         return html`
         <nav-title .nav="${nav}"></nav-title>
