@@ -4,7 +4,7 @@ import { WebSocketLink } from '@apollo/client/link/ws';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { SubscriptionClient } from 'subscriptions-transport-ws';
 
-const ENDPOINT = "graphql.mint.isi.edu/v1/graphql";
+const ENDPOINT = "graphql.wildfire.mint.isi.edu/v1/graphql";
 const SECRET = "WmGrIc4MxU";
 
 /* Typescript declarations so window.__APOLLO_CLIENT__ doesn't give an error */

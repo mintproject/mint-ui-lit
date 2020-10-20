@@ -1,0 +1,8 @@
+export FIREBASE_API_KEY=AIzaSyC8GFYvhuFI_zM7TDoyuh-dSqcAkngO7W0
+export FIREBASE_AUTH_DOMAIN=mint-wildfire.firebaseapp.com
+export FIREBASE_DATABASE_URL=https://mint-wildfire.firebaseio.com
+export FIREBASE_PROJECT_ID=mint-wildfire
+export FIREBASE_STORAGE_BUCKET=mint-wildfire.appspot.com
+export FIREBASE_MESSAGING_SENDER_ID=25480984621
+export FIREBASE_APP_ID=1:25480984621:web:0a7e9e73ffbb695066e0a4
+export GOOGLE_MAPS_API_KEY=AIzaSyBl8J85KibSuhHEw_j0JTlITVTBb8oXiMo

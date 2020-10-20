@@ -11,10 +11,11 @@
   "scripts": {
     "gulp": "gulp -f gulp/config.ts --cwd .",
     "start": "cross-env BROWSERSLIST=\"edge > 12\" webpack-dev-server --config webpack/dev.config.ts --hot --color --compress --overlay --history-api-fallback --open",
+    "start-wildfire": "cross-env BROWSERSLIST=\"edge > 12\" webpack-dev-server --config webpack/wildfire`.config.ts --hot --color --compress --overlay --history-api-fallback --open",
     "build:static": "cross-env STATIC=true npm run gulp build:es6",
     "create-build": "webpack --config webpack/prod.config.ts",
     "create-build-dev": "webpack --config webpack/dev.config.ts",
-    "create-build-wildfire": "webpack --config webpack/wildfire.config.ts",
+    "create-build-wildfire": "webpack --config webpack/wildfire.config.ts && sed -i 's/api.models.mint.isi.edu/api.models.wildfire.mint.isi.edu/g' build/components/0.js",
     "build": "ts-node webpack/build.ts",
     "serve": "prpl-server --root build/ ",
     "lint": "npm run gulp lint"

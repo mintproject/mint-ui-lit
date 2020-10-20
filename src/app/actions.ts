@@ -18,7 +18,7 @@ import { selectProblemStatement, selectThread, selectTask, selectThreadSection, 
 import { auth, db } from '../config/firebase';
 import { User } from 'firebase';
 import { MintPreferences, UserProfile } from './reducers';
-import { DefaultApi } from '@mintproject/modelcatalog_client';
+import { Configuration, DefaultApi, ConfigurationParameters } from '@mintproject/modelcatalog_client';
 import { dexplorerSelectDataset, dexplorerSelectDatasetArea } from 'screens/datasets/ui-actions';
 import { selectEmulatorModel } from 'screens/emulators/actions';
 
@@ -178,7 +178,10 @@ export const signOut = () => {
 };
 
 const modelCatalogLogin = (username: string, password: string) => {
-  let API = new DefaultApi();
+  let fetchApiUrl = "https://api.models.wildfire.mint.isi.edu/v1.5.0"
+  let cfg_parameters = {basePath: fetchApiUrl} as ConfigurationParameters
+  let cfg : Configuration = new Configuration(cfg_parameters);
+  let API = new DefaultApi(cfg);
   store.dispatch({type: STATUS_MODEL_CATALOG_ACCESS_TOKEN, status: 'LOADING'})
   //API.userLoginGet({username: username, password: password})
   API.userLoginPost({user: {username: username, password: password}})

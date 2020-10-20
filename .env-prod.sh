@@ -1,0 +1,8 @@
+export FIREBASE_API_KEY=AIzaSyD-9p_lHomJd99QOVG9OqeHw6kuVD2naas
+export FIREBASE_AUTH_DOMAIN=mint-full.firebaseapp.com
+export FIREBASE_DATABASE_URL=https://mint-full.firebaseio.com
+export FIREBASE_PROJECT_ID=mint-full
+export FIREBASE_STORAGE_BUCKET=mint-full.appspot.com
+export FIREBASE_MESSAGING_SENDER_ID=128464392367
+export FIREBASE_APP_ID=1:128464392367:web:97eaa44bc1fcb5296c445a
+export GOOGLE_MAPS_API_KEY=AIzaSyBl8J85KibSuhHEw_j0JTlITVTBb8oXiMo
