@@ -4,7 +4,6 @@ import { SharedStyles } from '../styles/shared-styles';
 import "weightless/icon";
 import { Task, TaskEvent, ThreadInfo, ThreadEvent, Thread, ProblemStatementInfo } from "screens/modeling/reducers";
 import { formElementsComplete, showNotification, resetForm, showDialog, hideDialog, hideNotification } from "util/ui_functions";
-import { getVariableIntervention, getVariableLongName } from "offline_data/variable_list";
 import { getUpdateEvent, getCreateEvent } from "util/graphql_adapter";
 import { updateTask, updateThreadInformation, addTaskWithThread } from "screens/modeling/actions";
 import { toDateString } from "util/date-utils";
@@ -18,6 +17,7 @@ import { goToPage } from "app/actions";
 
 import "./permissions-editor";
 import { PermissionsEditor } from "./permissions-editor";
+import { VariableMap } from "screens/variables/reducers";
 
 @customElement('task-editor')
 export class TaskEditor extends connect(store)(LitElement) {
@@ -56,6 +56,9 @@ export class TaskEditor extends connect(store)(LitElement) {
 
     @property({type: Object})
     private _selectedIntervention!: any;    
+    
+    @property({type: Object})
+    private _variableMap: VariableMap = {};
     
     static get styles() {
         return [SharedStyles, css`
@@ -134,7 +137,7 @@ export class TaskEditor extends connect(store)(LitElement) {
             <input type="hidden" name="taskid"></input>
 
             <!-- Variables --> 
-            ${renderVariables(this.editMode, this._handleResponseVariableChange, this._handleDrivingVariableChange)}
+            ${renderVariables(this._variableMap, this.editMode, this._handleResponseVariableChange, this._handleDrivingVariableChange)}
             <br />
 
             <!-- Intervention Details (if any) -->
@@ -254,14 +257,14 @@ export class TaskEditor extends connect(store)(LitElement) {
         (form.elements["driving_variable"] as HTMLInputElement).value = driving_variable;
         (form.querySelector("#task_permissions") as PermissionsEditor).setPermissions(task.permissions);
 
-        this._selectedIntervention = getVariableIntervention(driving_variable);
+        this._selectedIntervention = this._variableMap[driving_variable]?.intervention;
     }
 
     _handleResponseVariableChange() {}
     
     _handleDrivingVariableChange(e: any) {
         let varid = e.target.value;
-        this._selectedIntervention = getVariableIntervention(varid);
+        this._selectedIntervention = this._variableMap[varid]?.intervention;
     }
 
 
@@ -397,5 +400,9 @@ export class TaskEditor extends connect(store)(LitElement) {
                 this._categorizedRegions = getCategorizedRegions(state);
             }
         }
+        if(state.variables && state.variables.variables) {
+            this._variableMap = state.variables.variables;
+        }
+        
     }
 }

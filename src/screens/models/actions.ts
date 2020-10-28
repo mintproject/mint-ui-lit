@@ -8,7 +8,6 @@ import { setupsSearchVariable, setupGetAll, sampleCollectionGet, getIdFromUri, g
 import { Model as MCModel, ModelConfigurationSetup, DatasetSpecification, SoftwareImage, ModelConfiguration, SoftwareVersion, SampleCollectionApi, SampleCollection, SampleResource, SampleResourceApi } from '@mintproject/modelcatalog_client';
 import { sortByPosition, getLabel } from 'model-catalog/util';
 
-import { getVariableProperty } from "offline_data/variable_list";
 import { IdMap } from "app/reducers";
 
 export const MODELS_VARIABLES_QUERY = 'MODELS_VARIABLES_QUERY';
@@ -181,10 +180,11 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
     //console.log('let variables =', variables);
     Promise.all(
         variables.map((variable:string) => {
+            /* FIXME
             let fromvar : string = getVariableProperty(variable, "created_from");
             if(fromvar) {
                 variable = fromvar;
-            }
+            }*/
             return setupsSearchVariable(variable);
         })
     ).then((resp) => {

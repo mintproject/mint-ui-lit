@@ -22,11 +22,11 @@ import { renderNotifications } from "../../util/ui_renders";
 import { showDialog, showNotification, hideDialog } from "../../util/ui_functions";
 import { toDateString, toDateTimeString } from "util/date-utils";
 import { RegionMap } from "screens/regions/reducers";
-import { getVariableLongName } from "offline_data/variable_list";
 import { TaskEditor } from "components/task-editor";
 import { ThreadEditor } from "components/thread-editor";
 import { getLatestEvent } from "util/event_utils";
 import { getUserPermission } from "util/permission_utils";
+import { VariableMap } from "@apollo/client/core/LocalState";
 
 
 @customElement('mint-problem-statement')
@@ -51,6 +51,9 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
     private _threadListExpanded: boolean = false;
 
     private _dispatched: boolean = false;
+
+    @property({type: Object})
+    private _variableMap: VariableMap = {};
 
     static get styles() {
         return [
@@ -385,10 +388,10 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
     }
 
     _getTaskVariablesText(task) {
-        let response = task.response_variables ? getVariableLongName(task.response_variables[0]) : "";
+        let response = task.response_variables ? this._variableMap[task.response_variables[0]] : null;
         let driving = (task.driving_variables && task.driving_variables.length > 0) ? 
-            getVariableLongName(task.driving_variables[0]) : "";
-        return (driving ? driving + " -> " : "") + response;
+        this._variableMap[task.driving_variables[0]] : null;
+        return (driving ? driving.name + " -> " : "") + (response?.name ?? "");
     }
 
     _getTaskRegionTimeText(task: Task) {
@@ -652,6 +655,10 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                 state.modeling.problem_statement.unsubscribe();
             }
             state.modeling.problem_statement = undefined;
+        }
+
+        if(state.variables && state.variables.variables) {
+            this._variableMap = state.variables.variables;
         }
     }
 }

@@ -1,11 +1,10 @@
-import { ApolloClient, createHttpLink, InMemoryCache, HttpLink, split, NormalizedCacheObject } from '@apollo/client';
-import { setContext } from '@apollo/client/link/context';
+import { ApolloClient, createHttpLink, InMemoryCache, split, NormalizedCacheObject } from '@apollo/client';
 import { WebSocketLink } from '@apollo/client/link/ws';
 import { getMainDefinition } from '@apollo/client/utilities';
+import { MintPreferences } from 'app/reducers';
 import { SubscriptionClient } from 'subscriptions-transport-ws';
 
-const ENDPOINT = "graphql.mint.isi.edu/v1/graphql";
-const SECRET = "WmGrIc4MxU";
+import * as mintConfig from './config.json';
 
 /* Typescript declarations so window.__APOLLO_CLIENT__ doesn't give an error */
 export {}
@@ -48,15 +47,16 @@ export class GraphQL {
   }
 
   static getSubscriptionLink() {
+    let prefs = mintConfig["default"] as MintPreferences;
     // Subscription Link
     const subscriptionClient = new SubscriptionClient(
-      "wss://" + ENDPOINT,
+      "wss://" + prefs.graphql.endpoint,
       {
         reconnect: true,
         lazy: true,
         connectionParams: {
           headers: {
-            "X-Hasura-Admin-Secret": SECRET,
+            "X-Hasura-Admin-Secret": prefs.graphql.secret,
             "X-Hasura-User-Id": GraphQL.userId,
             "X-Hasura-Role": "user"
           }
@@ -69,11 +69,12 @@ export class GraphQL {
   }
 
   static getHTTPSLink() {
+    let prefs = mintConfig["default"] as MintPreferences;
     // Normal HTTP Link
     return createHttpLink({
-      uri: "https://" + ENDPOINT,
+      uri: "https://" + prefs.graphql.endpoint,
       headers: {
-        "X-Hasura-Admin-Secret": SECRET,
+        "X-Hasura-Admin-Secret": prefs.graphql.secret,
         "X-Hasura-User-Id": GraphQL.userId,
         "X-Hasura-Role": "user"
       }

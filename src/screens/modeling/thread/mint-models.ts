@@ -20,7 +20,6 @@ import "weightless/popover-card";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
 import { showNotification, showDialog } from "../../../util/ui_functions";
 import { selectThreadSection } from "../../../app/ui-actions";
-import { getVariableLongName } from "../../../offline_data/variable_list";
 import { MintThreadPage } from "./mint-thread-page";
 import { Region } from "screens/regions/reducers";
 import { IdMap } from "app/reducers";
@@ -29,6 +28,7 @@ import { Model as MCModel, SoftwareVersion,
 
 import 'components/loading-dots';
 import { getLatestEventOfType } from "util/event_utils";
+import variables, { VariableMap } from "screens/variables/reducers";
 
 store.addReducers({
     models
@@ -72,6 +72,9 @@ export class MintModels extends connect(store)(MintThreadPage) {
 
     private _responseVariables: string[] = [];
     private _drivingVariables: string[] = [];
+
+    @property({type: Object})
+    private _variableMap: VariableMap = {};
 
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
@@ -224,12 +227,12 @@ export class MintModels extends connect(store)(MintThreadPage) {
                 </wl-title>
                 <p>
                     The models below generate data that includes the indicator that you selected earlier: 
-                    "${this.thread.response_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
+                    "${this.thread.response_variables.map((variable) => (this._variableMap[variable]?.name ?? "")).join(", ")}".
                     Other models that are available in the system do not generate that kind of result.
                     ${this.thread.driving_variables.length ? 
                         html`
                         These models also allow adjusting the adjustable variable you selected earlier:
-                        "${this.thread.driving_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
+                        "${this.thread.driving_variables.map((variable) => (this._variableMap[variable]?.name ?? "")).join(", ")}".
                         `
                         : ""
                     }
@@ -554,6 +557,10 @@ export class MintModels extends connect(store)(MintThreadPage) {
         if(state.models && !state.models.loading && this._dispatched) {
             this._queriedModels = state.models!.models;
             this._dispatched = false;
+        }
+
+        if(state.variables && state.variables.variables) {
+            this._variableMap = state.variables.variables;
         }
     }
 }

@@ -13,12 +13,12 @@ import { ProblemStatementInfo, ProblemStatementList, ThreadInfo, ThreadEvent, Ta
 import { subscribeProblemStatementsList, subscribeProblemStatement, subscribeThread } from 'screens/modeling/actions';
 
 import { fromTimeStampToDateString } from "util/date-utils";
-import { getVariableLongName } from "offline_data/variable_list";
 import { getURL } from 'model-catalog/util';
 
 import '../../components/nav-title'
 import { getVisualizationURLs } from 'util/state_functions';
 import { Region, RegionMap } from 'screens/regions/reducers';
+import { VariableMap } from '@apollo/client/core/LocalState';
 
 const PREFIX_REPORT = 'analysis/report/';
 
@@ -59,6 +59,9 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
 
   @property({type: Object})
   private prefs: UserPreferences;
+
+  @property({type: Object})
+  private _variableMap: VariableMap = {};
 
   static get styles() {
     return [SharedStyles, css`
@@ -201,11 +204,6 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
       });
     }
 
-    let responseV = thread.response_variables && thread.response_variables.length > 0 ?
-        getVariableLongName(thread.response_variables[0]) : '';
-    let drivingV = thread.driving_variables && thread.driving_variables.length > 0?
-        getVariableLongName(thread.driving_variables[0]) : '';
-
     let vizurls = getVisualizationURLs(thread, task, ps, this.prefs.mint)
 
     return html`
@@ -240,13 +238,13 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
         <span>
           ${!task.response_variables || task.response_variables.length == 0 ?
             'No indicators' : task.response_variables.map((rv) => html`
-            <div>${getVariableLongName(rv)} (<span class="monospaced">${rv}</span>)</div>`)}
+            <div>${this._variableMap[rv]?.name ?? ""} (<span class="monospaced">${rv}</span>)</div>`)}
         </span>
         <wl-title level="4">Adjustable variables:</wl-title>
         <span>
           ${!task.driving_variables || task.driving_variables.length == 0 ?
           'No adjustable variables' : task.driving_variables.map((dv) => html`
-            <div>${getVariableLongName(dv)} (<span class="monospaced">${dv}</span>)</div>`)}
+            <div>${this._variableMap[dv]?.name ?? ""} (<span class="monospaced">${dv}</span>)</div>`)}
         </span>
       </div>`
   }
@@ -352,9 +350,9 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
   }
 
   private _getThreadInfoSummaryText (t: ThreadInfo) {
-    let response = t.response_variables ? getVariableLongName(t.response_variables[0]) : "";
+    let response = t.response_variables ? this._variableMap[t.response_variables[0]] : null;
     let regionname = t.regionid && this._regions && this._regions[t.regionid] ? this._regions[t.regionid].name : this._region.name;
-    return (response ? response + ": " : "") + regionname
+    return (response ? response.name + ": " : "") + regionname
   }
 
   private _renderDates (thread: ThreadInfo) {
@@ -394,6 +392,11 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
         this.requestUpdate();
       }
     }
+
+    if(state.variables && state.variables.variables) {
+      this._variableMap = state.variables.variables;
+    }
+
     if (state.ui) {
       this._selectedProblemStatementId = state.ui.selected_problem_statement_id
       this._selectedTaskId = state.ui.selected_task_id;

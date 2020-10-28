@@ -1,7 +1,7 @@
 export const PARAMETER_TYPES = {
     "https://w3id.org/wings/export/MINT#StartDate":                     "StartDate",
     "https://w3id.org/wings/export/MINT#EndDate":                       "EndDate",
-    "https://w3id.org/wings/export/MINT#DataCatalogId":                 "DataCaralogId",
+    "https://w3id.org/wings/export/MINT#DataCatalogId":                 "DataCatalogId",
     "https://w3id.org/wings/export/MINT#BoundingBox":                   "BoundingBox",
     "https://w3id.org/wings/export/MINT#Adjustment":                    "Adjustment",
     "https://w3id.org/wings/export/MINT#CyclesPlantingDay1":            "CyclesPlantingDay1",

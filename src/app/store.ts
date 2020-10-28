@@ -52,6 +52,8 @@ import { ModelCatalogState } from 'model-catalog/reducers';
 import { DExplorerUIAction } from 'screens/datasets/ui-actions';
 import { EmulatorsState } from 'screens/emulators/reducers';
 import { EmulatorsAction } from 'screens/emulators/actions';
+import { VariablesState } from 'screens/variables/reducers';
+import { VariablesAction } from 'screens/variables/actions';
 
 // Overall state extends static states and partials lazy states.
 export interface RootState {
@@ -60,6 +62,7 @@ export interface RootState {
   models?: ModelsState;
   datasets?: DatasetsState;
   regions?: RegionsState;
+  variables?: VariablesState;
   emulators?: EmulatorsState;
   messages?: MessagesState;
   explorerUI?: ExplorerUIState;
@@ -69,7 +72,7 @@ export interface RootState {
 }
 
 export type RootAction = AppAction | ModelingAction | ModelsAction | DatasetsAction | EmulatorsAction |
-                         RegionsAction | UIAction | ExplorerUIAction |
+                         RegionsAction | UIAction | ExplorerUIAction | VariablesAction |
                          MessagesAction | ModelCatalogAction | DExplorerUIAction;
 
 // Sets up a Chrome extension for time travel debugging.

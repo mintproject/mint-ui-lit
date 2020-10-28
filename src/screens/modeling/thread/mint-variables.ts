@@ -13,15 +13,22 @@ import { BASE_HREF } from "../../../app/actions";
 import { renderNotifications, renderResponseVariables, renderDrivingVariables, renderLastUpdateText } from "../../../util/ui_renders";
 import { formElementsComplete, showNotification, hideNotification } from "../../../util/ui_functions";
 import { selectThreadSection } from "../../../app/ui-actions";
-import { getVariableLongName } from "../../../offline_data/variable_list";
 import { MintThreadPage } from "./mint-thread-page";
 import { updateThreadInformation } from "../actions";
+import variables, { VariableMap } from "screens/variables/reducers";
+
+store.addReducers({
+    variables
+});
 
 @customElement('mint-variables')
 export class MintVariables extends connect(store)(MintThreadPage) {
     @property({type: Boolean})
     private _editMode: Boolean = false;
 
+    @property({type: Object})
+    private _variableMap: VariableMap = {};
+    
     static get styles() {
         return [
           SharedStyles,
@@ -71,7 +78,8 @@ export class MintVariables extends connect(store)(MintThreadPage) {
                                     console.log('>', responseid);
                                     return html`
                                     <li>
-                                        <a id="response_variable_href" href="${BASE_HREF}variables/${responseid}">${getVariableLongName(responseid)}</a>
+                                        <a id="response_variable_href" href="${BASE_HREF}variables/${responseid}"
+                                        >${this._variableMap[responseid]?.name ?? ""}</a>
                                         <wl-tooltip anchor="#response_variable_href" 
                                             .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
                                             anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
@@ -94,7 +102,7 @@ export class MintVariables extends connect(store)(MintThreadPage) {
                                 driverids.map((driverid) => {
                                     return html`
                                     <li>
-                                        <a id="driving_variable_href" href="${BASE_HREF}variables/${driverid}">${getVariableLongName(driverid)}</a>
+                                        <a id="driving_variable_href" href="${BASE_HREF}variables/${driverid}">${this._variableMap[driverid]?.name ?? ""}</a>
                                         <wl-tooltip anchor="#driving_variable_href" 
                                             .anchorOpenEvents="${["mouseover"]}" .anchorCloseEvents="${["mouseout"]}" fixed
                                             anchorOriginX="center" anchorOriginY="bottom" transformOriginX="center">
@@ -131,10 +139,10 @@ export class MintVariables extends connect(store)(MintThreadPage) {
                             <li>
                                 <div class="input_half">
                                 ${responseids.length == 0 ?
-                                    renderResponseVariables("", false, ()=>{})
+                                    renderResponseVariables("", this._variableMap, false, ()=>{})
                                 :
                                     responseids.map((responseid) => {
-                                        return renderResponseVariables(responseid, false, ()=>{});
+                                        return renderResponseVariables(responseid, this._variableMap, false, ()=>{});
                                     })
                                 }
                                 </div>
@@ -150,10 +158,10 @@ export class MintVariables extends connect(store)(MintThreadPage) {
                             <li>
                                 <div class="input_half">
                                 ${driverids.length == 0 ?
-                                    renderDrivingVariables("", false, ()=>{})
+                                    renderDrivingVariables("", this._variableMap, false, ()=>{})
                                     :
                                     driverids.map((driverid) => {
-                                        return renderDrivingVariables(driverid, false, ()=>{});
+                                        return renderDrivingVariables(driverid, this._variableMap, false, ()=>{});
                                     })
                                 }
                                 </div>
@@ -208,6 +216,9 @@ export class MintVariables extends connect(store)(MintThreadPage) {
         super.setUser(state);
         if(super.setThread(state)) {
             hideNotification("saveNotification", this.shadowRoot!);
+        }
+        if(state.variables && state.variables.variables) {
+            this._variableMap = state.variables.variables;
         }
     }
 }

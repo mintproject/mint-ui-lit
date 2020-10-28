@@ -1,8 +1,8 @@
 import { html } from "lit-element";
+import { Variable, VariableMap } from "screens/variables/reducers";
 import { MintEvent } from "../screens/modeling/reducers";
-import { VARIABLES } from "../offline_data/variable_list";
 
-export const renderVariables = (readonly: boolean, response_callback: Function, driving_callback: Function) => {
+export const renderVariables = (variables: VariableMap, readonly: boolean, response_callback: Function, driving_callback: Function) => {
     return html`
         <p>
         Indicators are the variables or index that indicates the state of the system being modeled.
@@ -10,12 +10,12 @@ export const renderVariables = (readonly: boolean, response_callback: Function, 
         </p>
         <div class="input_full">
             <label>Indicators/Response of interest</label>
-            ${renderResponseVariables("", readonly, response_callback)}
+            ${renderResponseVariables("", variables, readonly, response_callback)}
         </div>  
         <br />
         <div class="input_full">
             <label>Adjustable Variables</label>
-            ${renderDrivingVariables("", readonly, driving_callback)}
+            ${renderDrivingVariables("", variables, readonly, driving_callback)}
         </div>                            
     `;
 }
@@ -49,16 +49,24 @@ export const renderNotifications = () => {
     `;
 }
 
-export const renderResponseVariables = (variableid: string, readonly: boolean, callback: Function) => {
+export const renderResponseVariables = (variableid: string, variables: VariableMap, readonly: boolean, callback: Function) => {
+    let indicatorsByCategory = {};
+    Object.values(variables).filter((varobj) => varobj.is_indicator).map((varobj) => {
+        (varobj.categories || []).map((category) => {
+            if(!indicatorsByCategory[category])
+                indicatorsByCategory[category] = [];
+            indicatorsByCategory[category].push(varobj);
+        })
+    });
     return html`
         <select name="response_variable" ?disabled="${readonly}" @change=${callback}>
-            ${Object.keys(VARIABLES['indicators']).map((categoryname) => {
-                let category = VARIABLES['indicators'][categoryname];
+            ${Object.keys(indicatorsByCategory).sort().map((categoryname) => {
+                let indicators = indicatorsByCategory[categoryname] as Variable[];
                 return html`
                 <optgroup label="${categoryname}">
-                ${Object.keys(category).map((varid) => {
-                    let stdname = category[varid]["SVO_name"];
-                    let name = category[varid]["long_name"];
+                ${indicators.sort((a,b) => a.name < b.name ? -1 : 1).map((varobj) => {
+                    let stdname = varobj.id;
+                    let name = varobj.name;
                     return html`
                         <option value="${stdname}" ?selected="${stdname==variableid}">
                             ${name}
@@ -72,18 +80,26 @@ export const renderResponseVariables = (variableid: string, readonly: boolean, c
     `;
 }
 
-export const renderDrivingVariables = (variableid: string, readonly: boolean, callback: Function) => {
+export const renderDrivingVariables = (variableid: string, variables: VariableMap, readonly: boolean, callback: Function) => {
+    let adjustmentsByCategory = {};
+    Object.values(variables).filter((varobj) => varobj.is_adjustment_variable).map((varobj) => {
+        (varobj.categories || []).map((category) => {
+            if(!adjustmentsByCategory[category])
+                adjustmentsByCategory[category] = [];
+            adjustmentsByCategory[category].push(varobj);
+        })
+    });    
     return html`
         <select name="driving_variable" ?disabled="${readonly}" @change=${callback}>
             <option value="">None</option>
-            ${Object.keys(VARIABLES['adjustment_variables']).map((categoryname) => {
-                let category = VARIABLES['adjustment_variables'][categoryname];
+            ${Object.keys(adjustmentsByCategory).sort().map((categoryname) => {
+                let adjustments = adjustmentsByCategory[categoryname] as Variable[];
                 return html`
                 <optgroup label="${categoryname}">
-                ${Object.keys(category).map((varid) => {
-                    let stdname = category[varid]["SVO_name"];
-                    let name = category[varid]["long_name"];
-                    let intervention = category[varid]["intervention"];
+                ${adjustments.sort((a,b) => a.name < b.name ? -1 : 1).map((varobj) => {
+                    let stdname = varobj.id;
+                    let name = varobj.name;
+                    let intervention = varobj.intervention;
                     if(intervention) {
                         name += " (Intervention: " + intervention.name + ")";
                     }

@@ -8,6 +8,7 @@ import { toDateString, fromTimestampIntegerToDateString } from "./date-utils";
 import { uuidv4 } from "screens/models/configure/util";
 
 import * as crypto from 'crypto';
+import { Variable } from "screens/variables/reducers";
 
 export const regionToGQL = (region: Region) => {
     let regionobj = {
@@ -33,6 +34,19 @@ export const regionFromGQL = (regionobj: any) : Region => {
         model_catalog_uri: regionobj.model_catalog_uri
     } as Region;
     return region;
+}
+
+export const variableFromGQL = (varobj: any) => {
+    let variable = {
+        id: varobj.id,
+        name: varobj.name,
+        categories: (varobj.categories ?? []).map((catobj) => catobj["category"]),
+        is_adjustment_variable: varobj.is_adjustment_variable,
+        is_indicator: varobj.is_indicator,
+        description: varobj.description,
+        intervention: varobj.intervention
+    } as Variable;
+    return variable;
 }
 
 export const eventToGQL = (event: MintEvent) => {

@@ -46,6 +46,7 @@ import { SharedStyles } from '../styles/shared-styles';
 import { showDialog, hideDialog, formElementsComplete } from '../util/ui_functions';
 import { User } from 'firebase';
 import { Region } from 'screens/regions/reducers';
+import { listVariables } from 'screens/variables/actions';
 
 @customElement('mint-app')
 export class MintApp extends connect(store)(LitElement) {
@@ -81,6 +82,7 @@ export class MintApp extends connect(store)(LitElement) {
 
   private _dispatchedRegionsQuery : boolean = false;
   private _dispatchedSubRegionsQuery : boolean = false;
+  private _dispatchedVariablesQuery : boolean = false;
 
   private _loggedIntoWings = false;
 
@@ -537,6 +539,14 @@ export class MintApp extends connect(store)(LitElement) {
       }
       else if(state.regions.sub_region_ids && state.regions.sub_region_ids[regionid]) {
         this._dispatchedSubRegionsQuery = false;
+      }
+    }
+
+    if(!state.variables || !state.variables.variables) {
+      if(!this._dispatchedVariablesQuery) {
+        console.log("Dispatching Variables Query")
+        this._dispatchedVariablesQuery = true;
+        store.dispatch(listVariables());
       }
     }
 
