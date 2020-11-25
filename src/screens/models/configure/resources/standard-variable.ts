@@ -64,7 +64,7 @@ export class ModelCatalogStandardVariable extends connect(store)(ModelCatalogRes
             let id = r.id ? r.id.split('/').pop() : '?'
             return html`${id}`;
         }
-        return '-?-';
+        return html`-?-`;
     }
 
     protected _getDBResources () {

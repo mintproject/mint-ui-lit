@@ -89,7 +89,7 @@ export const modelPut: ActionThunk<Promise<Model>, MCAModelsAdd> = (model: Model
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {
-        if (model.dateCreated) delete model.dateCreated;
+        //if (model.dateCreated) delete model.dateCreated;
         debug('Updating', model);
         let api : ModelApi = new ModelApi(cfg);
         let id : string = getIdFromUri(model.id);

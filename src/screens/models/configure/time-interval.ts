@@ -312,7 +312,7 @@ export class ModelsConfigureTimeInterval extends connect(store)(PageViewElement)
                 description: [desc],
                 intervalUnit: [ { id: unitId } ],
             }
-            if (value) newTimeInterval.intervalValue = [<unknown>value as object];
+            if (value) newTimeInterval.intervalValue = [value];
 
             this._waiting = true;
             store.dispatch(timeIntervalPost(newTimeInterval)).then((timeInterval: TimeInterval) => {
@@ -348,7 +348,7 @@ export class ModelsConfigureTimeInterval extends connect(store)(PageViewElement)
             editedTimeInterval.label = [name];
             editedTimeInterval.description = [desc];
             editedTimeInterval.intervalUnit = [ {id : unitId} ];
-            if (value) editedTimeInterval.intervalValue = [<unknown>value as object];
+            if (value) editedTimeInterval.intervalValue = [value];
 
             this._waiting = true;
             store.dispatch(timeIntervalPut(editedTimeInterval)).then((timeInterval: TimeInterval) => {

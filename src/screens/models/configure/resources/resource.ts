@@ -728,9 +728,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
             req = store.dispatch(this.resourcePost(resource));
         } else if (this._status === Status.EDIT) {
-            //TODO: Donde se agrega lo nuevo a lo antiguo?
             resource.id = this._editingResourceId;
-            req = store.dispatch(this.resourcePut(resource));
+            let resourceEdited : T = this._createEditedResource(resource);
+            req = store.dispatch(this.resourcePut(resourceEdited));
         }
         req.then((r:T) => {
             console.log('SAVED: ', r);
@@ -749,6 +749,20 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             this._eventSave(r);
         });
         return req;
+    }
+
+    private _createEditedResource (edited:T) {
+        // Merges the resource to edit with the original resource.
+        // TODO: how to erase a property?
+        let orig = this._getEditingResource();
+        console.log("Original resource:", orig);
+        Object.keys(edited).forEach((key:string) => {
+            if (edited[key] === undefined) delete edited[key];
+        });
+        console.log("Edited resource:", edited);
+        let merged = { ...orig, ...edited };
+        console.log("Merged:", merged);
+        return merged;
     }
 
     private _eventSave (r:T) {

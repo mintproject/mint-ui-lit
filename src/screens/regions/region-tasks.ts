@@ -7,7 +7,6 @@ import 'components/google-map-custom';
 import 'weightless/progress-spinner';
 import { RegionQueryPage } from './region-query-page';
 import { SharedStyles } from 'styles/shared-styles';
-import { getVariableLongName } from 'offline_data/variable_list';
 import { fromTimeStampToDateString } from 'util/date-utils';
 import { goToPage } from 'app/actions';
 import { db } from 'config/firebase';
@@ -47,7 +46,7 @@ export class RegionTasks extends connect(store)(RegionQueryPage)  {
                             <wl-title level="4" style="margin: 0">
                             ${el.name}
                             </wl-title>
-                            ${el.rvar ? getVariableLongName(el.rvar) + ':' : ''}
+                            ${el.rvar ? el.rvar + ':' : ''}
                             ${this._selectedRegion.name}
                             <div slot="after" style="display:flex">
                             ${this._renderDates(el.dates)}

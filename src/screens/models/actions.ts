@@ -101,7 +101,7 @@ export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages:
         region_name: setup.hasRegion && setup.hasRegion.length > 0 ?
                 setup.hasRegion.map(getLabel).join(', ') : "",
         description: setup.description ? setup.description[0] : "",
-        category: setup.hasModelCategory ? setup.hasModelCategory[0] : "",
+        category: setup.hasModelCategory ? setup.hasModelCategory[0].label[0] : "",
         code_url: setup.hasComponentLocation ? setup.hasComponentLocation[0] : "",
         input_files: [],
         input_parameters: [],
