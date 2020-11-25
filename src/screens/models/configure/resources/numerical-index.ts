@@ -42,7 +42,7 @@ export class ModelCatalogNumericalIndex extends connect(store)(ModelCatalogResou
         this._inputStandardVariable.setAttribute('id', 'input-standard-variable');
     }
 
-    protected _editResource (r:DatasetSpecification) {
+    protected _editResource (r:NumericalIndex) {
         super._editResource(r);
         let edResource = this._getEditingResource();
         this._inputStandardVariable.setResources( edResource.hasStandardVariable );

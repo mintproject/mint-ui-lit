@@ -1,5 +1,5 @@
 import { ModelCatalogResource } from './resource';
-import { Category, CategoryFromJSON } from '@mintproject/modelcatalog_client';
+import { ModelCategory, ModelCategoryFromJSON } from '@mintproject/modelcatalog_client';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
@@ -15,7 +15,7 @@ import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 
 @customElement('model-catalog-category')
-export class ModelCatalogCategory extends connect(store)(ModelCatalogResource)<Category> {
+export class ModelCatalogCategory extends connect(store)(ModelCatalogResource)<ModelCategory> {
     static get styles() {
         return [ExplorerStyles, SharedStyles, this.getBasicStyles(), css`
         .two-inputs > wl-textfield, 

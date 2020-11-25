@@ -1,6 +1,6 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
-import { Configuration, Category, ModelCategoryApi } from '@mintproject/modelcatalog_client';
+import { Configuration, ModelCategory, ModelCategoryApi } from '@mintproject/modelcatalog_client';
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, getUser } from './actions';
 
 function debug (...args: any[]) {}// console.log('[MC Category]', ...args); }
@@ -8,30 +8,30 @@ function debug (...args: any[]) {}// console.log('[MC Category]', ...args); }
 export const CATEGORY_ADD = "CATEGORY_ADD";
 export const CATEGORY_DELETE = "CATEGORY_DELETE";
 
-interface MCACategoryAdd extends Action<'CATEGORY_ADD'> { payload: IdMap<Category> };
+interface MCACategoryAdd extends Action<'CATEGORY_ADD'> { payload: IdMap<ModelCategory> };
 interface MCACategoryDelete extends Action<'CATEGORY_DELETE'> { uri: string };
 
 export type ModelCatalogCategoryAction =  MCACategoryAdd | MCACategoryDelete;
 
-let categorysPromise : Promise<IdMap<Category>> | null = null;
+let categorysPromise : Promise<IdMap<ModelCategory>> | null = null;
 
-export const categoriesGet: ActionThunk<Promise<IdMap<Category>>, MCACategoryAdd> = () => (dispatch) => {
+export const categoriesGet: ActionThunk<Promise<IdMap<ModelCategory>>, MCACategoryAdd> = () => (dispatch) => {
     if (!categorysPromise) {
         categorysPromise = new Promise((resolve, reject) => {
             debug('Fetching all');
             let user : string = getUser();
             let api : ModelCategoryApi = new ModelCategoryApi();
-            let req2 : Promise<Category[]> = api.modelcategorysGet({username: user});
+            let req2 : Promise<ModelCategory[]> = api.modelcategorysGet({username: user});
 
-            let promises : Promise<Category[]>[] = [req2];
-            promises.forEach((p:Promise<Category[]>, i:number) => {
-                p.then((resp:Category[]) => dispatch({ type: CATEGORY_ADD, payload: resp.reduce(idReducer, {}) }));
+            let promises : Promise<ModelCategory[]>[] = [req2];
+            promises.forEach((p:Promise<ModelCategory[]>, i:number) => {
+                p.then((resp:ModelCategory[]) => dispatch({ type: CATEGORY_ADD, payload: resp.reduce(idReducer, {}) }));
                 p.catch((err) => console.error('Error on GET Categorys ' + (i==0?'System':'User'), err));
             });
 
             Promise.all(promises).then((values) => {
-                let data : IdMap<Category> = {};
-                values.forEach((tis:Category[]) => {
+                let data : IdMap<ModelCategory> = {};
+                values.forEach((tis:ModelCategory[]) => {
                     data = tis.reduce(idReducer, data);
                 });
                 resolve(data);
@@ -46,13 +46,13 @@ export const categoriesGet: ActionThunk<Promise<IdMap<Category>>, MCACategoryAdd
     return categorysPromise;
 }
 
-export const categoryGet: ActionThunk<Promise<Category>, MCACategoryAdd> = (uri:string) => (dispatch) => {
+export const categoryGet: ActionThunk<Promise<ModelCategory>, MCACategoryAdd> = (uri:string) => (dispatch) => {
     debug('Fetching', uri);
     let id : string = getIdFromUri(uri);
     let user : string = getUser();
     let api : ModelCategoryApi = new ModelCategoryApi();
-    let req : Promise<Category> = api.modelcategorysIdGet({username: user, id: id});
-    req.then((resp:Category) => {
+    let req : Promise<ModelCategory> = api.modelcategorysIdGet({username: user, id: id});
+    req.then((resp:ModelCategory) => {
         dispatch({
             type: CATEGORY_ADD,
             payload: idReducer({}, resp)
@@ -64,15 +64,15 @@ export const categoryGet: ActionThunk<Promise<Category>, MCACategoryAdd> = (uri:
     return req;
 }
 
-export const categoryPost: ActionThunk<Promise<Category>, MCACategoryAdd> = (category:Category) => (dispatch) => {
+export const categoryPost: ActionThunk<Promise<ModelCategory>, MCACategoryAdd> = (category:ModelCategory) => (dispatch) => {
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {
         debug('Creating new', category);
         let postProm = new Promise((resolve,reject) => {
             let api : ModelCategoryApi = new ModelCategoryApi(cfg);
-            let req = api.modelcategorysPost({user: user, category: category}); // This should be my username on prod.
-            req.then((resp:Category) => {
+            let req = api.modelcategorysPost({user: user, modelCategory: category}); // This should be my username on prod.
+            req.then((resp:ModelCategory) => {
                 debug('Response for POST', resp);
                 dispatch({
                     type: CATEGORY_ADD,
@@ -92,14 +92,14 @@ export const categoryPost: ActionThunk<Promise<Category>, MCACategoryAdd> = (cat
     }
 }
 
-export const categoryPut: ActionThunk<Promise<Category>, MCACategoryAdd> = (category: Category) => (dispatch) => {
+export const categoryPut: ActionThunk<Promise<ModelCategory>, MCACategoryAdd> = (category: ModelCategory) => (dispatch) => {
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {
         debug('Updating', category);
         let api : ModelCategoryApi = new ModelCategoryApi(cfg);
         let id : string = getIdFromUri(category.id);
-        let req : Promise<Category> = api.modelcategorysIdPut({id: id, user: user, category: category});
+        let req : Promise<ModelCategory> = api.modelcategorysIdPut({id: id, user: user, modelCategory: category});
         req.then((resp) => {
             debug('Response for PUT:', resp);
             dispatch({
@@ -117,7 +117,7 @@ export const categoryPut: ActionThunk<Promise<Category>, MCACategoryAdd> = (cate
     }
 }
 
-export const categoryDelete: ActionThunk<void, MCACategoryDelete> = (category:Category) => (dispatch) => {
+export const categoryDelete: ActionThunk<void, MCACategoryDelete> = (category:ModelCategory) => (dispatch) => {
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {

@@ -205,5 +205,5 @@ export * from './variable-presentation-actions';
 export * from './numerical-index-actions';
 export * from './data-transformation-actions';
 export * from './data-transformation-setup-actions';
-export * from './standard-variable';
+export * from './standard-variable-actions';
 export * from './category-actions';

@@ -31,7 +31,7 @@ import { MODELS_ADD, MODEL_DELETE,
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Region, GeoShape, Grid,
          Process, Parameter, TimeInterval, SoftwareImage, DatasetSpecification, SampleResource, Image, StandardVariable,
-         SampleCollection, Organization, FundingInformation, Visualization, SourceCode, Intervention, Category,
+         SampleCollection, Organization, FundingInformation, Visualization, SourceCode, Intervention, ModelCategory,
          VariablePresentation, NumericalIndex, DataTransformation, DataTransformationSetup } from '@mintproject/modelcatalog_client';
 import { IdMap } from 'app/reducers'
 
@@ -62,7 +62,7 @@ export interface ModelCatalogState {
     dataTransformations:    IdMap<DataTransformation>;
     dataTransformationSetups:IdMap<DataTransformationSetup>;
     standardVariables:      IdMap<StandardVariable>;
-    categories:             IdMap<Category>;
+    categories:             IdMap<ModelCategory>;
 }
 
 const INITIAL_STATE: ModelCatalogState = { 
@@ -92,7 +92,7 @@ const INITIAL_STATE: ModelCatalogState = {
     dataTransformations:    {} as IdMap<DataTransformation>,
     dataTransformationSetups: {} as IdMap<DataTransformationSetup>,
     standardVariables:      {} as IdMap<StandardVariable>,
-    categories:             {} as IdMap<Category>,
+    categories:             {} as IdMap<ModelCategory>,
 } as ModelCatalogState;
 
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {

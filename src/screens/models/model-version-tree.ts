@@ -8,7 +8,7 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
 
 import { IdMap } from 'app/reducers';
-import { SoftwareVersion, Model } from '@mintproject/modelcatalog_client';
+import { SoftwareVersion, Model, ModelCategory } from '@mintproject/modelcatalog_client';
 import { regionsGet } from 'model-catalog/actions';
 import { getLabel, sortVersions, getURL} from 'model-catalog/util';
 
@@ -128,13 +128,17 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
 
         let categoryModels = {};
         Object.values(this._models).forEach((m:Model) => {
-            let category : string = m.hasModelCategory && m.hasModelCategory.length > 0 ?
-                    m.hasModelCategory[0] : 'Uncategorized';
-            if (!categoryModels[category]) categoryModels[category] = [];
-            categoryModels[category].push(m);
-            if (this._selectedModel === m.id) {
-                this._visible[category] = true;
+            let categories : string[] = ['Uncategorized'];
+            if (m.hasModelCategory && m.hasModelCategory.length > 0) {
+                categories = m.hasModelCategory.map((c:ModelCategory) => c.label ? c.label[0] : c.id);
             }
+            categories.forEach((cat:string)  => {
+                if (!categoryModels[cat]) categoryModels[cat] = [];
+                categoryModels[cat].push(m);
+                if (this._selectedModel === m.id) {
+                    this._visible[cat] = true;
+                }
+            });
         });
 
         return html`

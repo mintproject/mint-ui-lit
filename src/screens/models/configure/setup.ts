@@ -868,7 +868,7 @@ export class ModelsConfigureSetup extends connect(store)(PageViewElement) {
         console.log('SELECTED AUTHORS:',selectedPersons);
         this._setup.author = [];
         selectedPersons.forEach((person) => {
-            this._setup.author.push( {id: person.id, type: 'Person'} );
+            this._setup.author.push( {id: person.id, type: ['Person']} );
             this._authors[person.id] = person;
         });
         this.requestUpdate();

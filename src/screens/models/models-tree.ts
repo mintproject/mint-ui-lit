@@ -166,7 +166,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
         let categoryModels = {};
         Object.values(this._models).forEach((m:Model) => {
             let category : string = m.hasModelCategory && m.hasModelCategory.length > 0 ?
-                    m.hasModelCategory[0] : 'Uncategorized';
+                    m.hasModelCategory[0].label[0] : 'Uncategorized';
             if (!categoryModels[category]) categoryModels[category] = [];
             categoryModels[category].push(m);
             if (this._selectedModel === m.id) {

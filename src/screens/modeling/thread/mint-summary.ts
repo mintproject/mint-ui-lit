@@ -6,7 +6,6 @@ import { SharedStyles } from "../../../styles/shared-styles";
 import { Execution, Task, ModelIOBindings } from "../reducers";
 import { getUISelectedTask } from "../../../util/state_functions";
 import { MintThreadPage } from "./mint-thread-page";
-import { getVariableLongName } from "../../../offline_data/variable_list";
 
 import "../../../components/editable-note";
 import { getLatestEventOfType } from "util/event_utils";
@@ -57,11 +56,11 @@ export class MintSummary extends connect(store)(MintThreadPage) {
                             <ul>
                                 <li>Response: 
                                     ${this.thread.response_variables.map((v)=>
-                                        getVariableLongName(v) + " (" + v + ")").join(", ")}
+                                        v + " (" + v + ")").join(", ")}
                                 </li>
                                 <li>Driving: 
                                     ${this.thread.driving_variables.map((v)=>
-                                        getVariableLongName(v) + " (" + v + ")").join(", ")}
+                                        v + " (" + v + ")").join(", ")}
                                 </li>
                             </ul>
                             <i>Notes: ${getLatestEventOfType(["CREATE", "UPDATE"], this._task.events).notes}</i>

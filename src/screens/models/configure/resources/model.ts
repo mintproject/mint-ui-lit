@@ -16,6 +16,7 @@ import { ModelCatalogGrid } from './grid';
 import { ModelCatalogNumericalIndex } from './numerical-index';
 import { ModelCatalogFundingInformation } from './funding-information';
 import { ModelCatalogVisualization } from './visualization';
+import { ModelCatalogCategory } from './category';
 
 import { goToPage } from 'app/actions';
 
@@ -96,6 +97,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
     private _inputIndex : ModelCatalogNumericalIndex;
     private _inputFunding : ModelCatalogFundingInformation;
     private _inputVisualization : ModelCatalogVisualization;
+    private _inputCategory : ModelCatalogCategory;
 
     constructor () {
         super();
@@ -107,6 +109,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         this._inputIndex = new ModelCatalogNumericalIndex();
         this._inputFunding = new ModelCatalogFundingInformation();
         this._inputVisualization = new ModelCatalogVisualization();
+        this._inputCategory = new ModelCatalogCategory();
     }
 
     public setResource (r:Model) {
@@ -118,6 +121,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 this._inputIndex.setResources(m.usefulForCalculatingIndex);
                 this._inputFunding.setResources(m.hasFunding);
                 this._inputVisualization.setResources(m.hasSampleVisualization);
+                this._inputCategory.setResources(m.hasModelCategory);
             }
         });
         return req;
@@ -130,6 +134,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         this._inputIndex.setActionSelect();
         this._inputFunding.setActionMultiselect();
         this._inputVisualization.setActionMultiselect();
+        this._inputCategory.setActionMultiselect();
     }
 
     protected _clearStatus () {
@@ -139,6 +144,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         if (this._inputIndex) this._inputIndex.unsetAction();
         if (this._inputFunding) this._inputFunding.unsetAction();
         if (this._inputVisualization) this._inputVisualization.unsetAction();
+        if (this._inputCategory) this._inputCategory.unsetAction();
         this.scrollUp();
         this.clearForm();
     }
@@ -150,11 +156,12 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         this._inputIndex.setResources(null);
         this._inputFunding.setResources(null);
         this._inputVisualization.setResources(null);
+        this._inputCategory.setResources(null);
         this._inputAuthor.setActionMultiselect();
         this._inputGrid.setActionSelect();
         this._inputIndex.setActionSelect();
         this._inputFunding.setActionMultiselect();
-        this._inputVisualization.setActionMultiselect();
+        this._inputCategory.setActionMultiselect();
     }
 
     protected _renderFullResource (r:Model) {
@@ -171,7 +178,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 <tr>
                     <td>Category:</td>
                     <td>
-                        ${r && r.hasModelCategory && r.hasModelCategory.length > 0 ? r.hasModelCategory[0] : ''}
+                        ${this._inputCategory}
                     </td>
                 </tr>
 
@@ -316,17 +323,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 <tr>
                     <td>Category:</td>
                     <td>
-                        <wl-select id="i-category" name="Category" required
-                            value="${edResource && edResource.hasModelCategory && edResource.hasModelCategory.length > 0
-                            ? edResource.hasModelCategory[0] : ''}">
-                            <option value="">None</option>
-                            <option value="Agriculture">Agriculture</option>
-                            <option value="Hydrology">Hydrology</option>
-                            <option value="Economy">Economy</option>
-                            <option value="Weather">Weather</option>
-                            <option value="Decision Support">Decision Support</option>
-                            <option value="Land Use">Land Use</option>
-                        </wl-select>
+                        ${this._inputCategory}
                     </td>
                 </tr>
 
@@ -479,7 +476,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
     protected _getResourceFromFullForm () {
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById("i-label") as Textfield;
-        let inputCategory : Select = this.shadowRoot.getElementById("i-category") as Select;
+        //let inputCategory : Select = this.shadowRoot.getElementById("i-category") as Select;
         let inputKeywords : Textfield = this.shadowRoot.getElementById("i-keywords") as Textfield;
         let inputShortDesc : Textarea = this.shadowRoot.getElementById("i-short-desc") as Textarea;
         let inputDesc : Textarea = this.shadowRoot.getElementById("i-desc") as Textarea;
@@ -495,7 +492,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
 
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : ''; 
-        let category : string = inputCategory ? inputCategory.value : ''; 
+        //let category : string = inputCategory ? inputCategory.value : ''; 
         let keywords : string = inputKeywords ? inputKeywords.value : ''; 
         let shortDesc : string = inputShortDesc ? inputShortDesc.value : ''; 
         let desc : string = inputDesc ? inputDesc.value : ''; 
@@ -508,12 +505,13 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         let documentation : string = inputDocumentation ? inputDocumentation.value : ''; 
         let download : string = inputDownload ? inputDownload.value : ''; 
         let installInstructions : string = inputInstallInstructions ? inputInstallInstructions.value : ''; 
+        let categories = this._inputCategory.getResources();
 
-        if (label && category && desc) {
+        if (label && desc && categories != null && categories.length > 0) {
             let jsonRes = {
                 type: ["Model"],
                 label: [label],
-                hasModelCategory: [category],
+                hasModelCategory: categories,
                 description: [desc],
                 author: this._inputAuthor.getResources(),
                 hasGrid: this._inputGrid.getResources(),
@@ -540,8 +538,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 (<any>inputLabel).onBlur();
                 this._notification.error("You must enter a name");
             }
-            if (!category) {
-                (<any>inputCategory).onBlur();
+            if (categories == null || categories.length > 0) {
                 this._notification.error("You must enter a category");
             }
             if (!desc) {
@@ -568,7 +565,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         let inputInstallInstructions : Textfield = this.shadowRoot.getElementById("i-install-instructions") as Textfield;
 
         if ( inputLabel )                inputLabel.value = '';
-        if ( inputCategory )             inputCategory.value = '';
+        //if ( inputCategory )             inputCategory.value = '';
         if ( inputKeywords )             inputKeywords.value = '';
         if ( inputShortDesc )            inputShortDesc.value = '';
         if ( inputDesc )                 inputDesc.value = '';

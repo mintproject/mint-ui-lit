@@ -203,7 +203,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
         this._categorizedMatchingSetups = this._matchingSetups
                 .reduce((map:IdMap<ModelConfigurationSetup[]>, setup:ModelConfigurationSetup) => {
             let cat : string = setup.hasModelCategory && setup.hasModelCategory.length > 0 ?
-                    setup.hasModelCategory[0] : 'Uncategorized'; 
+                    setup.hasModelCategory[0].label[0] : 'Uncategorized'; 
             if (!map[cat]) map[cat] = [setup];
             else map[cat].push(setup)
             return map;

@@ -531,7 +531,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         Object.values(this._allModels).forEach((m:Model) => {
             // Model nodes.
             let category : string = m.hasModelCategory && m.hasModelCategory.length > 0 ?
-                    m.hasModelCategory[0] : 'Uncategorized';
+                    m.hasModelCategory[0].label[0] : 'Uncategorized';
             if (!this._nodes[category]) {
                 let newNode : TreeNode = new TreeNode();
                 newNode.setName(category);
