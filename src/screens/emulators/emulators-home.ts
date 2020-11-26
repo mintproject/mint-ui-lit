@@ -65,6 +65,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                 <wl-tab @click="${() => this._showEmulators('hand')}" ?checked="${this._selectedModel=='hand'}">HAND</wl-tab>
                 <wl-tab @click="${() => this._showEmulators('cycles')}" ?checked="${this._selectedModel=='cycles'}">CYCLES</wl-tab>
                 <wl-tab @click="${() => this._showEmulators('fsi')}" ?checked="${this._selectedModel=='fsi'}">FSI</wl-tab>
+                <wl-tab @click="${() => this._showEmulators('drought')}" ?checked="${this._selectedModel=='drought'}">Drought</wl-tab>
             </wl-tab-group>
 
             <div id="pihm_emulators" class="emulators" .style="display:${this._selectedModel=='pihm' ? '': 'none'}">
@@ -355,7 +356,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                     </tbody>
                 </table>
             </div>
-            
+
             <div id="fsi_emulators" .style="display:${this._selectedModel=='fsi' ? '': 'none'}" class="emulators">
                 <h2>FSI Emulators</h2>
                 <table class="pure-table pure-table-bordered">
@@ -364,6 +365,98 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                     </thead>
                     <tbody>
                         <tr><td>Ethiopia</td><td>2008-2017</td><td><a href="https://data.mint.isi.edu/files/raw-data/GloFAS/flooding/GloFASv2.1_SS_ET_1981_2017.nc">https://data.mint.isi.edu/files/raw-data/GloFAS/flooding/GloFASv2.1_SS_ET_1981_2017.nc</a></td><td>Yes (locally)</td><td><a href="https://w3id.org/okn/i/mint/fsi_1.0_simple_et_ss">https://w3id.org/okn/i/mint/fsi_1.0_simple_et_ss</a></td><td>simulation year: 2008-2017</td><td><a href="/ethiopia/modeling/scenario/cFut6KW7huKmLMqTLGEw/rzkcVNqnSGWKMttVWjCM/cqaAmUmY55WsMr79Nrcl/results">/ethiopia/modeling/scenario/cFut6KW7huKmLMqTLGEw/rzkcVNqnSGWKMttVWjCM/cqaAmUmY55WsMr79Nrcl/results</a></td><td></td><td>Finished</td><td>NO (no need for calibration)</td><td>Years 2018 and 2019 ran separately (Daniel). All runs shared with Jataware, they are happy with MINT NetCDF format </td></tr>
+                    </tbody>
+                </table>
+            </div>               
+
+            <div id="drought_emulators" .style="display:${this._selectedModel=='drought' ? '': 'none'}" class="emulators">
+                <h2>Drought Emulators</h2>
+                <table class="pure-table pure-table-bordered">
+                    <thead>
+                        <tr><th>Region</th><th>Time period</th><th>Input (data preparation has been completed)</th><th>Model setup has been tested (outside MINT)</th><th>Setup (the model setup available in MINT)</th><th>Ensemble description (range of parameters completed in the simulation)</th><th>Output summary (Ensemble)</th><th>Results reviewed by modeler</th><th>Status</th><th>Validated?</th><th>Comments</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Ethiopia</td>
+                            <td>2010-2018</td><td><a href="https://data.mint.isi.edu/files/CHIRPS/2.0/global_monthly/chirps-v2.0.monthly.nc">https://data.mint.isi.edu/files/CHIRPS/2.0/global_monthly/chirps-v2.0.monthly.nc</a></td>
+                            <td>Yes (locally)</td>
+                            <td><a href="https://w3id.org/okn/i/mint/dsi_1.2.0_cfg_chirps_ethiopia">https://w3id.org/okn/i/mint/dsi_1.2.0_cfg_chirps_ethiopia</a></td>
+                            <td>
+                                Index: SPI;
+                                distribution: gamma;
+                                scales: 6;
+                                sim start year: 2010;
+                                sim end year: 2018;
+                                calib start year: 1981;
+                                calib end year: 2010;
+                                global: False;
+                                min lon: 23;
+                                max lon: 48;
+                                min lat: 3;
+                                max lat: 15;
+                                dataset type: CHIRPS;
+                            </td>
+                            <td><a href="/ethiopia/modeling/scenario/VCWuwuZ6vJQjNiVlrS0Q/4t6hVGaS71FHAmQ2000a/1gT1VIIdDTO1iG88wpgZ/results">/ethiopia/modeling/scenario/VCWuwuZ6vJQjNiVlrS0Q/4t6hVGaS71FHAmQ2000a/1gT1VIIdDTO1iG88wpgZ/results</a></td>
+                            <td></td>
+                            <td>Finished</td>
+                            <td>NO (no need for calibration)</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Ethiopia</td>
+                            <td>2010-2018</td>
+                            <td><a href="https://data.mint.isi.edu/files/raw-data/ECMWF.nc">https://data.mint.isi.edu/files/raw-data/ECMWF.nc</a></td>
+                            <td>Yes (locally)</td>
+                            <td><a href="https://w3id.org/okn/i/mint/dsi_1.2.0_cfg_ecmwf_ethiopia">https://w3id.org/okn/i/mint/dsi_1.2.0_cfg_ecmwf_ethiopia</a></td>
+                            <td>
+                                Index: SPI;
+                                distribution: gamma;
+                                scales: 6;
+                                sim start year: 2010;
+                                sim end year: 2018;
+                                calib start year: 1981;
+                                calib end year: 2010;
+                                global: False;
+                                min lon: 23;
+                                max lon: 48;
+                                min lat: 3;
+                                max lat: 15;
+                                dataset type: ECMWF;
+                            </td>
+                            <td><a href="/ethiopia/modeling/scenario/VCWuwuZ6vJQjNiVlrS0Q/0bIX4jue50DDcVEPTow9/zaJQOpdyIka9diQ9bz5p/results">/ethiopia/modeling/scenario/VCWuwuZ6vJQjNiVlrS0Q/0bIX4jue50DDcVEPTow9/zaJQOpdyIka9diQ9bz5p/results</a></td>
+                            <td></td>
+                            <td>Finished</td>
+                            <td>NO (no need for calibration)</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Ethiopia</td>
+                            <td>2010-2018</td>
+                            <td><a href="https://data.mint.isi.edu/files/raw-data/GLDAS2.1_TP_2000_2018.nc">https://data.mint.isi.edu/files/raw-data/GLDAS2.1_TP_2000_2018.nc</a></td>
+                            <td>Yes (locally)</td>
+                            <td><a href="https://w3id.org/okn/i/mint/dsi_1.2.0_cfg_ecmwf_ethiopia">https://w3id.org/okn/i/mint/dsi_1.2.0_cfg_ecmwf_ethiopia</a></td>
+                            <td>
+                                Index: SPI;
+                                distribution: gamma;
+                                scales: 6;
+                                data start year: 2008;
+                                data end year: 2017;
+                                calib start year: 2000;
+                                calib end year: 2017;
+                                min lon: 23;
+                                max lon: 48;
+                                min lat: 3;
+                                max lat: 15;
+                                data type: GLDAS;
+                                periodicity: monthly;
+                                generate visualization: True;
+                            </td>
+                            <td><a href="/ethiopia/modeling/scenario/VCWuwuZ6vJQjNiVlrS0Q/eGvdXNQWUuZKdLUeMQPB/z6ICs8Bup4AUWKjYm6g2/results">/ethiopia/modeling/scenario/VCWuwuZ6vJQjNiVlrS0Q/eGvdXNQWUuZKdLUeMQPB/z6ICs8Bup4AUWKjYm6g2/results</a></td>
+                            <td></td>
+                            <td>Finished</td>
+                            <td>NO (no need for calibration)</td>
+                            <td></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>               
