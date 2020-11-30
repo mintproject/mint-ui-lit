@@ -8,7 +8,7 @@ import { store, RootState } from 'app/store';
 import { goToPage } from 'app/actions';
 import { IdMap } from 'app/reducers';
 
-import { isEmpty, uriToId } from 'model-catalog/util';
+import { isEmpty, uriToId, getLabel } from 'model-catalog/util';
 import { Model } from '@mintproject/modelcatalog_client';
 import { modelsSearchIndex, modelsSearchIntervention, modelsSearchRegion, modelsSearchStandardVariable } from 'model-catalog/actions';
 import { CustomNotification } from 'components/notification';
@@ -426,7 +426,8 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                         (model.label ? model.label.join() : '') +
                         (model.description ? model.description.join() : '') +
                         (model.keywords ? model.keywords.join() : '') +
-                        (model.hasModelCategory ? model.hasModelCategory.join() : '')
+                        (model.hasModelCategory && model.hasModelCategory.length > 0 ?
+                                model.hasModelCategory.map(getLabel).join(', ') : '')
                     ).toLowerCase();
                 });
                 this._activeModels = {};
