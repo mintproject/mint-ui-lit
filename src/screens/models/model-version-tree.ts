@@ -128,17 +128,18 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
 
         let categoryModels = {};
         Object.values(this._models).forEach((m:Model) => {
-            let categories : string[] = ['Uncategorized'];
             if (m.hasModelCategory && m.hasModelCategory.length > 0) {
-                categories = m.hasModelCategory.map((c:ModelCategory) => c.label ? c.label[0] : c.id);
+                m.hasModelCategory.map(getLabel).forEach((category:string) => {
+                    if (!categoryModels[category]) categoryModels[category] = [];
+                    categoryModels[category].push(m);
+                    if (this._selectedModel === m.id) this._visible[category] = true;
+                });
+            } else {
+                let category : string = 'Uncategorized';
+                if (!categoryModels[category]) categoryModels[category] = [];
+                categoryModels[category].push(m);
+                if (this._selectedModel === m.id) this._visible[category] = true;
             }
-            categories.forEach((cat:string)  => {
-                if (!categoryModels[cat]) categoryModels[cat] = [];
-                categoryModels[cat].push(m);
-                if (this._selectedModel === m.id) {
-                    this._visible[cat] = true;
-                }
-            });
         });
 
         return html`

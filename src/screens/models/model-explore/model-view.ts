@@ -672,7 +672,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                       html`<div><b>Creation date:</b> ${this._model.dateCreated[0].toString().replace(/T.*$/,'')}</div>`
                       :''}
                     ${this._model.hasModelCategory ?
-                      html`<div><b>Category:</b> ${this._model.hasModelCategory.join(', ')}</div>`
+                      html`<div><b>Category:</b> ${this._model.hasModelCategory.map(getLabel).join(', ')}</div>`
                       :''}
                     ${modelType.length > 0 ? html`<div><b>Model type:</b> ${modelType.join(', ')}</div>`:''}
                 </div>

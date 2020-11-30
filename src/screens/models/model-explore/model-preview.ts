@@ -9,7 +9,7 @@ import { goToPage } from '../../../app/actions';
 import { ExplorerStyles } from './explorer-styles'
 
 import { getId, isEmpty, isSubregion, getLatestVersion, getLatestConfiguration, getLatestSetup,
-         isExecutable } from 'model-catalog/util';
+         isExecutable, getLabel } from 'model-catalog/util';
 import { IdMap } from 'app/reducers';
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Parameter, SoftwareImage,
          Person, Process, SampleResource, SampleCollection, Region, Image } from '@mintproject/modelcatalog_client';
@@ -217,7 +217,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                     }
                   </div>
                   <div class="text-centered two-lines">
-                    Category: ${this._model.hasModelCategory ? html`${this._model.hasModelCategory[0]}` : html`-`}
+                    Category: ${this._model.hasModelCategory ? html`${this._model.hasModelCategory.map(getLabel).join(', ')}` : html`-`}
                     <br/>
                     Type: ${modelType ? modelType : '-'}
                   </div>

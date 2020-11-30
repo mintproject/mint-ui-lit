@@ -46,6 +46,7 @@ import { ModelCatalogGrid } from './resources/grid';
 import { ModelCatalogParameter } from './resources/parameter';
 import { ModelCatalogDatasetSpecification } from './resources/dataset-specification';
 import { ModelCatalogRegion } from './resources/region';
+import { ModelCatalogCategory } from './resources/category';
 
 import { ModelsConfigureGrid } from './grid';
 import { ModelsConfigureTimeInterval } from './time-interval';
@@ -79,6 +80,7 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
     private _inputDSInput : ModelCatalogDatasetSpecification;
     private _inputDSOutput : ModelCatalogDatasetSpecification;
     private _inputRegion : ModelCatalogRegion;
+    private _inputCategory : ModelCatalogCategory;
 
     private _selectedModel : string = '';
     private _selectedVersion : string = '';
@@ -173,15 +175,7 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
             <tr>
                 <td>Category:</td>
                 <td>
-                    <wl-select id="form-config-category" name="Category" required 
-                            value="${this._config && this._config.hasModelCategory ? this._config.hasModelCategory[0] : ''}">
-                        <option value="">None</option>
-                        <option value="Agriculture">Agriculture</option>
-                        <option value="Hydrology">Hydrology</option>
-                        <option value="Economy">Economy</option>
-                        <option value="Weather">Weather</option>
-                        <option value="Land Use">Land Use</option>
-                    </wl-select>
+                    <model-catalog-category id="mccategory"></model-catalog-category>
                 </td>
             </tr>
 
@@ -347,6 +341,7 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
         this._inputDSOutput =  this.shadowRoot.getElementById('mcoutput') as ModelCatalogDatasetSpecification;
         this._inputGrid = this.shadowRoot.getElementById('mcgrid') as ModelCatalogGrid;
         this._inputRegion = this.shadowRoot.getElementById('mcregion') as ModelCatalogRegion;
+        this._inputCategory = this.shadowRoot.getElementById('mccategory') as ModelCatalogCategory;
         this._inputDSInput.setName('input');
         this._inputDSOutput.setName('output');
         this._setEditingInputs();
@@ -362,6 +357,7 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
         this._inputDSInput.setActionEditOrAdd();
         this._inputDSOutput.setActionEditOrAdd();
         this._inputRegion.setActionMultiselect();
+        this._inputCategory.setActionMultiselect();
         /*let inputs = [this._inputTimeInterval];
         inputs.forEach((input) => {
             input.setActionSelect();
@@ -374,7 +370,6 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
           action: 'New Configuration save button clicked',
         });
         let inputName : Textfield = this.shadowRoot.getElementById("form-config-name") as Textfield;
-        let inputCategory : Select = this.shadowRoot.getElementById("form-config-category") as Select;
         let inputDesc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-desc") as HTMLTextAreaElement;
         let inputShortDesc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-short-desc") as HTMLTextAreaElement;
         let inputInstall : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-installation") as HTMLTextAreaElement;
@@ -386,7 +381,6 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
         let inputNotes : Textfield = this.shadowRoot.getElementById("form-config-usage-notes") as Textfield;
 
         let name        : string = inputName        ? inputName        .value : ''; 
-        let category    : string = inputCategory    ? inputCategory    .value : ''; 
         let desc        : string = inputDesc        ? inputDesc        .value : '';    
         let shortDesc   : string = inputShortDesc   ? inputShortDesc   .value : '';    
         let install     : string = inputInstall     ? inputInstall     .value : '';
@@ -396,13 +390,14 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
         let compLoc     : string = inputCompLoc     ? inputCompLoc     .value : '';   
         let tag         : string = inputTag         ? inputTag         .value : '';   
         let notes : string = inputNotes ? inputNotes.value : '';
+        let categories = this._inputCategory.getResources();
 
-        if (name && category && desc) {
+        if (name && categories.length > 0 && desc) {
             let jsonObj = {
                 //type: ["ModelConfiguration"],
                 label: [name],
                 description: [desc],
-                hasModelCategory: [category],
+                hasModelCategory: categories,
                 hasOutputTimeInterval: this._inputTimeInterval.getResources(),
                 author: this._inputPerson.getResources(),
                 hasProcess: this._inputProcess.getResources(),
@@ -454,7 +449,6 @@ export class ModelsNewConfig extends connect(store)(PageViewElement) {
             });
         } else {
             if (!name && inputName) (<any>inputName).onBlur();
-            if (!category && inputCategory) (<any>inputCategory).onBlur();
             if (!desc && inputDesc) (<any>inputDesc).onBlur();
         }
     }

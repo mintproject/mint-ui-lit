@@ -12,7 +12,7 @@ import { goToPage } from 'app/actions';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
 
-import { Person, ModelConfiguration, ModelConfigurationFromJSON } from '@mintproject/modelcatalog_client';
+import { Person,ModelCategory, ModelConfiguration, ModelConfigurationFromJSON } from '@mintproject/modelcatalog_client';
 
 import { modelConfigurationPut, modelConfigurationPost, modelConfigurationGet, modelConfigurationDelete } from 'model-catalog/actions';
 import { getURL, getLabel } from 'model-catalog/util';
@@ -40,6 +40,7 @@ import { ModelCatalogRegion } from './resources/region';
 import { ModelCatalogParameter } from './resources/parameter';
 import { ModelCatalogDatasetSpecification } from './resources/dataset-specification';
 import { ModelCatalogNumericalIndex } from './resources/numerical-index';
+import { ModelCatalogCategory } from './resources/category';
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
@@ -66,6 +67,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     private _inputDSOutput : ModelCatalogDatasetSpecification;
     private _inputRegion : ModelCatalogRegion;
     private _inputNumericalIndex : ModelCatalogNumericalIndex;
+    private _inputCategory : ModelCatalogCategory;
 
     private _rendered : boolean = false;
 
@@ -166,17 +168,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             <tr>
                 <td>Category:</td>
                 <td>
-                    ${this._editing ? html`
-                    <wl-select id="form-config-category" name="Category" required 
-                            value="${this._config && this._config.hasModelCategory ? this._config.hasModelCategory[0] : ''}">
-                        <option value="">None</option>
-                        <option value="Agriculture">Agriculture</option>
-                        <option value="Hydrology">Hydrology</option>
-                        <option value="Economy">Economy</option>
-                        <option value="Weather">Weather</option>
-                        <option value="Land Use">Land Use</option>
-                    </wl-select>`
-                    : (this._config && this._config.hasModelCategory ? this._config.hasModelCategory[0] : '')}
+                    <model-catalog-category id="mccategory"></model-catalog-category>
                 </td>
             </tr>
 
@@ -411,7 +403,6 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
           action: 'Configuration save button clicked',
         });
         let inputName : Textfield = this.shadowRoot.getElementById("form-config-name") as Textfield;
-        let inputCategory : Select = this.shadowRoot.getElementById("form-config-category") as Select;
         let inputDesc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-desc") as HTMLTextAreaElement;
         let inputShortDesc : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-short-desc") as HTMLTextAreaElement;
         let inputInstall : HTMLTextAreaElement = this.shadowRoot.getElementById("form-config-installation") as HTMLTextAreaElement;
@@ -424,7 +415,6 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
 
 
         let name        : string = inputName        ? inputName        .value : '';
-        let category    : string = inputCategory    ? inputCategory    .value : '';
         let desc        : string = inputDesc        ? inputDesc        .value : '';
         let shortDesc   : string = inputShortDesc   ? inputShortDesc   .value : '';
         let install     : string = inputInstall     ? inputInstall     .value : '';
@@ -434,13 +424,14 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         let compLoc     : string = inputCompLoc     ? inputCompLoc     .value : '';
         let tag         : string = inputTag         ? inputTag         .value : '';
         let notes : string = inputNote ? inputNote.value : '';
+        let categories = this._inputCategory.getResources();
 
-        if (name && category && desc) {
+        if (name && categories.length > 0 && desc) {
             let jsonObj = {
                 //type: ["ModelConfiguration"],
                 label: [name],
                 description: [desc],
-                hasModelCategory: [category],
+                hasModelCategory: categories,
                 hasOutputTimeInterval: this._inputTimeInterval.getResources(),
                 author: this._inputPerson.getResources(),
                 hasProcess: this._inputProcess.getResources(),
@@ -486,7 +477,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
             });
         } else {
             if (!name && inputName) (<any>inputName).onBlur();
-            if (!category && inputCategory) (<any>inputCategory).onBlur();
+            //TODO: show error when no category
             if (!desc && inputDesc) (<any>inputDesc).onBlur();
         }
     }
@@ -504,6 +495,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         this._inputGrid = this.shadowRoot.getElementById('mcgrid') as ModelCatalogGrid;
         this._inputRegion = this.shadowRoot.getElementById('mcregion') as ModelCatalogRegion;
         this._inputNumericalIndex = this.shadowRoot.getElementById('mcindex') as ModelCatalogNumericalIndex;
+        this._inputCategory = this.shadowRoot.getElementById('mccategory') as ModelCatalogCategory;
         this._rendered = true;
         if (this._config) {
             this._initializeForm();
@@ -526,6 +518,10 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         this._inputDSOutput.setResources( this._config.hasOutput );
         this._inputRegion.setResources( this._config.hasRegion );
         this._inputNumericalIndex.setResources( this._config.usefulForCalculatingIndex );
+        if (this._config.hasModelCategory) {
+            let filteredCategories = this._config.hasModelCategory.filter((c:ModelCategory) => !!c.id);
+            this._inputCategory.setResources(filteredCategories);
+        }
     }
 
     private _setEditingInputs () { //TODO types...
@@ -539,6 +535,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
         this._inputDSOutput.setActionEditOrAdd();
         this._inputRegion.setActionMultiselect();
         this._inputNumericalIndex.setActionMultiselect();
+        this._inputCategory.setActionMultiselect();
         /*let inputs = [this._inputTimeInterval];
         inputs.forEach((input) => {
             input.setActionSelect();
@@ -548,7 +545,7 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
     private _unsetEditingInputs () {
         let inputs = [this._inputTimeInterval, this._inputPerson, this._inputGrid, this._inputProcess,
                 this._inputSoftwareImage, this._inputParameter, this._inputRegion, this._inputDSInput,
-                this._inputDSOutput, this._inputNumericalIndex];
+                this._inputDSOutput, this._inputNumericalIndex, this._inputCategory];
         inputs.forEach((input) => {
             input.unsetAction();
         });
