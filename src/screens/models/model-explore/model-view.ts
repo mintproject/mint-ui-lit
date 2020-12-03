@@ -798,6 +798,13 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     private _renderTableTechnical (resource:ModelConfiguration|ModelConfigurationSetup, titlePrefix:string) {
+        //Do no show when the model does not have any technical property
+        if (!resource.hasSoftwareImage && !resource.operatingSystems && !resource.memoryRequirements && 
+            !resource.processorRequirements && !resource.softwareRequirements && !resource.hasDownloadURL &&
+            !resource.hasInstallationInstructions && !resource.hasComponentLocation && !resource.hasSourceCode) {
+            return html``;
+        }
+
         return html`
             <table class="pure-table pure-table-striped">
                 <thead>

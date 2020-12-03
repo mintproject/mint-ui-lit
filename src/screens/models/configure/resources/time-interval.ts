@@ -35,14 +35,16 @@ export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResourc
     protected resourceDelete = timeIntervalDelete;
 
     private _units : IdMap<Unit> = {
-        'https://w3id.org/okn/i/mint/dayT':
-            { id: 'https://w3id.org/okn/i/mint/dayT', label: ['day']},
-        'https://w3id.org/okn/i/mint/hourT':
-            { id: 'https://w3id.org/okn/i/mint/hourT', label: ['hour']},
-        'https://w3id.org/okn/i/mint/yearT':
-            { id: 'https://w3id.org/okn/i/mint/yearT', label: ['year']},
         'https://w3id.org/okn/i/mint/minT':
             { id: 'https://w3id.org/okn/i/mint/minT', label: ['min']},
+        'https://w3id.org/okn/i/mint/hourT':
+            { id: 'https://w3id.org/okn/i/mint/hourT', label: ['hour']},
+        'https://w3id.org/okn/i/mint/dayT':
+            { id: 'https://w3id.org/okn/i/mint/dayT', label: ['day']},
+        'https://w3id.org/okn/i/mint/month':
+            { id: 'https://w3id.org/okn/i/mint/month', label: ['month']},
+        'https://w3id.org/okn/i/mint/yearT':
+            { id: 'https://w3id.org/okn/i/mint/yearT', label: ['year']},
         'https://w3id.org/okn/i/mint/variable':
             { id: 'https://w3id.org/okn/i/mint/variable', label: ['variable']}
     } as IdMap<Unit>;

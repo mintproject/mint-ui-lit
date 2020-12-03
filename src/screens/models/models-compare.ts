@@ -96,7 +96,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         {
             name: "Category",
             fn: (setup:ModelConfigurationSetup) => setup.hasModelCategory && setup.hasModelCategory.length > 0 ?
-                    setup.hasModelCategory[setup.hasModelCategory.length-1] : html`<span style="color:#999">None<span>`
+                    setup.hasModelCategory.map(getLabel).join(', ') : html`<span style="color:#999">None<span>`
         },
         {
             name: "Keywords",
