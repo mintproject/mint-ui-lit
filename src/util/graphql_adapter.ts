@@ -650,22 +650,21 @@ const getModelIOFixedBindings = (io) => {
     let fixed_bindings_data = []
     if ("value" in io && "resources" in io["value"]) {
         io["value"]["resources"].forEach((res: any) => {
-            if (!("name" in res)) {
+            if (!("name" in res))
                 res["name"] = res["url"].replace(/^.*\/(.*?)$/, "$1");
-                fixed_bindings_data.push({
-                    "resource": {
-                        "data": {
-                            "id": getMd5Hash(res["url"]),
-                            "name": res["name"],
-                            "url": res["url"]
-                        },
-                        "on_conflict": {
-                            "constraint": "resource_pkey",
-                            "update_columns": ["name"]
-                        }
+            fixed_bindings_data.push({
+                "resource": {
+                    "data": {
+                        "id": getMd5Hash(res["url"]),
+                        "name": res["name"],
+                        "url": res["url"]
+                    },
+                    "on_conflict": {
+                        "constraint": "resource_pkey",
+                        "update_columns": ["name"]
                     }
-                })
-            }
+                }
+            })
         });
     }
     return {
