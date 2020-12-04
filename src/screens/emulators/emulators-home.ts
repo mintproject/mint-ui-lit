@@ -38,6 +38,9 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
 
     @property({type: String})
     private _selectedModel : string = '';
+
+    @property({type: String})
+    private _tableType : string = 'filter';
     
     @property({type: Array})
     private _emulators : EmulatorsListWithStatus;
@@ -391,12 +394,24 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                     (this._modelIO ? html`<center><br />Please select a model</center>` : "") :
                     html`
                     <!-- Emulator Executions -->
-                    <h2>${this._selectedModel} Emulators</h2>
-                    ${this._modelInputsLoading ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`:
+                    <div style="display: flex; align-items: center;">
+                        <h2 style="padding: 0px 10px;">${this._selectedModel} Emulators</h2>
+                        <wl-tab-group align="left">
+                            <wl-tab @click="${() => this._tableType = 'filter'}" ?checked="${this._tableType==='filter'}">
+                                Filter executions
+                            </wl-tab>
+                            <wl-tab @click="${() => this._tableType = 'grouped'}" ?checked="${this._tableType==='grouped'}">
+                                Executions Grouped by Thread
+                            </wl-tab>
+                        </wl-tab-group>
+                    </div>
+
+                    ${this._tableType == 'filter' ? 
+                    (this._modelInputsLoading ? 
+                        html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`:
                         (!this._modelIO ? 
                             "" : 
                             html`
-                            <h4>Filter All ${this._selectedModel} Executions</h4>
                             <table class="pure-table halfnhalf" style="width: 100%">
                                 <tbody>
                                 <tr>
@@ -587,14 +602,13 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                             </table>`
                         )}                            
                         </div>`
-                    )}
-                        
-                    ${this._emulatorsLoading ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`:
+                    ) ) : (
+                    this._emulatorsLoading ? 
+                        html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`:
                         (!this._emulators ? 
                             html`<div>Error: Could not load executions by thread</div>` 
                             : 
                             html`
-                            <h4>${this._selectedModel} Executions Grouped by Thread</h4>
                             <table class="pure-table pure-table-bordered">
                                 <thead>
                                     <tr><th>Model Calibrated for Region</th><th>Executed for Region</th><th>Time period</th><th>Input</th><th>Model Setup</th><th>Ensemble description (range of parameters)</th><th>Output summary (Ensemble)</th></tr>
@@ -639,7 +653,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                 })}
                                 </tbody>
                             </table>`)
-                    }`
+                    )}`
             )}
         </div>`;
     }

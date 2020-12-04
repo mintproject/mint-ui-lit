@@ -229,7 +229,8 @@ export class MintApp extends connect(store)(LitElement) {
             ${this._selectedRegion ? 
               html`
               <wl-button flat inverted class="message-button ${this._page == 'emulators' ? 'selected' : ''}" @click="${() => goToPage('emulators')}">
-                Emulators <wl-icon style="margin-left: 4px;">settings</wl-icon>
+                  Emulators &#38; Results
+                  <wl-icon style="margin-left: 4px;">settings</wl-icon>
               </wl-button>
               ` : ""
             }
@@ -247,7 +248,8 @@ export class MintApp extends connect(store)(LitElement) {
               </wl-button>              
               &nbsp;
               <wl-button flat inverted class="message-button ${this._page == 'emulators' ? 'selected' : ''}" @click="${() => goToPage('emulators')}">
-                Emulators <wl-icon style="margin-left: 4px;">settings</wl-icon>
+                  Emulators &#38; Results
+                  <wl-icon style="margin-left: 4px;">settings</wl-icon>
               </wl-button>
               ` : ""
             }

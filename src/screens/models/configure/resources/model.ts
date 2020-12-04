@@ -17,6 +17,7 @@ import { ModelCatalogNumericalIndex } from './numerical-index';
 import { ModelCatalogFundingInformation } from './funding-information';
 import { ModelCatalogVisualization } from './visualization';
 import { ModelCatalogCategory } from './category';
+import { ModelCatalogImage } from './image';
 
 import { goToPage } from 'app/actions';
 
@@ -98,6 +99,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
     private _inputFunding : ModelCatalogFundingInformation;
     private _inputVisualization : ModelCatalogVisualization;
     private _inputCategory : ModelCatalogCategory;
+    private _inputLogo : ModelCatalogImage;
 
     constructor () {
         super();
@@ -110,6 +112,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         this._inputFunding = new ModelCatalogFundingInformation();
         this._inputVisualization = new ModelCatalogVisualization();
         this._inputCategory = new ModelCatalogCategory();
+        this._inputLogo = new ModelCatalogImage();
     }
 
     public setResource (r:Model) {
@@ -122,6 +125,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 this._inputFunding.setResources(m.hasFunding);
                 this._inputVisualization.setResources(m.hasSampleVisualization);
                 this._inputCategory.setResources(m.hasModelCategory);
+                this._inputLogo.setResources(m.logo);
             }
         });
         return req;
@@ -135,6 +139,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         this._inputFunding.setActionMultiselect();
         this._inputVisualization.setActionMultiselect();
         this._inputCategory.setActionMultiselect();
+        this._inputLogo.setActionSelect();
     }
 
     protected _clearStatus () {
@@ -145,6 +150,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         if (this._inputFunding) this._inputFunding.unsetAction();
         if (this._inputVisualization) this._inputVisualization.unsetAction();
         if (this._inputCategory) this._inputCategory.unsetAction();
+        if (this._inputLogo) this._inputLogo.unsetAction();
         this.scrollUp();
         this.clearForm();
     }
@@ -157,11 +163,13 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         this._inputFunding.setResources(null);
         this._inputVisualization.setResources(null);
         this._inputCategory.setResources(null);
+        this._inputLogo.setResources(null);
         this._inputAuthor.setActionMultiselect();
         this._inputGrid.setActionSelect();
         this._inputIndex.setActionSelect();
         this._inputFunding.setActionMultiselect();
         this._inputCategory.setActionMultiselect();
+        this._inputLogo.setActionSelect();
     }
 
     protected _renderFullResource (r:Model) {
@@ -201,6 +209,13 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                     <td>Full description:</td>
                     <td>
                         ${r.description ? r.description[0] : ''}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Logo:</td>
+                    <td>
+                        ${this._inputLogo}
                     </td>
                 </tr>
 
@@ -354,7 +369,14 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 </tr>
 
                 <tr>
-                    <td>Author</td>
+                    <td>Logo:</td>
+                    <td>
+                        ${this._inputLogo}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Author:</td>
                     <td>
                         ${this._inputAuthor}
                     </td>
@@ -518,6 +540,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 hasFunding: this._inputFunding.getResources(),
                 hasSampleVisualization: this._inputVisualization.getResources(),
                 usefulForCalculatingIndex: this._inputIndex.getResources(),
+                logo: this._inputLogo.getResources(),
             };
             if (keywords) jsonRes["keywords"] = [keywords];
             if (shortDesc) jsonRes["shortDescription"] = [shortDesc];
