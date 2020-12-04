@@ -579,10 +579,16 @@ export class ModelsConfigureConfiguration extends connect(store)(PageViewElement
                         if (this._rendered) this._initializeForm();
                     } else {
                         this._loading = true;
-                        store.dispatch(modelConfigurationGet(this._selectedConfig)).then((config:ModelConfiguration) => {
+                        let req = store.dispatch(modelConfigurationGet(this._selectedConfig));
+                        req.then((config:ModelConfiguration) => {
                             this._loading = false;
                             this._config = config;
                             if (this._rendered) this._initializeForm();
+                        });
+                        req.catch((err) => {
+                            //TODO: handle 404 and other errors.
+                            this._loading = false;
+                            this._config = null;
                         });
                     }
                 }

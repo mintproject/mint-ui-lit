@@ -9,8 +9,9 @@ import { goToPage } from 'app/actions';
 import { IdMap } from 'app/reducers';
 
 import { isEmpty, uriToId, getLabel } from 'model-catalog/util';
-import { Model } from '@mintproject/modelcatalog_client';
-import { modelsSearchIndex, modelsSearchIntervention, modelsSearchRegion, modelsSearchStandardVariable } from 'model-catalog/actions';
+import { Model, NumericalIndex } from '@mintproject/modelcatalog_client';
+import { modelsSearchIndex, modelsSearchIntervention, numericalIndexsGet,
+         modelsSearchRegion, modelsSearchStandardVariable } from 'model-catalog/actions';
 import { CustomNotification } from 'components/notification';
 
 import './model-preview'
@@ -47,6 +48,12 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     @property({type: Boolean})
     private _loading : boolean = true;
+
+    @property({type: Boolean})
+    private _loadingIndex : boolean = false;
+
+    @property({type: Object})
+    private _index: IdMap<NumericalIndex>;
 
     @property({type: Object}) private _comparisonList : string[] = [];
 
@@ -200,7 +207,13 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     <model-preview .id="${key}" ?active="${this._activeModels[key]}">
 
                       <div slot="description">
-                        ${this._models[key].description}
+                          ${this._searchType == 'index' && this._filter? 
+                            (this._models[key].usefulForCalculatingIndex || [])
+                                .map((index:NumericalIndex) => this._index[index.id])
+                                .map(getLabel)
+                                .map((l:string) => html`<span class="resource numerical-index">${l}</span>`)
+                            : this._models[key].description
+                          }
                       </div>
 
                       <wl-icon slot="extra-icon" @click="${()=>{this._addToComparisonList(key)}}">compare_arrows</wl-icon>
@@ -337,7 +350,18 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             Object.keys(this._models).forEach((key:string) => {
                 this._activeModels[key] = false;
             })
-            this._lastTimeout = setTimeout(
+            if (!this._loadingIndex) {
+                this._loading=false;
+                let matches : NumericalIndex[] = Object.values(this._index).filter((i:NumericalIndex) => getLabel(i).includes(input));
+                Object.values(this._models).forEach((m:Model) => {
+                    if (m && m.usefulForCalculatingIndex) {
+                        this._activeModels[m.id] = m.usefulForCalculatingIndex.some((il:NumericalIndex) => {
+                            return matches.some((ix) => ix.id == il.id);
+                        })
+                    }
+                })
+            }
+            /*this._lastTimeout = setTimeout(
                 ()=>{ 
                     let req = modelsSearchIndex(input);
                     req.then((result:any) => {
@@ -348,7 +372,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                         });
                         this._loading=false;
                     });
-                }, 750);
+                }, 750);*/
         } else {
             this._loading=false;
             this._clearSearchInput();
@@ -407,6 +431,15 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             this._loading=false;
             this._clearSearchInput();
         }
+    }
+
+    firstUpdated () {
+        this._loadingIndex = true;
+        store.dispatch( numericalIndexsGet () ).then((indices:IdMap<NumericalIndex>) => {
+            this._loadingIndex = false;
+            this._index = indices;
+            console.log('indices:', indices);
+        })
     }
 
     stateChanged(state: RootState) {
