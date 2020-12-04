@@ -9,7 +9,7 @@ export const renderVariables = (variables: VariableMap, readonly: boolean, respo
         Adjustable parameters are the variables and interventions you are interested in changing to explore outcomes on the indicator.
         </p>
         <div class="input_full">
-            <label>Indicators/Response of interest</label>
+            <label>Indicators/Response of interest <span style="font-family: auto;">*</span></label>
             ${renderResponseVariables("", variables, readonly, response_callback)}
         </div>  
         <br />
