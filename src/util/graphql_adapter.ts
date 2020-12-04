@@ -609,6 +609,7 @@ export const modelToGQL = (m: Model) => {
         "output_time_interval": m.output_time_interval,
         "code_url": m.code_url,
         "usage_notes": m.usage_notes,
+        "software_image": m.software_image,
         "inputs": {
             "data": m.input_files.map((input) => modelInputOutputToGQL(input)),
             "on_conflict": {
