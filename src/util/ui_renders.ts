@@ -49,6 +49,25 @@ export const renderNotifications = () => {
     `;
 }
 
+
+const varmodel = {
+    'grain~dry__mass-per-area_yield' : 'Cycles',
+    'crop__simulated_produced_mass' : 'EACS',
+    'break_through_curve' : '',
+    'evaporation_volume_flux_index' : '',
+    'channel_water_flow__flood_volume-flux_severity_index' : 'Flood Severity Index',
+    'flooding_contour' : '',
+    'land_surface_water__flood_inundation_depth' : 'TopoFlow',
+    'atmosphere_water__precipitation_evapotranspiration_standardized_index' : '',
+    'atmosphere_water__precipitation_standardized_index' : 'Drought Indices, DroughtPredict',
+    'recharge_volume_flux' : 'HAND',
+    'downstream_volume_flow_rate' : 'TopoFlow',
+    'channel~stream_water__flow_duration_index' : '',
+    'streamflow_location' : '',
+    'total_water_storage' : '',
+    'water_table__level_height' : '',
+}
+
 export const renderResponseVariables = (variableid: string, variables: VariableMap, readonly: boolean, callback: Function) => {
     let indicatorsByCategory = {};
     Object.values(variables).filter((varobj) => varobj.is_indicator).map((varobj) => {
@@ -70,6 +89,7 @@ export const renderResponseVariables = (variableid: string, variables: VariableM
                     return html`
                         <option value="${stdname}" ?selected="${stdname==variableid}">
                             ${name}
+                            ${varmodel[stdname] ? "[" + varmodel[stdname] + "]" : ''}
                         </option>
                     `;
                 })}
