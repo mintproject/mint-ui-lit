@@ -233,7 +233,7 @@ const modeling: Reducer<ModelingState, RootAction> = (state = INITIAL_STATE, act
             let problem_statement = {
                 ...action.details,
                 changed: true,
-                unsubscribe: state.problem_statement!.unsubscribe
+                unsubscribe: state.problem_statement?.unsubscribe
             } as ProblemStatement            
             return {
                 ...state,
@@ -294,7 +294,7 @@ const modeling: Reducer<ModelingState, RootAction> = (state = INITIAL_STATE, act
             let thread = {
                 ...action.details,
                 changed: true,
-                unsubscribe: state.thread!.unsubscribe
+                unsubscribe: state.thread?.unsubscribe
             } as Thread            
             return {
                 ...state,

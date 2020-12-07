@@ -10,7 +10,7 @@ import { Model } from "../models/reducers";
 
 import { IdMap, UserPreferences } from 'app/reducers';
 import { ProblemStatementInfo, ProblemStatementList, ThreadInfo, ThreadEvent, Task, Thread } from 'screens/modeling/reducers';
-import { subscribeProblemStatementsList, subscribeProblemStatement, subscribeThread } from 'screens/modeling/actions';
+import { fetchThread, fetchProblemStatement, fetchProblemStatementsList } from 'screens/modeling/actions';
 
 import { fromTimeStampToDateString } from "util/date-utils";
 import { getURL } from 'model-catalog/util';
@@ -177,7 +177,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
   private _getTasks(ps:ProblemStatementInfo) {
     if (!this._tasks[ps.id]) {
       this._loading[ps.id] = true;
-      store.dispatch(subscribeProblemStatement(ps.id));
+      store.dispatch(fetchProblemStatement(ps.id));
     }
   }
 
@@ -363,12 +363,12 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
   }
 
   // checking executable_ensemble_summary
-  private _subscribeToProblemStatementList() {
+  private _fetchProblemStatementList() {
     if(this._list && this._list.unsubscribe)
       this._list.unsubscribe();
     this._dispatched = true;
     console.log("Subscribing to Problem Statement List for " + this._top_regionid);
-    store.dispatch(subscribeProblemStatementsList(this._top_regionid));
+    store.dispatch(fetchProblemStatementsList(this._top_regionid));
   }
 
   stateChanged(state: RootState) {
@@ -403,7 +403,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
       if (state.ui.selected_thread_id && state.ui.selected_thread_id != this._selectedThreadId) {
         this._thread = undefined;
         this._selectedThreadId = state.ui.selected_thread_id;
-        store.dispatch( subscribeThread(this._selectedThreadId) );
+        store.dispatch( fetchThread(this._selectedThreadId) );
       }
       this._selectedThreadId = state.ui.selected_thread_id;
       if (state.ui.selected_top_regionid && state.regions!.regions &&
@@ -411,7 +411,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
         this._top_regionid = state.ui.selected_top_regionid;
         this._regions = state.regions!.regions;
         this._top_region = this._regions[this._top_regionid];
-        this._subscribeToProblemStatementList();
+        this._fetchProblemStatementList();
       } 
     }
     super.setRegionId(state);

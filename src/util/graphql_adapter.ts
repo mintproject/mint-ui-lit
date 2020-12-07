@@ -424,6 +424,7 @@ export const datasliceFromGQL = (d: any) => {
 }
 
 export const modelFromGQL = (m: any) => {
+    m = Object.assign({}, m);
     m.input_files = (m["inputs"] as any[]).map((input) => {
         return modelIOFromGQL(input);
     });
