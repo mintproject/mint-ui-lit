@@ -218,8 +218,10 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                   </div>
                   <div class="text-centered two-lines">
                     Category: ${this._model.hasModelCategory ? html`${this._model.hasModelCategory.map(getLabel).join(', ')}` : html`-`}
+                    ${modelType && modelType.length > 0? html`
                     <br/>
-                    Type: ${modelType ? modelType : '-'}
+                    Type: ${modelType}
+                    ` : html``}
                   </div>
                 </td>
 
