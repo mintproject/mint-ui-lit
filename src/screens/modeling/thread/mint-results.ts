@@ -176,7 +176,8 @@ export class MintResults extends connect(store)(MintThreadPage) {
                         </p>`
                     : html `Please execute some runs first`}
 
-                    ${finished && !submitted && this.permission.write ? 
+                    <!-- FIXME: Temporarily removed -->
+                    ${false && finished && !submitted && this.permission.write ? 
                         html` <wl-button class="submit"
                         @click="${() => this._publishAllResults(model.id)}">Save all results</wl-button>`
                         : 
@@ -191,7 +192,8 @@ export class MintResults extends connect(store)(MintThreadPage) {
                             : ""
                         )
                     }
-                    ${finished && finished_ingestion ? 
+                    <!-- FIXME: Temporarily removed -->
+                    ${false && finished && finished_ingestion ? 
                         "Results have been saved" : ''
                     }
                     <br /><br />
