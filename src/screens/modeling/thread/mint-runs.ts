@@ -52,7 +52,12 @@ export class MintRuns extends connect(store)(MintThreadPage) {
           `
         ]
     }
-    
+
+    private _scrollInto (id:string) {
+        let el = this.shadowRoot!.getElementById(id);
+        if (el) el.scrollIntoView({block: "start", behavior: "smooth"});
+    }
+
     protected render() {
         if(!this.thread) {
             return html ``;
@@ -206,7 +211,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                     ${pending > 0 ? html `${pending} are waiting to be run` : ""}
                     </p>
 
-                    <div style="width: 100%; border:1px solid #EEE;border-bottom:0px;">
+                    <div style="width: 100%; border:1px solid #EEE;border-bottom:0px; line-height: 30px;">
                         ${grouped_ensemble && !grouped_ensemble.loading ? 
                         html`
                         ${this.currentPage[model.id] > 1 ? 
@@ -220,8 +225,26 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                         }
                         ` : ""
                         }
-                        <wl-button type="button" flat inverted style="float:right"
-                            @click="${() => (this.currentPage[model.id] = 1) && this._fetchRuns(this.thread.id, model.id)}">Reload</wl-button>
+                        <span style="float:right">
+                            <span>Scroll to:</span>
+                            <wl-button type="button" flat inverted  style="padding: 6px; border-radius: 4px;"
+                                @click="${() => this._scrollInto('run')}"> Run</wl-button>
+                            ${grouped_ensemble && !grouped_ensemble.loading ?
+                                html`
+                                    ${grouped_ensemble.inputs.length > 0 ? html`
+                                <wl-button type="button" flat inverted  style="padding: 6px; border-radius: 4px;"
+                                    @click="${() => this._scrollInto('in')}"> Inputs</wl-button>
+                                    ` : html``}
+                                    ${grouped_ensemble.params.length > 0 ? html`
+                                <wl-button type="button" flat inverted  style="padding: 6px; border-radius: 4px;"
+                                    @click="${() => this._scrollInto('param')}"> Parameters</wl-button>
+                                    ` : html``}
+                                `
+                                : html``}
+                            |
+                            <wl-button type="button" flat inverted style="float:right"
+                                @click="${() => (this.currentPage[model.id] = 1) && this._fetchRuns(this.thread.id, model.id)}">Reload</wl-button>
+                        </span>
                     </div>
                     <div style="height:400px;overflow:auto;width:100%;border:1px solid #EEE">
                         ${grouped_ensemble ? 
@@ -237,11 +260,11 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                         html `<colgroup span="${grouped_ensemble.params.length}"></colgroup>` : ""} <!-- Parameters -->
                                     <thead>
                                         <tr>
-                                            <th colspan="4">Run</th> <!-- Run Status -->
+                                            <th colspan="4" id="run">Run</th> <!-- Run Status -->
                                             ${grouped_ensemble.inputs.length > 0 ? 
-                                                html `<th colspan="${grouped_ensemble.inputs.length}">Inputs</th>` : ""} <!-- Inputs -->
+                                                html `<th colspan="${grouped_ensemble.inputs.length}" id="in">Inputs</th>` : ""} <!-- Inputs -->
                                             ${grouped_ensemble.params.length > 0 ? 
-                                                html `<th colspan="${grouped_ensemble.params.length}">Parameters</th>` : ""} <!-- Parameters -->
+                                                html `<th colspan="${grouped_ensemble.params.length}" id="param">Parameters</th>` : ""} <!-- Parameters -->
                                         </tr>
                                         <tr>
                                             <th>Run Status</th>

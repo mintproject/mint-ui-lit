@@ -363,6 +363,11 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
         store.dispatch(searchEmulatorsForFilter(this._selectedModel, this._emulatorRegion, this._searchConstraints));
     }
 
+    private _scrollInto (id:string) {
+        let el = this.shadowRoot!.getElementById(id);
+        if (el) el.scrollIntoView({block: "start", behavior: "smooth"});
+    }
+
     protected render() {
         let nav = [{label:'Model Products / Emulators', url:'emulators'}] 
         let inputs = (this._modelIO || []).filter((io)=>io.type == "input");
@@ -521,8 +526,16 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                             html `<wl-button flat inverted @click=${() => this._nextPage(1)}>Next</wl-button>` :
                             html `<wl-button flat inverted disabled>Next</wl-button>`
                         }
-                        <wl-button type="button" flat inverted  style="float:right"
-                            @click="${() =>(this.currentPage = 1) && this._fetchRuns()}">Reload</wl-button>
+                        <span style="float:right">
+                            <span>Scroll to:</span>
+                            <wl-button type="button" flat inverted  style="padding: 6px; border-radius: 4px;" @click="${() => this._scrollInto('in')}">inputs</wl-button>
+                            <wl-button type="button" flat inverted  style="padding: 6px; border-radius: 4px;" @click="${() => this._scrollInto('param')}">parameters</wl-button>
+                            <wl-button type="button" flat inverted  style="padding: 6px; border-radius: 4px;" @click="${() => this._scrollInto('out')}">outputs</wl-button>
+                            |
+                            <wl-button type="button" flat inverted  @click="${() =>(this.currentPage = 1) && this._fetchRuns()}">
+                                Reload
+                            </wl-button>
+                        </span>
                         ` : ""
                         }
                         </div>
@@ -543,11 +556,11 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                     <thead>
                                         <tr>
                                             ${inputs.length > 0 ? 
-                                                html `<th colspan="${inputs.length}">Inputs</th>` : ""} <!-- Inputs -->
+                                                html `<th colspan="${inputs.length}" id="in">Inputs</th>` : ""} <!-- Inputs -->
                                             ${params.length > 0 ? 
-                                                html `<th colspan="${params.length}">Parameters</th>` : ""} <!-- Parameters -->
+                                                html `<th colspan="${params.length}" id="param">Parameters</th>` : ""} <!-- Parameters -->
                                             ${outputs.length > 0 ? 
-                                                html `<th colspan="${outputs.length}">Outputs</th>` : ""} <!-- Outputs -->
+                                                html `<th colspan="${outputs.length}" id="out">Outputs</th>` : ""} <!-- Outputs -->
                                         </tr>
                                         <tr>
                                             ${inputs.map((inf) => html`<th scope="col">${inf.name.replace(/(-|_)/g, ' ')}</th>` )}
