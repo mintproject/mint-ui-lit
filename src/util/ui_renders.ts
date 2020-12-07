@@ -54,18 +54,18 @@ const varmodel = {
     'grain~dry__mass-per-area_yield' : 'Cycles',
     'crop__simulated_produced_mass' : 'EACS',
     'break_through_curve' : '',
-    'evaporation_volume_flux_index' : '',
+    'evaporation_volume_flux_index' : 'Drought Indices',
     'channel_water_flow__flood_volume-flux_severity_index' : 'Flood Severity Index',
-    'flooding_contour' : '',
+    'flooding_contour' : 'HAND',
     'land_surface_water__flood_inundation_depth' : 'TopoFlow',
-    'atmosphere_water__precipitation_evapotranspiration_standardized_index' : '',
+    'atmosphere_water__precipitation_evapotranspiration_standardized_index' : 'Drought Indices',
     'atmosphere_water__precipitation_standardized_index' : 'Drought Indices, DroughtPredict',
     'recharge_volume_flux' : 'HAND',
     'downstream_volume_flow_rate' : 'TopoFlow',
     'channel~stream_water__flow_duration_index' : '',
     'streamflow_location' : '',
-    'total_water_storage' : '',
-    'water_table__level_height' : '',
+    'total_water_storage' : 'MODFLOW',
+    'water_table__level_height' : 'MODFLOW',
 }
 
 export const renderResponseVariables = (variableid: string, variables: VariableMap, readonly: boolean, callback: Function) => {

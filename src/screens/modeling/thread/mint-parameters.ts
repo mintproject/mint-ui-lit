@@ -183,7 +183,8 @@ export class MintParameters extends connect(store)(MintThreadPage) {
                                             :
                                             html`
                                             <div class="input_full">
-                                                <input type="text" name="${input.id}" 
+                                                <input type="text" name="${input.id}"
+                                                    placeholder="${input.default? input.default : ''}"
                                                     @change="${() => this._validateInput(model, input)}"
                                                     value="${(bindings||[]).join(", ")}"></input>
                                             </div>
