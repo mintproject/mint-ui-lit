@@ -279,6 +279,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
                 console.log("Subscribing to thread " + thread_id);
                 // Reset the problem_statement details
                 this.thread = null;
+                this._summaries = null;
                 this._dispatched = true;
                 this._dispatched_execution_summary = false;
                 
@@ -343,6 +344,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
             state.modeling.execution_summaries = null;
             state.modeling.executions = null;
             this.thread = null;
+            this._summaries = null;
         }
 
         if(this.thread && state.modeling.execution_summaries && state.modeling.execution_summaries[thread_id]) {
@@ -358,6 +360,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
             }
             state.modeling.thread = undefined;
             this.thread = null;
+            this._summaries = null;
         }
     }
 
