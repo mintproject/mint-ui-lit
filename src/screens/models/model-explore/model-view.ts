@@ -1760,19 +1760,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                             this._softwareImages[si.id] = si;
                         });
 
-                        // Req does not return all info so requestion params and id again.
                         if (setup.hasParameter) this._loadParameters(setup.hasParameter, db);
-                        //if (setup.hasInput) this._loadDatasetSpecifications(setup.hasInput, db);
-                        //if (setup.hasOutput) this._loadDatasetSpecifications(setup.hasOutput, db);
-                        (setup.hasInput || []).forEach((ds:DatasetSpecification) => {
-                            this._datasetSpecifications[ds.id] = ds;
-                        });
-                        (setup.hasOutput || []).forEach((ds:DatasetSpecification) => {
-                            this._datasetSpecifications[ds.id] = ds;
-                        });
+                        if (setup.hasInput) this._loadDatasetSpecifications(setup.hasInput, db);
+                        if (setup.hasOutput) this._loadDatasetSpecifications(setup.hasOutput, db);
                         
                         this._setup = setup;
-                        //console.log('setup', setup);
                         this._loading[this._selectedSetup] = false;
                     }).catch((error) => {
                         if (error.status == 404) {
