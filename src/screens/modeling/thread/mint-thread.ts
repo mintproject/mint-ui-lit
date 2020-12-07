@@ -328,12 +328,13 @@ export class MintThread extends connect(store)(MintThreadPage) {
                 console.log("Unsubscribing to thread " + state.modeling.thread.id);
                 state.modeling.thread.unsubscribe();
             }
-            console.log("Unsubscribing to model execution summary for " + state.modeling.thread.id);
-            for(let modelid in state.modeling.execution_summaries[state.modeling.thread.id]) {
-                let summary : ExecutionSummary = state.modeling.execution_summaries[state.modeling.thread.id][modelid];
-                summary.unsubscribe();
+            if(state.modeling.thread?.id) {
+                console.log("Unsubscribing to model execution summary for " + state.modeling.thread.id);
+                for(let modelid in state.modeling.execution_summaries[state.modeling.thread.id]) {
+                    let summary : ExecutionSummary = state.modeling.execution_summaries[state.modeling.thread.id][modelid];
+                    summary.unsubscribe();
+                }
             }
-
             state.modeling.thread = null;
             state.modeling.execution_summaries = null;
             state.modeling.executions = null;
