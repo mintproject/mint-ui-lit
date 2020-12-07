@@ -44,6 +44,7 @@ import executionIdsForThreadGQL from '../../queries/execution/executionids-for-t
 import subscribeExecutionsListGQL from '../../queries/execution/list-subscription.graphql';
 import listThreadModelExecutionsListGQL from '../../queries/execution/executions-for-thread-model.graphql';
 import subscribeThreadExecutionSummaryListGQL from '../../queries/execution/thread-execution-summary-subscription.graphql';
+import getThreadExecutionSummaryListGQL from '../../queries/execution/thread-execution-summary.graphql';
 import listExecutionsListGQL from '../../queries/execution/list.graphql';
 
 import { problemStatementFromGQL, taskFromGQL, threadFromGQL, 
@@ -518,9 +519,9 @@ export const fetchThread: ActionCreator<ThreadDetailsThunkResult> = (threadid: s
     });
 };
 
-// List ProblemStatements
-type ThreadExecutionSummaryThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionSummaryActionDetails | ThreadExecutionSummaryActionSubscription>;
-export const subscribeThreadExecutionSummary: ActionCreator<ThreadExecutionSummaryThunkResult> = 
+// List Thread Execution Summaries
+type SubThreadExecutionSummaryThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionSummaryActionDetails | ThreadExecutionSummaryActionSubscription>;
+export const subscribeThreadExecutionSummary: ActionCreator<SubThreadExecutionSummaryThunkResult> = 
         (thread_id:string, model_id: string, thread_model_id: string) => (dispatch) => {
     let APOLLO_CLIENT = GraphQL.instance(auth);
     let subscription = APOLLO_CLIENT.subscribe({
@@ -555,6 +556,36 @@ export const subscribeThreadExecutionSummary: ActionCreator<ThreadExecutionSumma
     });    
 };
 
+// List Thread Execution Summaries
+type ThreadExecutionSummaryThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionSummaryActionDetails>;
+export const getThreadExecutionSummary: ActionCreator<ThreadExecutionSummaryThunkResult> = 
+        (thread_id:string, model_id: string) => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    APOLLO_CLIENT.query({
+        query: getThreadExecutionSummaryListGQL,
+        variables: {
+            thread_id: thread_id,
+            model_id: model_id
+        }
+    }).then(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let tmsummary = result.data.thread_model_execution_summary;
+            let summary = threadModelExecutionSummaryFromGQL(tmsummary[0] ?? {});
+            summary.changed = true;
+            //console.log("Updated summary for "+thread_id);
+            dispatch({
+                type: THREAD_EXECUTION_SUMMARY,
+                model_id: model_id,
+                thread_id: thread_id,
+                execution_summary: summary,
+            })
+        }
+    });  
+};
 
 // List Thread Runs
 type ListExecutionsThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionsActionList>;

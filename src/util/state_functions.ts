@@ -1,6 +1,6 @@
-import { Thread, ModelIOBindings, InputBindings, Task, ProblemStatementInfo } from "../screens/modeling/reducers";
+import { Thread, ModelIOBindings, InputBindings, Task, ProblemStatementInfo, ExecutionSummary } from "../screens/modeling/reducers";
 import { RootState } from "../app/store";
-import { MintPreferences } from "app/reducers";
+import { IdMap, MintPreferences } from "app/reducers";
 import { getLatestEventOfType } from "./event_utils";
 
 export const matchVariables = (variables1: string[], variables2: string[], fullmatch: boolean) => {
@@ -89,8 +89,7 @@ export const getThreadParametersStatus = (thread:Thread) => {
     return TASK_NOT_STARTED;
 }
 
-export const getThreadRunsStatus = (thread:Thread) => {
-    let sum = thread.execution_summary;
+export const getThreadRunsStatus = (sum: IdMap<ExecutionSummary>) => {
     if (sum && Object.keys(sum).length > 0) {
         let ok = true;
         Object.keys(sum).map((modelid) => {
@@ -105,11 +104,10 @@ export const getThreadRunsStatus = (thread:Thread) => {
     return TASK_NOT_STARTED;
 }
 
-export const getThreadResultsStatus = (thread:Thread) => {
-    if(getThreadRunsStatus(thread) != TASK_DONE)
+export const getThreadResultsStatus = (sum: IdMap<ExecutionSummary>) => {
+    if(getThreadRunsStatus(sum) != TASK_DONE)
         return TASK_NOT_STARTED;
     
-    let sum = thread.execution_summary;
     if (sum && Object.keys(sum).length > 0) {
         let ok = true;
         Object.keys(sum).map((modelid) => {
@@ -163,7 +161,7 @@ export const getUISelectedSubgoalRegion = (state: RootState) => {
 }
 
 export const getVisualizationURLs = (thread: Thread, task: Task, problem_statement: ProblemStatementInfo, prefs: MintPreferences) => {
-    if(getThreadResultsStatus(thread) == "TASK_DONE") {
+    if(getThreadResultsStatus(thread.execution_summary) == "TASK_DONE") {
         let responseV = thread.response_variables.length > 0? thread.response_variables[0] : '';
 
         let visualizations = [];

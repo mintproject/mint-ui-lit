@@ -11,7 +11,7 @@ import { setupGetAll, regionsGet, modelsGet, versionsGet,
 import { getId } from 'model-catalog/util';
 
 import { SharedStyles } from "../../../styles/shared-styles";
-import { cacheModelsFromCatalog, setThreadModels } from "../actions";
+import { cacheModelsFromCatalog, getThreadExecutionSummary, setThreadModels } from "../actions";
 import { getUISelectedSubgoalRegion } from "../../../util/state_functions";
 import { isSubregion, getLabel } from "model-catalog/util";
 

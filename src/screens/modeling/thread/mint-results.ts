@@ -156,6 +156,10 @@ export class MintResults extends connect(store)(MintThreadPage) {
                 }
                 */
 
+                if(!submitted_runs) {
+                    return "Please execute some runs first";
+                }
+
                return html`
                <li>
                     <wl-title level="4"><a target="_blank" href="${this._getModelURL(model)}">${model.name}</a></wl-title>
@@ -495,19 +499,6 @@ export class MintResults extends connect(store)(MintThreadPage) {
         super.setThread(state);
 
         let thread_id = this.thread?.id
-        // If a thread has been selected, fetch thread details
-        if(thread_id && this.user) {
-            if(!this._thread_id || (this._thread_id != thread_id)) {
-                this._thread_id = thread_id;
-                return;
-            }
-        }
-
-        // If run status has changed, then reload all runs
-        if(state.modeling.execution_summaries && state.modeling.execution_summaries[thread_id]) {
-            this.thread.execution_summary = state.modeling.execution_summaries[thread_id];
-        }
-
         if(state.modeling.executions) {
             this._executions = state.modeling.executions[thread_id]; 
         }

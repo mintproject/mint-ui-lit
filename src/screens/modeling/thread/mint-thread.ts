@@ -17,12 +17,13 @@ import { getThreadVariablesStatus, TASK_NOT_STARTED, getThreadModelsStatus,
     getThreadDatasetsStatus, getThreadRunsStatus, getThreadResultsStatus, 
     TASK_DONE, TASK_PARTLY_DONE, 
     getUISelectedTask, getThreadParametersStatus } from "../../../util/state_functions";
-import { ExecutionSummary, Task, Thread } from "../reducers";
+import { Execution, ExecutionSummary, Task, Thread } from "../reducers";
 import { BASE_HREF } from "../../../app/actions";
 import { MintThreadPage } from "./mint-thread-page";
 import { hideNotification } from "util/ui_functions";
 import { subscribeThread, subscribeThreadExecutionSummary } from "../actions";
 import { getLatestEvent } from "util/event_utils";
+import { IdMap } from "app/reducers";
 
 @customElement('mint-thread')
 export class MintThread extends connect(store)(MintThreadPage) {
@@ -31,6 +32,9 @@ export class MintThread extends connect(store)(MintThreadPage) {
 
     @property({ type: String })
     private _currentMode: string = "";
+
+    @property({type: Object})
+    private _summaries: IdMap<ExecutionSummary>;
 
     @property({type: Boolean})
     private _dispatched: boolean = false;
@@ -124,10 +128,10 @@ export class MintThread extends connect(store)(MintThreadPage) {
                 status = getThreadParametersStatus(this.thread);
                 break;
             case "runs":
-                status = getThreadRunsStatus(this.thread);
+                status = getThreadRunsStatus(this._summaries);
                 break;
             case "results":
-                status = getThreadResultsStatus(this.thread);
+                status = getThreadResultsStatus(this._summaries);
                 break;
             default:
                 break;
@@ -339,7 +343,12 @@ export class MintThread extends connect(store)(MintThreadPage) {
             state.modeling.execution_summaries = null;
             state.modeling.executions = null;
             this.thread = null;
-        }        
+        }
+
+        if(this.thread && state.modeling.execution_summaries && state.modeling.execution_summaries[thread_id]) {
+            this.thread.execution_summary = state.modeling.execution_summaries[thread_id];
+            this._summaries = this.thread.execution_summary;
+        }
 
         if(!this.user && state.modeling.thread) {
             // Logged out, Unsubscribe

@@ -69,7 +69,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
             `
         }
 
-        let done = (getThreadRunsStatus(this.thread) == TASK_DONE);
+        let done = (getThreadRunsStatus(this.thread.execution_summary) == TASK_DONE);
         
         // Group running executions
         let grouped_executions = {};
@@ -127,6 +127,10 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                     //TODO: For some reason the modelid is of other model...
                     return `  `;
                 }
+                if(!summary.total_runs) {
+                    return ` `;
+                }
+                
                 let grouped_ensemble = grouped_executions[modelid];
                 this.totalPages[modelid] = Math.ceil(summary.total_runs/this.pageSize);
 
@@ -353,11 +357,11 @@ export class MintRuns extends connect(store)(MintThreadPage) {
         postJSONResource({
             url: mint.ensemble_manager_api + "/executions" + (mint.execution_engine == "localex" ? "Local" : ""),
             onLoad: function(e: any) {
-                this._waiting = false;
+                me._waiting = false;
                 hideNotification("runNotification", me.shadowRoot);
             },
             onError: function() {
-                this._waiting = false;
+                me._waiting = false;
                 hideNotification("runNotification", me.shadowRoot);
                 alert("Could not connect to the Execution Manager!");
             }
@@ -475,18 +479,6 @@ export class MintRuns extends connect(store)(MintThreadPage) {
         super.setThread(state);
 
         let thread_id = this.thread?.id
-        // If a thread has been selected, fetch thread details
-        if(thread_id && this.user) {
-            if(!this._thread_id || (this._thread_id != thread_id)) {
-                this._thread_id = thread_id;
-                return;
-            }
-        }
-
-        // If run status has changed, then reload all runs
-        if(state.modeling.execution_summaries && state.modeling.execution_summaries[thread_id]) {
-            this.thread.execution_summary = state.modeling.execution_summaries[thread_id];
-        }
 
         for(let modelid in this.thread?.execution_summary ?? {}) {
             let summary : ExecutionSummary = this.thread.execution_summary[modelid];

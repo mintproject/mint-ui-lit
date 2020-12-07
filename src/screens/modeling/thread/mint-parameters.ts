@@ -8,7 +8,7 @@ import { SharedStyles } from "../../../styles/shared-styles";
 import { Model, ModelParameter } from "../../models/reducers";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
 import { TASK_DONE, getThreadParametersStatus } from "../../../util/state_functions";
-import { setThreadParameters } from "../actions";
+import { getThreadExecutionSummary, setThreadParameters, subscribeThreadExecutionSummary } from "../actions";
 import { showNotification } from "../../../util/ui_functions";
 import { selectThreadSection } from "../../../app/ui-actions";
 import { MintThreadPage } from "./mint-thread-page";
@@ -434,6 +434,12 @@ export class MintParameters extends connect(store)(MintThreadPage) {
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
         this._waiting = true;
         await setThreadParameters(model_ensembles, execution_summary, notes, this.thread);
+
+        // Refresh execution summary
+        for(let modelid in model_ensembles) {
+            store.dispatch(subscribeThreadExecutionSummary(this.thread.id, modelid, model_ensembles[modelid].id));
+        };
+
         this._waiting = false;
     }
 
