@@ -13,7 +13,7 @@ import { getId } from 'model-catalog/util';
 import { SharedStyles } from "../../../styles/shared-styles";
 import { cacheModelsFromCatalog, setThreadModels } from "../actions";
 import { getUISelectedSubgoalRegion } from "../../../util/state_functions";
-import { isSubregion } from "model-catalog/util";
+import { isSubregion, getLabel } from "model-catalog/util";
 
 import "weightless/tooltip";
 import "weightless/popover-card";
@@ -270,10 +270,10 @@ export class MintModels extends connect(store)(MintThreadPage) {
                                                 <td>${model.category}</td>
                                                 <td>
                                                 ${model.hasRegion ?
-                                                    model.hasRegion.map((region:any) => 
-                                                    this._allRegions[region.id] ? 
-                                                    html`${this._allRegions[region.id].label[0]}` : ''
-                                                ) : ''}
+                                                    model.hasRegion
+                                                        .map((region:any) => this._allRegions[region.id])
+                                                        .map(getLabel).join(', ')
+                                                : ''}
                                                 </td>
                                             </tr>
                                             `;
