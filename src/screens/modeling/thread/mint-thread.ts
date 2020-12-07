@@ -17,11 +17,11 @@ import { getThreadVariablesStatus, TASK_NOT_STARTED, getThreadModelsStatus,
     getThreadDatasetsStatus, getThreadRunsStatus, getThreadResultsStatus, 
     TASK_DONE, TASK_PARTLY_DONE, 
     getUISelectedTask, getThreadParametersStatus } from "../../../util/state_functions";
-import { Task, Thread } from "../reducers";
+import { ExecutionSummary, Task, Thread } from "../reducers";
 import { BASE_HREF } from "../../../app/actions";
 import { MintThreadPage } from "./mint-thread-page";
 import { hideNotification } from "util/ui_functions";
-import { subscribeThread } from "../actions";
+import { subscribeThread, subscribeThreadExecutionSummary } from "../actions";
 import { getLatestEvent } from "util/event_utils";
 
 @customElement('mint-thread')
@@ -34,6 +34,9 @@ export class MintThread extends connect(store)(MintThreadPage) {
 
     @property({type: Boolean})
     private _dispatched: boolean = false;
+
+    @property({type: Boolean})
+    private _dispatched_execution_summary: boolean = false;
 
     static get styles() {
         return [
@@ -261,13 +264,22 @@ export class MintThread extends connect(store)(MintThreadPage) {
                     console.log("Unsubscribing to thread " + state.modeling.thread.id);
                     state.modeling.thread.unsubscribe();
                 }
-                console.log("Subscribing to thread " + thread_id);
+                if(state.modeling.thread?.id) {
+                    console.log("Unsubscribing to model execution summary for thread " + state.modeling.thread.id);
+                    for(let modelid in ((state.modeling.execution_summaries ?? {})[state.modeling.thread.id] ?? {})) {
+                        let summary : ExecutionSummary = state.modeling.execution_summaries[state.modeling.thread.id][modelid];
+                        summary.unsubscribe();
+                    }
+                }
 
+                console.log("Subscribing to thread " + thread_id);
                 // Reset the problem_statement details
                 this.thread = null;
                 this._dispatched = true;
-                // Make a subscription call for the new problem_statement id
-                store.dispatch(subscribeThread(thread_id));
+                this._dispatched_execution_summary = false;
+                
+                // Make a subscription call for the new thread id
+                store.dispatch(subscribeThread(thread_id));              
                 return;
             }
 
@@ -282,6 +294,23 @@ export class MintThread extends connect(store)(MintThreadPage) {
                 this.thread = state.modeling.thread;
                 if(!state.ui.selected_thread_section)
                     this._selectMode(this._getNextMode());
+
+                if(!this._dispatched_execution_summary) {
+                    // Make a subscription call for execution summaries for the new thread id
+                    console.log("Subscribing to model execution summaries for "+thread_id);
+                    if(state.modeling.thread.model_ensembles) {
+                        for(let modelid in state.modeling.thread.model_ensembles) {
+                            if(state.modeling.execution_summaries) {
+                                delete state.modeling.execution_summaries[modelid];
+                                if(state.modeling && state.modeling.executions)
+                                    delete state.modeling.executions[modelid];
+                            }
+                            store.dispatch(subscribeThreadExecutionSummary(thread_id, modelid, 
+                                state.modeling.thread.model_ensembles[modelid].id));
+                            this._dispatched_execution_summary = true;
+                        }
+                    }
+                }
             }
             else if(!state.modeling.thread) {
                 this._dispatched = false;
@@ -299,7 +328,15 @@ export class MintThread extends connect(store)(MintThreadPage) {
                 console.log("Unsubscribing to thread " + state.modeling.thread.id);
                 state.modeling.thread.unsubscribe();
             }
+            console.log("Unsubscribing to model execution summary for " + state.modeling.thread.id);
+            for(let modelid in state.modeling.execution_summaries[state.modeling.thread.id]) {
+                let summary : ExecutionSummary = state.modeling.execution_summaries[state.modeling.thread.id][modelid];
+                summary.unsubscribe();
+            }
+
             state.modeling.thread = null;
+            state.modeling.execution_summaries = null;
+            state.modeling.executions = null;
             this.thread = null;
         }        
 

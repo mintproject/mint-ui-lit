@@ -403,7 +403,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
       if (state.ui.selected_thread_id && state.ui.selected_thread_id != this._selectedThreadId) {
         this._thread = undefined;
         this._selectedThreadId = state.ui.selected_thread_id;
-        store.dispatch( subscribeThread(this._selectedThreadId) );
+        //store.dispatch( subscribeThread(this._selectedThreadId) );
       }
       this._selectedThreadId = state.ui.selected_thread_id;
       if (state.ui.selected_top_regionid && state.regions!.regions &&
@@ -411,7 +411,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
         this._top_regionid = state.ui.selected_top_regionid;
         this._regions = state.regions!.regions;
         this._top_region = this._regions[this._top_regionid];
-        this._subscribeToProblemStatementList();
+        //this._subscribeToProblemStatementList();
       } 
     }
     super.setRegionId(state);

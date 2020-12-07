@@ -1,6 +1,6 @@
 import { Reducer } from "redux";
 import { RootAction } from "../../app/store";
-import { PROBLEM_STATEMENTS_LIST, PROBLEM_STATEMENT_DETAILS, PROBLEM_STATEMENT_SUBSCRIPTION, THREAD_SUBSCRIPTION, THREAD_DETAILS, THREAD_EXECUTIONS_LIST, TASKS_LIST, THREADS_LIST, TASK_DETAILS, THREADS_LIST_SUBSCRIPTION, TASKS_LIST_SUBSCRIPTION, THREAD_EXECUTION_SUMMARY_SUBSCRIPTION } from "./actions";
+import { PROBLEM_STATEMENTS_LIST, PROBLEM_STATEMENT_DETAILS, PROBLEM_STATEMENT_SUBSCRIPTION, THREAD_SUBSCRIPTION, THREAD_DETAILS, THREAD_EXECUTIONS_LIST, TASKS_LIST, THREADS_LIST, TASK_DETAILS, THREADS_LIST_SUBSCRIPTION, TASKS_LIST_SUBSCRIPTION, THREAD_EXECUTION_SUMMARY_SUBSCRIPTION, THREAD_EXECUTION_SUMMARY } from "./actions";
 import { Model } from "../models/reducers";
 import { Dataset, DataResource, Dataslice } from "../datasets/reducers";
 import { IdMap, IdNameObject } from "../../app/reducers";
@@ -11,19 +11,27 @@ export interface ModelingState {
     problem_statements?: ProblemStatementList
     problem_statement?: ProblemStatement
     thread?: Thread
-    execution_summaries?: ModelExecutionSummary
-    executions?: ModelExecutions
+    execution_summaries?: ThreadModelExecutionSummary
+    executions?: ThreadModelExecutions
 }
 
 export interface ExecutionsWithStatus {
     loading: boolean,
     changed: boolean,
-    unsubscribe: Function,
     executions: Execution[]
 }
 
 export type ModelExecutions = {
     [modelid: string] : ExecutionsWithStatus
+}
+
+export type ThreadModelExecutions = {
+    [threadid: string] : ModelExecutions
+}
+
+
+export type ThreadModelExecutionSummary = {
+    [threadid: string] : ModelExecutionSummary
 }
 
 export type ModelExecutionSummary = {
@@ -294,21 +302,38 @@ const modeling: Reducer<ModelingState, RootAction> = (state = INITIAL_STATE, act
             }
         case THREAD_EXECUTIONS_LIST: 
             state.executions = { ...state.executions };
-            state.executions[action.model_id] = {
+            state.executions[action.thread_id] = { ...state.executions[action.thread_id] }
+            state.executions[action.thread_id][action.model_id] = {
                 loading: action.loading,
-                unsubscribe: action.unsubscribe,
                 changed: true,
                 executions: action.executions
             }
             return {
                 ...state
-            };   
+            };
+        case THREAD_EXECUTION_SUMMARY: 
+            state.execution_summaries = { ...state.execution_summaries };
+            state.execution_summaries[action.thread_id] = { ...state.execution_summaries[action.thread_id] }
+            let unsubscribefn = state.execution_summaries[action.thread_id][action.model_id]?.unsubscribe;
+            state.execution_summaries[action.thread_id][action.model_id] = {
+                ...action.execution_summary,
+                changed: true,
+                unsubscribe: unsubscribefn
+            }
+            if(unsubscribefn) {
+                return { ...state };
+            }
         case THREAD_EXECUTION_SUMMARY_SUBSCRIPTION: 
             state.execution_summaries = { ...state.execution_summaries };
-            state.execution_summaries[action.model_id] = action.execution_summary;
-            return {
-                ...state
-            };
+            state.execution_summaries[action.thread_id] = { ...state.execution_summaries[action.thread_id] }
+            let summary = state.execution_summaries[action.thread_id][action.model_id];
+            state.execution_summaries[action.thread_id][action.model_id] = {
+                ...summary,
+                unsubscribe: action.unsubscribe
+            }
+            if(summary) {
+                return { ...state };
+            }
         default:
             return state;
     }

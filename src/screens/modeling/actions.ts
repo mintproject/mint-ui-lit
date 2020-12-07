@@ -94,6 +94,7 @@ export const THREAD_EXECUTIONS_LIST = 'THREAD_EXECUTIONS_LIST';
 export const THREAD_EXECUTIONS_ADD = 'THREAD_EXECUTIONS_ADD';
 export const THREAD_EXECUTIONS_REMOVE = 'THREAD_EXECUTIONS_REMOVE';
 export const THREAD_EXECUTIONS_RUN = 'THREAD_EXECUTIONS_RUN';
+export const THREAD_EXECUTION_SUMMARY = 'THREAD_EXECUTION_SUMMARY';
 export const THREAD_EXECUTION_SUMMARY_SUBSCRIPTION = 'THREAD_EXECUTION_SUMMARY_SUBSCRIPTION';
 
 export interface ProblemStatementsActionList extends Action<'PROBLEM_STATEMENTS_LIST'> { list: ProblemStatementList };
@@ -153,17 +154,22 @@ export interface ThreadDatasetsActionRemove extends Action<'THREAD_DATASETS_REMO
 };
 
 export interface ThreadExecutionsActionList extends Action<'THREAD_EXECUTIONS_LIST'> { 
-    thread_model_id: string
+    thread_id: string
     model_id: string
     loading: boolean
-    unsubscribe?: Function
     executions: Execution[] 
 };
 
-export interface ThreadExecutionSummaryActionSubscription extends Action<'THREAD_EXECUTION_SUMMARY_SUBSCRIPTION'> { 
-    thread_model_id?: string
+export interface ThreadExecutionSummaryActionDetails extends Action<'THREAD_EXECUTION_SUMMARY'> { 
+    thread_id: string
     model_id: string
-    execution_summary?: ExecutionSummary,
+    execution_summary?: ExecutionSummary
+    unsubscribe?: Function 
+};
+
+export interface ThreadExecutionSummaryActionSubscription extends Action<'THREAD_EXECUTION_SUMMARY_SUBSCRIPTION'> { 
+    thread_id: string
+    model_id?: string
     unsubscribe?: Function 
 };
 
@@ -181,7 +187,8 @@ export type ThreadAction = ThreadVariablesActionAdd | ThreadVariablesActionRemov
     ThreadModelsActionAdd | ThreadModelsActionRemove | 
     ThreadDatasetsActionAdd | ThreadDatasetsActionRemove |
     ThreadExecutionsActionAdd | ThreadExecutionsActionRemove | ThreadExecutionsActionRun | 
-    ThreadExecutionsActionList | ThreadsActionListSubscription | ThreadExecutionSummaryActionSubscription;
+    ThreadExecutionsActionList | ThreadsActionListSubscription | 
+    ThreadExecutionSummaryActionDetails | ThreadExecutionSummaryActionSubscription;
 
 export type ModelingAction =  ProblemStatementsAction | TasksAction | ThreadsAction | ThreadAction ;
 
@@ -222,7 +229,7 @@ export const subscribeProblemStatementsList: ActionCreator<ProblemListThunkResul
     // Dispatch unsubscribe function
     dispatch({
         type: PROBLEM_STATEMENTS_LIST_SUBSCRIPTION,
-        unsubscribe: subscription.unsubscribe
+        unsubscribe: () => { subscription.unsubscribe() }
     });
 };
 
@@ -262,7 +269,7 @@ export const subscribeTasksList: ActionCreator<ListTasksThunkResult> = (problem_
     // Dispatch unsubscribe function
     dispatch({
         type: TASKS_LIST_SUBSCRIPTION,
-        unsubscribe: subscription.unsubscribe
+        unsubscribe: () => { subscription.unsubscribe() }
     });
 };
 
@@ -303,7 +310,7 @@ export const subscribeThreadsList: ActionCreator<ListThreadsThunkResult> = (task
     // Dispatch unsubscribe function
     dispatch({
         type: THREADS_LIST_SUBSCRIPTION,
-        unsubscribe: subscription.unsubscribe
+        unsubscribe: () => { subscription.unsubscribe() }
     });
 };
 */
@@ -325,7 +332,7 @@ export const subscribeProblemStatement: ActionCreator<ProblemDetailsThunkResult>
         else {
             let problem = result.data.problem_statement_by_pk;
             if(problem) {
-                console.log("Changes to the problem statement");
+                //console.log("Changes to the problem statement");
                 let details = problemStatementFromGQL(problem);
                 // Dispatch problem_statement details on an edit
                 dispatch({
@@ -339,7 +346,7 @@ export const subscribeProblemStatement: ActionCreator<ProblemDetailsThunkResult>
     // Dispatch unsubscribe function
     dispatch({
         type: PROBLEM_STATEMENT_SUBSCRIPTION,
-        unsubscribe: subscription.unsubscribe
+        unsubscribe: () => { subscription.unsubscribe() }
     });
 };
 
@@ -371,7 +378,7 @@ export const subscribeTask: ActionCreator<TaskDetailsThunkResult> = (task_id: st
     // Dispatch unsubscribe function
     dispatch({
         type: TASK_SUBSCRIPTION,
-        unsubscribe: subscription.unsubscribe
+        unsubscribe: () => { subscription.unsubscribe() }
     });
 };
 */
@@ -392,6 +399,7 @@ export const subscribeThread: ActionCreator<ThreadDetailsThunkResult> = (threadi
         }
         else {
             //console.log(result);
+            //console.log("Changes to the thread " + threadid);
             let thread = result.data.thread_by_pk;
             if(thread) {
                 let details = threadFromGQL(thread);
@@ -406,14 +414,14 @@ export const subscribeThread: ActionCreator<ThreadDetailsThunkResult> = (threadi
     // Dispatch unsubscribe function
     dispatch({
         type: THREAD_SUBSCRIPTION,
-        unsubscribe: subscription.unsubscribe
+        unsubscribe: () => { subscription.unsubscribe() }
     });
 };
 
 // List ProblemStatements
-type ThreadExecutionSummaryThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionSummaryActionSubscription>;
+type ThreadExecutionSummaryThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionSummaryActionDetails | ThreadExecutionSummaryActionSubscription>;
 export const subscribeThreadExecutionSummary: ActionCreator<ThreadExecutionSummaryThunkResult> = 
-        (model_id: string, thread_model_id: string) => (dispatch) => {
+        (thread_id:string, model_id: string, thread_model_id: string) => (dispatch) => {
     let APOLLO_CLIENT = GraphQL.instance(auth);
     let subscription = APOLLO_CLIENT.subscribe({
         query: subscribeThreadExecutionSummaryListGQL,
@@ -429,29 +437,36 @@ export const subscribeThreadExecutionSummary: ActionCreator<ThreadExecutionSumma
             let tmsummary = result.data.thread_model_execution_summary;
             let summary = threadModelExecutionSummaryFromGQL(tmsummary[0] ?? {});
             summary.changed = true;
-            summary.unsubscribe = subscription.unsubscribe;
+            //console.log("Updated summary for "+thread_id);
             dispatch({
-                type: THREAD_EXECUTION_SUMMARY_SUBSCRIPTION,
+                type: THREAD_EXECUTION_SUMMARY,
                 model_id: model_id,
-                thread_model_id: thread_model_id,
+                thread_id: thread_id,
                 execution_summary: summary,
             })
         }
     });
+    // Dispatch unsubscribe function
+    dispatch({
+        type: THREAD_EXECUTION_SUMMARY_SUBSCRIPTION,
+        thread_id: thread_id,
+        model_id: model_id,
+        unsubscribe: () => { subscription.unsubscribe() }
+    });    
 };
 
 
 // List Thread Runs
 type ListExecutionsThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionsActionList>;
 export const listThreadModelExecutionsAction: ActionCreator<ListExecutionsThunkResult> = 
-        (model_id: string, thread_model_id: string, 
+        (thread_id:string, model_id: string, thread_model_id: string, 
             start: number, limit: number, order_by: string,
             ) => (dispatch) => {
 
     dispatch({
         type: THREAD_EXECUTIONS_LIST,
         model_id: model_id,
-        thread_model_id: thread_model_id,
+        thread_id: thread_id,
         executions: null,
         loading: true
     });
@@ -476,8 +491,7 @@ export const listThreadModelExecutionsAction: ActionCreator<ListExecutionsThunkR
             dispatch({
                 type: THREAD_EXECUTIONS_LIST,
                 model_id: model_id,
-                thread_model_id: thread_model_id,
-                //unsubscribe: subscription.unsubscribe,
+                thread_id: thread_id,
                 loading: false,
                 executions
             })
