@@ -352,7 +352,8 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             })
             if (!this._loadingIndex) {
                 this._loading=false;
-                let matches : NumericalIndex[] = Object.values(this._index).filter((i:NumericalIndex) => getLabel(i).includes(input));
+                let matches : NumericalIndex[] = Object.values(this._index)
+                    .filter((i:NumericalIndex) => getLabel(i).toLowerCase().includes(input));
                 Object.values(this._models).forEach((m:Model) => {
                     if (m && m.usefulForCalculatingIndex) {
                         this._activeModels[m.id] = m.usefulForCalculatingIndex.some((il:NumericalIndex) => {
