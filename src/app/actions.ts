@@ -369,7 +369,9 @@ const loadPage: ActionCreator<ThunkResult> =
       import('../screens/emulators/emulators-home').then((_module) => {
         let model = subpage;
         if(model != "home")
-          store.dispatch(selectEmulatorModel(model))
+          store.dispatch(selectEmulatorModel(model));
+        else 
+          store.dispatch(selectEmulatorModel('CYCLES'));
       });
       break;
     case 'analysis':

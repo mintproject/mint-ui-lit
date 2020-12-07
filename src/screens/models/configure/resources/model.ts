@@ -135,7 +135,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         super._editResource(r);
         this._inputAuthor.setActionMultiselect();
         this._inputGrid.setActionSelect();
-        this._inputIndex.setActionSelect();
+        this._inputIndex.setActionMultiselect();
         this._inputFunding.setActionMultiselect();
         this._inputVisualization.setActionMultiselect();
         this._inputCategory.setActionMultiselect();
@@ -166,7 +166,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         this._inputLogo.setResources(null);
         this._inputAuthor.setActionMultiselect();
         this._inputGrid.setActionSelect();
-        this._inputIndex.setActionSelect();
+        this._inputIndex.setActionMultiselect();
         this._inputFunding.setActionMultiselect();
         this._inputCategory.setActionMultiselect();
         this._inputLogo.setActionSelect();

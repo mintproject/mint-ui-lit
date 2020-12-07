@@ -122,6 +122,11 @@ export class MintRuns extends connect(store)(MintThreadPage) {
             ${Object.keys(this.thread.execution_summary).map((modelid) => {
                 let summary = this.thread.execution_summary[modelid];
                 let model = this.thread.models![modelid];
+                if (!model) {
+                    console.warn("modelid:", modelid, "is not on this thread!", this.thread);
+                    //TODO: For some reason the modelid is of other model...
+                    return `  `;
+                }
                 let grouped_ensemble = grouped_executions[modelid];
                 this.totalPages[modelid] = Math.ceil(summary.total_runs/this.pageSize);
 
@@ -252,7 +257,8 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                     </thead>
                                     <!-- Body -->
                                     <tbody>
-                                    ${Object.keys(grouped_ensemble.executions).map((index:string) => {
+                                    ${grouped_ensemble.executions && Object.keys(grouped_ensemble.executions).length > 0 ?
+                                    Object.keys(grouped_ensemble.executions).map((index:string) => {
                                         let ensemble: Execution = grouped_ensemble.executions[index];
                                         let model = this.thread.models![ensemble.modelid];
                                         let param_defaults = {};
@@ -295,7 +301,17 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                                 </td>` )}
                                             </tr>
                                         `;
-                                    })}
+                                    })
+                                    : html`
+                                    <tr>
+                                        <td colspan="${grouped_ensemble.inputs.length + grouped_ensemble.params.length == 0 ? 
+                                            5 
+                                            : grouped_ensemble.inputs.length + grouped_ensemble.params.length + 4}">
+                                            <wl-progress-bar style="display: inline-block; margin-right: 15px"></wl-progress-bar>
+                                            <p style="display: inline-block;">Downloading software image and data...</p>
+                                        </td>
+                                    </tr>
+                                    `}
                                     </tbody>
                                 </table>`
                             )
