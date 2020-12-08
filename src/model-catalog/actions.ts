@@ -6,7 +6,8 @@ import { Configuration, DefaultApi } from '@mintproject/modelcatalog_client';
 import { DEFAULT_GRAPH, PREFIX_URI } from 'config/default-graph';
 
 import { ModelCatalogModelAction } from './model-actions';
-import { ModelCatalogVersionAction } from './version-actions';
+//import { ModelCatalogVersionAction } from './version-actions';
+import { ModelCatalogVersionAction } from './api';
 import { ModelCatalogModelConfigurationAction } from './model-configuration-actions';
 import { ModelCatalogModelConfigurationSetupAction } from './model-configuration-setup-actions';
 import { ModelCatalogPersonAction } from './person-actions';

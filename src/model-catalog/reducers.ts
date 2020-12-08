@@ -1,7 +1,7 @@
 import { Reducer } from "redux";
 import { RootAction } from "app/store";
 import { MODELS_ADD, MODEL_DELETE,
-         VERSIONS_ADD, VERSION_DELETE,
+         //VERSIONS_ADD, VERSION_DELETE,
          MODEL_CONFIGURATIONS_ADD, MODEL_CONFIGURATION_DELETE,
          MODEL_CONFIGURATION_SETUPS_ADD, MODEL_CONFIGURATION_SETUP_DELETE,
          PERSONS_ADD, PERSON_DELETE,
@@ -28,12 +28,21 @@ import { MODELS_ADD, MODEL_DELETE,
          STANDARD_VARIABLE_ADD, STANDARD_VARIABLE_DELETE,
          CATEGORY_ADD, CATEGORY_DELETE,
          } from './actions'
+import { adds, dels } from './api';
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Region, GeoShape, Grid,
          Process, Parameter, TimeInterval, SoftwareImage, DatasetSpecification, SampleResource, Image, StandardVariable,
          SampleCollection, Organization, FundingInformation, Visualization, SourceCode, Intervention, ModelCategory,
          VariablePresentation, NumericalIndex, DataTransformation, DataTransformationSetup } from '@mintproject/modelcatalog_client';
 import { IdMap } from 'app/reducers'
+
+export type ModelCatalogTypes = "causaldiagram" | "configurationsetup" | "datatransformation" | "datatransformationsetup" |
+        "dataspecification" | "empiricalmodel" | "emulator" | "equation" | "fundinginformation" | "geocoordinates" | "geoshape" |
+        "grid" | "hybridmodel" | "image" | "intervention" | "model" | "modelconfiguration" | "modelconfigurationsetup" | 
+        "numericalindex" | "organization" | "parameter" | "person" | "pointbasedgrid" | "process" | "region" | "samplecollection" | 
+        "sampleexecution" | "sampleresource" | "software" | "softwareconfiguration" | "softwareimage" | "softwareversion" |
+        "sourcecode" | "spatialresolution" | "spatiallydistributedgrid" | "standardvariable" | "theoryguidedmodel" | "timeinterval" |
+        "unit" | "variable" | "variablepresentation" | "visualization";
 
 export interface ModelCatalogState {
     models:                 IdMap<Model>;
@@ -114,7 +123,7 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             return { ...state, processes: {...state.processes, ...action.payload} };
         case GRIDS_ADD:
             return { ...state, grids: {...state.grids, ...action.payload} };
-        case VERSIONS_ADD:
+        case adds['softwareversion']:
             return { ...state, versions: {...state.versions, ...action.payload} };
         case SAMPLE_RESOURCES_ADD:
             return { ...state, sampleResources: {...state.sampleResources, ...action.payload} };
@@ -185,7 +194,7 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             tmp = { ...state.grids };
             delete tmp[action.uri];
             return { ...state, grids: tmp };
-        case VERSION_DELETE:
+        case dels['softwareversion']:
             tmp = { ...state.versions };
             delete tmp[action.uri];
             return { ...state, versions: tmp };
