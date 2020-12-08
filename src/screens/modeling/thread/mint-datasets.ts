@@ -237,6 +237,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                     <ul>
                     ${input_files.map((input) => {
                         let bindings:string[] = ensembles[input.id!];
+                        let dbindings = (bindings || []).map((bid) => this.thread.data[bid]?.dataset?.id);
 
                         if((bindings && bindings.length > 0) && !this._editMode) {
                             // Already present: Show selections
@@ -246,6 +247,9 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                 <ul>
                                     ${bindings.map((binding) => {
                                         let dataslice = this.thread.data![binding];
+                                        if(!dataslice) {
+                                            return;
+                                        }
                                         let num_selected_resources = dataslice.selected_resources ?? 0;
                                         let num_total_resources = dataslice.total_resources ?? 0;
                                         return html`
@@ -309,7 +313,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                                     <tr>
                                                         <td><input class="${this._valid(modelid)}_${this._valid(input.id!)}_checkbox" 
                                                             type="checkbox" data-datasetid="${dataset.id}"
-                                                            ?checked="${(bindings || []).indexOf(dataset.id!) >= 0}"></input></td>
+                                                            ?checked="${(dbindings || []).indexOf(dataset.id!) >= 0}"></input></td>
                                                         <td class="${matched ? 'matched': ''}">
                                                             <a target="_blank" href="${this._regionid}/datasets/browse/${dataset.id}/${this.getSubregionId()}">${dataset.name}</a>
                                                             <br/>
@@ -733,10 +737,15 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
             })
         });
         console.log("Loading Datasets...");
+        if(new_datasets.length == 0) {
+            this._waiting = false;
+            alert("Please select a dataset");
+            return;
+        }
 
         Promise.all(Object.values(new_datasets)
-                .filter(ds => !ds.resources_loaded)
-                .map(ds => this._loadDatasetResources(ds))
+                .filter(ds => !ds.dataset.resources_loaded)
+                .map(ds => this._loadDatasetResources(ds.dataset))
         ).then((values) => {
             this._waiting = false;
             this._selectThreadDatasets();
@@ -745,8 +754,11 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
     }
 
     async _selectThreadDatasets() {
-        let data: DataMap = this.thread.data || {};
+        let data: DataMap = {}; //this.thread.data || {};
         let model_ensembles: ModelEnsembleMap = this.thread.model_ensembles || {};
+
+        let data_transformations = {}; //FIXME: load from firestore
+        let model_dt_ensembles: ModelEnsembleMap = this.thread.model_dt_ensembles || {};
 
         Object.keys(this.thread.models!).map((modelid) => {
             let model = this.thread.models![modelid];
@@ -761,31 +773,27 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
 
                 let newdata = this._getDatasetSelections(modelid, inputid);
                 let new_datatransformations = this._getDataTransformationSelections(modelid, inputid);
-        
+                
+                if(!model_ensembles[modelid])
+                    model_ensembles[modelid] = {
+                        id: uuidv4(),
+                        bindings: {}
+                    };                
+                model_ensembles[modelid].bindings[inputid] = [];
                 Object.keys(newdata).map((sliceid) => {
-                    if(!model_ensembles[modelid])
-                        model_ensembles[modelid] = {
-                            id: uuidv4(),
-                            bindings: {}
-                        };
-                    if(!model_ensembles[modelid].bindings[inputid])
-                        model_ensembles[modelid].bindings[inputid] = [];
                     model_ensembles[modelid].bindings[inputid].push(sliceid!);
                     data[sliceid] = newdata[sliceid];
                 }); 
                 
 
                 // Now add the data transformations
-                let data_transformations = {}; //FIXME: load from firestore
-                let model_dt_ensembles: ModelEnsembleMap = this.thread.model_dt_ensembles || {};
+                if(!model_dt_ensembles[modelid])
+                    model_dt_ensembles[modelid] = {
+                        id: uuidv4(),
+                        bindings: {}
+                    };                
+                model_dt_ensembles[modelid].bindings[inputid] = [];
                 Object.keys(new_datatransformations).map((dtid) => {
-                    if(!model_dt_ensembles[modelid])
-                        model_dt_ensembles[modelid] = {
-                            id: uuidv4(),
-                            bindings: {}
-                        };
-                    if(!model_dt_ensembles[modelid].bindings[inputid])
-                        model_dt_ensembles[modelid].bindings[inputid] = [];
                     model_dt_ensembles[modelid].bindings[inputid].push(dtid!);
                     data_transformations[dtid] = new_datatransformations[dtid];
                 });
