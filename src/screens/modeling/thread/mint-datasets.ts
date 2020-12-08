@@ -737,11 +737,13 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
             })
         });
         console.log("Loading Datasets...");
+        /*
         if(new_datasets.length == 0) {
             this._waiting = false;
             alert("Please select a dataset");
             return;
         }
+        */
 
         Promise.all(Object.values(new_datasets)
                 .filter(ds => !ds.dataset.resources_loaded)
