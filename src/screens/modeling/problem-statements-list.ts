@@ -224,18 +224,22 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
         let problem_statement_name = (form.elements["problem_statement_name"] as HTMLInputElement).value;
         let problem_statement_region = (form.elements["problem_statement_region"] as HTMLInputElement).value;
         let problem_statement_subregion = (form.elements["problem_statement_subregion"] as HTMLInputElement).value;
-        let problem_statement_from = (form.elements["problem_statement_from"] as HTMLInputElement).value;
-        let problem_statement_to = (form.elements["problem_statement_to"] as HTMLInputElement).value;
+        let problem_statement_from = new Date((form.elements["problem_statement_from"] as HTMLInputElement).value);
+        let problem_statement_to = new Date((form.elements["problem_statement_to"] as HTMLInputElement).value);
         let problem_statement_notes = (form.elements["problem_statement_notes"] as HTMLInputElement).value;
         let problem_statement_permissions = (form.querySelector("#problem_statement_permissions") as PermissionsEditor).permissions;
+        if(problem_statement_from >= problem_statement_to) {
+          alert("The start date should be before the end date");
+          return;
+        }
 
         let problem_statement = {
           name: problem_statement_name,
           regionid: problem_statement_region,
           subregionid: problem_statement_subregion,
           dates: {
-            start_date: new Date(problem_statement_from),
-            end_date: new Date(problem_statement_to)
+            start_date: problem_statement_from,
+            end_date: problem_statement_to
           },
           notes: problem_statement_notes,
           events: [],

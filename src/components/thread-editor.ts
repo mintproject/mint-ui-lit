@@ -135,10 +135,14 @@ export class ThreadEditor extends LitElement {
         //if(formElementsComplete(form, ["thread_name"])) {
             let threadid = (form.elements["threadid"] as HTMLInputElement).value;
             let thread_name = (form.elements["thread_name"] as HTMLInputElement).value;
-            let thread_from = (form.elements["thread_from"] as HTMLInputElement).value;
-            let thread_to = (form.elements["thread_to"] as HTMLInputElement).value;
+            let thread_from = new Date((form.elements["thread_from"] as HTMLInputElement).value);
+            let thread_to = new Date((form.elements["thread_to"] as HTMLInputElement).value);
             let thread_notes = (form.elements["thread_notes"] as HTMLInputElement).value;
             let thread_permissions = (form.querySelector("#thread_permissions") as PermissionsEditor).permissions;
+            if(thread_from >= thread_to) {
+                alert("The start date should be before the end date");
+                return;
+              }
 
             showNotification("saveNotification", this.shadowRoot!);
             
@@ -148,8 +152,8 @@ export class ThreadEditor extends LitElement {
                 thread = this.task!.threads[threadid];
                 thread.name = thread_name;
                 thread.dates = {
-                    start_date: new Date(thread_from),
-                    end_date: new Date(thread_to)
+                    start_date: thread_from,
+                    end_date: thread_to
                 };
                 thread.events = [getUpdateEvent(thread_notes) as ThreadEvent];
                 thread.permissions = thread_permissions;
@@ -161,8 +165,8 @@ export class ThreadEditor extends LitElement {
                     name: thread_name,
                     task_id: this.task.id,
                     dates: {
-                        start_date: new Date(thread_from),
-                        end_date: new Date(thread_to)
+                        start_date: thread_from,
+                        end_date: thread_to
                     },
                     driving_variables: this.task.driving_variables,
                     response_variables: this.task.response_variables,
