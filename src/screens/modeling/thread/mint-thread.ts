@@ -33,11 +33,11 @@ export class MintThread extends connect(store)(MintThreadPage) {
     @property({ type: String })
     private _currentMode: string = "";
 
-    @property({type: Object})
-    private _summaries: IdMap<ExecutionSummary>;
-
     @property({type: Boolean})
     private _dispatched: boolean = false;
+
+    @property({type: Object})
+    private _sectionDoneMap: IdMap<string> = {};
 
     @property({type: Boolean})
     private _dispatched_execution_summary: boolean = false;
@@ -87,56 +87,38 @@ export class MintThread extends connect(store)(MintThreadPage) {
         ];
     }
 
-    private _renderProgressBar() {
+    private _renderProgressBar(sectionDoneMap: IdMap<string>) {
         return html`
             <ul class="breadcrumbs">
                 <a id="models_breadcrumb" 
-                    class="${this._getBreadcrumbClass('models')}" 
+                    class="${this._getBreadcrumbClass('models', sectionDoneMap)}" 
                     href="${this._getModeURL('models')}">Models</li>
                 <a id="datasets_breadcrumb" 
-                    class="${this._getBreadcrumbClass('datasets')}" 
+                    class="${this._getBreadcrumbClass('datasets', sectionDoneMap)}" 
                     href="${this._getModeURL('datasets')}">Datasets</li>
                 <a id="parameters_breadcrumb" 
-                    class="${this._getBreadcrumbClass('parameters')}" 
+                    class="${this._getBreadcrumbClass('parameters', sectionDoneMap)}" 
                     href="${this._getModeURL('parameters')}">Parameters</li>
                 <a id="runs_breadcrumb" 
-                    class="${this._getBreadcrumbClass('runs')}" 
+                    class="${this._getBreadcrumbClass('runs', sectionDoneMap)}" 
                     href="${this._getModeURL('runs')}">Runs</li>
                 <a id="results_breadcrumb" 
-                    class="${this._getBreadcrumbClass('results')}" 
+                    class="${this._getBreadcrumbClass('results', sectionDoneMap)}" 
                     href="${this._getModeURL('results')}">Results</li>
                 <a id="visualize_breadcrumb" 
-                    class="${this._getBreadcrumbClass('visualize')}" 
+                    class="${this._getBreadcrumbClass('visualize', sectionDoneMap)}" 
                     href="${this._getModeURL('visualize')}">Visualize</li>
             </ul>
         `;
     }
 
-    private _getSectionStatus(section:string) {
-        let status = TASK_NOT_STARTED;
-        switch(section) {
-            case "variables":
-                status = getThreadVariablesStatus(this.thread);
-                break;
-            case "models":
-                status = getThreadModelsStatus(this.thread);
-                break;
-            case "datasets":
-                status = getThreadDatasetsStatus(this.thread);
-                break;
-            case "parameters":
-                status = getThreadParametersStatus(this.thread);
-                break;
-            case "runs":
-                status = getThreadRunsStatus(this._summaries);
-                break;
-            case "results":
-                status = getThreadResultsStatus(this._summaries);
-                break;
-            default:
-                break;
-        }
-        return status;
+    private _setSectionStatusMap() {
+        this._sectionDoneMap["variables"] = getThreadVariablesStatus(this.thread);
+        this._sectionDoneMap["models"] = getThreadModelsStatus(this.thread);
+        this._sectionDoneMap["datasets"] = getThreadDatasetsStatus(this.thread);
+        this._sectionDoneMap["parameters"] = getThreadParametersStatus(this.thread);
+        this._sectionDoneMap["runs"] = getThreadRunsStatus(this.thread);
+        this._sectionDoneMap["results"] = getThreadResultsStatus(this.thread);
     }
 
     private _getNextMode() {
@@ -150,7 +132,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
             "visualize"
         ];
         for(let i=0; i<modes.length; i++) {
-            let status = this._getSectionStatus(modes[i]);
+            let status = this._sectionDoneMap[modes[i]];
             if(status != TASK_DONE) {
                 return modes[i];
             }
@@ -158,8 +140,8 @@ export class MintThread extends connect(store)(MintThreadPage) {
         return "visualize";
     }
 
-    private _getBreadcrumbClass(section: string) {
-        let status = this._getSectionStatus(section);
+    private _getBreadcrumbClass(section: string, sectionDoneMap: IdMap<string>) {
+        let status = sectionDoneMap[section];
         let cls = "";
         if(this._currentMode == section)
             cls += " active";
@@ -217,7 +199,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
         }
 
         return html`
-            ${this._renderProgressBar()}
+            ${this._renderProgressBar(this._sectionDoneMap)}
 
             <div class="card2">
                 <mint-variables class="page" 
@@ -279,7 +261,6 @@ export class MintThread extends connect(store)(MintThreadPage) {
                 console.log("Subscribing to thread " + thread_id);
                 // Reset the problem_statement details
                 this.thread = null;
-                this._summaries = null;
                 this._dispatched = true;
                 this._dispatched_execution_summary = false;
                 
@@ -297,6 +278,8 @@ export class MintThread extends connect(store)(MintThreadPage) {
                 this._dispatched = false;
                 state.modeling.thread.changed = false;
                 this.thread = state.modeling.thread;
+                
+                this._setSectionStatusMap();
                 if(!state.ui.selected_thread_section)
                     this._selectMode(this._getNextMode());
 
@@ -325,7 +308,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
         if(this.thread && state.ui.selected_thread_section) {
           //console.log(state.ui.selected_thread_section);
           this._selectMode(state.ui.selected_thread_section);
-          state.ui.selected_thread_section = "";
+          //state.ui.selected_thread_section = "";
         }
 
         if(state.modeling && state.ui && state.ui.selected_thread_id == null) {
@@ -344,12 +327,13 @@ export class MintThread extends connect(store)(MintThreadPage) {
             state.modeling.execution_summaries = null;
             state.modeling.executions = null;
             this.thread = null;
-            this._summaries = null;
         }
 
         if(this.thread && state.modeling.execution_summaries && state.modeling.execution_summaries[thread_id]) {
             this.thread.execution_summary = state.modeling.execution_summaries[thread_id];
-            this._summaries = this.thread.execution_summary;
+            this._setSectionStatusMap();
+            if(!state.ui.selected_thread_section)
+                this._selectMode(this._getNextMode());
         }
 
         if(!this.user && state.modeling.thread) {
@@ -360,7 +344,6 @@ export class MintThread extends connect(store)(MintThreadPage) {
             }
             state.modeling.thread = undefined;
             this.thread = null;
-            this._summaries = null;
         }
     }
 
@@ -390,3 +373,4 @@ export class MintThread extends connect(store)(MintThreadPage) {
         return false;
     }
 }
+

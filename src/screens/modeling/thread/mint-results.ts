@@ -139,7 +139,6 @@ export class MintResults extends connect(store)(MintThreadPage) {
            <ul>
            ${Object.keys(this.thread.execution_summary ?? {}).map((modelid) => {
                let summary = this.thread.execution_summary[modelid];
-               console.log(summary);
                let model = this.thread.models![modelid];
                if(!model) {
                    return;
@@ -179,7 +178,8 @@ export class MintResults extends connect(store)(MintThreadPage) {
                         The parameter settings you selected required ${summary.total_runs} runs. 
                         ${!finished ? "So far, " : ""} ${summary.submitted_runs} model runs
                         ${!finished ? "have been" : "were"} submitted, out of which 
-                        ${summary.successful_runs} succeeded and produced results, while ${summary.failed_runs} failed.
+                        ${summary.successful_runs} succeeded and produced results, 
+                        while <span .style="color:${summary.failed_runs?'red': ''}">${summary.failed_runs} failed</span>.
                         ${running > 0 ? html `${running} are currently running` : ""}
                         ${running > 0 && pending > 0 ? ', and ' : ''}
                         ${pending > 0 ? html `${pending} are waiting to be run` : ""}

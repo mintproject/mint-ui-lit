@@ -491,7 +491,7 @@ export const getThreadExecutionSummary: ActionCreator<ThreadExecutionSummaryThun
 type ListExecutionsThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionsActionList>;
 export const listThreadModelExecutionsAction: ActionCreator<ListExecutionsThunkResult> = 
         (thread_id:string, model_id: string, thread_model_id: string, 
-            start: number, limit: number, order_by: string,
+            start: number, limit: number, order_by: Array<Object>,
             ) => (dispatch) => {
 
     dispatch({
@@ -509,7 +509,7 @@ export const listThreadModelExecutionsAction: ActionCreator<ListExecutionsThunkR
             threadModelId: thread_model_id,
             start: start,
             limit: limit,
-            orderBy: order_by ? [order_by] : []
+            orderBy: order_by ? order_by : []
         },
         fetchPolicy: "no-cache"
     }).then((result) => {

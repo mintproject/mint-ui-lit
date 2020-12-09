@@ -35,9 +35,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     @property({type: Number})
     private pageSize = 100;
     @property({type: String})
-    private orderBy = "start_time";
-    @property({type: Boolean})
-    private orderByDesc = false;
+    private orderBy = [{"status": "asc"}, {"start_time": "asc"}];
 
     @property({type: String})
     private _log: string;
@@ -74,7 +72,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
             `
         }
 
-        let done = (getThreadRunsStatus(this.thread.execution_summary) == TASK_DONE);
+        let done = (getThreadRunsStatus(this.thread) == TASK_DONE);
         
         // Group running executions
         let grouped_executions = {};
@@ -209,7 +207,8 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                     (${nInputs} input resources &#215; ${nParameters} parameters).
                     ${!finished ? "So far, " : ""} ${submitted_runs} model runs
                     ${!finished ? "have been" : "were"} submitted, out of which 
-                    ${successful_runs} succeeded, while ${failed_runs} failed.
+                    ${successful_runs} succeeded, while 
+                        <span .style="color:${failed_runs?'red': ''}">${failed_runs} failed</span>.
                     ${running > 0 ? html `${running} are currently running` : ""}
                     ${running > 0 && pending > 0 ? ', and ' : ''}
                     ${pending > 0 ? html `${pending} are waiting to be run` : ""}
@@ -391,11 +390,6 @@ export class MintRuns extends connect(store)(MintThreadPage) {
         }, data, false);
     }
 
-    _orderBy(threadid: string, modelid: string, orderBy: string) {
-        this.orderBy = orderBy;
-        this._fetchRuns(threadid, modelid)
-    }
-
     _nextPage(threadid: string, modelid: string, offset:  number) {
         this.currentPage[modelid] += offset;
         this._fetchRuns(threadid, modelid)
@@ -454,12 +448,10 @@ export class MintRuns extends connect(store)(MintThreadPage) {
             this.currentPage[modelid] = 1;
         let start = (this.currentPage[modelid] - 1)*this.pageSize;
         let limit = this.pageSize;
-        let orderBy = {};
-        orderBy[this.orderBy] = this.orderByDesc ? "desc" : "asc";
         store.dispatch(listThreadModelExecutionsAction(
             threadid,
             modelid, this.thread.model_ensembles[modelid].id, 
-            start, limit, orderBy));
+            start, limit, this.orderBy));
     }
 
     async _reloadAllRuns() {
