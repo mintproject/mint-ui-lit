@@ -54,10 +54,13 @@ import { EmulatorsState } from 'screens/emulators/reducers';
 import { EmulatorsAction } from 'screens/emulators/actions';
 import { VariablesState } from 'screens/variables/reducers';
 import { VariablesAction } from 'screens/variables/actions';
+import { AnalysisState } from 'screens/analysis/reducers';
+import { AnalysisAction } from 'screens/analysis/actions';
 
 // Overall state extends static states and partials lazy states.
 export interface RootState {
   app: AppState;
+  analysis: AnalysisState;
   modeling: ModelingState;
   models?: ModelsState;
   datasets?: DatasetsState;
@@ -73,7 +76,7 @@ export interface RootState {
 
 export type RootAction = AppAction | ModelingAction | ModelsAction | DatasetsAction | EmulatorsAction |
                          RegionsAction | UIAction | ExplorerUIAction | VariablesAction |
-                         MessagesAction | ModelCatalogAction | DExplorerUIAction;
+                         MessagesAction | ModelCatalogAction | DExplorerUIAction | AnalysisAction;
 
 // Sets up a Chrome extension for time travel debugging.
 // See https://github.com/zalmoxisus/redux-devtools-extension for more information.

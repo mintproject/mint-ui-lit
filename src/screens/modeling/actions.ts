@@ -15,10 +15,6 @@ import subscribeProblemStatementsListGQL from '../../queries/problem-statement/l
 import subscribeProblemStatementGQL from '../../queries/problem-statement/get-subscription.graphql';
 import subscribeThreadGQL from '../../queries/thread/get-subscription.graphql';
 
-import fetchProblemStatementsListGQL from '../../queries/problem-statement/list.graphql';
-import fetchProblemStatementGQL from '../../queries/problem-statement/get.graphql';
-import fetchThreadGQL from '../../queries/thread/get.graphql';
-
 import newProblemStatementGQL from '../../queries/problem-statement/new.graphql';
 import newTaskGQL from '../../queries/task/new.graphql';
 import newThreadGQL from '../../queries/thread/new.graphql';
@@ -238,42 +234,6 @@ export const subscribeProblemStatementsList: ActionCreator<SubProblemListThunkRe
     });
 };
 
-
-// List ProblemStatements
-type ProblemListThunkResult = ThunkAction<void, RootState, undefined, ProblemStatementsActionList>;
-export const fetchProblemStatementsList: ActionCreator<ProblemListThunkResult> = (regionid: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
-    APOLLO_CLIENT.query({
-        query: fetchProblemStatementsListGQL,
-        variables: {
-            regionId: regionid
-        }
-    }).then(result => {
-        if(result.errors && result.errors.length > 0) {
-            console.log("ERROR");
-            console.log(result);
-        }
-        else {
-            let problem_statements:IdMap<ProblemStatementInfo> = {};
-            let problem_statement_ids:string[] = [];
-            let problems = result.data.problem_statement;
-            //console.log(problems);
-            problems.forEach((problem: any) => {
-                problem_statement_ids.push(problem["id"]);
-                problem_statements[problem["id"]] = problemStatementFromGQL(problem);
-            })
-            let list = {
-                problem_statement_ids: problem_statement_ids,
-                problem_statements: problem_statements
-            } as ProblemStatementList;   
-            dispatch({
-                type: PROBLEM_STATEMENTS_LIST,
-                list
-            })
-        }
-    });
-};
-
 /*
 // List Tasks
 type ListTasksThunkResult = ThunkAction<void, RootState, undefined, TasksActionList | TasksActionListSubscription>;
@@ -391,36 +351,6 @@ export const subscribeProblemStatement: ActionCreator<SubProblemDetailsThunkResu
     });
 };
 
-
-// Get ProblemStatement details
-type ProblemDetailsThunkResult = ThunkAction<void, RootState, undefined, ProblemStatementsActionDetails>;
-export const fetchProblemStatement: ActionCreator<ProblemDetailsThunkResult> = (problem_statement_id: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
-    APOLLO_CLIENT.query({
-        query: fetchProblemStatementGQL,
-        variables: {
-            id: problem_statement_id
-        }
-    }).then(result => {
-        if(result.errors && result.errors.length > 0) {
-            console.log("ERROR");
-            console.log(result);
-        }
-        else {
-            let problem = result.data.problem_statement_by_pk;
-            if(problem) {
-                //console.log("Changes to the problem statement");
-                let details = problemStatementFromGQL(problem);
-                // Dispatch problem_statement details on an edit
-                dispatch({
-                    type: PROBLEM_STATEMENT_DETAILS,
-                    details
-                });
-            }
-        }
-    });
-};
-
 /*
 // Get Task details
 type TaskDetailsThunkResult = ThunkAction<void, RootState, undefined, TasksActionDetails | TasksActionSubscription >;
@@ -486,36 +416,6 @@ export const subscribeThread: ActionCreator<ThreadSubDetailsThunkResult> = (thre
     dispatch({
         type: THREAD_SUBSCRIPTION,
         unsubscribe: () => { subscription.unsubscribe() }
-    });
-};
-
-// Get Thread details
-type ThreadDetailsThunkResult = ThunkAction<void, RootState, undefined, ThreadsActionDetails>;
-export const fetchThread: ActionCreator<ThreadDetailsThunkResult> = (threadid: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
-    APOLLO_CLIENT.query({
-        query: fetchThreadGQL,
-        variables: {
-            id: threadid
-        }
-    }).then(result => {
-        if(result.errors && result.errors.length > 0) {
-            console.log("ERROR");
-            console.log(result);
-        }
-        else {
-            //console.log(result);
-            //console.log("Changes to the thread " + threadid);
-            let thread = result.data.thread_by_pk;
-            if(thread) {
-                let details = threadFromGQL(thread);
-                // Dispatch problem_statement details on an edit
-                dispatch({
-                    type: THREAD_DETAILS,
-                    details
-                });
-            }
-        }
     });
 };
 
