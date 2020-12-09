@@ -139,6 +139,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
            <ul>
            ${Object.keys(this.thread.execution_summary ?? {}).map((modelid) => {
                let summary = this.thread.execution_summary[modelid];
+               console.log(summary);
                let model = this.thread.models![modelid];
                if(!model) {
                    return;
@@ -146,7 +147,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                let grouped_ensemble = grouped_executions[modelid];
                this.totalPages[modelid] = Math.ceil(summary.total_runs/this.pageSize);
                let finished_runs = summary.successful_runs + summary.failed_runs;
-               let submitted_runs = summary.submitted_for_execution;
+               let submitted_runs = (summary.submitted_for_execution || summary.submission_time);
                let submitted = summary.submitted_for_ingestion;
                let finished_ingestion = (summary.ingested_runs == summary.total_runs);
                let finished = (finished_runs == summary.total_runs);
@@ -160,7 +161,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                     this._fetchRuns(model.id, 1, this.pageSize)
                 }
                 */
-
+               
                 if(!submitted_runs) {
                     return "Please execute some runs first";
                 }
