@@ -131,7 +131,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                     return `  `;
                 }
                 if(!summary.total_runs) {
-                    return ` `;
+                    return html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`;
                 }
                 
                 let grouped_ensemble = grouped_executions[modelid];
