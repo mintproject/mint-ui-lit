@@ -5,8 +5,6 @@ addons:
   ssh_known_hosts:
   - mint.isi.edu
   - 54.148.90.74
-env:
-  - NODE_ENV=production
 install: yarn
 cache: yarn
 script: yarn build
