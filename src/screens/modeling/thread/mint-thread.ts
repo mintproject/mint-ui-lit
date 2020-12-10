@@ -263,6 +263,8 @@ export class MintThread extends connect(store)(MintThreadPage) {
                 this.thread = null;
                 this._dispatched = true;
                 this._dispatched_execution_summary = false;
+                state.modeling.executions = null;
+                state.modeling.execution_summaries = null;
                 
                 // Make a subscription call for the new thread id
                 store.dispatch(subscribeThread(thread_id));              
