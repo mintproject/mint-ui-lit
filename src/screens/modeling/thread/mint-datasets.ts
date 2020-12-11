@@ -809,6 +809,9 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
 
         this._waiting = true;
         await setThreadData(data, model_ensembles, notes, this.thread);
+
+        store.dispatch(selectThreadSection("parameters"));
+
         this._waiting = false;
     }
 

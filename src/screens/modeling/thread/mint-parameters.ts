@@ -436,11 +436,8 @@ export class MintParameters extends connect(store)(MintThreadPage) {
         this._waiting = true;
         await setThreadParameters(model_ensembles, execution_summary, notes, this.thread);
 
-        // Refresh execution summary
-        for(let modelid in model_ensembles) {
-            store.dispatch(subscribeThreadExecutionSummary(this.thread.id, modelid, model_ensembles[modelid].id));
-        };
-
+        store.dispatch(selectThreadSection("runs"));
+        
         this._waiting = false;
     }
 
