@@ -35,7 +35,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     @property({type: Number})
     private pageSize = 100;
     @property({type: String})
-    private orderBy = [{"status": "asc"}, {"start_time": "asc"}];
+    private orderBy = [{"status": "asc"}]; //, {"start_time": "asc"}];
 
     @property({type: String})
     private _log: string;
