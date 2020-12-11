@@ -4,7 +4,7 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
 import { modelConfigurationSetupGet, modelConfigurationSetupsGet, modelConfigurationSetupPost, modelConfigurationSetupPut, modelConfigurationSetupDelete } from 'model-catalog/actions';
-import { ModelConfigurationSetup, ModelConfigurationSetupFromJSON } from '@mintproject/modelcatalog_client';
+import { ModelConfiguration, ModelConfigurationSetup, ModelConfigurationSetupFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 import { renderExternalLink } from 'util/ui_renders';
 
@@ -14,10 +14,14 @@ import { ExplorerStyles } from '../../model-explore/explorer-styles'
 import { ModelCatalogPerson } from './person';
 import { ModelCatalogGrid } from './grid';
 import { ModelCatalogNumericalIndex } from './numerical-index';
-import { ModelCatalogFundingInformation } from './funding-information';
-import { ModelCatalogVisualization } from './visualization';
 import { ModelCatalogCategory } from './category';
-import { ModelCatalogImage } from './image';
+import { ModelCatalogSoftwareImage } from './software-image';
+import { ModelCatalogTimeInterval } from './time-interval';
+import { ModelCatalogRegion } from './region';
+import { ModelCatalogProcess } from './process';
+
+import { ModelCatalogParameter } from './parameter';
+import { ModelCatalogDatasetSpecification } from './dataset-specification';
 
 import { goToPage } from 'app/actions';
 
@@ -25,8 +29,8 @@ import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 
-@customElement('model-catalog-setup')
-export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<ModelConfigurationSetup> {
+@customElement('model-catalog-model-configuration-setup')
+export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCatalogResource)<ModelConfigurationSetup> {
     static get styles() {
         return [ExplorerStyles, SharedStyles, this.getBasicStyles(), css`
             .details-table {
@@ -93,12 +97,19 @@ export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<Mode
 
     public pageMax : number = 10
 
+    private _parentConfig : ModelConfigurationSetup;
+
     private _inputAuthor : ModelCatalogPerson;
     private _inputGrid : ModelCatalogGrid;
+    private _inputTimeInterval : ModelCatalogTimeInterval;
     private _inputIndex : ModelCatalogNumericalIndex;
-    private _inputFunding : ModelCatalogFundingInformation;
-    private _inputVisualization : ModelCatalogVisualization;
     private _inputCategory : ModelCatalogCategory;
+    private _inputRegion : ModelCatalogRegion;
+    private _inputProcesses : ModelCatalogProcess;
+    private _inputSoftwareImage : ModelCatalogSoftwareImage;
+
+    private _inputParameter : ModelCatalogParameter;
+    private _inputDSInput : ModelCatalogDatasetSpecification;
 
     constructor () {
         super();
@@ -107,10 +118,18 @@ export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<Mode
     protected _initializeSingleMode () {
         this._inputAuthor = new ModelCatalogPerson();
         this._inputGrid = new ModelCatalogGrid();
+        this._inputTimeInterval = new ModelCatalogTimeInterval();
         this._inputIndex = new ModelCatalogNumericalIndex();
-        this._inputFunding = new ModelCatalogFundingInformation();
-        this._inputVisualization = new ModelCatalogVisualization();
         this._inputCategory = new ModelCatalogCategory();
+        this._inputRegion = new ModelCatalogRegion();
+        this._inputProcesses = new ModelCatalogProcess();
+        this._inputSoftwareImage = new ModelCatalogSoftwareImage();
+
+        this._inputParameter = new ModelCatalogParameter();
+        this._inputParameter.inline = false;
+        this._inputDSInput = new ModelCatalogDatasetSpecification();
+        this._inputDSInput.inline = false;
+
     }
 
     public setResource (r:ModelConfigurationSetup) {
@@ -119,10 +138,15 @@ export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<Mode
             if (m) {
                 this._inputAuthor.setResources(m.author);
                 this._inputGrid.setResources(m.hasGrid);
+                this._inputTimeInterval.setResources(m.hasOutputTimeInterval);
                 this._inputIndex.setResources(m.usefulForCalculatingIndex);
-                this._inputFunding.setResources(m.hasFunding);
-                this._inputVisualization.setResources(m.hasSampleVisualization);
                 this._inputCategory.setResources(m.hasModelCategory);
+                this._inputRegion.setResources(m.hasRegion);
+                this._inputProcesses.setResources(m.hasProcess);
+                this._inputSoftwareImage.setResources(m.hasSoftwareImage);
+
+                this._inputParameter.setResources( m.hasParameter );
+                this._inputDSInput.setResources( m.hasInput );
             }
         });
         return req;
@@ -130,12 +154,22 @@ export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<Mode
 
     protected _editResource (r:ModelConfigurationSetup) {
         super._editResource(r);
+        this._setEditingActions();
+    }
+
+    private _setEditingActions () {
         this._inputAuthor.setActionMultiselect();
         this._inputGrid.setActionSelect();
         this._inputIndex.setActionMultiselect();
-        this._inputFunding.setActionMultiselect();
-        this._inputVisualization.setActionMultiselect();
         this._inputCategory.setActionMultiselect();
+
+        this._inputTimeInterval.setActionSelect();
+        this._inputRegion.setActionMultiselect();
+        this._inputProcesses.setActionMultiselect();
+        this._inputSoftwareImage.setActionSelect();
+
+        this._inputParameter.setActionEditOrAdd();
+        this._inputDSInput.setActionEditOrAdd();
     }
 
     protected _clearStatus () {
@@ -143,26 +177,37 @@ export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<Mode
         if (this._inputAuthor) this._inputAuthor.unsetAction();
         if (this._inputGrid) this._inputGrid.unsetAction();
         if (this._inputIndex) this._inputIndex.unsetAction();
-        if (this._inputFunding) this._inputFunding.unsetAction();
-        if (this._inputVisualization) this._inputVisualization.unsetAction();
         if (this._inputCategory) this._inputCategory.unsetAction();
+        if (this._inputTimeInterval) this._inputTimeInterval.unsetAction();
+        if (this._inputRegion) this._inputRegion.unsetAction();
+        if (this._inputProcesses) this._inputProcesses.unsetAction();
+        if (this._inputSoftwareImage) this._inputSoftwareImage.unsetAction();
+
+        if (this._inputParameter) this._inputParameter.unsetAction();
+        if (this._inputDSInput) this._inputDSInput.unsetAction();
         this.scrollUp();
         this.clearForm();
     }
 
-    public enableSingleResourceCreation () {
+    public enableSingleResourceCreation (parentConfig:ModelConfiguration) {
         super.enableSingleResourceCreation();
-        this._inputAuthor.setResources(null);
-        this._inputGrid.setResources(null);
-        this._inputIndex.setResources(null);
-        this._inputFunding.setResources(null);
-        this._inputVisualization.setResources(null);
-        this._inputCategory.setResources(null);
-        this._inputAuthor.setActionMultiselect();
-        this._inputGrid.setActionSelect();
-        this._inputIndex.setActionMultiselect();
-        this._inputFunding.setActionMultiselect();
-        this._inputCategory.setActionMultiselect();
+
+        this._parentConfig = parentConfig;
+        if (this._parentConfig) {
+            let m = this._parentConfig;
+            this._inputAuthor.setResources(m.author);
+            this._inputGrid.setResources(m.hasGrid);
+            this._inputTimeInterval.setResources(m.hasOutputTimeInterval);
+            this._inputIndex.setResources(m.usefulForCalculatingIndex);
+            this._inputCategory.setResources(m.hasModelCategory);
+            this._inputRegion.setResources(m.hasRegion);
+            this._inputProcesses.setResources(m.hasProcess);
+            this._inputSoftwareImage.setResources(m.hasSoftwareImage);
+
+            this._inputParameter.setResources( m.hasParameter );
+            this._inputDSInput.setResources( m.hasInput );
+        }
+        this._setEditingActions();
     }
 
     protected _renderFullResource (r:ModelConfigurationSetup) {
@@ -174,21 +219,14 @@ export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<Mode
                     <td colspan="2" style="padding: 5px 20px;">
                         <wl-title level="3"> {getLabel(r)} </wl-title>
                     </td>
-                </tr-->
+                </tr>
 
                 <tr>
                     <td>Category:</td>
                     <td>
-                        ${this._inputCategory}
+                        {this._inputCategory}
                     </td>
-                </tr>
-
-                <tr>
-                    <td>Keywords</td>
-                    <td>
-                        ${r.keywords ? r.keywords[0] : ''}
-                    </td>
-                </tr>
+                </tr-->
 
                 ${r.shortDescription ? html`
                 <tr>
@@ -199,83 +237,57 @@ export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<Mode
                 </tr>` : '' }
 
                 <tr>
-                    <td>Full description:</td>
+                    <td>Description:</td>
                     <td>
                         ${r.description ? r.description[0] : ''}
                     </td>
                 </tr>
 
                 <tr>
-                    <td>Author</td>
+                    <td>Keywords:</td>
+                    <td>
+                        ${r.keywords ? r.keywords[0] : ''}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Region:</td>
+                    <td>
+                        ${this._inputRegion}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Setup Creator:</td>
                     <td>
                         ${this._inputAuthor}
                     </td>
                 </tr>
 
                 <tr>
-                    <td>License:</td>
+                    <td>Parameter assignment method:</td>
                     <td>
-                        ${r && r.license ? r.license[0] : ''}
+                        <div style="display: grid; grid-template-columns: auto 36px;">
+                            <span style="vertical-align: middle; line-height: 40px; font-size: 16px;">${r.parameterAssignmentMethod}</span>
+                            <span tip="Calibrated: The model was calibrated (either manually or automatically) against baseline data.&#10;Expert configured: A modeler did an expert guess of the parameters based on available data." 
+                                  id="pam" class="tooltip" style="top: 8px;">
+                                <wl-icon style="--icon-size: 24px;">help_outline</wl-icon>
+                            </span>
+                        </div>
                     </td>
                 </tr>
 
                 <tr>
-                    <td>Citation:</td>
+                    <td>SoftwareImage:</td>
                     <td>
-                        ${r && r.citation ? r.citation[0] : ''}
+                        ${this._inputSoftwareImage}
                     </td>
                 </tr>
 
                 <tr>
-                    <td>Funding:</td>
+                    <td>Component Location:</td>
                     <td>
-                        ${this._inputFunding}
-                    </td>
-                </tr>
-
-                ${r.website ? html`
-                <tr>
-                    <td>Website URL</td>
-                    <td>
-                        <a href="${r.website[0]}">${r.website[0]}</a>
-                    </td>
-                </tr>` : ''}
-
-                ${r.hasDocumentation ? html`
-                <tr>
-                    <td>Documentation URL</td>
-                    <td>
-                         <a href="${r.hasDocumentation[0]}">${r.hasDocumentation[0]}</a>
-                    </td>
-                </tr>` : ''}
-
-                ${r.hasDownloadURL ? html`
-                <tr>
-                    <td>Download URL</td>
-                    <td>
-                        <a href="${r.hasDownloadURL[0]}">${r.hasDownloadURL[0]}</a>
-                    </td>
-                </tr>`: ''}
-
-                ${r.hasInstallationInstructions? html`
-                <tr>
-                    <td>Installation instructions URL</td>
-                    <td>
-                        <a href="${r.hasInstallationInstructions[0]}">${r.hasInstallationInstructions[0]}</a>
-                    </td>
-                </tr>`:''}
-
-                <tr>
-                    <td>Purpose</td>
-                    <td>
-                        ${r.hasPurpose ? r.hasPurpose[0] : ''}
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>Usage notes:</td>
-                    <td>
-                        ${r.hasUsageNotes ? r.hasUsageNotes[0] : ''}
+                        ${r && r.hasComponentLocation ? renderExternalLink(r.hasComponentLocation) : ''}
                     </td>
                 </tr>
 
@@ -287,9 +299,16 @@ export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<Mode
                 </tr>
 
                 <tr>
-                    <td>Visualizations:</td>
+                    <td>Time interval:</td>
                     <td>
-                        ${this._inputVisualization}
+                        ${this._inputTimeInterval}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Processes:</td>
+                    <td>
+                        ${this._inputProcesses}
                     </td>
                 </tr>
 
@@ -299,7 +318,25 @@ export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<Mode
                         ${this._inputIndex}
                     </td>
                 </tr>
-            </table>`
+
+                <tr>
+                    <td>Usage notes:</td>
+                    <td>
+                        ${ r && r.hasUsageNotes ?  r.hasUsageNotes[0] : '' }
+                    </td>
+                </tr>
+            </table>
+
+        <wl-title level="4" style="margin-top:1em">
+            Parameters:
+        </wl-title>
+        ${this._inputParameter}
+
+        <wl-title level="4" style="margin-top:1em">
+            Input files:
+        </wl-title>
+        ${this._inputDSInput}
+        `
     }
 
     public scrollUp () {
@@ -317,7 +354,7 @@ export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<Mode
                 <tr>
                     <td colspan="2" style="padding: 5px 20px;">
                         <wl-textfield id="i-label" label="Model name" 
-                                      value="${edResource ? getLabel(edResource) : ''}" required></wl-textfield>
+                                      value="${edResource && edResource.label ? edResource.label[0] : ''}" required></wl-textfield>
                     </td>
                 </tr>
 
@@ -325,6 +362,15 @@ export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<Mode
                     <td>Category:</td>
                     <td>
                         ${this._inputCategory}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Description:</td>
+                    <td>
+                        <textarea id="i-desc" name="Description" rows="5">${
+                            edResource && edResource.description ? edResource.description[0] : ''
+                        }</textarea>
                     </td>
                 </tr>
 
@@ -337,76 +383,47 @@ export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<Mode
                 </tr>
 
                 <tr>
-                    <td>Short description:</td>
+                    <td>Region:</td>
                     <td>
-                        <textarea id="i-short-desc" name="Short description" rows="3">${
-                            edResource && edResource.shortDescription ? edResource.shortDescription[0] : ''
-                        }</textarea>
+                        ${this._inputRegion}
                     </td>
                 </tr>
 
                 <tr>
-                    <td>Full Description:</td>
-                    <td>
-                        <textarea id="i-desc" name="Description" rows="5">${
-                            edResource && edResource.description ? edResource.description[0] : ''
-                        }</textarea>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>Author:</td>
+                    <td>Setup Creator:</td>
                     <td>
                         ${this._inputAuthor}
                     </td>
                 </tr>
 
                 <tr>
-                    <td>Funding:</td>
+                    <td>Parameter assignment method:</td>
                     <td>
-                        ${this._inputFunding}
+                        <div style="display: grid; grid-template-columns: auto 36px;">
+                            <wl-select id="edit-setup-assign-method" label="Parameter assignment method" placeholder="Select a parameter assignament method" required>
+                                <option value="" disabled selected>Please select a parameter assignment method</option>
+                                <option value="Calibration">Calibration</option>
+                                <option value="Expert-configured">Expert tuned</option>
+                            </wl-select>
+                            <span tip="Calibrated: The model was calibrated (either manually or automatically) against baseline data.&#10;Expert configured: A modeler did an expert guess of the parameters based on available data." 
+                                  id="pam" class="tooltip" style="top: 8px;">
+                                <wl-icon style="--icon-size: 24px;">help_outline</wl-icon>
+                            </span>
+                        </div>
                     </td>
                 </tr>
 
                 <tr>
-                    <td>License:</td>
+                    <td>SoftwareImage:</td>
                     <td>
-                        <textarea id="i-license" name="License" rows="2">${edResource && edResource.license ? edResource.license[0] : ''}</textarea>
+                        ${this._inputSoftwareImage}
                     </td>
                 </tr>
 
                 <tr>
-                    <td>Citation:</td>
+                    <td>Component Location:</td>
                     <td>
-                        <textarea id="i-citation" name="Citation" rows="2">${edResource && edResource.citation ? edResource.citation[0] : ''}</textarea>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>Purpose:</td>
-                    <td>
-                        <textarea id="i-purpose" rows="3">${
-                            edResource && edResource.hasPurpose ?  edResource.hasPurpose[0] : ''
-                        }</textarea>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>Example:</td>
-                    <td>
-                        <textarea id="i-example" name="Example" rows="4">${
-                            edResource && edResource.hasExample ? edResource.hasExample[0] : ''
-                        }</textarea>
-                    </td>
-                </tr>
-
-
-                <tr>
-                    <td>Usage notes:</td>
-                    <td>
-                        <textarea id="i-usage-notes" rows="6">${
-                            edResource && edResource.hasUsageNotes ?  edResource.hasUsageNotes[0] : ''
-                        }</textarea>
+                        <textarea id="i-usage-notes" rows="2">${edResource && edResource.hasComponentLocation ?  edResource.hasComponentLocation[0] : ''}</textarea>
                     </td>
                 </tr>
 
@@ -418,9 +435,16 @@ export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<Mode
                 </tr>
 
                 <tr>
-                    <td>Visualizations:</td>
+                    <td>Time interval:</td>
                     <td>
-                        ${this._inputVisualization}
+                        ${this._inputTimeInterval}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Processes:</td>
+                    <td>
+                        ${this._inputProcesses}
                     </td>
                 </tr>
 
@@ -430,47 +454,25 @@ export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<Mode
                         ${this._inputIndex}
                     </td>
                 </tr>
+
+                <tr>
+                    <td>Usage notes:</td>
+                    <td>
+                        <textarea id="i-usage-notes" rows="6">${edResource && edResource.hasUsageNotes ?  edResource.hasUsageNotes[0] : ''}</textarea>
+                    </td>
+                </tr>
+
             </table>
 
-            <details style="margin-top: 6px;">
-              <summary>External URLs</summary>
-                <table class="details-table">
-                    <colgroup style="width: 220px">
-                    <tr>
-                        <td>Website URL</td>
-                        <td>
-                            <wl-textfield id="i-website" name="Website URL" type="url"
-                                    value="${edResource && edResource.website ? edResource.website[0] : ''}"></wl-textfield>
-                        </td>
-                    </tr>
+        <wl-title level="4" style="margin-top:1em">
+            Parameters:
+        </wl-title>
+        ${this._inputParameter}
 
-                    <tr>
-                        <td>Documentation URL</td>
-                        <td>
-                            <wl-textfield id="i-documentation" name="Documentation URL" type="url"
-                                    value="${edResource && edResource.hasDocumentation ? edResource.hasDocumentation[0] : ''}"></wl-textfield>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>Download URL</td>
-                        <td>
-                            <wl-textfield id="i-download" name="Download URL" type="url"
-                                    value="${edResource && edResource.hasDownloadURL ? edResource.hasDownloadURL[0] : ''}"></wl-textfield>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>Installation instructions URL</td>
-                        <td>
-                            <wl-textfield id="i-install-instructions" name="Installation instructions URL" type="url"
-                                    value="${edResource && edResource.hasInstallationInstructions ?
-                                    edResource.hasInstallationInstructions[0] : ''}"></wl-textfield>
-                        </td>
-                    </tr>
-                </table>
-            </details>
-
+        <wl-title level="4" style="margin-top:1em">
+            Input files:
+        </wl-title>
+        ${this._inputDSInput}
         `;
     }
 
@@ -516,8 +518,6 @@ export class ModelCatalogSetup extends connect(store)(ModelCatalogResource)<Mode
                 description: [desc],
                 author: this._inputAuthor.getResources(),
                 hasGrid: this._inputGrid.getResources(),
-                hasFunding: this._inputFunding.getResources(),
-                hasSampleVisualization: this._inputVisualization.getResources(),
                 usefulForCalculatingIndex: this._inputIndex.getResources(),
             };
             if (keywords) jsonRes["keywords"] = [keywords];

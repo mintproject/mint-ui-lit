@@ -406,10 +406,12 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     protected _renderRow (r:T) {
+        if (r)
         return html`
             <td>${getLabel(r)}</td>
             <td>${r.description ? r.description[0] : ''}</td>
         `;
+        return html``;
     }
 
     protected _renderSearchOnList () {
