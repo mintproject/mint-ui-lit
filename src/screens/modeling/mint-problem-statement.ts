@@ -11,6 +11,7 @@ import "weightless/tooltip";
 import "weightless/popover-card";
 import "weightless/snackbar";
 
+import 'components/loading-dots';
 import './thread/mint-thread';
 import '../../components/task-editor';
 import '../../components/thread-editor';
@@ -177,6 +178,10 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
             this._problem_statement.events);
         let selected_task_permissions = getUserPermission(this._selectedTask?.permissions ?? [], 
             this._selectedTask?.events ?? []);
+            
+        let taskEditor = this.shadowRoot.querySelector<TaskEditor>("#taskEditor")!;
+        let threadEditor = this.shadowRoot.querySelector<ThreadEditor>("#threadEditor")!;
+
         return html`
             <!-- Top ProblemStatement Heading -->
             <div class="cltrow problem_statementrow">
@@ -211,6 +216,17 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                 @click="${() => showDialog('tasksHelpDialog', this.shadowRoot)}">Read more</a>
                         </div>
                         <ul>
+                        ${taskEditor?.addingTask ? 
+                            html`
+                                <li class="active">
+                                    <div class="cltrow taskrow">
+                                        <div class="cltmain">
+                                            <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>
+                                        </div>
+                                    </div>
+                                </li>
+                            ` : ``
+                        }
                         ${taskids.map((taskid) => {
                             const task = this._problem_statement!.tasks[taskid];
                             let task_permission = getUserPermission(task.permissions, task.events);
@@ -282,6 +298,17 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                     @click="${() => showDialog('threadsHelpDialog', this.shadowRoot)}">Read more</a>
                             </div>
                             <ul>
+                            ${threadEditor?.addingThread ? 
+                                html`
+                                    <li class="active">
+                                        <div class="cltrow taskrow">
+                                            <div class="cltmain">
+                                                <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>
+                                            </div>
+                                        </div>
+                                    </li>
+                                ` : ``
+                            }
                             ${threads.map(pid => this._selectedTask.threads[pid]).map((thread: ThreadInfo, i: number) => {
                                 if(!thread) {
                                     return "";
@@ -353,7 +380,8 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
 
         <!-- Editors -->
         <task-editor .problem_statement="${this._problem_statement}" id="taskEditor"></task-editor>
-        <thread-editor .task="${this._selectedTask}" id="threadEditor"></thread-editor>
+        <thread-editor .problem_statement_id="${this._problem_statement.id}"
+            .task="${this._selectedTask}" id="threadEditor"></thread-editor>
 
         <!-- Help Dialogs -->
         ${this._renderHelpDialogs()}
@@ -626,6 +654,12 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                 this._dispatched = false;
                 state.modeling.problem_statement.changed = false;
                 this._problem_statement = state.modeling.problem_statement;
+
+                // Problem statement has changed. Reset Task/Thread data
+                let taskEditor = this.shadowRoot.querySelector<TaskEditor>("#taskEditor")!;
+                if(taskEditor) taskEditor.addingTask = false;
+                let threadEditor = this.shadowRoot.querySelector<ThreadEditor>("#threadEditor")!;
+                if(threadEditor) threadEditor.addingThread = false;
             }
             else if(!state.modeling.problem_statement) {
                 this._dispatched = false;

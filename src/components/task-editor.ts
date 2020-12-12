@@ -59,7 +59,13 @@ export class TaskEditor extends connect(store)(LitElement) {
     
     @property({type: Object})
     private _variableMap: VariableMap = {};
+
+    @property({type: Boolean})
+    public addingTask: boolean = false;
     
+    @property({type: String})
+    public editingTaskId: string = null;
+
     static get styles() {
         return [SharedStyles, css`
             fieldset {
@@ -228,7 +234,6 @@ export class TaskEditor extends connect(store)(LitElement) {
         (form.elements["task_from"] as HTMLInputElement).value = toDateString(dates?.start_date);
         (form.elements["task_to"] as HTMLInputElement).value = toDateString(dates?.end_date);
         (form.querySelector("#task_permissions") as PermissionsEditor).setPermissions([]);
-
         this._selectedIntervention = null;
     }
 
@@ -339,6 +344,8 @@ export class TaskEditor extends connect(store)(LitElement) {
                         updateThreadInformation(thread);
                     }
                 })
+
+                this.editingTaskId = this.task.id;
             }
             else {
                 // Add Task
@@ -374,6 +381,8 @@ export class TaskEditor extends connect(store)(LitElement) {
                     permissions: task_permissions
                 } as Thread
 
+                this.addingTask = true;
+
                 // Create the Task along with default thread
                 let ids = await addTaskWithThread(this.problem_statement!, this.task, thread);
                 goToPage("modeling/problem_statement/" + this.problem_statement.id + "/" + ids[0] + "/" + ids[1]);
@@ -405,7 +414,6 @@ export class TaskEditor extends connect(store)(LitElement) {
         }
         if(state.variables && state.variables.variables) {
             this._variableMap = state.variables.variables;
-        }
-        
+        }        
     }
 }

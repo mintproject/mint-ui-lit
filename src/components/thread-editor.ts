@@ -11,11 +11,15 @@ import { getLatestEventOfType } from "util/event_utils";
 import { PermissionsEditor } from "./permissions-editor";
 
 import "./permissions-editor";
+import { goToPage } from "app/actions";
 
 @customElement('thread-editor')
 export class ThreadEditor extends LitElement {
     @property({type: Object})
     public thread: ThreadInfo;
+
+    @property({type: String})
+    public problem_statement_id: string;
 
     @property({type: Object})
     public task: Task;
@@ -29,6 +33,12 @@ export class ThreadEditor extends LitElement {
     @property({type: Boolean})
     public editMode = false;
     
+    @property({type: Boolean})
+    public addingThread: boolean = false;
+    
+    @property({type: String})
+    public editingThreadId: string = null;
+
     static get styles() {
         return [SharedStyles, css`
             fieldset {
@@ -130,7 +140,7 @@ export class ThreadEditor extends LitElement {
         `;
     }
 
-    _onEditThreadSubmit() {
+    async _onEditThreadSubmit() {
         let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#threadForm")!;
         //if(formElementsComplete(form, ["thread_name"])) {
             let threadid = (form.elements["threadid"] as HTMLInputElement).value;
@@ -157,6 +167,9 @@ export class ThreadEditor extends LitElement {
                 };
                 thread.events = [getUpdateEvent(thread_notes) as ThreadEvent];
                 thread.permissions = thread_permissions;
+
+                this.editingThreadId = thread.id;
+
                 updateThreadInformation(thread);
             }
             else {
@@ -178,7 +191,11 @@ export class ThreadEditor extends LitElement {
                     permissions: thread_permissions
                 } as ThreadInfo;
 
-                addThread(this.task, thread);
+                this.addingThread = true;
+
+                let new_id = await addThread(this.task, thread);
+
+                goToPage("modeling/problem_statement/" + this.problem_statement_id + "/" + this.task.id + "/" + new_id);
             }
             hideDialog("threadDialog", this.shadowRoot!);
         /*}
