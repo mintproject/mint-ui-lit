@@ -7,6 +7,7 @@ The complete set of contributors may be found at http://polymer.github.io/CONTRI
 Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 */
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import { Action, ActionCreator } from 'redux';
 import { ThunkAction } from 'redux-thunk';
@@ -103,6 +104,7 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
     if (user) {
       ReactGA.set({ userId: user.email });
       dispatch(fetchUserProfile(user)).then(() => {
+          ModelCatalogApi.setUsername(user.email);
           // Check the state of the model-catalog access token.
           let state: any = store.getState();
           if (!state.app.prefs.modelCatalog.status) {
@@ -178,6 +180,7 @@ export const signOut = () => {
 };
 
 const modelCatalogLogin = (username: string, password: string) => {
+  ModelCatalogApi.login(username, password);
   let API = new DefaultApi();
   store.dispatch({type: STATUS_MODEL_CATALOG_ACCESS_TOKEN, status: 'LOADING'})
   //API.userLoginGet({username: username, password: password})
