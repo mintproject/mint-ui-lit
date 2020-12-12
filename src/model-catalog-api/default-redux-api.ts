@@ -23,8 +23,9 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
             this._redux = false;
         }
         let apiName : string = this._api.constructor.name;
-        this._name = apiName.replace('Api','');
-        this._lname = this._name.toLowerCase() as ModelCatalogTypes;
+        let name = apiName.replace('Api','');
+        this._lname = name.toLowerCase() as ModelCatalogTypes;
+        this._name = name.charAt(0).toLowerCase() + name.slice(1);
         this._username = user;
     }
 
