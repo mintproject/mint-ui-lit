@@ -70,6 +70,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object}) private _softwareImages : IdMap<SoftwareImage> = {} as IdMap<SoftwareImage>;
     @property({type: Object}) private _parameters : IdMap<Parameter> = {} as IdMap<Parameter>;
     @property({type: Object}) private _datasetSpecifications : IdMap<DatasetSpecification> = {} as IdMap<DatasetSpecification>;
+    @property({type: Object}) private _datasetSpecifications2 : IdMap<DatasetSpecification> = {} as IdMap<DatasetSpecification>;
     @property({type: Object}) private _interventions : IdMap<Intervention> = {} as IdMap<Intervention>;
     @property({type: Object}) private _variablePresentations : IdMap<VariablePresentation> = {} as IdMap<VariablePresentation>;
 
@@ -1323,6 +1324,8 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     private _renderFixedResource (ds: DatasetSpecification) {
+        if (this._datasetSpecifications2[ds.id])
+            ds = this._datasetSpecifications2[ds.id];
         return html`
             ${ds.hasFixedResource && ds.hasFixedResource.length > 0 &&
               ds.hasFixedResource[0].value && ds.hasFixedResource[0].value.length > 0 ? html`
@@ -1763,7 +1766,12 @@ export class ModelView extends connect(store)(PageViewElement) {
                         if (setup.hasParameter) this._loadParameters(setup.hasParameter, db);
                         if (setup.hasInput) this._loadDatasetSpecifications(setup.hasInput, db);
                         if (setup.hasOutput) this._loadDatasetSpecifications(setup.hasOutput, db);
-                        
+
+                        (setup.hasInput || []).concat(setup.hasOutput || []).forEach((ds:DatasetSpecification) => {
+                            //FIXME: this does not return hasFixedValue -> hasPart
+                            this._datasetSpecifications2[ds.id] = ds;
+                        });
+
                         this._setup = setup;
                         this._loading[this._selectedSetup] = false;
                     }).catch((error) => {
