@@ -33,6 +33,7 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
     protected resourcePost = variablePresentationPost;
     protected resourcePut = variablePresentationPut;
     protected resourceDelete = variablePresentationDelete;
+    public uniqueLabel : boolean = true;
 
     public pageMax : number = 10
 

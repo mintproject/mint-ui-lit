@@ -32,6 +32,7 @@ export class ModelCatalogNumericalIndex extends connect(store)(ModelCatalogResou
     protected resourcePost = numericalIndexPost;
     protected resourcePut = numericalIndexPut;
     protected resourceDelete = numericalIndexDelete;
+    public uniqueLabel : boolean = true;
 
     private _inputStandardVariable : ModelCatalogStandardVariable;
 
