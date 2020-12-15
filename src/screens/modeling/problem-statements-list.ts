@@ -87,13 +87,16 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
         let last_event = getLatestEvent(problem_statement.events);
         let permissions = getUserPermission(problem_statement.permissions, problem_statement.events);
         let create_event = getLatestEventOfType(["CREATE"], problem_statement.events);
+        console.log(problem_statement.preview);
         //let region = this._regions[problem_statement.regionid];
         if(problem_statement.regionid == this._top_regionid) {
           return html`
           <wl-list-item class="active"
               @click="${this._onSelectProblemStatement}"
               data-problem_statement_id="${problem_statement.id}">
-              <wl-icon slot="before">label_important</wl-icon>
+              <div slot="before">
+                  <wl-icon>label_important</wl-icon>
+              </div>
               <div slot="after" style="display:flex">
                 <div class="caption">
                   Last updated by: ${last_event?.userid}<br/>
@@ -113,14 +116,22 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
                     `: ""}
                 </div>
               </div>
-              <wl-title level="4" style="margin: 0">${problem_statement.name}</wl-title>
-              ${last_event?.notes ? html`<div class="small-notes"><b>Notes:</b> ${last_event.notes}</div>` : ''}
-              <div>
-                Time Period: ${toDateString(problem_statement.dates.start_date)} to 
-                ${toDateString(problem_statement.dates.end_date)}
-              </div>
-              <div class="caption">
-                  Created by: ${create_event?.userid} at ${toDateTimeString(create_event?.timestamp)}
+              <div style="display: flex; justify-content: space-between;">
+                  <div>
+                      <wl-title level="4" style="margin: 0">${problem_statement.name}</wl-title>
+                      ${last_event?.notes ? html`<div class="small-notes"><b>Notes:</b> ${last_event.notes}</div>` : ''}
+                      <div>
+                        Time Period: ${toDateString(problem_statement.dates.start_date)} to 
+                        ${toDateString(problem_statement.dates.end_date)}
+                      </div>
+                      <div class="caption">
+                          Created by: ${create_event?.userid} at ${toDateTimeString(create_event?.timestamp)}
+                      </div>
+                </div>
+                <div style="max-width: 250px;">
+                    ${problem_statement.preview && problem_statement.preview.length > 0?
+                        html`<b>Indicators:</b> ${problem_statement.preview.join(', ')}` :''}
+                </div>
               </div>
           </wl-list-item>
           `

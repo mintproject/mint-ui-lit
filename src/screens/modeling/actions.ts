@@ -212,6 +212,21 @@ export const subscribeProblemStatementsList: ActionCreator<SubProblemListThunkRe
             let problem_statement_ids:string[] = [];
             let problems = result.data.problem_statement;
             //console.log(problems);
+            /* FIXME: I've changed the query to return all variables used on task and threads, As
+             * I'm processing the data here to do not break anything */
+            problems.forEach((problem: any) => {
+                if (problem["tasks"]) {
+                    let varnameset : Set<string> = new Set();
+                    problem["tasks"].forEach(t =>  
+                        t["threads"].forEach(th => 
+                            varnameset.add(th.response_variable.name)
+                        )
+                    );
+                    problem["preview"] = Array.from(varnameset);
+                    delete problem["tasks"]
+                }
+            });
+            /**/
             problems.forEach((problem: any) => {
                 problem_statement_ids.push(problem["id"]);
                 problem_statements[problem["id"]] = problemStatementFromGQL(problem);
