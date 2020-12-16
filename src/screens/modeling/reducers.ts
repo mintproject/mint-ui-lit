@@ -76,6 +76,7 @@ export interface ProblemStatementInfo extends IdNameObject {
     dates: DateRange
     events?: ProblemStatementEvent[]
     permissions?: MintPermission[]
+    preview?: string[]
 }
 
 export interface DateRange {

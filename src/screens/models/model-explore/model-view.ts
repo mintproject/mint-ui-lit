@@ -1368,7 +1368,9 @@ export class ModelView extends connect(store)(PageViewElement) {
         return html`
             <wl-title level="3">${title}:</wl-title>
             ${dsArr.map((ds:DatasetSpecification) => html`
-            <wl-expansion id="${getLabel(ds)}" name="${title}" @click="${() => this._expandDS(ds)}" style="overflow-y: hidden;">
+            <wl-expansion id="${getLabel(ds)}" name="${title}" @click="${() => this._expandDS(ds)}"
+                    .disabled=${this._loading[ds.id]}
+                    style="overflow-y: hidden;">
                 <span slot="title" style="flex-grow: unset;">
                     ${this._loading[ds.id] ? 
                         getLabel(ds)
@@ -1440,8 +1442,14 @@ export class ModelView extends connect(store)(PageViewElement) {
         `
     }
 
+    private _closeAllExpansions () {
+        let allExp = this.shadowRoot.querySelectorAll('wl-expansion');
+        if (allExp && allExp.length > 0) {
+            allExp.forEach(exp => exp["checked"] = false);
+        }
+    }
+
     private _expandDS (ds: DatasetSpecification) {
-        console.log('>', ds.id);
         if (!this._loading[ds.id]) {
             if (!this._loadedPresentations[ds.id]) {
                 let db = (store.getState() as RootState).modelCatalog;
@@ -1449,13 +1457,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                 let dataset = this._datasetSpecifications[ds.id];
                 if (dataset.hasPresentation && dataset.hasPresentation.length > 0)
                     this._loadVariablePresentations(dataset.hasPresentation, db);
-                else
+                else 
                     this.requestUpdate();
             }
-        } else {
-            setTimeout(() => {
-                this._expandDS(ds);
-            }, 500);
         }
     }
 
@@ -1773,6 +1777,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         });
 
                         this._setup = setup;
+                        this._closeAllExpansions();
                         this._loading[this._selectedSetup] = false;
                     }).catch((error) => {
                         if (error.status == 404) {
