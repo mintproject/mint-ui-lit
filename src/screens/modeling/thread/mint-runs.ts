@@ -271,8 +271,8 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                         </tr>
                                         <tr>
                                             <th>Run Status</th>
-                                            <th>Start Time</th>
-                                            <th>End Time</th>                                            
+                                            <th>Run Start Time</th>
+                                            <th>Run End Time</th>                                            
                                             <th>Run Log</th>
                                             ${grouped_ensemble.inputs.length + grouped_ensemble.params.length == 0 ?     
                                                 html`<th></th>` : ""
