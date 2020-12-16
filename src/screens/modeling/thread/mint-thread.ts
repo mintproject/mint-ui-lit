@@ -113,12 +113,14 @@ export class MintThread extends connect(store)(MintThreadPage) {
     }
 
     private _setSectionStatusMap() {
-        this._sectionDoneMap["variables"] = getThreadVariablesStatus(this.thread);
-        this._sectionDoneMap["models"] = getThreadModelsStatus(this.thread);
-        this._sectionDoneMap["datasets"] = getThreadDatasetsStatus(this.thread);
-        this._sectionDoneMap["parameters"] = getThreadParametersStatus(this.thread);
-        this._sectionDoneMap["runs"] = getThreadRunsStatus(this.thread);
-        this._sectionDoneMap["results"] = getThreadResultsStatus(this.thread);
+        let map = {};
+        map["variables"] = getThreadVariablesStatus(this.thread);
+        map["models"] = getThreadModelsStatus(this.thread);
+        map["datasets"] = getThreadDatasetsStatus(this.thread);
+        map["parameters"] = getThreadParametersStatus(this.thread);
+        map["runs"] = getThreadRunsStatus(this.thread);
+        map["results"] = getThreadResultsStatus(this.thread);
+        this._sectionDoneMap = map;
     }
 
     private _getNextMode() {
