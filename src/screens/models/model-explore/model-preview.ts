@@ -185,6 +185,10 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                 loading-dots {
                     --width: 20px;
                 }
+
+                .title:hover {
+                    color:rgb(15, 122, 207);
+                }
             `
         ];
     }
