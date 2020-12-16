@@ -128,7 +128,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
                           Created by: ${create_event?.userid} at ${toDateTimeString(create_event?.timestamp)}
                       </div>
                 </div>
-                <div style="max-width: 250px;">
+                <div style="width: 250px; max-width: 250px;">
                     ${problem_statement.preview && problem_statement.preview.length > 0?
                         html`<b>Indicators:</b> ${problem_statement.preview.join(', ')}` :''}
                 </div>

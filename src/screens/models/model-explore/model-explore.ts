@@ -439,7 +439,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         store.dispatch( numericalIndexsGet () ).then((indices:IdMap<NumericalIndex>) => {
             this._loadingIndex = false;
             this._index = indices;
-            console.log('indices:', indices);
         })
     }
 
