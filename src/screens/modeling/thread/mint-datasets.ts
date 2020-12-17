@@ -693,6 +693,8 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
             this._waiting = true;
             showNotification("saveNotification", this.shadowRoot!);            
             await selectThreadDataResources(this._selectResourcesData.id, resource_selected, this.thread.id);
+            this._waiting = false;
+            this.selectAndContinue("datasets");
         }
         let mainSelection = this.shadowRoot.querySelectorAll('input');
         if (mainSelection && mainSelection.length > 0) {
@@ -756,7 +758,6 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                 .filter(ds => !ds.dataset.resources_loaded)
                 .map(ds => this._loadDatasetResources(ds.dataset))
         ).then((values) => {
-            this._waiting = false;
             this._selectThreadDatasets();
         });
 
@@ -768,9 +769,11 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
 
         let data_transformations = {}; //FIXME: load from firestore
         let model_dt_ensembles: ModelEnsembleMap = this.thread.model_dt_ensembles || {};
-
+        
+        let allok = true;
         Object.keys(this.thread.models!).map((modelid) => {
             let model = this.thread.models![modelid];
+            let ok = true;
             model.input_files.filter((input) => !input.value).map((input) => {
                 let inputid = input.id!;
                 // If not in edit mode, then check if we already have bindings for this
@@ -806,17 +809,31 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                     model_dt_ensembles[modelid].bindings[inputid].push(dtid!);
                     data_transformations[dtid] = new_datatransformations[dtid];
                 });
+
+                if(model_ensembles[modelid].bindings[inputid].length == 0 &&
+                    model_dt_ensembles[modelid].bindings[inputid].length == 0) {
+                        ok = false;
+                    }
             })
+            if(!ok) {
+                allok = false;
+            }
         });
+
+        if(!allok) {
+            this._waiting = false;
+            this._editMode = true;
+            alert("Please select atleast one dataset");
+            return;
+        }
+
         // Turn off edit mode
         this._editMode = false;
+
         showNotification("saveNotification", this.shadowRoot!);
 
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-
-        this._waiting = true;
         await setThreadData(data, model_ensembles, notes, this.thread);
-
         this.selectAndContinue("datasets");
     }
 
