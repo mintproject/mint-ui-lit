@@ -430,12 +430,8 @@ export const listModelTypeInputParamValues: ActionCreator<ListModelInputParamVal
         }
         else {
             let values : any[] = [];
-            result.data.model_parameter.forEach((param) => {
-                if(param.fixed_value != null)
-                    values.push(convertType(param.fixed_value, input.datatype));
-                param.execution_parameter_bindings.forEach((binding) => {
-                    values.push(convertType(binding.parameter_value, input.datatype));
-                })
+            result.data.execution_parameter_binding.forEach((param) => {
+                values.push(convertType(param.parameter_value, input.datatype));
             })
             values = values.filter((item: any, pos: number) => 
                 item && (values.indexOf(item) == pos));
