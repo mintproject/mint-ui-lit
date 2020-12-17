@@ -171,10 +171,10 @@ const getExecutionWhereClauseForFilter = (filters: EmulatorSearchConstraint[]) =
             " model_parameter: { name: { _eq: \"" + filter.input +"\"} } " +
             " parameter_value: {_in: [ " + filter.values.map((v) => "\"" + v + "\"") + " ]}\n" +
             "}}\n" +
-            "{ model: { parameters: {" + 
+            /*"{ model: { parameters: {" + 
             " name: { _eq: \"" + filter.input +"\"} " +
             " fixed_value: {_in: [ " + filter.values.map((v) => "\"" + v + "\"") + " ]}\n" +
-            "}}}\n" +
+            "}}}\n" +*/
             "]}\n";
     });
     query += filters.filter((filter) => filter.inputtype == "input").map((filter) => {
@@ -183,10 +183,10 @@ const getExecutionWhereClauseForFilter = (filters: EmulatorSearchConstraint[]) =
         " model_io: { name: { _eq: \"" + filter.input +"\"} }" +
         " resource_id: {_in: [ " + filter.values.map((v) => "\"" + v.id + "\"") + " ]}\n" +
         "}}\n" +
-        "{ model: { inputs: { model_io: {" + 
+        /*"{ model: { inputs: { model_io: {" + 
         " name: { _eq: \"" + filter.input +"\"} " +
         " fixed_bindings: { resource_id: {_in: [ " + filter.values.map((v) => "\"" + v.id + "\"") + " ]}}\n" +
-        "}}}}\n" +
+        "}}}}\n" +*/
         "]}\n";
     });
     query += " ]\n";
