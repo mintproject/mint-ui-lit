@@ -312,7 +312,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                                         // FIXME: This should be resolved to a collection of resources
                                                         let furl = this._getDatasetURL(res); 
                                                         return html`
-                                                            <td><a href="${furl}">${res.name}</a></td>
+                                                            <td><a target="_blank" href="${furl}">${res.name}</a></td>
                                                         `;
                                                     }
                                                 })}

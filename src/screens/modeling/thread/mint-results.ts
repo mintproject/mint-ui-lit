@@ -328,14 +328,14 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                                 }
                                                 if(!fname)
                                                     fname = result.location.replace(/.+\//, '');
-                                                return html`<td><a href="${furl}">${fname}</a></td>`;
+                                                return html`<td><a target="_blank" href="${furl}">${fname}</a></td>`;
                                             })}
                                             ${grouped_ensemble.inputs.map((input) => {
                                                 let res = ensemble.bindings[input.id] as DataResource;
                                                 if(res) {
                                                     // FIXME: This could be resolved to a collection of resources
                                                     return html`
-                                                        <td><a href="${res.url}">${res.name}</a></td>
+                                                        <td><a target="_blank" href="${res.url}">${res.name}</a></td>
                                                     `;
                                                 }
                                             })}
