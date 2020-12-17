@@ -48,9 +48,6 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
     @property({type: Boolean})
     private _editMode: Boolean = false;
 
-    @property({type: Boolean})
-    private _waiting: Boolean = false;
-
     @property({type: Array})
     private _datasetsToCompare: Dataset[] = [];
 
@@ -696,7 +693,6 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
             this._waiting = true;
             showNotification("saveNotification", this.shadowRoot!);            
             await selectThreadDataResources(this._selectResourcesData.id, resource_selected, this.thread.id);
-            this._waiting = false;
         }
         let mainSelection = this.shadowRoot.querySelectorAll('input');
         if (mainSelection && mainSelection.length > 0) {
@@ -821,9 +817,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         this._waiting = true;
         await setThreadData(data, model_ensembles, notes, this.thread);
 
-        store.dispatch(selectThreadSection("parameters"));
-
-        this._waiting = false;
+        this.selectAndContinue("datasets");
     }
 
     firstUpdated() {
@@ -883,53 +877,55 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         super.setThread(state);
         if(this.thread && this.thread.models != this._models) {
             this._models = this.thread.models!;
-            if (Object.keys(this._models).length > 0) {
-                Object.values(this._models).forEach((m:Model) => {
-                    (m.input_files || []).forEach((i) => {
-                        if (!this._loading[i.id] && !this._dsInputs[i.id]) {
-                            this._loading[i.id] = true;
-                            store.dispatch(datasetSpecificationGet(i.id)).then((ds:DatasetSpecification) => {
-                                this._dsInputs[ds.id] = ds;
-                                this._loading[ds.id] = false;
-                                (ds.hasDataTransformation || []).forEach((dt) => {
-                                    if (!this._loading[dt.id] && !this._dataTransformations[dt.id]) {
-                                        this._loading[dt.id] = true;
-                                        store.dispatch(dataTransformationGet(dt.id)).then((DT) => {
-                                            this._dataTransformations[DT.id] = DT;
-                                            this._loading[DT.id] = false;
-                                            if (!this._inputDT[i.id]) this._inputDT[i.id] = [];
-                                            this._inputDT[i.id].push(DT);
-                                            this.requestUpdate();
-                                        });
-                                    }
-                                });
-                            })
-                        }
-                    });
-                    /*let fixed = m.input_files.filter((i) => !!i.value);
-                    if (false && fixed.length > 0) { //FIXME: not all inputs are in the catalog!
-                        if (!this._mcInputs[m.id]) {
-                            this._mcInputs[m.id] = new ModelCatalogDatasetSpecification();
-                            this._mcInputs[m.id].inline = false;
-                            this._mcInputs[m.id].isSetup = true;
-                            this._mcInputs[m.id].colspan = 4;
-                            //this._mcInputs.setAsSetup();
-                        }
-                        let fakeInputs = fixed.map((i) => {
-                            return {
-                                id: i.id,
-                                label: [i.name]
-                            };
+            if(this._models) {
+                if (Object.keys(this._models).length > 0) {
+                    Object.values(this._models).forEach((m:Model) => {
+                        (m.input_files || []).forEach((i) => {
+                            if (!this._loading[i.id] && !this._dsInputs[i.id]) {
+                                this._loading[i.id] = true;
+                                store.dispatch(datasetSpecificationGet(i.id)).then((ds:DatasetSpecification) => {
+                                    this._dsInputs[ds.id] = ds;
+                                    this._loading[ds.id] = false;
+                                    (ds.hasDataTransformation || []).forEach((dt) => {
+                                        if (!this._loading[dt.id] && !this._dataTransformations[dt.id]) {
+                                            this._loading[dt.id] = true;
+                                            store.dispatch(dataTransformationGet(dt.id)).then((DT) => {
+                                                this._dataTransformations[DT.id] = DT;
+                                                this._loading[DT.id] = false;
+                                                if (!this._inputDT[i.id]) this._inputDT[i.id] = [];
+                                                this._inputDT[i.id].push(DT);
+                                                this.requestUpdate();
+                                            });
+                                        }
+                                    });
+                                })
+                            }
                         });
-                        this._mcInputs[m.id].setResources(fakeInputs);
-                    }*/
-                });
+                        /*let fixed = m.input_files.filter((i) => !!i.value);
+                        if (false && fixed.length > 0) { //FIXME: not all inputs are in the catalog!
+                            if (!this._mcInputs[m.id]) {
+                                this._mcInputs[m.id] = new ModelCatalogDatasetSpecification();
+                                this._mcInputs[m.id].inline = false;
+                                this._mcInputs[m.id].isSetup = true;
+                                this._mcInputs[m.id].colspan = 4;
+                                //this._mcInputs.setAsSetup();
+                            }
+                            let fakeInputs = fixed.map((i) => {
+                                return {
+                                    id: i.id,
+                                    label: [i.name]
+                                };
+                            });
+                            this._mcInputs[m.id].setResources(fakeInputs);
+                        }*/
+                    });
+                }
+
+
+                this.queryDataCatalog();
+                if(this.thread.id != thread_id) 
+                    this._resetEditMode();
             }
-
-
-            this.queryDataCatalog();
-            if(this.thread.id != thread_id) 
-                this._resetEditMode();
         }
 
         if(state.datasets && state.datasets.model_datasets) {

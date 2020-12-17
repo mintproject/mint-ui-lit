@@ -40,9 +40,6 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     @property({type: String})
     private _log: string;
 
-    @property({type: Boolean})
-    private _waiting: Boolean = false;
-
     static get styles() {
         return [
           SharedStyles,
@@ -388,6 +385,8 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                 alert("Could not connect to the Execution Manager!");
             }
         }, data, false);
+
+        this.selectAndContinue("runs");
     }
 
     _nextPage(threadid: string, modelid: string, offset:  number) {
@@ -444,14 +443,16 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     }
 
     async _fetchRuns (threadid: string, modelid: string) {
-        if(!this.currentPage[modelid])
-            this.currentPage[modelid] = 1;
-        let start = (this.currentPage[modelid] - 1)*this.pageSize;
-        let limit = this.pageSize;
-        store.dispatch(listThreadModelExecutionsAction(
-            threadid,
-            modelid, this.thread.model_ensembles[modelid].id, 
-            start, limit, this.orderBy));
+        if(this.thread.model_ensembles[modelid]) {
+            if(!this.currentPage[modelid])
+                this.currentPage[modelid] = 1;
+            let start = (this.currentPage[modelid] - 1)*this.pageSize;
+            let limit = this.pageSize;
+            store.dispatch(listThreadModelExecutionsAction(
+                threadid,
+                modelid, this.thread.model_ensembles[modelid].id, 
+                start, limit, this.orderBy));
+        }
     }
 
     async _reloadAllRuns() {

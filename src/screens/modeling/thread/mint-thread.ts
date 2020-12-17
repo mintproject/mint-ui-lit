@@ -177,6 +177,9 @@ export class MintThread extends connect(store)(MintThreadPage) {
             }
         }
         this._currentMode = mode;
+        
+        // Scroll to top
+        this.shadowRoot.querySelector(".card2")?.scrollTo(0,0);
 
         // TODO: Change the url to reflect mode change.
         if(this.task && this.thread) {
@@ -244,9 +247,18 @@ export class MintThread extends connect(store)(MintThreadPage) {
         this.task = getUISelectedTask(state);
 
         let thread_id = state.ui!.selected_thread_id;
+
+        // If models have changed, then fetch the thread again
+        if(this.thread && this.thread.refresh) {
+            console.log("Models Changed. Fetch Thread again");
+            this._dispatched_execution_summary = false;
+            this._dispatched = false;
+        }
+
         // If a thread has been selected, fetch thread details
         if(thread_id && this.user) {
-            if(!this._dispatched && (!state.modeling.thread || (state.modeling.thread.id != thread_id))) {
+            if(!this._dispatched && 
+                (this.thread?.refresh || !state.modeling.thread ||  (state.modeling.thread.id != thread_id))) {
                 // Unsubscribe to any existing thread details listener
                 if(state.modeling.thread && state.modeling.thread.unsubscribe) {
                     console.log("Unsubscribing to thread " + state.modeling.thread.id);
@@ -280,6 +292,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
                 state.modeling.thread.changed) {
 
                 this._dispatched = false;
+                this._waiting = false;
                 state.modeling.thread.changed = false;
                 this.thread = state.modeling.thread;
                 

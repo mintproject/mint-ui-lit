@@ -64,8 +64,6 @@ export class MintModels extends connect(store)(MintThreadPage) {
 
     @property({type: Object})
     private _allRegions : any = {};
-    @property({type:Boolean})
-    private _waiting: boolean = false;
 
     private _dispatched: Boolean = false;
     private _pendingQuery: Boolean = false;
@@ -162,6 +160,9 @@ export class MintModels extends connect(store)(MintThreadPage) {
                 
         let modelids = Object.keys((this.thread.models || {})) || [];
         let done = (this.thread.models && modelids.length > 0);
+        if(!this._responseVariables)
+            return;
+            
         let availableModels = this._queriedModels[this._responseVariables.join(",")] || [];
         
         // Filter all available models by region        
@@ -513,10 +514,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
         // FIXME: Warn user that this will delete existing data/parameter/runs ?
 
         await setThreadModels(models, notes, this.thread);
-        
-        store.dispatch(selectThreadSection("datasets"));
-
-        this._waiting = false;
+        this.selectAndContinue("models");
     }
 
     _queryModelCatalog() {

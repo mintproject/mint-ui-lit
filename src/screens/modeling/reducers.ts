@@ -116,6 +116,7 @@ export interface Thread extends ThreadInfo {
     visualizations?: Visualization[]
     events: ThreadEvent[]
     changed?: boolean
+    refresh?: boolean
     unsubscribe?: Function
 }
 
