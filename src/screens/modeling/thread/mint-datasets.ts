@@ -698,6 +698,17 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
             await selectThreadDataResources(this._selectResourcesData.id, resource_selected, this.thread.id);
             this._waiting = false;
         }
+        let mainSelection = this.shadowRoot.querySelectorAll('input');
+        if (mainSelection && mainSelection.length > 0) {
+            for (let i = 0;  i < mainSelection.length; i++) {
+                if (mainSelection[i].getAttribute("data-datasetid") === this._selectResourcesData.id) {
+                    console.log("match!")
+                    mainSelection[i]["checked"] = true;
+                    this.requestUpdate();
+                    break;
+                }
+            }
+        }
         hideDialog("resourceSelectionDialog", this.shadowRoot);        
     }
 

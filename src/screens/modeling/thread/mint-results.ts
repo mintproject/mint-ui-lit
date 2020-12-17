@@ -27,7 +27,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
     private _editMode: Boolean = false;
    
     @property({type: Boolean})
-    private _showAllResults: Boolean = true;
+    private _showAllResults: Boolean = false;
 
     @property({type: Object})
     private totalPages : Map<string, number> = {} as Map<string, number>;
