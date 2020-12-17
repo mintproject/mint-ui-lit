@@ -697,6 +697,7 @@ const modelIOToGQL = (io: any) => {
         "id": io["id"],
         "name": io["name"],
         "type": io["type"],
+        "format": io["format"],
         "fixed_bindings": fixed_bindings,
         "variables": {
             "data": io["variables"].map((v) => { 
