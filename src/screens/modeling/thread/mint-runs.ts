@@ -404,6 +404,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
             onLoad: function(e: any) {
                 let log = e.target.responseText;
                 log = log.replace(/\\n/g, "\n");
+                log = log.replace(/\\r/g, "");
                 log = log.replace(/\\t/g, "\t");
                 log = log.replace(/\\u001b.+?m/g, "");
                 log = log.replace(/^"/, "");
