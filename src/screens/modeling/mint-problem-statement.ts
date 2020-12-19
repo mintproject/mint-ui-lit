@@ -28,6 +28,7 @@ import { ThreadEditor } from "components/thread-editor";
 import { getLatestEvent } from "util/event_utils";
 import { getUserPermission } from "util/permission_utils";
 import { VariableMap } from "@apollo/client/core/LocalState";
+import { selectTask, selectThread } from "app/ui-actions";
 
 
 @customElement('mint-problem-statement')
@@ -81,10 +82,10 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
 
             .twocolumns {
                 position: absolute;
-                top: 120px;
-                bottom: 25px;
-                left: 25px;
-                right: 25px;
+                top: 100px;
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
                 display: flex;
                 border: 1px solid #F0F0F0;
             }
@@ -124,6 +125,54 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
             h2 {
                 border-bottom: 1px solid #F0F0F0;
                 padding-bottom: 10px;
+            }
+
+            .small-screen {
+                display: none;
+            }
+
+            @media (max-width: 1024px) {
+                .twocolumns {
+                    top: 100px;
+                    bottom: 5px;
+                    left: 5px;
+                    right: 5px;
+                    background-color: white;
+                }
+                .left {
+                    width: 100%;
+                    border-right: 0px;
+                    transition: width 0.2s;
+                }
+                .left_sm_closed {
+                    width: 0px;
+                    overflow: hidden;
+                    transition: width 0.2s;
+                    border-width: 0px;
+                    padding-right: 0px;
+                }
+                .right {
+                    width: 0px;
+                    transition: width 0.2s;
+                }
+                .right_sm_full {
+                    width: 100%;
+                    transition: width 0.2s;
+                }
+                wl-title {
+                    --title-font-size-level-3: 14px;
+                    line-height: 16px;
+                }
+                .small-screen wl-icon {
+                    --icon-size: 12px;
+                }
+                .small-screen {
+                    display: inline-block;
+                }
+                .card2 {
+                    border: 0px;
+                    padding: 0px;
+                }
             }
 
             `
@@ -189,7 +238,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                     <wl-icon>arrow_back_ios</wl-icon>
                 </wl-button>
                 <div class="cltmain navtop">
-                    <wl-title level="3">${this._problem_statement!.name}</wl-title>
+                    <wl-title level="3" nowrap="true">${this._problem_statement!.name}</wl-title>
                 </div>
             </div>
 
@@ -197,7 +246,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
             <div class="twocolumns">
 
                 <!-- Left Column : List of Tasks -->
-                <div class="${this._hideTasks ? 'left_closed' : 'left'}">
+                <div class="${this._hideTasks ? 'left_closed' : 'left'} ${this._selectedTask ? 'left_sm_closed' : ''}">
                     <div class="clt">
                         <div class="cltrow_padded problem_statementrow">
                             <div class="cltmain">
@@ -271,13 +320,17 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                 </div>
 
                 <!-- Right Column : Thread Tree + Thread details -->
-                <div class="${this._hideTasks ? 'right_full' : 'right'}">
+                <div class="${this._hideTasks ? 'right_full' : 'right'} ${this._selectedTask ? 'right_sm_full' : ''}">
                     <div class="card2">
                     ${this._selectedTask ?
                         html`
                         <div class="clt">
                             <div class="cltrow problem_statementrow">
-                                <div class="cltmain" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
+                                <div class="cltmain" style="display: flex; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
+                                <!-- Top ProblemStatement Heading -->
+                                    <wl-button flat inverted @click="${()=> this._deselectTasks()}" class="small-screen">
+                                        <wl-icon>arrow_back_ios</wl-icon>
+                                    </wl-button>
                                     <wl-title level="4">
                                         Modeling threads
                                         &nbsp;&nbsp;
@@ -527,6 +580,12 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
             }
         }
         return false;
+    }
+
+    _deselectTasks() {
+        this._hideTasks = false;
+        store.dispatch(selectThread(null));
+        store.dispatch(selectTask(null));
     }
     
     _addThreadDialog(e: Event) {

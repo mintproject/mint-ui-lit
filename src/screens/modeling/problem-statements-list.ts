@@ -57,6 +57,24 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
         font-size: 13px;
         color: black;
       }
+      .top-paragraph {
+        margin-left: 44px
+      }
+      div.caption {
+        width: 200px;
+      }
+      @media (max-width: 1024px) {
+        .big-screen {
+          display: none;
+        }
+        .top-paragraph {
+          margin-left: 10px
+        }
+        wl-list-item {
+          --list-item-padding: 10px;
+          --list-item-after-margin: 5px !important;
+        }
+      }
       `
     ];
   }
@@ -78,7 +96,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
         <wl-icon @click="${this._addProblemStatementDialog}" 
           class="actionIcon bigActionIcon addIcon" id="addProblemStatementIcon">note_add</wl-icon>
     </div>
-    <p style="margin-left: 44px">
+    <p class="top-paragraph">
     Choose an existing problem from the list below or click add to create a new one. 
     </p>
     <!-- Show ProblemStatement List -->
@@ -94,11 +112,11 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
           <wl-list-item class="active"
               @click="${this._onSelectProblemStatement}"
               data-problem_statement_id="${problem_statement.id}">
-              <div slot="before">
+              <div class="big-screen" slot="before">
                   <wl-icon>label_important</wl-icon>
               </div>
               <div slot="after" style="display:flex">
-                <div class="caption">
+                <div class="caption big-screen">
                   Last updated by: ${last_event?.userid}<br/>
                   ${toDateTimeString(last_event?.timestamp)}
                 </div>
@@ -128,7 +146,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
                           Created by: ${create_event?.userid} at ${toDateTimeString(create_event?.timestamp)}
                       </div>
                 </div>
-                <div style="width: 250px; max-width: 250px;">
+                <div class="big-screen" style="width: 250px;">
                     ${problem_statement.preview && problem_statement.preview.length > 0?
                         html`<b>Indicators:</b> ${problem_statement.preview.join(', ')}` :''}
                 </div>

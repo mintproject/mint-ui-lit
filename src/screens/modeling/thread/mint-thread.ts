@@ -82,6 +82,13 @@ export class MintThread extends connect(store)(MintThreadPage) {
             height: calc(100% - 100px);
             overflow: auto;
             background: #FFFFFF;
+          }
+
+          @media (max-width: 1024px) {
+            .breadcrumbs {
+                display: flex;
+                justify-content: center;
+            }
         }
         `
         ];

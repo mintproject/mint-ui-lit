@@ -76,6 +76,13 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                 model-explorer {
                     height: calc(100% - 40px);
                 }
+
+                @media (max-width: 768px) {
+                    .icongrid {
+                        grid-template-columns: 120px 120px 120px !important;
+                        margin-left: calc(50% - 180px) !important;
+                    }
+                }
             `,
             SharedStyles
         ];
