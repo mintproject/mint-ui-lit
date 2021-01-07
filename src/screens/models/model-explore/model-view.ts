@@ -882,6 +882,19 @@ export class ModelView extends connect(store)(PageViewElement) {
                             : this._sourceCodes[resource.hasSourceCode[0].id].programmingLanguage
                         }</td>
                     </tr>`: ''}
+                ${titlePrefix == 'CONFIGURATION' || titlePrefix == 'SETUP' ? html`
+                    <tr>
+                        <td><b>DAME command:</b></td>
+                        <td>
+                            <div class="monospaced">
+                                <div>
+                                    <span style="color: darkgray;">$</span> dame run 
+                                    ${titlePrefix == 'CONFIGURATION' ?
+                                        uriToId(this._selectedConfig) : uriToId(this._selectedSetup) }
+                                </div>
+                            </div>
+                        </td>
+                    </tr>`: ''}
                 </tbody>
             </table>`;
     }
