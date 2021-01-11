@@ -110,6 +110,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
     private _inputParameter : ModelCatalogParameter;
     private _inputDSInput : ModelCatalogDatasetSpecification;
+    private _outputDSInput : ModelCatalogDatasetSpecification;
 
     constructor () {
         super();
@@ -127,9 +128,18 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
         this._inputParameter = new ModelCatalogParameter();
         this._inputParameter.inline = false;
+        this._inputParameter.creationDisable();
+        this._inputParameter.setAsSetup();
+
         this._inputDSInput = new ModelCatalogDatasetSpecification();
         this._inputDSInput.inline = false;
+        this._inputDSInput.creationDisable();
+        this._inputDSInput.setAsSetup();
 
+        this._outputDSInput = new ModelCatalogDatasetSpecification();
+        this._outputDSInput.inline = false;
+        this._outputDSInput.creationDisable();
+        this._outputDSInput.setAsSetup();
     }
 
     public setResource (r:ModelConfigurationSetup) {
@@ -147,8 +157,11 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
                 this._inputParameter.setResources( m.hasParameter );
                 this._inputDSInput.setResources( m.hasInput );
+
+                this._outputDSInput.setResources( m.hasOutput );
             }
         });
+        console.log('>>', r);
         return req;
     }
 
@@ -170,6 +183,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
         this._inputParameter.setActionEditOrAdd();
         this._inputDSInput.setActionEditOrAdd();
+        this._outputDSInput.setActionEditOrAdd();
     }
 
     protected _clearStatus () {
@@ -185,6 +199,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
         if (this._inputParameter) this._inputParameter.unsetAction();
         if (this._inputDSInput) this._inputDSInput.unsetAction();
+        if (this._outputDSInput) this._outputDSInput.unsetAction();
         this.scrollUp();
         this.clearForm();
     }
@@ -206,6 +221,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
             this._inputParameter.setResources( m.hasParameter );
             this._inputDSInput.setResources( m.hasInput );
+            this._outputDSInput.setResources( m.hasOutput );
         }
         this._setEditingActions();
     }
@@ -347,6 +363,10 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
     protected _renderFullForm () {
         let edResource = this._getEditingResource();
+        let assignMethod : string = "";
+        if (edResource && edResource.parameterAssignmentMethod && edResource.parameterAssignmentMethod.length > 0) {
+            assignMethod = edResource.parameterAssignmentMethod[0];
+        }
         return html`
             <div id="page-top"></div>
             <table class="details-table">
@@ -400,8 +420,12 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                     <td>Parameter assignment method:</td>
                     <td>
                         <div style="display: grid; grid-template-columns: auto 36px;">
-                            <wl-select id="edit-setup-assign-method" label="Parameter assignment method" placeholder="Select a parameter assignament method" required>
-                                <option value="" disabled selected>Please select a parameter assignment method</option>
+                            <wl-select id="edit-setup-assign-method"
+                                       value="${assignMethod}"
+                                       label="Parameter assignment method"
+                                       placeholder="Select a parameter assignament method"
+                                       required>
+                                <option value="" disabled>Please select a parameter assignment method</option>
                                 <option value="Calibration">Calibration</option>
                                 <option value="Expert-configured">Expert tuned</option>
                             </wl-select>
@@ -473,7 +497,11 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             Input files:
         </wl-title>
         ${this._inputDSInput}
-        `;
+
+        <wl-title level="4" style="margin-top:1em">
+            Outputs files:
+        </wl-title>
+        ${this._outputDSInput}`;
     }
 
     protected _getResourceFromFullForm () {
@@ -512,7 +540,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
         if (label && desc && categories != null && categories.length > 0) {
             let jsonRes = {
-                type: ["Model"],
                 label: [label],
                 hasModelCategory: categories,
                 description: [desc],

@@ -34,30 +34,44 @@ export class ModelCatalogGrid extends connect(store)(ModelCatalogResource)<Grid>
     protected resourceDelete = gridDelete;
 
     protected _renderResource (r:Grid) {
+        let additionalTypes : string[] = (r.type || []).filter((s:string) => s != "Grid");
         return html`
-            <div class="one-line" style="text-decoration:underline; color:black;">
-                ${getLabel(r)}
-            </div>
             <div class="one-line" style="display: flex; justify-content: space-between;">
+                <span style="text-decoration:underline; color:black;"> ${getLabel(r)} </span>
+                ${additionalTypes.length > 0 ? html`
+                <span style="margin-left: 10px; font-style: oblique;">
+                    ${additionalTypes.join(', ')}
+                </span>
+                ` : ''}
+            </div>
+            ${r.hasSpatialResolution || r.hasDimension || r.hasShape ? html`
+            <div class="one-line" style="display: flex; justify-content: space-between;">
+                ${r.hasSpatialResolution && r.hasSpatialResolution.length > 0 ? html`
                 <span style="margin-right: 10px;">
                     <span style="font-size:12px">Spatial res:</span>
                     <span class="monospaced" style="color:black">
-                        ${r.hasSpatialResolution && r.hasSpatialResolution.length > 0 ? r.hasSpatialResolution[0] : '-'}
+                        ${r.hasSpatialResolution[0]}
                     </span>
-                </span>
+                </span>`: ''}
+
+                ${r.hasDimension && r.hasDimension.length > 0 ? html`
                 <span style="margin-right: 10px;">
                     <span style="font-size:12px">Dimensions:</span>
                     <span class="number" style="color:black">
-                        ${r.hasDimension && r.hasDimension.length > 0 ? r.hasDimension[0] : '-'}
+                        ${r.hasDimension[0]}
                     </span>
-                </span>
-                <span style="margin-right: 10px;" class="one-line">
+                </span>`: ''}
+
+                ${r.hasShape && r.hasShape.length > 0 ? html`
+                <span class="one-line">
                     <span style="font-size:12px">Shape:</span>
                     <span class="monospaced" style="color:black">
-                        ${r.hasShape && r.hasShape.length > 0 ? r.hasShape[0] : '-'}
+                        ${r.hasShape[0]}
                     </span>
                 </span>
+                ` : ''}
             </div>
+            ` : ''}
         `;
     }
 

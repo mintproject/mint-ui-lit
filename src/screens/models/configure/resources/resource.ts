@@ -50,7 +50,6 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             border: 1px solid gray;
             margin-right: 5px;
             --button-padding: 4px;
-            float: right;
         }
 
         .list-item {
@@ -166,6 +165,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     @property({type: Number}) protected _page : number = 0;
     public pageMax : number = -1;
+    public inlineMax : number = -1;
+    @property({type: Boolean}) private inlineMaxShowMore : boolean = false;
 
     private _order : IdMap<T> = {} as IdMap<T>;
     protected _notification : CustomNotification;
@@ -274,17 +275,28 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     private _renderInline () {
         return html`
-        <div style="position: relative">
+        <div style="display: flex; justify-content: space-between;">
+            <span>
+            ${this._resources.length == 0 ?
+                this._renderEmpty()
+                : this._resources
+                        .filter((r:T, i:number) => this.inlineMaxShowMore || this.inlineMax < 0 || i < this.inlineMax)
+                        .map((r:T) => this._renderStatus(r))
+            }
+            ${this.inlineMax > 0 && this.inlineMax < this._resources.length ? html`
+                <a style="display: block" @click=${() => this.inlineMaxShowMore = !this.inlineMaxShowMore}>
+                    Show ${this.inlineMaxShowMore ? 'less' : 'more'}
+                </a>
+            ` : ''}
+            </span>
+            <span>
             ${(this._action === Action.SELECT || this._action === Action.MULTISELECT) ? html`
                 <wl-button @click="${this._showEditSelectionDialog}" id="select-button" flat inverted>
                     <wl-icon>edit</wl-icon>
                 </wl-button>`
                 : ''
             }
-            ${this._resources.length == 0 ?
-                this._renderEmpty()
-                : this._resources.map((r:T) => this._renderStatus(r))
-            }
+            </span>
         </div>`;
     }
 
@@ -475,6 +487,12 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     protected _renderSelectList () {
         if (!this._allResourcesLoaded && !this._allResourcesLoading) this._loadAllResources();
+        let sortBySelection = (a:T, b:T) => {
+            if (a && isSelected(a.id)) return -1;
+            if (b && isSelected(b.id)) return 1;
+            return 0;
+        }
+
         // Diff between SELECT and MULTISELECT
         let checked : string = (this._action === Action.SELECT) ?
                 'radio_button_checked' : 'check_box';
@@ -492,14 +510,14 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         let resourcesToShow : T[] = [];
         let pages : number = -1;
         if (!this._allResourcesLoading) {
-            resourcesToShow = Object.values(this._loadedResources);
+            resourcesToShow = Object.values(this._loadedResources).sort(sortBySelection);
             this._filters.forEach((filter:(r:T)=>boolean) => {
                 resourcesToShow = resourcesToShow.filter(filter);
             });
             if (this.pageMax > 0 && this.pageMax < resourcesToShow.length) {
                 pages = Math.ceil(resourcesToShow.length / this.pageMax);
                 resourcesToShow = resourcesToShow.filter((r,i) => {
-                    let a : boolean = (i > this._page * this.pageMax);
+                    let a : boolean = (i >= this._page * this.pageMax);
                     let b : boolean = (i < (this._page+1) * this.pageMax);
                     return a && b;
                 });
@@ -1106,10 +1124,19 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected _loadAllResources () {
         this._allResourcesLoading = true;
         store.dispatch(this.resourcesGet()).then((resources:IdMap<T>) => {
+            /*
             let nonDCResources = Object.values(this._loadedResources).filter((r:T) => !r.id.includes(PREFIX_URI))
-            this._allResourcesLoading = false;
-            this._loadedResources = resources;
             nonDCResources.forEach((r:T) => this._loadedResources[r.id] = r);
+            */
+            // Check that selected resources are in the resources loaded.
+            this._resources.forEach((r:T) => {
+                if (!Object.values(resources).some((l:T) => l.id === r.id)) {
+                    console.warn("Selected resource not found on loaded resources, ", r);
+                    resources[r.id] = r;
+                }
+            });
+            this._loadedResources = resources;
+            this._allResourcesLoading = false;
             this._allResourcesLoaded = true;
         });
     }

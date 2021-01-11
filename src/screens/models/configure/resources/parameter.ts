@@ -84,8 +84,16 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     public colspan = 3;
     public lazy = true;
     public onlyFixedValue = false;
-
+    
+    @property({type: Boolean}) private isAdjustable = false;
+    @property({type: Boolean}) private showDefaults = false;
     @property({type: String}) private _formPart : string = "";
+
+    public isSetup : boolean = false;
+    public setAsSetup () {
+        this.isSetup = true;
+        this.colspan = 4;
+    }
 
     constructor () {
         super();
@@ -95,7 +103,25 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         return html`
             <th><b>Name</b></th>
             <th><b>Type</b></th>
-            <th><b>Default Value</b></th>
+            <th style="white-space: nowrap;">${this.isSetup ? 
+                html`
+                    <b>Value in this setup</b>
+                    <span class="tooltip" style="white-space:normal;"
+                     tip="If a value is set up in this field, you will not be able to change it in run time. For example, a price adjustment is set up to be 10%, it won't be editable when running the the model">
+                        <wl-icon>help</wl-icon>
+                    </span>
+                `
+                : html`<b>Default Value</b>`}
+            </th>
+            ${this.isSetup ? html`
+            <th style="white-space: nowrap;">
+                <b>Adjustable</b>
+                <span class="tooltip" style="white-space:normal;"
+                 tip="An adjustable parameter is a knob that a user will be able to fill with a value when executing the model">
+                    <wl-icon>help</wl-icon>
+                </span>
+            </th>
+            ` : html``}
         `;
     }
 
@@ -106,12 +132,17 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         return html`
             <td>
                 <code>${label}</code><br/>
-                <b>${r.description ? r.description[0] : ''}</b>
+                <b>${r.description ? r.description[0].split(',').join(', ') : ''}</b>
             </td>
             <td>${renderParameterType(r)}</td>
             <td>
                 ${this._renderTypedValue(r)}
             </td>
+            ${this.isSetup ? html`
+            <td style="text-align: center;">
+                <wl-icon>${r.hasFixedValue ?  'check_box_outline_blank' : 'check_box'}</wl-icon>
+            </td>
+            ` : html``}
         `;
     }
 
@@ -137,17 +168,20 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         }
 
         return html`
-            ${value} ${isDefault && this.onlyFixedValue ? '(default)' : ''}
+            ${value} ${isDefault && this.isSetup ? '(default)' : ''}
             ${r.usesUnit ? r.usesUnit[0].label : ''}`;
     }
 
     protected _editResource (r:Parameter) {
         super._editResource(r);
         let lr : Parameter = this._loadedResources[r.id];
-        if (lr && lr.hasDataType && lr.hasDataType.length > 0) {
-            let dt = lr.hasDataType[0];
-            if (dt === 'integer') dt = 'int';
-            this._formPart = dt;
+        if (lr) {
+            if (lr.hasDataType && lr.hasDataType.length > 0) {
+                let dt = lr.hasDataType[0];
+                if (dt === 'integer') dt = 'int';
+                this._formPart = dt;
+            }
+            this.isAdjustable = !lr.hasFixedValue;
         }
     }
 
@@ -158,13 +192,32 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 edResource.type.filter((p:string) => p != 'Parameter') : [];
         return html`
         <form>
-            <wl-textfield id="parameter-label" label="Name" required
-                value=${edResource ? getLabel(edResource) : ''}>
-            </wl-textfield>
-            <wl-textarea id="parameter-desc" label="Description" required
-                value=${edResource && edResource.description ? edResource.description[0] : ''}>
-            </wl-textarea>
+            ${this.isSetup ? html`
+                <div @click=${() => this.isAdjustable = !this.isAdjustable} style="padding-top: 10px;">
+                    <wl-checkbox ?checked="${this.isAdjustable}"></wl-checkbox>
+                    <label style="padding-left: 10px;">Is Adjustable</label>
+                </div>
+                ${this.isAdjustable ? html`` : html`
+                <wl-textfield id="fixed-value" 
+                              label="Value in this setup"
+                              value="${edResource ? (edResource.hasFixedValue ? edResource.hasFixedValue[0] 
+                                : (edResource.hasDefaultValue ? edResource.hasDefaultValue[0] : '')) : ''}">
+                </wl-textfield>
+                `}
+                <div @click=${() => this.showDefaults = !this.showDefaults} style="padding-top: 10px;">
+                    <wl-checkbox ?checked="${this.showDefaults}"></wl-checkbox>
+                    <label style="padding-left: 10px;">Show defaults</label>
+                </div>
+            ` : html`
+                <wl-textfield id="parameter-label" label="Name" required
+                    value=${edResource ? getLabel(edResource) : ''}>
+                </wl-textfield>
+                <wl-textarea id="parameter-desc" label="Description" required
+                    value=${edResource && edResource.description ? edResource.description[0] : ''}>
+                </wl-textarea>
+            `}
 
+            ${(!this.isSetup || this.showDefaults) ? html`
             <wl-select id="parameter-type" label="Parameter type" 
                 value=${(additionalTypes.length > 0)? additionalTypes[0] : ''}>
                 <option value="">None</option>
@@ -195,7 +248,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 <wl-textfield type="number" step="1" id="part-int-min" label="Minimum"
                     value="${edResource && edResource.hasMinimumAcceptedValue ? edResource.hasMinimumAcceptedValue[0] : '' }">
                 </wl-textfield>
-                <wl-textfield required type="number" id="part-int-default" label="Default value" required
+                <wl-textfield type="number" id="part-int-default" label="Default value" required
                     value="${edResource && edResource.hasDefaultValue ? edResource.hasDefaultValue[0] : '' }">
                 </wl-textfield>
                 <wl-textfield type="number" id="part-int-max" label="Maximum"
@@ -250,6 +303,8 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                     <option value="TRUE">True</option>
                 </wl-select>
             </div>
+            ` : html``}
+
 
             <!-- TODO: relevantForIntervention, adjustsVariable -->
         </form>`;
