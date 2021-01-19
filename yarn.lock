@@ -1384,10 +1384,10 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@mintproject/modelcatalog_client@^6.0.0":
-  version "6.0.0"
-  resolved "https://registry.yarnpkg.com/@mintproject/modelcatalog_client/-/modelcatalog_client-6.0.0.tgz#c8891598b116e7f0a2ed0dde61c04f70f9a1791d"
-  integrity sha512-htr1UmzfieExJBFij2Ji1ueS9WqpUgsXZZwvXuF/VmWMnwegheuh8IElW1C5tpWjYHR6r+rPRX1Q3h8042YivQ==
+"@mintproject/modelcatalog_client@^7.0.0":
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/@mintproject/modelcatalog_client/-/modelcatalog_client-7.0.0.tgz#e235ed8107ae3ab1007531cbd3645436eb8a24cd"
+  integrity sha512-HDtaKFtCtpUrGbWr/Hb1yY5X1qQOkgs57bAtrguCLkM2ON1wT56lLAZMmPvY1nZdlT675gkOr6HwN5WIzuiGNA==
 
 "@mrmlnc/readdir-enhanced@^2.2.1":
   version "2.2.1"
@@ -13033,7 +13033,7 @@ websocket-extensions@>=0.1.1:
   resolved "https://registry.yarnpkg.com/websocket-extensions/-/websocket-extensions-0.1.4.tgz#7f8473bc839dfd87608adb95d7eb075211578a42"
   integrity sha512-OqedPIGOfsDlo31UNwYbCFMSaO9m9G/0faIHj5/dZFDMFqPTcx6UwqyOy3COEaEOg/9VsGIpdqn62W5KhoKSpg==
 
-weightless@0.0.37:
+weightless@^0.0.37:
   version "0.0.37"
   resolved "https://registry.yarnpkg.com/weightless/-/weightless-0.0.37.tgz#155b020c27ec1d210055f09c31682f32ae785c09"
   integrity sha512-WxzpPc2VlD/PFWwOxMhQ6dPOmM4ugepXn6D8Qo7vUNSWWRIANqBvkQlo4TsjYiEpM4rAXCBGvkwMpfpxad14mA==
