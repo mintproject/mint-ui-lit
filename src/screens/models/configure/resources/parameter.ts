@@ -75,7 +75,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     protected classes : string = "resource parameter";
     protected name : string = "parameter";
     protected pname : string = "parameters";
-    protected positionAttr : string = "position";
+    //protected positionAttr : string = "position";
     protected resourcesGet = parametersGet;
     protected resourceGet = parameterGet;
     protected resourcePost = parameterPost;
@@ -342,6 +342,9 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
     protected _getResourceFromForm () {
         if (this.onlyFixedValue) return this._getFixedValue(); //This is used on modeling.
+        let edResource = this._getEditingResource();
+        let position = edResource && edResource.position && edResource.position.length === 1 ?
+            edResource.position[0] : this._resources.length + 1;
 
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById('parameter-label') as Textfield;
@@ -365,6 +368,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 description: [desc],
                 label: [label],
                 hasDataType: [datatype],
+                position: [position],
             };
 
             if (unit) jsonRes["usesUnit"] = [{id: unit}];
@@ -390,7 +394,8 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                     console.warn("Error validating data-type.");
             } else {
                 let jsonRes = {
-                    hasDataType: [datatype]
+                    hasDataType: [datatype],
+                    type: ["Parameter"],
                 };
                 if (unit) jsonRes["usesUnit"] = [{id: unit}];
                 if (aType) jsonRes["type"].push(aType);

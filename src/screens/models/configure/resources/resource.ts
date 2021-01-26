@@ -731,13 +731,15 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     protected _clearStatus () {
+        if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
+            this._unsetSubResources();
+        }
         this._status = Status.NONE;
         this._editingResourceId = '';
         if (this._action === Action.EDIT_OR_ADD) {
             this._closeDialog();
         }
         this.clearForm();
-        this._unsetSubResources();
         this._unsetSubActions();
     }
 
@@ -773,24 +775,36 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
     }
 
-    private _saveResource (resource:T) {
-        console.log('_saveResource ID:', resource.id);
+    private _saveResource (r:T) {
+        console.log('_saveResource ID:', r.id);
         this._waiting = true;
-        let req : Promise<T>;
-        if (resource.id) {
-            req = store.dispatch(this.resourcePut(resource));
-        } else {
-            req = store.dispatch(this.resourcePost(resource));
-        }
-        req.then((r:T) => {
-            console.log('SAVED: ', r);
-            this._waiting = false;
-            this._loadedResources[r.id] = r;
-            this._notification.save(this.name + " saved");
-            this._postSaveUpdate(r);
-            this._eventSave(r);
+        return new Promise((resolve, reject) => {
+            let inner : Promise<T> = this._createLazyInnerResources(r);
+            inner.catch(reject);
+            inner.then((resource:T) => {
+                let req : Promise<T>;
+                if (resource.id) {
+                    req = store.dispatch(this.resourcePut(resource));
+                } else {
+                    req = store.dispatch(this.resourcePost(resource));
+                }
+                req.catch(reject);
+                req.then((r:T) => {
+                    console.log('SAVED: ', r);
+                    this._waiting = false;
+                    this._loadedResources[r.id] = r;
+                    this._notification.save(this.name + " saved");
+                    this._postSaveUpdate(r);
+                    this._eventSave(r);
+                    resolve(r);
+                });
+            });
         });
-        return req;
+    }
+
+    /* This function must be redefined when a complex resource is saved and some of his inner resources is lazy */
+    protected _createLazyInnerResources (r:T) {
+        return Promise.resolve(r);
     }
 
     private _postSaveUpdate (r:T) {
@@ -807,6 +821,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         } else if (this._action === Action.SELECT) {
             this._selectedResourceId = r.id;
         }
+        console.log('postSaveUpdate', this._resources);
     }
 
     private _createEditedResource (edited:T) {
@@ -851,6 +866,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     private _saveResourceLazy (resource:T) {
         //Update memory now
+        console.log('save lazy', resource);
         this._loadedResources[resource.id] = resource;
         this._postSaveUpdate(this._addToSaveQueue(resource));
     }
@@ -859,7 +875,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         if (r.id && r.id.includes(PREFIX_URI)) { // if the resource has an ID and its part of the model catalog, is an edition.
             this._resourcesToEdit[r.id] = r;
         } else { // The resource has no Id or is not part of the model-catalog.
-            //Do no modify already created resources.
+            //Do no modify already created resources. Temp resources start with '0.'
             if (!r.id || !(r.id[0] == '0' && r.id[1] == '.')) { 
                 r.id = Math.random().toString(36);
             }
@@ -869,10 +885,12 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         return r;
     }
 
-    //When lazy is on, this function must be used to perform the save
+    // When lazy is on, this function must be used to perform the save
+    // Only save the selected resources 
     public save () {
-        let creation = Object.values(this._resourcesToCreate).map((r:T) => {
-            //FIXME playing with index to delete could be a problem.
+        let creation = Object.values(this._resourcesToCreate)
+                .filter((r:T) => this._resources.some((r2:T) => r2.id === r.id))
+                .map((r:T) => {
             let tempId : string = r.id;
             r["id"] = "";
 
@@ -883,7 +901,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             });
             return req;
         });
-        let edition = Object.values(this._resourcesToEdit).map((r:T) => {
+        let edition = Object.values(this._resourcesToEdit)
+                .filter((r:T) => this._resources.some((r2:T) => r2.id === r.id))
+                .map((r:T) => {
             let req = store.dispatch(this.resourcePut(r));
             req.then((resource: T) => {
                 this._loadedResources[resource.id] = resource;
@@ -937,7 +957,6 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     protected _editResource (r:T) {
-        console.log('ED', r);
         this._editingResourceId = r.id;
         this._status = Status.EDIT;
         if (this._action === Action.EDIT_OR_ADD) {
@@ -1081,6 +1100,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._singleMode = false;
         if (!r || r.length === 0) {
             this._resources = [];
+            this._orderedResources = [];
             this._order = {};
             return;
         }
@@ -1215,6 +1235,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 }
             } else {
                 this._resources = [];
+                this._orderedResources = [];
                 this._unsetSubResources();
                 resolve();
             }
@@ -1252,14 +1273,14 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             let nonDC : IdMap<T> = {};
             if (nonDCResources.length > 0)
                 nonDCResources.forEach((r:T) => nonDC[r.id] = r);
+            this._loadedResources = { ...nonDC, ...resources };
             // Check that selected resources are in the resources loaded.
             this._resources.forEach((r:T) => {
-                if (!Object.values(resources).some((l:T) => l.id === r.id)) {
+                if (!Object.values(this._loadedResources).some((l:T) => l.id === r.id)) {
                     console.warn("Selected resource not found on loaded resources, ", r);
-                    resources[r.id] = r;
+                    this._loadedResources[r.id] = r;
                 }
             });
-            this._loadedResources = { ...nonDC, ...resources };
             this._allResourcesLoading = false;
             this._allResourcesLoaded = true;
         });

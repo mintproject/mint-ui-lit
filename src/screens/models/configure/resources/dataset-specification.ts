@@ -62,7 +62,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
     protected resourcePost = datasetSpecificationPost;
     protected resourcePut = datasetSpecificationPut;
     protected resourceDelete = datasetSpecificationDelete;
-    protected positionAttr : string = "position";
+    //protected positionAttr : string = "position";
     public colspan = 3;
 
     public isSetup : boolean = false;
@@ -136,7 +136,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
         `;
     }
 
-    //TODO: fix this, Is not the same as modelm, config, setup, etc.
+    //TODO: fix this, Is not the same as model, config, setup, etc.
     private _setSubResources2 (r:DatasetSpecification) {
         if (r.hasFixedResource && r.hasFixedResource.length > 0) {
             if (r.hasFixedResource[0].type.indexOf("SampleCollection") >= 0) {
@@ -257,22 +257,25 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
         let dim : string = inputDim ? inputDim.value : '';
         let presentation : VariablePresentation[] = this._inputVariablePresentation.getResources();
 
+        //POSITION
+        let edResource = this._getEditingResource();
+        let position = edResource && edResource.position && edResource.position.length === 1 ?
+            edResource.position[0] : this._resources.length + 1;
+
         if (label && desc && format) {
             let jsonRes = {
                 type: ["DatasetSpecification"],
                 label: [label],
                 description: [desc],
                 hasFormat: [format],
-                position: [this._resources.length + 1],
+                position: [position],
                 hasPresentation: presentation,
                 hasDimensionality: [0],
             };
             if (this.isSetup) {
-                console.log('here');
                 jsonRes["hasFixedResource"] = this._fileType == "resource" ?
                         this._inputSampleResource.getResources() : this._inputSampleCollection.getResources();
             } else {
-                console.log('or here!');
                 jsonRes["hasDataTransformation"] = this._inputDataTransformation.getResources();
             }
             if (presentation.length > 0 || confirm("If no variables are associated with an input, we will not be able to search dataset candidates in the MINT data catalog when using this model")) {

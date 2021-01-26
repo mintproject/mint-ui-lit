@@ -3,9 +3,9 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { modelConfigurationSetupGet, modelConfigurationSetupsGet, modelConfigurationSetupPost, modelConfigurationSetupPut, modelConfigurationSetupDelete } from 'model-catalog/actions';
-import { Grid, TimeInterval, Parameter, DatasetSpecification, ModelConfiguration, ModelConfigurationSetup,
-         ModelConfigurationSetupFromJSON } from '@mintproject/modelcatalog_client';
+import { modelConfigurationGet, modelConfigurationsGet, modelConfigurationPost, modelConfigurationPut, modelConfigurationDelete } from 'model-catalog/actions';
+import { Grid, TimeInterval, Parameter, DatasetSpecification, SoftwareVersion, ModelConfiguration,
+         ModelConfigurationFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 import { renderExternalLink } from 'util/ui_renders';
 
@@ -20,7 +20,6 @@ import { ModelCatalogSoftwareImage } from './software-image';
 import { ModelCatalogTimeInterval } from './time-interval';
 import { ModelCatalogRegion } from './region';
 import { ModelCatalogProcess } from './process';
-
 import { ModelCatalogParameter } from './parameter';
 import { ModelCatalogDatasetSpecification } from './dataset-specification';
 
@@ -30,8 +29,8 @@ import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 
-@customElement('model-catalog-model-configuration-setup')
-export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCatalogResource)<ModelConfigurationSetup> {
+@customElement('model-catalog-model-configuration')
+export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogResource)<ModelConfiguration> {
     static get styles() {
         return [ExplorerStyles, SharedStyles, this.getBasicStyles(), css`
             .details-table {
@@ -87,24 +86,24 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         `];
     }
 
-    protected classes : string = "resource setup";
-    protected name : string = "setup";
-    protected pname : string = "setups";
-    protected resourcesGet = modelConfigurationSetupsGet;
-    protected resourceGet = modelConfigurationSetupGet;
-    protected resourcePut = modelConfigurationSetupPut;
-    protected resourceDelete = modelConfigurationSetupDelete;
+    protected classes : string = "resource configuration";
+    protected name : string = "configuration";
+    protected pname : string = "configurations";
+    protected resourcesGet = modelConfigurationsGet;
+    protected resourceGet = modelConfigurationGet;
+    protected resourcePut = modelConfigurationPut;
+    protected resourceDelete = modelConfigurationDelete;
 
-    protected resourcePost = (r:ModelConfigurationSetup) => {
-        if (this._parentConfig) {
-            return modelConfigurationSetupPost(r, this._parentConfig);
+    protected resourcePost = (r:ModelConfiguration) => {
+        if (this._parentVersion) {
+            return modelConfigurationPost(r, this._parentVersion);
         }
         return Promise.reject();
     };
 
     public pageMax : number = 10
 
-    private _parentConfig : ModelConfiguration;
+    private _parentVersion : SoftwareVersion;
 
     private _inputAuthor : ModelCatalogPerson;
     private _inputGrid : ModelCatalogGrid;
@@ -117,7 +116,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
     private _inputParameter : ModelCatalogParameter;
     private _inputDSInput : ModelCatalogDatasetSpecification;
-    //private _outputDSInput : ModelCatalogDatasetSpecification;
+    private _inputDSOutput : ModelCatalogDatasetSpecification;
 
     constructor () {
         super();
@@ -126,9 +125,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
     protected _initializeSingleMode () {
         this._inputAuthor = new ModelCatalogPerson();
         this._inputGrid = new ModelCatalogGrid();
-        this._inputGrid.lazy = true;
         this._inputTimeInterval = new ModelCatalogTimeInterval();
-        this._inputTimeInterval.lazy = true;
         this._inputIndex = new ModelCatalogNumericalIndex();
         this._inputCategory = new ModelCatalogCategory();
         this._inputRegion = new ModelCatalogRegion();
@@ -138,22 +135,17 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputParameter = new ModelCatalogParameter();
         this._inputParameter.inline = false;
         this._inputParameter.lazy = true;
-        this._inputParameter.creationDisable();
-        this._inputParameter.setAsSetup();
 
         this._inputDSInput = new ModelCatalogDatasetSpecification();
         this._inputDSInput.inline = false;
         this._inputDSInput.lazy = true;
-        this._inputDSInput.creationDisable();
-        this._inputDSInput.setAsSetup();
 
-        /*this._outputDSInput = new ModelCatalogDatasetSpecification();
-        this._outputDSInput.inline = false;
-        this._outputDSInput.creationDisable();
-        this._outputDSInput.setAsSetup();*/
+        this._inputDSOutput = new ModelCatalogDatasetSpecification();
+        this._inputDSOutput.inline = false;
+        this._inputDSOutput.lazy = true;
     }
 
-    protected _setSubResources (r:ModelConfigurationSetup) {
+    protected _setSubResources (r:ModelConfiguration) {
         this._inputAuthor.setResources(r.author);
         this._inputGrid.setResources(r.hasGrid);
         this._inputTimeInterval.setResources(r.hasOutputTimeInterval);
@@ -164,7 +156,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputSoftwareImage.setResources(r.hasSoftwareImage);
         this._inputParameter.setResources( r.hasParameter );
         this._inputDSInput.setResources( r.hasInput );
-        //this._outputDSInput.setResources( m.hasOutput );
+        this._inputDSOutput.setResources( r.hasOutput );
     }
 
     protected _unsetSubResources () {
@@ -179,9 +171,9 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             this._inputSoftwareImage.setResources(null);
             this._inputParameter.setResources(null);
             this._inputDSInput.setResources(null);
-            this._parentConfig = null;
+            this._inputDSOutput.setResources(null);
+            this._parentVersion = null;
         }
-        //this._outputDSInput.setResources(null);
     }
 
     protected _setSubActions () {
@@ -195,7 +187,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputSoftwareImage.setActionSelect();
         this._inputParameter.setActionEditOrAdd();
         this._inputDSInput.setActionEditOrAdd();
-        //this._outputDSInput.setActionEditOrAdd();
+        this._inputDSOutput.setActionEditOrAdd();
     }
 
     protected _unsetSubActions () {
@@ -209,52 +201,44 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         if (this._inputSoftwareImage) this._inputSoftwareImage.unsetAction();
         if (this._inputParameter) this._inputParameter.unsetAction();
         if (this._inputDSInput) this._inputDSInput.unsetAction();
-        //if (this._outputDSInput) this._outputDSInput.unsetAction();
+        if (this._inputDSOutput) this._inputDSOutput.unsetAction();
     }
 
-    public enableSingleResourceCreation (parentConfig:ModelConfiguration) {
+    public enableSingleResourceCreation (parentVersion:SoftwareVersion) {
         super.enableSingleResourceCreation();
-        if (parentConfig != this._parentConfig) {
-            this._parentConfig = parentConfig;
-            if (this._parentConfig) {
-                let r = this._parentConfig;
+        if (parentVersion != this._parentVersion) {
+            this._unsetSubResources();
+            this._parentVersion = parentVersion;
+            if (this._parentVersion) {
+                let r = this._parentVersion;
                 this._inputAuthor.setResources(r.author);
-                this._inputGrid.setResourcesAsCopy(r.hasGrid);
-                this._inputTimeInterval.setResourcesAsCopy(r.hasOutputTimeInterval);
-                this._inputIndex.setResources(r.usefulForCalculatingIndex);
-                this._inputCategory.setResources(r.hasModelCategory);
-                this._inputRegion.setResources(r.hasRegion);
-                this._inputProcesses.setResources(r.hasProcess);
-                this._inputSoftwareImage.setResources(r.hasSoftwareImage);
-                this._inputParameter.setResourcesAsCopy( r.hasParameter );
-                this._inputDSInput.setResourcesAsCopy( r.hasInput );
-                //this._outputDSInput.setResources( m.hasOutput );
             }
         }
     }
 
     public disableSingleResourceCreation () {
         super.disableSingleResourceCreation();
-        this._parentConfig = null;
+        this._parentVersion = null;
     }
 
-    protected _renderFullResource (r:ModelConfigurationSetup) {
+    protected _renderFullResource (r:ModelConfiguration) {
         // Example, Type, operating system, versions?
         return html`
             <table class="details-table">
                 <colgroup wir.="150px">
-                <!--tr>
-                    <td colspan="2" style="padding: 5px 20px;">
-                        <wl-title level="3"> {getLabel(r)} </wl-title>
+                <tr>
+                    <td>Category:</td>
+                    <td>
+                        ${this._inputCategory}
                     </td>
                 </tr>
 
                 <tr>
-                    <td>Category:</td>
+                    <td>Description:</td>
                     <td>
-                        {this._inputCategory}
+                        ${r.description ? r.description[0] : ''}
                     </td>
-                </tr-->
+                </tr>
 
                 ${r.shortDescription ? html`
                 <tr>
@@ -264,10 +248,11 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                     </td>
                 </tr>` : '' }
 
+
                 <tr>
-                    <td>Description:</td>
+                    <td>Installation instructions:</td>
                     <td>
-                        ${r.description ? r.description[0] : ''}
+                        ${r.hasInstallationInstructions ? r.hasInstallationInstructions[0] : ''}
                     </td>
                 </tr>
 
@@ -279,29 +264,30 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 </tr>
 
                 <tr>
-                    <td>Region:</td>
+                    <td>Assumptions:</td>
                     <td>
-                        ${this._inputRegion}
+                        ${r.hasAssumption? r.hasAssumption[0] : ''}
                     </td>
                 </tr>
 
                 <tr>
-                    <td>Setup Creator:</td>
+                    <td>Website:</td>
+                    <td>
+                        ${r.website ? r.website[0] : ''}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Configuration Creator:</td>
                     <td>
                         ${this._inputAuthor}
                     </td>
                 </tr>
 
                 <tr>
-                    <td>Parameter assignment method:</td>
+                    <td>Region:</td>
                     <td>
-                        <div style="display: grid; grid-template-columns: auto 36px;">
-                            <span style="vertical-align: middle; line-height: 40px; font-size: 16px;">${r.parameterAssignmentMethod}</span>
-                            <span tip="Calibrated: The model was calibrated (either manually or automatically) against baseline data.&#10;Expert configured: A modeler did an expert guess of the parameters based on available data." 
-                                  id="pam" class="tooltip" style="top: 8px;">
-                                <wl-icon style="--icon-size: 24px;">help_outline</wl-icon>
-                            </span>
-                        </div>
+                        ${this._inputRegion}
                     </td>
                 </tr>
 
@@ -364,6 +350,11 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             Input files:
         </wl-title>
         ${this._inputDSInput}
+
+        <wl-title level="4" style="margin-top:1em">
+            Output files:
+        </wl-title>
+        ${this._inputDSOutput}
         `
     }
 
@@ -375,10 +366,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
     protected _renderFullForm () {
         let edResource = this._getEditingResource();
-        let assignMethod : string = "";
-        if (edResource && edResource.parameterAssignmentMethod && edResource.parameterAssignmentMethod.length > 0) {
-            assignMethod = edResource.parameterAssignmentMethod[0];
-        }
         return html`
             <div id="page-top"></div>
             <table class="details-table">
@@ -398,10 +385,29 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 </tr>
 
                 <tr>
-                    <td>Description:</td>
+                    <td>Full description:</td>
                     <td>
-                        <textarea id="i-desc" name="Description" rows="5">${
+                        <textarea id="i-full-desc" name="Description" rows="5">${
                             edResource && edResource.description ? edResource.description[0] : ''
+                        }</textarea>
+                    </td>
+                </tr>
+
+
+                <tr>
+                    <td>Short description:</td>
+                    <td>
+                        <textarea id="i-short-desc" name="Short description" rows="3">${
+                            edResource && edResource.shortDescription ? edResource.shortDescription[0] : ''
+                        }</textarea>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Installation instructions:</td>
+                    <td>
+                        <textarea id="i-install-instructions" name="Installation instructions" rows="5">${
+                            edResource && edResource.hasInstallationInstructions? edResource.hasInstallationInstructions[0] : ''
                         }</textarea>
                     </td>
                 </tr>
@@ -415,37 +421,34 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 </tr>
 
                 <tr>
-                    <td>Region:</td>
+                    <td>Assumptions:</td>
                     <td>
-                        ${this._inputRegion}
+                        <textarea id="i-assumption" name="Assumptions" rows="3">${
+                            edResource && edResource.hasAssumption? edResource.hasAssumption[0] : ''
+                        }</textarea>
                     </td>
                 </tr>
 
                 <tr>
-                    <td>Setup Creator:</td>
+                    <td>Website:</td>
+                    <td>
+                        <wl-textfield id="i-website" name="Website"
+                                value="${edResource && edResource.website ? edResource.website[0] : ''}">
+                        </wl-textfield>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Configuration Creator:</td>
                     <td>
                         ${this._inputAuthor}
                     </td>
                 </tr>
 
                 <tr>
-                    <td>Parameter assignment method:</td>
+                    <td>Region:</td>
                     <td>
-                        <div style="display: grid; grid-template-columns: auto 36px;">
-                            <wl-select id="edit-setup-assign-method"
-                                       value="${assignMethod}"
-                                       label="Parameter assignment method"
-                                       placeholder="Select a parameter assignament method"
-                                       required>
-                                <option value="" disabled>Please select a parameter assignment method</option>
-                                <option value="Calibration">Calibration</option>
-                                <option value="Expert-configured">Expert tuned</option>
-                            </wl-select>
-                            <span tip="Calibrated: The model was calibrated (either manually or automatically) against baseline data.&#10;Expert configured: A modeler did an expert guess of the parameters based on available data." 
-                                  id="pam" class="tooltip" style="top: 8px;">
-                                <wl-icon style="--icon-size: 24px;">help_outline</wl-icon>
-                            </span>
-                        </div>
+                        ${this._inputRegion}
                     </td>
                 </tr>
 
@@ -498,6 +501,19 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                     </td>
                 </tr>
 
+                <tr>
+                    <td>Tag</td>
+                    <td>
+                        <wl-select id="i-tag" name="Tag"
+                                value="${edResource && edResource.tag ? edResource.tag[0] : ''}">
+                            <option value="">None</option>
+                            <option value="latest">Latest</option>
+                            <option value="deprecated">Deprecated</option>
+                            <option value="preferred">Preferred</option>
+                        </wl-select>
+                    </td>
+                </tr>
+
             </table>
 
         <wl-title level="4" style="margin-top:1em">
@@ -508,7 +524,12 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         <wl-title level="4" style="margin-top:1em">
             Input files:
         </wl-title>
-        ${this._inputDSInput}`;
+        ${this._inputDSInput}
+
+        <wl-title level="4" style="margin-top:1em">
+            Output files:
+        </wl-title>
+        ${this._inputDSOutput}`;
     }
 
     protected _getResourceFromFullForm () {
@@ -516,87 +537,87 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         let inputLabel : Textfield = this.shadowRoot.getElementById("i-label") as Textfield;
         let inputKeywords : Textfield = this.shadowRoot.getElementById("i-keywords") as Textfield;
         let inputShortDesc : Textarea = this.shadowRoot.getElementById("i-short-desc") as Textarea;
-        let inputDesc : Textarea = this.shadowRoot.getElementById("i-desc") as Textarea;
-        let inputParameterAssignament : Select =  this.shadowRoot.getElementById("edit-setup-assign-method") as Select;
-        let inputUsageNotes : Textarea = this.shadowRoot.getElementById("i-usage-notes") as Textarea;
+        let inputDesc : Textarea = this.shadowRoot.getElementById("i-full-desc") as Textarea;
         let inputCompLoc : Textarea = this.shadowRoot.getElementById("i-comploc") as Textarea;
-
+        let inputWebsite : Textfield = this.shadowRoot.getElementById("i-website") as Textfield;
+        let inputInstallInstructions : Textarea = this.shadowRoot.getElementById("i-install-instructions") as Textarea;
+        let inputAssumption : Textarea = this.shadowRoot.getElementById("i-assumption") as Textarea;
+        let inputUsageNotes : Textarea = this.shadowRoot.getElementById("i-usage-notes") as Textarea;
+        let inputTag : Select = this.shadowRoot.getElementById("i-tag") as Select;
 
         let inputLicense : Textarea = this.shadowRoot.getElementById("i-license") as Textarea;
         let inputCitation : Textarea = this.shadowRoot.getElementById("i-citation") as Textarea;
         let inputPurpose : Textarea = this.shadowRoot.getElementById("i-purpose") as Textarea;
         let inputExample : Textarea = this.shadowRoot.getElementById("i-example") as Textarea;
-        let inputWebsite : Textfield = this.shadowRoot.getElementById("i-website") as Textfield;
         let inputDocumentation : Textfield = this.shadowRoot.getElementById("i-documentation") as Textfield;
         let inputDownload : Textfield = this.shadowRoot.getElementById("i-download") as Textfield;
-        let inputInstallInstructions : Textfield = this.shadowRoot.getElementById("i-install-instructions") as Textfield;
 
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : ''; 
         let keywords : string = inputKeywords ? inputKeywords.value : ''; 
         let shortDesc : string = inputShortDesc ? inputShortDesc.value : ''; 
         let desc : string = inputDesc ? inputDesc.value : ''; 
-        let paramAssign : string = inputParameterAssignament ? inputParameterAssignament.value : '';
         let comploc : string = inputCompLoc ? inputCompLoc.value : ''; 
+        let website : string = inputWebsite ? inputWebsite.value : ''; 
+        let installInstructions : string = inputInstallInstructions ? inputInstallInstructions.value : ''; 
+        let assumptions : string = inputAssumption ? inputAssumption.value : ''; 
+        let usageNotes : string = inputUsageNotes ? inputUsageNotes.value : ''; 
+        let tag : string = inputTag ? inputTag.value : '';
 
         let license : string = inputLicense ? inputLicense.value : ''; 
         let citation : string = inputCitation ? inputCitation.value : ''; 
         let purpose : string = inputPurpose ? inputPurpose.value : ''; 
         let example : string = inputExample ? inputExample.value : ''; 
-        let usageNotes : string = inputUsageNotes ? inputUsageNotes.value : ''; 
-        let website : string = inputWebsite ? inputWebsite.value : ''; 
         let documentation : string = inputDocumentation ? inputDocumentation.value : ''; 
         let download : string = inputDownload ? inputDownload.value : ''; 
-        let installInstructions : string = inputInstallInstructions ? inputInstallInstructions.value : ''; 
 
         let categories = this._inputCategory.getResources();
 
-        if (label && desc && paramAssign && categories != null && categories.length > 0) {
+        if (label && desc && categories != null && categories.length > 0) {
             let jsonRes = {
                 label: [label],
                 hasModelCategory: categories,
-                parameterAssignmentMethod: [paramAssign],
                 description: [desc],
                 author: this._inputAuthor.getResources(),
                 usefulForCalculatingIndex: this._inputIndex.getResources(),
                 hasRegion: this._inputRegion.getResources(),
                 hasSoftwareImage: this._inputSoftwareImage.getResources(),
                 hasProcess: this._inputProcesses.getResources(),
-                // this ones are temporal resources
                 hasOutputTimeInterval: this._inputTimeInterval.getResources(),
                 hasGrid: this._inputGrid.getResources(),
+                // this ones are temporal resources
                 hasParameter: this._inputParameter.getResources(),
                 hasInput: this._inputDSInput.getResources(),
+                hasOutput: this._inputDSOutput.getResources(),
             };
             if (keywords) jsonRes["keywords"] = [keywords];
             if (shortDesc) jsonRes["shortDescription"] = [shortDesc];
             if (comploc) jsonRes["hasComponentLocation"] = [comploc];
+            if (website) jsonRes["website"] = [website];
+            if (installInstructions) jsonRes["hasInstallationInstructions"] = [installInstructions];
+            if (assumptions) jsonRes["hasAssumption"] = [assumptions];
+            if (usageNotes) jsonRes["hasUsageNotes"] = [usageNotes];
+            if (tag) jsonRes["tag"] = [tag];
 
             if (license) jsonRes["license"] = [license];
             if (citation) jsonRes["citation"] = [citation];
             if (purpose) jsonRes["hasPurpose"] = [purpose];
             if (example) jsonRes["hasExample"] = [example];
-            if (usageNotes) jsonRes["hasUsageNotes"] = [usageNotes];
-            if (website) jsonRes["website"] = [website];
             if (documentation) jsonRes["hasDocumentation"] = [documentation];
             if (download) jsonRes["hasDownloadURL"] = [download];
-            if (installInstructions) jsonRes["hasInstallationInstructions"] = [installInstructions];
 
-            return ModelConfigurationSetupFromJSON(jsonRes);
+            return ModelConfigurationFromJSON(jsonRes);
         } else {
             // Show errors
             if (!label) {
                 (<any>inputLabel).onBlur();
                 this._notification.error("You must enter a name");
             }
-            if (categories == null || categories.length > 0) {
+            if (categories == null || categories.length === 0) {
                 this._notification.error("You must enter a category");
             }
             if (!desc) {
                 this._notification.error("You must enter a full description");
-            }
-            if (!paramAssign) {
-                (<any>inputParameterAssignament).onBlur();
             }
         }
     }
@@ -632,37 +653,29 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         if ( inputInstallInstructions )  inputInstallInstructions.value = '';
     }
 
-    protected _createLazyInnerResources (r:ModelConfigurationSetup) {
+    protected _createLazyInnerResources (r:ModelConfiguration) {
         return new Promise((resolve, reject) => {
-            let copy : ModelConfigurationSetup = { ...r };
-
-            let reqGrid : Promise<Grid[]> = this._inputGrid.save();
-            reqGrid.then((grids:Grid[]) => copy.hasGrid = grids);
-
-            let reqTi : Promise<TimeInterval[]> = this._inputTimeInterval.save();
-            reqTi.then((tis:TimeInterval[]) => copy.hasOutputTimeInterval = tis);
+            let copy : ModelConfiguration = { ...r };
 
             let reqParams : Promise<Parameter[]> = this._inputParameter.save();
             reqParams.then((params:Parameter[]) => copy.hasParameter = params);
 
             let reqInput : Promise<DatasetSpecification[]> = this._inputDSInput.save();
             reqInput.then((inputs:DatasetSpecification[]) => copy.hasInput = inputs);
+
+            let reqOutput : Promise<DatasetSpecification[]> = this._inputDSOutput.save();
+            reqOutput.then((outputs:DatasetSpecification[]) => copy.hasOutput = outputs);
  
-            let all : Promise<any> = Promise.all([reqGrid,reqTi,reqParams,reqInput]);
+            let all : Promise<any> = Promise.all([reqParams,reqInput,reqOutput]);
             all.catch(reject);
             all.then((x:any) => {
                 resolve(copy);
             });
-
-            /*this._inputGrid.lazy = true;
-            this._inputTimeInterval.lazy = true;
-            this._inputParameter.lazy = true;
-            this._inputDSInput.lazy = true;*/
         });
     }
 
     protected _getDBResources () {
         let db = (store.getState() as RootState).modelCatalog;
-        return db.setups;
+        return db.configurations;
     }
 }

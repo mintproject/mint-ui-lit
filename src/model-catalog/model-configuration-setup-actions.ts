@@ -3,9 +3,9 @@ import { IdMap } from 'app/reducers'
 import { Configuration, ModelConfigurationSetup, ModelConfigurationSetupApi, ModelConfiguration,
          ConfigurationSetupApi, Parameter, DatasetSpecification } from '@mintproject/modelcatalog_client';
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, fixObjects, getUser,
-         parameterPost, datasetSpecificationPost, modelConfigurationPut } from './actions';
+         modelConfigurationPut } from './actions';
 
-function debug (...args: any[]) { }// console.log('[MC ModelConfigurationSetup]', ...args); }
+function debug (...args: any[]) { console.log('[MC ModelConfigurationSetup]', ...args); }
 
 export const MODEL_CONFIGURATION_SETUPS_ADD = "MODEL_CONFIGURATION_SETUPS_ADD";
 export const MODEL_CONFIGURATION_SETUP_DELETE = "MODEL_CONFIGURATION_SETUP_DELETE";
@@ -76,50 +76,33 @@ export const modelConfigurationSetupPost: ActionThunk<Promise<ModelConfiguration
             return Promise.reject(new Error('Cannot create ModelConfigurationSetup, object has ID'));
         } else {
             return new Promise((resolve,reject) => {
-                // Parameters
-                let paramProm : Promise<Parameter>[] = modelConfigurationSetup.hasParameter
-                        .map((parameter: Parameter) => dispatch(parameterPost(parameter)));
-                Promise.all(paramProm).then((parameters:Parameter[]) => {
-                    modelConfigurationSetup.hasParameter = parameters;
-                    modelConfigurationSetup.adjustableParameter = parameters.filter(p => p["isAdjustable"]);
-                });
-
-                //Inputs
-                let dsProm : Promise<DatasetSpecification>[] = modelConfigurationSetup.hasInput
-                        .map((input:DatasetSpecification) => dispatch(datasetSpecificationPost(input)));
-                Promise.all(dsProm).then((dss:DatasetSpecification[]) => {
-                    modelConfigurationSetup.hasInput = dss;
-                });
-
-                Promise.all(paramProm.concat(dsProm)).then((v) => {
-                    modelConfigurationSetup.hasOutput = fixObjects(modelConfigurationSetup.hasOutput);
-                    //Create setup and update config
-                    let api : ModelConfigurationSetupApi = new ModelConfigurationSetupApi(cfg);
-                    let req = api.modelconfigurationsetupsPost({user: user, modelConfigurationSetup: modelConfigurationSetup});
-                    req.then((resp:ModelConfigurationSetup) => {
-                        debug('Response for POST', resp);
-                        dispatch({
-                            type: MODEL_CONFIGURATION_SETUPS_ADD,
-                            payload: createIdMap(resp)
-                        });
-
-                        if (modelConfiguration.hasSetup) {
-                            modelConfiguration.hasSetup.push(resp)
-                        } else {
-                            modelConfiguration.hasSetup = [resp]
-                        }
-
-                        dispatch(modelConfigurationPut(modelConfiguration)).then((v) => {
-                            resolve(resp);
-                        });
-                    });
-                    req.catch((err) => {
-                        console.error('Error on POST ModelConfiguration', err);
-                        reject(err);
+                // Check adjustable parameters.
+                if (modelConfigurationSetup.hasParameter)
+                    modelConfigurationSetup.adjustableParameter = modelConfigurationSetup.hasParameter
+                            .filter((p:Parameter) => (p && (!p.hasFixedValue || p.hasFixedValue.length === 0)));
+                let api : ModelConfigurationSetupApi = new ModelConfigurationSetupApi(cfg);
+                let req = api.modelconfigurationsetupsPost({user: user, modelConfigurationSetup: modelConfigurationSetup});
+                req.then((resp:ModelConfigurationSetup) => {
+                    debug('Response for POST', resp);
+                    dispatch({
+                        type: MODEL_CONFIGURATION_SETUPS_ADD,
+                        payload: createIdMap(resp)
                     });
 
-                });
+                    if (modelConfiguration.hasSetup) {
+                        modelConfiguration.hasSetup.push(resp)
+                    } else {
+                        modelConfiguration.hasSetup = [resp]
+                    }
 
+                    dispatch(modelConfigurationPut(modelConfiguration)).then((v) => {
+                        resolve(resp);
+                    });
+                });
+                req.catch((err) => {
+                    console.error('Error on POST ModelConfiguration', err);
+                    reject(err);
+                });
             });
         }
     } else {

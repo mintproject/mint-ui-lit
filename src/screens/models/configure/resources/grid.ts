@@ -34,7 +34,7 @@ export class ModelCatalogGrid extends connect(store)(ModelCatalogResource)<Grid>
     protected resourceDelete = gridDelete;
 
     protected _renderResource (r:Grid) {
-        let additionalTypes : string[] = (r.type || []).filter((s:string) => s != "Grid");
+        let additionalTypes : string[] = (r.type || []).filter((s:string) => s != "Grid" && s != "https://w3id.org/okn/o/sdm#Grid");
         return html`
             <div class="one-line" style="display: flex; justify-content: space-between;">
                 <span style="text-decoration:underline; color:black;"> ${getLabel(r)} </span>
