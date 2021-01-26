@@ -38,6 +38,10 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             --list-height: 180px;
             --dialog-height: 100%;
         }
+        #input-sample-collection {
+            --list-height: 200px;
+            --dialog-height: 100%;
+        }
         .two-inputs > wl-textfield, 
         .two-inputs > wl-select {
             display: inline-block;
@@ -94,19 +98,20 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
 
     protected _editResource (r:DatasetSpecification) {
         super._editResource(r);
-        this._inputVariablePresentation.setResources( r.hasPresentation );
-        this._inputDataTransformation.setResources( r.hasDataTransformation );
+        let ed : DatasetSpecification = this._getEditingResource();
+        this._inputVariablePresentation.setResources( ed.hasPresentation );
+        this._inputDataTransformation.setResources( ed.hasDataTransformation );
         this._inputSampleCollection.setResources(null);
         this._inputSampleResource.setResources(null);
-        if (r.hasFixedResource && r.hasFixedResource.length > 0) {
-            if (r.hasFixedResource[0].type.indexOf("SampleCollection") >= 0) {
+        if (ed.hasFixedResource && ed.hasFixedResource.length > 0) {
+            if (ed.hasFixedResource[0].type.indexOf("SampleCollection") >= 0) {
                 this._fileType = 'collection';
-                this._inputSampleCollection.setResources(r.hasFixedResource.filter((ds:DatasetSpecification) => {
+                this._inputSampleCollection.setResources(ed.hasFixedResource.filter((ds:DatasetSpecification) => {
                     return ds.type.indexOf("SampleCollection") >= 0;
                 }));
             } else {
                 this._fileType = 'resource';
-                this._inputSampleResource.setResources(r.hasFixedResource.filter((ds:DatasetSpecification) => {
+                this._inputSampleResource.setResources(ed.hasFixedResource.filter((ds:DatasetSpecification) => {
                     return ds.type.indexOf("SampleCollection") < 0;
                 }));
             }
@@ -131,9 +136,9 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
         `;
     }
 
-    private _loadResources (r:DatasetSpecification) {
+    //TODO: fix this, Is not the same as modelm, config, setup, etc.
+    private _setSubResources2 (r:DatasetSpecification) {
         if (r.hasFixedResource && r.hasFixedResource.length > 0) {
-            //FIXME: only first fixed res
             if (r.hasFixedResource[0].type.indexOf("SampleCollection") >= 0) {
                 if (!this.sampleCollections[r.id])
                     this.sampleCollections[r.id] = new ModelCatalogSampleCollection();
@@ -144,14 +149,15 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
                 this.sampleResources[r.id].setResources(r.hasFixedResource);
             }
         }
-        if (r.hasPresentation && !this._vpDisplayer[r.id]) {
-            this._vpDisplayer[r.id] = new ModelCatalogVariablePresentation();
+        if (r.hasPresentation) {
+            if (!this._vpDisplayer[r.id])
+                this._vpDisplayer[r.id] = new ModelCatalogVariablePresentation();
             this._vpDisplayer[r.id].setResources( r.hasPresentation );
         }
     }
 
     protected _renderRow (r:DatasetSpecification) {
-        this._loadResources(r);
+        this._setSubResources2(r);
         return html`
             <td>
                 <code>${getLabel(r)}</code> 
@@ -250,7 +256,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
         let format : string = inputFormat ? inputFormat.value : '';
         let dim : string = inputDim ? inputDim.value : '';
         let presentation : VariablePresentation[] = this._inputVariablePresentation.getResources();
-        let dataTransformation : DataTransformation[] = this._inputDataTransformation.getResources();
+
         if (label && desc && format) {
             let jsonRes = {
                 type: ["DatasetSpecification"],
@@ -259,14 +265,19 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
                 hasFormat: [format],
                 position: [this._resources.length + 1],
                 hasPresentation: presentation,
-                hasDataTransformation: dataTransformation,
                 hasDimensionality: [0],
             };
+            if (this.isSetup) {
+                console.log('here');
+                jsonRes["hasFixedResource"] = this._fileType == "resource" ?
+                        this._inputSampleResource.getResources() : this._inputSampleCollection.getResources();
+            } else {
+                console.log('or here!');
+                jsonRes["hasDataTransformation"] = this._inputDataTransformation.getResources();
+            }
             if (presentation.length > 0 || confirm("If no variables are associated with an input, we will not be able to search dataset candidates in the MINT data catalog when using this model")) {
                 return DatasetSpecificationFromJSON(jsonRes); 
-            } 
-            return null;
-            //return DatasetSpecificationFromJSON(jsonRes);
+            }
         } else {
             // Show errors
             if (!label) (<any>inputLabel).onBlur();

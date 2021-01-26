@@ -110,7 +110,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
     private _inputParameter : ModelCatalogParameter;
     private _inputDSInput : ModelCatalogDatasetSpecification;
-    private _outputDSInput : ModelCatalogDatasetSpecification;
+    //private _outputDSInput : ModelCatalogDatasetSpecification;
 
     constructor () {
         super();
@@ -119,7 +119,9 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
     protected _initializeSingleMode () {
         this._inputAuthor = new ModelCatalogPerson();
         this._inputGrid = new ModelCatalogGrid();
+        this._inputGrid.lazy = true;
         this._inputTimeInterval = new ModelCatalogTimeInterval();
+        this._inputTimeInterval.lazy = true;
         this._inputIndex = new ModelCatalogNumericalIndex();
         this._inputCategory = new ModelCatalogCategory();
         this._inputRegion = new ModelCatalogRegion();
@@ -128,66 +130,67 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
         this._inputParameter = new ModelCatalogParameter();
         this._inputParameter.inline = false;
+        this._inputParameter.lazy = true;
         this._inputParameter.creationDisable();
         this._inputParameter.setAsSetup();
 
         this._inputDSInput = new ModelCatalogDatasetSpecification();
         this._inputDSInput.inline = false;
+        this._inputDSInput.lazy = true;
         this._inputDSInput.creationDisable();
         this._inputDSInput.setAsSetup();
 
-        this._outputDSInput = new ModelCatalogDatasetSpecification();
+        /*this._outputDSInput = new ModelCatalogDatasetSpecification();
         this._outputDSInput.inline = false;
         this._outputDSInput.creationDisable();
-        this._outputDSInput.setAsSetup();
+        this._outputDSInput.setAsSetup();*/
     }
 
-    public setResource (r:ModelConfigurationSetup) {
-        let req = super.setResource(r);
-        req.then((m:ModelConfigurationSetup) => {
-            if (m) {
-                this._inputAuthor.setResources(m.author);
-                this._inputGrid.setResources(m.hasGrid);
-                this._inputTimeInterval.setResources(m.hasOutputTimeInterval);
-                this._inputIndex.setResources(m.usefulForCalculatingIndex);
-                this._inputCategory.setResources(m.hasModelCategory);
-                this._inputRegion.setResources(m.hasRegion);
-                this._inputProcesses.setResources(m.hasProcess);
-                this._inputSoftwareImage.setResources(m.hasSoftwareImage);
-
-                this._inputParameter.setResources( m.hasParameter );
-                this._inputDSInput.setResources( m.hasInput );
-
-                this._outputDSInput.setResources( m.hasOutput );
-            }
-        });
-        console.log('>>', r);
-        return req;
+    protected _setSubResources (r:ModelConfigurationSetup) {
+        this._inputAuthor.setResources(r.author);
+        this._inputGrid.setResources(r.hasGrid);
+        this._inputTimeInterval.setResources(r.hasOutputTimeInterval);
+        this._inputIndex.setResources(r.usefulForCalculatingIndex);
+        this._inputCategory.setResources(r.hasModelCategory);
+        this._inputRegion.setResources(r.hasRegion);
+        this._inputProcesses.setResources(r.hasProcess);
+        this._inputSoftwareImage.setResources(r.hasSoftwareImage);
+        this._inputParameter.setResources( r.hasParameter );
+        this._inputDSInput.setResources( r.hasInput );
+        //this._outputDSInput.setResources( m.hasOutput );
     }
 
-    protected _editResource (r:ModelConfigurationSetup) {
-        super._editResource(r);
-        this._setEditingActions();
+    protected _unsetSubResources () {
+        if (this._singleModeInitialized) {
+            this._inputAuthor.setResources(null);
+            this._inputGrid.setResources(null);
+            this._inputTimeInterval.setResources(null);
+            this._inputIndex.setResources(null);
+            this._inputCategory.setResources(null);
+            this._inputRegion.setResources(null);
+            this._inputProcesses.setResources(null);
+            this._inputSoftwareImage.setResources(null);
+            this._inputParameter.setResources(null);
+            this._inputDSInput.setResources(null);
+        }
+        //this._outputDSInput.setResources(null);
     }
 
-    private _setEditingActions () {
+    protected _setSubActions () {
         this._inputAuthor.setActionMultiselect();
         this._inputGrid.setActionSelect();
         this._inputIndex.setActionMultiselect();
         this._inputCategory.setActionMultiselect();
-
         this._inputTimeInterval.setActionSelect();
         this._inputRegion.setActionMultiselect();
         this._inputProcesses.setActionMultiselect();
         this._inputSoftwareImage.setActionSelect();
-
         this._inputParameter.setActionEditOrAdd();
         this._inputDSInput.setActionEditOrAdd();
-        this._outputDSInput.setActionEditOrAdd();
+        //this._outputDSInput.setActionEditOrAdd();
     }
 
-    protected _clearStatus () {
-        super._clearStatus();
+    protected _unsetSubActions () {
         if (this._inputAuthor) this._inputAuthor.unsetAction();
         if (this._inputGrid) this._inputGrid.unsetAction();
         if (this._inputIndex) this._inputIndex.unsetAction();
@@ -196,34 +199,51 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         if (this._inputRegion) this._inputRegion.unsetAction();
         if (this._inputProcesses) this._inputProcesses.unsetAction();
         if (this._inputSoftwareImage) this._inputSoftwareImage.unsetAction();
-
         if (this._inputParameter) this._inputParameter.unsetAction();
         if (this._inputDSInput) this._inputDSInput.unsetAction();
-        if (this._outputDSInput) this._outputDSInput.unsetAction();
-        this.scrollUp();
-        this.clearForm();
+        //if (this._outputDSInput) this._outputDSInput.unsetAction();
     }
 
     public enableSingleResourceCreation (parentConfig:ModelConfiguration) {
         super.enableSingleResourceCreation();
+        if (parentConfig != this._parentConfig) {
+            this._parentConfig = parentConfig;
+            if (this._parentConfig) {
+                /*TODO: define what is to copy and whats new.
+                let newSetup : ModelConfigurationSetup = ModelConfigurationSetupFromJSON({
+                    id: '',
+                    author: parentConfig.author,
+                    hasGrid: parentConfig.hasGrid,
+                    hasOutputTimeInterval: parentConfig.hasOutputTimeInterval,
+                    usefulForCalculatingIndex: parentConfig.usefulForCalculatingIndex,
+                    hasModelCategory: parentConfig.hasModelCategory,
+                    hasRegion: parentConfig.hasRegion,
+                    hasProcess: parentConfig.hasProcess,
+                    hasSoftwareImage: parentConfig.hasSoftwareImage,
+                    hasParameter: parentConfig.hasParameter,
+                    hasInput: parentConfig.hasInput,
+                });
+                this._setSubResources(newSetup);*/
 
-        this._parentConfig = parentConfig;
-        if (this._parentConfig) {
-            let m = this._parentConfig;
-            this._inputAuthor.setResources(m.author);
-            this._inputGrid.setResources(m.hasGrid);
-            this._inputTimeInterval.setResources(m.hasOutputTimeInterval);
-            this._inputIndex.setResources(m.usefulForCalculatingIndex);
-            this._inputCategory.setResources(m.hasModelCategory);
-            this._inputRegion.setResources(m.hasRegion);
-            this._inputProcesses.setResources(m.hasProcess);
-            this._inputSoftwareImage.setResources(m.hasSoftwareImage);
-
-            this._inputParameter.setResources( m.hasParameter );
-            this._inputDSInput.setResources( m.hasInput );
-            this._outputDSInput.setResources( m.hasOutput );
+                let r = this._parentConfig;
+                this._inputAuthor.setResources(r.author);
+                this._inputGrid.setResourcesAsCopy(r.hasGrid);
+                this._inputTimeInterval.setResourcesAsCopy(r.hasOutputTimeInterval);
+                this._inputIndex.setResources(r.usefulForCalculatingIndex);
+                this._inputCategory.setResources(r.hasModelCategory);
+                this._inputRegion.setResources(r.hasRegion);
+                this._inputProcesses.setResources(r.hasProcess);
+                this._inputSoftwareImage.setResources(r.hasSoftwareImage);
+                this._inputParameter.setResourcesAsCopy( r.hasParameter );
+                this._inputDSInput.setResourcesAsCopy( r.hasInput );
+                //this._outputDSInput.setResources( m.hasOutput );
+            }
         }
-        this._setEditingActions();
+    }
+
+    public disableSingleResourceCreation () {
+        super.disableSingleResourceCreation();
+        this._parentConfig = null;
     }
 
     protected _renderFullResource (r:ModelConfigurationSetup) {
@@ -496,18 +516,12 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         <wl-title level="4" style="margin-top:1em">
             Input files:
         </wl-title>
-        ${this._inputDSInput}
-
-        <wl-title level="4" style="margin-top:1em">
-            Outputs files:
-        </wl-title>
-        ${this._outputDSInput}`;
+        ${this._inputDSInput}`;
     }
 
     protected _getResourceFromFullForm () {
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById("i-label") as Textfield;
-        //let inputCategory : Select = this.shadowRoot.getElementById("i-category") as Select;
         let inputKeywords : Textfield = this.shadowRoot.getElementById("i-keywords") as Textfield;
         let inputShortDesc : Textarea = this.shadowRoot.getElementById("i-short-desc") as Textarea;
         let inputDesc : Textarea = this.shadowRoot.getElementById("i-desc") as Textarea;
@@ -578,7 +592,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
     public clearForm () {
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById("i-label") as Textfield;
-        let inputCategory : Select = this.shadowRoot.getElementById("i-category") as Select;
         let inputKeywords : Textfield = this.shadowRoot.getElementById("i-keywords") as Textfield;
         let inputShortDesc : Textarea = this.shadowRoot.getElementById("i-short-desc") as Textarea;
         let inputDesc : Textarea = this.shadowRoot.getElementById("i-desc") as Textarea;
@@ -593,7 +606,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         let inputInstallInstructions : Textfield = this.shadowRoot.getElementById("i-install-instructions") as Textfield;
 
         if ( inputLabel )                inputLabel.value = '';
-        //if ( inputCategory )             inputCategory.value = '';
         if ( inputKeywords )             inputKeywords.value = '';
         if ( inputShortDesc )            inputShortDesc.value = '';
         if ( inputDesc )                 inputDesc.value = '';

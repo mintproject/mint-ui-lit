@@ -140,7 +140,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
             </td>
             ${this.isSetup ? html`
             <td style="text-align: center;">
-                <wl-icon>${r.hasFixedValue ?  'check_box_outline_blank' : 'check_box'}</wl-icon>
+                <wl-icon>${r.hasFixedValue && r.hasFixedValue.length > 0 ?  'check_box_outline_blank' : 'check_box'}</wl-icon>
             </td>
             ` : html``}
         `;
@@ -198,9 +198,10 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                     <label style="padding-left: 10px;">Is Adjustable</label>
                 </div>
                 ${this.isAdjustable ? html`` : html`
-                <wl-textfield id="fixed-value" 
+                <wl-textfield id="fixed-value"  required
                               label="Value in this setup"
-                              value="${edResource ? (edResource.hasFixedValue ? edResource.hasFixedValue[0] 
+                              value="${edResource ? (edResource.hasFixedValue && edResource.hasFixedValue.length > 0 ?
+                                edResource.hasFixedValue[0] 
                                 : (edResource.hasDefaultValue ? edResource.hasDefaultValue[0] : '')) : ''}">
                 </wl-textfield>
                 `}
@@ -340,7 +341,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     }
 
     protected _getResourceFromForm () {
-        if (this.onlyFixedValue) return this._getFixedValue();
+        if (this.onlyFixedValue) return this._getFixedValue(); //This is used on modeling.
 
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById('parameter-label') as Textfield;
@@ -348,6 +349,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let inputDatatype : Textfield = this.shadowRoot.getElementById("parameter-datatype") as Textfield;
         let inputUnit : Select = this.shadowRoot.getElementById("parameter-unit") as Select;
         let inputType : Select = this.shadowRoot.getElementById("parameter-type") as Select;
+        let inputFixed : Textfield = this.shadowRoot.getElementById('fixed-value') as Textfield;
 
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : '';
@@ -355,48 +357,117 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let datatype : string = inputDatatype ? inputDatatype.value : '';
         let unit : string = inputUnit ? inputUnit.value : '';
         let aType : string = inputType ? inputType.value : '';
-        if (label && desc && datatype) {
+        let fixed : string = inputFixed ? inputFixed.value : '';
+        if (!this.isSetup && label && desc && datatype) {
 
             let jsonRes = {
                 type: ["Parameter"],
                 description: [desc],
                 label: [label],
                 hasDataType: [datatype],
-                position: [this._resources.length + 1]
             };
 
             if (unit) jsonRes["usesUnit"] = [{id: unit}];
             if (aType) jsonRes["type"].push(aType);
 
-            let jsonRes2 = undefined;
+            let jsonRes2 = this._getDefaultsPart(datatype);
 
-            switch (datatype) {
-                case "int":
-                    jsonRes2 = this._getPartIntFromForm();
-                    break;
-                case "float":
-                    jsonRes2 = this._getPartFloatFromForm();
-                    break;
-                case "string":
-                    jsonRes2 = this._getPartStringFromForm();
-                    break;
-                case "boolean":
-                    jsonRes2 = this._getPartBooleanFromForm();
-                    break;
-                default:
-                    console.warn('unrecognized datatype');
-                    return;
-                    break;
-            }
-
-            if (jsonRes2) {
+            if (jsonRes2)
                 return ParameterFromJSON({...jsonRes, ...jsonRes2});
+        } else if (this.isSetup) {
+            if (this.isAdjustable && !this.showDefaults) {
+                // Remove old fixed values to use the default one
+                return ParameterFromJSON({hasFixedValue: []})
+            }
+            if (!this.isAdjustable && !fixed) {
+                (<any>inputFixed).onBlur();
+                return;
+            }
+            if (!this.showDefaults) { 
+                if (this._validateDataTypedValue(fixed))
+                    return ParameterFromJSON({ hasFixedValue: [fixed] });
+                else 
+                    console.warn("Error validating data-type.");
+            } else {
+                let jsonRes = {
+                    hasDataType: [datatype]
+                };
+                if (unit) jsonRes["usesUnit"] = [{id: unit}];
+                if (aType) jsonRes["type"].push(aType);
+                let jsonRes2 = this._getDefaultsPart(datatype);
+                if (jsonRes2)
+                    return ParameterFromJSON({...jsonRes, ...jsonRes2});
             }
         } else {
             // Show errors
-            if (!label) (<any>inputLabel).onBlur();
-            if (!desc) (<any>inputDesc).onBlur();
-            if (!datatype) (<any>inputDatatype).onBlur();
+            if (!this.isSetup) {
+                if (!label) (<any>inputLabel).onBlur();
+                if (!desc) (<any>inputDesc).onBlur();
+                if (!datatype) (<any>inputDatatype).onBlur();
+            }
+        }
+    }
+
+    private _validateDataTypedValue (value:string, ed? : Parameter ) : boolean {
+        let edR : Parameter = ed ? ed : this._getEditingResource();
+        let datatype : string = edR.hasDataType && edR.hasDataType.length === 1 ? edR.hasDataType[0] : '';
+        switch (datatype) {
+            case "int":
+            case "float":
+                let val : number = datatype == "int" ? parseInt(value) : parseFloat(value);;
+                let min : number = edR.hasMinimumAcceptedValue && edR.hasMinimumAcceptedValue.length === 1 ? 
+                        parseFloat(edR.hasMinimumAcceptedValue[0]) : undefined;
+                let max : number = edR.hasMaximumAcceptedValue && edR.hasMaximumAcceptedValue.length === 1 ?
+                        parseFloat(edR.hasMaximumAcceptedValue[0]) : undefined;
+                if (min != undefined && min > val) {
+                    this._notification.error("Parameter value must be greater than " + min);
+                    return false;
+                }
+                if (max != undefined && max < val) {
+                    this._notification.error("Parameter value must be less than " + max);
+                    return false;
+                }
+                break;
+            case "string":
+                if (edR.hasAcceptedValues && edR.hasAcceptedValues.length === 1) {
+                    let av : string[] = edR.hasAcceptedValues[0].split(/ *, */);
+                    if (!av.includes(value)) {
+                        this._notification.error("Parameter value must be an accepted value");
+                        return false;
+                    }
+                }
+                break;
+            case "boolean":
+                let bol : string = value.toLowerCase();
+                if (!(bol == 'true' || bol == 'false')) {
+                    this._notification.error("Parameter value must be True or False");
+                    return false;
+                }
+                break;
+            default:
+                console.warn('unrecognized datatype');
+                break;
+        }
+        return true;
+    }
+
+    private _getDefaultsPart (datatype:string) {
+        switch (datatype) {
+            case "int":
+                return this._getPartIntFromForm();
+                break;
+            case "float":
+                return this._getPartFloatFromForm();
+                break;
+            case "string":
+                return this._getPartStringFromForm();
+                break;
+            case "boolean":
+                 return this._getPartBooleanFromForm();
+                break;
+            default:
+                console.warn('unrecognized datatype');
+                return;
         }
     }
 
@@ -409,30 +480,14 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let def: string = inputDef ? inputDef.value : '';
         if (def) {
             let jsonRes = {
+                hasDataType: ["int"],
                 hasDefaultValue: [def]
             };
+            if (min) jsonRes['hasMinimumAcceptedValue'] = [min];
+            if (max) jsonRes['hasMaximumAcceptedValue'] = [max];
 
-            let idef : number = parseInt(def);
-            let imin : number = undefined;
-            let imax : number = undefined;
-
-            if (min) {
-                jsonRes['hasMinimumAcceptedValue'] = [min];
-                imin = parseInt(min);
-                if (idef < imin) {
-                    //TODO: notify
-                    return;
-                }
-            }
-            if (max) {
-                jsonRes['hasMaximumAcceptedValue'] = [max];
-                imax = parseInt(max);
-                if (idef > imax) {
-                    //TODO: notify
-                    return;
-                }
-            }
-            return jsonRes;
+            if (this._validateDataTypedValue(def, jsonRes))
+                return jsonRes;
         } else {
             (<any>inputDef).onBlur();
         }
@@ -449,30 +504,14 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let max : string = inputMax ? inputMax.value : '';
         if (def) {
             let jsonRes = {
-                hasDefaultValue: [parseFloat(def)]
+                hasDataType: ["float"],
+                hasDefaultValue: [def]
             };
             if (inc) jsonRes['recommendedIncrement'] = [inc];
-            let idef : number = parseInt(def);
-            let imin : number = undefined;
-            let imax : number = undefined;
-
-            if (min) {
-                jsonRes['hasMinimumAcceptedValue'] = [min];
-                imin = parseInt(min);
-                if (idef < imin) {
-                    //TODO: notify
-                    return;
-                }
-            }
-            if (max) {
-                jsonRes['hasMaximumAcceptedValue'] = [max];
-                imax = parseInt(max);
-                if (idef > imax) {
-                    //TODO: notify
-                    return;
-                }
-            }
-            return jsonRes;
+            if (min) jsonRes['hasMinimumAcceptedValue'] = [min];
+            if (max) jsonRes['hasMaximumAcceptedValue'] = [max];
+            if (this._validateDataTypedValue(def, jsonRes))
+                return jsonRes;
         } else {
             (<any>inputDef).onBlur();
         }
@@ -485,16 +524,12 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let acc : string = inputAcc ? inputAcc.value : '';
         if (def) {
             let jsonRes = {
+                hasDataType: ["string"],
                 hasDefaultValue: [def]
             };
-            if (acc) {
-                let acceptedValues : string[] = acc.split(/ *, */);
-                jsonRes['hasAcceptedValues'] = [acceptedValues.join(', ')];
-                if (!acceptedValues.includes(def)) {
-                    //TODO notify!
-                }
-            }
-            return jsonRes;
+            if (acc) jsonRes['hasAcceptedValues'] = [acc];
+            if (this._validateDataTypedValue(def, jsonRes))
+                return jsonRes;
         } else {
             (<any>inputDef).onBlur();
         }
@@ -505,9 +540,11 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let def : string = inputDef ? inputDef.value : '';
         if (def) {
             let jsonRes = {
+                hasDataType: ["boolean"],
                 hasDefaultValue: [def]
             };
-            return jsonRes;
+            if (this._validateDataTypedValue(def, jsonRes))
+                return jsonRes;
         } else {
             (<any>inputDef).onBlur();
         }

@@ -11,7 +11,7 @@ import { PREFIX_URI } from 'config/default-graph';
 
 import "weightless/progress-spinner";
 import "weightless/textfield";
-import "weightless/textfield";
+import "weightless/textarea";
 import "weightless/card";
 import "weightless/dialog";
 import "weightless/button";
@@ -143,13 +143,15 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: Object}) protected _error : IdMap<boolean> = {};
     @property({type: Boolean}) protected _allResourcesLoaded : boolean = false;
     @property({type: Boolean}) protected _allResourcesLoading : boolean = false;
+    // FIXME: this could be only one.
     @property({type: String}) protected _selectedResourceId : string = "";
     @property({type: String}) protected _editingResourceId : string = "";
     protected _selectedResources : IdMap<boolean> = {};
 
     // FLAGS
-    @property({type: String}) protected _action : Action = Action.NONE;
-    @property({type: String}) protected _status : Status = Status.NONE;
+    @property({type: String}) protected _action : Action = Action.NONE; //NONE, SELECT, MULTISELECT, EDIT_OR_ADD,
+    @property({type: String}) protected _status : Status = Status.NONE; //NONE, CREATE, EDIT, CUSTOM_CREATE,
+
     @property({type: Boolean}) public inline : boolean = true;
     @property({type: Boolean}) private _dialogOpen : boolean = false;
     @property({type: Boolean}) protected _waiting : boolean = false;
@@ -171,6 +173,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     private _order : IdMap<T> = {} as IdMap<T>;
     protected _notification : CustomNotification;
 
+    private _idToCopy : IdMap<string> = {} as IdMap<string>;
     public lazy : boolean = false;
 
     protected classes : string = "resource";
@@ -199,10 +202,11 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         return this._status == Status.CREATE;
     }
     
-    private _singleModeInitialized : boolean = false;
+    protected _singleModeInitialized : boolean = false;
 
     /* Must be defined */
     protected _initializeSingleMode () {
+        console.error('Single mode no defined');
     }
 
     public unsetAction () {
@@ -221,6 +225,13 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._action = Action.EDIT_OR_ADD;
     }
 
+    /* Complex resources can have inner resources */
+    protected _setSubActions () {
+    }
+
+    protected _unsetSubActions () {
+    }
+
     public setName (newName : string) {
         this.name = newName;
     }
@@ -231,7 +242,6 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     protected render () {
-        //console.log('Render', this.pname + ':', this._resources, this._loadedResources);
         return html`
             ${this._singleMode ? 
                 this._renderFullView() 
@@ -629,6 +639,15 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         return this._renderForm();
     }
 
+    public clearForm () {
+        // GET ELEMENTS
+        let inputLabel : Textfield  = this.shadowRoot.getElementById('resource-label') as Textfield;
+        let inputDesc  : Textarea   = this.shadowRoot.getElementById('resource-desc') as Textarea;
+        // VALIDATE
+        if (inputLabel) inputLabel.value = '';
+        if (inputDesc) inputDesc.value = '';
+    }
+
     private _grabPosition (e) {
         let tr = e.target.closest("TR");
         let trRect = tr.getBoundingClientRect();
@@ -717,6 +736,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         if (this._action === Action.EDIT_OR_ADD) {
             this._closeDialog();
         }
+        this.clearForm();
+        this._unsetSubResources();
+        this._unsetSubActions();
     }
 
     protected _onSelectButtonClicked () {
@@ -735,40 +757,56 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     protected _onSaveButtonClicked () {
+        //FIXME: this should be a unique getresourceformfrom function.
         let resource = this._singleMode ? this._getResourceFromFullForm() : this._getResourceFromForm();
         if (resource && this._status != Status.NONE) {
-            if (this.lazy) this._addToSaveQueue(resource);
+
+            if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
+                resource.id = "";
+            } else if (this._status === Status.EDIT) {
+                resource.id = this._editingResourceId;
+                resource = this._createEditedResource(resource);
+            }
+
+            if (this.lazy) this._saveResourceLazy(resource);
             else this._saveResource(resource);
         }
     }
 
     private _saveResource (resource:T) {
+        console.log('_saveResource ID:', resource.id);
         this._waiting = true;
         let req : Promise<T>;
-        if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
+        if (resource.id) {
+            req = store.dispatch(this.resourcePut(resource));
+        } else {
             req = store.dispatch(this.resourcePost(resource));
-        } else if (this._status === Status.EDIT) {
-            resource.id = this._editingResourceId;
-            let resourceEdited : T = this._createEditedResource(resource);
-            req = store.dispatch(this.resourcePut(resourceEdited));
         }
         req.then((r:T) => {
             console.log('SAVED: ', r);
             this._waiting = false;
             this._loadedResources[r.id] = r;
-            this._clearStatus();
             this._notification.save(this.name + " saved");
-            if (this._action === Action.EDIT_OR_ADD && this._resources.filter((s:T) => s.id===r.id).length === 0) {
-                this._resources.push(r);
-                if (this.positionAttr) this._orderedResources.push(r);
-            } else if (this._action === Action.MULTISELECT) {
-                this._selectedResources[r.id] = true;
-            } else if (this._action === Action.SELECT) {
-                this._selectedResourceId = r.id;
-            }
+            this._postSaveUpdate(r);
             this._eventSave(r);
         });
         return req;
+    }
+
+    private _postSaveUpdate (r:T) {
+        this._clearStatus();
+        if (this._action === Action.EDIT_OR_ADD && this._resources.filter((s:T) => s.id===r.id).length === 0) {
+            //Check if saved resource is already selected.
+            if (this._resources.some((r2:T) => r2.id === r.id))
+                this._resources.map((r2:T) => r2.id === r.id ? r : r2);
+            else
+                this._resources.push(r);
+            if (this.positionAttr) this._orderedResources.push(r);
+        } else if (this._action === Action.MULTISELECT) {
+            this._selectedResources[r.id] = true;
+        } else if (this._action === Action.SELECT) {
+            this._selectedResourceId = r.id;
+        }
     }
 
     private _createEditedResource (edited:T) {
@@ -811,55 +849,49 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this.dispatchEvent(event);
     }
 
-    private _addToSaveQueue (resource:T) {
-        if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
-            // Create a temp id , max len 15
-            let id : string = (new Date()).getTime() + '';
-            resource['id'] = id;
-            this._resourcesToCreate[id] = resource;
-            if (this._action === Action.EDIT_OR_ADD) {
-                this._resources.push(resource);
-                if (this.positionAttr) this._orderedResources.push(resource);
-            }
-        } else if (this._status === Status.EDIT) {
-            resource.id = this._editingResourceId;
-            this._resourcesToEdit[this._editingResourceId] = resource;
-        }
+    private _saveResourceLazy (resource:T) {
+        //Update memory now
         this._loadedResources[resource.id] = resource;
-        this._clearStatus();
-        if (this._action === Action.MULTISELECT) {
-            this._selectedResources[resource.id] = true;
-        } else if (this._action === Action.SELECT) {
-            this._selectedResourceId = resource.id;
+        this._postSaveUpdate(this._addToSaveQueue(resource));
+    }
+
+    private _addToSaveQueue (r:T) {
+        if (r.id && r.id.includes(PREFIX_URI)) { // if the resource has an ID and its part of the model catalog, is an edition.
+            this._resourcesToEdit[r.id] = r;
+        } else { // The resource has no Id or is not part of the model-catalog.
+            //Do no modify already created resources.
+            if (!r.id || !(r.id[0] == '0' && r.id[1] == '.')) { 
+                r.id = Math.random().toString(36);
+            }
+            this._resourcesToCreate[r.id] = r;
         }
+        this._loadedResources[r.id] = r;
+        return r;
     }
 
     //When lazy is on, this function must be used to perform the save
     public save () {
         let creation = Object.values(this._resourcesToCreate).map((r:T) => {
+            //FIXME playing with index to delete could be a problem.
             let tempId : string = r.id;
-            let index : number = -1;
-            this._resources.forEach((r2:T, i:number) => {
-                if (r2.id === r.id) index = i;
-            });
-
             r["id"] = "";
+
             let req = store.dispatch(this.resourcePost(r));
             req.then((resource : T) => {
-                this._resources.splice(index,1);
-                this._resources.push(resource);
+                this._loadedResources[resource.id] = resource;
+                this._resources = this._resources.map((r2:T) => (r2.id === tempId) ? resource : r2);
             });
             return req;
         });
         let edition = Object.values(this._resourcesToEdit).map((r:T) => {
             let req = store.dispatch(this.resourcePut(r));
+            req.then((resource: T) => {
+                this._loadedResources[resource.id] = resource;
+            });
             return req;
         });
         let allp = Promise.all([ ...creation, ...edition ]);
         allp.then((rs: T[]) => {
-            rs.forEach((lr:T) => {
-                this._loadedResources[lr.id] = lr;
-            });
             this._resourcesToEdit = {};
             this._resourcesToCreate  = {};
             if (this.positionAttr) this._refreshOrder();
@@ -905,12 +937,14 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     protected _editResource (r:T) {
+        console.log('ED', r);
         this._editingResourceId = r.id;
         this._status = Status.EDIT;
         if (this._action === Action.EDIT_OR_ADD) {
             this._dialogOpen = true;
             showDialog("resource-dialog", this.shadowRoot);
         }
+        this._setSubActions();
     }
 
     private _deleteResource (r:T) {
@@ -949,6 +983,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             this._singleModeInitialized = true;
         }
         this._status = Status.CREATE;
+        this._setSubActions();
     }
 
     public disableSingleResourceCreation () {
@@ -1014,6 +1049,33 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         });
     }
 
+    private _loadResources (r:T[]) {
+        let ids : string [] = r.map((l:T) => l.id);
+        ids.forEach((id:string) => this._loading[id] = true);
+        let dbResources : IdMap<T> = this._getDBResources();
+        return Promise.all(
+            ids.map((id:string) => {
+                if (dbResources[id])  {
+                    this._loadedResources[id] = dbResources[id];
+                    this._loading[id] = false;
+                    return Promise.resolve(this._loadedResources[id]);
+                } else {
+                    let req = store.dispatch(this.resourceGet(id));
+                    req.then((r:T) => {
+                        this._loadedResources[id] = r;
+                        this._loading[id] = false;
+                        this.requestUpdate();
+                    });
+                    req.catch(() => {
+                        this._error[id] = true;
+                        this._loading[id] = false;
+                    });
+                    return req;
+                }
+            })
+        );
+    }
+
     /* This is the way to set a list of resources */
     public setResources (r:T[]) {
         this._singleMode = false;
@@ -1064,6 +1126,56 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
     }
 
+    /* Same as before but removes the id to set is as a copy. To use when lazy */
+    public setResourcesAsCopy (r:T[]) {
+        // FIXME: This does not work it loads everything always... should change the API redux.
+        if (!this.lazy) {
+            console.error("Cannot copy resources.");
+            return;
+        }
+        this._singleMode = false;
+        if (!r || r.length === 0) {
+            this._resources = [];
+            this._order = {};
+            this._idToCopy = {};
+            return;
+        }
+
+        let copyFn = (l:T) => {
+            if (!this._idToCopy[l.id]) {
+                let copy : T = this._addToSaveQueue({ ... this._loadedResources[l.id], id: "" });
+                this._idToCopy[l.id] = copy.id;
+            }
+        };
+        let replaceFn = (l:T) => {
+            let r = {...l};
+            if (this._idToCopy[r.id]) r.id = this._idToCopy[r.id];
+            return r;
+        };
+
+        let shouldLoad : T[] = r.filter((l:T) => l.id && l.id.includes(PREFIX_URI) && (!this._loading[l.id] || !this._loadedResources[l.id]));
+
+        //Add external resources
+        r.filter((l:T) => !l.id.includes(PREFIX_URI)).forEach((l:T) => this._loadedResources[l.id] = {...l});
+
+        //Copy loaded resources
+        r.filter((l:T) => l.id && l.id.includes(PREFIX_URI) && this._loadedResources[l.id]).forEach(copyFn);
+
+        this._resources = [...r].map(replaceFn);
+
+        if (shouldLoad.length > 0) {
+            this._loadResources(shouldLoad).then((resources:T[]) => {
+                resources.forEach(copyFn);
+                this._resources = [...r].map(replaceFn);
+                if (this.positionAttr) this._refreshOrder();
+            }).catch(() => {
+                if (this.positionAttr) this._refreshOrder();
+            })
+        } else if (this.positionAttr) {
+            this._refreshOrder();
+        }
+    }
+
     /* Set a single resource */
     public setResource (r:T) {
         return new Promise((resolve, reject) => {
@@ -1079,6 +1191,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     let dbResources : IdMap<T> = this._getDBResources();
                     if (dbResources[id]) {
                         this._loadedResources[id] = dbResources[id];
+                        this._setSubResources(dbResources[id]);
                         resolve(dbResources[id]);
                     } else {
                         this._loading[id] = true;
@@ -1087,6 +1200,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                             this._loading[id] = false;
                             this._loadedResources[id] = r;
                             this.requestUpdate();
+                            this._setSubResources(r);
                             resolve(r);
                         });
                         req.catch(() => {
@@ -1096,13 +1210,22 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                         });
                     }
                 } else if (this._loadedResources[id]) {
+                    this._setSubResources(this._loadedResources[id]);
                     resolve(this._loadedResources[id]);
                 }
             } else {
                 this._resources = [];
+                this._unsetSubResources();
                 resolve();
             }
         });
+    }
+
+    /* Complex resources could have inner resources. Must be initialized here */ 
+    protected _setSubResources (r:T) {
+    }
+
+    protected _unsetSubResources () {
     }
 
     public getResources () {
@@ -1124,10 +1247,11 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected _loadAllResources () {
         this._allResourcesLoading = true;
         store.dispatch(this.resourcesGet()).then((resources:IdMap<T>) => {
-            /*
-            let nonDCResources = Object.values(this._loadedResources).filter((r:T) => !r.id.includes(PREFIX_URI))
-            nonDCResources.forEach((r:T) => this._loadedResources[r.id] = r);
-            */
+            // This are the resources that are in memory but not on the dc
+            let nonDCResources = Object.values(this._loadedResources).filter((r:T) => !r.id.includes(PREFIX_URI));
+            let nonDC : IdMap<T> = {};
+            if (nonDCResources.length > 0)
+                nonDCResources.forEach((r:T) => nonDC[r.id] = r);
             // Check that selected resources are in the resources loaded.
             this._resources.forEach((r:T) => {
                 if (!Object.values(resources).some((l:T) => l.id === r.id)) {
@@ -1135,7 +1259,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     resources[r.id] = r;
                 }
             });
-            this._loadedResources = resources;
+            this._loadedResources = { ...nonDC, ...resources };
             this._allResourcesLoading = false;
             this._allResourcesLoaded = true;
         });

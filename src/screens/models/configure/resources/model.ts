@@ -177,12 +177,6 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         return html`
             <table class="details-table">
                 <colgroup wir.="150px">
-                <!--tr>
-                    <td colspan="2" style="padding: 5px 20px;">
-                        <wl-title level="3"> {getLabel(r)} </wl-title>
-                    </td>
-                </tr-->
-
                 <tr>
                     <td>Category:</td>
                     <td>
@@ -588,7 +582,6 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         let inputInstallInstructions : Textfield = this.shadowRoot.getElementById("i-install-instructions") as Textfield;
 
         if ( inputLabel )                inputLabel.value = '';
-        //if ( inputCategory )             inputCategory.value = '';
         if ( inputKeywords )             inputKeywords.value = '';
         if ( inputShortDesc )            inputShortDesc.value = '';
         if ( inputDesc )                 inputDesc.value = '';
