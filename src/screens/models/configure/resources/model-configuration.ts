@@ -134,15 +134,15 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
 
         this._inputParameter = new ModelCatalogParameter();
         this._inputParameter.inline = false;
-        this._inputParameter.lazy = true;
+        this._inputParameter.lazy = false;
 
         this._inputDSInput = new ModelCatalogDatasetSpecification();
         this._inputDSInput.inline = false;
-        this._inputDSInput.lazy = true;
+        this._inputDSInput.lazy = false;
 
         this._inputDSOutput = new ModelCatalogDatasetSpecification();
         this._inputDSOutput.inline = false;
-        this._inputDSOutput.lazy = true;
+        this._inputDSOutput.lazy = false;
     }
 
     protected _setSubResources (r:ModelConfiguration) {
@@ -653,7 +653,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         if ( inputInstallInstructions )  inputInstallInstructions.value = '';
     }
 
-    protected _createLazyInnerResources (r:ModelConfiguration) {
+    /*protected _createLazyInnerResources (r:ModelConfiguration) {
         return new Promise((resolve, reject) => {
             let copy : ModelConfiguration = { ...r };
 
@@ -672,7 +672,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
                 resolve(copy);
             });
         });
-    }
+    }*/
 
     protected _getDBResources () {
         let db = (store.getState() as RootState).modelCatalog;
