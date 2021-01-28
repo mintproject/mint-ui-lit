@@ -10,9 +10,6 @@ import { showNotification } from "../../util/ui_functions";
 import { ExplorerStyles } from './model-explore/explorer-styles'
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
 
-import './configure/configuration';
-import './configure/new-config';
-import './configure/parameter';
 import './models-tree'
 
 import { showDialog, hideDialog } from 'util/ui_functions';

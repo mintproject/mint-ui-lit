@@ -327,7 +327,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 <td colspan="${this.positionAttr ? this.colspan +2 : this.colspan + 1}" align="center">
                     <a class="clickable" @click=${this._createResource}>Add a new ${this.name}</a>
                 </td>
-            </tr>` : (this._resources.length == 0 ? html`
+            </tr>` 
+            : (this._resources.length == 0 ? html`
             <tr>
                 <td colspan="${this.colspan + 1}" align="center">
                     ${ this._renderEmpty() }
@@ -412,8 +413,13 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     </td>` : ''}
                     ${this._renderRow(lr)}
                     ${this._action === Action.EDIT_OR_ADD ? html`
-                    <td>
-                        <wl-button class="edit" @click="${() => this._editResource(r)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
+                    <td style="width: ${this._deleteEnabled ? '65' : '30'}px">
+                        <div style="display: flex; justify-content: space-between;">
+                            <wl-button class="edit" @click="${() => this._editResource(r)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
+                            ${this._deleteEnabled ? html`
+                            <wl-button class="edit" @click="${() => this._deleteResource(r)}" flat inverted><wl-icon>delete</wl-icon></wl-button>
+                            ` : ''}
+                        </div>
                     </td>` : ''}`
                 }
             </tr>`;
@@ -977,9 +983,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             });
             if (index >= 0) {
                 this._resources.splice(index,1);
-            } else {
                 this.requestUpdate();
-            }
+            } 
             store.dispatch(this.resourceDelete(r)).then(() => {
                 this._notification.save(this.name + " deleted")
                 this._eventDelete(r);

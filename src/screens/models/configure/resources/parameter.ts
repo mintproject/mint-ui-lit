@@ -16,6 +16,7 @@ import 'components/data-catalog-id-checker';
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
+import 'weightless/checkbox';
 
 const renderParameterType = (param:Parameter) => {
     let ptype = param.type.filter(p => p != 'Parameter').map(uri => uri.split('#').pop())
