@@ -185,6 +185,10 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                 loading-dots {
                     --width: 20px;
                 }
+
+                .title:hover {
+                    color:rgb(15, 122, 207);
+                }
             `
         ];
     }
@@ -195,6 +199,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
             let modelType : string[] = this._model.type ?
                     this._model.type.map(t => t.replace('Model', '')).filter(t => !!t)
                     : [];
+            let modelUri : string = this._regionid + (this._url? this._url : this.PREFIX + getId(this._model));
         return html`
             <table>
               <tr>
@@ -210,11 +215,13 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                   </div>
                   <div>
                     <span class="helper"></span>
+                    <a href="${modelUri}" style="color: unset; text-decoration: none;">
                     ${this._loadingLogo ? html`<wl-progress-spinner></wl-progress-spinner>`
                       : (this._logo && this._logo.value ? html`<img src="${this._logo.value[0]}"/>`
                         : html`<wl-icon id="img-placeholder">image</wl-icon>`
                       )
                     }
+                    </a>
                   </div>
                   <div class="text-centered two-lines">
                     Category: ${this._model.hasModelCategory ? html`${this._model.hasModelCategory.map(getLabel).join(', ')}` : html`-`}
@@ -227,7 +234,9 @@ export class ModelPreview extends connect(store)(PageViewElement) {
 
                 <td class="right">
                   <div class="header"> 
-                    <span class="title">${this._model.label}</span>
+                    <a href="${modelUri}" style="color: unset; text-decoration: none;">
+                        <span class="title">${this._model.label}</span>
+                    </a>
                     <span class="icon">
                         <slot name="extra-icon"></slot>
                     </span>
@@ -254,7 +263,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                         ${this._model.keywords && this._model.keywords.length > 0 ? 
                             this._model.keywords.join(';').split(/ *; */).join(', ') : 'No keywords'}
                     </span>
-                    <a href="${this._regionid + (this._url? this._url : this.PREFIX + getId(this._model))}" class="details-button"> 
+                    <a href="${modelUri}" class="details-button"> 
                         More details
                     </a>
                   </div>

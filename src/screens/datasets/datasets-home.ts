@@ -76,9 +76,9 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
                     <wl-icon>library_add</wl-icon>
                     <div>Add Datasets</div>
                 </a-->
-                <a href="${this._regionid}/datasets/data-transformations">
-                    <wl-icon style="margin-top: 4px;">addchart</wl-icon>
-                    <div style="margin-top: -10px;">Data Transformations</div>
+                <a class="tight" href="${this._regionid}/datasets/data-transformations">
+                    <wl-icon>addchart</wl-icon>
+                    <div>Data Transformations</div>
                 </a>
                 <a href="${this._regionid}/datasets/quality-workflows">
                     <wl-icon>high_quality</wl-icon>

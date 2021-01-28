@@ -1,16 +1,5 @@
 query model_parameters_for_model($regionId: String!, $inputName: String!, $modelType: String!) {
-  model_parameter(where: {name: {_eq: $inputName}, model: {model_name: {_eq: $modelType}, thread_models: {thread: {_or: [{region_id: {_eq: $regionId}}, {region: {parent_region_id: {_eq: $regionId}}}]}}}}) {
-    datatype
-    fixed_value
-    execution_parameter_bindings(
-      where: {
-        execution: {
-          status: {_eq: "SUCCESS"}
-          model: {model_name: {_eq: $modelType}, thread_models: {thread: {_or: [{region_id: {_eq: $regionId}}, {region: {parent_region_id: {_eq: $regionId}}}]}}}
-        }
-      }, 
-      distinct_on: parameter_value) {
-      parameter_value
-    }
+  execution_parameter_binding(where: {model_parameter: {name: {_eq: $inputName}}, execution: {status: {_eq: "SUCCESS"}, model: {model_name: {_eq: $modelType}, thread_models: {thread: {_or: [{region_id: {_eq: $regionId}}, {region: {parent_region_id: {_eq: $regionId}}}]}}}}}, distinct_on: parameter_value) {
+    parameter_value
   }
 }

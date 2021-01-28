@@ -33,9 +33,6 @@ export class MintParameters extends connect(store)(MintThreadPage) {
     @property({type: Boolean})
     private _editMode: Boolean = false;
 
-    @property({type: Boolean})
-    private _waiting: Boolean = false;
-
     static get styles() {
         return [
           SharedStyles,
@@ -436,12 +433,7 @@ export class MintParameters extends connect(store)(MintThreadPage) {
         this._waiting = true;
         await setThreadParameters(model_ensembles, execution_summary, notes, this.thread);
 
-        // Refresh execution summary
-        for(let modelid in model_ensembles) {
-            store.dispatch(subscribeThreadExecutionSummary(this.thread.id, modelid, model_ensembles[modelid].id));
-        };
-
-        this._waiting = false;
+        this.selectAndContinue("parameters");
     }
 
     stateChanged(state: RootState) {

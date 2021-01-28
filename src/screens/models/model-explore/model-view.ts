@@ -70,6 +70,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object}) private _softwareImages : IdMap<SoftwareImage> = {} as IdMap<SoftwareImage>;
     @property({type: Object}) private _parameters : IdMap<Parameter> = {} as IdMap<Parameter>;
     @property({type: Object}) private _datasetSpecifications : IdMap<DatasetSpecification> = {} as IdMap<DatasetSpecification>;
+    @property({type: Object}) private _datasetSpecifications2 : IdMap<DatasetSpecification> = {} as IdMap<DatasetSpecification>;
     @property({type: Object}) private _interventions : IdMap<Intervention> = {} as IdMap<Intervention>;
     @property({type: Object}) private _variablePresentations : IdMap<VariablePresentation> = {} as IdMap<VariablePresentation>;
 
@@ -1336,6 +1337,8 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     private _renderFixedResource (ds: DatasetSpecification) {
+        if (this._datasetSpecifications2[ds.id])
+            ds = this._datasetSpecifications2[ds.id];
         return html`
             ${ds.hasFixedResource && ds.hasFixedResource.length > 0 &&
               ds.hasFixedResource[0].value && ds.hasFixedResource[0].value.length > 0 ? html`
@@ -1378,7 +1381,9 @@ export class ModelView extends connect(store)(PageViewElement) {
         return html`
             <wl-title level="3">${title}:</wl-title>
             ${dsArr.map((ds:DatasetSpecification) => html`
-            <wl-expansion id="${getLabel(ds)}" name="${title}" @click="${() => this._expandDS(ds)}" style="overflow-y: hidden;">
+            <wl-expansion id="${getLabel(ds)}" name="${title}" @click="${() => this._expandDS(ds)}"
+                    .disabled=${this._loading[ds.id]}
+                    style="overflow-y: hidden;">
                 <span slot="title" style="flex-grow: unset;">
                     ${this._loading[ds.id] ? 
                         getLabel(ds)
@@ -1450,8 +1455,14 @@ export class ModelView extends connect(store)(PageViewElement) {
         `
     }
 
+    private _closeAllExpansions () {
+        let allExp = this.shadowRoot.querySelectorAll('wl-expansion');
+        if (allExp && allExp.length > 0) {
+            allExp.forEach(exp => exp["checked"] = false);
+        }
+    }
+
     private _expandDS (ds: DatasetSpecification) {
-        console.log('>', ds.id);
         if (!this._loading[ds.id]) {
             if (!this._loadedPresentations[ds.id]) {
                 let db = (store.getState() as RootState).modelCatalog;
@@ -1459,13 +1470,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                 let dataset = this._datasetSpecifications[ds.id];
                 if (dataset.hasPresentation && dataset.hasPresentation.length > 0)
                     this._loadVariablePresentations(dataset.hasPresentation, db);
-                else
+                else 
                     this.requestUpdate();
             }
-        } else {
-            setTimeout(() => {
-                this._expandDS(ds);
-            }, 500);
         }
     }
 
@@ -1776,8 +1783,14 @@ export class ModelView extends connect(store)(PageViewElement) {
                         if (setup.hasParameter) this._loadParameters(setup.hasParameter, db);
                         if (setup.hasInput) this._loadDatasetSpecifications(setup.hasInput, db);
                         if (setup.hasOutput) this._loadDatasetSpecifications(setup.hasOutput, db);
-                        
+
+                        (setup.hasInput || []).concat(setup.hasOutput || []).forEach((ds:DatasetSpecification) => {
+                            //FIXME: this does not return hasFixedValue -> hasPart
+                            this._datasetSpecifications2[ds.id] = ds;
+                        });
+
                         this._setup = setup;
+                        this._closeAllExpansions();
                         this._loading[this._selectedSetup] = false;
                     }).catch((error) => {
                         if (error.status == 404) {

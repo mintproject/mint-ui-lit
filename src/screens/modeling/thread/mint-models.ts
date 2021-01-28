@@ -64,8 +64,6 @@ export class MintModels extends connect(store)(MintThreadPage) {
 
     @property({type: Object})
     private _allRegions : any = {};
-    @property({type:Boolean})
-    private _waiting: boolean = false;
 
     private _dispatched: Boolean = false;
     private _pendingQuery: Boolean = false;
@@ -150,6 +148,11 @@ export class MintModels extends connect(store)(MintThreadPage) {
         ]
     }
 
+    private _createModelCatalogUri(region: Region) {
+        let prefix="https://w3id.org/okn/i/mint/";
+        return (prefix + region.name).replace(/\s/g,'_');
+    }
+
     protected render() {
         if(!this.thread) {
             return html ``;
@@ -157,12 +160,35 @@ export class MintModels extends connect(store)(MintThreadPage) {
                 
         let modelids = Object.keys((this.thread.models || {})) || [];
         let done = (this.thread.models && modelids.length > 0);
+        if(!this._responseVariables)
+            return;
+            
         let availableModels = this._queriedModels[this._responseVariables.join(",")] || [];
-        let regionModels = availableModels.filter((model: Model) =>
-            !model.hasRegion ||
-            model.hasRegion.length == 0 ||
-            (model.hasRegion||[]).some((region) => isSubregion(this._region.model_catalog_uri, region))
-        );
+        
+        // Filter all available models by region        
+        let regionModels = [];
+        // Filter by subregion first
+        if(this._subregion) {
+            // If no model catalog uri for this region, create one
+            if(!this._subregion.model_catalog_uri)
+                this._subregion.model_catalog_uri = this._createModelCatalogUri(this._subregion);
+            regionModels = availableModels.filter((model: Model) =>
+                !model.hasRegion ||
+                model.hasRegion.length == 0 ||
+                (model.hasRegion||[]).some((region) => isSubregion(this._subregion.model_catalog_uri, region))
+            );  
+        }
+        // Then filter by main region if no models for subregion
+        if(regionModels.length == 0) {
+            if(!this._region.model_catalog_uri)
+                this._region.model_catalog_uri = this._createModelCatalogUri(this._region);
+            regionModels = availableModels.filter((model: Model) =>
+                !model.hasRegion ||
+                model.hasRegion.length == 0 ||
+                (model.hasRegion||[]).some((region) => isSubregion(this._region.model_catalog_uri, region))
+            );
+        }
+
         let latest_update_event = getLatestEventOfType(["CREATE", "UPDATE"], this.thread.events);
         let latest_model_event = getLatestEventOfType(["SELECT_MODELS"], this.thread.events);
         return html`
@@ -488,8 +514,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
         // FIXME: Warn user that this will delete existing data/parameter/runs ?
 
         await setThreadModels(models, notes, this.thread);
-
-        this._waiting = false;
+        this.selectAndContinue("models");
     }
 
     _queryModelCatalog() {

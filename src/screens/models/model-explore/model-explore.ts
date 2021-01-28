@@ -193,7 +193,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                 --><wl-select id="search-type-selector" label="Search on" @input="${this._onSearchTypeChange}" value="${this._searchType}">
                    <option value="full-text">Name, description and keywords</option>
                    <option value="variables">Variable names</option>
-                   <option value="index">Index</option>
+                   <option value="index">Index or indicator</option>
                    <option value="intervention">Intervention</option>
                    <option value="region">Region</option>
                 </wl-select>
@@ -439,7 +439,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         store.dispatch( numericalIndexsGet () ).then((indices:IdMap<NumericalIndex>) => {
             this._loadingIndex = false;
             this._index = indices;
-            console.log('indices:', indices);
         })
     }
 

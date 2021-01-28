@@ -23,6 +23,7 @@ export class ModelCatalogStandardVariable extends connect(store)(ModelCatalogRes
     protected resourcePost = standardVariablePost;
     protected resourcePut = standardVariablePut;
     protected resourceDelete = standardVariableDelete;
+    public uniqueLabel : boolean = true;
 
     protected _renderForm () {
         let edResource = this._getEditingResource();

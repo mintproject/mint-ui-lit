@@ -68,13 +68,12 @@ export class AppHome extends connect(store)(PageViewElement) {
           }
 
           .middle2main {
-            /*height: calc(100% - 110px);*/
-            height: calc(100% - 240px);
+            height: calc(70%);
+            min-height: 300px;
           }
-          
-		  .middle > p {
-			margin-bottom: 5px;
-		  }
+          .middle > p {
+            margin-bottom: 5px;
+          }
         `
       ];
     }

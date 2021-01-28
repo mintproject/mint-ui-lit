@@ -10,7 +10,7 @@ import { Model } from "../models/reducers";
 
 import { IdMap, UserPreferences } from 'app/reducers';
 import { ProblemStatementInfo, ProblemStatementList, ThreadInfo, ThreadEvent, Task, Thread } from 'screens/modeling/reducers';
-import { fetchThread, fetchProblemStatement, fetchProblemStatementsList } from 'screens/modeling/actions';
+import { fetchThread, fetchProblemStatement, fetchProblemStatementsList } from './actions';
 
 import { fromTimeStampToDateString } from "util/date-utils";
 import { getURL } from 'model-catalog/util';
@@ -367,28 +367,25 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
     if(this._list && this._list.unsubscribe)
       this._list.unsubscribe();
     this._dispatched = true;
-    console.log("Subscribing to Problem Statement List for " + this._top_regionid);
+    console.log("Fetching Problem Statement List for " + this._top_regionid);
     store.dispatch(fetchProblemStatementsList(this._top_regionid));
   }
 
   stateChanged(state: RootState) {
-    /* This could stay active when moving to another page for links, so autoupdate active property */
-    super.setSubPage(state);
-    this.active = (this._subpage === 'report');
     this.prefs = state.app.prefs;
 
-    if (state.modeling) {
-      if (state.modeling.problem_statements) {
-        this._list = state.modeling.problem_statements;
+    if (state.analysis) {
+      if (state.analysis.problem_statements) {
+        this._list = state.analysis.problem_statements;
         this._dispatched = false;
       }
-      if (state.modeling.problem_statement && (!this._tasks[state.modeling.problem_statement.id])) {
-        this._tasks[state.modeling.problem_statement.id] = state.modeling.problem_statement.tasks;
-        this._loading[state.modeling.problem_statement.id] = false;
+      if (state.analysis.problem_statement && (!this._tasks[state.analysis.problem_statement.id])) {
+        this._tasks[state.analysis.problem_statement.id] = state.analysis.problem_statement.tasks;
+        this._loading[state.analysis.problem_statement.id] = false;
         this.requestUpdate();
       }
-      if (state.modeling.thread && !this._thread && (state.modeling.thread.id === state.ui.selected_thread_id)) {
-        this._thread = state.modeling.thread;
+      if (state.analysis.thread && !this._thread && (state.analysis.thread.id === state.ui.selected_thread_id)) {
+        this._thread = state.analysis.thread;
         this.requestUpdate();
       }
     }

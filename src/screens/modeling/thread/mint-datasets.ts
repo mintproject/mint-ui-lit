@@ -48,9 +48,6 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
     @property({type: Boolean})
     private _editMode: Boolean = false;
 
-    @property({type: Boolean})
-    private _waiting: Boolean = false;
-
     @property({type: Array})
     private _datasetsToCompare: Dataset[] = [];
 
@@ -237,6 +234,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                     <ul>
                     ${input_files.map((input) => {
                         let bindings:string[] = ensembles[input.id!];
+                        let dbindings = (bindings || []).map((bid) => this.thread.data[bid]?.dataset?.id);
 
                         if((bindings && bindings.length > 0) && !this._editMode) {
                             // Already present: Show selections
@@ -246,6 +244,9 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                 <ul>
                                     ${bindings.map((binding) => {
                                         let dataslice = this.thread.data![binding];
+                                        if(!dataslice) {
+                                            return;
+                                        }
                                         let num_selected_resources = dataslice.selected_resources ?? 0;
                                         let num_total_resources = dataslice.total_resources ?? 0;
                                         return html`
@@ -309,7 +310,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                                     <tr>
                                                         <td><input class="${this._valid(modelid)}_${this._valid(input.id!)}_checkbox" 
                                                             type="checkbox" data-datasetid="${dataset.id}"
-                                                            ?checked="${(bindings || []).indexOf(dataset.id!) >= 0}"></input></td>
+                                                            ?checked="${(dbindings || []).indexOf(dataset.id!) >= 0}"></input></td>
                                                         <td class="${matched ? 'matched': ''}">
                                                             <a target="_blank" href="${this._regionid}/datasets/browse/${dataset.id}/${this.getSubregionId()}">${dataset.name}</a>
                                                             <br/>
@@ -693,6 +694,18 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
             showNotification("saveNotification", this.shadowRoot!);            
             await selectThreadDataResources(this._selectResourcesData.id, resource_selected, this.thread.id);
             this._waiting = false;
+            this.selectAndContinue("datasets");
+        }
+        let mainSelection = this.shadowRoot.querySelectorAll('input');
+        if (mainSelection && mainSelection.length > 0) {
+            for (let i = 0;  i < mainSelection.length; i++) {
+                if (mainSelection[i].getAttribute("data-datasetid") === this._selectResourcesData.id) {
+                    console.log("match!")
+                    mainSelection[i]["checked"] = true;
+                    this.requestUpdate();
+                    break;
+                }
+            }
         }
         hideDialog("resourceSelectionDialog", this.shadowRoot);        
     }
@@ -733,23 +746,34 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
             })
         });
         console.log("Loading Datasets...");
+        /*
+        if(new_datasets.length == 0) {
+            this._waiting = false;
+            alert("Please select a dataset");
+            return;
+        }
+        */
 
         Promise.all(Object.values(new_datasets)
-                .filter(ds => !ds.resources_loaded)
-                .map(ds => this._loadDatasetResources(ds))
+                .filter(ds => !ds.dataset.resources_loaded)
+                .map(ds => this._loadDatasetResources(ds.dataset))
         ).then((values) => {
-            this._waiting = false;
             this._selectThreadDatasets();
         });
 
     }
 
     async _selectThreadDatasets() {
-        let data: DataMap = this.thread.data || {};
+        let data: DataMap = {}; //this.thread.data || {};
         let model_ensembles: ModelEnsembleMap = this.thread.model_ensembles || {};
 
+        let data_transformations = {}; //FIXME: load from firestore
+        let model_dt_ensembles: ModelEnsembleMap = this.thread.model_dt_ensembles || {};
+        
+        let allok = true;
         Object.keys(this.thread.models!).map((modelid) => {
             let model = this.thread.models![modelid];
+            let ok = true;
             model.input_files.filter((input) => !input.value).map((input) => {
                 let inputid = input.id!;
                 // If not in edit mode, then check if we already have bindings for this
@@ -761,45 +785,56 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
 
                 let newdata = this._getDatasetSelections(modelid, inputid);
                 let new_datatransformations = this._getDataTransformationSelections(modelid, inputid);
-        
+                
+                if(!model_ensembles[modelid])
+                    model_ensembles[modelid] = {
+                        id: uuidv4(),
+                        bindings: {}
+                    };                
+                model_ensembles[modelid].bindings[inputid] = [];
                 Object.keys(newdata).map((sliceid) => {
-                    if(!model_ensembles[modelid])
-                        model_ensembles[modelid] = {
-                            id: uuidv4(),
-                            bindings: {}
-                        };
-                    if(!model_ensembles[modelid].bindings[inputid])
-                        model_ensembles[modelid].bindings[inputid] = [];
                     model_ensembles[modelid].bindings[inputid].push(sliceid!);
                     data[sliceid] = newdata[sliceid];
                 }); 
                 
 
                 // Now add the data transformations
-                let data_transformations = {}; //FIXME: load from firestore
-                let model_dt_ensembles: ModelEnsembleMap = this.thread.model_dt_ensembles || {};
+                if(!model_dt_ensembles[modelid])
+                    model_dt_ensembles[modelid] = {
+                        id: uuidv4(),
+                        bindings: {}
+                    };                
+                model_dt_ensembles[modelid].bindings[inputid] = [];
                 Object.keys(new_datatransformations).map((dtid) => {
-                    if(!model_dt_ensembles[modelid])
-                        model_dt_ensembles[modelid] = {
-                            id: uuidv4(),
-                            bindings: {}
-                        };
-                    if(!model_dt_ensembles[modelid].bindings[inputid])
-                        model_dt_ensembles[modelid].bindings[inputid] = [];
                     model_dt_ensembles[modelid].bindings[inputid].push(dtid!);
                     data_transformations[dtid] = new_datatransformations[dtid];
                 });
+
+                if(model_ensembles[modelid].bindings[inputid].length == 0 &&
+                    model_dt_ensembles[modelid].bindings[inputid].length == 0) {
+                        ok = false;
+                    }
             })
+            if(!ok) {
+                allok = false;
+            }
         });
+
+        if(!allok) {
+            this._waiting = false;
+            this._editMode = true;
+            alert("Please select atleast one dataset");
+            return;
+        }
+
         // Turn off edit mode
         this._editMode = false;
+
         showNotification("saveNotification", this.shadowRoot!);
 
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-
-        this._waiting = true;
         await setThreadData(data, model_ensembles, notes, this.thread);
-        this._waiting = false;
+        this.selectAndContinue("datasets");
     }
 
     firstUpdated() {
@@ -859,53 +894,55 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         super.setThread(state);
         if(this.thread && this.thread.models != this._models) {
             this._models = this.thread.models!;
-            if (Object.keys(this._models).length > 0) {
-                Object.values(this._models).forEach((m:Model) => {
-                    (m.input_files || []).forEach((i) => {
-                        if (!this._loading[i.id] && !this._dsInputs[i.id]) {
-                            this._loading[i.id] = true;
-                            store.dispatch(datasetSpecificationGet(i.id)).then((ds:DatasetSpecification) => {
-                                this._dsInputs[ds.id] = ds;
-                                this._loading[ds.id] = false;
-                                (ds.hasDataTransformation || []).forEach((dt) => {
-                                    if (!this._loading[dt.id] && !this._dataTransformations[dt.id]) {
-                                        this._loading[dt.id] = true;
-                                        store.dispatch(dataTransformationGet(dt.id)).then((DT) => {
-                                            this._dataTransformations[DT.id] = DT;
-                                            this._loading[DT.id] = false;
-                                            if (!this._inputDT[i.id]) this._inputDT[i.id] = [];
-                                            this._inputDT[i.id].push(DT);
-                                            this.requestUpdate();
-                                        });
-                                    }
-                                });
-                            })
-                        }
-                    });
-                    /*let fixed = m.input_files.filter((i) => !!i.value);
-                    if (false && fixed.length > 0) { //FIXME: not all inputs are in the catalog!
-                        if (!this._mcInputs[m.id]) {
-                            this._mcInputs[m.id] = new ModelCatalogDatasetSpecification();
-                            this._mcInputs[m.id].inline = false;
-                            this._mcInputs[m.id].isSetup = true;
-                            this._mcInputs[m.id].colspan = 4;
-                            //this._mcInputs.setAsSetup();
-                        }
-                        let fakeInputs = fixed.map((i) => {
-                            return {
-                                id: i.id,
-                                label: [i.name]
-                            };
+            if(this._models) {
+                if (Object.keys(this._models).length > 0) {
+                    Object.values(this._models).forEach((m:Model) => {
+                        (m.input_files || []).forEach((i) => {
+                            if (!this._loading[i.id] && !this._dsInputs[i.id]) {
+                                this._loading[i.id] = true;
+                                store.dispatch(datasetSpecificationGet(i.id)).then((ds:DatasetSpecification) => {
+                                    this._dsInputs[ds.id] = ds;
+                                    this._loading[ds.id] = false;
+                                    (ds.hasDataTransformation || []).forEach((dt) => {
+                                        if (!this._loading[dt.id] && !this._dataTransformations[dt.id]) {
+                                            this._loading[dt.id] = true;
+                                            store.dispatch(dataTransformationGet(dt.id)).then((DT) => {
+                                                this._dataTransformations[DT.id] = DT;
+                                                this._loading[DT.id] = false;
+                                                if (!this._inputDT[i.id]) this._inputDT[i.id] = [];
+                                                this._inputDT[i.id].push(DT);
+                                                this.requestUpdate();
+                                            });
+                                        }
+                                    });
+                                })
+                            }
                         });
-                        this._mcInputs[m.id].setResources(fakeInputs);
-                    }*/
-                });
+                        /*let fixed = m.input_files.filter((i) => !!i.value);
+                        if (false && fixed.length > 0) { //FIXME: not all inputs are in the catalog!
+                            if (!this._mcInputs[m.id]) {
+                                this._mcInputs[m.id] = new ModelCatalogDatasetSpecification();
+                                this._mcInputs[m.id].inline = false;
+                                this._mcInputs[m.id].isSetup = true;
+                                this._mcInputs[m.id].colspan = 4;
+                                //this._mcInputs.setAsSetup();
+                            }
+                            let fakeInputs = fixed.map((i) => {
+                                return {
+                                    id: i.id,
+                                    label: [i.name]
+                                };
+                            });
+                            this._mcInputs[m.id].setResources(fakeInputs);
+                        }*/
+                    });
+                }
+
+
+                this.queryDataCatalog();
+                if(this.thread.id != thread_id) 
+                    this._resetEditMode();
             }
-
-
-            this.queryDataCatalog();
-            if(this.thread.id != thread_id) 
-                this._resetEditMode();
         }
 
         if(state.datasets && state.datasets.model_datasets) {

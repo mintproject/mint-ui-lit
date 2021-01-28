@@ -153,6 +153,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: String}) protected _status : Status = Status.NONE; //NONE, CREATE, EDIT, CUSTOM_CREATE,
 
     @property({type: Boolean}) public inline : boolean = true;
+    @property({type: Boolean}) public uniqueLabel : boolean = false;
     @property({type: Boolean}) private _dialogOpen : boolean = false;
     @property({type: Boolean}) protected _waiting : boolean = false;
     @property({type: Boolean}) protected _singleMode : boolean = false;
@@ -768,21 +769,31 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         //FIXME: this should be a unique getresourceformfrom function.
         let resource = this._singleMode ? this._getResourceFromFullForm() : this._getResourceFromForm();
         if (resource && this._status != Status.NONE) {
+            if (!this.uniqueLabel || this._checkLabelUniq(getLabel(resource))) {
+                if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
+                    resource.id = "";
+                } else if (this._status === Status.EDIT) {
+                    resource.id = this._editingResourceId;
+                    resource = this._createEditedResource(resource);
+                }
 
-            if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
-                resource.id = "";
-            } else if (this._status === Status.EDIT) {
-                resource.id = this._editingResourceId;
-                resource = this._createEditedResource(resource);
+                if (this.lazy) this._saveResourceLazy(resource);
+                else this._saveResource(resource);
+            } else {
+                this._notification.error('The name "'+ getLabel(resource) + '" is already on use.');
             }
-
-            if (this.lazy) this._saveResourceLazy(resource);
-            else this._saveResource(resource);
         }
     }
 
+    private _checkLabelUniq (label:string) {
+        //Is all loaded?
+        let llabel : string = label.toLowerCase();
+        return !Object.values(this._loadedResources).some((r:T) => 
+            r && r.label && r.label.some((name:string) => name.toLowerCase() == llabel)
+        );
+    }
+
     private _saveResource (r:T) {
-        console.log('_saveResource ID:', r.id);
         this._waiting = true;
         return new Promise((resolve, reject) => {
             let inner : Promise<T> = this._createLazyInnerResources(r);

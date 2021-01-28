@@ -59,7 +59,13 @@ export class TaskEditor extends connect(store)(LitElement) {
     
     @property({type: Object})
     private _variableMap: VariableMap = {};
+
+    @property({type: Boolean})
+    public addingTask: boolean = false;
     
+    @property({type: String})
+    public editingTaskId: string = null;
+
     static get styles() {
         return [SharedStyles, css`
             fieldset {
@@ -228,7 +234,6 @@ export class TaskEditor extends connect(store)(LitElement) {
         (form.elements["task_from"] as HTMLInputElement).value = toDateString(dates?.start_date);
         (form.elements["task_to"] as HTMLInputElement).value = toDateString(dates?.end_date);
         (form.querySelector("#task_permissions") as PermissionsEditor).setPermissions([]);
-
         this._selectedIntervention = null;
     }
 
@@ -295,13 +300,16 @@ export class TaskEditor extends connect(store)(LitElement) {
         let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#taskForm")!;
         if(formElementsComplete(form, ["response_variable", "task_from", "task_to"])) {
             let task_name = (form.elements["task_name"] as HTMLInputElement).value;
-            let task_from = (form.elements["task_from"] as HTMLInputElement).value;
-            let task_to = (form.elements["task_to"] as HTMLInputElement).value;
+            let task_from = new Date((form.elements["task_from"] as HTMLInputElement).value);
+            let task_to = new Date((form.elements["task_to"] as HTMLInputElement).value);
             let task_region = (form.elements["task_region"] as HTMLInputElement).value;
             if(!task_region)
                 task_region = this._regionid;
             let task_permissions = (form.querySelector("#task_permissions") as PermissionsEditor).permissions;
-                
+            if(task_from >= task_to) {
+                alert("The start date should be before the end date");
+                return;
+            }
             showNotification("saveNotification", this.shadowRoot!);
             // If no taskid then this is a new task
             if(this.task) {
@@ -309,8 +317,8 @@ export class TaskEditor extends connect(store)(LitElement) {
                 this.task.name = task_name;
                 this.task.regionid = task_region;
                 this.task.dates = {
-                    start_date: new Date(task_from),
-                    end_date: new Date(task_to)
+                    start_date: task_from,
+                    end_date: task_to
                 };
 
                 // Temporary addition FIXME:
@@ -336,6 +344,8 @@ export class TaskEditor extends connect(store)(LitElement) {
                         updateThreadInformation(thread);
                     }
                 })
+
+                this.editingTaskId = this.task.id;
             }
             else {
                 // Add Task
@@ -347,8 +357,8 @@ export class TaskEditor extends connect(store)(LitElement) {
                     driving_variables: driving_variable ? [driving_variable] : [],
                     response_variables: response_variable ? [response_variable] : [],
                     dates: {
-                        start_date: new Date(task_from),
-                        end_date: new Date(task_to)
+                        start_date: task_from,
+                        end_date: task_to
                     },
                     threads: {},
                     events: [getCreateEvent(task_name) as TaskEvent],
@@ -360,8 +370,8 @@ export class TaskEditor extends connect(store)(LitElement) {
                     driving_variables: driving_variable ? [driving_variable] : [],
                     response_variables: response_variable ? [response_variable] : [],
                     dates: {
-                        start_date: new Date(task_from),
-                        end_date: new Date(task_to)
+                        start_date: task_from,
+                        end_date: task_to
                     },
                     models: {},
                     data: {},
@@ -370,6 +380,8 @@ export class TaskEditor extends connect(store)(LitElement) {
                     events: [getCreateEvent("Default Thread Created") as ThreadEvent],
                     permissions: task_permissions
                 } as Thread
+
+                this.addingTask = true;
 
                 // Create the Task along with default thread
                 let ids = await addTaskWithThread(this.problem_statement!, this.task, thread);
@@ -402,7 +414,6 @@ export class TaskEditor extends connect(store)(LitElement) {
         }
         if(state.variables && state.variables.variables) {
             this._variableMap = state.variables.variables;
-        }
-        
+        }        
     }
 }

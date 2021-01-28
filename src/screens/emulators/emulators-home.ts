@@ -448,7 +448,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                                 `;
                                             })}
                                             <tr>
-                                                <td colspan="3">Add New Filter</td>
+                                                <td colspan="3">Filter model runs based on input parameter ranges and datasets</td>
                                             </tr>
                                             <tr>
                                                 <td>

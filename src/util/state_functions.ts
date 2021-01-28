@@ -89,7 +89,8 @@ export const getThreadParametersStatus = (thread:Thread) => {
     return TASK_NOT_STARTED;
 }
 
-export const getThreadRunsStatus = (sum: IdMap<ExecutionSummary>) => {
+export const getThreadRunsStatus = (thread: Thread) => {
+    let sum = thread?.execution_summary;
     if (sum && Object.keys(sum).length > 0) {
         let ok = true;
         Object.keys(sum).map((modelid) => {
@@ -104,10 +105,11 @@ export const getThreadRunsStatus = (sum: IdMap<ExecutionSummary>) => {
     return TASK_NOT_STARTED;
 }
 
-export const getThreadResultsStatus = (sum: IdMap<ExecutionSummary>) => {
-    if(getThreadRunsStatus(sum) != TASK_DONE)
+export const getThreadResultsStatus = (thread: Thread) => {
+    if(getThreadRunsStatus(thread) != TASK_DONE)
         return TASK_NOT_STARTED;
     
+    let sum = thread?.execution_summary;
     if (sum && Object.keys(sum).length > 0) {
         let ok = true;
         Object.keys(sum).map((modelid) => {
@@ -161,7 +163,7 @@ export const getUISelectedSubgoalRegion = (state: RootState) => {
 }
 
 export const getVisualizationURLs = (thread: Thread, task: Task, problem_statement: ProblemStatementInfo, prefs: MintPreferences) => {
-    if(getThreadResultsStatus(thread.execution_summary) == "TASK_DONE") {
+    if(getThreadResultsStatus(thread) == "TASK_DONE") {
         let responseV = thread.response_variables.length > 0? thread.response_variables[0] : '';
 
         let visualizations = [];

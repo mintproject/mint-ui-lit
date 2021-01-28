@@ -49,7 +49,6 @@ export class PermissionsEditor extends LitElement {
         if(!this._permission) {
             return html``;
         }
-        console.log(this._permission);
         return html`
             <div class="input_full">
                 <label>Sharing</label>

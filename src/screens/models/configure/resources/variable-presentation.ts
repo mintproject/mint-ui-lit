@@ -34,6 +34,7 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
     protected resourcePost = variablePresentationPost;
     protected resourcePut = variablePresentationPut;
     protected resourceDelete = variablePresentationDelete;
+    public uniqueLabel : boolean = true;
 
     private _inputStandardVariable : ModelCatalogStandardVariable;
 

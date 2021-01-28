@@ -27,7 +27,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
     private _editMode: Boolean = false;
    
     @property({type: Boolean})
-    private _showAllResults: Boolean = true;
+    private _showAllResults: Boolean = false;
 
     @property({type: Object})
     private totalPages : Map<string, number> = {} as Map<string, number>;
@@ -146,7 +146,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                let grouped_ensemble = grouped_executions[modelid];
                this.totalPages[modelid] = Math.ceil(summary.total_runs/this.pageSize);
                let finished_runs = summary.successful_runs + summary.failed_runs;
-               let submitted_runs = summary.submitted_for_execution;
+               let submitted_runs = (summary.submitted_for_execution || summary.submission_time);
                let submitted = summary.submitted_for_ingestion;
                let finished_ingestion = (summary.ingested_runs == summary.total_runs);
                let finished = (finished_runs == summary.total_runs);
@@ -160,7 +160,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                     this._fetchRuns(model.id, 1, this.pageSize)
                 }
                 */
-
+               
                 if(!submitted_runs) {
                     return "Please execute some runs first";
                 }
@@ -178,7 +178,8 @@ export class MintResults extends connect(store)(MintThreadPage) {
                         The parameter settings you selected required ${summary.total_runs} runs. 
                         ${!finished ? "So far, " : ""} ${summary.submitted_runs} model runs
                         ${!finished ? "have been" : "were"} submitted, out of which 
-                        ${summary.successful_runs} succeeded and produced results, while ${summary.failed_runs} failed.
+                        ${summary.successful_runs} succeeded and produced results, 
+                        while <span .style="color:${summary.failed_runs?'red': ''}">${summary.failed_runs} failed</span>.
                         ${running > 0 ? html `${running} are currently running` : ""}
                         ${running > 0 && pending > 0 ? ', and ' : ''}
                         ${pending > 0 ? html `${pending} are waiting to be run` : ""}
@@ -327,14 +328,14 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                                 }
                                                 if(!fname)
                                                     fname = result.location.replace(/.+\//, '');
-                                                return html`<td><a href="${furl}">${fname}</a></td>`;
+                                                return html`<td><a target="_blank" href="${furl}">${fname}</a></td>`;
                                             })}
                                             ${grouped_ensemble.inputs.map((input) => {
                                                 let res = ensemble.bindings[input.id] as DataResource;
                                                 if(res) {
                                                     // FIXME: This could be resolved to a collection of resources
                                                     return html`
-                                                        <td><a href="${res.url}">${res.name}</a></td>
+                                                        <td><a target="_blank" href="${res.url}">${res.name}</a></td>
                                                     `;
                                                 }
                                             })}

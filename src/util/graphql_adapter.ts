@@ -141,7 +141,8 @@ export const problemStatementFromGQL = (problem: any) : ProblemStatement => {
         },
         events: problem["events"].map(eventFromGQL),
         permissions: problem["permissions"].map(permissionFromGQL),
-        tasks: {}
+        tasks: {},
+        preview: problem["preview"]
     } as ProblemStatement;
     if(problem["tasks"]) {
         problem["tasks"].forEach((task:any) => {
@@ -696,6 +697,7 @@ const modelIOToGQL = (io: any) => {
         "id": io["id"],
         "name": io["name"],
         "type": io["type"],
+        "format": io["format"],
         "fixed_bindings": fixed_bindings,
         "variables": {
             "data": io["variables"].map((v) => { 

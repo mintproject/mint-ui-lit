@@ -31,6 +31,7 @@ export const SharedStyles = css`
     --nav-color: #232323;
     --nav-height: 50px;
     --nav-title-margin: 0px;
+    --nav-padding: 10px;
     border-bottom: 1px solid #E6E6E6;
   }   
 
@@ -227,6 +228,12 @@ export const SharedStyles = css`
       --icon-size: 100px;
       margin-top: 10px;
   }
+  .icongrid a.tight wl-icon {
+    margin-top: 4px;
+  }
+  .icongrid a.tight div {
+    margin-top: -10px;
+  }  
   .icongrid > a[disabled]{
     color: gray;
     border-color: gray;
@@ -343,12 +350,13 @@ export const SharedStyles = css`
   /* End of Tree View */
 
   .card {
-    margin: 15px;
+    margin: 10px;
     left: 0px;
     right: 0px;
     padding: 10px;
-    height: calc(100% - 50px);
-    background: #FFFFFF;
+    padding-top: 0px;
+    height: calc(100% - 75px);
+    overflow: auto;
   }
 
   .page {
@@ -633,21 +641,21 @@ export const SharedStyles = css`
     line-height: 26px;
     font-size: 13px;
     font-weight: bold;
-    padding: 0 10px 0 5px;
+    padding: 0 5px 0 0px;
     text-align: center;
-    margin: 2px 23px 1px 0px;
+    margin: 2px 19px 1px 0px;
   }
   .breadcrumbs a:before, .breadcrumbs a:after {
     content: "";
     position: absolute;
     top: 0;
     border: 0 solid #f0f0f0;
-    border-width: 13px 12px;
+    border-width: 13px 8px;
     width: 0;
     height: 0;
   }
   .breadcrumbs a:before {
-    left: -19px;
+    left: -15px;
     border-left-color: transparent;
   }
   .breadcrumbs a:after {
@@ -711,15 +719,81 @@ export const SharedStyles = css`
   /* End of input type = file */
 
   @media (max-width: 768px) {
-    .breadcrumbs a {
-      font-size: 12px;
-      width: 70px;
+    wl-list-item {
+      --list-item-padding: 10px;
+      --list-item-after-margin: 5px;
+    }
+    .card {
+      margin: 5px;
+      padding: 5px;
+      padding-top: 0px;
+    }
+    .card2 {
+        padding: 0px;
+    }
+    .icongrid {
+      display: grid;
+      grid-template-columns: 120px 120px;
+      grid-template-rows: 120px 120px;
+      margin-left: calc(50% - 120px);
+      margin-top: 60px;
+    }
+    .icongrid a {
+        border: 2px solid #0f7acf;
+        border-radius: 5px;
+        font-size: 12px;
+        margin: 2px;
+    }
+    .icongrid wl-icon {
+        --icon-size: 40px;
+        margin-top: 30px;
+    }
+    .icongrid a.tight wl-icon {
+      margin-top: 24px;
+    }
+    .icongrid a.tight div {
+      margin-top: 0px;
+    }      
+    .svgicon {
+      margin-top: 30px;
+      width: 40px;
+      height: 40px;
     }
   }
+
+  @media (max-width: 768px) {
+    /* Smaller Breadcrumbs for thread */
+    .breadcrumbs .icon {
+      font-size: 10px;
+    }
+    .breadcrumbs a {
+      width: auto;
+      min-width: 30px;
+      font-size: 12px;
+      padding: 0 6px 0 3px;
+      margin-right: 14px;
+    }
+    .breadcrumbs a:before, .breadcrumbs a:after {
+      border-width: 13px 6px;
+    }
+    .breadcrumbs a:before {
+      left: -12px;
+    }
+  }
+
   @media (max-width: 480px) {
     .breadcrumbs a {
-      font-size: 9px;
-      width: 49px;
+      width: auto;
+      min-width: 20px;
+      font-size: 10px;
+      padding: 0 4px 0 2px;
+      margin-right: 10px;
+    }
+    .breadcrumbs a:before, .breadcrumbs a:after {
+      border-width: 13px 4px;
+    }
+    .breadcrumbs a:before {
+      left: -8px;
     }
   }
 
