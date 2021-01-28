@@ -324,7 +324,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
         }
 
         if (this._nConfigs > 0 && this._nSetups < 0 && !this._regions && this._region &&
-                ![db.configurations, db.setups, db.regions].map(isEmpty).some(b=>b)) {
+                ![db.configurations, db.regions].map(isEmpty).some(b=>b)) {
             // We filter for region, so we need to compute the url, local setups and regions.
             this._regions = new Set();
             this._nLocalSetups = 0;

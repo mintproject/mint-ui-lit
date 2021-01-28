@@ -227,7 +227,6 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                             </span>
                         </span>
                         ${this._visible[version.id] ? html`
-                        ${Object.keys(this._configs).length === 0 ? html`<loading-dots style="--width: 20px;"></loading-dots>` : html`
                         <ul style="padding-left: 30px;">
                             ${(version.hasConfiguration || [])
                                 .filter(c => !!c.id)
@@ -268,7 +267,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                                     Add new configuration
                                 </a>
                             </li>
-                        </ul>`}
+                        </ul>
                         ` : ''}
                     </li>`)}
                 </ul>

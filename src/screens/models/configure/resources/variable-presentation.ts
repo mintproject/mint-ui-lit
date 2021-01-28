@@ -13,6 +13,7 @@ import { ExplorerStyles } from '../../model-explore/explorer-styles'
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
+import { ModelCatalogStandardVariable } from './standard-variable';
 
 @customElement('model-catalog-variable-presentation')
 export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalogResource)<VariablePresentation> {
@@ -35,7 +36,27 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
     protected resourceDelete = variablePresentationDelete;
     public uniqueLabel : boolean = true;
 
-    public pageMax : number = 10
+    private _inputStandardVariable : ModelCatalogStandardVariable;
+
+    public pageMax : number = 10;
+    public inlineMax : number = 4;
+
+    constructor () {
+        super();
+        this._inputStandardVariable = new ModelCatalogStandardVariable();
+        this._inputStandardVariable.setActionMultiselect();
+    }
+
+    protected _editResource (r:VariablePresentation) {
+        super._editResource(r);
+        let edResource = this._getEditingResource();
+        this._inputStandardVariable.setResources( edResource.hasStandardVariable );
+    }
+
+    protected _createResource () {
+        this._inputStandardVariable.setResources(null);
+        super._createResource();
+    }
 
     protected _renderForm () {
         let edResource = this._getEditingResource();
@@ -55,19 +76,17 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
             </wl-textfield>
             <div style="padding: 10px 0px;">
                 <div style="padding: 5px 0px; font-weight: bold;">Standard Variables</div>
-                ${edResource && edResource.hasStandardVariable.map((s) => html`
-                <span> ${getLabel(s)} </span>
-                `)}
+                ${this._inputStandardVariable}
             </div>
         </form>`;
     }
 
     protected _renderResource (r:VariablePresentation) {
-        let desc : string = r.description ? r.description[0] : '';
+        let desc : string = r && r.description ? r.description[0] : '';
         return desc ? html`
             <span class="tooltip small-tooltip" tip="${desc}">
-                ${getLabel(r)}
-            </span>` : html`${getLabel(r)}`;
+                ${getLabel(r).replaceAll('_',' ')}
+            </span>` : (r ? html`${getLabel(r).replaceAll('_',' ')}` : html`--`);
     }
 
     protected _getResourceFromForm () {
