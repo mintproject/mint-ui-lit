@@ -164,7 +164,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: String}) protected _textFilter : string = "";
     @property({type: Boolean}) protected _creationEnabled : boolean = true;
     @property({type: Boolean}) protected _editionEnabled : boolean = true;
-    @property({type: Boolean}) protected _deleteEnabled : boolean = true;
+    @property({type: Boolean}) protected _deletionEnabled : boolean = true;
 
     @property({type: Number}) protected _page : number = 0;
     public pageMax : number = -1;
@@ -191,12 +191,20 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         (r:T) => this._resourceToText(r).toLowerCase().includes( this._textFilter ),
     ];
 
-    public creationEnable () {
+    public enableCreation () {
         this._creationEnabled = true;
     }
 
-    public creationDisable () {
+    public disableCreation () {
         this._creationEnabled = false;
+    }
+
+    public enableDeletion () {
+        this._deletionEnabled = true;
+    }
+
+    public disableDeletion () {
+        this._deletionEnabled = false;
     }
 
     public isCreating () {
@@ -414,10 +422,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     </td>` : ''}
                     ${this._renderRow(lr)}
                     ${this._action === Action.EDIT_OR_ADD ? html`
-                    <td style="width: ${this._deleteEnabled ? '65' : '30'}px">
+                    <td style="width: ${this._deletionEnabled ? '65' : '30'}px">
                         <div style="display: flex; justify-content: space-between;">
                             <wl-button class="edit" @click="${() => this._editResource(r)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
-                            ${this._deleteEnabled ? html`
+                            ${this._deletionEnabled ? html`
                             <wl-button class="edit" @click="${() => this._deleteResource(r)}" flat inverted><wl-icon>delete</wl-icon></wl-button>
                             ` : ''}
                         </div>
@@ -468,7 +476,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     <wl-button style="float:right;" @click="${() => this._editResource(this._resources[0])}">
                         <wl-icon>edit</wl-icon>&ensp;Edit
                     </wl-button>
-                        <wl-button style="--primary-hue: 0; --primary-saturation: 75%" ?disabled="${!this._deleteEnabled}"
+                        <wl-button style="--primary-hue: 0; --primary-saturation: 75%" ?disabled="${!this._deletionEnabled}"
                                    @click="${() => this._deleteResource(this._resources[0])}">
                         <wl-icon>delete</wl-icon>&ensp;Delete
                     </wl-button>
@@ -575,7 +583,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                         <wl-button @click="${() => this._editResource(r)}" flat inverted ?disabled="${!this._editionEnabled}">
                             <wl-icon>edit</wl-icon>
                         </wl-button>
-                        <wl-button @click="${() => this._deleteResource(r)}" flat inverted ?disabled="${!this._deleteEnabled}">
+                        <wl-button @click="${() => this._deleteResource(r)}" flat inverted ?disabled="${!this._deletionEnabled}">
                             <wl-icon class="warning">delete</wl-icon>
                         </wl-button>
                     </span>
@@ -904,36 +912,39 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     // When lazy is on, this function must be used to perform the save
     // Only save the selected resources 
-    public save () {
-        let creation = Object.values(this._resourcesToCreate)
-                .filter((r:T) => this._resources.some((r2:T) => r2.id === r.id))
-                .map((r:T) => {
-            let tempId : string = r.id;
-            r["id"] = "";
+    public save () : Promise<T[]> {
+        return new Promise((resolve, reject) => {
+            let creation = Object.values(this._resourcesToCreate)
+                    .filter((r:T) => this._resources.some((r2:T) => r2.id === r.id))
+                    .map((r:T) => {
+                let tempId : string = r.id;
+                r["id"] = "";
 
-            let req = store.dispatch(this.resourcePost(r));
-            req.then((resource : T) => {
-                this._loadedResources[resource.id] = resource;
-                this._resources = this._resources.map((r2:T) => (r2.id === tempId) ? resource : r2);
+                let req = store.dispatch(this.resourcePost(r));
+                req.then((resource : T) => {
+                    this._loadedResources[resource.id] = resource;
+                    this._resources = this._resources.map((r2:T) => (r2.id === tempId) ? resource : r2);
+                });
+                return req;
             });
-            return req;
-        });
-        let edition = Object.values(this._resourcesToEdit)
-                .filter((r:T) => this._resources.some((r2:T) => r2.id === r.id))
-                .map((r:T) => {
-            let req = store.dispatch(this.resourcePut(r));
-            req.then((resource: T) => {
-                this._loadedResources[resource.id] = resource;
+            let edition = Object.values(this._resourcesToEdit)
+                    .filter((r:T) => this._resources.some((r2:T) => r2.id === r.id))
+                    .map((r:T) => {
+                let req = store.dispatch(this.resourcePut(r));
+                req.then((resource: T) => {
+                    this._loadedResources[resource.id] = resource;
+                });
+                return req;
             });
-            return req;
+            let allp = Promise.all([ ...creation, ...edition ]);
+            allp.then((rs: T[]) => {
+                this._resourcesToEdit = {};
+                this._resourcesToCreate  = {};
+                if (this.positionAttr) this._refreshOrder();
+                resolve( this._resources.map((l:T) => this._loadedResources[l.id]) );
+            })
+            allp.catch(reject);
         });
-        let allp = Promise.all([ ...creation, ...edition ]);
-        allp.then((rs: T[]) => {
-            this._resourcesToEdit = {};
-            this._resourcesToCreate  = {};
-            if (this.positionAttr) this._refreshOrder();
-        })
-        return allp;
     }
 
     protected _getResourceFromForm () {

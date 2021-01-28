@@ -3,7 +3,7 @@ import { IdMap } from 'app/reducers'
 import { Configuration, ModelConfigurationSetup, ModelConfigurationSetupApi, ModelConfiguration,
          ConfigurationSetupApi, Parameter, DatasetSpecification } from '@mintproject/modelcatalog_client';
 import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, fixObjects, getUser,
-         modelConfigurationPut } from './actions';
+         modelConfigurationPut, modelConfigurationGet } from './actions';
 
 function debug (...args: any[]) { console.log('[MC ModelConfigurationSetup]', ...args); }
 
@@ -89,15 +89,24 @@ export const modelConfigurationSetupPost: ActionThunk<Promise<ModelConfiguration
                         payload: createIdMap(resp)
                     });
 
-                    if (modelConfiguration.hasSetup) {
-                        modelConfiguration.hasSetup.push(resp)
-                    } else {
-                        modelConfiguration.hasSetup = [resp]
-                    }
+                    let reqg = dispatch(modelConfigurationGet(modelConfiguration.id));
+                    reqg.then((config:ModelConfiguration) => {
 
-                    dispatch(modelConfigurationPut(modelConfiguration)).then((v) => {
-                        resolve(resp);
+                        if (config.hasSetup) {
+                            config.hasSetup.push(resp)
+                        } else {
+                            config.hasSetup = [resp]
+                        }
+
+                        let reqp = dispatch(modelConfigurationPut(config));
+                        reqp.then((v) => {
+                            resolve(resp);
+                        });
+                        reqp.catch(reject);
+
                     });
+                    reqg.catch(reject);
+
                 });
                 req.catch((err) => {
                     console.error('Error on POST ModelConfiguration', err);

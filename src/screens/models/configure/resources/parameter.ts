@@ -505,7 +505,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let inputMin : Textfield = this.shadowRoot.getElementById('part-float-min') as Textfield;
         let inputMax : Textfield = this.shadowRoot.getElementById('part-float-max') as Textfield;
         let def : string = inputDef ? inputDef.value : '';
-        let inc : string = inputInc ? inputInc.value : '';
+        let inc : number = inputInc ? parseInt(inputInc.value) : NaN;
         let min : string = inputMin ? inputMin.value : '';
         let max : string = inputMax ? inputMax.value : '';
         if (def) {

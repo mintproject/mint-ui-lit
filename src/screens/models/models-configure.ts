@@ -10,11 +10,12 @@ import { showNotification } from "../../util/ui_functions";
 import { ExplorerStyles } from './model-explore/explorer-styles'
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
 
-import './models-tree'
 
 import { showDialog, hideDialog } from 'util/ui_functions';
 import { ModelCatalogModelConfigurationSetup } from './configure/resources/model-configuration-setup';
 import { ModelCatalogModelConfiguration } from './configure/resources/model-configuration';
+
+import { ModelsTree } from './models-tree';
 
 import "weightless/slider";
 import "weightless/progress-spinner";
@@ -50,6 +51,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
 
     private _iConfig : ModelCatalogModelConfiguration;
     private _iSetup : ModelCatalogModelConfigurationSetup;
+    private _modelTree : ModelsTree;
 
     private _url : string = '';
     private _selectedModel : string = '';
@@ -132,28 +134,28 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         super();
         this._iSetup = new ModelCatalogModelConfigurationSetup();
         this._iConfig = new ModelCatalogModelConfiguration();
+        this._modelTree = new ModelsTree();
+        this._modelTree.active = true;
     }
 
     firstUpdated () {
+        let isConfig = (types:string[]) => types && types.length > 0 && 
+                types.some((t:string) => ["ModelConfiguration", "https://w3id.org/okn/o/sdm#ModelConfiguration"].includes(t));
+        let isSetup = (types:string[]) => types && types.length > 0 && 
+                types.some((t:string) => ["ModelConfigurationSetup", "https://w3id.org/okn/o/sdm#ModelConfigurationSetup"].includes(t));
+        
         this.addEventListener('model-catalog-save', (e:Event) => {
             let detail = e['detail'];
-            console.log('event detail', detail);
-            let types = detail["type"];
-            let acceptedTypes = ["ModelConfiguration", "ModelConfigurationSetup",
-                                 "https://w3id.org/okn/o/sdm#ModelConfiguration",
-                                 "https://w3id.org/okn/o/sdm#ModelConfigurationSetup"]
-            if (this._creating && types && types.length > 0 &&
-                    types.some((t:string) => acceptedTypes.includes(t))) {
-                console.log('ACCEPTED');
+            if (this._creating && detail.id) {
                 let id : string = detail.id.split('/').pop();
                 let url : string = 'models/configure/' +
                         this._selectedModel.split('/').pop() + '/'  +
                         this._selectedVersion.split('/').pop() + '/';
 
-                if (!this._selectedSetup && this._config) {
+                if (isSetup(detail["type"])) {
                     this._iSetup.setResource(null);
                     goToPage(url + this._selectedConfig.split('/').pop() + '/' + id);
-                } else if (!this._selectedConfig && this._version) {
+                } else if (isConfig["type"]) {
                     this._iConfig.setResource(null);
                     goToPage(url + id);
                 }
@@ -167,6 +169,17 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     this._iConfig.enableSingleResourceCreation(this._version);
             }
         });
+        this.addEventListener('model-catalog-delete', (e:Event) => {
+            let detail = e['detail'];
+            let url : string = 'models/configure/' +
+                    this._selectedModel.split('/').pop() + '/'  +
+                    this._selectedVersion.split('/').pop() + '/';
+            if (isSetup(detail["type"])) {
+                goToPage(url + this._selectedConfig.split('/').pop());
+            } else {
+                goToPage(url);
+            }
+        });
     }
 
     protected render() {
@@ -175,7 +188,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             <div class="${this._hideModels ? 'left_closed' : 'left'}">
                 <div class="clt">
                     <wl-title level="4" style="margin: 4px; padding: 10px 10px 0px 10px;">Models:</wl-title>
-                    <models-tree active></models-tree>
+                    ${this._modelTree}
                 </div>
             </div>
 
