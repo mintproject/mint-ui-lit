@@ -1,252 +1,391 @@
 import { Action, ActionCreator } from 'redux';
-import { ScenarioList, Scenario, ScenarioDetails, 
-    Goal, Pathway, SubGoal, ExecutableEnsemble, PathwayInfo } from './reducers';
+import { ProblemStatementList, ProblemStatementInfo, 
+    ProblemStatement,  Thread, Task, 
+    Execution, ThreadInfo, ThreadList, TaskList, ModelEnsembleMap, DataMap, ExecutionSummary, ThreadEvent } from './reducers';
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from '../../app/store';
-import { db, fieldValue, auth } from '../../config/firebase';
-import { Dataset } from '../datasets/reducers';
+//import { db, fieldValue, auth } from '../../config/firebase';
+import { Dataset, DataResource, Dataslice } from '../datasets/reducers';
 import { Model } from '../models/reducers';
-import { EXAMPLE_SCENARIOS_LIST_DATA, EXAMPLE_SCENARIO_DETAILS } from '../../offline_data/sample_scenarios';
-import { IdMap } from '../../app/reducers';
-import { OFFLINE_DEMO_MODE } from '../../app/actions';
-import { listEnsembles } from 'util/state_functions';
+import { IdMap, UserPreferences } from '../../app/reducers';
 
-export const SCENARIOS_LIST = 'SCENARIOS_LIST';
-export const SCENARIOS_ADD = 'SCENARIOS_ADD';
-export const SCENARIOS_REMOVE = 'SCENARIOS_REMOVE';
-export const SCENARIOS_UPDATE = 'SCENARIOS_UPDATE';
-export const SCENARIO_DETAILS = 'SCENARIO_DETAILS';
-export const SCENARIO_SUBSCRIPTION = 'SCENARIO_SUBSCRIPTION';
+import { GraphQL } from 'config/graphql';
 
-export const GOALS_LIST = 'GOALS_LIST';
-export const GOALS_ADD = 'GOALS_ADD';
-export const GOALS_REMOVE = 'GOALS_REMOVE';
-export const GOALS_UPDATE = 'GOALS_UPDATE';
+import subscribeProblemStatementsListGQL from '../../queries/problem-statement/list-subscription.graphql';
+import subscribeProblemStatementGQL from '../../queries/problem-statement/get-subscription.graphql';
+import subscribeThreadGQL from '../../queries/thread/get-subscription.graphql';
 
-export const SUBGOALS_LIST = 'SUBGOALS_LIST';
-export const SUBGOALS_ADD = 'SUBGOALS_ADD';
-export const SUBGOALS_REMOVE = 'SUBGOALS_REMOVE';
-export const SUBGOALS_UPDATE = 'SUBGOALS_UPDATE';
+import newProblemStatementGQL from '../../queries/problem-statement/new.graphql';
+import newTaskGQL from '../../queries/task/new.graphql';
+import newThreadGQL from '../../queries/thread/new.graphql';
 
-export const PATHWAY_DETAILS = 'PATHWAY_DETAILS';
-export const PATHWAY_SUBSCRIPTION = 'PATHWAY_SUBSCRIPTION';
-export const PATHWAYS_ADD = 'PATHWAYS_ADD';
-export const PATHWAYS_REMOVE = 'PATHWAYS_REMOVE';
-export const PATHWAYS_UPDATE = 'PATHWAYS_UPDATE';
+import updateProblemStatementGQL from '../../queries/problem-statement/update.graphql';
+import updateTaskGQL from '../../queries/task/update.graphql';
+import updateThreadModelGQL from '../../queries/thread/update-models.graphql';
+import updateThreadDataGQL from '../../queries/thread/update-datasets.graphql';
+import updateThreadParametersGQL from '../../queries/thread/update-parameters.graphql';
+import updateThreadInfoGQL from '../../queries/thread/update-info.graphql';
+import addThreadEventGQL from '../../queries/thread/add-event.graphql';
+import setDatasliceResourcesGQL from '../../queries/thread/set-dataslice-resources.graphql';
+import getDatasliceResourcesGQL from '../../queries/thread/get-dataslice-resources.graphql';
 
-export const PATHWAY_VARIABLES_ADD = 'PATHWAY_VARIABLES_ADD';
-export const PATHWAY_VARIABLES_REMOVE = 'PATHWAY_VARIABLES_REMOVE';
+import deleteProblemStatementGQL from '../../queries/problem-statement/delete.graphql';
+import deleteTaskGQL from '../../queries/task/delete.graphql';
+import deleteThreadGQL from '../../queries/thread/delete.graphql';
 
-export const PATHWAY_MODELS_ADD = 'PATHWAY_MODELS_ADD';
-export const PATHWAY_MODELS_REMOVE = 'PATHWAY_MODELS_REMOVE';
+import listExistingModelsGQL from '../../queries/model/list-in.graphql';
+import newModelsGQL from '../../queries/model/new.graphql';
 
-export const PATHWAY_DATASETS_ADD = 'PATHWAY_DATASETS_ADD';
-export const PATHWAY_DATASETS_REMOVE = 'PATHWAY_DATASETS_REMOVE';
+import executionIdsForThreadGQL from '../../queries/execution/executionids-for-thread.graphql';
+import subscribeExecutionsListGQL from '../../queries/execution/list-subscription.graphql';
+import listThreadModelExecutionsListGQL from '../../queries/execution/executions-for-thread-model.graphql';
+import subscribeThreadExecutionSummaryListGQL from '../../queries/execution/thread-execution-summary-subscription.graphql';
+import getThreadExecutionSummaryListGQL from '../../queries/execution/thread-execution-summary.graphql';
+import listExecutionsListGQL from '../../queries/execution/list.graphql';
 
-export const PATHWAY_ENSEMBLES_LIST = 'PATHWAY_ENSEMBLES_LIST';
-export const PATHWAY_ENSEMBLES_ADD = 'PATHWAY_ENSEMBLES_ADD';
-export const PATHWAY_ENSEMBLES_REMOVE = 'PATHWAY_ENSEMBLES_REMOVE';
-export const PATHWAY_ENSEMBLES_RUN = 'PATHWAY_ENSEMBLES_RUN';
+import { problemStatementFromGQL, taskFromGQL, threadFromGQL, 
+    threadInfoFromGQL, taskToGQL, problemStatementToGQL, 
+    executionFromGQL, taskUpdateToGQL, 
+    problemStatementUpdateToGQL, 
+    threadInfoUpdateToGQL,
+    threadInfoToGQL,
+    threadModelsToGQL,
+    modelToGQL,
+    getCustomEvent,
+    threadDataBindingsToGQL,
+    threadParameterBindingsToGQL, datasliceFromGQL, threadModelExecutionSummaryFromGQL} from '../../util/graphql_adapter';
+import { postJSONResource } from 'util/mint-requests';
+import { isObject } from 'util';
+import { Md5 } from 'ts-md5';
+import { Model as MCModel, SoftwareImage, ModelConfiguration, SoftwareVersion } from '@mintproject/modelcatalog_client';
+import { fetchModelsFromCatalog } from 'screens/models/actions';
+import { auth } from 'config/firebase';
 
-export interface ScenariosActionList extends Action<'SCENARIOS_LIST'> { list: ScenarioList };
-export interface ScenariosActionAdd extends Action<'SCENARIOS_ADD'> { item: Scenario };
-export interface ScenariosActionRemove extends Action<'SCENARIOS_REMOVE'> { id: string };
-export interface ScenariosActionUpdate extends Action<'SCENARIOS_UPDATE'> { item: Scenario };
+export const PROBLEM_STATEMENTS_LIST = 'PROBLEM_STATEMENTS_LIST';
+export const PROBLEM_STATEMENTS_LIST_SUBSCRIPTION = 'PROBLEM_STATEMENTS_LIST_SUBSCRIPTION';
+export const PROBLEM_STATEMENTS_ADD = 'PROBLEM_STATEMENTS_ADD';
+export const PROBLEM_STATEMENTS_REMOVE = 'PROBLEM_STATEMENTS_REMOVE';
+export const PROBLEM_STATEMENTS_UPDATE = 'PROBLEM_STATEMENTS_UPDATE';
+export const PROBLEM_STATEMENT_DETAILS = 'PROBLEM_STATEMENT_DETAILS';
+export const PROBLEM_STATEMENT_SUBSCRIPTION = 'PROBLEM_STATEMENT_SUBSCRIPTION';
 
-export interface ScenariosActionDetails extends Action<'SCENARIO_DETAILS'> { details: ScenarioDetails };
-export interface ScenariosActionSubscription extends Action<'SCENARIO_SUBSCRIPTION'> { unsubscribe: Function };
+export const TASKS_LIST = 'TASKS_LIST';
+export const TASKS_LIST_SUBSCRIPTION = 'TASKS_LIST_SUBSCRIPTION';
+export const TASKS_ADD = 'TASKS_ADD';
+export const TASKS_REMOVE = 'TASKS_REMOVE';
+export const TASKS_UPDATE = 'TASKS_UPDATE';
+export const TASK_DETAILS = 'TASK_DETAILS';
+export const TASK_SUBSCRIPTION = 'TASK_SUBSCRIPTION';
 
-export type ScenariosAction = ScenariosActionList | ScenariosActionAdd | ScenariosActionRemove |
-    ScenariosActionUpdate | ScenariosActionDetails | ScenariosActionSubscription;
+export const THREADS_LIST = 'THREADS_LIST';
+export const THREADS_LIST_SUBSCRIPTION = 'THREADS_LIST_SUBSCRIPTION';
+export const THREADS_ADD = 'THREADS_ADD';
+export const THREADS_REMOVE = 'THREADS_REMOVE';
+export const THREADS_UPDATE = 'THREADS_UPDATE';
 
-export interface GoalsActionList extends Action<'GOALS_LIST'> { scenarioid: string };
-export interface GoalsActionAdd extends Action<'GOALS_ADD'> { item: Goal, scenarioid: string };
-export interface GoalsActionRemove extends Action<'GOALS_REMOVE'> { id: string, scenarioid: string };
-export interface GoalsActionUpdate extends Action<'GOALS_UPDATE'> { item: Goal, scenarioid: string };
+export const THREAD_DETAILS = 'THREAD_DETAILS';
+export const THREAD_SUBSCRIPTION = 'THREAD_SUBSCRIPTION';
+export const THREAD_VARIABLES_ADD = 'THREAD_VARIABLES_ADD';
+export const THREAD_VARIABLES_REMOVE = 'THREAD_VARIABLES_REMOVE';
+export const THREAD_MODELS_ADD = 'THREAD_MODELS_ADD';
+export const THREAD_MODELS_REMOVE = 'THREAD_MODELS_REMOVE';
+export const THREAD_DATASETS_ADD = 'THREAD_DATASETS_ADD';
+export const THREAD_DATASETS_REMOVE = 'THREAD_DATASETS_REMOVE';
+export const THREAD_EXECUTIONS_LIST = 'THREAD_EXECUTIONS_LIST';
+export const THREAD_EXECUTIONS_ADD = 'THREAD_EXECUTIONS_ADD';
+export const THREAD_EXECUTIONS_REMOVE = 'THREAD_EXECUTIONS_REMOVE';
+export const THREAD_EXECUTIONS_RUN = 'THREAD_EXECUTIONS_RUN';
+export const THREAD_EXECUTION_SUMMARY = 'THREAD_EXECUTION_SUMMARY';
+export const THREAD_EXECUTION_SUMMARY_SUBSCRIPTION = 'THREAD_EXECUTION_SUMMARY_SUBSCRIPTION';
 
-export type GoalsAction = GoalsActionList | GoalsActionAdd | GoalsActionRemove | GoalsActionUpdate;
+export interface ProblemStatementsActionList extends Action<'PROBLEM_STATEMENTS_LIST'> { list: ProblemStatementList };
+export interface ProblemStatementsActionListSubscription extends Action<'PROBLEM_STATEMENTS_LIST_SUBSCRIPTION'> { unsubscribe: Function };
+export interface ProblemStatementsActionAdd extends Action<'PROBLEM_STATEMENTS_ADD'> { item: ProblemStatementInfo };
+export interface ProblemStatementsActionRemove extends Action<'PROBLEM_STATEMENTS_REMOVE'> { id: string };
+export interface ProblemStatementsActionUpdate extends Action<'PROBLEM_STATEMENTS_UPDATE'> { item: ProblemStatementInfo };
 
-export interface SubGoalsActionList extends Action<'SUBGOALS_LIST'> { scenarioid: string };
-export interface SubGoalsActionAdd extends Action<'SUBGOALS_ADD'> { item: SubGoal, goalid: string, scenarioid: string };
-export interface SubGoalsActionRemove extends Action<'SUBGOALS_REMOVE'> { id: string, scenarioid: string };
-export interface SubGoalsActionUpdate extends Action<'SUBGOALS_UPDATE'> { item: SubGoal, scenarioid: string };
+export interface ProblemStatementsActionDetails extends Action<'PROBLEM_STATEMENT_DETAILS'> { details: ProblemStatement };
+export interface ProblemStatementsActionSubscription extends Action<'PROBLEM_STATEMENT_SUBSCRIPTION'> { unsubscribe: Function };
 
-export type SubGoalsAction = SubGoalsActionList | SubGoalsActionAdd | SubGoalsActionRemove | SubGoalsActionUpdate;
+export type ProblemStatementsAction = ProblemStatementsActionList | ProblemStatementsActionAdd | ProblemStatementsActionRemove |
+    ProblemStatementsActionUpdate | ProblemStatementsActionDetails | ProblemStatementsActionSubscription | ProblemStatementsActionListSubscription;
 
-export interface PathwaysActionList extends Action<'PATHWAYS_LIST'> { scenarioid: string };
-export interface PathwaysActionAdd extends Action<'PATHWAYS_ADD'> { item: Pathway, subgoalid: string, scenarioid: string };
-export interface PathwaysActionRemove extends Action<'PATHWAYS_REMOVE'> { id: string, scenarioid: string };
-export interface PathwaysActionUpdate extends Action<'PATHWAYS_UPDATE'> { item: Pathway, scenarioid: string };
-export interface PathwaysActionDetails extends Action<'PATHWAY_DETAILS'> { details: Pathway };
-export interface PathwaysActionSubscription extends Action<'PATHWAY_SUBSCRIPTION'> { unsubscribe: Function };
+export interface TasksActionList extends Action<'TASKS_LIST'> { list: TaskList };
+export interface TasksActionListSubscription extends Action<'TASKS_LIST_SUBSCRIPTION'> { unsubscribe: Function };
+export interface TasksActionAdd extends Action<'TASKS_ADD'> { item: Task, goalid: string, problem_statement_id: string };
+export interface TasksActionRemove extends Action<'TASKS_REMOVE'> { id: string, problem_statement_id: string };
+export interface TasksActionUpdate extends Action<'TASKS_UPDATE'> { item: Task, problem_statement_id: string };
+export interface TasksActionDetails extends Action<'TASK_DETAILS'> { details: Task };
+export interface TasksActionSubscription extends Action<'TASK_SUBSCRIPTION'> { unsubscribe: Function };
 
-export type PathwaysAction = PathwaysActionList | PathwaysActionAdd | PathwaysActionRemove 
-    | PathwaysActionUpdate | PathwaysActionDetails | PathwaysActionSubscription;
+export type TasksAction = TasksActionList | TasksActionAdd | TasksActionRemove 
+    | TasksActionUpdate | TasksActionDetails | TasksActionSubscription | TasksActionListSubscription;
 
-export interface PathwayVariablesActionAdd extends Action<'PATHWAY_VARIABLES_ADD'> { 
-    item: string, pathwayid: string, scenarioid: string 
+export interface ThreadsActionList extends Action<'THREADS_LIST'> { list: ThreadList };
+export interface ThreadsActionListSubscription extends Action<'THREADS_LIST_SUBSCRIPTION'> { unsubscribe: Function };
+export interface ThreadsActionAdd extends Action<'THREADS_ADD'> { item: Thread, subgoalid: string, problem_statement_id: string };
+export interface ThreadsActionRemove extends Action<'THREADS_REMOVE'> { id: string, problem_statement_id: string };
+export interface ThreadsActionUpdate extends Action<'THREADS_UPDATE'> { item: Thread, problem_statement_id: string };
+export interface ThreadsActionDetails extends Action<'THREAD_DETAILS'> { details: Thread };
+export interface ThreadsActionSubscription extends Action<'THREAD_SUBSCRIPTION'> { unsubscribe: Function };
+
+export type ThreadsAction = ThreadsActionList | ThreadsActionAdd | ThreadsActionRemove 
+    | ThreadsActionUpdate | ThreadsActionDetails | ThreadsActionSubscription | ThreadsActionListSubscription;
+
+
+export interface ThreadVariablesActionAdd extends Action<'THREAD_VARIABLES_ADD'> { 
+    item: string, thread_id: string
 };
-export interface PathwayVariablesActionRemove extends Action<'PATHWAY_VARIABLES_REMOVE'> { 
-    id: string, pathwayid: string, scenarioid: string 
+export interface ThreadVariablesActionRemove extends Action<'THREAD_VARIABLES_REMOVE'> { 
+    id: string, thread_id: string
 };
 
-export interface PathwayModelsActionAdd extends Action<'PATHWAY_MODELS_ADD'> { 
-    item: Model, pathwayid: string, sceanarioid: string
+export interface ThreadModelsActionAdd extends Action<'THREAD_MODELS_ADD'> { 
+    item: Model, thread_id: string, problem_statement_id: string
 };
-export interface PathwayModelsActionRemove extends Action<'PATHWAY_MODELS_REMOVE'> { 
-    id: string, pathwayid: string, sceanarioid: string
-};
-
-export interface PathwayDatasetsActionAdd extends Action<'PATHWAY_DATASETS_ADD'> { 
-    item: Dataset, pathwayid: string, sceanarioid: string
-};
-export interface PathwayDatasetsActionRemove extends Action<'PATHWAY_DATASETS_REMOVE'> { 
-    id: string, pathwayid: string, sceanarioid: string
+export interface ThreadModelsActionRemove extends Action<'THREAD_MODELS_REMOVE'> { 
+    id: string, thread_id: string
 };
 
-export interface PathwayEnsemblesActionList extends Action<'PATHWAY_ENSEMBLES_LIST'> { 
-    pathwayid: string
-    modelid: string
+export interface ThreadDatasetsActionAdd extends Action<'THREAD_DATASETS_ADD'> { 
+    item: Dataset, thread_id: string
+};
+export interface ThreadDatasetsActionRemove extends Action<'THREAD_DATASETS_REMOVE'> { 
+    id: string, thread_id: string
+};
+
+export interface ThreadExecutionsActionList extends Action<'THREAD_EXECUTIONS_LIST'> { 
+    thread_id: string
+    model_id: string
     loading: boolean
-    ensembles: ExecutableEnsemble[] 
-};
-export interface PathwayEnsemblesActionAdd extends Action<'PATHWAY_ENSEMBLES_ADD'> { 
-    item: ExecutableEnsemble, pathwayid: string, sceanarioid: string
-};
-export interface PathwayEnsemblesActionRemove extends Action<'PATHWAY_ENSEMBLES_REMOVE'> { 
-    id: string, pathwayid: string, sceanarioid: string
-};
-export interface PathwayEnsemblesActionRun extends Action<'PATHWAY_ENSEMBLES_RUN'> { 
-    id: string, pathwayid: string, sceanarioid: string
+    executions: Execution[] 
 };
 
-export type PathwayAction = PathwayVariablesActionAdd | PathwayVariablesActionRemove |
-    PathwayModelsActionAdd | PathwayModelsActionRemove | 
-    PathwayDatasetsActionAdd | PathwayDatasetsActionRemove |
-    PathwayEnsemblesActionAdd | PathwayEnsemblesActionRemove | PathwayEnsemblesActionRun | 
-    PathwayEnsemblesActionList;
-
-export type ModelingAction =  ScenariosAction | GoalsAction  | PathwaysAction | PathwayAction ;
-
-// List Scenarios
-type ListThunkResult = ThunkAction<void, RootState, undefined, ScenariosActionList>;
-export const listScenarios: ActionCreator<ListThunkResult> = () => (dispatch) => {
-
-    if(OFFLINE_DEMO_MODE) {
-        dispatch({
-            type: SCENARIOS_LIST,
-            list: EXAMPLE_SCENARIOS_LIST_DATA
-        });
-        return;
-    }
-
-    db.collection("scenarios").onSnapshot((querySnapshot) => {
-        let scenarios:IdMap<Scenario> = {};
-        let scenarioids:string[] = [];
-        querySnapshot.forEach((sdoc) => {
-            var data = sdoc.data();
-            data.id = sdoc.id;
-            scenarios[sdoc.id] = data as Scenario;
-            scenarioids.push(sdoc.id);
-        });
-
-        let list = {
-            scenarioids: scenarioids,
-            scenarios: scenarios
-        } as ScenarioList;
-        //console.log(list);
-
-        dispatch({
-            type: SCENARIOS_LIST,
-            list
-        })
-    });
+export interface ThreadExecutionSummaryActionDetails extends Action<'THREAD_EXECUTION_SUMMARY'> { 
+    thread_id: string
+    model_id: string
+    execution_summary?: ExecutionSummary
+    unsubscribe?: Function 
 };
 
-// Get Scenario details
-type DetailsThunkResult = ThunkAction<void, RootState, undefined, ScenariosActionDetails | ScenariosActionSubscription>;
-export const getScenarioDetail: ActionCreator<DetailsThunkResult> = (scenarioid: string) => (dispatch) => {
+export interface ThreadExecutionSummaryActionSubscription extends Action<'THREAD_EXECUTION_SUMMARY_SUBSCRIPTION'> { 
+    thread_id: string
+    model_id?: string
+    unsubscribe?: Function 
+};
 
-    if(OFFLINE_DEMO_MODE) {
-        dispatch({
-            type: SCENARIO_SUBSCRIPTION,
-            unsubscribe: ()=>{}
-        });
-        EXAMPLE_SCENARIO_DETAILS["id"] = scenarioid;    
-        dispatch({
-            type: SCENARIO_DETAILS,
-            details: EXAMPLE_SCENARIO_DETAILS
-        });
-        return;
-    }
+export interface ThreadExecutionsActionAdd extends Action<'THREAD_EXECUTIONS_ADD'> { 
+    item: Execution, thread_id: string
+};
+export interface ThreadExecutionsActionRemove extends Action<'THREAD_EXECUTIONS_REMOVE'> { 
+    id: string, thread_id: string
+};
+export interface ThreadExecutionsActionRun extends Action<'THREAD_EXECUTIONS_RUN'> { 
+    id: string, thread_id: string
+};
 
-    let unsubscribe = db.collection("scenarios").doc(scenarioid).onSnapshot({
-        complete: () => {},
-        error: (error) => {
-            // FIXME: Check error code (if permissions error, then unsubscribe)
-            console.log(error.code);
-            unsubscribe();
-        },
-        next: (doc) => {
-            var details = Object.assign({}, doc.data()) as ScenarioDetails;
-            if(!details)
-                return;
-            details.id = doc.id;
-            db.collection("scenarios/"+scenarioid+"/subgoals").get().then((subgoals) => {
-                details.goals = {};
-                details.subgoals = {};
-                subgoals.forEach((doc) => {
-                    var data = Object.assign({}, doc.data());
-                    data.id = doc.id;
-                    details.subgoals[doc.id] = data as SubGoal;
-                });
-                // Dispach scenario details on an edit
-                dispatch({
-                    type: SCENARIO_DETAILS,
-                    details
-                });
+export type ThreadAction = ThreadVariablesActionAdd | ThreadVariablesActionRemove |
+    ThreadModelsActionAdd | ThreadModelsActionRemove | 
+    ThreadDatasetsActionAdd | ThreadDatasetsActionRemove |
+    ThreadExecutionsActionAdd | ThreadExecutionsActionRemove | ThreadExecutionsActionRun | 
+    ThreadExecutionsActionList | ThreadsActionListSubscription | 
+    ThreadExecutionSummaryActionDetails | ThreadExecutionSummaryActionSubscription;
+
+export type ModelingAction =  ProblemStatementsAction | TasksAction | ThreadsAction | ThreadAction ;
+
+// List ProblemStatements
+type SubProblemListThunkResult = ThunkAction<void, RootState, undefined, ProblemStatementsActionList | ProblemStatementsActionListSubscription>;
+export const subscribeProblemStatementsList: ActionCreator<SubProblemListThunkResult> = (regionid: string) => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let subscription = APOLLO_CLIENT.subscribe({
+        query: subscribeProblemStatementsListGQL,
+        variables: {
+            regionId: regionid
+        }
+    }).subscribe(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let problem_statements:IdMap<ProblemStatementInfo> = {};
+            let problem_statement_ids:string[] = [];
+            let problems = result.data.problem_statement;
+            //console.log(problems);
+            /* FIXME: I've changed the query to return all variables used on task and threads, As
+             * I'm processing the data here to do not break anything */
+            problems.forEach((problem: any) => {
+                if (problem["tasks"]) {
+                    let varnameset : Set<string> = new Set();
+                    problem["tasks"].forEach(t =>  
+                        t["threads"].forEach(th => 
+                            varnameset.add(th.response_variable.name)
+                        )
+                    );
+                    problem["preview"] = Array.from(varnameset);
+                    delete problem["tasks"]
+                }
             });
+            /**/
+            problems.forEach((problem: any) => {
+                problem_statement_ids.push(problem["id"]);
+                problem_statements[problem["id"]] = problemStatementFromGQL(problem);
+            })
+            let list = {
+                problem_statement_ids: problem_statement_ids,
+                problem_statements: problem_statements
+            } as ProblemStatementList;   
+            dispatch({
+                type: PROBLEM_STATEMENTS_LIST,
+                list
+            })
         }
     });
 
     // Dispatch unsubscribe function
     dispatch({
-        type: SCENARIO_SUBSCRIPTION,
-        unsubscribe: unsubscribe
+        type: PROBLEM_STATEMENTS_LIST_SUBSCRIPTION,
+        unsubscribe: () => { subscription.unsubscribe() }
+    });
+};
+
+/*
+// List Tasks
+type ListTasksThunkResult = ThunkAction<void, RootState, undefined, TasksActionList | TasksActionListSubscription>;
+export const subscribeTasksList: ActionCreator<ListTasksThunkResult> = (problem_statement_id: string) => (dispatch) => {
+    let subscription = APOLLO_CLIENT.subscribe({
+        query: subscribeTasksListGQL,
+        variables: {
+            problem_statement_id: problem_statement_id
+        }
+    }).subscribe(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let tasks:IdMap<Task> = {};
+            let task_ids:string[] = [];
+            //console.log(problems);
+            result.data.task.forEach((task: any) => {
+                task_ids.push(task["id"]);
+                tasks[task["id"]] = taskFromGQL(task);
+            })
+            let list = {
+                task_ids: task_ids,
+                tasks: tasks
+            } as TaskList;   
+            dispatch({
+                type: TASKS_LIST,
+                list
+            })
+        }
+    });
+
+    // Dispatch unsubscribe function
+    dispatch({
+        type: TASKS_LIST_SUBSCRIPTION,
+        unsubscribe: () => { subscription.unsubscribe() }
     });
 };
 
 
-// Get Pathway details
-type PathwayDetailsThunkResult = ThunkAction<void, RootState, undefined, PathwaysActionDetails | PathwaysActionSubscription>;
-export const getPathway: ActionCreator<PathwayDetailsThunkResult> = (scenarioid: string, pathwayid: string) => (dispatch) => {
-    let unsubscribe = db.collection("scenarios/"+scenarioid+"/pathways").doc(pathwayid).onSnapshot({
-        complete: () => {},
-        error: (error) => {
-            // FIXME: Check error code (if permissions error, then unsubscribe)
-            console.log(error.code);
-            unsubscribe();
-        },
-        next: (doc) => {
-            if(!doc.exists) {
-                unsubscribe();
-                dispatch({
-                    type: PATHWAY_DETAILS,
-                    details: null
-                });
-                return;
-            }
-            var details = Object.assign({}, doc.data()) as Pathway;
-            if(!details)
-                return;
-            details.id = doc.id;
-            // TODO: Move datasets and ensembles to separate collections
-            // datasets/<dsid> => contains details about resources and metadata
-            // ensembles<ensid> => contains details about the ensemble: bindings and run details
+// List Threads
+type ListThreadsThunkResult = ThunkAction<void, RootState, undefined, ThreadsActionList | ThreadsActionListSubscription >;
+export const subscribeThreadsList: ActionCreator<ListThreadsThunkResult> = (task_id: string) => (dispatch) => {
 
-            // Dispach pathway details
+    let subscription = APOLLO_CLIENT.subscribe({
+        query: subscribeThreadsListGQL,
+        variables: {
+            task_id: task_id
+        }
+    }).subscribe(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let threads:IdMap<ThreadInfo> = {};
+            let thread_ids:string[] = [];
+            //console.log(problems);
+            result.data.thread.forEach((thread: any) => {
+                thread_ids.push(thread["id"]);
+                threads[thread["id"]] = threadInfoFromGQL(thread);
+            })
+            let list = {
+                thread_ids: thread_ids,
+                threads: threads
+            } as ThreadList;   
             dispatch({
-                type: PATHWAY_DETAILS,
+                type: THREADS_LIST,
+                list
+            })
+        }
+    });
+
+    // Dispatch unsubscribe function
+    dispatch({
+        type: THREADS_LIST_SUBSCRIPTION,
+        unsubscribe: () => { subscription.unsubscribe() }
+    });
+};
+*/
+
+// Get ProblemStatement details
+type SubProblemDetailsThunkResult = ThunkAction<void, RootState, undefined, ProblemStatementsActionDetails | ProblemStatementsActionSubscription>;
+export const subscribeProblemStatement: ActionCreator<SubProblemDetailsThunkResult> = (problem_statement_id: string) => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let subscription = APOLLO_CLIENT.subscribe({
+        query: subscribeProblemStatementGQL,
+        variables: {
+            id: problem_statement_id
+        }
+    }).subscribe(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let problem = result.data.problem_statement_by_pk;
+            if(problem) {
+                //console.log("Changes to the problem statement");
+                let details = problemStatementFromGQL(problem);
+                // Dispatch problem_statement details on an edit
+                dispatch({
+                    type: PROBLEM_STATEMENT_DETAILS,
+                    details
+                });
+            }
+        }
+    });
+
+    // Dispatch unsubscribe function
+    dispatch({
+        type: PROBLEM_STATEMENT_SUBSCRIPTION,
+        unsubscribe: () => { subscription.unsubscribe() }
+    });
+};
+
+/*
+// Get Task details
+type TaskDetailsThunkResult = ThunkAction<void, RootState, undefined, TasksActionDetails | TasksActionSubscription >;
+export const subscribeTask: ActionCreator<TaskDetailsThunkResult> = (task_id: string) => (dispatch) => {
+    let subscription = APOLLO_CLIENT.subscribe({
+        query: subscribeTaskGQL,
+        variables: {
+            id: task_id
+        }
+    }).subscribe(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let task = result.data.task_by_pk;
+            let details = taskFromGQL(task);
+            // Dispatch problem_statement details on an edit
+            dispatch({
+                type: TASK_DETAILS,
                 details
             });
         }
@@ -254,297 +393,503 @@ export const getPathway: ActionCreator<PathwayDetailsThunkResult> = (scenarioid:
 
     // Dispatch unsubscribe function
     dispatch({
-        type: PATHWAY_SUBSCRIPTION,
-        unsubscribe: unsubscribe
+        type: TASK_SUBSCRIPTION,
+        unsubscribe: () => { subscription.unsubscribe() }
+    });
+};
+*/
+
+// Get Thread details
+type ThreadSubDetailsThunkResult = ThunkAction<void, RootState, undefined, ThreadsActionDetails | ThreadsActionSubscription>;
+export const subscribeThread: ActionCreator<ThreadSubDetailsThunkResult> = (threadid: string) => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let subscription = APOLLO_CLIENT.subscribe({
+        query: subscribeThreadGQL,
+        variables: {
+            id: threadid
+        }
+    }).subscribe(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            //console.log(result);
+            //console.log("Changes to the thread " + threadid);
+            let thread = result.data.thread_by_pk;
+            if(thread) {
+                let details = threadFromGQL(thread);
+                // Dispatch problem_statement details on an edit
+                dispatch({
+                    type: THREAD_DETAILS,
+                    details
+                });
+            }
+        }
+    });
+    // Dispatch unsubscribe function
+    dispatch({
+        type: THREAD_SUBSCRIPTION,
+        unsubscribe: () => { subscription.unsubscribe() }
     });
 };
 
-// List Pathway Runs
-type ListEnsemblesThunkResult = ThunkAction<void, RootState, undefined, PathwayEnsemblesActionList>;
-export const fetchPathwayEnsembles: ActionCreator<ListEnsemblesThunkResult> = 
-        (pathwayid: string, modelid: string, ensembleids: string[]) => (dispatch) => {
-
-    
+// List Thread Execution Summaries
+type SubThreadExecutionSummaryThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionSummaryActionDetails | ThreadExecutionSummaryActionSubscription>;
+export const subscribeThreadExecutionSummary: ActionCreator<SubThreadExecutionSummaryThunkResult> = 
+        (thread_id:string, model_id: string, thread_model_id: string) => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let subscription = APOLLO_CLIENT.subscribe({
+        query: subscribeThreadExecutionSummaryListGQL,
+        variables: {
+            threadModelId: thread_model_id,
+        }
+    }).subscribe(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let tmsummary = result.data.thread_model_execution_summary;
+            let summary = threadModelExecutionSummaryFromGQL(tmsummary[0] ?? {});
+            summary.changed = true;
+            //console.log("Updated summary for "+thread_id);
+            dispatch({
+                type: THREAD_EXECUTION_SUMMARY,
+                model_id: model_id,
+                thread_id: thread_id,
+                execution_summary: summary,
+            })
+        }
+    });
+    // Dispatch unsubscribe function
     dispatch({
-        type: PATHWAY_ENSEMBLES_LIST,
-        pathwayid: pathwayid,
-        modelid: modelid,
-        ensembles: null,
+        type: THREAD_EXECUTION_SUMMARY_SUBSCRIPTION,
+        thread_id: thread_id,
+        model_id: model_id,
+        unsubscribe: () => { subscription.unsubscribe() }
+    });    
+};
+
+// List Thread Execution Summaries
+type ThreadExecutionSummaryThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionSummaryActionDetails>;
+export const getThreadExecutionSummary: ActionCreator<ThreadExecutionSummaryThunkResult> = 
+        (thread_id:string, model_id: string) => (dispatch) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    APOLLO_CLIENT.query({
+        query: getThreadExecutionSummaryListGQL,
+        variables: {
+            thread_id: thread_id,
+            model_id: model_id
+        }
+    }).then(result => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let tmsummary = result.data.thread_model_execution_summary;
+            let summary = threadModelExecutionSummaryFromGQL(tmsummary[0] ?? {});
+            summary.changed = true;
+            //console.log("Updated summary for "+thread_id);
+            dispatch({
+                type: THREAD_EXECUTION_SUMMARY,
+                model_id: model_id,
+                thread_id: thread_id,
+                execution_summary: summary,
+            })
+        }
+    });  
+};
+
+// List Thread Runs
+type ListExecutionsThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionsActionList>;
+export const listThreadModelExecutionsAction: ActionCreator<ListExecutionsThunkResult> = 
+        (thread_id:string, model_id: string, thread_model_id: string, 
+            start: number, limit: number, order_by: Array<Object>,
+            ) => (dispatch) => {
+
+    dispatch({
+        type: THREAD_EXECUTIONS_LIST,
+        model_id: model_id,
+        thread_id: thread_id,
+        executions: null,
         loading: true
     });
 
-    listEnsembles(ensembleids).then((ensembles) => {
-        dispatch({
-            type: PATHWAY_ENSEMBLES_LIST,
-            pathwayid: pathwayid,
-            modelid: modelid,
-            loading: false,
-            ensembles
-        })
-    });
-};
-
-export const setPathwayEnsembleIds = (scenarioid: string, pathwayid: string, 
-        modelid, batchid: number, ensembleids: string[]) : Promise<void> => {
-    let pathwayEnsembleIdsRef = db.collection("scenarios").doc(scenarioid).collection("pathways").doc(pathwayid).collection("ensembleids");
-    let docid = modelid.replace(/.+\//, '') + "_" + batchid;
-    let data = {
-        modelid: modelid,
-        ensemble_ids: ensembleids
-    }
-    return pathwayEnsembleIdsRef.doc(docid).set(data);
-}
-
-export const deleteAllPathwayEnsembleIds = async (scenarioid: string, pathwayid: string, modelid: string) => {
-    let pathwayEnsembleIdsRef = db.collection("scenarios").doc(scenarioid).collection("pathways").doc(pathwayid).collection("ensembleids");
-    let queryRef = null;
-    if(modelid) {
-        queryRef = pathwayEnsembleIdsRef.where("modelid", "==", modelid);
-    }
-    else {
-        queryRef = pathwayEnsembleIdsRef;
-    }
-    queryRef.get().then((snapshot) => {
-        snapshot.forEach((doc) => {
-            doc.ref.delete();
-        })
-    })
-}
-
-export const getAllPathwayEnsembleIds = async (scenarioid: string, pathwayid: string,
-        modelid: string) : Promise<string[]> => {
-    let pathwayEnsembleIdsRef = db.collection("scenarios").doc(scenarioid).collection("pathways").doc(pathwayid).collection("ensembleids")
-        .where("modelid", "==", modelid);
-
-    return pathwayEnsembleIdsRef.get().then((snapshot) => {
-        let ensembleids = [];
-        snapshot.forEach((doc) => {
-            ensembleids = ensembleids.concat(doc.data().ensemble_ids);
-        })
-        return ensembleids;
-    });
-}
-
-// Add Scenario
-export const addScenario = (scenario:Scenario) =>  {
-    let scenarioRef = db.collection("scenarios").doc();
-    scenario.last_update = Date.now().toString();
-    scenario.last_update_user = auth.currentUser.email;    
-    scenarioRef.set(scenario);
-    return scenarioRef.id;
-};
-
-// Add Goal
-export const addGoal = (scenario:Scenario, goal:Goal) =>  {
-    let goalRef = db.collection("scenarios/"+scenario.id+"/goals").doc();
-    goalRef.set(goal).then(() => updateScenario(scenario));
-    return goalRef.id;
-};
-
-// Add SubGoal
-export const addSubGoal = (scenario:Scenario, goalid:string, subgoal: SubGoal) =>  {
-    let subgoalRef = db.collection("scenarios/"+scenario.id+"/subgoals").doc();
-    Promise.all([
-        db.collection("scenarios/"+scenario.id+"/goals").doc(goalid).update({
-            subgoalids: fieldValue.arrayUnion(subgoalRef.id)
-        }),
-        subgoalRef.set(subgoal)
-    ])
-    .then(() => updateScenario(scenario));
-
-    return subgoalRef.id;
-};
-
-// Add Pathway
-export const addPathway = (scenario:Scenario, subgoalid: string, pathway:Pathway) =>  {
-    let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc();
-    let pathwayinfo = {
-        id: pathwayRef.id,
-        name: pathway.name,
-        dates: pathway.dates
-    };
-    Promise.all([
-        db.collection("scenarios/"+scenario.id+"/subgoals").doc(subgoalid).update({
-            [`pathways.${pathwayinfo.id}`]: pathwayinfo
-        }),
-        pathwayRef.set(pathway)
-    ])
-    .then(() => updateScenario(scenario));
-
-    return pathwayRef.id;
-};
-
-// Add Goal along with Subgoal and a pathway with a response & driving variable
-export const addGoalFull = (scenario:Scenario, goal: Goal, subgoal: SubGoal, pathway: Pathway) => {
-    let goalRef = db.collection("scenarios/"+scenario.id+"/goals").doc();
-    let subgoalRef = db.collection("scenarios/"+scenario.id+"/subgoals").doc();
-    let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc();
-    goal.subgoalids = [subgoalRef.id];
-    subgoal.pathways[pathwayRef.id] = {
-        id: pathwayRef.id,
-        name: pathway.name ? pathway.name : subgoal.name
-    };
-
-    Promise.all([
-        pathwayRef.set(pathway),
-        subgoalRef.set(subgoal),
-        goalRef.set(goal)
-    ])
-    .then(() => updateScenario(scenario));
-    
-    return goalRef.id;
-}
-
-// Add Subgoal and a pathway with a response & driving variable, to an existing Goal
-export const addSubGoalFull = (scenario:Scenario, goalid: string, subgoal: SubGoal, pathway: Pathway) => {
-    let subgoalRef = db.collection("scenarios/"+scenario.id+"/subgoals").doc();
-    let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc();
-    subgoal.pathways[pathwayRef.id] = {
-        id: pathwayRef.id,
-        name: pathway.name ? pathway.name : subgoal.name
-    };
-    let promises = [
-        pathwayRef.set(pathway),
-        subgoalRef.set(subgoal)
-    ];
-    if(goalid) {
-        promises.push(
-            db.collection("scenarios/"+scenario.id+"/goals").doc(goalid).update({
-                subgoalids: fieldValue.arrayUnion(subgoalRef.id)
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    APOLLO_CLIENT.query({
+        query: listThreadModelExecutionsListGQL,
+        variables: {
+            threadModelId: thread_model_id,
+            start: start,
+            limit: limit,
+            orderBy: order_by ? order_by : []
+        },
+        fetchPolicy: "no-cache"
+    }).then((result) => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let executions = result.data.execution.map((ex:any) => executionFromGQL(ex));
+            dispatch({
+                type: THREAD_EXECUTIONS_LIST,
+                model_id: model_id,
+                thread_id: thread_id,
+                loading: false,
+                executions
             })
-        );
-    }
-    Promise.all(promises).then(() => updateScenario(scenario));
-
-    return subgoalRef.id;
-}
-
-// Update Scenario
-export const updateScenario = (scenario: Scenario) =>  {
-    let scenarioRef = db.collection("scenarios").doc(scenario.id);
-    if(auth.currentUser) {
-        scenario.last_update = Date.now().toString();
-        scenario.last_update_user = auth.currentUser.email;
-        if(!scenario.subregionid)
-            scenario.subregionid = null;
-        scenarioRef.set(scenario);
-    }
-};
-
-// Update Goal
-export const updateGoal = (scenario: Scenario, goal: Goal) =>  {
-    let goalRef = db.collection("scenarios/"+scenario.id+"/goals").doc(goal.id);
-    goalRef.set(goal).then(() => updateScenario(scenario));
-};
-
-// Update Sub Goal
-export const updateSubGoal = (scenario: Scenario, subgoal: SubGoal) =>  {
-    let goalRef = db.collection("scenarios/"+scenario.id+"/subgoals").doc(subgoal.id);
-    goalRef.set(subgoal).then(() => updateScenario(scenario));
-};
-
-// Update Pathway
-export const updatePathway = (scenario: Scenario, pathway: Pathway) =>  {
-    let npathway = Object.assign({}, pathway);
-    delete npathway.unsubscribe;
-    let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc(pathway.id);
-    console.log(scenario.id + " ---- update pathway: " + pathway.id);
-    //console.log(pathway);
-    return pathwayRef.set(npathway); //.then(() => updateScenario(scenario));
-};
-
-export const updatePathwayInfo = (scenario: Scenario, subgoalid: string, pathwayinfo: PathwayInfo) => {
-    let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc(pathwayinfo.id);
-    Promise.all([
-        db.collection("scenarios/"+scenario.id+"/subgoals").doc(subgoalid).update({
-            [`pathways.${pathwayinfo.id}`]: pathwayinfo
-        }),
-        pathwayRef.set(pathwayinfo, {merge: true})
-    ])
-    .then(() => updateScenario(scenario));
-}
-
-export const updatePathwayVariables = (scenarioid: string, pathwayid: string, 
-        driving_variables: string[], response_variables: string[]) =>  {
-    let pathwayRef = db.collection("scenarios/"+scenarioid+"/pathways").doc(pathwayid);
-    return pathwayRef.set({
-        driving_variables: driving_variables,
-        response_variables: response_variables
-    }, {merge: true});
-};
-
-export const updatePathwayFromPathwayInformation = (scenarioid: string, pathwayid: string, pathwayinfo: PathwayInfo) => {
-    let pathwayRef = db.collection("scenarios/"+scenarioid+"/pathways").doc(pathwayinfo.id);
-    return pathwayRef.set(pathwayinfo, {merge: true});
-}
-
-// Add Ensembles
-export const addPathwayEnsembles = (ensembles: ExecutableEnsemble[]) => {
-    let ensemblesRef = db.collection("ensembles");
-    // Read all docs (to check if they exist or not)
-    let readpromises = [];
-    ensembles.map((ensemble) => {
-        readpromises.push(ensemblesRef.doc(ensemble.id).get());
+        }
     });
-    let batch = db.batch();
-    let i = 0;
-    return Promise.all(readpromises).then((docs) => {
-        docs.map((curdoc: firebase.firestore.DocumentSnapshot) => {
-            // If doc doesn't exist, write ensemble
-            let ensemble = ensembles[i++];
-            //if(!curdoc.exists)
-            batch.set(curdoc.ref, ensemble);
-        })
-        return batch.commit();
-    })
-}
-
-// Update Pathway Ensembles
-export const updatePathwayEnsembles = (ensembles: ExecutableEnsemble[]) => {
-    let ensemblesRef = db.collection("ensembles");
-    let batch = db.batch();
-    let i = 0;
-    ensembles.map((ensemble) => {
-        batch.update(ensemblesRef.doc(ensemble.id), ensemble);
-    })
-    return batch.commit();
-}
-
-// Delete Scenario
-export const deleteScenario = (scenario:Scenario) =>  {
-    let scenarioRef = db.collection("scenarios").doc(scenario.id);
-    _deleteCollection(scenarioRef.collection("goals"), null);
-    _deleteCollection(scenarioRef.collection("subgoals"), null);
-    _deleteCollection(scenarioRef.collection("pathways"), "ensembleids");
-    return scenarioRef.delete();
 };
 
-// Delete Goal
-export const deleteGoal = (scenario:Scenario, goalid: string) =>  {
-    let goalRef = db.collection("scenarios/"+scenario.id+"/goals").doc(goalid);
-    goalRef.delete().then(() => updateScenario(scenario));
+export const getAllThreadExecutionIds = async (thread_id: string, modelid: string) : Promise<string[]> => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    return APOLLO_CLIENT.query({
+        query: executionIdsForThreadGQL,
+        variables: {
+            id: thread_id,
+            modelId: modelid
+        }
+    }).then((result) => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            if(result.data.thread_by_pk.thread_models.length > 0)
+                return result.data.thread_by_pk.thread_models[0].executions.map((ex:any) => ex.execution_id);
+        }
+        return null;        
+    });
+}
+
+// Add ProblemStatement
+export const addProblemStatement = (problem_statement:ProblemStatementInfo) : Promise<string> =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let problemobj = problemStatementToGQL(problem_statement);
+    //console.log(problemobj);
+    return APOLLO_CLIENT.mutate({
+        mutation: newProblemStatementGQL,
+        variables: {
+            object: problemobj
+        }
+    }).then((result) => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            return result.data.insert_problem_statement.returning[0].id;
+        }
+        return null;        
+    });
 };
 
-// Delete SubGoal
-export const deleteSubGoal = (scenario:Scenario, goalid:string, subgoalid: string) =>  {
-    let subgoalRef = db.collection("scenarios/"+scenario.id+"/subgoals").doc(subgoalid);
-    if(goalid) {
-        db.collection("scenarios/"+scenario.id+"/goals").doc(goalid).update({
-            subgoalids: fieldValue.arrayRemove(subgoalid)
-        });
+// Add Task
+export const addTask = (problem_statement: ProblemStatementInfo, task: Task) : Promise<string> =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let taskobj = taskToGQL(task, problem_statement);
+    return APOLLO_CLIENT.mutate({
+        mutation: newTaskGQL,
+        variables: {
+            object: taskobj
+        }
+    }).then((result) => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            return result.data.insert_task.returning[0].id;
+        }
+        return null;        
+    });
+};
+
+// Add Task
+export const addTaskWithThread = (problem_statement: ProblemStatementInfo, task: Task, thread: ThreadInfo) : Promise<string[]> =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let taskobj = taskToGQL(task, problem_statement);
+    let threadobj = threadInfoToGQL(thread, task.id, task.regionid);
+    taskobj["threads"] = {
+        data: [threadobj]
     }
-    subgoalRef.delete().then(() => updateScenario(scenario));
+    return APOLLO_CLIENT.mutate({
+        mutation: newTaskGQL,
+        variables: {
+            object: taskobj
+        }
+    }).then((result) => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            return [
+                result.data.insert_task.returning[0].id,
+                result.data.insert_task.returning[0].threads[0].id
+            ];
+        }
+        return null;        
+    });
 };
 
-// Delete Pathway
-export const deletePathway = (scenario:Scenario, subgoalid: string, pathway:PathwayInfo) =>  {
-    deleteAllPathwayEnsembleIds(scenario.id, pathway.id, null);
-    
-    let pathwayRef = db.collection("scenarios/"+scenario.id+"/pathways").doc(pathway.id);
-    pathwayRef.delete()
-    db.collection("scenarios/"+scenario.id+"/subgoals").doc(subgoalid).update({
-        [`pathways.${pathway.id}`]: fieldValue.delete()
-    }).then(() => updateScenario(scenario));;
+// Add Thread
+export const addThread = (task:Task, thread: ThreadInfo) : Promise<string> =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let threadobj = threadInfoToGQL(thread, task.id, task.regionid);
+    //console.log(threadobj);
+    return APOLLO_CLIENT.mutate({
+        mutation: newThreadGQL,
+        variables: {
+            object: threadobj
+        }
+    }).then((result) => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            return result.data.insert_thread.returning[0].id;
+        }
+        return null;        
+    });
+};
+
+
+// Update ProblemStatement
+export const updateProblemStatement = (problem_statement: ProblemStatementInfo) =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let problemobj = problemStatementUpdateToGQL(problem_statement);
+    return APOLLO_CLIENT.mutate({
+        mutation: updateProblemStatementGQL,
+        variables: {
+            object: problemobj
+        }
+    });
+};
+
+// Update Task
+export const updateTask = (task: Task) =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let taskobj = taskUpdateToGQL(task);
+    return APOLLO_CLIENT.mutate({
+        mutation: updateTaskGQL,
+        variables: {
+            object: taskobj
+        }
+    });
+};
+
+export const updateThreadInformation = (threadinfo: ThreadInfo) => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let threadobj = threadInfoUpdateToGQL(threadinfo);
+    return APOLLO_CLIENT.mutate({
+        mutation: updateThreadInfoGQL,
+        variables: {
+            object: threadobj
+        }
+    });
+}
+
+export const setThreadModels = (models: Model[], notes: string, thread: Thread) =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let threadmodelsobj = models.map((model) => {
+        return {
+            model_id: model.id,
+            thread_id: thread.id
+        };
+    });
+    let event = getCustomEvent("SELECT_MODELS", notes);
+    let eventobj = event;
+    eventobj["thread_id"] = thread.id;
+    return APOLLO_CLIENT.mutate({
+        mutation: updateThreadModelGQL,
+        variables: {
+            threadId: thread.id,
+            objects: threadmodelsobj,
+            event: eventobj
+        }
+    });
+};
+
+export const setThreadData = (datasets: DataMap, model_ensembles: ModelEnsembleMap, 
+        notes: string, thread: Thread) =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let bindings = threadDataBindingsToGQL(datasets, model_ensembles, thread);
+    let event = getCustomEvent("SELECT_DATA", notes);
+    let eventobj = event;
+    eventobj["thread_id"] = thread.id;
+    return APOLLO_CLIENT.mutate({
+        mutation: updateThreadDataGQL,
+        variables: {
+            threadId: thread.id,
+            data: bindings.data,
+            modelIO: bindings.model_io,
+            event: eventobj
+        }
+    });
+};
+
+export const setThreadParameters = (model_ensembles: ModelEnsembleMap, 
+        execution_summary: IdMap<ExecutionSummary>,
+        notes: string, thread: Thread) =>  {
+    let bindings = threadParameterBindingsToGQL(model_ensembles, thread);
+    let event = getCustomEvent("SELECT_PARAMETERS", notes);
+    let eventobj = event;
+    eventobj["thread_id"] = thread.id;
+    let summaries = [];
+    Object.keys(execution_summary).forEach((modelid) => {
+        let summary = execution_summary[modelid];
+        summary["thread_model_id"] = model_ensembles[modelid].id;
+        summaries.push(summary);
+    })
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    return APOLLO_CLIENT.mutate({
+        mutation: updateThreadParametersGQL,
+        variables: {
+            threadId: thread.id,
+            summaries: summaries,
+            modelParams: bindings,
+            event: eventobj
+        }
+    });
+};
+
+export const getThreadDataResources = (sliceid: string): Promise<Dataslice> => {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    return APOLLO_CLIENT.query({
+        query: getDatasliceResourcesGQL,
+        variables: {
+            id: sliceid,
+        }
+    }).then((result) => {
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            return datasliceFromGQL(result.data.dataslice_by_pk);
+        }
+    });
+}
+
+export const selectThreadDataResources = (sliceid: string, resource_selections: any, threadid: string) => {
+    let slice_resources = Object.keys(resource_selections).map((resid) => {
+        return {
+            dataslice_id: sliceid,
+            resource_id: resid,
+            selected: resource_selections[resid]
+        };
+    })
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    return APOLLO_CLIENT.mutate({
+        mutation: setDatasliceResourcesGQL,
+        variables: {
+            datasliceId: sliceid,
+            threadId: threadid,
+            resources: slice_resources
+        },
+        refetchQueries: [{
+            query: getDatasliceResourcesGQL,
+            variables: {
+                id: sliceid
+            }
+        }]
+    });
+}
+
+export const addThreadEvent = (eventobj: ThreadEvent, thread: Thread) =>  {
+    eventobj["thread_id"] = thread.id;
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    return APOLLO_CLIENT.mutate({
+        mutation: addThreadEventGQL,
+        variables: {
+            threadId: thread.id,
+            event: eventobj
+        }
+    });
+};
+
+// Cache Models in GraphQL backend
+export const cacheModelsFromCatalog = async (
+    models: Model[], 
+    allSoftwareImages: IdMap<SoftwareImage>, 
+    allConfigs: ModelConfiguration[],
+    allVersions: SoftwareVersion[],
+    allModels: MCModel[] ) =>  {
+        let APOLLO_CLIENT = GraphQL.instance(auth);
+        // First check if any of these models are already in GraphQL
+        let result = await APOLLO_CLIENT.query({
+            query: listExistingModelsGQL,
+            variables: {
+                modelIds: models.map((m) => m.id)
+            }
+        });
+        if(result.errors && result.errors.length > 0) {
+            console.log("ERROR");
+            console.log(result);
+        }
+        else {
+            let uncached_models = {};
+            models.forEach(model => {
+                let found = false;
+                result.data.model.forEach(m => {
+                    if (m["id"] == model["id"])
+                        found = true;
+                });
+                if(!found) {
+                    uncached_models[model.id] = model;
+                }
+            });
+            if(Object.keys(uncached_models).length > 0) {
+                let full_models = await fetchModelsFromCatalog(uncached_models, 
+                    allSoftwareImages, allConfigs, allVersions, allModels); 
+                await APOLLO_CLIENT.mutate({
+                    mutation: newModelsGQL,
+                    variables: {
+                        objects: Object.values(full_models).map((fullmodel) => modelToGQL(fullmodel))
+                    }
+                });
+            }
+        }
+    }
+
+
+// Delete ProblemStatement
+export const deleteProblemStatement = (problem_statement_id: string) =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    return APOLLO_CLIENT.mutate({
+        mutation: deleteProblemStatementGQL,
+        variables: {
+            id: problem_statement_id
+        }
+    });
+};
+
+// Delete Task
+export const deleteTask = (taskid: string) =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    return APOLLO_CLIENT.mutate({
+        mutation: deleteTaskGQL,
+        variables: {
+            id: taskid
+        }
+    });
+};
+
+// Delete Thread
+export const deleteThread = (threadid: string) =>  {
+    let APOLLO_CLIENT = GraphQL.instance(auth);
+    return APOLLO_CLIENT.mutate({
+        mutation: deleteThreadGQL,
+        variables: {
+            id: threadid
+        }
+    });
 };
 
 /* Helper Function */
@@ -561,4 +906,60 @@ const _deleteCollection = (collRef: firebase.firestore.CollectionReference, subC
             doc.ref.delete();
         });
     });
+}
+
+/* Execution Functions */
+
+export const getMatchingEnsemble = (ensembles: Execution[], execution: Execution, hashes: string[]) => {
+    let hash = getEnsembleHash(execution);
+    let index = hashes.indexOf(hash);
+    if(index >= 0) {
+        return ensembles[index];
+    }
+    return null;
+}
+
+export const getEnsembleHash = (ensemble: Execution) : string => {
+    let str = ensemble.modelid;
+    let varids = Object.keys(ensemble.bindings).sort();
+    varids.map((varid) => {
+        let binding = ensemble.bindings[varid];
+        let bindingid = isObject(binding) ? (binding as DataResource).id : binding;
+        str += varid + "=" + bindingid + "&";
+    })
+    return Md5.hashStr(str).toString();
+}
+
+export const sendDataForIngestion = (threadid: string, prefs: UserPreferences) => {
+    let data = {
+        thread_id: threadid
+    };
+    return new Promise<void>((resolve, reject) => {
+        postJSONResource({
+            url: prefs.mint.ingestion_api + "/modelthreads",
+            onLoad: function(e: any) {
+                resolve();
+            },
+            onError: function() {
+                reject("Cannot ingest thread");
+            }
+        }, data, false);
+    });    
+}
+
+export const threadTotalRunsChanged = (oldthread: Thread, newthread: Thread) => {
+    if(oldthread == null && newthread != null)
+        return true;
+    if(newthread == null)
+        return false;
+
+    let oldtotal = 0;
+    Object.keys(oldthread.execution_summary).map((modelid) => {
+        oldtotal += oldthread.execution_summary[modelid].total_runs;
+    })
+    let newtotal = 0;
+    Object.keys(newthread.execution_summary).map((modelid) => {
+        newtotal += newthread.execution_summary[modelid].total_runs;
+    })
+    return oldtotal != newtotal;
 }

@@ -21,7 +21,7 @@ export const numericalIndexsGet: ActionThunk<Promise<IdMap<NumericalIndex>>, MCA
         debug('Fetching all');
         let api : NumericalIndexApi = new NumericalIndexApi();
         numericalIndexsPromise = new Promise((resolve, reject) => {
-            let req : Promise<NumericalIndex[]> = api.numericalindexsGet({username: getUser()});
+            let req : Promise<NumericalIndex[]> = api.numericalindexsGet({username: getUser(), perPage:200});
             req.then((resp:NumericalIndex[]) => {
                 let data = resp.reduce(idReducer, {}) as IdMap<NumericalIndex>
                 dispatch({

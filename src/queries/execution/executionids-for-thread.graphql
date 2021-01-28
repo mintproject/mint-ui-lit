@@ -1,0 +1,9 @@
+query execution_ids_for_thread($id:String!, $modelId: String!) {
+  thread_by_pk(id: $id) {
+    thread_models(where: {model_id: {_eq: $modelId}}) {
+      executions {
+        execution_id
+      }
+    }
+  }
+}

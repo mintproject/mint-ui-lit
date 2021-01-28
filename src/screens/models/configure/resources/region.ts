@@ -10,7 +10,7 @@ import { Region, RegionFromJSON, GeoShape, GeoShapeFromJSON } from '@mintproject
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
-import { GOOGLE_API_KEY } from 'config/google-api-key';
+import { GOOGLE_API_KEY } from 'config/firebase';
 import { GoogleMapCustom } from 'components/google-map-custom';
 import { RegionCategory } from "screens/regions/reducers";
 import { Region as LocalRegion} from "screens/regions/reducers";
@@ -131,6 +131,15 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
         </form>`;
     }*/
 
+    public getResources () {
+        let rs : Region[] = super.getResources();
+        //FIXME: server is failing with GeoShape
+        return rs.map((r:Region) => {
+            if (r.geo) delete r.geo;
+            return r;
+        })
+    }
+
     protected _getResourceFromForm () {
         // GET ELEMENTS
         if (this._tabMap) {
@@ -197,7 +206,7 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
             <wl-button @click="${this._closeMap}" style="margin-right: 5px;" inverted flat ?disabled="">
                 Cancel
             </wl-button>
-            <wl-button class="submit" ?disabled="${this._waiting || !this._selectedMapRegion}" @click="${this._onFormSaveButtonClicked}">
+            <wl-button class="submit" ?disabled="${this._waiting || !this._selectedMapRegion}" @click="${this._onSaveButtonClicked}">
                 Select
                 ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
             </wl-button>
@@ -216,7 +225,7 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
         return html`
             <wl-tab-group align="center">
                 <wl-tab ?checked="${!this._tabMap}" @click="${() => {this._tabMap = false;}}">Search Region</wl-tab>
-                <wl-tab ?checked="${this._tabMap}" @click="${this._enableMap}">Map</wl-tab>
+                <wl-tab ?checked="${this._tabMap}" @click="${this._enableMap}" disabled>Map</wl-tab>
             </wl-tab-group>
         `;
     }
@@ -229,7 +238,9 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
     }
 
     private _renderMapTab () {
-        return html`
+        //FIXME: Add region->category->subcategory relations.
+        return html`Disabled`;
+        /*return html`
             <form id="regionForm">
                 <div class="input_half">
                     <label>Region category</label>
@@ -264,10 +275,10 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
             <b>Bounding Box:</b>
                 ${ this._selectedMapRegion.bounding_box.xmin.toFixed(4) + ',' + this._selectedMapRegion.bounding_box.ymin.toFixed(4) }
                 ${ this._selectedMapRegion.bounding_box.xmax.toFixed(4) + ',' + this._selectedMapRegion.bounding_box.ymax.toFixed(4) }
-            ` : ''}`
+            ` : ''}`*/
     }
 
-    private _onRegionCategoryChange () {
+    /*private _onRegionCategoryChange () {
         let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#regionForm")!;
         let category = (form.elements["category-selector"] as HTMLSelectElement).value;
         if (category != this._selectedCategory) {
@@ -291,7 +302,7 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
               })
             }
         }
-    }
+    }*/
 
     private _handleMapClick(ev: any) {
         if(ev.detail && ev.detail.id) {

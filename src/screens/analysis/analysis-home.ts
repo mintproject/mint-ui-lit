@@ -19,7 +19,7 @@ store.addReducers({
 @customElement('analysis-home')
 export class AnalysisHome extends connect(store)(PageViewElement) {
     @property({type: String})
-    private _selectedPathwayId : string = '';
+    private _selectedThreadId : string = '';
 
     static get styles() {
         return [
@@ -43,7 +43,7 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
                 break;
             case 'report':
                 nav.push({label: 'Available Reports', url: 'analysis/report'});
-                if (this._selectedPathwayId) {
+                if (this._selectedThreadId) {
                     nav.push({label: 'Available Reports', url: 'analysis/report'})
                 }
                 break;
@@ -88,7 +88,7 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
         super.setRegionId(state);
         super.setSubPage(state);
         if (state.ui) {
-            this._selectedPathwayId = state.ui.selected_pathwayid;
+            this._selectedThreadId = state.ui.selected_thread_id;
         }
     }
 }

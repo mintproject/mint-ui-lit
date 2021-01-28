@@ -11,6 +11,7 @@ import './model-explore/model-explore';
 import './models-register';
 import './models-calibrate';
 import './models-configure';
+import './models-edit';
 import '../../components/nav-title'
 
 store.addReducers({
@@ -67,8 +68,20 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     margin:auto;
                 }
 
+                .icongrid {
+                    grid-template-columns: 160px 160px 160px !important;
+                    margin-left: calc(50% - 240px) !important;
+                }
+
                 model-explorer {
                     height: calc(100% - 40px);
+                }
+
+                @media (max-width: 768px) {
+                    .icongrid {
+                        grid-template-columns: 120px 120px 120px !important;
+                        margin-left: calc(50% - 180px) !important;
+                    }
                 }
             `,
             SharedStyles
@@ -105,6 +118,9 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             case 'compare':
                 nav.push({label: 'Compare Models', url: 'models/compare'});
                 break;
+            case 'edit':
+                nav.push({label: 'Edit Models', url: 'models/edit'});
+                break;
             default:
                 break;
         }
@@ -124,10 +140,18 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <wl-icon>search</wl-icon>
                     <div>Browse Models</div>
                 </a>
-                <!--a href="{this._regionid}/models/register"-->
-                <a disabled>
+                <a href="${this._regionid}/models/register">
+                <!--a disabled-->
                     <wl-icon>library_add</wl-icon>
                     <div>Add Models</div>
+                </a>
+                <a href="${this._regionid}/models/edit">
+                    <wl-icon>edit</wl-icon>
+                    <div>Edit Models</div>
+                </a>
+                <a href="${this._regionid}/models/compare">
+                    <wl-icon>compare</wl-icon>
+                    <div>Compare Models</div>
                 </a>
                 <a href="${this._regionid}/models/configure">
                     <wl-icon>perm_data_settings</wl-icon>
@@ -145,6 +169,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             <models-configure class="page" ?active="${this._subpage == 'configure'}"></models-configure>
             <models-calibrate class="page" ?active="${this._subpage == 'calibrate'}"></models-calibrate>
             <models-compare class="page" ?active="${this._subpage == 'compare'}"></models-compare>
+            <models-edit class="page" ?active="${this._subpage == 'edit'}"></models-edit>
         `
     }
 

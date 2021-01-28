@@ -6,7 +6,7 @@ import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
 import { addRegions, addSubcategory } from './actions';
-import { GOOGLE_API_KEY } from 'config/google-api-key';
+import { GOOGLE_API_KEY } from 'config/firebase';
 import { IdMap } from 'app/reducers';
 import { Region, RegionCategory } from './reducers';
 
@@ -21,12 +21,16 @@ import { BoundingBox } from './reducers';
 
 import "./region-models";
 import "./region-datasets";
+import { geometriesToGeoJson, geoJsonToGeometries } from 'util/geometry_functions';
 
 @customElement('regions-editor')
 export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     @property({type: String})
     public regionType: string;
+
+    @property({type: Object})
+    public _regionCategory: RegionCategory;
 
     @property({type: String})
     private _selectedSubregionId: string;
@@ -48,6 +52,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     @property({type: Array})
     private _newregions: Array<any> = [];
+
+    @property({type: Object})
+    private _new_geometries: any = {};
 
     @property({type: Array})
     private _subcategories: RegionCategory[] = [];
@@ -151,22 +158,16 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
 	// TODO: maybe move the description text outside and move the button to other place.
     protected render() {
-        let subcatArr = this._region ? 
-            (this._selectedSubcategory === '' ? 
-                this._region.categories.filter((c:RegionCategory) => c.id === this.regionType)
-                : this._region.subcategories[this.regionType].filter((c:RegionCategory) => 
-                    c.id === this._selectedSubcategory)
-            ) : [];
-        let subcat : RegionCategory | null = subcatArr.length > 0 ? subcatArr[0] : null;
+        let subcat = this._regionCategory[this._selectedSubcategory];
         return html`
         <div style="display: flex; margin-bottom: 10px;">
             <wl-tab-group align="center" style="width: 100%;">
                 <wl-tab @click="${() => this._selectSubcategory('')}" ?checked=${!this._selectedSubcategory}>
-                    ${this.regionType ? this.regionType : 'Base regions'}
+                    ${this._regionCategory?.name ? this._regionCategory.name : 'Base regions'}
                 </wl-tab>
                 ${this._subcategories.map(((sc:RegionCategory) => html`
                 <wl-tab @click="${() => this._selectSubcategory(sc.id)}" ?checked=${this._selectedSubcategory == sc.id}>
-                    ${sc.id}
+                    ${sc.name}
                 </wl-tab>
                 `))}
             </wl-tab-group>
@@ -187,7 +188,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                     modeling in ${this._region.name || this._regionid}`)
                 : ''}
             ${subcat ? html`
-                ${subcat.description ? html`<div>${subcat.description}</div>` : ''}
+                ${subcat.name ? html`<div>${subcat.name}</div>` : ''}
                 ${subcat.citation ?
                     html`<div style="font-size: 13px; font-style: italic; padding-top: 3px;">${subcat.citation}</div>`
                     : ''}
@@ -264,7 +265,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     private _downloadGeoJson () {
         downloadFile(
-            this._selectedRegion.geojson_blob,
+            JSON.stringify(geometriesToGeoJson(this._selectedRegion.geometries)),
             this._selectedRegion.name.replace(/\s/, '_').toLowerCase() + '.json',
             'application/json');
     }
@@ -273,7 +274,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
         if (map && this._regions) {
             let selectedRegions = this._regions.filter((region) => 
-                    region.region_type == (this._selectedSubcategory ? this._selectedSubcategory : this.regionType))
+                    region.category_id == (this._selectedSubcategory ? this._selectedSubcategory : this.regionType))
             if (selectedRegions.length > 0) {
                 this._mapEmpty = false;
                 try {
@@ -304,7 +305,10 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         this._geojson_nameprop = null;
         this._newregions = [];
         let input:HTMLInputElement = this.shadowRoot!.querySelector<HTMLInputElement>("#geojson_file")!;
+        let subcategory = this.shadowRoot!.getElementById("subcategory-selector") as HTMLInputElement;
         input.value = null;
+        if(this._selectedSubcategory)
+            subcategory.value = this._selectedSubcategory;
 
         showDialog("addRegionDialog", this.shadowRoot);
     }
@@ -340,11 +344,11 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                     return;
                 }
                 let index = checkbox.value;
-                let nregion = this._newregions[index];
+                let geomobj = this._new_geometries[index];
                 let region = {
-                    geojson_blob: JSON.stringify(nregion),
+                    geometries: geomobj.geometries,
                     name: input.value,
-                    region_type: regionType
+                    category_id: regionType
                 } as Region;
                 newregions.push(region);
             }
@@ -372,18 +376,18 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     _onAddSubcategorySubmit() {
         let nameEl = this.shadowRoot!.getElementById('subcategory-name') as HTMLInputElement;
         let descEl = this.shadowRoot!.getElementById('subcategory-desc') as HTMLInputElement;
-        let name = nameEl.value;
-        let desc = descEl.value;
+        let id = nameEl.value;
+        let name = descEl.value;
         if (!name) {
             showNotification("formValuesIncompleteNotification", this.shadowRoot!);
             return;
         }
 
-        let index = this._subcategories.map((sc) => sc.id).indexOf(name);
+        let index = this._subcategories.map((sc) => sc.id).indexOf(id);
         if (index < 0) {
-            addSubcategory(this._regionid, this.regionType, name, desc).then((value) => {
+            addSubcategory(this._regionid, this.regionType, id, name).then((value) => {
                 hideDialog("addSubcategoryDialog", this.shadowRoot);
-                this._subcategories.push({id: name, description: desc});
+                this._subcategories.push({id: id, name: name});
                 this.requestUpdate();
             })
         } else {
@@ -422,6 +426,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     }
 
     _renderAddRegionsDialog() {
+        let regionCategoryName = this._regionCategory?.name;
         return html`
         <wl-dialog class="larger" id="addRegionDialog" fixed backdrop blockscrolling>
             <h3 slot="header">Add ${this.regionType.toLowerCase()} regions</h3>
@@ -429,9 +434,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 <br />
                 <form id="regionsForm">
                     <wl-select label="Category" id="subcategory-selector" style="margin-bottom: 1em;">
-                        <option value="base" selected> ${this.regionType ? this.regionType : 'Base regions'} </option>
+                        <option value="base" selected> ${ regionCategoryName ? regionCategoryName : 'Base regions'} </option>
                         ${this._subcategories.map((sc:RegionCategory) => html`
-                        <option value="${sc.id}">${sc.id}</option>
+                        <option value="${sc.id}">${sc.name}</option>
                         `)}
                     </wl-select>
                     <div>
@@ -462,16 +467,19 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                                 </th>
                             </thead>
                             <tbody>
-                                ${this._newregions.map((newregion, index) => {
+                                ${Object.keys(this._new_geometries).map((regionname) => {
+                                    let newgeometry = this._new_geometries[regionname];
                                     return html`
                                         <tr>
-                                            <td><input type="checkbox" checked class="regionindex" value="${index}"></td>
+                                            <td><input type="checkbox" checked class="regionindex" value="${regionname}"></td>
                                             <td>
                                                 <div class="input_full">
                                                     <input type="text" class="regionname"
-                                                        value="${this._geojson_nameprop ? 
-                                                            newregion.properties['_mint_name'] : ''}">
+                                                        value="${this._geojson_nameprop ? newgeometry.name : ''}">
                                                     </input>
+                                                    <span>
+                                                    ${(newgeometry.geometries.length > 1 ? 
+                                                                ' (' + newgeometry.geometries.length +' parts)':  '')}
                                                 </div>
                                             </td>
                                         </tr>
@@ -495,23 +503,19 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
     _selectGeojsonNameProperty(e: any) {
         this._geojson_nameprop = e.target.value;
-        this._setMintNameProperty();
+        this._setMintRegionNameAndGeometries();
     }
 
-    _setMintNameProperty() {
-        let dupesmap = {}
-        this._newregions = this._newregions.map((region) => {
-            let orig_region_name = region.properties[this._geojson_nameprop];
-            let new_region_name = orig_region_name;
-            if(!dupesmap[orig_region_name]) {
-                dupesmap[orig_region_name] = 1;
-            }
-            else {
-                new_region_name += "_" + dupesmap[orig_region_name];
-                dupesmap[orig_region_name] ++ ;
-            }
-            region.properties["_mint_name"]  = new_region_name;
-            return region;
+    _setMintRegionNameAndGeometries() {
+        this._new_geometries = {};
+        this._newregions.forEach((region) => {
+            let region_name = region.properties[this._geojson_nameprop];
+            if (!this._new_geometries[region_name])
+                this._new_geometries[region_name] = {
+                    name: region_name,
+                    geometries: []
+                }
+            this._new_geometries[region_name].geometries.push(region.geometry);
         })
     }    
 
@@ -560,8 +564,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             shouldUpdateRegions = true;
         }
 
-        if (this._region && this._region.subcategories && this._region.subcategories[this.regionType]) {
-            this._subcategories = this._region.subcategories[this.regionType];
+        if (this._region && state.regions.categories && state.regions.categories[this.regionType]) {
+            this._regionCategory = state.regions.categories[this.regionType];
+            this._subcategories = this._regionCategory.subcategories;
         }
 
         if (state.ui && state.ui.selected_sub_regionid != this._selectedSubregionId) {

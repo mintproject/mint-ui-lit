@@ -1,16 +1,15 @@
 import { RootAction } from "./store";
 import { Reducer } from "redux";
-import { UI_SELECT_SUBGOAL, UI_SELECT_PATHWAY, UI_SELECT_PATHWAY_SECTION, UI_SELECT_DATA_TRANSFORMATION,
-    UI_SELECT_SCENARIO, UI_SELECT_TOP_REGION, UI_SELECT_THREAD, UI_SELECT_SUB_REGION } from "./ui-actions";
+import { UI_SELECT_TASK, UI_SELECT_THREAD, UI_SELECT_THREAD_SECTION, UI_SELECT_DATA_TRANSFORMATION,
+    UI_SELECT_PROBLEM_STATEMENT, UI_SELECT_TOP_REGION, UI_SELECT_SUB_REGION } from "./ui-actions";
 
 export interface UIState {
     selected_top_regionid?:string
     selected_sub_regionid?:string
-    selected_scenarioid?:string
-    selected_subgoalid?:string
-    selected_pathwayid?:string
-    selected_pathway_section?:string
-    selected_threadid?:string
+    selected_problem_statement_id?:string
+    selected_task_id?:string
+    selected_thread_id?:string
+    selected_thread_section?:string
     selected_datatransformationid?:string
 }
 
@@ -31,33 +30,33 @@ const ui: Reducer<UIState, RootAction> = (state = INITIAL_STATE, action) => {
         case UI_SELECT_THREAD:
             return {
                 ...state,
-                selected_threadid: action.threadid,
+                selected_thread_id: action.thread_id,
             }
-        case UI_SELECT_SCENARIO:
+        case UI_SELECT_PROBLEM_STATEMENT:
             return {
                 ...state,
-                selected_scenarioid: action.scenarioid,
-                selected_subgoalid: "",
-                selected_pathwayid: "",
-                selected_pathway_section: "",
+                selected_problem_statement_id: action.problem_statement_id,
+                selected_task_id: "",
+                selected_thread_id: "",
+                selected_thread_section: "",
             }
-        case UI_SELECT_SUBGOAL:
+        case UI_SELECT_TASK:
             return {
                 ...state,
-                selected_subgoalid: action.subgoalid,
-                selected_pathwayid: "",
-                selected_pathway_section: "",
+                selected_task_id: action.task_id,
+                selected_thread_id: "",
+                selected_thread_section: "",
             }
-        case UI_SELECT_PATHWAY:
+        case UI_SELECT_THREAD:
             return {
                 ...state,
-                selected_pathwayid: action.pathwayid,
-                //selected_pathway_section: "variables"
+                selected_thread_id: action.thread_id,
+                //selected_thread_section: "variables"
             }
-        case UI_SELECT_PATHWAY_SECTION:
+        case UI_SELECT_THREAD_SECTION:
             return {
                 ...state,
-                selected_pathway_section: action.section
+                selected_thread_section: action.section
             }
         case UI_SELECT_DATA_TRANSFORMATION:
             return {

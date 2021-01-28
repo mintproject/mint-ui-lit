@@ -166,31 +166,31 @@ export class DatasetsSearch extends connect(store)(PageViewElement) {
         `
     }
 
-    _createQueryParameters() {
-        let dsname = (this.shadowRoot.querySelector("#ds_name") as HTMLInputElement).value;
-        let dsvars = (this.shadowRoot.querySelector("#ds_variables") as HTMLInputElement).value;
-        let dsstart = (this.shadowRoot.querySelector("#ds_start_date") as HTMLInputElement).value;
-        let dsend = (this.shadowRoot.querySelector("#ds_end_date") as HTMLInputElement).value;
+    //_createQueryParameters() {
+    //    let dsname = (this.shadowRoot.querySelector("#ds_name") as HTMLInputElement).value;
+    //    let dsvars = (this.shadowRoot.querySelector("#ds_variables") as HTMLInputElement).value;
+    //    let dsstart = (this.shadowRoot.querySelector("#ds_start_date") as HTMLInputElement).value;
+    //    let dsend = (this.shadowRoot.querySelector("#ds_end_date") as HTMLInputElement).value;
 
-        let queryParams = {} as DatasetQueryParameters;
-        if(dsname)
-            queryParams.name = dsname;
-        if(dsvars)
-            queryParams.variables = dsvars.split(/\s*,\s*/);
-        if(dsstart || dsend) {
-            queryParams.dateRange = {
-                start_date: dsstart ? toTimeStamp(dsstart) : null,
-                end_date: dsend ? toTimeStamp(dsend) : null
-            }
-        }
-        //queryParams.spatialCoverage = this._region.bounding_box;
-        return queryParams;
-    }
+    //    let queryParams = {} as DatasetQueryParameters;
+    //    if(dsname)
+    //        queryParams.name = dsname;
+    //    if(dsvars)
+    //        queryParams.variables = dsvars.split(/\s*,\s*/);
+    //    if(dsstart || dsend) {
+    //        queryParams.dateRange = {
+    //            start_date: dsstart ? toTimeStamp(dsstart) : null,
+    //            end_date: dsend ? toTimeStamp(dsend) : null
+    //        }
+    //    }
+    //    //queryParams.spatialCoverage = this._region.bounding_box;
+    //    return queryParams;
+    //}
 
-    _findDatasets() {
-        let queryParams = this._createQueryParameters();
-        store.dispatch(queryGeneralDatasets(queryParams, this.prefs.mint));
-    }
+    //_findDatasets() {
+    //    let queryParams = this._createQueryParameters();
+    //    store.dispatch(queryGeneralDatasets(queryParams, this.prefs.mint));
+    //}
 
     _onSearchInput () {
         let inputElement : HTMLElement | null = this.shadowRoot!.getElementById('search-input');

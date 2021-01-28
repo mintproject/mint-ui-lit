@@ -26,6 +26,16 @@ export interface Dataset extends IdNameObject {
     spatial_coverage?: any,
 };
 
+export interface Dataslice extends IdNameObject {
+    dataset: Dataset,
+    total_resources?: number,
+    selected_resources?: number,
+    resources: DataResource[],
+    resources_loaded?: boolean,
+    time_period: DateRange,
+    spatial_coverage?: any
+}
+
 export interface DataResource extends IdNameObject {
     url: string
     time_period?: DateRange,

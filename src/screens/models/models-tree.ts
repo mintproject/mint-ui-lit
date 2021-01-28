@@ -10,7 +10,7 @@ import { goToPage } from '../../app/actions';
 import { IdMap } from 'app/reducers';
 import { ModelConfigurationSetup, ModelConfiguration, SoftwareVersion, Model, Region } from '@mintproject/modelcatalog_client';
 import { regionsGet } from 'model-catalog/actions';
-import { isSubregion, sortVersions, sortConfigurations, sortSetups } from 'model-catalog/util';
+import { getLabel, isSubregion, sortVersions, sortConfigurations, sortSetups } from 'model-catalog/util';
 
 import "weightless/progress-spinner";
 import 'components/loading-dots'
@@ -165,12 +165,17 @@ export class ModelsTree extends connect(store)(PageViewElement) {
 
         let categoryModels = {};
         Object.values(this._models).forEach((m:Model) => {
-            let category : string = m.hasModelCategory && m.hasModelCategory.length > 0 ?
-                    m.hasModelCategory[0] : 'Uncategorized';
-            if (!categoryModels[category]) categoryModels[category] = [];
-            categoryModels[category].push(m);
-            if (this._selectedModel === m.id) {
-                this._visible[category] = true;
+            if (m.hasModelCategory && m.hasModelCategory.length > 0) {
+                m.hasModelCategory.map(getLabel).forEach((category:string) => {
+                    if (!categoryModels[category]) categoryModels[category] = [];
+                    categoryModels[category].push(m);
+                    if (this._selectedModel === m.id) this._visible[category] = true;
+                });
+            } else {
+                let category : string = 'Uncategorized';
+                if (!categoryModels[category]) categoryModels[category] = [];
+                categoryModels[category].push(m);
+                if (this._selectedModel === m.id) this._visible[category] = true;
             }
         });
 
@@ -222,7 +227,6 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                             </span>
                         </span>
                         ${this._visible[version.id] ? html`
-                        ${Object.keys(this._configs).length === 0 ? html`<loading-dots style="--width: 20px;"></loading-dots>` : html`
                         <ul style="padding-left: 30px;">
                             ${(version.hasConfiguration || [])
                                 .filter(c => !!c.id)
@@ -263,7 +267,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                                     Add new configuration
                                 </a>
                             </li>
-                        </ul>`}
+                        </ul>
                         ` : ''}
                     </li>`)}
                 </ul>
@@ -279,7 +283,6 @@ export class ModelsTree extends connect(store)(PageViewElement) {
         </ul>
         `;
     }
-
 
     private _renderTag (tag : string[]) {
         if (!tag || tag.length == 0)

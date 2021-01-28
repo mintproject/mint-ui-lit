@@ -1,0 +1,8 @@
+fragment task_events on task {
+  events {
+    event
+    timestamp
+    userid
+    notes
+  }
+}

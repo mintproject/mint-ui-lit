@@ -13,15 +13,16 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState, store } from './store';
 import { explorerClearModel, explorerSetModel, explorerSetVersion, explorerSetConfig, addModelToCompare, clearCompare,
          explorerSetCalibration, explorerSetMode, registerSetStep } from '../screens/models/model-explore/ui-actions';
-import { selectScenario, selectPathway, selectSubgoal, selectPathwaySection, selectTopRegion, selectThread,
+import { selectProblemStatement, selectThread, selectTask, selectThreadSection, selectTopRegion,
          selectDataTransformation } from './ui-actions';
 import { auth, db } from '../config/firebase';
 import { User } from 'firebase';
-import { UserPreferences, MintPreferences, UserProfile } from './reducers';
+import { MintPreferences, UserProfile } from './reducers';
 import { DefaultApi } from '@mintproject/modelcatalog_client';
 import { dexplorerSelectDataset, dexplorerSelectDatasetArea } from 'screens/datasets/ui-actions';
 import { selectEmulatorModel } from 'screens/emulators/actions';
 
+import * as mintConfig from '../config/config.json';
 import ReactGA from 'react-ga';
 
 export const BASE_HREF = document.getElementsByTagName("base")[0].href.replace(/^http(s)?:\/\/.*?\//, "/");
@@ -109,7 +110,7 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
             if (accessToken) {
                 store.dispatch({type: FETCH_MODEL_CATALOG_ACCESS_TOKEN, accessToken: accessToken});
             } else {
-                console.error('No access token on local storage!')
+                console.info('No access token on local storage!')
                 // Should log out
             }
           } else if (state.app.prefs.modelCatalog.status === 'ERROR') {
@@ -133,30 +134,27 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
 
 type UserPrefsThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchMintConfig>;
 export const fetchMintConfig: ActionCreator<UserPrefsThunkResult> = () => (dispatch) => {
-  db.doc("configs/main").get().then((doc) => {
-    let prefs = doc.data() as MintPreferences;
-    if(prefs.execution_engine == "wings") {
-      fetch(prefs.wings.server + "/config").then((res) => {
-        res.json().then((wdata) => {
-          prefs.wings.export_url = wdata["internal_server"]
-          prefs.wings.storage = wdata["storage"];
-          prefs.wings.dotpath = wdata["dotpath"];
-          prefs.wings.onturl = wdata["ontology"];
-          dispatch({
-            type: FETCH_MINT_CONFIG,
-            prefs: prefs
-          });
-        })
+  let prefs = mintConfig["default"] as MintPreferences;
+  if(prefs.execution_engine == "wings") {
+    fetch(prefs.wings.server + "/config").then((res) => {
+      res.json().then((wdata) => {
+        prefs.wings.export_url = wdata["internal_server"]
+        prefs.wings.storage = wdata["storage"];
+        prefs.wings.dotpath = wdata["dotpath"];
+        prefs.wings.onturl = wdata["ontology"];
+        dispatch({
+          type: FETCH_MINT_CONFIG,
+          prefs: prefs
+        });
       })
-    }
-    else {
-      dispatch({
-        type: FETCH_MINT_CONFIG,
-        prefs: prefs
-      });
-    }
-  })
-  return;
+    })
+  }
+  else {
+    dispatch({
+      type: FETCH_MINT_CONFIG,
+      prefs: prefs
+    });
+  }
 };
 
 export const signIn = (email: string, password: string) => {
@@ -187,7 +185,6 @@ const modelCatalogLogin = (username: string, password: string) => {
         let accessToken : string = JSON.parse(data)['access_token'];
         if (accessToken) {
             localStorage.setItem('accessToken', accessToken);
-            console.log('NEW TOKEN:', accessToken);
             store.dispatch({type: FETCH_MODEL_CATALOG_ACCESS_TOKEN, accessToken: accessToken});
         } else {
             store.dispatch({type: STATUS_MODEL_CATALOG_ACCESS_TOKEN, status: 'ERROR'})
@@ -216,7 +213,6 @@ export const goToRegionPage = (regionid: string, page:string) => {
 }
 
 export const navigate: ActionCreator<ThunkResult> = (path: string) => (dispatch) => {
-  //console.log(path);
   ReactGA.pageview(path);
   // Extract the page name from path.
   let cpath = path === BASE_HREF ? '/home' : path.slice(BASE_HREF.length);
@@ -251,28 +247,34 @@ const loadPage: ActionCreator<ThunkResult> =
       break;    
     case 'modeling':
       if(subpage == 'home') {
-        // No parameters. Load Modeling Home (List of Scenarios)
+        // No parameters. Load Modeling Home (List of ProblemStatements)
         import('../screens/modeling/modeling-home').then((_module) => {
-          store.dispatch(selectScenario(null));
-          store.dispatch(selectPathway(null));
+          store.dispatch(selectProblemStatement(null));
+          store.dispatch(selectTask(null));
+          store.dispatch(selectThread(null));
         });
       }
-      else if(subpage == 'scenario') {
-        // Scenario passed in. Load scenario
-        import('../screens/modeling/mint-scenario').then((_module) => {
-          if(params.length > 0) {
-            store.dispatch(selectScenario(params[0]));
-            if(params.length > 1) {
-              store.dispatch(selectSubgoal(params[1]));
-              if(params.length > 2) {
-                store.dispatch(selectPathway(params[2]));
-                if(params.length > 3) {
-                  store.dispatch(selectPathwaySection(params[3]));
+      else if(subpage == 'problem_statement' || subpage == 'scenario') {
+        // ProblemStatement passed in. Load problem_statement
+        import('../screens/modeling/mint-problem-statement').then((_module) => {
+          if(params.length > 0 && params[0]) {
+            store.dispatch(selectProblemStatement(params[0]));
+            if(params.length > 1 && params[1]) {
+              store.dispatch(selectTask(params[1]));
+              if(params.length > 2 && params[2]) {
+                store.dispatch(selectThread(params[2]));
+                if(params.length > 3 && params[3]) {
+                  store.dispatch(selectThreadSection(params[3]));
                 }
+              } else {
+                store.dispatch(selectThread(null));
               }
             }
+            else {
+              store.dispatch(selectTask(null));
+            }
           } else {
-            store.dispatch(selectScenario(null));
+            store.dispatch(selectProblemStatement(null));
           }
         });   
       }
@@ -324,8 +326,8 @@ const loadPage: ActionCreator<ThunkResult> =
         } else if (subpage == 'compare') {
             import('../screens/models/models-compare').then((_module) => {
                 store.dispatch(clearCompare());
-                for (let i = 0; i < params.length; i++) {
-                    store.dispatch(addModelToCompare(params[i]));
+                if (params.length > 0) {
+                    store.dispatch(addModelToCompare(params[0]));
                 }
             });
         } else if (subpage == 'register') {
@@ -335,6 +337,20 @@ const loadPage: ActionCreator<ThunkResult> =
                 if (params.length > 1) {
                     let step : number = parseInt(params[1] as string);
                     if (step) store.dispatch(registerSetStep(step));
+                }
+            } else {
+                store.dispatch(explorerClearModel());
+            }
+        } else if (subpage == 'edit') {
+            if (params[params.length -1] === 'edit' || params[params.length -1] === 'new') {
+                store.dispatch(explorerSetMode(params.pop()));
+            } else {
+                store.dispatch(explorerSetMode('view'));
+            }
+            if(params.length > 0) {
+                store.dispatch(explorerSetModel(params[0]));
+                if (params.length > 1) {
+                    store.dispatch(explorerSetVersion(params[1]));
                 }
             } else {
                 store.dispatch(explorerClearModel());
@@ -351,28 +367,29 @@ const loadPage: ActionCreator<ThunkResult> =
     case 'emulators':
       import('../screens/emulators/emulators-home').then((_module) => {
         let model = subpage;
-        if(model == "home")
-          model = "pihm";
-        store.dispatch(selectEmulatorModel(model))
+        if(model != "home")
+          store.dispatch(selectEmulatorModel(model));
+        else 
+          store.dispatch(selectEmulatorModel('CYCLES'));
       });
       break;
     case 'analysis':
         if (subpage == 'home') {
             import('../screens/analysis/analysis-home').then((_module) => {
-                store.dispatch(selectScenario(null));
+                store.dispatch(selectProblemStatement(null));
             });
         } else if (subpage == 'report') {
             import('../screens/analysis/analysis-report').then((_module) => {
               if(params.length > 0) {
-                store.dispatch(selectScenario(params[0]));
+                store.dispatch(selectProblemStatement(params[0]));
                 if(params.length > 1) {
-                  store.dispatch(selectSubgoal(params[1]));
+                  store.dispatch(selectTask(params[1]));
                   if(params.length > 2) {
-                    store.dispatch(selectPathway(params[2]));
+                    store.dispatch(selectThread(params[2]));
                   }
                 }
               } else {
-                store.dispatch(selectScenario(null));
+                store.dispatch(selectProblemStatement(null));
               }
             });
         }
@@ -413,12 +430,12 @@ const loadPage: ActionCreator<ThunkResult> =
         break;
     case 'messages':
         if(subpage == 'home') {
-          // No parameters. Load Modeling Home (List of Scenarios)
+          // No parameters. Load Modeling Home (List of ProblemStatements)
           import('../screens/messages/messages-home').then((_module) => {
           });
         }
         else if(subpage == "thread") {
-          // Scenario passed in. Load scenario
+          // ProblemStatement passed in. Load problem_statement
           import('../screens/messages/messages-thread').then((_module) => {
             if(params.length > 0) {
               store.dispatch(selectThread(params[0]));

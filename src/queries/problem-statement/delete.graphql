@@ -1,0 +1,68 @@
+mutation delete_problem_statement($id: String!) {
+  delete_thread_permission(where: {thread: {task: {problem_statement_id: {_eq: $id}}}}) {
+    affected_rows
+  }
+  delete_thread_provenance(where: {thread: {task: {problem_statement_id: {_eq: $id}}}}) {
+    affected_rows
+  }
+  delete_task_permission(where: {task: {problem_statement_id: {_eq: $id}}}) {
+    affected_rows
+  }  
+  delete_task_provenance(where: {task: {problem_statement_id: {_eq: $id}}}) {
+    affected_rows
+  }
+  delete_problem_statement_permission(where: {problem_statement_id: {_eq: $id}}) {
+    affected_rows
+  }
+  delete_problem_statement_provenance(where: {problem_statement_id: {_eq: $id}}) {
+    affected_rows
+  }  
+
+ # Delete thread model executions
+  delete_thread_model_execution_summary(where: {thread_model: {thread: {task: {problem_statement_id: {_eq: $id}}}}}) {
+    affected_rows
+  }
+  delete_thread_model_execution(where: {thread_model: {thread: {task: {problem_statement_id: {_eq: $id}}}}}) {
+    affected_rows
+  }
+
+  # Delete thread model data binding
+  delete_thread_model_io(where: {thread_model: {thread: {task: {problem_statement_id: {_eq: $id}}}}}) {
+    affected_rows
+  }
+  # Delete thread model parameter binding
+  delete_thread_model_parameter(where: {thread_model: {thread: {task: {problem_statement_id: {_eq: $id}}}}}) {
+    affected_rows
+  }
+
+  # Delete thread data
+  delete_dataslice_resource(where: {dataslice: {thread_data: {thread: {task: {problem_statement_id: {_eq: $id}}}}}}) {
+    affected_rows
+  }
+  delete_dataslice(where: {thread_data: {thread: {task: {problem_statement_id: {_eq: $id}}}}}) {
+    affected_rows
+  }
+  delete_thread_data(where: {thread: {task: {problem_statement_id: {_eq: $id}}}}) {
+    affected_rows
+  }
+
+  # Delete thread models
+  delete_thread_model(where: {thread: {task: {problem_statement_id: {_eq: $id}}}}) {
+    affected_rows
+  }
+
+  # Delete threads
+  delete_thread(where: {task: {problem_statement_id: {_eq: $id}}}) {
+    affected_rows
+  }
+
+  # Delete tasks
+  delete_task(where: {problem_statement_id: {_eq: $id}}) {
+    affected_rows
+  }
+
+  # Delete problem statement
+  delete_problem_statement_by_pk(id: $id) {
+    id
+  }
+}

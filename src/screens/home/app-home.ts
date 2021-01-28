@@ -7,7 +7,7 @@ import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { listTopRegions, calculateMapDetails } from '../regions/actions';
 import { Region, RegionMap } from '../regions/reducers';
-import { GOOGLE_API_KEY } from '../../config/google-api-key';
+import { GOOGLE_API_KEY } from '../../config/firebase';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
 
@@ -68,13 +68,12 @@ export class AppHome extends connect(store)(PageViewElement) {
           }
 
           .middle2main {
-            /*height: calc(100% - 110px);*/
-            height: calc(100% - 240px);
+            height: calc(70%);
+            min-height: 300px;
           }
-          
-		  .middle > p {
-			margin-bottom: 5px;
-		  }
+          .middle > p {
+            margin-bottom: 5px;
+          }
         `
       ];
     }

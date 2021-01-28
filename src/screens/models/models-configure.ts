@@ -8,15 +8,13 @@ import { goToPage } from '../../app/actions';
 import { renderNotifications } from "../../util/ui_renders";
 import { showNotification } from "../../util/ui_functions";
 import { ExplorerStyles } from './model-explore/explorer-styles'
+import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
 
-import './configure/configuration';
-import './configure/setup';
-import './configure/new-setup';
-import './configure/new-config';
-import './configure/parameter';
 import './models-tree'
 
 import { showDialog, hideDialog } from 'util/ui_functions';
+import { ModelCatalogModelConfigurationSetup } from './configure/resources/model-configuration-setup';
+import { ModelCatalogModelConfiguration } from './configure/resources/model-configuration';
 
 import "weightless/slider";
 import "weightless/progress-spinner";
@@ -35,17 +33,23 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     @property({type: Boolean})
     private _creating : boolean = false;
 
-    @property({type: Object})
-    private _model: any = null;
+    @property({type: Boolean})
+    private _loading : boolean = false;
 
     @property({type: Object})
-    private _version: any = null;
+    private _model: Model;
 
     @property({type: Object})
-    private _config: any = null;
+    private _version: SoftwareVersion;
 
     @property({type: Object})
-    private _setup: any = null;
+    private _config: ModelConfiguration;
+
+    @property({type: Object})
+    private _setup: ModelConfigurationSetup;
+
+    private _iConfig : ModelCatalogModelConfiguration;
+    private _iSetup : ModelCatalogModelConfigurationSetup;
 
     private _url : string = '';
     private _selectedModel : string = '';
@@ -124,6 +128,47 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
         ];
     }
 
+    public constructor () {
+        super();
+        this._iSetup = new ModelCatalogModelConfigurationSetup();
+        this._iConfig = new ModelCatalogModelConfiguration();
+    }
+
+    firstUpdated () {
+        this.addEventListener('model-catalog-save', (e:Event) => {
+            let detail = e['detail'];
+            console.log('event detail', detail);
+            let types = detail["type"];
+            let acceptedTypes = ["ModelConfiguration", "ModelConfigurationSetup",
+                                 "https://w3id.org/okn/o/sdm#ModelConfiguration",
+                                 "https://w3id.org/okn/o/sdm#ModelConfigurationSetup"]
+            if (this._creating && types && types.length > 0 &&
+                    types.some((t:string) => acceptedTypes.includes(t))) {
+                console.log('ACCEPTED');
+                let id : string = detail.id.split('/').pop();
+                let url : string = 'models/configure/' +
+                        this._selectedModel.split('/').pop() + '/'  +
+                        this._selectedVersion.split('/').pop() + '/';
+
+                if (!this._selectedSetup && this._config) {
+                    this._iSetup.setResource(null);
+                    goToPage(url + this._selectedConfig.split('/').pop() + '/' + id);
+                } else if (!this._selectedConfig && this._version) {
+                    this._iConfig.setResource(null);
+                    goToPage(url + id);
+                }
+            }
+        })
+        this.addEventListener('model-catalog-cancel', () => {
+            if (this._creating) {
+                if (!this._selectedSetup && this._config)
+                    this._iSetup.enableSingleResourceCreation(this._config);
+                else if (!this._selectedConfig && this._version)
+                    this._iConfig.enableSingleResourceCreation(this._version);
+            }
+        });
+    }
+
     protected render() {
         return html`
         <div class="twocolumns">
@@ -145,7 +190,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     `: ''}
                     <div class="cltrow_padded">
                         <div class="cltmain">
-                            <wl-title level="3" style="margin: 0px; ${(this._config&&!this._setup)? 'color:rgb(6, 108, 67);':''}">
+                            <wl-title level="3" .style="margin: 0px; ${(this._config&&!this._setup)? 'color:rgb(6, 108, 67);':''}">
                                 ${this._creating ? html`<span class="title-prefix">
                                     CREATING A NEW ${this._config? 'SETUP' : 'CONFIGURATION'} FOR
                                 </span>` 
@@ -184,11 +229,15 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                             by providing a URL to them, and edit the descriptions of the model configuration to reflect the changes.
                         </p>
                     </div>` : ''}
+
                     <div style="padding: 0px 10px;">
-                        <models-configure-configuration class="page" ?active="${this._selectedConfig && !this._selectedSetup && !this._creating}"></models-configure-configuration>
-                        <models-configure-setup class="page" ?active="${this._selectedSetup && !this._creating}"></models-configure-setup>
-                        <models-new-config class="page" ?active="${this._selectedVersion && !this._selectedConfig && this._creating}"></models-new-config>
-                        <models-new-setup class="page" ?active="${this._selectedConfig && this._creating}"></models-new-setup>
+                        ${this._loading ? 
+                            html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner>` 
+                            : ( ((this._selectedConfig && !this._creating && !this._selectedSetup) ||
+                            (!this._selectedConfig && this._selectedVersion && this._creating) ) ?
+                                this._iConfig :
+                                ((this._selectedSetup && !this._creating) || (this._selectedConfig && this._creating) ?  this._iSetup : '')
+                            )}
                     </div>
                 </div>
             </div>
@@ -226,14 +275,22 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             if (versionChanged) {
                 this._selectedVersion = ui.selectedVersion;
                 this._version = null;
+                this._iConfig.disableSingleResourceCreation();
             }
             if (configChanged) {
                 this._selectedConfig = ui.selectedConfig;
                 this._config = null;
+                this._iSetup.disableSingleResourceCreation();
+                if (!this._selectedConfig)
+                    this._iConfig.setResource(null);
             }
             if (calibrationChanged) {
                 this._selectedSetup = ui.selectedCalibration;
                 this._setup = null;
+                if (!this._selectedSetup) {
+                    this._iConfig.disableSingleResourceCreation();
+                    this._iSetup.setResource(null);
+                }
             }
 
             if (state.modelCatalog) {
@@ -246,12 +303,32 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     this._version = db.versions[this._selectedVersion];
                 }
                 if (!this._config && db.configurations && this._selectedConfig && db.configurations[this._selectedConfig]) {
+                    this._iConfig.disableSingleResourceCreation();
                     this._config = db.configurations[this._selectedConfig];
+                    this._iConfig.setResource(this._config);
                 }
                 if (!this._setup && db.setups && this._selectedSetup && db.setups[this._selectedSetup]) {
+                    this._iSetup.disableSingleResourceCreation();
                     this._setup = db.setups[this._selectedSetup];
+                    this._iSetup.setResource(this._setup);
+                }
+
+                if (this._creating) {
+                    if (this._config) {
+                        this._iSetup.enableSingleResourceCreation(this._config);
+                    } else if (this._version) {
+                        this._iConfig.enableSingleResourceCreation(this._version);
+                    }
                 }
             }
         }
+
+        this._loading = this._selectedModel && this._selectedVersion && this._selectedConfig &&
+                        ( (this._selectedSetup && !this._setup) || 
+                          (this._creating && !this._selectedSetup && !this._config) )
+                        ||
+                        this._selectedModel && this._selectedVersion && !this._selectedSetup &&
+                        ( (this._selectedConfig && !this._config) || 
+                          (this._creating && !this._selectedVersion && !this._version))
     }
 }
