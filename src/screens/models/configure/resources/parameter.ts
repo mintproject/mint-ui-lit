@@ -12,6 +12,8 @@ import { parameterGet, parametersGet, parameterPost, parameterPut, parameterDele
 import { Parameter, Unit, ParameterFromJSON } from '@mintproject/modelcatalog_client';
 import { PARAMETER_TYPES } from 'offline_data/parameter_types';
 
+import { ModelCatalogUnit } from './unit'
+
 import 'components/data-catalog-id-checker';
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
@@ -44,6 +46,10 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         .two-inputs > span {
             display: inline-block;
             width: 50%;
+        }
+        #input-unit {
+            --list-height: 200px;
+            --dialog-height: 100%;
         }
         `];
     }
@@ -90,6 +96,8 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     @property({type: Boolean}) private showDefaults = false;
     @property({type: String}) private _formPart : string = "";
 
+    private _inputUnit : ModelCatalogUnit;
+
     public isSetup : boolean = false;
     public setAsSetup () {
         this.isSetup = true;
@@ -98,6 +106,14 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
     constructor () {
         super();
+        this._inputUnit = new ModelCatalogUnit();
+        this._inputUnit.setActionSelect();
+        this._inputUnit.setAttribute('id', 'input-unit');
+    }
+
+    protected _createResource () {
+        this._inputUnit.setResources(null);
+        super._createResource();
     }
 
     protected _renderTableHeader () {
@@ -175,6 +191,9 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
     protected _editResource (r:Parameter) {
         super._editResource(r);
+        console.log(r);
+        //BUG: http://qudt.org/1.1/schema/qudt#Unit is not part of the model-catalog.
+        this._inputUnit.setResources(r.usesUnit);
         let lr : Parameter = this._loadedResources[r.id];
         if (lr) {
             if (lr.hasDataType && lr.hasDataType.length > 0) {
@@ -237,13 +256,11 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                     <option value="boolean">Boolean</option>
                 </wl-select>
 
-                <wl-select id="parameter-unit" label="Parameter unit"
-                    value="${edResource && edResource.usesUnit ? edResource.usesUnit[0].id:''}">
-                    <option value="">None</option>
-                    ${Object.values(this._units).map((unit:Unit) => html`
-                        <option value="${unit.id}">${unit.label}</option>
-                    `)}
-                </wl-select>
+                <span>
+                    <span style="font-size: 0.75rem;color: rgb(86, 90, 93);">Unit:</span>
+                    ${this._inputUnit}
+                </span>
+
             </div>
 
             <div class="min-max-input" style="display: ${this._formPart === 'int' ? 'grid' : 'none'}">
