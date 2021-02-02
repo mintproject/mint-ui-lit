@@ -734,7 +734,6 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         let mov: number = oldIndex > newIndex ? +1 : -1;
         for (let i = min; i < max + 1; i ++) {
             let index : number = i === oldIndex ? newIndex : i + mov;
-            //console.log(i, '->', index, this._orderedResources[i-1]);
             this._setResourcePosition(this._orderedResources[i-1], index);
         }
         this._refreshOrder();
@@ -777,19 +776,19 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         //FIXME: this should be a unique getresourceformfrom function.
         let resource = this._singleMode ? this._getResourceFromFullForm() : this._getResourceFromForm();
         if (resource && this._status != Status.NONE) {
-            if (!this.uniqueLabel || this._checkLabelUniq(getLabel(resource))) {
-                if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
+            if ((this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE)) {
+                if (!this.uniqueLabel || this._checkLabelUniq(getLabel(resource))) {
                     resource.id = "";
-                } else if (this._status === Status.EDIT) {
-                    resource.id = this._editingResourceId;
-                    resource = this._createEditedResource(resource);
+                } else {
+                    this._notification.error('The name "'+ getLabel(resource) + '" is already on use.');
                 }
-
-                if (this.lazy) this._saveResourceLazy(resource);
-                else this._saveResource(resource);
-            } else {
-                this._notification.error('The name "'+ getLabel(resource) + '" is already on use.');
+            } else if (this._status === Status.EDIT) {
+                resource.id = this._editingResourceId;
+                resource = this._createEditedResource(resource);
             }
+
+            if (this.lazy) this._saveResourceLazy(resource);
+            else this._saveResource(resource);
         }
     }
 
@@ -815,7 +814,6 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 }
                 req.catch(reject);
                 req.then((r:T) => {
-                    console.log('SAVED: ', r);
                     this._waiting = false;
                     this._loadedResources[r.id] = r;
                     this._notification.save(this.name + " saved");
@@ -846,7 +844,6 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         } else if (this._action === Action.SELECT) {
             this._selectedResourceId = r.id;
         }
-        console.log('postSaveUpdate', this._resources);
     }
 
     private _createEditedResource (edited:T) {
@@ -891,7 +888,6 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     private _saveResourceLazy (resource:T) {
         //Update memory now
-        console.log('save lazy', resource);
         this._loadedResources[resource.id] = resource;
         this._postSaveUpdate(this._addToSaveQueue(resource));
     }
@@ -918,9 +914,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     .filter((r:T) => this._resources.some((r2:T) => r2.id === r.id))
                     .map((r:T) => {
                 let tempId : string = r.id;
-                r["id"] = "";
+                let toSend : T = { ...r, id: "" };
 
-                let req = store.dispatch(this.resourcePost(r));
+                let req = store.dispatch(this.resourcePost(toSend));
                 req.then((resource : T) => {
                     this._loadedResources[resource.id] = resource;
                     this._resources = this._resources.map((r2:T) => (r2.id === tempId) ? resource : r2);

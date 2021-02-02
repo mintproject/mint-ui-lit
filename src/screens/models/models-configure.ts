@@ -155,7 +155,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                 if (isSetup(detail["type"])) {
                     this._iSetup.setResource(null);
                     goToPage(url + this._selectedConfig.split('/').pop() + '/' + id);
-                } else if (isConfig["type"]) {
+                } else if (isConfig(detail["type"])) {
                     this._iConfig.setResource(null);
                     goToPage(url + id);
                 }
