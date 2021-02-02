@@ -82,7 +82,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     protected classes : string = "resource parameter";
     protected name : string = "parameter";
     protected pname : string = "parameters";
-    //protected positionAttr : string = "position";
+    protected positionAttr : string = "position";
     protected resourcesGet = parametersGet;
     protected resourceGet = parameterGet;
     protected resourcePost = parameterPost;
