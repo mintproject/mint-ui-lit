@@ -83,7 +83,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
     constructor () {
         super();
         this._dtParameters = new ModelCatalogParameter();
-        this._dtParameters.creationEnable();
+        this._dtParameters.enableCreation();
         this._dtParameters.inline = false;
         this._dtParameters.setActionEditOrAdd();
         this._dtParameters.onlyFixedValue = true;

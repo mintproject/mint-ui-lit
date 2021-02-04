@@ -27,12 +27,13 @@ import { MODELS_ADD, MODEL_DELETE,
          DATA_TRANSFORMATION_SETUP_ADD, DATA_TRANSFORMATION_SETUP_DELETE,
          STANDARD_VARIABLE_ADD, STANDARD_VARIABLE_DELETE,
          CATEGORY_ADD, CATEGORY_DELETE,
+         UNITS_ADD, UNIT_DELETE,
          } from './actions'
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Region, GeoShape, Grid,
          Process, Parameter, TimeInterval, SoftwareImage, DatasetSpecification, SampleResource, Image, StandardVariable,
          SampleCollection, Organization, FundingInformation, Visualization, SourceCode, Intervention, ModelCategory,
-         VariablePresentation, NumericalIndex, DataTransformation, DataTransformationSetup } from '@mintproject/modelcatalog_client';
+         VariablePresentation, NumericalIndex, DataTransformation, DataTransformationSetup, Unit } from '@mintproject/modelcatalog_client';
 import { IdMap } from 'app/reducers'
 
 export interface ModelCatalogState {
@@ -63,6 +64,7 @@ export interface ModelCatalogState {
     dataTransformationSetups:IdMap<DataTransformationSetup>;
     standardVariables:      IdMap<StandardVariable>;
     categories:             IdMap<ModelCategory>;
+    units:                  IdMap<Unit>;
 }
 
 const INITIAL_STATE: ModelCatalogState = { 
@@ -93,6 +95,7 @@ const INITIAL_STATE: ModelCatalogState = {
     dataTransformationSetups: {} as IdMap<DataTransformationSetup>,
     standardVariables:      {} as IdMap<StandardVariable>,
     categories:             {} as IdMap<ModelCategory>,
+    units:                  {} as IdMap<Unit>,
 } as ModelCatalogState;
 
 const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -152,6 +155,8 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             return { ...state, standardVariables: {...state.standardVariables, ...action.payload} };
         case CATEGORY_ADD:
             return { ...state, categories: {...state.categories, ...action.payload} };
+        case UNITS_ADD:
+            return { ...state, units: {...state.units, ...action.payload} };
 
         case MODEL_DELETE:
             tmp = { ...state.models };
@@ -257,6 +262,10 @@ const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_ST
             tmp = { ...state.categories };
             delete tmp[action.uri];
             return { ...state, categories: tmp };
+        case UNIT_DELETE:
+            tmp = { ...state.units };
+            delete tmp[action.uri];
+            return { ...state, units: tmp };
         default:
             return state;
     }

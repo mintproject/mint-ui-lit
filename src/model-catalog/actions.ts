@@ -32,6 +32,7 @@ import { ModelCatalogDataTransformationAction } from './data-transformation-acti
 import { ModelCatalogDataTransformationSetupAction } from './data-transformation-setup-actions';
 import { ModelCatalogStandardVariableAction } from './standard-variable-actions';
 import { ModelCatalogCategoryAction } from './category-actions';
+import { ModelCatalogUnitAction } from './unit-actions';
 
 export type ActionThunk<R,A extends Action> = ActionCreator<ThunkAction<R, RootState, undefined, A>>
 interface IdObject { id?: string };
@@ -109,7 +110,8 @@ export type ModelCatalogAction = ModelCatalogModelAction | ModelCatalogVersionAc
         ModelCatalogImageAction | ModelCatalogVisualizationAction | ModelCatalogOrganizationAction | 
         ModelCatalogFundingInformationAction | ModelCatalogSourceCodeAction | ModelCatalogInterventionAction |
         ModelCatalogVariablePresentationAction | ModelCatalogNumericalIndexAction | ModelCatalogStandardVariableAction |
-        ModelCatalogDataTransformationAction | ModelCatalogDataTransformationSetupAction | ModelCatalogCategoryAction; 
+        ModelCatalogDataTransformationAction | ModelCatalogDataTransformationSetupAction | ModelCatalogCategoryAction | 
+        ModelCatalogUnitAction; 
 
 //FIXME: The API is returning only one model (void), doing the fetch instead.
 const CUSTOM_URI = "https://api.models.mint.isi.edu/v1.6.0/custom/";
@@ -207,3 +209,4 @@ export * from './data-transformation-actions';
 export * from './data-transformation-setup-actions';
 export * from './standard-variable-actions';
 export * from './category-actions';
+export * from './unit-actions';

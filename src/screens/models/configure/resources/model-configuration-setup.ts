@@ -138,21 +138,20 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputParameter = new ModelCatalogParameter();
         this._inputParameter.inline = false;
         this._inputParameter.lazy = true;
-        this._inputParameter.creationDisable();
+        this._inputParameter.disableCreation();
+        this._inputParameter.disableDeletion();
         this._inputParameter.setAsSetup();
 
         this._inputDSInput = new ModelCatalogDatasetSpecification();
         this._inputDSInput.inline = false;
         this._inputDSInput.lazy = true;
-        this._inputDSInput.creationDisable();
+        this._inputDSInput.disableCreation();
+        this._inputDSInput.disableDeletion();
         this._inputDSInput.setAsSetup();
 
-        /*this._outputDSInput = new ModelCatalogDatasetSpecification();
-        this._outputDSInput.inline = false;
-        this._outputDSInput.creationDisable();
-        this._outputDSInput.setAsSetup();*/
     }
 
+    //when this happens ?
     protected _setSubResources (r:ModelConfigurationSetup) {
         this._inputAuthor.setResources(r.author);
         this._inputGrid.setResources(r.hasGrid);
@@ -164,7 +163,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputSoftwareImage.setResources(r.hasSoftwareImage);
         this._inputParameter.setResources( r.hasParameter );
         this._inputDSInput.setResources( r.hasInput );
-        //this._outputDSInput.setResources( m.hasOutput );
     }
 
     protected _unsetSubResources () {
@@ -181,7 +179,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             this._inputDSInput.setResources(null);
             this._parentConfig = null;
         }
-        //this._outputDSInput.setResources(null);
     }
 
     protected _setSubActions () {
@@ -195,7 +192,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputSoftwareImage.setActionSelect();
         this._inputParameter.setActionEditOrAdd();
         this._inputDSInput.setActionEditOrAdd();
-        //this._outputDSInput.setActionEditOrAdd();
     }
 
     protected _unsetSubActions () {
@@ -209,7 +205,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         if (this._inputSoftwareImage) this._inputSoftwareImage.unsetAction();
         if (this._inputParameter) this._inputParameter.unsetAction();
         if (this._inputDSInput) this._inputDSInput.unsetAction();
-        //if (this._outputDSInput) this._outputDSInput.unsetAction();
     }
 
     public enableSingleResourceCreation (parentConfig:ModelConfiguration) {
@@ -228,7 +223,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 this._inputSoftwareImage.setResources(r.hasSoftwareImage);
                 this._inputParameter.setResourcesAsCopy( r.hasParameter );
                 this._inputDSInput.setResourcesAsCopy( r.hasInput );
-                //this._outputDSInput.setResources( m.hasOutput );
             }
         }
     }
@@ -243,18 +237,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         return html`
             <table class="details-table">
                 <colgroup wir.="150px">
-                <!--tr>
-                    <td colspan="2" style="padding: 5px 20px;">
-                        <wl-title level="3"> {getLabel(r)} </wl-title>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>Category:</td>
-                    <td>
-                        {this._inputCategory}
-                    </td>
-                </tr-->
 
                 ${r.shortDescription ? html`
                 <tr>
@@ -521,7 +503,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         let inputUsageNotes : Textarea = this.shadowRoot.getElementById("i-usage-notes") as Textarea;
         let inputCompLoc : Textarea = this.shadowRoot.getElementById("i-comploc") as Textarea;
 
-
         let inputLicense : Textarea = this.shadowRoot.getElementById("i-license") as Textarea;
         let inputCitation : Textarea = this.shadowRoot.getElementById("i-citation") as Textarea;
         let inputPurpose : Textarea = this.shadowRoot.getElementById("i-purpose") as Textarea;
@@ -653,11 +634,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             all.then((x:any) => {
                 resolve(copy);
             });
-
-            /*this._inputGrid.lazy = true;
-            this._inputTimeInterval.lazy = true;
-            this._inputParameter.lazy = true;
-            this._inputDSInput.lazy = true;*/
         });
     }
 
