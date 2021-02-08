@@ -888,7 +888,6 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     private _saveResourceLazy (resource:T) {
         //Update memory now
-        this._loadedResources[resource.id] = resource;
         this._postSaveUpdate(this._addToSaveQueue(resource));
     }
 
@@ -1045,12 +1044,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         if (position > 0 && lr) {
             let newR : T = { ... lr };
             newR[this.positionAttr] = [position];
-            this._loadedResources[r.id] = newR;
-            if (this.lazy) {
-                this._resourcesToEdit[r.id] = newR;
-            } else {
-                //TODO: do an update here;
-            }
+            this._loadedResources[r.id] = newR; //this is not necesary i think.
+            if (this.lazy) this._saveResourceLazy(newR);
+            else this._saveResource(newR);
         }
     }
 
@@ -1073,6 +1069,27 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             //console.log('New order:', this._orderedResources.map(r => r.label[0]));
             this.requestUpdate();
         }
+    }
+
+    public isOrdered () : boolean {
+        if (!this.positionAttr) return false;
+        for (let i = 0; i < this._orderedResources.length; i++) {
+            let r : T = this._orderedResources[i];
+            if (!r || this._getResourcePosition(r) != i+1)
+                return false;
+        }
+        return true;
+    }
+
+    public forceOrder () : void {
+        if (this.positionAttr) {
+            for (let i : number = 0; i < this._orderedResources.length; i++) {
+                let r : T = this._orderedResources[i];
+                if (this._getResourcePosition(r) != i+1)
+                    this._setResourcePosition(r, i+1);
+            }
+        }
+        this.requestUpdate();
     }
 
     protected _forceLoad (r:T) {

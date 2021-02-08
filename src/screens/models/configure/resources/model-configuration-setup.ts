@@ -494,6 +494,14 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
     }
 
     protected _getResourceFromFullForm () {
+        // Check position
+        if (!this._inputParameter.isOrdered() && confirm("Parameters are not ordered, use automatic order?")) {
+            this._inputParameter.forceOrder();
+        }
+        if (!this._inputDSInput.isOrdered() && confirm("Inputs are not ordered, use automatic order?")) {
+            this._inputDSInput.forceOrder();
+        }
+
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById("i-label") as Textfield;
         let inputKeywords : Textfield = this.shadowRoot.getElementById("i-keywords") as Textfield;
