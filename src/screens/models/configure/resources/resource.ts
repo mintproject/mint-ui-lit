@@ -23,7 +23,7 @@ import { Select } from 'weightless/select';
 
 /************/
 import { LitElement } from 'lit-element';
-import { getId, getLabel } from 'model-catalog/util';
+import { getId, getLabel, capitalizeFirstLetter } from 'model-catalog/util';
 interface BaseResources {
     id?: string;
     label?: string[];
@@ -165,6 +165,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: Boolean}) protected _creationEnabled : boolean = true;
     @property({type: Boolean}) protected _editionEnabled : boolean = true;
     @property({type: Boolean}) protected _deletionEnabled : boolean = true;
+    @property({type: Boolean}) protected _duplicationEnabled : boolean = false;
 
     @property({type: Number}) protected _page : number = 0;
     public pageMax : number = -1;
@@ -205,6 +206,14 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     public disableDeletion () {
         this._deletionEnabled = false;
+    }
+
+    public enableDuplication (...args: any[]) {
+        this._duplicationEnabled = true;
+    }
+
+    public disableDuplication () {
+        this._duplicationEnabled = false;
     }
 
     public isCreating () {
@@ -424,9 +433,13 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     ${this._action === Action.EDIT_OR_ADD ? html`
                     <td style="width: ${this._deletionEnabled ? '65' : '30'}px">
                         <div style="display: flex; justify-content: space-between;">
-                            <wl-button class="edit" @click="${() => this._editResource(r)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
+                            <wl-button class="edit" @click="${() => this._editResource(r)}" flat inverted>
+                                <wl-icon>edit</wl-icon>
+                            </wl-button>
                             ${this._deletionEnabled ? html`
-                            <wl-button class="edit" @click="${() => this._deleteResource(r)}" flat inverted><wl-icon>delete</wl-icon></wl-button>
+                            <wl-button class="edit" @click="${() => this._deleteResource(r)}" flat inverted>
+                                <wl-icon>delete</wl-icon>
+                            </wl-button>
                             ` : ''}
                         </div>
                     </td>` : ''}`
@@ -472,13 +485,20 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 </div>` 
         } else {
             return html`
-                <div style="margin-top: 1em;">
-                    <wl-button style="float:right;" @click="${() => this._editResource(this._resources[0])}">
-                        <wl-icon>edit</wl-icon>&ensp;Edit
-                    </wl-button>
+                <div style="display: flex; justify-content: space-between; padding: 1em 0;">
+                    <span>
                         <wl-button style="--primary-hue: 0; --primary-saturation: 75%" ?disabled="${!this._deletionEnabled}"
                                    @click="${() => this._deleteResource(this._resources[0])}">
-                        <wl-icon>delete</wl-icon>&ensp;Delete
+                            <wl-icon>delete</wl-icon>&ensp;Delete
+                        </wl-button>
+                        <wl-button  style="--primary-hue: 124; --primary-saturation: 45%; margin-left: 0.5em;"
+                                    ?disabled="${!this._duplicationEnabled}"
+                                    @click="${this._onDuplicateButtonClicked}">
+                            <wl-icon>edit</wl-icon>&ensp;Duplicate
+                        </wl-button>
+                    </span>
+                    <wl-button @click="${() => this._editResource(this._resources[0])}">
+                        <wl-icon>edit</wl-icon>&ensp;Edit
                     </wl-button>
                 </div>`
         }
@@ -487,6 +507,17 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     private _onCancelButtonClicked () {
         this._clearStatus();
         this._eventCancel();
+    }
+
+    private _onDuplicateButtonClicked () {
+        let p : Promise<T> = this.duplicate();
+        p.then((r:T) => {
+            this._notification.save(capitalizeFirstLetter(this.name) +" duplicated.");
+            this._eventSave(r);
+        });
+        p.catch((err) => {
+            this._notification.error("Error trying to duplicate resource");
+        });
     }
 
     _searchPromise = null;
@@ -850,13 +881,19 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         // Merges the resource to edit with the original resource.
         // TODO: how to erase a property?
         let orig = this._getEditingResource();
-        console.log("Original resource:", orig);
+        //console.log("Original resource:", orig);
         Object.keys(edited).forEach((key:string) => {
             if (edited[key] === undefined) delete edited[key];
         });
-        console.log("Edited resource:", edited);
+        //console.log("Edited resource:", edited);
         let merged = { ...orig, ...edited };
-        console.log("Merged:", merged);
+        //console.log("Merged:", merged);
+        // To remove stuff, we need to send a empty array on the edited resource,
+        // We need to save so remove it.
+        Object.keys(merged).forEach((key:string) => {
+            if (Array.isArray(merged[key]) && merged[key].length === 0)
+                merged[key] = undefined;
+        });
         return merged;
     }
 
@@ -888,7 +925,6 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     private _saveResourceLazy (resource:T) {
         //Update memory now
-        this._loadedResources[resource.id] = resource;
         this._postSaveUpdate(this._addToSaveQueue(resource));
     }
 
@@ -1045,12 +1081,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         if (position > 0 && lr) {
             let newR : T = { ... lr };
             newR[this.positionAttr] = [position];
-            this._loadedResources[r.id] = newR;
-            if (this.lazy) {
-                this._resourcesToEdit[r.id] = newR;
-            } else {
-                //TODO: do an update here;
-            }
+            this._loadedResources[r.id] = newR; //this is not necesary i think.
+            if (this.lazy) this._saveResourceLazy(newR);
+            else this._saveResource(newR);
         }
     }
 
@@ -1073,6 +1106,27 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             //console.log('New order:', this._orderedResources.map(r => r.label[0]));
             this.requestUpdate();
         }
+    }
+
+    public isOrdered () : boolean {
+        if (!this.positionAttr) return false;
+        for (let i = 0; i < this._orderedResources.length; i++) {
+            let r : T = this._orderedResources[i];
+            if (!r || this._getResourcePosition(r) != i+1)
+                return false;
+        }
+        return true;
+    }
+
+    public forceOrder () : void {
+        if (this.positionAttr) {
+            for (let i : number = 0; i < this._orderedResources.length; i++) {
+                let r : T = this._orderedResources[i];
+                if (this._getResourcePosition(r) != i+1)
+                    this._setResourcePosition(r, i+1);
+            }
+        }
+        this.requestUpdate();
     }
 
     protected _forceLoad (r:T) {
@@ -1262,6 +1316,51 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 this._unsetSubResources();
                 resolve();
             }
+        });
+    }
+
+    protected _duplicateResource (r:T) : Promise<T> {
+        let copy : T = { ...r, id: '' };
+        return new Promise((resolve, reject) => {
+            let inner : Promise<T> = this._duplicateInnerResources(copy);
+            inner.catch(reject);
+            inner.then((fullResource:T) => {
+                let post : Promise<T> = store.dispatch(this.resourcePost(fullResource));
+                post.catch(reject);
+                post.then(resolve);
+            });
+        });
+
+    }
+
+    protected _duplicateInnerResources (r:T) : Promise<T> {
+        //MUST be remplaced
+        return new Promise((resolve, reject) => {
+            resolve(r);
+        });
+    }
+
+    public duplicateAllResources () : Promise<T[]> {
+        return new Promise((resolve, reject) => {
+            //Check that all resources are loaded
+            if (this._resources.some((r:T) => !this._loadedResources[r.id]))
+                reject("Some resources have not been loaded.")
+            let allRes : Promise<T>[] = this._resources
+                    .map((r:T) => this._loadedResources[r.id])
+                    .map((r:T) => this._duplicateResource(r));
+            let p : Promise<T[]> = Promise.all(allRes);
+            p.catch(reject);
+            p.then(resolve);
+        });
+    }
+
+    public duplicate () : Promise<T> {
+        return new Promise((resolve, reject) => {
+            if (!this._singleMode || this._resources.length != 1 || !this._loadedResources[this._resources[0].id])
+                reject();
+            let p : Promise<T> = this._duplicateResource(this._loadedResources[this._resources[0].id]);
+            p.catch(reject);
+            p.then(resolve);
         });
     }
 

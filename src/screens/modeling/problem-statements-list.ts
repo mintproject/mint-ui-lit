@@ -105,7 +105,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
         let last_event = getLatestEvent(problem_statement.events);
         let permissions = getUserPermission(problem_statement.permissions, problem_statement.events);
         let create_event = getLatestEventOfType(["CREATE"], problem_statement.events);
-        console.log(problem_statement.preview);
+        //console.log(problem_statement.preview);
         //let region = this._regions[problem_statement.regionid];
         if(problem_statement.regionid == this._top_regionid) {
           return html`
