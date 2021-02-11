@@ -319,11 +319,19 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     this._iConfig.disableSingleResourceCreation();
                     this._config = db.configurations[this._selectedConfig];
                     this._iConfig.setResource(this._config);
+                    if (this._version)
+                        this._iConfig.enableDuplication(this._version);
+                    else
+                        console.warn("Version is not loaded!");
                 }
                 if (!this._setup && db.setups && this._selectedSetup && db.setups[this._selectedSetup]) {
                     this._iSetup.disableSingleResourceCreation();
                     this._setup = db.setups[this._selectedSetup];
                     this._iSetup.setResource(this._setup);
+                    if (this._config)
+                        this._iSetup.enableDuplication(this._config);
+                    else
+                        console.warn("Configuration is not loaded!");
                 }
 
                 if (this._creating) {

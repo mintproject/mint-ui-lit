@@ -98,7 +98,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         if (this._parentVersion) {
             return modelConfigurationPost(r, this._parentVersion);
         }
-        return Promise.reject();
+        return Promise.reject("Configuration does not have parent version!");
     };
 
     public pageMax : number = 10
@@ -204,22 +204,46 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         if (this._inputDSOutput) this._inputDSOutput.unsetAction();
     }
 
+    private _parentInnerResourcesSet : boolean = false;
     public enableSingleResourceCreation (parentVersion:SoftwareVersion) {
         super.enableSingleResourceCreation();
-        if (parentVersion != this._parentVersion) {
+        this._parentVersion = parentVersion;
+
+        if (!this._parentInnerResourcesSet) {
+            this._parentInnerResourcesSet = true;
             this._unsetSubResources();
-            this._parentVersion = parentVersion;
-            if (this._parentVersion) {
-                let r = this._parentVersion;
-                this._inputAuthor.setResources(r.author);
-            }
+            this._inputAuthor.setResources(this._parentVersion.author);
         }
     }
 
     public disableSingleResourceCreation () {
         super.disableSingleResourceCreation();
-        this._parentVersion = null;
+        this._parentInnerResourcesSet = false;
     }
+
+    public enableDuplication (parentVersion : SoftwareVersion) {
+        super.enableDuplication();
+        this._parentVersion = parentVersion;
+    }
+
+    protected _duplicateInnerResources (r:ModelConfiguration) : Promise<ModelConfiguration> {
+        return new Promise((resolve, reject) => {
+            r.label = [r.label[0] + " (copy)"];
+            r.hasSetup = undefined;
+            let newParams : Promise<Parameter[]> = this._inputParameter.duplicateAllResources();
+            let newIn : Promise<DatasetSpecification[]> = this._inputDSInput.duplicateAllResources();
+            let newOut : Promise<DatasetSpecification[]> = this._inputDSOutput.duplicateAllResources();
+
+            newParams.then((params: Parameter[]) => r.hasParameter = params);
+            newIn.then((inputs: DatasetSpecification[]) => r.hasInput = inputs);
+            newOut.then((outputs: DatasetSpecification[]) => r.hasOutput = outputs);
+
+            let allp = Promise.all([newParams, newIn, newOut]);
+            allp.catch(reject);
+            allp.then((_) => resolve(r));
+        });
+    }
+
 
     protected _renderFullResource (r:ModelConfiguration) {
         // Example, Type, operating system, versions?
@@ -609,6 +633,11 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
             if (assumptions) jsonRes["hasAssumption"] = [assumptions];
             if (usageNotes) jsonRes["hasUsageNotes"] = [usageNotes];
             if (tag) jsonRes["tag"] = [tag];
+            else {
+                let edResource = this._getEditingResource();
+                if (edResource && edResource.tag)
+                    jsonRes["tag"] = [];
+            }
 
             if (license) jsonRes["license"] = [license];
             if (citation) jsonRes["citation"] = [citation];

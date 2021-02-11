@@ -21,7 +21,9 @@ import { Select } from 'weightless/select';
 import 'weightless/checkbox';
 
 const renderParameterType = (param:Parameter) => {
-    let ptype = param.type.filter(p => p != 'Parameter').map(uri => uri.split('#').pop())
+    let ptype = param.type
+            .filter(p => p != "Parameter" && p != "https://w3id.org/okn/o/sd#Parameter")
+            .map(uri => uri.split('#').pop())
     return html`
         ${ptype} ${param.hasDataType ? html`(<span class="monospaced">${param.hasDataType}</span>)` : ''}
         ${(param.hasMinimumAcceptedValue || param.hasMaximumAcceptedValue) ?

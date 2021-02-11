@@ -207,29 +207,49 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         if (this._inputDSInput) this._inputDSInput.unsetAction();
     }
 
+    private _parentInnerResourcesSet : boolean = false;
     public enableSingleResourceCreation (parentConfig:ModelConfiguration) {
         super.enableSingleResourceCreation();
-        if (parentConfig != this._parentConfig) {
-            this._parentConfig = parentConfig;
-            if (this._parentConfig) {
-                let r = this._parentConfig;
-                this._inputAuthor.setResources(r.author);
-                this._inputGrid.setResourcesAsCopy(r.hasGrid);
-                this._inputTimeInterval.setResourcesAsCopy(r.hasOutputTimeInterval);
-                this._inputIndex.setResources(r.usefulForCalculatingIndex);
-                this._inputCategory.setResources(r.hasModelCategory);
-                this._inputRegion.setResources(r.hasRegion);
-                this._inputProcesses.setResources(r.hasProcess);
-                this._inputSoftwareImage.setResources(r.hasSoftwareImage);
-                this._inputParameter.setResourcesAsCopy( r.hasParameter );
-                this._inputDSInput.setResourcesAsCopy( r.hasInput );
-            }
+        this._parentConfig = parentConfig;
+        if (!this._parentInnerResourcesSet) {
+            this._parentInnerResourcesSet = true;
+            let r = this._parentConfig;
+            this._inputAuthor.setResources(r.author);
+            this._inputGrid.setResourcesAsCopy(r.hasGrid);
+            this._inputTimeInterval.setResourcesAsCopy(r.hasOutputTimeInterval);
+            this._inputIndex.setResources(r.usefulForCalculatingIndex);
+            this._inputCategory.setResources(r.hasModelCategory);
+            this._inputRegion.setResources(r.hasRegion);
+            this._inputProcesses.setResources(r.hasProcess);
+            this._inputSoftwareImage.setResources(r.hasSoftwareImage);
+            this._inputParameter.setResourcesAsCopy( r.hasParameter );
+            this._inputDSInput.setResourcesAsCopy( r.hasInput );
         }
     }
 
     public disableSingleResourceCreation () {
         super.disableSingleResourceCreation();
-        this._parentConfig = null;
+        this._parentInnerResourcesSet = false;
+    }
+
+    public enableDuplication (parentConfig:ModelConfiguration) {
+        super.enableDuplication();
+        this._parentConfig = parentConfig;
+    }
+
+    protected _duplicateInnerResources (r:ModelConfigurationSetup) : Promise<ModelConfigurationSetup> {
+        return new Promise((resolve, reject) => {
+            r.label = [r.label[0] + " (copy)"];
+            let newParams : Promise<Parameter[]> = this._inputParameter.duplicateAllResources();
+            let newIn : Promise<DatasetSpecification[]> = this._inputDSInput.duplicateAllResources();
+
+            newParams.then((params: Parameter[]) => r.hasParameter = params);
+            newIn.then((inputs: DatasetSpecification[]) => r.hasInput = inputs);
+
+            let allp = Promise.all([newParams, newIn]);
+            allp.catch(reject);
+            allp.then((_) => resolve(r));
+        });
     }
 
     protected _renderFullResource (r:ModelConfigurationSetup) {
