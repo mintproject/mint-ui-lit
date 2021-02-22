@@ -318,6 +318,30 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
 
     protected _renderFullForm () {
         let edResource = this._getEditingResource();
+        let atype : string = "";
+        if (edResource && edResource.type.length == 2) {
+            let ts : string[] = edResource.type.filter((t:string) => t != "https://w3id.org/okn/o/sdm#Model" && t != "Model");
+            if (ts.length > 0) {
+                atype = ts[0];
+                switch (atype) {
+                    case "EmpiricalModel":
+                        atype = "https://w3id.org/okn/o/sdm#EmpiricalModel";
+                        break;
+                    case "Theory-GuidedModel":
+                        atype = "https://w3id.org/okn/o/sdm#Theory-GuidedModel";
+                        break;
+                    case "CoupledModel":
+                        atype = "https://w3id.org/okn/o/sdm#CoupledModel";
+                        break;
+                    case "OtherModel":
+                        atype = "https://w3id.org/okn/o/sdm#OtherModel";
+                        break;
+                    default:
+                        break;
+                }
+            }
+            console.log('>>> ' + atype);
+        }
         return html`
             <div id="page-top"></div>
             <table class="details-table">
@@ -333,6 +357,22 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                     <td>Category:</td>
                     <td>
                         ${this._inputCategory}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Model type:</td>
+                    <td>
+                        <wl-select id="i-type"
+                                   value="${atype}"
+                                   label="Model type"
+                                   placeholder="Select a parameter assignament method">
+                            <option value="">None</option>
+                            <option value="https://w3id.org/okn/o/sdm#EmpiricalModel">Empirical Model</option>
+                            <option value="https://w3id.org/okn/o/sdm#Theory-GuidedModel">Theory Guided Model</option>
+                            <option value="https://w3id.org/okn/o/sdm#CoupledModel">Coupled Model</option>
+                            <option value="https://w3id.org/okn/o/sdm#OtherModel">Other</option>
+                        </wl-select>
                     </td>
                 </tr>
 
@@ -445,53 +485,62 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                         ${this._inputIndex}
                     </td>
                 </tr>
+
+                <tr>
+                    <td>Operating systems:</td>
+                    <td>
+                        <wl-textfield id="i-so" name="Operating systems"
+                                value="${edResource && edResource.operatingSystems ? edResource.operatingSystems[0] : ''}"></wl-textfield>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Website URL</td>
+                    <td>
+                        <wl-textfield id="i-website" name="Website URL" type="url"
+                                value="${edResource && edResource.website ? edResource.website[0] : ''}"></wl-textfield>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Documentation URL</td>
+                    <td>
+                        <wl-textfield id="i-documentation" name="Documentation URL" type="url"
+                                value="${edResource && edResource.hasDocumentation ? edResource.hasDocumentation[0] : ''}"></wl-textfield>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Download URL</td>
+                    <td>
+                        <wl-textfield id="i-download" name="Download URL" type="url"
+                                value="${edResource && edResource.hasDownloadURL ? edResource.hasDownloadURL[0] : ''}"></wl-textfield>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Installation instructions URL</td>
+                    <td>
+                        <wl-textfield id="i-install-instructions" name="Installation instructions URL" type="url"
+                                value="${edResource && edResource.hasInstallationInstructions ?
+                                edResource.hasInstallationInstructions[0] : ''}"></wl-textfield>
+                    </td>
+                </tr>
             </table>
 
-            <details style="margin-top: 6px;">
+            <!--details style="margin-top: 6px;">
               <summary>External URLs</summary>
                 <table class="details-table">
                     <colgroup style="width: 220px">
-                    <tr>
-                        <td>Website URL</td>
-                        <td>
-                            <wl-textfield id="i-website" name="Website URL" type="url"
-                                    value="${edResource && edResource.website ? edResource.website[0] : ''}"></wl-textfield>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>Documentation URL</td>
-                        <td>
-                            <wl-textfield id="i-documentation" name="Documentation URL" type="url"
-                                    value="${edResource && edResource.hasDocumentation ? edResource.hasDocumentation[0] : ''}"></wl-textfield>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>Download URL</td>
-                        <td>
-                            <wl-textfield id="i-download" name="Download URL" type="url"
-                                    value="${edResource && edResource.hasDownloadURL ? edResource.hasDownloadURL[0] : ''}"></wl-textfield>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>Installation instructions URL</td>
-                        <td>
-                            <wl-textfield id="i-install-instructions" name="Installation instructions URL" type="url"
-                                    value="${edResource && edResource.hasInstallationInstructions ?
-                                    edResource.hasInstallationInstructions[0] : ''}"></wl-textfield>
-                        </td>
-                    </tr>
                 </table>
-            </details>
-
+            </details-->
         `;
     }
 
     protected _getResourceFromFullForm () {
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById("i-label") as Textfield;
+        let inputSO : Textfield = this.shadowRoot.getElementById("i-so") as Textfield;
         //let inputCategory : Select = this.shadowRoot.getElementById("i-category") as Select;
         let inputKeywords : Textfield = this.shadowRoot.getElementById("i-keywords") as Textfield;
         let inputShortDesc : Textarea = this.shadowRoot.getElementById("i-short-desc") as Textarea;
@@ -505,9 +554,12 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         let inputDocumentation : Textfield = this.shadowRoot.getElementById("i-documentation") as Textfield;
         let inputDownload : Textfield = this.shadowRoot.getElementById("i-download") as Textfield;
         let inputInstallInstructions : Textfield = this.shadowRoot.getElementById("i-install-instructions") as Textfield;
+        let inputType : Select = this.shadowRoot.getElementById("i-type") as Select;
 
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : ''; 
+        let so : string = inputSO ? inputSO.value : ''; 
+        let atype : string = inputType ? inputType.value : '';
         //let category : string = inputCategory ? inputCategory.value : ''; 
         let keywords : string = inputKeywords ? inputKeywords.value : ''; 
         let shortDesc : string = inputShortDesc ? inputShortDesc.value : ''; 
@@ -547,6 +599,8 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
             if (documentation) jsonRes["hasDocumentation"] = [documentation];
             if (download) jsonRes["hasDownloadURL"] = [download];
             if (installInstructions) jsonRes["hasInstallationInstructions"] = [installInstructions];
+            if (so) jsonRes["operatingSystems"] = [so];
+            if (atype) jsonRes["type"].push(atype);
 
             return ModelFromJSON(jsonRes);
         } else {

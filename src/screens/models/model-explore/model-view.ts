@@ -105,7 +105,14 @@ export class ModelView extends connect(store)(PageViewElement) {
 
                 .config-selector {
                     display: grid;
-                    grid-template-columns: 50px auto 114px;
+                    grid-template-columns: 50px auto 205px;
+                    align-items: center;
+                    height: 50px;
+                }
+
+                .setup-selector {
+                    display: grid;
+                    grid-template-columns: 50px auto 144px;
                     align-items: center;
                     height: 50px;
                 }
@@ -388,11 +395,11 @@ export class ModelView extends connect(store)(PageViewElement) {
     _renderCLIDialog () {
         return html`
         <wl-dialog class="larger" id="CLIDialog" fixed backdrop blockscrolling>
-            <h3 slot="header">Execute on Desktop/Server</h3>
+            <h3 slot="header">Execute with DAME</h3>
             <div slot="content">
                 <wl-text> You can run this model with the following command: </wl-text>
                 <div class="monospaced code-example">
-                    <div style="font-size: 14px">
+                    <div style="font-size: 14px; overflow: hidden;">
                         <span style="color: darkgray;">$</span> dame run ${this._runArgs}
                     </div>
                     <div>
@@ -432,11 +439,11 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     _editModel () {
-        goToPage('models/edit/' + getURL(this._selectedModel));
+        goToPage('models/edit/' + getURL(this._selectedModel) + '/edit');
     }
 
     _goToEdit (configUri: string, setupUri?:string) {
-        goToPage('models/configure/' + getURL(this._selectedModel, this._selectedVersion, configUri, setupUri));
+        goToPage('models/configure/' + getURL(this._selectedModel, this._selectedVersion, configUri, setupUri) + '/edit');
     }
 
     _addConfig () {
@@ -573,12 +580,15 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </span>
                 `}
                 <span>
-                    <wl-select label="Select a configuration" id="config-selector" @input="${this._onConfigChange}">
+                    <wl-select label=${this._selectedConfig ? "Selected configuration" : "Select a configuration"} id="config-selector" @input="${this._onConfigChange}">
                     </wl-select>
                 </span>
                 <span>
                     <wl-button flat inverted @click="${() => this._goToEdit(this._selectedConfig)}" ?disabled="${!this._selectedConfig}">
                         <wl-icon>edit</wl-icon>
+                        <span style="font-size: 11px; font-weight: bold;">
+                            Edit<br/>Configuration
+                        </span>
                     </wl-button>
                     <span class="tooltip small-tooltip" tip="Download and Run">
                         <wl-button flat inverted @click=${() => this._openCLIDialog(this._selectedConfig)} ?disabled="${!isExecutable(this._config)}">
@@ -592,7 +602,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </span>
             </div>
 
-            <div class="config-selector 
+            <div class="setup-selector 
                 ${this._selectedConfig && this._config && this._config.hasSetup && this._config.hasSetup.length > 0? '' : 'hidden'}">
                 ${this._selectedSetup ? html`
                     <a class="no-decoration" style="text-align: center;" target="_blank" href="${this._selectedSetup}">
@@ -608,12 +618,15 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </span>`
                 }
                 <span>
-                    <wl-select label="Select a configuration setup" id="setup-selector" @input="${this._onSetupChange}">
+                    <wl-select label=${this._selectedSetup ? "Selected configuration setup" :"Select a configuration setup"} id="setup-selector" @input="${this._onSetupChange}">
                     </wl-select>
                 </span>
                 <span>
                     <wl-button flat inverted @click="${() => this._goToEdit(this._selectedConfig, this._selectedSetup)}" ?disabled="${!this._selectedSetup}">
                         <wl-icon>edit</wl-icon>
+                        <span style="font-size: 11px; font-weight: bold;">
+                            Edit<br/>Setup
+                        </span>
                     </wl-button>
                     <span class="tooltip small-tooltip" tip="Download and Run">
                         <wl-button flat inverted @click=${() => this._openCLIDialog(this._selectedSetup)} ?disabled="${!isExecutable(this._setup)}">
@@ -645,21 +658,33 @@ export class ModelView extends connect(store)(PageViewElement) {
 
         return html`
             ${this._renderCLIDialog()}
-            <div class="wrapper">
-                <div class="col-title">
-                    <wl-title level="2">
-                        <a class="no-decoration" style="" target="_blank" href="${this._selectedModel}">
-                            <wl-button flat inverted>
-                                <span class="rdf-icon">
-                            </wl-button>
-                        </a>
-                        <span>${getLabel(this._model)}</span>
-                        <wl-button style="--button-font-size: 16px; --button-padding: 8px; float: right;" flat inverted 
-                                @click="${() => this._editModel()}">
-                            <wl-icon>edit</wl-icon>
+            <div class="col-title">
+                <wl-title level="2">
+                    <a class="no-decoration" style="" target="_blank" href="${this._selectedModel}">
+                        <wl-button flat inverted>
+                            <span class="rdf-icon">
                         </wl-button>
-                    </wl-title>
-                </div>
+                    </a>
+                    <span>${getLabel(this._model)}</span>
+                    <wl-button style="--button-font-size: 16px; --button-padding: 8px; float: right;" flat inverted 
+                            @click="${() => this._editModel()}">
+                        <wl-icon>edit</wl-icon>
+                        <span style="font-size: 11px;">
+                            Edit<br/>Model
+                        </span>
+                    </wl-button>
+                </wl-title>
+            </div>
+
+            ${this._renderSelectors()}
+            ${this._setupNotFound ? html`
+            <p style="text-align: center; color:red;">
+                The setup ${this._selectedSetup ? this._selectedSetup.split('/').pop() : 'selected'} is private or was deleted 
+            </p>` : ''}
+
+            <wl-divider style="margin: .5em 0;"></wl-divider>
+
+            <div class="wrapper">
                 <div class="col-img text-centered">
                     ${this._model.logo && this._model.logo.length > 0 ? (
                         this._loading[this._model.logo[0].id] ?
@@ -678,7 +703,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${modelType.length > 0 ? html`<div><b>Model type:</b> ${modelType.join(', ')}</div>`:''}
                 </div>
                 <div class="col-desc">
-                    <wl-divider style="margin-bottom: .5em;"></wl-divider>
                     <wl-text style="text-align: justify;">${this._model.description}</wl-text>
                     ${this._emulators[this._selectedModel] ?  html`
                     <div style="margin-top: 4px;">
@@ -711,7 +735,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                           html`<wl-text>
                             <b>• Documentation:</b>
                             <a target="_blank" href="${this._model.hasDocumentation[0]}">
-                                ${this._model.hasDocumentation[0].split('/').pop() || this._model.hasDocumentation}
+                                ${this._model.hasDocumentation[0]}
                             </a>
                         </wl-text>` :''}
                         ${!this._modelRegions || this._modelRegions.length > 0 ? html`<wl-text><b>• Regions:</b>
@@ -726,11 +750,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                             ${ this._model.keywords.map((kws:string) => kws.split(/ *; */).map(capitalizeFirstLetter).join(', ') ).join(', ') }
                         </wl-text>` :''}
                     </div>
-                    ${this._renderSelectors()}
-                    ${this._setupNotFound ? html`
-                    <p style="text-align: center; color:red;">
-                        The setup ${this._selectedSetup ? this._selectedSetup.split('/').pop() : 'selected'} is private or was deleted 
-                    </p>` : ''}
                 </div>
 
                 <div class="row-tab-header">
