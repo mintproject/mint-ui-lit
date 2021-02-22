@@ -1069,6 +1069,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._singleMode = false;
     }
 
+    public editSelectedResource () {
+        this._editResource(this._resources[0]);
+    }
+
     private _getResourcePosition (r:T) {
         let p = r[this.positionAttr];
         if (p && p.length > 0)
