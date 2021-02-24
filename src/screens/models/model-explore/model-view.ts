@@ -20,6 +20,7 @@ import { ExplorerStyles } from './explorer-styles'
 import marked from 'marked';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
+import { urlify } from 'util/ui_renders';
 
 import { goToPage } from 'app/actions';
 import "weightless/expansion";
@@ -728,8 +729,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                         ${this._model.datePublished?
                           html`<wl-text><b>• Publication date:</b> ${ this._model.datePublished }</wl-text>`
                           :''}
-                        ${this._model.citation?
-                          html`<wl-text><b>• Preferred citation:</b> <i>${ this._model.citation }<i></wl-text>` 
+                        ${this._model.citation && this._model.citation.length > 0 ?
+                          html`<wl-text><b>• Preferred citation:</b> <i>${ urlify(this._model.citation[0]) }<i></wl-text>` 
                           :''}
                         ${this._model.hasDocumentation?
                           html`<wl-text>
