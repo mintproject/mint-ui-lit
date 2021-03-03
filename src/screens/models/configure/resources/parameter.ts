@@ -13,6 +13,7 @@ import { Parameter, Unit, ParameterFromJSON } from '@mintproject/modelcatalog_cl
 import { PARAMETER_TYPES } from 'offline_data/parameter_types';
 
 import { ModelCatalogUnit } from './unit'
+import { ModelCatalogVariablePresentation } from './variable-presentation';
 
 import 'components/data-catalog-id-checker';
 import { Textfield } from 'weightless/textfield';
@@ -49,37 +50,12 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
             display: inline-block;
             width: 50%;
         }
-        #input-unit {
+        #input-unit, #input-variable {
             --list-height: 200px;
             --dialog-height: 100%;
         }
         `];
     }
-
-    private _units : IdMap<Unit> = {
-        'https://w3id.org/okn/i/mint/%25': 
-            { id: 'https://w3id.org/okn/i/mint/%25', label: ['%'] },
-        'https://w3id.org/okn/i/mint/dayT':
-            { id: 'https://w3id.org/okn/i/mint/dayT', label: ['day']},
-        'https://w3id.org/okn/i/mint/hourT':
-            { id: 'https://w3id.org/okn/i/mint/hourT', label: ['hour']},
-        'https://w3id.org/okn/i/mint/yearT':
-            { id: 'https://w3id.org/okn/i/mint/yearT', label: ['year']},
-        'https://w3id.org/okn/i/mint/minT':
-            { id: 'https://w3id.org/okn/i/mint/minT', label: ['min']},
-        'https://w3id.org/okn/i/mint/date':
-            { id: 'https://w3id.org/okn/i/mint/date', label: ['date']},
-        'https://w3id.org/okn/i/mint/pixel':
-            { id: 'https://w3id.org/okn/i/mint/pixel', label: ['pixel']},
-        'https://w3id.org/okn/i/mint/second':
-            { id: 'https://w3id.org/okn/i/mint/second', label: ['second']},
-        'https://w3id.org/okn/i/mint/month':
-            { id: 'https://w3id.org/okn/i/mint/month', label: ['month']},
-        'https://w3id.org/okn/i/mint/degree':
-            { id: 'https://w3id.org/okn/i/mint/degree', label: ['degree']},
-        'https://w3id.org/okn/i/mint/kg_ha_1M_L_2':
-            { id: 'https://w3id.org/okn/i/mint/kg_ha_1M_L_2', label: ['kg ha-1']},
-    } as IdMap<Unit>;
 
     protected classes : string = "resource parameter";
     protected name : string = "parameter";
@@ -99,6 +75,8 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     @property({type: String}) private _formPart : string = "";
 
     private _inputUnit : ModelCatalogUnit;
+    private _vpDisplayer : IdMap<ModelCatalogVariablePresentation> = {};
+    private _inputVariable : ModelCatalogVariablePresentation;
 
     public isSetup : boolean = false;
     public setAsSetup () {
@@ -111,6 +89,10 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         this._inputUnit = new ModelCatalogUnit();
         this._inputUnit.setActionSelect();
         this._inputUnit.setAttribute('id', 'input-unit');
+        
+        this._inputVariable = new ModelCatalogVariablePresentation();
+        this._inputVariable.setActionMultiselect();
+        this._inputVariable.setAttribute('id', 'input-variable');
     }
 
     protected _createResource () {
@@ -144,7 +126,16 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         `;
     }
 
+    private _prepareVariablePresentation (r:Parameter) {
+        if (r.hasPresentation && r.hasPresentation.length > 0) {
+            if (!this._vpDisplayer[r.id])
+                this._vpDisplayer[r.id] = new ModelCatalogVariablePresentation();
+            this._vpDisplayer[r.id].setResources(r.hasPresentation);
+        }
+    }
+
     protected _renderRow (r:Parameter) {
+        this._prepareVariablePresentation(r);
         let label : string = getLabel(r);
         let dcata : boolean = r.hasDefaultValue && 
                 (label == "gldas_dataset_id" || label == "shapefile_dataset_id" || label == "data_set_id");
@@ -152,6 +143,11 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
             <td>
                 <code>${label}</code><br/>
                 <b>${r.description ? r.description[0].split(',').join(', ') : ''}</b>
+                ${r.hasPresentation && r.hasPresentation.length > 0 ? html`
+                    <div style="padding-top: 10px">
+                        <b>Variables:</b> ${this._vpDisplayer[r.id]}
+                    </div>
+                ` : '' }
             </td>
             <td>${renderParameterType(r)}</td>
             <td>
@@ -196,6 +192,8 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         console.log(r);
         //BUG: http://qudt.org/1.1/schema/qudt#Unit is not part of the model-catalog.
         this._inputUnit.setResources(r.usesUnit);
+        this._inputVariable.setResources(r.hasPresentation);
+
         let lr : Parameter = this._loadedResources[r.id];
         if (lr) {
             if (lr.hasDataType && lr.hasDataType.length > 0) {
@@ -248,6 +246,10 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                     <option value="${id}">${PARAMETER_TYPES[id]}</option>
                 `)}
             </wl-select>
+
+            <div style="margin-top: 5px;">
+                <b>Variables:</b> ${this._inputVariable}
+            </div>
 
             <div class="two-inputs">
                 <wl-select id="parameter-datatype" label="Data type" required @change="${this._onDataTypeChanged}"
@@ -370,7 +372,6 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let inputLabel : Textfield = this.shadowRoot.getElementById('parameter-label') as Textfield;
         let inputDesc : Textarea = this.shadowRoot.getElementById('parameter-desc') as Textarea;
         let inputDatatype : Textfield = this.shadowRoot.getElementById("parameter-datatype") as Textfield;
-        let inputUnit : Select = this.shadowRoot.getElementById("parameter-unit") as Select;
         let inputType : Select = this.shadowRoot.getElementById("parameter-type") as Select;
         let inputFixed : Textfield = this.shadowRoot.getElementById('fixed-value') as Textfield;
 
@@ -378,9 +379,9 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let label : string = inputLabel ? inputLabel.value : '';
         let desc : string = inputDesc ? inputDesc.value : '';
         let datatype : string = inputDatatype ? inputDatatype.value : '';
-        let unit : string = inputUnit ? inputUnit.value : '';
         let aType : string = inputType ? inputType.value : '';
         let fixed : string = inputFixed ? inputFixed.value : '';
+
         if (!this.isSetup && label && desc && datatype) {
 
             let jsonRes = {
@@ -389,9 +390,10 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 label: [label],
                 hasDataType: [datatype],
                 position: [position],
+                hasPresentation: this._inputVariable.getResources(),
+                usesUnit: this._inputUnit.getResources(),
             };
 
-            if (unit) jsonRes["usesUnit"] = [{id: unit}];
             if (aType) jsonRes["type"].push(aType);
 
             let jsonRes2 = this._getDefaultsPart(datatype);
@@ -416,8 +418,9 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 let jsonRes = {
                     hasDataType: [datatype],
                     type: ["Parameter"],
+                    hasPresentation: this._inputVariable.getResources(),
+                    usesUnit: this._inputUnit.getResources(),
                 };
-                if (unit) jsonRes["usesUnit"] = [{id: unit}];
                 if (aType) jsonRes["type"].push(aType);
                 let jsonRes2 = this._getDefaultsPart(datatype);
                 if (jsonRes2)
