@@ -365,17 +365,20 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
                 </tr>
             </table>
 
-        <wl-title level="4" style="margin-top:1em">
+        <wl-title level="3" style="margin-top:1em">
+            Inputs:
+        </wl-title>
+        <wl-title level="4">
             Parameters:
         </wl-title>
         ${this._inputParameter}
 
         <wl-title level="4" style="margin-top:1em">
-            Input files:
+            Files:
         </wl-title>
         ${this._inputDSInput}
 
-        <wl-title level="4" style="margin-top:1em">
+        <wl-title level="3" style="margin-top:1em">
             Output files:
         </wl-title>
         ${this._inputDSOutput}
@@ -540,17 +543,20 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
 
             </table>
 
-        <wl-title level="4" style="margin-top:1em">
+        <wl-title level="3" style="margin-top:1em">
+            Inputs:
+        </wl-title>
+        <wl-title level="4">
             Parameters:
         </wl-title>
         ${this._inputParameter}
 
         <wl-title level="4" style="margin-top:1em">
-            Input files:
+            Files:
         </wl-title>
         ${this._inputDSInput}
 
-        <wl-title level="4" style="margin-top:1em">
+        <wl-title level="3" style="margin-top:1em">
             Output files:
         </wl-title>
         ${this._inputDSOutput}`;
