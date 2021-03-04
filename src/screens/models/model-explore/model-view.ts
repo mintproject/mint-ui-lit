@@ -1630,6 +1630,12 @@ export class ModelView extends connect(store)(PageViewElement) {
         let ui = state.explorerUI;
         let db = state.modelCatalog;
 
+        this.setSubPage(state);
+        if (this._subpage != "explore") {
+            if (this._selectedModel) this._selectedModel = '';
+            return;
+        }
+
         // check whats changed
         let modelChanged : boolean = ui && (ui.selectedModel !== this._selectedModel);
         let versionChanged : boolean = ui && (modelChanged || ui.selectedVersion !== this._selectedVersion);
