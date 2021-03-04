@@ -172,7 +172,6 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
             this._inputParameter.setResources(null);
             this._inputDSInput.setResources(null);
             this._inputDSOutput.setResources(null);
-            this._parentVersion = null;
         }
     }
 
