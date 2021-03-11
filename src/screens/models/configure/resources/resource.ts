@@ -200,6 +200,14 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._creationEnabled = false;
     }
 
+    public enableEdition () {
+        this._editionEnabled = true;
+    }
+
+    public disableEdition () {
+        this._editionEnabled = false;
+    }
+
     public enableDeletion () {
         this._deletionEnabled = true;
     }
