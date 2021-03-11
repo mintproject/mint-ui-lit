@@ -200,6 +200,14 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._creationEnabled = false;
     }
 
+    public enableEdition () {
+        this._editionEnabled = true;
+    }
+
+    public disableEdition () {
+        this._editionEnabled = false;
+    }
+
     public enableDeletion () {
         this._deletionEnabled = true;
     }
@@ -1067,6 +1075,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     public disableSingleResourceCreation () {
         this._clearStatus();
         this._singleMode = false;
+    }
+
+    public editSelectedResource () {
+        this._editResource(this._resources[0]);
     }
 
     private _getResourcePosition (r:T) {

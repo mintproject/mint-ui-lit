@@ -204,6 +204,7 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
 
             let enableCreation : boolean = (ui.mode === 'new' && !this._creating);
             this._creating = (ui.mode === 'new');
+            this._editing = (ui.mode === 'edit');
 
             super.setRegionId(state);
 
@@ -240,6 +241,10 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
                 if (this._model) {
                     this._iVersion.enableSingleResourceCreation(this._model);
                 }
+            }
+
+            if (this._model && !this._version) {
+                if (this._editing) this._iModel.editSelectedResource();
             }
 
         }

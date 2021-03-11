@@ -10,7 +10,7 @@
   "private": true,
   "scripts": {
     "gulp": "gulp -f gulp/config.ts --cwd .",
-    "start": "cross-env BROWSERSLIST=\"edge > 12\" webpack-dev-server --config webpack/dev.config.ts --hot --color --compress --overlay --history-api-fallback --open",
+    "start": "cross-env BROWSERSLIST=\"edge > 12\" webpack-dev-server --config webpack/dev.config.ts --hot --color --compress --overlay --history-api-fallback",
     "build:static": "cross-env STATIC=true npm run gulp build:es6",
     "create-build": "webpack --config webpack/prod.config.ts",
     "create-build-dev": "webpack --config webpack/dev.config.ts",
@@ -22,7 +22,7 @@
     "@apollo/client": "^3.1.3",
     "@babel/polyfill": "^7.10.4",
     "@babel/runtime-corejs2": "^7.11.2",
-    "@mintproject/modelcatalog_client": "^7.0.0",
+    "@mintproject/modelcatalog_client": "^7.0.1",
     "@polymer/app-layout": "^3.0.2",
     "@polymer/polymer": "^3.1.0",
     "@types/codemirror": "^0.0.78",

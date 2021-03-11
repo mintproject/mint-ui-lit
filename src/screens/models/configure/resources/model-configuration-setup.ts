@@ -177,7 +177,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             this._inputSoftwareImage.setResources(null);
             this._inputParameter.setResources(null);
             this._inputDSInput.setResources(null);
-            this._parentConfig = null;
         }
     }
 
@@ -357,13 +356,16 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 </tr>
             </table>
 
-        <wl-title level="4" style="margin-top:1em">
+        <wl-title level="3" style="margin-top:1em">
+            Inputs:
+        </wl-title>
+        <wl-title level="4">
             Parameters:
         </wl-title>
         ${this._inputParameter}
 
         <wl-title level="4" style="margin-top:1em">
-            Input files:
+            Files:
         </wl-title>
         ${this._inputDSInput}
         `
@@ -502,13 +504,16 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
             </table>
 
-        <wl-title level="4" style="margin-top:1em">
+        <wl-title level="3" style="margin-top:1em">
+            Inputs:
+        </wl-title>
+        <wl-title level="4">
             Parameters:
         </wl-title>
         ${this._inputParameter}
 
         <wl-title level="4" style="margin-top:1em">
-            Input files:
+            Files:
         </wl-title>
         ${this._inputDSInput}`;
     }

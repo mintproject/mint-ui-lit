@@ -146,3 +146,22 @@ export const renderLastUpdateText = (info: MintEvent) => {
 export const renderExternalLink = (uri, label?) => {
     return html`<a target='_blank' href="${uri}">${label? label : uri}</a>`
 }
+
+export const urlify = (text:string)  => {
+  let urlRegex : RegExp = /(https?:\/\/[^\s]+)/g;
+  let parts : string[] = text.split(urlRegex);
+  let htmls = [];
+  parts.forEach((p:string) => {
+    if (p.match(urlRegex)) {
+        let endp : boolean = false;
+        if (p[p.length - 1] === '.') {
+            p = p.substring(0, p.length - 1);
+            endp = true;
+        }
+        htmls.push(html`<a target="_blank" href="${p}">${p}</a>${endp?'.':''}`)
+    } else {
+        htmls.push(p);
+    }
+  });
+  return htmls;
+}
