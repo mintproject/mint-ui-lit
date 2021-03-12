@@ -389,6 +389,18 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                     case "OtherModel":
                         atype = "https://w3id.org/okn/o/sdm#OtherModel";
                         break;
+                    case "TheoryGuidedEmpiricalModel":
+                        atype = "https://w3id.org/okn/o/sdm#TheoryGuidedEmpiricalModel"
+                        break;
+                    case "DataAssimilation":
+                        atype = "https://w3id.org/okn/o/sdm#DataAssimilation"
+                        break;
+                    case "TheoryAndEmpiricalModel":
+                        atype = "https://w3id.org/okn/o/sdm#TheoryAndEmpiricalModel"
+                        break;
+                    case "TheoryBasedModel":
+                        atype = "https://w3id.org/okn/o/sdm#TheoryBasedModel"
+                        break;
                     default:
                         break;
                 }
@@ -453,7 +465,11 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                                    placeholder="Select a parameter assignament method">
                             <option value="">None</option>
                             <option value="https://w3id.org/okn/o/sdm#EmpiricalModel">Empirical Model</option>
-                            <option value="https://w3id.org/okn/o/sdm#Theory-GuidedModel">Theory Guided Model</option>
+                            <option value="https://w3id.org/okn/o/sdm#TheoryGuidedEmpiricalModel">Theory-guided empirical models</option>
+                            <option value="https://w3id.org/okn/o/sdm#DataAssimilation">Data assimilation</option>
+                            <option value="https://w3id.org/okn/o/sdm#TheoryAndEmpiricalModel">Theory and empirical models</option>
+                            <option value="https://w3id.org/okn/o/sdm#TheoryBasedModel">Theory-based model</option>
+                            <!--option value="https://w3id.org/okn/o/sdm#Theory-GuidedModel">Theory Guided Model</option-->
                             <option value="https://w3id.org/okn/o/sdm#OtherModel">Other</option>
                         </wl-select>
                     </td>
