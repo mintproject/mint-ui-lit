@@ -822,7 +822,8 @@ export class ModelView extends connect(store)(PageViewElement) {
         //Do no show when the model does not have any technical property
         if (!resource.hasSoftwareImage && !resource.operatingSystems && !resource.memoryRequirements && 
             !resource.processorRequirements && !resource.softwareRequirements && !resource.hasDownloadURL &&
-            !resource.hasInstallationInstructions && !resource.hasComponentLocation && !resource.hasSourceCode) {
+            !resource.hasInstallationInstructions && !resource.hasComponentLocation && !resource.hasSourceCode &&
+            !resource.parameterization && !resource.runtimeEstimation && !resource.limitations) {
             return html``;
         }
 
@@ -870,6 +871,23 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <td><b>Software requirements:</b></td>
                         <td>${resource.softwareRequirements[0]}</td>
                     </tr>`: ''}
+
+                ${resource.parameterization && resource.parameterization.length > 0 ? html`
+                    <tr>
+                        <td><b>Parameterization:</b></td>
+                        <td>${resource.parameterization[0]}</td>
+                    </tr>`: ''}
+                ${resource.limitations && resource.limitations.length > 0 ? html`
+                    <tr>
+                        <td><b>Limitations:</b></td>
+                        <td>${resource.limitations[0]}</td>
+                    </tr>`: ''}
+                ${resource.runtimeEstimation && resource.runtimeEstimation.length > 0 ? html`
+                    <tr>
+                        <td><b>Runtime Estimation:</b></td>
+                        <td>${resource.runtimeEstimation[0]}</td>
+                    </tr>`: ''}
+
                 ${resource.hasDownloadURL && resource.hasDownloadURL.length > 0 ? html`
                     <tr>
                         <td><b>Download:</b></td>
@@ -984,6 +1002,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </li>
                 `)}
             </ul>` :''}
+
+            ${this._model.theoreticalBasis && this._model.theoreticalBasis.length > 0 ? html`
+            <wl-title level="2" style="font-size: 16px; display: inline-block; margin-right: 4px;">Theoretical Basis:</wl-title>
+            <span> ${this._model.theoreticalBasis[0]} </span>`:''}
 
             ${this._model.hasAssumption && this._model.hasAssumption.length > 0 ? html`
             <wl-title level="2" style="font-size: 16px;">Assumptions:</wl-title>

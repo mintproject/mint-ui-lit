@@ -306,6 +306,30 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                     </td>
                 </tr>
 
+                ${r.runtimeEstimation ? html`
+                <tr>
+                    <td>Runtime Estimation:</td>
+                    <td>
+                        ${r.runtimeEstimation ? r.runtimeEstimation[0] : ''}
+                    </td>
+                </tr>` : ''}
+
+                ${r.parameterization ? html`
+                <tr>
+                    <td>Parameterization:</td>
+                    <td>
+                        ${r.parameterization ? r.parameterization[0] : ''}
+                    </td>
+                </tr>` : ''}
+
+                ${r.limitations ? html`
+                <tr>
+                    <td>Limitations:</td>
+                    <td>
+                        ${r.limitations ? r.limitations[0] : ''}
+                    </td>
+                </tr>` : ''}
+
                 <tr>
                     <td>SoftwareImage:</td>
                     <td>
@@ -454,6 +478,30 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 </tr>
 
                 <tr>
+                    <td>Runtime Estimation:</td>
+                    <td>
+                        <wl-textfield id="i-runtime" name="Runtime Estimation"
+                                value="${edResource && edResource.runtimeEstimation? edResource.runtimeEstimation[0] : ''}"></wl-textfield>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Parameterization:</td>
+                    <td>
+                        <wl-textfield id="i-parameterization" name="Parameterization"
+                                value="${edResource && edResource.parameterization ? edResource.parameterization[0] : ''}"></wl-textfield>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Limitations:</td>
+                    <td>
+                        <wl-textfield id="i-limitations" name="Limitations"
+                                value="${edResource && edResource.limitations ? edResource.limitations[0] : ''}"></wl-textfield>
+                    </td>
+                </tr>
+
+                <tr>
                     <td>SoftwareImage:</td>
                     <td>
                         ${this._inputSoftwareImage}
@@ -545,6 +593,10 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         let inputDownload : Textfield = this.shadowRoot.getElementById("i-download") as Textfield;
         let inputInstallInstructions : Textfield = this.shadowRoot.getElementById("i-install-instructions") as Textfield;
 
+        let inputRuntime : Textfield = this.shadowRoot.getElementById("i-runtime") as Textfield;
+        let inputParameterization : Textfield = this.shadowRoot.getElementById("i-parameterization") as Textfield;
+        let inputLimitations : Textfield = this.shadowRoot.getElementById("i-limitations") as Textfield;
+
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : ''; 
         let keywords : string = inputKeywords ? inputKeywords.value : ''; 
@@ -562,6 +614,10 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         let documentation : string = inputDocumentation ? inputDocumentation.value : ''; 
         let download : string = inputDownload ? inputDownload.value : ''; 
         let installInstructions : string = inputInstallInstructions ? inputInstallInstructions.value : ''; 
+
+        let runtime : string = inputRuntime ? inputRuntime.value : ''; 
+        let parameterization : string = inputParameterization ? inputParameterization.value : ''; 
+        let limitations : string = inputLimitations ? inputLimitations.value : ''; 
 
         let categories = this._inputCategory.getResources();
 
@@ -595,6 +651,10 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             if (documentation) jsonRes["hasDocumentation"] = [documentation];
             if (download) jsonRes["hasDownloadURL"] = [download];
             if (installInstructions) jsonRes["hasInstallationInstructions"] = [installInstructions];
+
+            if (runtime) jsonRes["runtimeEstimation"] = [runtime];
+            if (parameterization) jsonRes["parameterization"] = [parameterization];
+            if (limitations) jsonRes["limitations"] = [limitations];
 
             return ModelConfigurationSetupFromJSON(jsonRes);
         } else {
