@@ -13,6 +13,7 @@ import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
 import { ModelCatalogPerson } from './person';
 import { ModelCatalogGrid } from './grid';
+import { ModelCatalogSourceCode } from './source-code';
 import { ModelCatalogNumericalIndex } from './numerical-index';
 import { ModelCatalogFundingInformation } from './funding-information';
 import { ModelCatalogVisualization } from './visualization';
@@ -102,6 +103,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
     private _inputVisualization : ModelCatalogVisualization;
     private _inputCategory : ModelCatalogCategory;
     private _inputLogo : ModelCatalogImage;
+    private _inputSourceCode : ModelCatalogSourceCode;
     
     @property({type: Boolean}) private _isCoupledModel : boolean = false;
     @property({type: String}) private _modelType : string = "";
@@ -112,6 +114,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
     }
 
     protected _initializeSingleMode () {
+        this._inputSourceCode = new ModelCatalogSourceCode();
         this._inputAuthor = new ModelCatalogPerson();
         this._inputGrid = new ModelCatalogGrid();
         this._inputIndex = new ModelCatalogNumericalIndex();
@@ -136,6 +139,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 this._inputVisualization.setResources(m.hasSampleVisualization);
                 this._inputCategory.setResources(m.hasModelCategory);
                 this._inputLogo.setResources(m.logo);
+                this._inputSourceCode.setResources(m.hasSourceCode);
                 this._modelType = this._getAdditionalType(m);
                 this._isCoupledModel = this._isCoupled(m);
                 if (this._isCoupledModel) {
@@ -155,6 +159,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         this._inputVisualization.setActionMultiselect();
         this._inputCategory.setActionMultiselect();
         this._inputLogo.setActionSelect();
+        this._inputSourceCode.setActionSelect();
         this._inputModel.setActionMultiselect();
     }
 
@@ -167,6 +172,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         if (this._inputVisualization) this._inputVisualization.unsetAction();
         if (this._inputCategory) this._inputCategory.unsetAction();
         if (this._inputLogo) this._inputLogo.unsetAction();
+        if (this._inputSourceCode) this._inputSourceCode.unsetAction();
         if (this._inputModel) this._inputModel.unsetAction();
         this.scrollUp();
         this.clearForm();
@@ -181,6 +187,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         this._inputVisualization.setResources(null);
         this._inputCategory.setResources(null);
         this._inputLogo.setResources(null);
+        this._inputSourceCode.setResources(null);
         this._inputModel.setResources(null);
         this._inputAuthor.setActionMultiselect();
         this._inputGrid.setActionSelect();
@@ -188,6 +195,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         this._inputFunding.setActionMultiselect();
         this._inputCategory.setActionMultiselect();
         this._inputLogo.setActionSelect();
+        this._inputSourceCode.setActionSelect();
         this._inputModel.setActionMultiselect();
     }
 
@@ -267,6 +275,13 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                         ${r.theoreticalBasis ? r.theoreticalBasis[0] : ''}
                     </td>
                 </tr>` : ''}
+
+                <tr>
+                    <td>Source Code:</td>
+                    <td>
+                        ${this._inputSourceCode}
+                    </td>
+                </tr>
 
                 ${r.runtimeEstimation ? html`
                 <tr>
@@ -531,6 +546,13 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 </tr>
 
                 <tr>
+                    <td>Source Code:</td>
+                    <td>
+                        ${this._inputSourceCode}
+                    </td>
+                </tr>
+
+                <tr>
                     <td>Runtime Estimation:</td>
                     <td>
                         <wl-textfield id="i-runtime" name="Runtime Estimation"
@@ -726,6 +748,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 hasSampleVisualization: this._inputVisualization.getResources(),
                 usefulForCalculatingIndex: this._inputIndex.getResources(),
                 logo: this._inputLogo.getResources(),
+                hasSourceCode: this._inputSourceCode.getResources(),
             };
             if (keywords) jsonRes["keywords"] = [keywords];
             if (shortDesc) jsonRes["shortDescription"] = [shortDesc];

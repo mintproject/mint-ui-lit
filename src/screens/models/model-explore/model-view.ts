@@ -451,11 +451,13 @@ export class ModelView extends connect(store)(PageViewElement) {
         goToPage('models/configure/' + getURL(this._selectedModel, this._selectedVersion, this._selectedConfig) + '/new');
     }
 
+    private _lastSelectorTimeout : any = null;
     _updateConfigSelector () {
         let configSelectorWl : Select = this.shadowRoot!.getElementById('config-selector') as Select;
         let configSelector : HTMLSelectElement | null = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
         if (configSelectorWl && configSelector) {
-            //console.log('Updating Config Selector');
+            if (this._lastSelectorTimeout != null) clearTimeout(this._lastSelectorTimeout);
+            console.log('Updating Config Selector');
             this._shouldUpdateConfigs = false;
             while (configSelector.options.length > 0)
                 configSelector.remove(configSelector.options.length - 1);
@@ -492,7 +494,16 @@ export class ModelView extends connect(store)(PageViewElement) {
             let arrowEl = configSelectorWl.shadowRoot.getElementById('arrow');
             if (arrowEl) arrowEl.style.pointerEvents = "none";
             (<any>configSelectorWl).refreshAttributes();
-        } 
+        } else {
+            //when everything is loaded, this can be execubed before the selectors render...
+            if (this._lastSelectorTimeout == null) {
+                let me = this;
+                this._lastSelectorTimeout = setTimeout(() => {
+                    me._lastSelectorTimeout = null;
+                    me._updateConfigSelector();
+                }, 250);
+            }
+        }
     }
 
     _clearVariables () {
@@ -1663,7 +1674,12 @@ export class ModelView extends connect(store)(PageViewElement) {
 
         this.setSubPage(state);
         if (this._subpage != "explore") {
-            if (this._selectedModel) this._selectedModel = '';
+            if (this._selectedModel) {
+                this._selectedModel = '';
+                this._selectedVersion = '';
+                this._selectedConfig = '';
+                this._selectedSetup = '';
+            }
             return;
         }
 
@@ -1684,6 +1700,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                 if (!this._selectedModel) {
                     this._clear();
                     return;
+                }
+                if (!this._selectedVersion) {
+                    this._shouldUpdateConfigs = true;
                 }
                 this._loading[this._selectedModel] = true;
                 store.dispatch(modelGet(this._selectedModel)).then((model:Model) => {

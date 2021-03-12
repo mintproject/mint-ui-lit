@@ -23,6 +23,7 @@ import { ModelCatalogProcess } from './process';
 
 import { ModelCatalogParameter } from './parameter';
 import { ModelCatalogDatasetSpecification } from './dataset-specification';
+import { ModelCatalogSourceCode } from './source-code';
 
 import { goToPage } from 'app/actions';
 
@@ -117,6 +118,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
     private _inputParameter : ModelCatalogParameter;
     private _inputDSInput : ModelCatalogDatasetSpecification;
+    private _inputSourceCode : ModelCatalogSourceCode;
     //private _outputDSInput : ModelCatalogDatasetSpecification;
 
     constructor () {
@@ -134,6 +136,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputRegion = new ModelCatalogRegion();
         this._inputProcesses = new ModelCatalogProcess();
         this._inputSoftwareImage = new ModelCatalogSoftwareImage();
+        this._inputSourceCode = new ModelCatalogSourceCode();
 
         this._inputParameter = new ModelCatalogParameter();
         this._inputParameter.inline = false;
@@ -163,6 +166,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputSoftwareImage.setResources(r.hasSoftwareImage);
         this._inputParameter.setResources( r.hasParameter );
         this._inputDSInput.setResources( r.hasInput );
+        this._inputSourceCode.setResources( r.hasSourceCode );
     }
 
     protected _unsetSubResources () {
@@ -177,6 +181,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             this._inputSoftwareImage.setResources(null);
             this._inputParameter.setResources(null);
             this._inputDSInput.setResources(null);
+            this._inputSourceCode.setResources(null);
         }
     }
 
@@ -191,6 +196,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputSoftwareImage.setActionSelect();
         this._inputParameter.setActionEditOrAdd();
         this._inputDSInput.setActionEditOrAdd();
+        this._inputSourceCode.setActionSelect();
     }
 
     protected _unsetSubActions () {
@@ -204,6 +210,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         if (this._inputSoftwareImage) this._inputSoftwareImage.unsetAction();
         if (this._inputParameter) this._inputParameter.unsetAction();
         if (this._inputDSInput) this._inputDSInput.unsetAction();
+        if (this._inputSourceCode) this._inputSourceCode.unsetAction();
     }
 
     private _parentInnerResourcesSet : boolean = false;
@@ -303,6 +310,13 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                                 <wl-icon style="--icon-size: 24px;">help_outline</wl-icon>
                             </span>
                         </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Source Code:</td>
+                    <td>
+                        ${this._inputSourceCode}
                     </td>
                 </tr>
 
@@ -478,6 +492,13 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 </tr>
 
                 <tr>
+                    <td>Source Code:</td>
+                    <td>
+                        ${this._inputSourceCode}
+                    </td>
+                </tr>
+
+                <tr>
                     <td>Runtime Estimation:</td>
                     <td>
                         <wl-textfield id="i-runtime" name="Runtime Estimation"
@@ -637,6 +658,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 hasGrid: this._inputGrid.getResources(),
                 hasParameter: this._inputParameter.getResources(),
                 hasInput: this._inputDSInput.getResources(),
+                hasSourceCode: this._inputSourceCode.getResources(),
             };
             if (keywords) jsonRes["keywords"] = [keywords];
             if (shortDesc) jsonRes["shortDescription"] = [shortDesc];
