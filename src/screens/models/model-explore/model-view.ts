@@ -777,7 +777,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${(this._tab === 'example') ? this._renderTabExample() : ''}
                 </div>
             </div>
-            ${this._renderCLIDialog()} `
+            ${this._renderCLIDialog()} 
+            <div style="height: 50px;"></div>`
     }
 
     private _goToTab (tabid:tabType) {
@@ -1186,42 +1187,111 @@ export class ModelView extends connect(store)(PageViewElement) {
             </h3>`
         }
         return html`
-            <wl-title level="3"> Parameters: </wl-title> 
+            <wl-title level="3"> Inputs: </wl-title> 
+            <wl-title level="4"> Parameters: </wl-title> 
             ${this._renderParametersTable(this._setup ? this._setup : this._config)}
-            <wl-title level="3"> Files: </wl-title> 
-            <wl-text style="font-style: italic; padding-left: 20px;">
+            <wl-title level="4"> Files: </wl-title> 
+            ${this._renderInputFileTable(this._setup ? this._setup : this._config)}
+            <wl-title level="3"> Output Files: </wl-title> 
+            ${this._renderOutputFileTable(this._setup ? this._setup : this._config)}
+            <wl-text style="font-style: italic; padding-left: 20px; margin-top: 1em;">
                 Look at the Variables tab to see more information about the contents of the inputs and outputs.
             </wl-text>
-            ${this._renderIOTable(this._setup ? this._setup : this._config)}
         `
+    }
+
+    private _renderInputFileTable (resource:ModelConfiguration|ModelConfigurationSetup) {
+        let isSetup = resource.type.includes('ModelConfigurationSetup');
+        return html`
+            <table class="pure-table pure-table-striped" style="overflow: visible;">
+                <colgroup>
+                    <col span="1" style="width: 20%;">
+                    <col span="1">
+                    ${isSetup? html`<col span="1">` : ''}
+                    <col span="1" style="max-width: 140px;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        ${isSetup? html`
+                        <th style="text-align: right;">
+                            Value on setup
+                            <span class="tooltip table-tooltip" tip="If a value is not set up in this field, the configuration default value will be used.">
+                                <wl-icon>help</wl-icon>
+                            </span>
+                        </th>` : html``}
+                        <th style="text-align: right;">Format</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                ${!resource.hasInput || resource.hasInput.length === 0 ?  html`
+                    <tr>
+                        <td colspan="4">
+                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no input files.</div>
+                        </td>
+                    </tr>` : html`
+                    ${resource.hasInput
+                            .filter((ds:DatasetSpecification) => !this._loading[ds.id])
+                            .map((ds:DatasetSpecification) => this._datasetSpecifications[ds.id])
+                            .sort(sortByPosition)
+                            .map((ds:DatasetSpecification) => html`
+                    <tr>
+                        <td><span class="monospaced">${getLabel(ds)}</span></td>
+                        <td>${ds.description && ds.description.length > 0 ? ds.description : ''}</td>
+                        ${isSetup? html`
+                        <td style="text-align: right;">
+                            ${this._renderFixedResource(ds)}
+                        </td>` : ''}
+                        <td style="text-align: right;" class="number">
+                            ${ds.hasFormat && ds.hasFormat.length > 0 ? ds.hasFormat[0] : ''}
+                        </td>
+                    </tr>
+                    `)}
+                    ${resource.hasInput.filter((ds:DatasetSpecification) => this._loading[ds.id]).map((ds:DatasetSpecification) => html`
+                    <tr>
+                        <td colspan="4">
+                            <div class="text-centered">${getId(ds)} <loading-dots style="--height: 10px; margin-left:10px"></loading-dots></div>
+                        </td>
+                    </tr>
+                    `)}`
+                }
+                </tbody>
+            </table>`
     }
 
     _renderParametersTable (resource:ModelConfiguration|ModelConfigurationSetup) {
         let isSetup = resource.type.includes('ModelConfigurationSetup');
         return html`
             <table class="pure-table pure-table-striped" style="overflow: visible;" id="parameters-table">
-                <col span="1" style="width: 180;">
+                <col span="1" style="width: 20%;">
                 <col span="1">
-                <col span="1">
+                <col span="1" style="width: 100px;">
                 <col span="1" style="width: 130px;">
                 <thead>
-                    <th>Parameter</th>
-                    <th>Description</th>
-                    <th style="text-align: right;">Relevant for intervention</th>
-                    <th style="text-align: right;">
-                        ${isSetup? html`
-                        Value on setup 
-                        <span class="tooltip table-tooltip" tip="If a value is not set up in this field configuration default value will be used.">
-                            <wl-icon>help</wl-icon>
-                        </span>`
-                        : 'Default value'}
-                    </th>
+                    <tr style="vertical-align: middle;">
+                        <th>Parameter</th>
+                        <th>Description</th>
+                        <th style="text-align: right;">
+                            Relevant for intervention
+                            <span style="display: inline-block;">/ Control<span>
+                        </th>
+                        <th style="text-align: right;">
+                            ${isSetup? html`
+                            Value on setup 
+                            <span class="tooltip table-tooltip" tip="If a value is not set up in this field configuration default value will be used.">
+                                <wl-icon>help</wl-icon>
+                            </span>`
+                            : 'Default value'}
+                        </th>
+                    </tr>
                 </thead>
                 <tbody>
                 ${!resource.hasParameter || resource.hasParameter.length === 0 ?  html`
                     <tr>
-                        <td colspan="4">
-                            <div class="info-center">This ${isSetup? 'setup' : 'configuration'} has no parameters.</div>
+                        <td colspan="4" style="vertical-align: middle;">
+                            <div class="info-center">This ${isSetup? 'setup' : 'configuration'} has no input parameters.</div>
                         </td>
                     </tr>` : html`
                     ${resource.hasParameter.filter((p:Parameter) => !this._loading[p.id])
@@ -1271,12 +1341,11 @@ export class ModelView extends connect(store)(PageViewElement) {
             </table>`
     }
 
-    _renderIOTable (resource:ModelConfiguration|ModelConfigurationSetup) {
+    private _renderOutputFileTable (resource:ModelConfiguration|ModelConfigurationSetup) {
         let isSetup = resource.type.includes('ModelConfigurationSetup');
         return html`
             <table class="pure-table pure-table-striped" style="overflow: visible;">
                 <colgroup>
-                    <col span="1" style="width: 10px;">
                     <col span="1" style="width: 20%;">
                     <col span="1">
                     ${isSetup? html`<col span="1">` : ''}
@@ -1284,65 +1353,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </colgroup>
                 <thead>
                     <tr>
-                        <th colspan="${isSetup? 5 : 4}" class="table-title">Input files</th>
-                    </tr>
-                    <tr>
-                        <th></th>
-                        <th>Name</th>
-                        <th>Description</th>
-                        ${isSetup? html`
-                        <th style="text-align: right;">
-                            Value on setup
-                            <span class="tooltip table-tooltip" tip="If a value is not set up in this field, the configuration default value will be used.">
-                                <wl-icon>help</wl-icon>
-                            </span>
-                        </th>` : html``}
-                        <th style="text-align: right;">Format</th>
-                    </tr>
-                </thead>
-                <tbody>
-
-                ${!resource.hasInput || resource.hasInput.length === 0 ?  html`
-                    <tr>
-                        <td colspan="4">
-                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no inputs.</div>
-                        </td>
-                    </tr>` : html`
-                    ${resource.hasInput
-                            .filter((ds:DatasetSpecification) => !this._loading[ds.id])
-                            .map((ds:DatasetSpecification) => this._datasetSpecifications[ds.id])
-                            .sort(sortByPosition)
-                            .map((ds:DatasetSpecification) => html`
-                    <tr>
-                        <td></td>
-                        <td><span class="monospaced">${getLabel(ds)}</span></td>
-                        <td>${ds.description && ds.description.length > 0 ? ds.description : ''}</td>
-                        ${isSetup? html`
-                        <td style="text-align: right;">
-                            ${this._renderFixedResource(ds)}
-                        </td>` : ''}
-                        <td style="text-align: right;" class="number">
-                            ${ds.hasFormat && ds.hasFormat.length > 0 ? ds.hasFormat[0] : ''}
-                        </td>
-                    </tr>
-                    `)}
-                    ${resource.hasInput.filter((ds:DatasetSpecification) => this._loading[ds.id]).map((ds:DatasetSpecification) => html`
-                    <tr>
-                        <td colspan="4">
-                            <div class="text-centered">${getId(ds)} <loading-dots style="--height: 10px; margin-left:10px"></loading-dots></div>
-                        </td>
-                    </tr>
-                    `)}`
-                }
-
-                </tbody>
-
-                <thead>
-                    <tr>
-                        <th colspan="${isSetup? 5 : 4}" class="table-title">Output files</th>
-                    </tr>
-                    <tr>
-                        <th></th>
                         <th>Name</th>
                         <th colspan="${isSetup? 2 : 1}">Description</th>
                         <th style="text-align: right;">Format</th>
@@ -1352,14 +1362,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${!resource.hasOutput || resource.hasOutput.length === 0 ?  html`
                     <tr>
                         <td colspan="4">
-                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no outputs.</div>
+                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no output files.</div>
                         </td>
                     </tr>` : html`
                     ${resource.hasOutput.filter((ds:DatasetSpecification) => !this._loading[ds.id])
                             .map((ds:DatasetSpecification) => this._datasetSpecifications[ds.id])
                             .sort(sortByPosition).map((ds:DatasetSpecification) => html`
                     <tr>
-                        <td></td>
                         <td><span class="monospaced">${getLabel(ds)}</span></td>
                         <td colspan="${isSetup? 2 : 1}">${ds.description && ds.description.length > 0 ? ds.description : ''}</td>
                         <td style="text-align: right;" class="number">

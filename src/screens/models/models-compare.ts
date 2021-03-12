@@ -119,6 +119,27 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         },
 
         {
+            name: "Theoretical Basis",
+            fn: (model:ModelConfigurationSetup) => model.theoreticalBasis && model.theoreticalBasis.length > 0 ?
+                    model.theoreticalBasis[0] : html`<span style="color:#999">None<span>`
+        },
+        {
+            name: "Runtime Estimation",
+            fn: (model:ModelConfigurationSetup) => model.runtimeEstimation && model.runtimeEstimation.length > 0 ?
+                    model.runtimeEstimation[0] : html`<span style="color:#999">None<span>`
+        },
+        {
+            name: "Parameterization",
+            fn: (model:ModelConfigurationSetup) => model.parameterization && model.parameterization.length > 0 ?
+                    model.parameterization[0] : html`<span style="color:#999">None<span>`
+        },
+        {
+            name: "Limitations",
+            fn: (model:ModelConfigurationSetup) => model.limitations && model.limitations.length > 0 ?
+                    model.limitations[0] : html`<span style="color:#999">None<span>`
+        },
+
+        {
             name: "Authors",
             fn: (m:modelLike) => m.author && m.author.length > 0 ?
                     this._iPerson[m.id]
