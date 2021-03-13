@@ -758,6 +758,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 </span>`)}
                         </wl-text>` :''}
 
+                        ${this._model.hasProcess && this._model.hasProcess.length > 0 ? html`<wl-text><b>• Processes:</b>
+                            ${this._renderProcesses(this._model.hasProcess)}
+                        </wl-text>` :''}
+
                         ${this._model.keywords? html`<wl-text><b>• Keywords:</b>
                             ${ this._model.keywords.map((kws:string) => kws.split(/ *; */).map(capitalizeFirstLetter).join(', ') ).join(', ') }
                         </wl-text>` :''}
@@ -915,24 +919,34 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <td><b>Component location:</b></td>
                         <td><a target="_blank" href="${resource.hasComponentLocation[0]}">${resource.hasComponentLocation[0]}</a></td>
                     </tr>`: ''}
+
                 ${resource.hasSourceCode && resource.hasSourceCode.length > 0 ? html`
                     <tr>
                         <td><b>Source code:</b></td>
                         <td>${this._loading[resource.hasSourceCode[0].id] ? 
                             html`${resource.hasSourceCode[0].id} <loading-dots style="--width: 20px"></loading-dots>`
-                            : html`<a target="_blank" href="${this._sourceCodes[resource.hasSourceCode[0].id].codeRepository}">
-                                ${this._sourceCodes[resource.hasSourceCode[0].id].codeRepository}
-                            </a>`
+                            : (this._sourceCodes[resource.hasSourceCode[0].id].codeRepository ? 
+                                html`<a target="_blank" href="${this._sourceCodes[resource.hasSourceCode[0].id].codeRepository}">
+                                    ${getLabel(this._sourceCodes[resource.hasSourceCode[0].id])}
+                                </a>` : html`
+                                <span>${getLabel(this._sourceCodes[resource.hasSourceCode[0].id])}</span>
+                            `)
                         }</td>
-                    </tr>`: ''}
-                ${resource.hasSourceCode && resource.hasSourceCode.length > 0 ? html`
+                    </tr>
+                    ${!this._loading[resource.hasSourceCode[0].id] &&
+                       this._sourceCodes[resource.hasSourceCode[0].id].programmingLanguage ? html`
                     <tr>
                         <td><b>Programing languages:</b></td>
-                        <td>${this._loading[resource.hasSourceCode[0].id] ? 
-                            html`${resource.hasSourceCode[0].id} <loading-dots style="--width: 20px"></loading-dots>`
-                            : this._sourceCodes[resource.hasSourceCode[0].id].programmingLanguage
-                        }</td>
-                    </tr>`: ''}
+                        <td>${this._sourceCodes[resource.hasSourceCode[0].id].programmingLanguage}</td>
+                    </tr>` : ''}
+                    ${!this._loading[resource.hasSourceCode[0].id] &&
+                       this._sourceCodes[resource.hasSourceCode[0].id].license ? html`
+                    <tr>
+                        <td><b>License:</b></td>
+                        <td>${this._sourceCodes[resource.hasSourceCode[0].id].license}</td>
+                    </tr>` : ''}
+                `: ''}
+
                 ${titlePrefix == 'CONFIGURATION' || titlePrefix == 'SETUP' ? html`
                     <tr>
                         <td><b>DAME command:</b></td>
@@ -1027,6 +1041,16 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ))}
             </ul>`
             :''}
+
+            ${this._model.hasInputVariable && this._model.hasInputVariable.length > 0 ? html`
+            <wl-title level="2" style="font-size: 16px;">Input Variables:</wl-title>
+            ${this._renderVariablePresentationTable(this._model.hasInputVariable)}
+            ` : ''}
+
+            ${this._model.hasOutputVariable && this._model.hasOutputVariable.length > 0 ? html`
+            <wl-title level="2" style="font-size: 16px;">Output Variables:</wl-title>
+            ${this._renderVariablePresentationTable(this._model.hasOutputVariable)}
+            ` : ''}
 
             ${this._config ? this._renderConfigResume() : ''}
             ${this._renderRelatedModels()}
@@ -1517,6 +1541,49 @@ export class ModelView extends connect(store)(PageViewElement) {
         `
     }
 
+    private _renderVariablePresentationTable (vps:VariablePresentation[]) {
+        return html`
+            <table class="pure-table pure-table-bordered">
+                <thead>
+                    <th>Name</th>
+                    <th>Long Name</th>
+                    <th>Description</th>
+                    <th>Standard Name</th>
+                    <th>Units</th>
+                </thead>
+                <tbody>
+                    ${vps.map((vp : VariablePresentation) => this._loading[vp.id] ? html`
+                    <tr>
+                        <td colspan="5">
+                            <div class="text-centered">
+                                ${getId(vp)} <loading-dots style="--height: 10px; margin-left:10px"></loading-dots>
+                            </div>
+                        </td>
+                    </tr>
+                    ` : html`
+                    <tr>
+                        <td>${getLabel(this._variablePresentations[vp.id])}</td>
+                        <td>${this._variablePresentations[vp.id].hasLongName}</td>
+                        <td>${this._variablePresentations[vp.id].description}</td>
+                        <td style="word-wrap: break-word;">
+                        ${this._variablePresentations[vp.id].hasStandardVariable && this._variablePresentations[vp.id].hasStandardVariable.length > 0 ? html`
+                            <a class="monospaced link" target="_blank" href="${this._variablePresentations[vp.id].hasStandardVariable[0].id}">
+                                ${getLabel(this._variablePresentations[vp.id].hasStandardVariable[0])}
+                            </a>
+                        ` : '-'}
+                        </td>
+                        <td style="min-width: 80px;">
+                            ${this._variablePresentations[vp.id].usesUnit && 
+                              this._variablePresentations[vp.id].usesUnit.length > 0 ?
+                                getLabel(this._variablePresentations[vp.id].usesUnit[0]) : '-'}
+                        </td>
+                    </tr>
+                    ` )}
+                </tbody>
+            </table>
+        `;
+    }
+
     private _closeAllExpansions () {
         let allExp = this.shadowRoot.querySelectorAll('wl-expansion');
         if (allExp && allExp.length > 0) {
@@ -1738,6 +1805,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                     if (this._tab === 'tech') {
                         this._loadSourceCodes(this._model.hasSourceCode, db);
                     }
+                    this._loadProcesses(this._model.hasProcess, db);
+                    this._loadVariablePresentations(this._model.hasInputVariable, db);
+                    this._loadVariablePresentations(this._model.hasOutputVariable, db);
 
                     //FIXME: this is duplicated
                     if (this._model && !this._modelRegions && !this._loadingGlobals) {

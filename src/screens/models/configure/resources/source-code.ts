@@ -27,7 +27,6 @@ export class ModelCatalogSourceCode extends connect(store)(ModelCatalogResource)
 
     protected _renderResource (r:SourceCode) {
         let url : string = (r.codeRepository) ?  r.codeRepository[0] : '';
-        //TODO: license is a link too.
         return html`
             <b style="text-decoration: underline;">${getLabel(r)}</b>
             ${r.programmingLanguage || url ?
@@ -57,16 +56,13 @@ export class ModelCatalogSourceCode extends connect(store)(ModelCatalogResource)
             <wl-textfield id="i-label" label="Name" required
                 value=${edResource ? getLabel(edResource) : ''}>
             </wl-textfield>
-            <wl-textfield id="i-desc" label="Description"
-                value=${edResource && edResource.description ? edResource.description[0] : ''}>
-            </wl-textfield>
             <wl-textfield id="i-language" label="Programming Language"
                 value=${edResource && edResource.programmingLanguage ? edResource.programmingLanguage[0] : ''}>
             </wl-textfield>
             <wl-textfield id="i-code" label="Code Repository URL" type="URL"
                 value=${edResource && edResource.codeRepository ? edResource.codeRepository[0] : ''}>
             </wl-textfield>
-            <wl-textfield id="i-license" label="License" type="URL"
+            <wl-textfield id="i-license" label="License"
                 value=${edResource && edResource.license ? edResource.license[0] : ''}>
             </wl-textfield>
         </form>`;
@@ -75,13 +71,11 @@ export class ModelCatalogSourceCode extends connect(store)(ModelCatalogResource)
     protected _getResourceFromForm () {
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById('i-label') as Textfield;
-        let inputDesc : Textfield = this.shadowRoot.getElementById('i-desc') as Textfield;
         let inputLang : Textfield = this.shadowRoot.getElementById('i-language') as Textfield;
         let inputCode : Textfield = this.shadowRoot.getElementById('i-code') as Textfield;
         let inputLicense : Textfield = this.shadowRoot.getElementById('i-license') as Textfield;
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : '';
-        let desc : string = inputDesc ? inputDesc.value : '';
         let lang : string = inputLang ? inputLang.value : '';
         let code : string = inputCode ? inputCode.value : '';
         let license : string = inputLicense ? inputLicense.value : '';
@@ -91,7 +85,6 @@ export class ModelCatalogSourceCode extends connect(store)(ModelCatalogResource)
                 type: ["SourceCode"],
                 label: [label],
                 // New way to define props
-                description: desc ? [desc] : [],
                 programmingLanguage: lang ? [lang] : [],
                 codeRepository: code ? [code] : [],
                 license: license ? [license] : []
