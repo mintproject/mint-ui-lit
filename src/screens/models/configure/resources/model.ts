@@ -19,6 +19,8 @@ import { ModelCatalogFundingInformation } from './funding-information';
 import { ModelCatalogVisualization } from './visualization';
 import { ModelCatalogCategory } from './category';
 import { ModelCatalogImage } from './image';
+import { ModelCatalogProcess } from './process';
+import { ModelCatalogVariablePresentation } from './variable-presentation';
 
 import { goToPage } from 'app/actions';
 
@@ -104,6 +106,9 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
     private _inputCategory : ModelCatalogCategory;
     private _inputLogo : ModelCatalogImage;
     private _inputSourceCode : ModelCatalogSourceCode;
+    private _inputProcess : ModelCatalogProcess;
+    private _inputVariableInput : ModelCatalogVariablePresentation;
+    private _inputVariableOutput : ModelCatalogVariablePresentation;
     
     @property({type: Boolean}) private _isCoupledModel : boolean = false;
     @property({type: String}) private _modelType : string = "";
@@ -115,6 +120,9 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
 
     protected _initializeSingleMode () {
         this._inputSourceCode = new ModelCatalogSourceCode();
+        this._inputProcess = new ModelCatalogProcess();
+        this._inputVariableInput = new ModelCatalogVariablePresentation();
+        this._inputVariableOutput = new ModelCatalogVariablePresentation();
         this._inputAuthor = new ModelCatalogPerson();
         this._inputGrid = new ModelCatalogGrid();
         this._inputIndex = new ModelCatalogNumericalIndex();
@@ -140,6 +148,9 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 this._inputCategory.setResources(m.hasModelCategory);
                 this._inputLogo.setResources(m.logo);
                 this._inputSourceCode.setResources(m.hasSourceCode);
+                this._inputProcess.setResources(m.hasProcess);
+                this._inputVariableInput.setResources(m.hasInputVariable);
+                this._inputVariableOutput.setResources(m.hasOutputVariable);
                 this._modelType = this._getAdditionalType(m);
                 this._isCoupledModel = this._isCoupled(m);
                 if (this._isCoupledModel) {
@@ -161,6 +172,9 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         this._inputLogo.setActionSelect();
         this._inputSourceCode.setActionSelect();
         this._inputModel.setActionMultiselect();
+        this._inputProcess.setActionMultiselect();
+        this._inputVariableInput.setActionMultiselect();
+        this._inputVariableOutput.setActionMultiselect();
     }
 
     protected _clearStatus () {
@@ -174,6 +188,9 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         if (this._inputLogo) this._inputLogo.unsetAction();
         if (this._inputSourceCode) this._inputSourceCode.unsetAction();
         if (this._inputModel) this._inputModel.unsetAction();
+        if (this._inputProcess) this._inputProcess.unsetAction();
+        if (this._inputVariableInput) this._inputVariableInput.unsetAction();
+        if (this._inputVariableOutput) this._inputVariableOutput.unsetAction();
         this.scrollUp();
         this.clearForm();
     }
@@ -188,6 +205,9 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         this._inputCategory.setResources(null);
         this._inputLogo.setResources(null);
         this._inputSourceCode.setResources(null);
+        this._inputVariableInput.setResources(null);
+        this._inputVariableOutput.setResources(null);
+        this._inputProcess.setResources(null);
         this._inputModel.setResources(null);
         this._inputAuthor.setActionMultiselect();
         this._inputGrid.setActionSelect();
@@ -196,6 +216,9 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         this._inputCategory.setActionMultiselect();
         this._inputLogo.setActionSelect();
         this._inputSourceCode.setActionSelect();
+        this._inputProcess.setActionMultiselect();
+        this._inputVariableInput.setActionMultiselect();
+        this._inputVariableOutput.setActionMultiselect();
         this._inputModel.setActionMultiselect();
     }
 
@@ -343,6 +366,27 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                     <td>Purpose:</td>
                     <td>
                         ${r.hasPurpose ? r.hasPurpose[0] : ''}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Process:</td>
+                    <td>
+                        ${this._inputProcess}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Input Variable:</td>
+                    <td>
+                        ${this._inputVariableInput}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Output Variable:</td>
+                    <td>
+                        ${this._inputVariableOutput}
                     </td>
                 </tr>
 
@@ -639,6 +683,27 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 </tr>
 
                 <tr>
+                    <td>Process:</td>
+                    <td>
+                        ${this._inputProcess}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Input Variable:</td>
+                    <td>
+                        ${this._inputVariableInput}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Output Variable:</td>
+                    <td>
+                        ${this._inputVariableOutput}
+                    </td>
+                </tr>
+
+                <tr>
                     <td>Operating systems:</td>
                     <td>
                         <wl-textfield id="i-so" name="Operating systems"
@@ -749,6 +814,9 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 usefulForCalculatingIndex: this._inputIndex.getResources(),
                 logo: this._inputLogo.getResources(),
                 hasSourceCode: this._inputSourceCode.getResources(),
+                hasProcess: this._inputProcess.getResources(),
+                hasInputVariable: this._inputVariableInput.getResources(),
+                hasOutputVariable: this._inputVariableOutput.getResources(),
             };
             if (keywords) jsonRes["keywords"] = [keywords];
             if (shortDesc) jsonRes["shortDescription"] = [shortDesc];

@@ -195,8 +195,6 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
     protected _editResource (r:Parameter) {
         super._editResource(r);
-        console.log(r);
-        //BUG: http://qudt.org/1.1/schema/qudt#Unit is not part of the model-catalog.
         this._inputUnit.setResources(r.usesUnit);
         this._inputVariable.setResources(r.hasPresentation);
         this._inputIntervention.setResources(r.relevantForIntervention);
