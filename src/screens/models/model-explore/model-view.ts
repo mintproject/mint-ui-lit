@@ -2096,12 +2096,18 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _renderFundings (fundArray: FundingInformation[]) {
         return (fundArray || []).map((fund:FundingInformation) => this._loading[fund.id] ?
             html`${getId(fund)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
-            : (this._funding[fund.id].fundingSource || []).map((org:Organization) => 
-                this._loading[org.id] ? 
-                html`${getId(org)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
-                : html`<span class="resource organization">
-                    ${getLabel(this._organizations[org.id])}
-                </span>`)
+            : (this._funding[fund.id].fundingSource ? 
+                this._funding[fund.id].fundingSource.map((org:Organization) => 
+                    this._loading[org.id] ? 
+                    html`${getId(org)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
+                    : html`<span class="resource organization">
+                        ${getLabel(this._organizations[org.id])}
+                    </span>`)
+                : (this._funding[fund.id].fundingGrant ? 
+                    html`<span>${this._funding[fund.id].fundingGrant}</span>`
+                    : html`${getLabel(this._funding[fund.id])}`
+                    )
+                )
             );
     }
 
