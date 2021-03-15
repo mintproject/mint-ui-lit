@@ -227,7 +227,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                     Category: ${this._model.hasModelCategory ? html`${this._model.hasModelCategory.map(getLabel).join(', ')}` : html`-`}
                     ${modelType && modelType.length > 0? html`
                     <br/>
-                    Type: ${modelType}
+                    Type: ${modelType.join(', ')}
                     ` : html``}
                   </div>
                 </td>

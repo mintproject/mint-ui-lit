@@ -665,7 +665,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             return html`NO MODEL`;
 
         let modelType : string[] = this._model.type ?
-                this._model.type.map((t:string) => t.replace('Model', '')).filter(t => !!t)
+                this._model.type.map((t:string) => t.replace("https://w3id.org/okn/o/sdm#", '').replace('Model', '')).filter(t => !!t)
                 : [];
 
         return html`
@@ -842,6 +842,11 @@ export class ModelView extends connect(store)(PageViewElement) {
             !resource.parameterization && !resource.runtimeEstimation && !resource.limitations) {
             return html``;
         }
+        
+        let instructionsIsUrl : boolean = resource.hasInstallationInstructions &&
+                                          resource.hasInstallationInstructions.length > 0 &&
+                                          resource.hasInstallationInstructions[0].substring(0,4) === 'http';
+
 
         return html`
             <table class="pure-table pure-table-striped">
@@ -912,7 +917,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${resource.hasInstallationInstructions && resource.hasInstallationInstructions.length > 0 ? html`
                     <tr>
                         <td><b>Installation instructions:</b></td>
-                        <td><a target="_blank" href="${resource.hasInstallationInstructions[0]}">${resource.hasInstallationInstructions[0]}</a></td>
+                        <td>
+                        ${instructionsIsUrl ? html`
+                            <a target="_blank" href="${resource.hasInstallationInstructions[0]}">${resource.hasInstallationInstructions[0]}</a>
+                        ` : html`
+                            <span>${resource.hasInstallationInstructions[0]}</span>
+                        `}
+                        </td>
                     </tr>`: ''}
                 ${resource.hasComponentLocation && resource.hasComponentLocation.length > 0 ? html`
                     <tr>
@@ -1041,16 +1052,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ))}
             </ul>`
             :''}
-
-            ${this._model.hasInputVariable && this._model.hasInputVariable.length > 0 ? html`
-            <wl-title level="2" style="font-size: 16px;">Input Variables:</wl-title>
-            ${this._renderVariablePresentationTable(this._model.hasInputVariable)}
-            ` : ''}
-
-            ${this._model.hasOutputVariable && this._model.hasOutputVariable.length > 0 ? html`
-            <wl-title level="2" style="font-size: 16px;">Output Variables:</wl-title>
-            ${this._renderVariablePresentationTable(this._model.hasOutputVariable)}
-            ` : ''}
 
             ${this._config ? this._renderConfigResume() : ''}
             ${this._renderRelatedModels()}
@@ -1441,31 +1442,38 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     private _renderTabVariables () {
-        if (!this._config) {
-            return html`
-            <br/>
-            <h3 style="margin-left:30px">
-                You must select a configuration or setup to see its variables.
-            </h3>`
-        }
         let resource : ModelConfiguration | ModelConfigurationSetup = this._setup ? this._setup : this._config;
         return html`
-            ${this._renderExpansionVariables(resource.hasInput, 'Inputs')}
-            ${this._renderExpansionVariables(resource.hasOutput, 'Outputs')}
+            ${this._config ? html`
+                <wl-title level="3">${this._setup ? 'Setup': 'Configuration'} variables:</wl-title>
+                ${this._renderExpansionVariables(resource.hasInput, 'Inputs')}
+                ${this._renderExpansionVariables(resource.hasOutput, 'Outputs')}
+                ${((!resource.hasInput || resource.hasInput.length === 0) &&
+                   (!resource.hasOutput || resource.hasOutput.length === 0)) ? html`
+                <br/>
+                <h3 style="margin-left:30px">
+                    This information has not been specified in the ${this._setup ? 'setup': 'configuration'} yet.
+                </h3>` : ''}
+            ` : ''}
 
-            ${((!resource.hasInput || resource.hasInput.length === 0) &&
-               (!resource.hasOutput || resource.hasOutput.length === 0)) ? html`
-            <br/>
-            <h3 style="margin-left:30px">
-                This information has not been specified yet.
-            </h3>` : ''}
+            ${this._model && (this._model.hasInputVariable || this._model.hasOutputVariable) ? html`
+                <wl-title level="3" style="margin-top: 1em;"> Model variables:</wl-title>
+                ${this._model.hasInputVariable && this._model.hasInputVariable.length > 0 ? html`
+                <wl-title level="2" style="font-size: 16px;">Input Variables:</wl-title>
+                ${this._renderVariablePresentationTable(this._model.hasInputVariable)}
+                ` : ''}
+                ${this._model.hasOutputVariable && this._model.hasOutputVariable.length > 0 ? html`
+                <wl-title level="2" style="font-size: 16px;">Output Variables:</wl-title>
+                ${this._renderVariablePresentationTable(this._model.hasOutputVariable)}
+                ` : ''}
+            ` : ''}
         `
     }
 
     private _renderExpansionVariables (dsArr: DatasetSpecification[], title: string) {
         if (!dsArr || dsArr.length === 0) return '';
         return html`
-            <wl-title level="3">${title}:</wl-title>
+            <wl-title level="2" style="font-size: 16px;">${title}:</wl-title>
             ${dsArr.map((ds:DatasetSpecification) => html`
             <wl-expansion id="${getLabel(ds)}" name="${title}" @click="${() => this._expandDS(ds)}"
                     .disabled=${this._loading[ds.id]}

@@ -23,6 +23,10 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
                 width: 200px;
                 left: 30%;
             }
+            #input-variable {
+                --list-height: 200px;
+                --dialog-height: 100%;
+            }
         `];
     }
 
@@ -45,6 +49,7 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
         super();
         this._inputStandardVariable = new ModelCatalogStandardVariable();
         this._inputStandardVariable.setActionMultiselect();
+        this._inputStandardVariable.setAttribute('id', 'input-variable');
     }
 
     protected _editResource (r:VariablePresentation) {
