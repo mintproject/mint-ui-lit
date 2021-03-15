@@ -523,7 +523,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 </tr>
 
                 <tr>
-                    <td>SoftwareImage:</td>
+                    <td>Software Image:</td>
                     <td>
                         ${this._inputSoftwareImage}
                     </td>

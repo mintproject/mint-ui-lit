@@ -14,6 +14,7 @@ import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 import { ModelCatalogStandardVariable } from './standard-variable';
+import { ModelCatalogUnit } from './unit';
 
 @customElement('model-catalog-variable-presentation')
 export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalogResource)<VariablePresentation> {
@@ -23,7 +24,7 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
                 width: 200px;
                 left: 30%;
             }
-            #input-variable {
+            #input-variable, #input-unit {
                 --list-height: 200px;
                 --dialog-height: 100%;
             }
@@ -41,6 +42,7 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
     public uniqueLabel : boolean = true;
 
     private _inputStandardVariable : ModelCatalogStandardVariable;
+    private _inputUnit : ModelCatalogUnit;
 
     public pageMax : number = 10;
     public inlineMax : number = 4;
@@ -50,16 +52,22 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
         this._inputStandardVariable = new ModelCatalogStandardVariable();
         this._inputStandardVariable.setActionMultiselect();
         this._inputStandardVariable.setAttribute('id', 'input-variable');
+
+        this._inputUnit = new ModelCatalogUnit();
+        this._inputUnit.setActionMultiselect();
+        this._inputUnit.setAttribute('id', 'input-unit');
     }
 
     protected _editResource (r:VariablePresentation) {
         super._editResource(r);
         let edResource = this._getEditingResource();
         this._inputStandardVariable.setResources( edResource.hasStandardVariable );
+        this._inputUnit.setResources( edResource.usesUnit );
     }
 
     protected _createResource () {
         this._inputStandardVariable.setResources(null);
+        this._inputUnit.setResources(null);
         super._createResource();
     }
 
@@ -80,8 +88,12 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
                 value=${edResource && edResource.hasLongName ? edResource.hasLongName[0] : ''}>
             </wl-textfield>
             <div style="padding: 10px 0px;">
-                <div style="padding: 5px 0px; font-weight: bold;">Standard Variables</div>
+                <div style="padding: 5px 0px; font-weight: bold;">Standard Variables:</div>
                 ${this._inputStandardVariable}
+            </div>
+            <div style="padding: 10px 0px;">
+                <div style="padding: 5px 0px; font-weight: bold;">Units:</div>
+                ${this._inputUnit}
             </div>
         </form>`;
     }
@@ -111,6 +123,8 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
             let jsonRes = {
                 type: ["VariablePresentation"],
                 label: [label],
+                usesUnit: this._inputUnit.getResources(),
+                hasStandardVariable: this._inputStandardVariable.getResources(),
             };
             if (desc) jsonRes["description"] = [desc];
             if (shortName) jsonRes["hasShortName"] = [shortName];
