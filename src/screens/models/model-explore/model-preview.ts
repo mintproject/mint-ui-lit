@@ -9,7 +9,7 @@ import { goToPage } from '../../../app/actions';
 import { ExplorerStyles } from './explorer-styles'
 
 import { getId, isEmpty, isSubregion, getLatestVersion, getLatestConfiguration, getLatestSetup,
-         isExecutable, getLabel } from 'model-catalog/util';
+         isExecutable, getLabel, getModelTypeNames } from 'model-catalog/util';
 import { IdMap } from 'app/reducers';
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Parameter, SoftwareImage,
          Person, Process, SampleResource, SampleCollection, Region, Image } from '@mintproject/modelcatalog_client';
@@ -196,9 +196,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
     protected render() {
         if (this._model) {
             //console.log(this._model);
-            let modelType : string[] = this._model.type ?
-                    this._model.type.map(t => t.replace("https://w3id.org/okn/o/sdm#", '').replace('Model', '')).filter(t => !!t)
-                    : [];
+            let modelType : string[] = this._model.type ? getModelTypeNames(this._model.type) : [];
             let modelUri : string = this._regionid + (this._url? this._url : this.PREFIX + getId(this._model));
         return html`
             <table>

@@ -2,7 +2,7 @@ import { ModelCatalogResource } from './resource';
 import { property, html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
+import { getLabel, getModelTypeNames } from 'model-catalog/util';
 import { modelGet, modelsGet, modelPost, modelPut, modelDelete } from 'model-catalog/actions';
 import { Model, ModelFromJSON, CoupledModel, CoupledModelFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
@@ -224,6 +224,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
 
     protected _renderFullResource (r:Model) {
         // Example, Type, operating system, versions?
+        let types : string = (r.type)? getModelTypeNames(r.type).join(', ') : '';
         return html`
             <table class="details-table">
                 <colgroup wir.="150px">
@@ -233,6 +234,15 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                         ${this._inputCategory}
                     </td>
                 </tr>
+
+                ${types ? html`
+                <tr>
+                    <td>Model type:</td>
+                    <td>
+                        ${types}
+                    </td>
+                </tr>
+                ` : ''}
 
                 <tr>
                     <td>Keywords</td>

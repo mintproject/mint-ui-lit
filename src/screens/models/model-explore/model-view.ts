@@ -12,7 +12,8 @@ import { modelGet, versionGet, versionsGet, modelConfigurationGet, modelConfigur
          modelConfigurationSetupGet, imageGet, personGet, regionsGet, organizationGet, fundingInformationGet,
          timeIntervalGet, gridGet, processGet, setupGetAll, visualizationGet, sourceCodeGet, softwareImageGet,
          parameterGet, datasetSpecificationGet, interventionGet, variablePresentationGet } from 'model-catalog/actions';
-import { setupInRegion, capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition, isExecutable } from 'model-catalog/util';
+import { setupInRegion, capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition, isExecutable,
+         getModelTypeNames } from 'model-catalog/util';
 import { GalleryEntry } from 'components/image-gallery';
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -664,9 +665,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (!this._model)
             return html`NO MODEL`;
 
-        let modelType : string[] = this._model.type ?
-                this._model.type.map((t:string) => t.replace("https://w3id.org/okn/o/sdm#", '').replace('Model', '')).filter(t => !!t)
-                : [];
+        let modelType : string[] = this._model.type ? getModelTypeNames(this._model.type) : [];
 
         return html`
             ${this._renderCLIDialog()}

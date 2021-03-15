@@ -4,6 +4,31 @@ import { IdMap } from "app/reducers";
 const TAG_LATEST = "latest";
 const TAG_DEPRECATED = "deprecated";
 
+export const MODELTYPES = {
+    "https://w3id.org/okn/o/sdm#EmpiricalModel": "Empirical Model",
+    "https://w3id.org/okn/o/sdm#TheoryGuidedEmpiricalModel": "Theory-guided Empirical Model",
+    "https://w3id.org/okn/o/sdm#DataAssimilation": "Data Assimilation",
+    "https://w3id.org/okn/o/sdm#TheoryAndEmpiricalModel": "Theory and Empirical Model",
+    "https://w3id.org/okn/o/sdm#TheoryBasedModel": "Theory-based Model",
+    "https://w3id.org/okn/o/sdm#Theory-GuidedModel": "Theory Guided Model",
+    "https://w3id.org/okn/o/sdm#CoupledModel": "Coupled Model",
+    "https://w3id.org/okn/o/sdm#OtherModel": "Other",
+    "EmpiricalModel": "Empirical Model",
+    "TheoryGuidedEmpiricalModel": "Theory-guided Empirical Model",
+    "DataAssimilation": "Data Assimilation",
+    "TheoryAndEmpiricalModel": "Theory and Empirical Model",
+    "TheoryBasedModel": "Theory-based Model",
+    "Theory-GuidedModel": "Theory Guided Model",
+    "CoupledModel": "Coupled Model",
+    "OtherModel": "Other",
+}
+
+export const getModelTypeNames = (types:string[]) : string[] => {
+    return types
+            .filter((t:string) => t != "https://w3id.org/okn/o/sdm#Model" && t != "Model")
+            .map((t:string) => MODELTYPES[t] ? MODELTYPES[t] : t.replace("https://w3id.org/okn/o/sdm#", ''));
+}
+
 export const capitalizeFirstLetter = (s:string) : string => {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
