@@ -69,11 +69,19 @@ export const idReducer = (dic:any, elem:any) => {
                         elem[key] = props.map((p:any) => (p instanceof Object) ? p : {id: p} );
                     }
                 }
+                //FIX types
+                props.forEach((x) => {
+                    if (x.type && !(x.type instanceof Array)) {
+                        //IS not an array, probably only one string.
+                        x.type = [x.type];
+                    }
+                })
             } else if (props !== undefined) {
                 console.warn(elem, key, 'is not an Array')
             }
         }
     });
+
     dic[elem.id] = elem;
     return dic;
 }

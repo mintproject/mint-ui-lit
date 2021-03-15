@@ -1187,7 +1187,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     /* This is the way to set a list of resources */
     public setResources (r:T[]) {
         this._singleMode = false;
-        if (!r || r.length === 0) {
+        if (!r || r.length === 0 || r.filter((l:T) => !!l.id).length === 0) {
             this._resources = [];
             this._orderedResources = [];
             this._order = {};

@@ -176,7 +176,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
                     this._selectedVersion.split('/').pop() + '/';
             if (isSetup(detail["type"])) {
                 goToPage(url + this._selectedConfig.split('/').pop());
-            } else {
+            } else if (isConfig(detail["type"])) {
                 goToPage(url);
             }
         });
