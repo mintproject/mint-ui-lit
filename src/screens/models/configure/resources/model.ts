@@ -500,7 +500,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 </tr>
 
                 <tr>
-                    <td>Category:</td>
+                    <td>Category*:</td>
                     <td>
                         ${this._inputCategory}
                     </td>
@@ -562,7 +562,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 </tr>
 
                 <tr>
-                    <td>Full Description:</td>
+                    <td>Full Description*:</td>
                     <td>
                         <textarea id="i-desc" name="Description" rows="5">${
                             edResource && edResource.description ? edResource.description[0] : ''
@@ -861,8 +861,9 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
                 (<any>inputLabel).onBlur();
                 this._notification.error("You must enter a name");
             }
-            if (categories == null || categories.length > 0) {
+            if (categories == null || categories.length === 0) {
                 this._notification.error("You must enter a category");
+                this.scrollUp();
             }
             if (!desc) {
                 this._notification.error("You must enter a full description");
