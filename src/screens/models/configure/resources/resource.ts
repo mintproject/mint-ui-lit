@@ -816,10 +816,11 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         let resource = this._singleMode ? this._getResourceFromFullForm() : this._getResourceFromForm();
         if (resource && this._status != Status.NONE) {
             if ((this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE)) {
-                if (!this.uniqueLabel || this._checkLabelUniq(getLabel(resource))) {
+                if (this.uniqueLabel && this._checkLabelUniq(resource)) {
                     resource.id = "";
                 } else {
-                    this._notification.error('The name "'+ getLabel(resource) + '" is already on use.');
+                    this._uniqueLabelError(resource);
+                    return null;
                 }
             } else if (this._status === Status.EDIT) {
                 resource.id = this._editingResourceId;
@@ -831,12 +832,16 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
     }
 
-    private _checkLabelUniq (label:string) {
+    protected _checkLabelUniq (resource:T) {
         //Is all loaded?
-        let llabel : string = label.toLowerCase();
+        let label : string = getLabel(resource).toLowerCase();
         return !Object.values(this._loadedResources).some((r:T) => 
-            r && r.label && r.label.some((name:string) => name.toLowerCase() == llabel)
+            r && r.label && r.label.some((name:string) => name.toLowerCase() == label)
         );
+    }
+
+    protected _uniqueLabelError (resource:T) {
+        this._notification.error('The name "'+ getLabel(resource) + '" is already on use.');
     }
 
     private _saveResource (r:T) {
@@ -1391,7 +1396,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         })
     }
 
-    public isSaved () {
+    public isSaved () : boolean {
         return !this.lazy || (Object.keys(this._resourcesToEdit).length === 0 && Object.keys(this._resourcesToCreate).length === 0);
     }
 
@@ -1399,9 +1404,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         return {} as IdMap<T>;
     }
 
-    protected _loadAllResources () {
+    protected _loadAllResources () : Promise<IdMap<T>> {
         this._allResourcesLoading = true;
-        store.dispatch(this.resourcesGet()).then((resources:IdMap<T>) => {
+        let allr : Promise<IdMap<T>> = store.dispatch(this.resourcesGet());
+        allr.then((resources:IdMap<T>) => {
             // This are the resources that are in memory but not on the dc
             let nonDCResources = Object.values(this._loadedResources).filter((r:T) => !r.id.includes(PREFIX_URI));
             let nonDC : IdMap<T> = {};
@@ -1418,5 +1424,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             this._allResourcesLoading = false;
             this._allResourcesLoaded = true;
         });
+        return allr;
+    }
+
+    public getAllResources () : Promise<IdMap<T>> {
+        return this._loadAllResources();
     }
 }

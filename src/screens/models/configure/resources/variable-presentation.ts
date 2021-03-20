@@ -4,7 +4,7 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
 import { variablePresentationGet, variablePresentationsGet, variablePresentationPost, variablePresentationPut, variablePresentationDelete } from 'model-catalog/actions';
-import { VariablePresentation, VariablePresentationFromJSON } from '@mintproject/modelcatalog_client';
+import { VariablePresentation, VariablePresentationFromJSON, Unit } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -44,6 +44,8 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
     private _inputStandardVariable : ModelCatalogStandardVariable;
     private _inputUnit : ModelCatalogUnit;
 
+    private _allUnits : IdMap<Unit>;
+
     public pageMax : number = 10;
     public inlineMax : number = 4;
 
@@ -56,6 +58,27 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
         this._inputUnit = new ModelCatalogUnit();
         this._inputUnit.setActionMultiselect();
         this._inputUnit.setAttribute('id', 'input-unit');
+        this._inputUnit.getAllResources().then((units:IdMap<Unit>) => {
+            this._allUnits = units;
+            //this._requestUpdate();
+        });
+    }
+
+    protected _checkLabelUniq (resource:VariablePresentation) {
+        let label : string = getLabel(resource).toLowerCase();
+        let unitIds : string[] = resource.usesUnit && resource.usesUnit.length > 0 ? 
+            resource.usesUnit.map((u:Unit) => u.id) : [];
+        return !Object.values(this._loadedResources).some((r:VariablePresentation) => 
+            r && r.label && r.label.some((name:string) => name.toLowerCase() == label) &&
+            (unitIds.length === 0 && (!r.usesUnit || r.usesUnit.length === 0) ||
+             unitIds.length === r.usesUnit.length && r.usesUnit
+                    .map((u:Unit) => u.id).every((id:string) => unitIds.includes(id))
+            )
+        );
+    }
+
+    protected _uniqueLabelError (resource:VariablePresentation) {
+        this._notification.error('The variable "'+ getLabel(resource) + '" with the same units is already on the catalog.');
     }
 
     protected _editResource (r:VariablePresentation) {
@@ -74,6 +97,9 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
     protected _renderForm () {
         let edResource = this._getEditingResource();
         return html`
+        <div style="font-weight: bold; padding: 5px;">
+            Please prefer to create a new variable instead of editing the units of an existing one.
+        </div>
         <form>
             <wl-textfield id="var-label" label="Name" required
                 value=${edResource ? getLabel(edResource) : ''}>
@@ -99,11 +125,20 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
     }
 
     protected _renderResource (r:VariablePresentation) {
-        let desc : string = r && r.description ? r.description[0] : '';
-        return desc ? html`
-            <span class="tooltip small-tooltip" tip="${desc}">
-                ${getLabel(r).replaceAll('_',' ')}
-            </span>` : (r ? html`${getLabel(r).replaceAll('_',' ')}` : html`--`);
+        if (r) {
+            let desc : string = r.description && r.description.length > 0 ? r.description[0] : '';
+            let label : string = getLabel(r).replaceAll('_',' ');
+            let  units : string = r.usesUnit && r.usesUnit.length > 0 && this._allUnits != null ?
+                    r.usesUnit.map((u:Unit) => getLabel(this._allUnits[u.id])).join(', ') : '';
+            return html`
+                <span class="${desc ? 'tooltip small-tooltip': ''}" tip="${desc}" 
+                      style="${units ? 'display: flex; justify-content: space-between;' : ''}">
+                    <span>${label}</span>
+                    ${units ? html`<span>&nbsp;(${units})</span>` : ''}
+                </span>
+            `;
+        } else 
+            return html`--`;
     }
 
     protected _getResourceFromForm () {
