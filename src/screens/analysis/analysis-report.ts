@@ -6,50 +6,62 @@ import { store, RootState } from 'app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from 'app/actions';
 
+import { Model } from "../models/reducers";
+
 import { IdMap, UserPreferences } from 'app/reducers';
-import { Scenario, ScenarioList, Pathway } from 'screens/modeling/reducers';
+import { ProblemStatementInfo, ProblemStatementList, ThreadInfo, ThreadEvent, Task, Thread } from 'screens/modeling/reducers';
+import { fetchThread, fetchProblemStatement, fetchProblemStatementsList } from './actions';
 
 import { fromTimeStampToDateString } from "util/date-utils";
-import { getVariableLongName } from "offline_data/variable_list";
-
-import { db } from '../../config/firebase';
+import { getURL } from 'model-catalog/util';
 
 import '../../components/nav-title'
 import { getVisualizationURLs } from 'util/state_functions';
 import { Region, RegionMap } from 'screens/regions/reducers';
-
-function log (...args: any) {console.log('REPORT:', ...args)}
+import { VariableMap } from '@apollo/client/core/LocalState';
 
 const PREFIX_REPORT = 'analysis/report/';
 
 @customElement('analysis-report')
 export class AnalysisReport extends connect(store)(PageViewElement) {
+  @property({type: String})
+  private _top_regionid?: string;
+
+  @property({type: Object})
+  private _top_region: Region;
+
+  @property({type: Object})
+  private _regions!: RegionMap;
+
+  @property({type: Object})
+  private _list!: ProblemStatementList;
+
   @property({type: Boolean})
-  private _loading = false;
+  private _dispatched: Boolean;
 
   @property({type: Object})
-  private _scenarios = {};
+  private _tasks : IdMap<IdMap<Task>> = {};
 
   @property({type: Object})
-  private _tasks = {};
+  private _thread : Thread;
 
-  @property({type: Object})
-  private _pathways = {};
-
-  @property({type: Object})
-  private _regions: RegionMap;
+  @property({type: Boolean})
+  private _loading : IdMap<boolean> = {};
 
   @property({type: String})
-  private _selectedScenarioId : string = '';
+  private _selectedProblemStatementId : string = '';
 
   @property({type: String})
   private _selectedTaskId : string = '';
 
   @property({type: String})
-  private _selectedPathwayId : string = '';
+  private _selectedThreadId : string = '';
 
   @property({type: Object})
   private prefs: UserPreferences;
+
+  @property({type: Object})
+  private _variableMap: VariableMap = {};
 
   static get styles() {
     return [SharedStyles, css`
@@ -105,273 +117,301 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
 
   protected render() {
     let nav = [{label:'Available Reports', url:'analysis/report'}] 
-    if (this._selectedPathwayId) {
+    if (this._selectedThreadId) {
       nav.push({label: 'Available Reports', url: 'analysis/report'})
     }
 
     return html`
         <nav-title .nav="${nav}" max="2"></nav-title>
-        ${this._loadReportsPage()}
+        ${(!this._list || this._dispatched) ?
+          this._renderLoading()
+          : (
+            (this._selectedProblemStatementId && this._selectedTaskId && this._selectedThreadId) ?
+              this._renderReport() : this._renderReportList()
+          )}
     `;
   }
 
-  private _loadReportsPage() {
-    //log('RENDER')
-    //log(this._selectedScenarioId, this._selectedTaskId, this._selectedPathwayId)
-    if (this._selectedScenarioId && this._selectedTaskId && this._selectedPathwayId) {
-      let scenario = this._scenarios[this._selectedScenarioId];
-      let task = this._tasks[this._selectedTaskId];
-      let pathway = this._pathways[this._selectedPathwayId] as Pathway;
-      if (!pathway) {
-        return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
-      }
+  private _renderLoading () {
+    return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
+  }
 
-      let responseV = pathway.response_variables && pathway.response_variables.length > 0 ?
-          getVariableLongName(pathway.response_variables[0]) : '';
-      let drivingV = pathway.driving_variables && pathway.driving_variables.length > 0?
-          getVariableLongName(pathway.driving_variables[0]) : '';
 
-      let vizurls = getVisualizationURLs(pathway, task, scenario, this.prefs.mint)
+  private _renderReportList () {
+    return html`
+      <span id="start"></span>
+      ${Object.values(this._list.problem_statements).map((ps:ProblemStatementInfo) => html`
+        <wl-expansion name="problem_statements" @click="${() => this._getTasks(ps)}" style="overflow-y: hidden;">
+          <span slot="title" style="flex-grow: unset;">
+            ${ps.name}
+          </span>
+          <!--span slot="description" style="overflow: hidden; text-overflow: ellipsis;"-->
+          ${this._tasks[ps.id] ? 
+            (Object.values(this._tasks[ps.id]).map((task:Task) => this._renderTask(ps , task)))
+            : this._renderLoading()
+          }
+        </wl-expansion>`
+      )}`;
+  }
 
-      return html`
-        ${task ? html `
+  private _renderTask (ps:ProblemStatementInfo, task:Task) {
+    let threads : ThreadInfo[] = Object.values(task.threads || []);
+    return html`
+      ${threads.map((t:ThreadInfo) => html`
+        <wl-list-item class="active" @click=${() => {
+            this._scrollUp();
+            goToPage(PREFIX_REPORT + ps.id + '/' + task.id + '/' + t.id);
+          }}>
+          <wl-title level="4" style="margin: 0">
+          ${task.name ? (task.name + " - ") : ""} ${t.name ? t.name : "Default thread"}
+          </wl-title>
+          ${this._getThreadInfoSummaryText(t)}
+          <div slot="after" style="display:flex">
+            ${this._renderDates(t)}
+          </div>
+        </wl-list-item>
+      `)}
+    `;
+  }
+
+  private _getTasks(ps:ProblemStatementInfo) {
+    if (!this._tasks[ps.id]) {
+      this._loading[ps.id] = true;
+      store.dispatch(fetchProblemStatement(ps.id));
+    }
+  }
+
+  private _renderReport () {
+    let ps = this._list.problem_statements[this._selectedProblemStatementId];
+    if (!this._tasks[this._selectedProblemStatementId] && !this._loading[this._selectedProblemStatementId]) {
+      this._getTasks(ps);
+    }
+    if (this._loading[this._selectedProblemStatementId]) return this._renderLoading();
+    let task = this._tasks[this._selectedProblemStatementId][this._selectedTaskId];
+
+    if (!this._thread || this._thread.id != this._selectedThreadId) {
+      return this._renderLoading();
+    }
+
+    //let thread = task.threads[this._selectedThreadId];
+    let thread = this._thread
+
+    let notes : IdMap<string> = {};
+
+    if (thread.events && thread.events.length > 0) {
+      thread.events.forEach((ev: ThreadEvent) => {
+        if (ev.notes) notes[ev.event] = ev.notes;
+      });
+    }
+
+    let vizurls = getVisualizationURLs(thread, task, ps, this.prefs.mint)
+
+    return html`
         <div class="main-content">
           <wl-title level="2" class="two-column-grid" style="padding: 0px;">
             <span>Thread: </span>
-            <span>${task.name ? (task.name + " - ") : ""} ${pathway.name ? pathway.name : "Default thread"}</span>
+            <span>${task.name ? (task.name + " - ") : ""} ${thread.name ? thread.name : "Default thread"}</span>
           </wl-title>
 
-          <wl-title level="3">Variables:</wl-title>
-          <div class="two-column-grid inner-content">
-            <wl-title level="4">Indicators:</wl-title>
-            <span>
-              ${!task.response_variables || task.response_variables.length == 0 ?
-                'No indicators' : task.response_variables.map((rv) => html`
-                <div>${getVariableLongName(rv)} (<span class="monospaced">${rv}</span>)</div>`)}
-            </span>
-            <wl-title level="4">Adjustable variables:</wl-title>
-            <span>
-              ${!task.driving_variables || task.driving_variables.length == 0 ?
-              'No adjustable variables' : task.driving_variables.map((dv) => html`
-                <div>${getVariableLongName(dv)} (<span class="monospaced">${dv}</span>)</div>`)}
-            </span>
-            <wl-title level="4">Notes:</wl-title>
-            <span class="notes" style="margin-top: 2px;">
-              ${pathway && pathway.notes && pathway.notes.variables ? pathway && pathway.notes && pathway.notes.variables : 'No notes'}
-            </span>
-          </div>
-
-          ${pathway ? html`
-          <wl-title level="3">Models:</wl-title>
-          <div class="inner-content">
-            ${!pathway.models || Object.keys(pathway.models).length == 0 ?
-            'No models' :
-            Object.values(pathway.models).map((model) => model.name)}
-            <div class="notes">
-              Notes:
-              <span>${pathway.notes && pathway.notes.models ? pathway.notes.models : 'No notes'}</span>
-            </div>
-          </div>
-
-          <wl-title level="3">Datasets:</wl-title>
-          <div class="inner-content">
-            ${!pathway.datasets || Object.keys(pathway.datasets).length == 0 ?
-            'No datasets' :
-            Object.values(pathway.datasets).map((dataset) => dataset.name)}
-            <div class="notes">
-              Notes:
-              <span>${pathway.notes && pathway.notes.models ? pathway.notes.models : 'No notes'}</span>
-            </div>
-          </div>
-
-          <wl-title level="3">Setup:</wl-title>
-          <div class="inner-content">
-            ${!pathway.model_ensembles || Object.keys(pathway.model_ensembles).length == 0 ?
-            'No adjustable variables for this model' : html`
-            <table class="pure-table pure-table-striped" style="width: 100%">
-              <colgroup>
-                  <col span="1">
-                  <col span="1">
-              </colgroup>
-              <thead>
-                  <th><b>Variable</b></th>
-                  <th><b>Value</b></th>
-              </thead>
-              <tbody>
-                ${Object.values(pathway.model_ensembles).map((ens) => Object.keys(ens).map((key) => html`
-                <tr>
-                  <td>${key.split('/').pop()}</td>
-                  <td>${ens[key].join(', ')}</td>
-                </tr>
-                `))}
-              </tbody>
-            </table>
-            `}
-            <div class="notes">
-              Notes:
-              <span>${pathway.notes && pathway.notes.parameters ? pathway.notes.parameters : 'No notes'}</span>
-            </div>
-          </div>
-
-          <wl-title level="3">Model runs and Results:</wl-title>
-          <div class="inner-content">
-            ${!pathway.executable_ensemble_summary || Object.keys(pathway.executable_ensemble_summary).length == 0 ? 
-            'No information about this run' : Object.values(pathway.executable_ensemble_summary).map(execSum => html`
-            The model setup created ${execSum.total_runs} configurations.
-            ${execSum.submitted_runs} model runs were submitted,
-            out of which ${execSum.successful_runs} succeeded, 
-            and ${execSum.failed_runs} failed.
-            `)}
-          </div>
+          ${this._renderVariablesSection(task, notes)}
+          ${this._renderModelsSection(thread, notes)}
+          ${this._renderDataSection(thread, notes)}
+          ${this._renderParametersSection(thread, notes)}
+          ${this._renderExecutionsSection(thread, notes)}
 
           <wl-title level="3">Thread visualizations:</wl-title>
           <div class="inner-content">
-            <div class="notes">
-              Notes:
-              <span>${pathway.notes && pathway.notes.visualization ? pathway.notes.visualization : 'No notes'}</span>
-            </div>
-
-          ${!vizurls || !pathway.executable_ensemble_summary || Object.keys(pathway.executable_ensemble_summary).length == 0 ? 
+          ${!vizurls?
             'No visualizations for this run' : 
             vizurls.map((vizurl) => {
                 return html`<iframe src="${vizurl}"></iframe>`;
             })
           }
           </div>
-          
-          `
-          :''}
-          <div style="height: 200px;"/>`
-          :''}
-          ${this._loading ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : '' }
-        </div>`
-
-    } else if (!this._selectedScenarioId && !this._selectedTaskId && !this._selectedPathwayId)  {
-      return html`
-        <span id="start"></span>
-        ${Object.values(this._scenarios).map((scenario:any) => html`
-        <wl-title level="3" style="margin: 12px 0px 0px 12px">${scenario.name}</wl-title>
-          ${scenario.tasks.map((taskid) => this._tasks[taskid]).map((task) => task.pathways.map((pathway) => html`
-            <wl-list-item class="active" @click="${() => {
-              this._scrollUp();
-              goToPage(PREFIX_REPORT + scenario.id + '/' + task.id + '/' + pathway.id);
-            }}">
-                <wl-title level="4" style="margin: 0">
-                ${task.name ? (task.name + " - ") : ""} ${pathway.name ? pathway.name : "Default thread"}
-                </wl-title>
-                ${this._getSubgoalSummaryText(task)}
-                <div slot="after" style="display:flex">
-                  ${this._renderDates(task, scenario)}
-                </div>
-            </wl-list-item>
-
-          `))}
-        `)}
-        ${this._loading ? html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` : '' }`
-    } else {
-      return html`
-        <p>
-        This page is in progress, it will give you the ability to prepare reports with findings backed up with visualisations and
-        analysis details
-        </p>
-      `
-    }
+    `;
   }
 
-  _scrollUp () {
+  private _renderVariablesSection (task:Task, notes: IdMap<string>) {
+    return html`<wl-title level="3">Variables:</wl-title>
+      <div class="two-column-grid inner-content">
+        <wl-title level="4">Indicators:</wl-title>
+        <span>
+          ${!task.response_variables || task.response_variables.length == 0 ?
+            'No indicators' : task.response_variables.map((rv) => html`
+            <div>${this._variableMap[rv]?.name ?? ""} (<span class="monospaced">${rv}</span>)</div>`)}
+        </span>
+        <wl-title level="4">Adjustable variables:</wl-title>
+        <span>
+          ${!task.driving_variables || task.driving_variables.length == 0 ?
+          'No adjustable variables' : task.driving_variables.map((dv) => html`
+            <div>${this._variableMap[dv]?.name ?? ""} (<span class="monospaced">${dv}</span>)</div>`)}
+        </span>
+      </div>`
+  }
+
+  private _renderModelsSection (thread:Thread, notes: IdMap<string>) {
+    return html`
+          <wl-title level="3">Models:</wl-title>
+          <div class="inner-content">
+            ${!thread.models || Object.keys(thread.models).length == 0 ?
+            'No models were selected in this thread' :
+            Object.values(thread.models).map((model:Model) => {
+              let modelurl : string = this._top_regionid;
+              modelurl += '/models/explore/';
+              modelurl += getURL(model.model_name, model.model_version, model.model_configuration, model.id);
+              return html`<a href="${modelurl}" target="_blank">${model.name}</a>`
+            })}
+            ${notes['SELECT_MODELS'] ?  html`
+              <div class="notes">
+                Notes: <span>${ notes['SELECT_MODELS'] }</span>
+              </div>` : '' }
+          </div>
+
+    `;
+  }
+
+  private _renderDataSection (thread:Thread, notes: IdMap<string>) {
+    return html`
+          <wl-title level="3">Datasets:</wl-title>
+          <div class="inner-content">
+            ${!thread.data || Object.keys(thread.data).length == 0 ?
+            'No datasets were selected in this thread' :
+            Object.values(thread.data).map((dataset) => dataset.name)}
+            ${notes['SELECT_DATA'] ?  html`
+              <div class="notes">
+                Notes: <span>${ notes['SELECT_DATA'] }</span>
+              </div>` : '' }
+          </div>
+
+    `;
+  }
+
+  private _renderParametersSection (thread:Thread, notes: IdMap<string>) {
+    return html`
+          <wl-title level="3">Setup:</wl-title>
+          <div class="inner-content">
+            ${!thread.model_ensembles || Object.keys(thread.model_ensembles).length == 0 ?
+            'No adjustable variables for this model' 
+            : (Object.values(thread.models).map((model:Model) => html`
+              Parameters for <b>${model.name}</b>:
+              <table class="pure-table pure-table-striped" style="width: 100%">
+                <colgroup>
+                    <col span="1">
+                    <col span="1">
+                </colgroup>
+                <thead>
+                    <th><b>Variable</b></th>
+                    <th><b>Value</b></th>
+                </thead>
+                <tbody>
+                  ${Object.keys(thread.model_ensembles[model.id].bindings).map((key:string) => html`
+                    <tr>
+                      <td>${key.split('/').pop()}</td>
+                      <td>${thread.model_ensembles[model.id].bindings[key].join(', ')}</td>
+                    </tr>
+                  `)}
+                </tbody>
+              </table>
+            `))
+            }
+
+            ${notes['SELECT_PARAMETERS'] ?  html`
+              <div class="notes">
+                Notes: <span>${ notes['SELECT_PARAMETERS'] }</span>
+              </div>` : '' }
+          </div>
+    `;
+  }
+
+  private _renderExecutionsSection (thread:Thread, notes: IdMap<string>) {
+    return html`
+          <wl-title level="3">Model runs and Results:</wl-title>
+          <div class="inner-content">
+            ${Object.values(thread.models).map((model:Model) => html`
+              Exectution details for <b>${model.name}</b>:<br/>
+              ${!thread.execution_summary[model.id] ? 
+                'Theres no available information for this run.'
+                : html`
+                  The model setup created ${thread.execution_summary[model.id].total_runs} configurations.
+                  ${thread.execution_summary[model.id].submitted_runs} model runs were submitted,
+                  out of which ${thread.execution_summary[model.id].successful_runs} succeeded, 
+                  and ${thread.execution_summary[model.id].failed_runs} failed.
+                `}
+            `)} 
+          </div>
+    `;
+  }
+
+  private _scrollUp () {
     let el = this.shadowRoot.getElementById('start');
     if (el) {
       el.scrollIntoView({behavior: "smooth", block: "start"})
     }
   }
 
-  _getSubgoalSummaryText(subgoal) {
-    let response = subgoal.response_variables ? getVariableLongName(subgoal.response_variables[0]) : "";
-    let subregionid = (subgoal.subregionid && subgoal.subregionid != "Select") ? subgoal.subregionid : null;
-    let regionname = subregionid && this._regions && this._regions[subregionid] ? this._regions[subregionid].name : this._region.name;
-    return (response ? response + ": " : "") + regionname
+  private _getThreadInfoSummaryText (t: ThreadInfo) {
+    let response = t.response_variables ? this._variableMap[t.response_variables[0]] : null;
+    let regionname = t.regionid && this._regions && this._regions[t.regionid] ? this._regions[t.regionid].name : this._region.name;
+    return (response ? response.name + ": " : "") + regionname
   }
 
-  _renderDates (subgoal, scenario) {
-    let dates = subgoal.dates ? subgoal.dates : scenario.dates;
-    let startdate = fromTimeStampToDateString(dates!.start_date);
-    let enddate = fromTimeStampToDateString(dates!.end_date);
-    return startdate + " - " + enddate;
+  private _renderDates (thread: ThreadInfo) {
+    let dates = thread.dates
+    let startdate = (dates!.start_date);
+    let enddate = (dates!.end_date);
+    return startdate.toLocaleDateString("en-US") + " - " + enddate.toLocaleDateString("en-US");
   }
 
   // checking executable_ensemble_summary
-  protected async fetchReports() {    
-    this._loading = true;
-    this._pathways = {};
-    this._scenarios = {};
-    this._tasks = {};
-
-    await db.collectionGroup("pathways").get().then((snapshot) => {
-      snapshot.forEach((pathway) => {
-        let execSumRaw = pathway.get('executable_ensemble_summary')
-        let execSum = execSumRaw ? Object.values(execSumRaw) : [];
-        if (execSum.length > 0 && execSum[0]['total_runs'] > 0 && execSum[0]['successful_runs'] + execSum[0]['failed_runs'] == execSum[0]['total_runs']) {
-          this._pathways[pathway.get('id')] = pathway.data();
-        }
-      });
-    })
-
-    await db.collection("scenarios").where('regionid', '==', this._regionid).get().then((querySnapshot) => {
-      querySnapshot.forEach((scenario) => {
-        let sid = scenario.get('id');
-        scenario.ref.collection('subgoals').get().then((qsnap) => {
-          qsnap.forEach((task) => {
-            let pathways = Object.keys(task.get('pathways') || {});
-            pathways.forEach(pathway => {
-              if (this._pathways[pathway]) {
-                if (!this._scenarios[sid]) {
-                  this._scenarios[sid] = scenario.data();
-                  this._scenarios[sid].tasks = [];
-                }
-                if(!this._tasks[task.ref.id]) {
-                  this._scenarios[sid].tasks.push(task.ref.id);
-                  this._tasks[task.ref.id] = task.data();
-                  this._tasks[task.ref.id].id = task.ref.id;
-                  this._tasks[task.ref.id].pathways = [];
-                }
-                this._tasks[task.ref.id].pathways.push(this._pathways[pathway]);
-              }
-            });
-          });
-        }).then(() => {
-          //FIXME 
-          this._loading = true;
-          this._loading = false;
-        })
-
-      })
-    });
-
-    log(this._scenarios, this._tasks, this._pathways);
-    //this._loading = false;
+  private _fetchProblemStatementList() {
+    if(this._list && this._list.unsubscribe)
+      this._list.unsubscribe();
+    this._dispatched = true;
+    console.log("Fetching Problem Statement List for " + this._top_regionid);
+    store.dispatch(fetchProblemStatementsList(this._top_regionid));
   }
 
   stateChanged(state: RootState) {
-    /* This could stay active when moving to another page for links, so autoupdate active property */
-    super.setSubPage(state);
-    this.active = (this._subpage === 'report');
-
-    if(super.setRegionId(state)) {
-      //console.log("Region id changed to " + this._regionid);
-      this.fetchReports();
-    }
-
     this.prefs = state.app.prefs;
 
-    if (state.ui) {
-      this._selectedScenarioId = state.ui.selected_scenarioid;
-      this._selectedTaskId = state.ui.selected_subgoalid;
-      this._selectedPathwayId = state.ui.selected_pathwayid;
-
-      if (state.ui.selected_top_regionid && state.regions!.regions) {
-          this._regions = state.regions.regions;
+    if (state.analysis) {
+      if (state.analysis.problem_statements) {
+        this._list = state.analysis.problem_statements;
+        this._dispatched = false;
+      }
+      if (state.analysis.problem_statement && (!this._tasks[state.analysis.problem_statement.id])) {
+        this._tasks[state.analysis.problem_statement.id] = state.analysis.problem_statement.tasks;
+        this._loading[state.analysis.problem_statement.id] = false;
+        this.requestUpdate();
+      }
+      if (state.analysis.thread && !this._thread && (state.analysis.thread.id === state.ui.selected_thread_id)) {
+        this._thread = state.analysis.thread;
+        this.requestUpdate();
       }
     }
+
+    if(state.variables && state.variables.variables) {
+      this._variableMap = state.variables.variables;
+    }
+
+    if (state.ui) {
+      this._selectedProblemStatementId = state.ui.selected_problem_statement_id
+      this._selectedTaskId = state.ui.selected_task_id;
+      if (state.ui.selected_thread_id && state.ui.selected_thread_id != this._selectedThreadId) {
+        this._thread = undefined;
+        this._selectedThreadId = state.ui.selected_thread_id;
+        store.dispatch( fetchThread(this._selectedThreadId) );
+      }
+      this._selectedThreadId = state.ui.selected_thread_id;
+      if (state.ui.selected_top_regionid && state.regions!.regions &&
+          this._top_regionid != state.ui.selected_top_regionid) {
+        this._top_regionid = state.ui.selected_top_regionid;
+        this._regions = state.regions!.regions;
+        this._top_region = this._regions[this._top_regionid];
+        this._fetchProblemStatementList();
+      } 
+    }
+    super.setRegionId(state);
   }
 
 }

@@ -12,7 +12,8 @@ import { modelGet, versionGet, versionsGet, modelConfigurationGet, modelConfigur
          modelConfigurationSetupGet, imageGet, personGet, regionsGet, organizationGet, fundingInformationGet,
          timeIntervalGet, gridGet, processGet, setupGetAll, visualizationGet, sourceCodeGet, softwareImageGet,
          parameterGet, datasetSpecificationGet, interventionGet, variablePresentationGet } from 'model-catalog/actions';
-import { setupInRegion, capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition, isExecutable } from 'model-catalog/util';
+import { setupInRegion, capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition, isExecutable,
+         getModelTypeNames } from 'model-catalog/util';
 import { GalleryEntry } from 'components/image-gallery';
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -20,6 +21,7 @@ import { ExplorerStyles } from './explorer-styles'
 import marked from 'marked';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
+import { urlify } from 'util/ui_renders';
 
 import { goToPage } from 'app/actions';
 import "weightless/expansion";
@@ -70,6 +72,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object}) private _softwareImages : IdMap<SoftwareImage> = {} as IdMap<SoftwareImage>;
     @property({type: Object}) private _parameters : IdMap<Parameter> = {} as IdMap<Parameter>;
     @property({type: Object}) private _datasetSpecifications : IdMap<DatasetSpecification> = {} as IdMap<DatasetSpecification>;
+    @property({type: Object}) private _datasetSpecifications2 : IdMap<DatasetSpecification> = {} as IdMap<DatasetSpecification>;
     @property({type: Object}) private _interventions : IdMap<Intervention> = {} as IdMap<Intervention>;
     @property({type: Object}) private _variablePresentations : IdMap<VariablePresentation> = {} as IdMap<VariablePresentation>;
 
@@ -104,7 +107,14 @@ export class ModelView extends connect(store)(PageViewElement) {
 
                 .config-selector {
                     display: grid;
-                    grid-template-columns: 50px auto 114px;
+                    grid-template-columns: 50px auto 205px;
+                    align-items: center;
+                    height: 50px;
+                }
+
+                .setup-selector {
+                    display: grid;
+                    grid-template-columns: 50px auto 144px;
                     align-items: center;
                     height: 50px;
                 }
@@ -387,11 +397,11 @@ export class ModelView extends connect(store)(PageViewElement) {
     _renderCLIDialog () {
         return html`
         <wl-dialog class="larger" id="CLIDialog" fixed backdrop blockscrolling>
-            <h3 slot="header">Execute on Desktop/Server</h3>
+            <h3 slot="header">Execute with DAME</h3>
             <div slot="content">
                 <wl-text> You can run this model with the following command: </wl-text>
                 <div class="monospaced code-example">
-                    <div style="font-size: 14px">
+                    <div style="font-size: 14px; overflow: hidden;">
                         <span style="color: darkgray;">$</span> dame run ${this._runArgs}
                     </div>
                     <div>
@@ -430,19 +440,25 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
+    _editModel () {
+        goToPage('models/edit/' + getURL(this._selectedModel) + '/edit');
+    }
+
     _goToEdit (configUri: string, setupUri?:string) {
-        goToPage('models/configure/' + getURL(this._selectedModel, this._selectedVersion, configUri, setupUri));
+        goToPage('models/configure/' + getURL(this._selectedModel, this._selectedVersion, configUri, setupUri) + '/edit');
     }
 
     _addConfig () {
         goToPage('models/configure/' + getURL(this._selectedModel, this._selectedVersion, this._selectedConfig) + '/new');
     }
 
+    private _lastSelectorTimeout : any = null;
     _updateConfigSelector () {
         let configSelectorWl : Select = this.shadowRoot!.getElementById('config-selector') as Select;
         let configSelector : HTMLSelectElement | null = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
         if (configSelectorWl && configSelector) {
-            //console.log('Updating Config Selector');
+            if (this._lastSelectorTimeout != null) clearTimeout(this._lastSelectorTimeout);
+            console.log('Updating Config Selector');
             this._shouldUpdateConfigs = false;
             while (configSelector.options.length > 0)
                 configSelector.remove(configSelector.options.length - 1);
@@ -479,7 +495,16 @@ export class ModelView extends connect(store)(PageViewElement) {
             let arrowEl = configSelectorWl.shadowRoot.getElementById('arrow');
             if (arrowEl) arrowEl.style.pointerEvents = "none";
             (<any>configSelectorWl).refreshAttributes();
-        } 
+        } else {
+            //when everything is loaded, this can be execubed before the selectors render...
+            if (this._lastSelectorTimeout == null) {
+                let me = this;
+                this._lastSelectorTimeout = setTimeout(() => {
+                    me._lastSelectorTimeout = null;
+                    me._updateConfigSelector();
+                }, 250);
+            }
+        }
     }
 
     _clearVariables () {
@@ -568,12 +593,15 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </span>
                 `}
                 <span>
-                    <wl-select label="Select a configuration" id="config-selector" @input="${this._onConfigChange}">
+                    <wl-select label=${this._selectedConfig ? "Selected configuration" : "Select a configuration"} id="config-selector" @input="${this._onConfigChange}">
                     </wl-select>
                 </span>
                 <span>
                     <wl-button flat inverted @click="${() => this._goToEdit(this._selectedConfig)}" ?disabled="${!this._selectedConfig}">
                         <wl-icon>edit</wl-icon>
+                        <span style="font-size: 11px; font-weight: bold;">
+                            Edit<br/>Configuration
+                        </span>
                     </wl-button>
                     <span class="tooltip small-tooltip" tip="Download and Run">
                         <wl-button flat inverted @click=${() => this._openCLIDialog(this._selectedConfig)} ?disabled="${!isExecutable(this._config)}">
@@ -587,7 +615,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </span>
             </div>
 
-            <div class="config-selector 
+            <div class="setup-selector 
                 ${this._selectedConfig && this._config && this._config.hasSetup && this._config.hasSetup.length > 0? '' : 'hidden'}">
                 ${this._selectedSetup ? html`
                     <a class="no-decoration" style="text-align: center;" target="_blank" href="${this._selectedSetup}">
@@ -603,12 +631,15 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </span>`
                 }
                 <span>
-                    <wl-select label="Select a configuration setup" id="setup-selector" @input="${this._onSetupChange}">
+                    <wl-select label=${this._selectedSetup ? "Selected configuration setup" :"Select a configuration setup"} id="setup-selector" @input="${this._onSetupChange}">
                     </wl-select>
                 </span>
                 <span>
                     <wl-button flat inverted @click="${() => this._goToEdit(this._selectedConfig, this._selectedSetup)}" ?disabled="${!this._selectedSetup}">
                         <wl-icon>edit</wl-icon>
+                        <span style="font-size: 11px; font-weight: bold;">
+                            Edit<br/>Setup
+                        </span>
                     </wl-button>
                     <span class="tooltip small-tooltip" tip="Download and Run">
                         <wl-button flat inverted @click=${() => this._openCLIDialog(this._selectedSetup)} ?disabled="${!isExecutable(this._setup)}">
@@ -634,23 +665,37 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (!this._model)
             return html`NO MODEL`;
 
-        let modelType : string[] = this._model.type ?
-                this._model.type.map((t:string) => t.replace('Model', '')).filter(t => !!t)
-                : [];
+        let modelType : string[] = this._model.type ? getModelTypeNames(this._model.type) : [];
 
         return html`
             ${this._renderCLIDialog()}
+            <div class="col-title">
+                <wl-title level="2">
+                    <a class="no-decoration" style="" target="_blank" href="${this._selectedModel}">
+                        <wl-button flat inverted>
+                            <span class="rdf-icon">
+                        </wl-button>
+                    </a>
+                    <span>${getLabel(this._model)}</span>
+                    <wl-button style="--button-font-size: 16px; --button-padding: 8px; float: right;" flat inverted 
+                            @click="${() => this._editModel()}">
+                        <wl-icon>edit</wl-icon>
+                        <span style="font-size: 11px;">
+                            Edit<br/>Model
+                        </span>
+                    </wl-button>
+                </wl-title>
+            </div>
+
+            ${this._renderSelectors()}
+            ${this._setupNotFound ? html`
+            <p style="text-align: center; color:red;">
+                The setup ${this._selectedSetup ? this._selectedSetup.split('/').pop() : 'selected'} is private or was deleted 
+            </p>` : ''}
+
+            <wl-divider style="margin: .5em 0;"></wl-divider>
+
             <div class="wrapper">
-                <div class="col-title">
-                    <wl-title level="2">
-                        <a class="no-decoration" style="" target="_blank" href="${this._selectedModel}">
-                            <wl-button flat inverted>
-                                <span class="rdf-icon">
-                            </wl-button>
-                        </a>
-                        ${this._model.label}
-                    </wl-title>
-                </div>
                 <div class="col-img text-centered">
                     ${this._model.logo && this._model.logo.length > 0 ? (
                         this._loading[this._model.logo[0].id] ?
@@ -664,12 +709,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                       html`<div><b>Creation date:</b> ${this._model.dateCreated[0].toString().replace(/T.*$/,'')}</div>`
                       :''}
                     ${this._model.hasModelCategory ?
-                      html`<div><b>Category:</b> ${this._model.hasModelCategory.join(', ')}</div>`
+                      html`<div><b>Category:</b> ${this._model.hasModelCategory.map(getLabel).join(', ')}</div>`
                       :''}
                     ${modelType.length > 0 ? html`<div><b>Model type:</b> ${modelType.join(', ')}</div>`:''}
                 </div>
                 <div class="col-desc">
-                    <wl-divider style="margin-bottom: .5em;"></wl-divider>
                     <wl-text style="text-align: justify;">${this._model.description}</wl-text>
                     ${this._emulators[this._selectedModel] ?  html`
                     <div style="margin-top: 4px;">
@@ -695,14 +739,14 @@ export class ModelView extends connect(store)(PageViewElement) {
                         ${this._model.datePublished?
                           html`<wl-text><b>• Publication date:</b> ${ this._model.datePublished }</wl-text>`
                           :''}
-                        ${this._model.citation?
-                          html`<wl-text><b>• Preferred citation:</b> <i>${ this._model.citation }<i></wl-text>` 
+                        ${this._model.citation && this._model.citation.length > 0 ?
+                          html`<wl-text><b>• Preferred citation:</b> <i>${ urlify(this._model.citation[0]) }<i></wl-text>` 
                           :''}
                         ${this._model.hasDocumentation?
                           html`<wl-text>
                             <b>• Documentation:</b>
                             <a target="_blank" href="${this._model.hasDocumentation[0]}">
-                                ${this._model.hasDocumentation[0].split('/').pop() || this._model.hasDocumentation}
+                                ${this._model.hasDocumentation[0]}
                             </a>
                         </wl-text>` :''}
                         ${!this._modelRegions || this._modelRegions.length > 0 ? html`<wl-text><b>• Regions:</b>
@@ -713,15 +757,14 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 </span>`)}
                         </wl-text>` :''}
 
+                        ${this._model.hasProcess && this._model.hasProcess.length > 0 ? html`<wl-text><b>• Processes:</b>
+                            ${this._renderProcesses(this._model.hasProcess)}
+                        </wl-text>` :''}
+
                         ${this._model.keywords? html`<wl-text><b>• Keywords:</b>
                             ${ this._model.keywords.map((kws:string) => kws.split(/ *; */).map(capitalizeFirstLetter).join(', ') ).join(', ') }
                         </wl-text>` :''}
                     </div>
-                    ${this._renderSelectors()}
-                    ${this._setupNotFound ? html`
-                    <p style="text-align: center; color:red;">
-                        The setup ${this._selectedSetup ? this._selectedSetup.split('/').pop() : 'selected'} is private or was deleted 
-                    </p>` : ''}
                 </div>
 
                 <div class="row-tab-header">
@@ -729,7 +772,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <wl-tab id="tab-overview" ?checked=${this._tab=='overview'} @click="${() => this._goToTab('overview')}"
                             >Overview</wl-tab>
                         <wl-tab id="tab-io" ?checked=${this._tab=='io'} @click="${() => this._goToTab('io')}"
-                            >Parameters and Files</wl-tab>
+                            >Inputs and Outputs</wl-tab>
                         <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => this._goToTab('variables')}"
                             >Variables</wl-tab>
                         ${this._getExample() ? html`
@@ -748,7 +791,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${(this._tab === 'example') ? this._renderTabExample() : ''}
                 </div>
             </div>
-            ${this._renderCLIDialog()} `
+            ${this._renderCLIDialog()} 
+            <div style="height: 50px;"></div>`
     }
 
     private _goToTab (tabid:tabType) {
@@ -790,6 +834,19 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     private _renderTableTechnical (resource:ModelConfiguration|ModelConfigurationSetup, titlePrefix:string) {
+        //Do no show when the model does not have any technical property
+        if (!resource.hasSoftwareImage && !resource.operatingSystems && !resource.memoryRequirements && 
+            !resource.processorRequirements && !resource.softwareRequirements && !resource.hasDownloadURL &&
+            !resource.hasInstallationInstructions && !resource.hasComponentLocation && !resource.hasSourceCode &&
+            !resource.parameterization && !resource.runtimeEstimation && !resource.limitations) {
+            return html``;
+        }
+        
+        let instructionsIsUrl : boolean = resource.hasInstallationInstructions &&
+                                          resource.hasInstallationInstructions.length > 0 &&
+                                          resource.hasInstallationInstructions[0].substring(0,4) === 'http';
+
+
         return html`
             <table class="pure-table pure-table-striped">
                 <thead>
@@ -834,6 +891,23 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <td><b>Software requirements:</b></td>
                         <td>${resource.softwareRequirements[0]}</td>
                     </tr>`: ''}
+
+                ${resource.parameterization && resource.parameterization.length > 0 ? html`
+                    <tr>
+                        <td><b>Parameterization:</b></td>
+                        <td>${resource.parameterization[0]}</td>
+                    </tr>`: ''}
+                ${resource.limitations && resource.limitations.length > 0 ? html`
+                    <tr>
+                        <td><b>Limitations:</b></td>
+                        <td>${resource.limitations[0]}</td>
+                    </tr>`: ''}
+                ${resource.runtimeEstimation && resource.runtimeEstimation.length > 0 ? html`
+                    <tr>
+                        <td><b>Runtime Estimation:</b></td>
+                        <td>${resource.runtimeEstimation[0]}</td>
+                    </tr>`: ''}
+
                 ${resource.hasDownloadURL && resource.hasDownloadURL.length > 0 ? html`
                     <tr>
                         <td><b>Download:</b></td>
@@ -842,30 +916,59 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${resource.hasInstallationInstructions && resource.hasInstallationInstructions.length > 0 ? html`
                     <tr>
                         <td><b>Installation instructions:</b></td>
-                        <td><a target="_blank" href="${resource.hasInstallationInstructions[0]}">${resource.hasInstallationInstructions[0]}</a></td>
+                        <td>
+                        ${instructionsIsUrl ? html`
+                            <a target="_blank" href="${resource.hasInstallationInstructions[0]}">${resource.hasInstallationInstructions[0]}</a>
+                        ` : html`
+                            <span>${resource.hasInstallationInstructions[0]}</span>
+                        `}
+                        </td>
                     </tr>`: ''}
                 ${resource.hasComponentLocation && resource.hasComponentLocation.length > 0 ? html`
                     <tr>
                         <td><b>Component location:</b></td>
                         <td><a target="_blank" href="${resource.hasComponentLocation[0]}">${resource.hasComponentLocation[0]}</a></td>
                     </tr>`: ''}
+
                 ${resource.hasSourceCode && resource.hasSourceCode.length > 0 ? html`
                     <tr>
                         <td><b>Source code:</b></td>
                         <td>${this._loading[resource.hasSourceCode[0].id] ? 
                             html`${resource.hasSourceCode[0].id} <loading-dots style="--width: 20px"></loading-dots>`
-                            : html`<a target="_blank" href="${this._sourceCodes[resource.hasSourceCode[0].id].codeRepository}">
-                                ${this._sourceCodes[resource.hasSourceCode[0].id].codeRepository}
-                            </a>`
+                            : (this._sourceCodes[resource.hasSourceCode[0].id].codeRepository ? 
+                                html`<a target="_blank" href="${this._sourceCodes[resource.hasSourceCode[0].id].codeRepository}">
+                                    ${getLabel(this._sourceCodes[resource.hasSourceCode[0].id])}
+                                </a>` : html`
+                                <span>${getLabel(this._sourceCodes[resource.hasSourceCode[0].id])}</span>
+                            `)
                         }</td>
-                    </tr>`: ''}
-                ${resource.hasSourceCode && resource.hasSourceCode.length > 0 ? html`
+                    </tr>
+                    ${!this._loading[resource.hasSourceCode[0].id] &&
+                       this._sourceCodes[resource.hasSourceCode[0].id].programmingLanguage ? html`
                     <tr>
                         <td><b>Programing languages:</b></td>
-                        <td>${this._loading[resource.hasSourceCode[0].id] ? 
-                            html`${resource.hasSourceCode[0].id} <loading-dots style="--width: 20px"></loading-dots>`
-                            : this._sourceCodes[resource.hasSourceCode[0].id].programmingLanguage
-                        }</td>
+                        <td>${this._sourceCodes[resource.hasSourceCode[0].id].programmingLanguage}</td>
+                    </tr>` : ''}
+                    ${!this._loading[resource.hasSourceCode[0].id] &&
+                       this._sourceCodes[resource.hasSourceCode[0].id].license ? html`
+                    <tr>
+                        <td><b>License:</b></td>
+                        <td>${this._sourceCodes[resource.hasSourceCode[0].id].license}</td>
+                    </tr>` : ''}
+                `: ''}
+
+                ${titlePrefix == 'CONFIGURATION' || titlePrefix == 'SETUP' ? html`
+                    <tr>
+                        <td><b>DAME command:</b></td>
+                        <td>
+                            <div class="monospaced">
+                                <div>
+                                    <span style="color: darkgray;">$</span> dame run 
+                                    ${titlePrefix == 'CONFIGURATION' ?
+                                        uriToId(this._selectedConfig) : uriToId(this._selectedSetup) }
+                                </div>
+                            </div>
+                        </td>
                     </tr>`: ''}
                 </tbody>
             </table>`;
@@ -935,6 +1038,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </li>
                 `)}
             </ul>` :''}
+
+            ${this._model.theoreticalBasis && this._model.theoreticalBasis.length > 0 ? html`
+            <wl-title level="2" style="font-size: 16px; display: inline-block; margin-right: 4px;">Theoretical Basis:</wl-title>
+            <span> ${this._model.theoreticalBasis[0]} </span>`:''}
 
             ${this._model.hasAssumption && this._model.hasAssumption.length > 0 ? html`
             <wl-title level="2" style="font-size: 16px;">Assumptions:</wl-title>
@@ -1115,42 +1222,111 @@ export class ModelView extends connect(store)(PageViewElement) {
             </h3>`
         }
         return html`
-            <wl-title level="3"> Parameters: </wl-title> 
+            <wl-title level="3"> Inputs: </wl-title> 
+            <wl-title level="4"> Parameters: </wl-title> 
             ${this._renderParametersTable(this._setup ? this._setup : this._config)}
-            <wl-title level="3"> Files: </wl-title> 
-            <wl-text style="font-style: italic; padding-left: 20px;">
+            <wl-title level="4"> Files: </wl-title> 
+            ${this._renderInputFileTable(this._setup ? this._setup : this._config)}
+            <wl-title level="3"> Output Files: </wl-title> 
+            ${this._renderOutputFileTable(this._setup ? this._setup : this._config)}
+            <wl-text style="font-style: italic; padding-left: 20px; margin-top: 1em;">
                 Look at the Variables tab to see more information about the contents of the inputs and outputs.
             </wl-text>
-            ${this._renderIOTable(this._setup ? this._setup : this._config)}
         `
+    }
+
+    private _renderInputFileTable (resource:ModelConfiguration|ModelConfigurationSetup) {
+        let isSetup = resource.type.includes('ModelConfigurationSetup');
+        return html`
+            <table class="pure-table pure-table-striped" style="overflow: visible;">
+                <colgroup>
+                    <col span="1" style="width: 20%;">
+                    <col span="1">
+                    ${isSetup? html`<col span="1">` : ''}
+                    <col span="1" style="max-width: 140px;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        ${isSetup? html`
+                        <th style="text-align: right;">
+                            Value on setup
+                            <span class="tooltip table-tooltip" tip="If a value is not set up in this field, the configuration default value will be used.">
+                                <wl-icon>help</wl-icon>
+                            </span>
+                        </th>` : html``}
+                        <th style="text-align: right;">Format</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                ${!resource.hasInput || resource.hasInput.length === 0 ?  html`
+                    <tr>
+                        <td colspan="4">
+                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no input files.</div>
+                        </td>
+                    </tr>` : html`
+                    ${resource.hasInput
+                            .filter((ds:DatasetSpecification) => !this._loading[ds.id])
+                            .map((ds:DatasetSpecification) => this._datasetSpecifications[ds.id])
+                            .sort(sortByPosition)
+                            .map((ds:DatasetSpecification) => html`
+                    <tr>
+                        <td><span class="monospaced">${getLabel(ds)}</span></td>
+                        <td>${ds.description && ds.description.length > 0 ? ds.description : ''}</td>
+                        ${isSetup? html`
+                        <td style="text-align: right;">
+                            ${this._renderFixedResource(ds)}
+                        </td>` : ''}
+                        <td style="text-align: right;" class="number">
+                            ${ds.hasFormat && ds.hasFormat.length > 0 ? ds.hasFormat[0] : ''}
+                        </td>
+                    </tr>
+                    `)}
+                    ${resource.hasInput.filter((ds:DatasetSpecification) => this._loading[ds.id]).map((ds:DatasetSpecification) => html`
+                    <tr>
+                        <td colspan="4">
+                            <div class="text-centered">${getId(ds)} <loading-dots style="--height: 10px; margin-left:10px"></loading-dots></div>
+                        </td>
+                    </tr>
+                    `)}`
+                }
+                </tbody>
+            </table>`
     }
 
     _renderParametersTable (resource:ModelConfiguration|ModelConfigurationSetup) {
         let isSetup = resource.type.includes('ModelConfigurationSetup');
         return html`
             <table class="pure-table pure-table-striped" style="overflow: visible;" id="parameters-table">
-                <col span="1" style="width: 180;">
+                <col span="1" style="width: 20%;">
                 <col span="1">
-                <col span="1">
+                <col span="1" style="width: 100px;">
                 <col span="1" style="width: 130px;">
                 <thead>
-                    <th>Parameter</th>
-                    <th>Description</th>
-                    <th style="text-align: right;">Relevant for intervention</th>
-                    <th style="text-align: right;">
-                        ${isSetup? html`
-                        Value on setup 
-                        <span class="tooltip table-tooltip" tip="If a value is not set up in this field configuration default value will be used.">
-                            <wl-icon>help</wl-icon>
-                        </span>`
-                        : 'Default value'}
-                    </th>
+                    <tr style="vertical-align: middle;">
+                        <th>Parameter</th>
+                        <th>Description</th>
+                        <th style="text-align: right;">
+                            Relevant for intervention
+                            <span style="display: inline-block;">/ Control<span>
+                        </th>
+                        <th style="text-align: right;">
+                            ${isSetup? html`
+                            Value on setup 
+                            <span class="tooltip table-tooltip" tip="If a value is not set up in this field configuration default value will be used.">
+                                <wl-icon>help</wl-icon>
+                            </span>`
+                            : 'Default value'}
+                        </th>
+                    </tr>
                 </thead>
                 <tbody>
                 ${!resource.hasParameter || resource.hasParameter.length === 0 ?  html`
                     <tr>
-                        <td colspan="4">
-                            <div class="info-center">This ${isSetup? 'setup' : 'configuration'} has no parameters.</div>
+                        <td colspan="4" style="vertical-align: middle;">
+                            <div class="info-center">This ${isSetup? 'setup' : 'configuration'} has no input parameters.</div>
                         </td>
                     </tr>` : html`
                     ${resource.hasParameter.filter((p:Parameter) => !this._loading[p.id])
@@ -1200,12 +1376,11 @@ export class ModelView extends connect(store)(PageViewElement) {
             </table>`
     }
 
-    _renderIOTable (resource:ModelConfiguration|ModelConfigurationSetup) {
+    private _renderOutputFileTable (resource:ModelConfiguration|ModelConfigurationSetup) {
         let isSetup = resource.type.includes('ModelConfigurationSetup');
         return html`
             <table class="pure-table pure-table-striped" style="overflow: visible;">
                 <colgroup>
-                    <col span="1" style="width: 10px;">
                     <col span="1" style="width: 20%;">
                     <col span="1">
                     ${isSetup? html`<col span="1">` : ''}
@@ -1213,69 +1388,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </colgroup>
                 <thead>
                     <tr>
-                        <th colspan="${isSetup? 5 : 4}" class="table-title">Input files</th>
-                    </tr>
-                    <tr>
-                        <th></th>
-                        <th>Name</th>
-                        <th>Description</th>
-                        ${isSetup? html`
-                        <th style="text-align: right;">
-                            Value on setup
-                            <span class="tooltip table-tooltip" tip="If a value is not set up in this field, the configuration default value will be used.">
-                                <wl-icon>help</wl-icon>
-                            </span>
-                        </th>` : html``}
-                        <th style="text-align: right;">Format</th>
-                    </tr>
-                </thead>
-                <tbody>
-
-                ${!resource.hasInput || resource.hasInput.length === 0 ?  html`
-                    <tr>
-                        <td colspan="4">
-                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no inputs.</div>
-                        </td>
-                    </tr>` : html`
-                    ${resource.hasInput.filter((ds:DatasetSpecification) => !this._loading[ds.id])
-                            .map((ds:DatasetSpecification) => this._datasetSpecifications[ds.id])
-                            .sort(sortByPosition).map((ds:DatasetSpecification) => html`
-                    <tr>
-                        <td></td>
-                        <td><span class="monospaced">${getLabel(ds)}</span></td>
-                        <td>${ds.description && ds.description.length > 0 ? ds.description : ''}</td>
-                        ${isSetup? html`
-                        <td style="text-align: right;">
-                            ${ds.hasFixedResource && ds.hasFixedResource.length > 0 &&
-                              ds.hasFixedResource[0].value && ds.hasFixedResource[0].value.length > 0 ? html`
-                                <a target="_blank" href="${ds.hasFixedResource[0].value[0]}">
-                                    ${(<unknown>ds.hasFixedResource[0].value[0] as string).split('/').pop()}
-                                    <!-- FIXME: The model catalog defines hasFixedResource as Object -->
-                                </a>
-                            `: html`<span style="color:#999999;">-</span>`}
-                        </td>` : ''}
-                        <td style="text-align: right;" class="number">
-                            ${ds.hasFormat && ds.hasFormat.length > 0 ? ds.hasFormat[0] : ''}
-                        </td>
-                    </tr>
-                    `)}
-                    ${resource.hasInput.filter((ds:DatasetSpecification) => this._loading[ds.id]).map((ds:DatasetSpecification) => html`
-                    <tr>
-                        <td colspan="4">
-                            <div class="text-centered">${getId(ds)} <loading-dots style="--height: 10px; margin-left:10px"></loading-dots></div>
-                        </td>
-                    </tr>
-                    `)}`
-                }
-
-                </tbody>
-
-                <thead>
-                    <tr>
-                        <th colspan="${isSetup? 5 : 4}" class="table-title">Output files</th>
-                    </tr>
-                    <tr>
-                        <th></th>
                         <th>Name</th>
                         <th colspan="${isSetup? 2 : 1}">Description</th>
                         <th style="text-align: right;">Format</th>
@@ -1285,14 +1397,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${!resource.hasOutput || resource.hasOutput.length === 0 ?  html`
                     <tr>
                         <td colspan="4">
-                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no outputs.</div>
+                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no output files.</div>
                         </td>
                     </tr>` : html`
                     ${resource.hasOutput.filter((ds:DatasetSpecification) => !this._loading[ds.id])
                             .map((ds:DatasetSpecification) => this._datasetSpecifications[ds.id])
                             .sort(sortByPosition).map((ds:DatasetSpecification) => html`
                     <tr>
-                        <td></td>
                         <td><span class="monospaced">${getLabel(ds)}</span></td>
                         <td colspan="${isSetup? 2 : 1}">${ds.description && ds.description.length > 0 ? ds.description : ''}</td>
                         <td style="text-align: right;" class="number">
@@ -1311,38 +1422,61 @@ export class ModelView extends connect(store)(PageViewElement) {
             </table>`
     }
 
+    private _renderFixedResource (ds: DatasetSpecification) {
+        if (this._datasetSpecifications2[ds.id])
+            ds = this._datasetSpecifications2[ds.id];
+        return html`
+            ${ds.hasFixedResource && ds.hasFixedResource.length > 0 &&
+              ds.hasFixedResource[0].value && ds.hasFixedResource[0].value.length > 0 ? html`
+                <a target="_blank" href="${ds.hasFixedResource[0].value[0]}">
+                    ${(<unknown>ds.hasFixedResource[0].value[0] as string).split('/').pop()}
+                    <!-- FIXME: The model catalog defines hasFixedResource as Object -->
+                </a>
+            `: html`<span style="color:#999999;">-</span>`}
+        `;
+    }
+
     private _renderTabExample () {
         return html`<div id="mk-example"></div>`
     }
 
     private _renderTabVariables () {
-        if (!this._config) {
-            return html`
-            <br/>
-            <h3 style="margin-left:30px">
-                You must select a configuration or setup to see its variables.
-            </h3>`
-        }
         let resource : ModelConfiguration | ModelConfigurationSetup = this._setup ? this._setup : this._config;
         return html`
-            ${this._renderExpansionVariables(resource.hasInput, 'Inputs')}
-            ${this._renderExpansionVariables(resource.hasOutput, 'Outputs')}
+            ${this._config ? html`
+                <wl-title level="3">${this._setup ? 'Setup': 'Configuration'} variables:</wl-title>
+                ${this._renderExpansionVariables(resource.hasInput, 'Inputs')}
+                ${this._renderExpansionVariables(resource.hasOutput, 'Outputs')}
+                ${((!resource.hasInput || resource.hasInput.length === 0) &&
+                   (!resource.hasOutput || resource.hasOutput.length === 0)) ? html`
+                <br/>
+                <h3 style="margin-left:30px">
+                    This information has not been specified in the ${this._setup ? 'setup': 'configuration'} yet.
+                </h3>` : ''}
+            ` : ''}
 
-            ${((!resource.hasInput || resource.hasInput.length === 0) &&
-               (!resource.hasOutput || resource.hasOutput.length === 0)) ? html`
-            <br/>
-            <h3 style="margin-left:30px">
-                This information has not been specified yet.
-            </h3>` : ''}
+            ${this._model && (this._model.hasInputVariable || this._model.hasOutputVariable) ? html`
+                <wl-title level="3" style="margin-top: 1em;"> Model variables:</wl-title>
+                ${this._model.hasInputVariable && this._model.hasInputVariable.length > 0 ? html`
+                <wl-title level="2" style="font-size: 16px;">Input Variables:</wl-title>
+                ${this._renderVariablePresentationTable(this._model.hasInputVariable)}
+                ` : ''}
+                ${this._model.hasOutputVariable && this._model.hasOutputVariable.length > 0 ? html`
+                <wl-title level="2" style="font-size: 16px;">Output Variables:</wl-title>
+                ${this._renderVariablePresentationTable(this._model.hasOutputVariable)}
+                ` : ''}
+            ` : ''}
         `
     }
 
     private _renderExpansionVariables (dsArr: DatasetSpecification[], title: string) {
         if (!dsArr || dsArr.length === 0) return '';
         return html`
-            <wl-title level="3">${title}:</wl-title>
+            <wl-title level="2" style="font-size: 16px;">${title}:</wl-title>
             ${dsArr.map((ds:DatasetSpecification) => html`
-            <wl-expansion id="${getLabel(ds)}" name="${title}" @click="${() => this._expandDS(ds)}" style="overflow-y: hidden;">
+            <wl-expansion id="${getLabel(ds)}" name="${title}" @click="${() => this._expandDS(ds)}"
+                    .disabled=${this._loading[ds.id]}
+                    style="overflow-y: hidden;">
                 <span slot="title" style="flex-grow: unset;">
                     ${this._loading[ds.id] ? 
                         getLabel(ds)
@@ -1414,8 +1548,57 @@ export class ModelView extends connect(store)(PageViewElement) {
         `
     }
 
+    private _renderVariablePresentationTable (vps:VariablePresentation[]) {
+        return html`
+            <table class="pure-table pure-table-bordered">
+                <thead>
+                    <th>Name</th>
+                    <th>Long Name</th>
+                    <th>Description</th>
+                    <th>Standard Name</th>
+                    <th>Units</th>
+                </thead>
+                <tbody>
+                    ${vps.map((vp : VariablePresentation) => this._loading[vp.id] ? html`
+                    <tr>
+                        <td colspan="5">
+                            <div class="text-centered">
+                                ${getId(vp)} <loading-dots style="--height: 10px; margin-left:10px"></loading-dots>
+                            </div>
+                        </td>
+                    </tr>
+                    ` : html`
+                    <tr>
+                        <td>${getLabel(this._variablePresentations[vp.id])}</td>
+                        <td>${this._variablePresentations[vp.id].hasLongName}</td>
+                        <td>${this._variablePresentations[vp.id].description}</td>
+                        <td style="word-wrap: break-word;">
+                        ${this._variablePresentations[vp.id].hasStandardVariable && this._variablePresentations[vp.id].hasStandardVariable.length > 0 ? html`
+                            <a class="monospaced link" target="_blank" href="${this._variablePresentations[vp.id].hasStandardVariable[0].id}">
+                                ${getLabel(this._variablePresentations[vp.id].hasStandardVariable[0])}
+                            </a>
+                        ` : '-'}
+                        </td>
+                        <td style="min-width: 80px;">
+                            ${this._variablePresentations[vp.id].usesUnit && 
+                              this._variablePresentations[vp.id].usesUnit.length > 0 ?
+                                getLabel(this._variablePresentations[vp.id].usesUnit[0]) : '-'}
+                        </td>
+                    </tr>
+                    ` )}
+                </tbody>
+            </table>
+        `;
+    }
+
+    private _closeAllExpansions () {
+        let allExp = this.shadowRoot.querySelectorAll('wl-expansion');
+        if (allExp && allExp.length > 0) {
+            allExp.forEach(exp => exp["checked"] = false);
+        }
+    }
+
     private _expandDS (ds: DatasetSpecification) {
-        console.log('>', ds.id);
         if (!this._loading[ds.id]) {
             if (!this._loadedPresentations[ds.id]) {
                 let db = (store.getState() as RootState).modelCatalog;
@@ -1423,13 +1606,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                 let dataset = this._datasetSpecifications[ds.id];
                 if (dataset.hasPresentation && dataset.hasPresentation.length > 0)
                     this._loadVariablePresentations(dataset.hasPresentation, db);
-                else
+                else 
                     this.requestUpdate();
             }
-        } else {
-            setTimeout(() => {
-                this._expandDS(ds);
-            }, 500);
         }
     }
 
@@ -1567,6 +1746,17 @@ export class ModelView extends connect(store)(PageViewElement) {
         let ui = state.explorerUI;
         let db = state.modelCatalog;
 
+        this.setSubPage(state);
+        if (this._subpage != "explore") {
+            if (this._selectedModel) {
+                this._selectedModel = '';
+                this._selectedVersion = '';
+                this._selectedConfig = '';
+                this._selectedSetup = '';
+            }
+            return;
+        }
+
         // check whats changed
         let modelChanged : boolean = ui && (ui.selectedModel !== this._selectedModel);
         let versionChanged : boolean = ui && (modelChanged || ui.selectedVersion !== this._selectedVersion);
@@ -1584,6 +1774,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                 if (!this._selectedModel) {
                     this._clear();
                     return;
+                }
+                if (!this._selectedVersion) {
+                    this._shouldUpdateConfigs = true;
                 }
                 this._loading[this._selectedModel] = true;
                 store.dispatch(modelGet(this._selectedModel)).then((model:Model) => {
@@ -1619,6 +1812,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                     if (this._tab === 'tech') {
                         this._loadSourceCodes(this._model.hasSourceCode, db);
                     }
+                    this._loadProcesses(this._model.hasProcess, db);
+                    this._loadVariablePresentations(this._model.hasInputVariable, db);
+                    this._loadVariablePresentations(this._model.hasOutputVariable, db);
 
                     //FIXME: this is duplicated
                     if (this._model && !this._modelRegions && !this._loadingGlobals) {
@@ -1736,19 +1932,18 @@ export class ModelView extends connect(store)(PageViewElement) {
                         (setup.hasSoftwareImage || []).forEach((si:SoftwareImage) => {
                             this._softwareImages[si.id] = si;
                         });
-                        // Save parameters
-                        (setup.hasParameter || []).forEach((parameter:Parameter) => {
-                            //FIXME: this does not return relevantForIntervention (id=undefined)
-                            if (!this._parameters[parameter.id]) this._parameters[parameter.id] = parameter;
-                        });
-                        // Save IO
-                        (setup.hasInput || []).concat(setup.hasOutput || []).forEach((ds:DatasetSpecification) => {
+
+                        if (setup.hasParameter) this._loadParameters(setup.hasParameter, db);
+                        if (setup.hasInput) this._loadDatasetSpecifications(setup.hasInput, db);
+                        if (setup.hasOutput) this._loadDatasetSpecifications(setup.hasOutput, db);
+
+                        (setup.hasInput || []).concat(setup.hasOutput || []).forEach((ds:DatasetSpecification) => {
                             //FIXME: this does not return hasFixedValue -> hasPart
-                            this._datasetSpecifications[ds.id] = ds;
+                            this._datasetSpecifications2[ds.id] = ds;
                         });
-                        
+
                         this._setup = setup;
-                        //console.log('setup', setup);
+                        this._closeAllExpansions();
                         this._loading[this._selectedSetup] = false;
                     }).catch((error) => {
                         if (error.status == 404) {
@@ -1814,6 +2009,32 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     private _renderAuthors (authorArray: (Person|Organization)[]) {
+        //HACK
+        if (this._selectedModel === "https://w3id.org/okn/i/mint/CYCLES") {
+            authorArray = [
+                {
+                    id: "https://w3id.org/okn/i/mint/kemanian_armen",
+                    label: ["Armen Kemanian"],
+                    type: ["Person", "Thing"]
+                } as Person,
+                {
+                    id: "https://w3id.org/okn/i/mint/shi_yuning",
+                    label: ["Yuning Shi"],
+                    type: ["Person", "Thing"]
+                } as Person,
+                {
+                    id: "https://w3id.org/okn/i/mint/white_charlie",
+                    label: ["Charlie M. White"],
+                    type: ["Person", "Thing"]
+                } as Person,
+                {
+                    id: "https://w3id.org/okn/i/mint/stockle_claudio",
+                    label: ["Claudio O. Stockle"],
+                    type: ["Person", "Thing"]
+                } as Person
+            ]
+        }
+
         return (authorArray || []).map((author:Person|Organization) => {
             if (this._loading[author.id]) {
                 return html`${getId(author)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
@@ -1875,12 +2096,18 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _renderFundings (fundArray: FundingInformation[]) {
         return (fundArray || []).map((fund:FundingInformation) => this._loading[fund.id] ?
             html`${getId(fund)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
-            : (this._funding[fund.id].fundingSource || []).map((org:Organization) => 
-                this._loading[org.id] ? 
-                html`${getId(org)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
-                : html`<span class="resource organization">
-                    ${getLabel(this._organizations[org.id])}
-                </span>`)
+            : (this._funding[fund.id].fundingSource ? 
+                this._funding[fund.id].fundingSource.map((org:Organization) => 
+                    this._loading[org.id] ? 
+                    html`${getId(org)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
+                    : html`<span class="resource organization">
+                        ${getLabel(this._organizations[org.id])}
+                    </span>`)
+                : (this._funding[fund.id].fundingGrant ? 
+                    html`<span>${this._funding[fund.id].fundingGrant}</span>`
+                    : html`${getLabel(this._funding[fund.id])}`
+                    )
+                )
             );
     }
 

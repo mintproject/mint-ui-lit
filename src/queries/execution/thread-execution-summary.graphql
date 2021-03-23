@@ -1,0 +1,15 @@
+#import "../fragments/execution-summary-info.graphql"
+
+query execution_summary(
+  $thread_id: String!, $model_id: String!) {
+	thread_model_execution_summary (
+    where: {
+      thread_model: {
+        thread_id:{_eq:$thread_id}
+        model_id:{_eq:$model_id}
+      }
+    }
+  ) {
+    ...execution_summary_info
+  }
+}

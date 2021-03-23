@@ -4,14 +4,14 @@ import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
 import { store, RootState } from 'app/store';
+import { CustomNotification } from 'components/notification';
 import { IdMap } from "app/reducers";
-
-import { renderNotifications } from "util/ui_renders";
-import { showNotification, showDialog, hideDialog } from 'util/ui_functions';
+import { showDialog, hideDialog } from 'util/ui_functions';
+import { PREFIX_URI } from 'config/default-graph';
 
 import "weightless/progress-spinner";
 import "weightless/textfield";
-import "weightless/textfield";
+import "weightless/textarea";
 import "weightless/card";
 import "weightless/dialog";
 import "weightless/button";
@@ -23,7 +23,7 @@ import { Select } from 'weightless/select';
 
 /************/
 import { LitElement } from 'lit-element';
-import { getId, getLabel } from 'model-catalog/util';
+import { getId, getLabel, capitalizeFirstLetter } from 'model-catalog/util';
 interface BaseResources {
     id?: string;
     label?: string[];
@@ -50,7 +50,6 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             border: 1px solid gray;
             margin-right: 5px;
             --button-padding: 4px;
-            float: right;
         }
 
         .list-item {
@@ -144,16 +143,20 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: Object}) protected _error : IdMap<boolean> = {};
     @property({type: Boolean}) protected _allResourcesLoaded : boolean = false;
     @property({type: Boolean}) protected _allResourcesLoading : boolean = false;
+    // FIXME: this could be only one.
     @property({type: String}) protected _selectedResourceId : string = "";
     @property({type: String}) protected _editingResourceId : string = "";
     protected _selectedResources : IdMap<boolean> = {};
 
     // FLAGS
-    @property({type: String}) protected _action : Action = Action.NONE;
-    @property({type: String}) protected _status : Status = Status.NONE;
+    @property({type: String}) protected _action : Action = Action.NONE; //NONE, SELECT, MULTISELECT, EDIT_OR_ADD,
+    @property({type: String}) protected _status : Status = Status.NONE; //NONE, CREATE, EDIT, CUSTOM_CREATE,
+
     @property({type: Boolean}) public inline : boolean = true;
+    @property({type: Boolean}) public uniqueLabel : boolean = false;
     @property({type: Boolean}) private _dialogOpen : boolean = false;
     @property({type: Boolean}) protected _waiting : boolean = false;
+    @property({type: Boolean}) protected _singleMode : boolean = false;
 
     @property({type: Object}) protected _resources : T[] = [] as T[];
     @property({type: Object}) protected _orderedResources : T[] = [] as T[];
@@ -161,14 +164,19 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: String}) protected _textFilter : string = "";
     @property({type: Boolean}) protected _creationEnabled : boolean = true;
     @property({type: Boolean}) protected _editionEnabled : boolean = true;
-    @property({type: Boolean}) protected _deleteEnabled : boolean = true;
+    @property({type: Boolean}) protected _deletionEnabled : boolean = true;
+    @property({type: Boolean}) protected _duplicationEnabled : boolean = false;
 
     @property({type: Number}) protected _page : number = 0;
     public pageMax : number = -1;
+    public inlineMax : number = -1;
+    @property({type: Boolean}) private inlineMaxShowMore : boolean = false;
 
     private _order : IdMap<T> = {} as IdMap<T>;
+    protected _notification : CustomNotification;
 
-    protected lazy : boolean = false;
+    private _idToCopy : IdMap<string> = {} as IdMap<string>;
+    public lazy : boolean = false;
 
     protected classes : string = "resource";
     protected name : string = "resource";
@@ -183,6 +191,49 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected _filters : ((r:T) => boolean)[] = [
         (r:T) => this._resourceToText(r).toLowerCase().includes( this._textFilter ),
     ];
+
+    public enableCreation () {
+        this._creationEnabled = true;
+    }
+
+    public disableCreation () {
+        this._creationEnabled = false;
+    }
+
+    public enableEdition () {
+        this._editionEnabled = true;
+    }
+
+    public disableEdition () {
+        this._editionEnabled = false;
+    }
+
+    public enableDeletion () {
+        this._deletionEnabled = true;
+    }
+
+    public disableDeletion () {
+        this._deletionEnabled = false;
+    }
+
+    public enableDuplication (...args: any[]) {
+        this._duplicationEnabled = true;
+    }
+
+    public disableDuplication () {
+        this._duplicationEnabled = false;
+    }
+
+    public isCreating () {
+        return this._status == Status.CREATE;
+    }
+    
+    protected _singleModeInitialized : boolean = false;
+
+    /* Must be defined */
+    protected _initializeSingleMode () {
+        console.error('Single mode no defined');
+    }
 
     public unsetAction () {
         this._action = Action.NONE;
@@ -200,33 +251,88 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._action = Action.EDIT_OR_ADD;
     }
 
+    /* Complex resources can have inner resources */
+    protected _setSubActions () {
+    }
+
+    protected _unsetSubActions () {
+    }
+
     public setName (newName : string) {
         this.name = newName;
     }
 
+    public constructor () {
+        super();
+        this._notification = new CustomNotification();
+    }
+
     protected render () {
-        //console.log('Render', this.pname + ':', this._resources, this._loadedResources);
         return html`
-            ${this.inline ? this._renderInline() : this._renderTable()}
+            ${this._singleMode ? 
+                this._renderFullView() 
+                : (this.inline ? 
+                    this._renderInline() 
+                    : this._renderTable())}
             <wl-dialog class="larger" id="resource-dialog" fixed backdrop blockscrolling persistent>
                 ${this._dialogOpen ? this._renderDialogContent() : ''}
             </wl-dialog>
+            ${this._notification}
         `;
+    }
+
+    private _renderFullView () {
+        if (this._status === Status.CREATE) {
+            return html`
+                ${this._renderFullForm()}
+                ${this._renderActionButtons()}
+            `;
+        } else if (this._resources.length > 0) {
+            let r : T = this._resources[0];
+            if (this._loading[r.id])
+                return html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
+            if (this._error[r.id])
+                return html`<p>
+                    An error has ocurred trying to load this resource. 
+                    <span @click="${() => this._forceLoad(r)}" id="retry-button">
+                        <wl-icon style="position:fixed;">cached</wl-icon>
+                    </span>
+                </p>`;
+            return html`
+                ${(this._status === Status.EDIT) ? 
+                    this._renderFullForm()
+                    : this._renderFullResource(this._loadedResources[r.id])}
+                ${this._renderActionButtons()}
+            `;
+        } else {
+            return this._renderEmpty();
+        }
     }
 
     private _renderInline () {
         return html`
-        <div style="position: relative">
+        <div style="display: flex; justify-content: space-between;">
+            <span>
+            ${this._resources.length == 0 ?
+                this._renderEmpty()
+                : this._resources
+                        .filter((r:T, i:number) => this.inlineMaxShowMore || this.inlineMax < 0 || i < this.inlineMax)
+                        .map((r:T) => this._renderStatus(r))
+            }
+            ${this.inlineMax > 0 && this.inlineMax < this._resources.length ? html`
+                <a style="display: block" @click=${() => this.inlineMaxShowMore = !this.inlineMaxShowMore}>
+                    Show ${this.inlineMaxShowMore ? 'less' : 'more'}
+                </a>
+            ` : ''}
+            </span>
+            <span>
             ${(this._action === Action.SELECT || this._action === Action.MULTISELECT) ? html`
                 <wl-button @click="${this._showEditSelectionDialog}" id="select-button" flat inverted>
                     <wl-icon>edit</wl-icon>
                 </wl-button>`
                 : ''
             }
-            ${this._resources.length == 0 ?
-                this._renderEmpty()
-                : this._resources.map((r:T) => this._renderStatus(r))
-            }
+            </span>
         </div>`;
     }
 
@@ -242,12 +348,13 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 ${editing ? html`<th style="width:10px;"></th>` : ''}
             </thead>
             ${this._resources.length > 0 ? displayedResources.map((r:T) => this._renderStatus(r)) : ''}
-            ${this._action === Action.EDIT_OR_ADD ? html`
+            ${this._action === Action.EDIT_OR_ADD && this._creationEnabled ? html`
             <tr class="ignore-grab">
                 <td colspan="${this.positionAttr ? this.colspan +2 : this.colspan + 1}" align="center">
                     <a class="clickable" @click=${this._createResource}>Add a new ${this.name}</a>
                 </td>
-            </tr>` : (this._resources.length == 0 ? html`
+            </tr>` 
+            : (this._resources.length == 0 ? html`
             <tr>
                 <td colspan="${this.colspan + 1}" align="center">
                     ${ this._renderEmpty() }
@@ -332,8 +439,17 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     </td>` : ''}
                     ${this._renderRow(lr)}
                     ${this._action === Action.EDIT_OR_ADD ? html`
-                    <td>
-                        <wl-button class="edit" @click="${() => this._editResource(r)}" flat inverted><wl-icon>edit</wl-icon></wl-button>
+                    <td style="width: ${this._deletionEnabled ? '65' : '30'}px">
+                        <div style="display: flex; justify-content: space-between;">
+                            <wl-button class="edit" @click="${() => this._editResource(r)}" flat inverted>
+                                <wl-icon>edit</wl-icon>
+                            </wl-button>
+                            ${this._deletionEnabled ? html`
+                            <wl-button class="edit" @click="${() => this._deleteResource(r)}" flat inverted>
+                                <wl-icon>delete</wl-icon>
+                            </wl-button>
+                            ` : ''}
+                        </div>
                     </td>` : ''}`
                 }
             </tr>`;
@@ -343,11 +459,17 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         return html`${getLabel(r)}`;
     }
 
+    protected _renderFullResource (r:T) {
+        return this._renderResource(r);
+    }
+
     protected _renderRow (r:T) {
+        if (r)
         return html`
             <td>${getLabel(r)}</td>
             <td>${r.description ? r.description[0] : ''}</td>
         `;
+        return html``;
     }
 
     protected _renderSearchOnList () {
@@ -356,6 +478,54 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 <wl-icon slot="after">search</wl-icon>
             </wl-textfield>
         `;
+    }
+
+    protected _renderActionButtons () {
+        if (this._status === Status.CREATE || this._status === Status.EDIT) {
+            return html`
+                <div style="float:right; margin-top: 1em;">
+                    <wl-button @click="${this._onCancelButtonClicked}" style="margin-right: 1em;" flat inverted>
+                        <wl-icon>cancel</wl-icon>&ensp;Discard changes
+                    </wl-button>
+                    <wl-button @click="${this._onSaveButtonClicked}">
+                        <wl-icon>save</wl-icon>&ensp;Save
+                    </wl-button>
+                </div>` 
+        } else {
+            return html`
+                <div style="display: flex; justify-content: space-between; padding: 1em 0;">
+                    <span>
+                        <wl-button style="--primary-hue: 0; --primary-saturation: 75%" ?disabled="${!this._deletionEnabled}"
+                                   @click="${() => this._deleteResource(this._resources[0])}">
+                            <wl-icon>delete</wl-icon>&ensp;Delete
+                        </wl-button>
+                        <wl-button  style="--primary-hue: 124; --primary-saturation: 45%; margin-left: 0.5em;"
+                                    ?disabled="${!this._duplicationEnabled}"
+                                    @click="${this._onDuplicateButtonClicked}">
+                            <wl-icon>edit</wl-icon>&ensp;Duplicate
+                        </wl-button>
+                    </span>
+                    <wl-button @click="${() => this._editResource(this._resources[0])}">
+                        <wl-icon>edit</wl-icon>&ensp;Edit
+                    </wl-button>
+                </div>`
+        }
+    }
+
+    private _onCancelButtonClicked () {
+        this._clearStatus();
+        this._eventCancel();
+    }
+
+    private _onDuplicateButtonClicked () {
+        let p : Promise<T> = this.duplicate();
+        p.then((r:T) => {
+            this._notification.save(capitalizeFirstLetter(this.name) +" duplicated.");
+            this._eventSave(r);
+        });
+        p.catch((err) => {
+            this._notification.error("Error trying to duplicate resource");
+        });
     }
 
     _searchPromise = null;
@@ -381,6 +551,12 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     protected _renderSelectList () {
         if (!this._allResourcesLoaded && !this._allResourcesLoading) this._loadAllResources();
+        let sortBySelection = (a:T, b:T) => {
+            if (a && isSelected(a.id)) return -1;
+            if (b && isSelected(b.id)) return 1;
+            return 0;
+        }
+
         // Diff between SELECT and MULTISELECT
         let checked : string = (this._action === Action.SELECT) ?
                 'radio_button_checked' : 'check_box';
@@ -398,14 +574,14 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         let resourcesToShow : T[] = [];
         let pages : number = -1;
         if (!this._allResourcesLoading) {
-            resourcesToShow = Object.values(this._loadedResources);
+            resourcesToShow = Object.values(this._loadedResources).sort(sortBySelection);
             this._filters.forEach((filter:(r:T)=>boolean) => {
                 resourcesToShow = resourcesToShow.filter(filter);
             });
             if (this.pageMax > 0 && this.pageMax < resourcesToShow.length) {
                 pages = Math.ceil(resourcesToShow.length / this.pageMax);
                 resourcesToShow = resourcesToShow.filter((r,i) => {
-                    let a : boolean = (i > this._page * this.pageMax);
+                    let a : boolean = (i >= this._page * this.pageMax);
                     let b : boolean = (i < (this._page+1) * this.pageMax);
                     return a && b;
                 });
@@ -446,7 +622,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                         <wl-button @click="${() => this._editResource(r)}" flat inverted ?disabled="${!this._editionEnabled}">
                             <wl-icon>edit</wl-icon>
                         </wl-button>
-                        <wl-button @click="${() => this._deleteResource(r)}" flat inverted ?disabled="${!this._deleteEnabled}">
+                        <wl-button @click="${() => this._deleteResource(r)}" flat inverted ?disabled="${!this._deletionEnabled}">
                             <wl-icon class="warning">delete</wl-icon>
                         </wl-button>
                     </span>
@@ -493,7 +669,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             <wl-button @click="${this._clearStatus}" style="margin-right: 5px;" inverted flat ?disabled="${this._waiting}">
                 Cancel
             </wl-button>
-            <wl-button class="submit" ?disabled="${this._waiting}" @click="${this._onFormSaveButtonClicked}">
+            <wl-button class="submit" ?disabled="${this._waiting}" @click="${this._onSaveButtonClicked}">
                 Save
                 ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
             </wl-button>
@@ -511,6 +687,19 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 value=${edResource && edResource.description ? edResource.description[0] : ''}>
             </wl-textarea>
         </form>`;
+    }
+
+    protected _renderFullForm () {
+        return this._renderForm();
+    }
+
+    public clearForm () {
+        // GET ELEMENTS
+        let inputLabel : Textfield  = this.shadowRoot.getElementById('resource-label') as Textfield;
+        let inputDesc  : Textarea   = this.shadowRoot.getElementById('resource-desc') as Textarea;
+        // VALIDATE
+        if (inputLabel) inputLabel.value = '';
+        if (inputDesc) inputDesc.value = '';
     }
 
     private _grabPosition (e) {
@@ -584,7 +773,6 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         let mov: number = oldIndex > newIndex ? +1 : -1;
         for (let i = min; i < max + 1; i ++) {
             let index : number = i === oldIndex ? newIndex : i + mov;
-            //console.log(i, '->', index, this._orderedResources[i-1]);
             this._setResourcePosition(this._orderedResources[i-1], index);
         }
         this._refreshOrder();
@@ -596,11 +784,16 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     }
 
     protected _clearStatus () {
+        if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
+            this._unsetSubResources();
+        }
         this._status = Status.NONE;
         this._editingResourceId = '';
         if (this._action === Action.EDIT_OR_ADD) {
             this._closeDialog();
         }
+        this.clearForm();
+        this._unsetSubActions();
     }
 
     protected _onSelectButtonClicked () {
@@ -618,88 +811,185 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._closeDialog();
     }
 
-    protected _onFormSaveButtonClicked () {
-        let resource = this._getResourceFromForm();
+    protected _onSaveButtonClicked () {
+        //FIXME: this should be a unique getresourceformfrom function.
+        let resource = this._singleMode ? this._getResourceFromFullForm() : this._getResourceFromForm();
         if (resource && this._status != Status.NONE) {
-            if (this.lazy) {
-                if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
-                    // Create a temp id
-                    let id : string = (new Date()).getTime() + '';
-                    resource['id'] = id;
-                    this._resourcesToCreate[id] = resource;
-                    if (this._action === Action.EDIT_OR_ADD) {
-                        this._resources.push(resource);
-                        if (this.positionAttr) this._orderedResources.push(resource);
-                    }
-                } else if (this._status === Status.EDIT) {
-                    resource.id = this._editingResourceId;
-                    this._resourcesToEdit[this._editingResourceId] = resource;
+            if ((this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE)) {
+                if (!this.uniqueLabel || this._checkLabelUniq(resource)) {
+                    resource.id = "";
+                } else {
+                    this._uniqueLabelError(resource);
+                    return null;
                 }
-                this._loadedResources[resource.id] = resource;
-                this._clearStatus();
-                if (this._action === Action.MULTISELECT) {
-                    this._selectedResources[resource.id] = true;
-                } else if (this._action === Action.SELECT) {
-                    this._selectedResourceId = resource.id;
-                }
-            } else {
-                this._waiting = true;
-                let req : Promise<T>;
-                if (this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE) {
-                    req = store.dispatch(this.resourcePost(resource));
-                } else if (this._status === Status.EDIT) {
-                    resource.id = this._editingResourceId;
-                    req = store.dispatch(this.resourcePut(resource));
-                }
-                req.then((r:T) => {
-                    console.log('Promise resolved', r);
-                    this._waiting = false;
-                    this._loadedResources[r.id] = r;
-                    this._clearStatus();
-                    // TODO: display notifications
-                    if (this._action === Action.EDIT_OR_ADD && this._resources.filter((s:T) => s.id===r.id).length === 0) {
-                        this._resources.push(r);
-                        if (this.positionAttr) this._orderedResources.push(r);
-                    } else if (this._action === Action.MULTISELECT) {
-                        this._selectedResources[r.id] = true;
-                    } else if (this._action === Action.SELECT) {
-                        this._selectedResourceId = r.id;
-                    }
-                });
+            } else if (this._status === Status.EDIT) {
+                resource.id = this._editingResourceId;
+                resource = this._createEditedResource(resource);
             }
+
+            if (this.lazy) this._saveResourceLazy(resource);
+            else this._saveResource(resource);
         }
     }
 
-    public save () {
-        let creation = Object.values(this._resourcesToCreate).map((r:T) => {
-            let tempId : string = r.id;
-            let index : number = -1;
-            this._resources.forEach((r2:T, i:number) => {
-                if (r2.id === r.id) index = i;
-            });
+    protected _checkLabelUniq (resource:T) {
+        //Is all loaded?
+        let label : string = getLabel(resource).toLowerCase();
+        return !Object.values(this._loadedResources).some((r:T) => 
+            r && r.label && r.label.some((name:string) => name.toLowerCase() == label)
+        );
+    }
 
-            r["id"] = "";
-            let req = store.dispatch(this.resourcePost(r));
-            req.then((resource : T) => {
-                this._resources.splice(index,1);
-                this._resources.push(resource);
+    protected _uniqueLabelError (resource:T) {
+        this._notification.error('The name "'+ getLabel(resource) + '" is already on use.');
+    }
+
+    private _saveResource (r:T) {
+        this._waiting = true;
+        return new Promise((resolve, reject) => {
+            let inner : Promise<T> = this._createLazyInnerResources(r);
+            inner.catch(reject);
+            inner.then((resource:T) => {
+                let req : Promise<T>;
+                if (resource.id) {
+                    req = store.dispatch(this.resourcePut(resource));
+                } else {
+                    req = store.dispatch(this.resourcePost(resource));
+                }
+                req.catch(reject);
+                req.then((r:T) => {
+                    this._waiting = false;
+                    this._loadedResources[r.id] = r;
+                    this._notification.save(this.name + " saved");
+                    this._postSaveUpdate(r);
+                    this._eventSave(r);
+                    resolve(r);
+                });
             });
-            return req;
         });
-        let edition = Object.values(this._resourcesToEdit).map((r:T) => {
-            let req = store.dispatch(this.resourcePut(r));
-            return req;
+    }
+
+    /* This function must be redefined when a complex resource is saved and some of his inner resources is lazy */
+    protected _createLazyInnerResources (r:T) {
+        return Promise.resolve(r);
+    }
+
+    private _postSaveUpdate (r:T) {
+        this._clearStatus();
+        if (this._action === Action.EDIT_OR_ADD && this._resources.filter((s:T) => s.id===r.id).length === 0) {
+            //Check if saved resource is already selected.
+            if (this._resources.some((r2:T) => r2.id === r.id))
+                this._resources.map((r2:T) => r2.id === r.id ? r : r2);
+            else
+                this._resources.push(r);
+            if (this.positionAttr) this._orderedResources.push(r);
+        } else if (this._action === Action.MULTISELECT) {
+            this._selectedResources[r.id] = true;
+        } else if (this._action === Action.SELECT) {
+            this._selectedResourceId = r.id;
+        }
+    }
+
+    private _createEditedResource (edited:T) {
+        // Merges the resource to edit with the original resource.
+        // TODO: how to erase a property?
+        let orig = this._getEditingResource();
+        //console.log("Original resource:", orig);
+        Object.keys(edited).forEach((key:string) => {
+            if (edited[key] === undefined) delete edited[key];
         });
-        let allp = Promise.all([ ...creation, ...edition ]);
-        allp.then((rs: T[]) => {
-            rs.forEach((lr:T) => {
-                this._loadedResources[lr.id] = lr;
+        //console.log("Edited resource:", edited);
+        let merged = { ...orig, ...edited };
+        //console.log("Merged:", merged);
+        // To remove stuff, we need to send a empty array on the edited resource,
+        // We need to save so remove it.
+        Object.keys(merged).forEach((key:string) => {
+            if (Array.isArray(merged[key]) && merged[key].length === 0)
+                merged[key] = undefined;
+        });
+        return merged;
+    }
+
+    private _eventSave (r:T) {
+        let event : CustomEvent = new CustomEvent('model-catalog-save', {
+            bubbles: true,
+            composed: true,
+            detail: r
+        });
+        this.dispatchEvent(event);
+    }
+
+    private _eventDelete (r:T) {
+        let event : CustomEvent = new CustomEvent('model-catalog-delete', {
+            bubbles: true,
+            composed: true,
+            detail: r
+        });
+        this.dispatchEvent(event);
+    }
+
+    private _eventCancel () {
+        let event : CustomEvent = new CustomEvent('model-catalog-cancel', {
+            bubbles: true,
+            composed: true,
+        });
+        this.dispatchEvent(event);
+    }
+
+    private _saveResourceLazy (resource:T) {
+        //Update memory now
+        this._postSaveUpdate(this._addToSaveQueue(resource));
+    }
+
+    private _addToSaveQueue (r:T) {
+        if (r.id && r.id.includes(PREFIX_URI)) { // if the resource has an ID and its part of the model catalog, is an edition.
+            this._resourcesToEdit[r.id] = r;
+        } else { // The resource has no Id or is not part of the model-catalog.
+            //Do no modify already created resources. Temp resources start with '0.'
+            if (!r.id || !(r.id[0] == '0' && r.id[1] == '.')) { 
+                r.id = Math.random().toString(36);
+            }
+            this._resourcesToCreate[r.id] = r;
+        }
+        this._loadedResources[r.id] = r;
+        return r;
+    }
+
+    // When lazy is on, this function must be used to perform the save
+    // Only save the selected resources 
+    public save () : Promise<T[]> {
+        return new Promise((resolve, reject) => {
+            let creation = Object.values(this._resourcesToCreate)
+                    .filter((r:T) => this._resources.some((r2:T) => r2.id === r.id))
+                    .map((r:T) => {
+                let tempId : string = r.id;
+                let toSend : T = { ...r, id: "" };
+
+                let req = store.dispatch(this.resourcePost(toSend));
+                req.then((resource : T) => {
+                    this._loadedResources[resource.id] = resource;
+                    this._resources = this._resources.map((r2:T) => (r2.id === tempId) ? resource : r2);
+                });
+                return req;
             });
-            this._resourcesToEdit = {};
-            this._resourcesToCreate  = {};
-            if (this.positionAttr) this._refreshOrder();
-        })
-        return allp;
+            let edition = Object.values(this._resourcesToEdit)
+                    .filter((r:T) => this._resources.some((r2:T) => r2.id === r.id))
+                    .map((r:T) => {
+                let req = store.dispatch(this.resourcePut(r));
+                req.then((resource: T) => {
+                    this._loadedResources[resource.id] = resource;
+                });
+                return req;
+            });
+            let allp = Promise.all([ ...creation, ...edition ]);
+            allp.then((rs: T[]) => {
+                this._resourcesToEdit = {};
+                this._resourcesToCreate  = {};
+                if (this.positionAttr) this._refreshOrder();
+                resolve( this._resources.map((l:T) => this._loadedResources[l.id]) );
+            })
+            allp.catch(reject);
+        });
     }
 
     protected _getResourceFromForm () {
@@ -719,6 +1009,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             if (!label) (<any>inputLabel).onBlur();
             if (!desc) (<any>inputDesc).onBlur();
         }
+    }
+
+    protected _getResourceFromFullForm () {
+        return this._getResourceFromForm();
     }
 
     private _showEditSelectionDialog () {
@@ -742,6 +1036,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             this._dialogOpen = true;
             showDialog("resource-dialog", this.shadowRoot);
         }
+        this._setSubActions();
     }
 
     private _deleteResource (r:T) {
@@ -755,11 +1050,11 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             });
             if (index >= 0) {
                 this._resources.splice(index,1);
-            } else {
                 this.requestUpdate();
-            }
+            } 
             store.dispatch(this.resourceDelete(r)).then(() => {
-                //TODO: display notification;
+                this._notification.save(this.name + " deleted")
+                this._eventDelete(r);
             });
         }
     }
@@ -770,6 +1065,25 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             this._dialogOpen = true;
             showDialog("resource-dialog", this.shadowRoot);
         }
+    }
+
+    public enableSingleResourceCreation (...args: any[]) {
+        this._singleMode = true;
+        if (!this._singleModeInitialized) {
+            this._initializeSingleMode();
+            this._singleModeInitialized = true;
+        }
+        this._status = Status.CREATE;
+        this._setSubActions();
+    }
+
+    public disableSingleResourceCreation () {
+        this._clearStatus();
+        this._singleMode = false;
+    }
+
+    public editSelectedResource () {
+        this._editResource(this._resources[0]);
     }
 
     private _getResourcePosition (r:T) {
@@ -784,12 +1098,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         if (position > 0 && lr) {
             let newR : T = { ... lr };
             newR[this.positionAttr] = [position];
-            this._loadedResources[r.id] = newR;
-            if (this.lazy) {
-                this._resourcesToEdit[r.id] = newR;
-            } else {
-                //TODO: do an update here;
-            }
+            this._loadedResources[r.id] = newR; //this is not necesary i think.
+            if (this.lazy) this._saveResourceLazy(newR);
+            else this._saveResource(newR);
         }
     }
 
@@ -814,6 +1125,27 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         }
     }
 
+    public isOrdered () : boolean {
+        if (!this.positionAttr) return false;
+        for (let i = 0; i < this._orderedResources.length; i++) {
+            let r : T = this._orderedResources[i];
+            if (!r || this._getResourcePosition(r) != i+1)
+                return false;
+        }
+        return true;
+    }
+
+    public forceOrder () : void {
+        if (this.positionAttr) {
+            for (let i : number = 0; i < this._orderedResources.length; i++) {
+                let r : T = this._orderedResources[i];
+                if (this._getResourcePosition(r) != i+1)
+                    this._setResourcePosition(r, i+1);
+            }
+        }
+        this.requestUpdate();
+    }
+
     protected _forceLoad (r:T) {
         this._loading[r.id] = true;
         let req = store.dispatch(this.resourceGet(r.id));
@@ -830,17 +1162,51 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         });
     }
 
+    private _loadResources (r:T[]) {
+        let ids : string [] = r.map((l:T) => l.id);
+        ids.forEach((id:string) => this._loading[id] = true);
+        let dbResources : IdMap<T> = this._getDBResources();
+        return Promise.all(
+            ids.map((id:string) => {
+                if (dbResources[id])  {
+                    this._loadedResources[id] = dbResources[id];
+                    this._loading[id] = false;
+                    return Promise.resolve(this._loadedResources[id]);
+                } else {
+                    let req = store.dispatch(this.resourceGet(id));
+                    req.then((r:T) => {
+                        this._loadedResources[id] = r;
+                        this._loading[id] = false;
+                        this.requestUpdate();
+                    });
+                    req.catch(() => {
+                        this._error[id] = true;
+                        this._loading[id] = false;
+                    });
+                    return req;
+                }
+            })
+        );
+    }
+
     /* This is the way to set a list of resources */
     public setResources (r:T[]) {
-        if (!r || r.length === 0) {
+        this._singleMode = false;
+        if (!r || r.length === 0 || r.filter((l:T) => !!l.id).length === 0) {
             this._resources = [];
+            this._orderedResources = [];
             this._order = {};
             return;
         }
         this._resources = [...r];
         let shouldLoad : string[] = this._resources
                 .map((r:T) => r.id)
-                .filter((id:string) => !this._loading[id] || !this._loadedResources[id]);
+                .filter((id:string) => id.includes(PREFIX_URI) && (!this._loading[id] || !this._loadedResources[id]));
+
+        //External resources
+        this._resources.map((r:T) => {
+            if (!r.id.includes(PREFIX_URI)) this._loadedResources[r.id] = { ...r };
+        });
 
         if (shouldLoad.length > 0) {
             let dbResources : IdMap<T> = this._getDBResources();
@@ -872,7 +1238,154 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         } else if (this.positionAttr) {
             this._refreshOrder();
         }
+    }
 
+    /* Same as before but removes the id to set is as a copy. To use when lazy */
+    public setResourcesAsCopy (r:T[]) {
+        // FIXME: This does not work it loads everything always... should change the API redux.
+        if (!this.lazy) {
+            console.error("Cannot copy resources.");
+            return;
+        }
+        this._singleMode = false;
+        if (!r || r.length === 0) {
+            this._resources = [];
+            this._order = {};
+            this._idToCopy = {};
+            return;
+        }
+
+        let copyFn = (l:T) => {
+            if (!this._idToCopy[l.id]) {
+                let copy : T = this._addToSaveQueue({ ... this._loadedResources[l.id], id: "" });
+                this._idToCopy[l.id] = copy.id;
+            }
+        };
+        let replaceFn = (l:T) => {
+            let r = {...l};
+            if (this._idToCopy[r.id]) r.id = this._idToCopy[r.id];
+            return r;
+        };
+
+        let shouldLoad : T[] = r.filter((l:T) => l.id && l.id.includes(PREFIX_URI) && (!this._loading[l.id] || !this._loadedResources[l.id]));
+
+        //Add external resources
+        r.filter((l:T) => !l.id.includes(PREFIX_URI)).forEach((l:T) => this._loadedResources[l.id] = {...l});
+
+        //Copy loaded resources
+        r.filter((l:T) => l.id && l.id.includes(PREFIX_URI) && this._loadedResources[l.id]).forEach(copyFn);
+
+        this._resources = [...r].map(replaceFn);
+
+        if (shouldLoad.length > 0) {
+            this._loadResources(shouldLoad).then((resources:T[]) => {
+                resources.forEach(copyFn);
+                this._resources = [...r].map(replaceFn);
+                if (this.positionAttr) this._refreshOrder();
+            }).catch(() => {
+                if (this.positionAttr) this._refreshOrder();
+            })
+        } else if (this.positionAttr) {
+            this._refreshOrder();
+        }
+    }
+
+    /* Set a single resource */
+    public setResource (r:T) {
+        return new Promise((resolve, reject) => {
+            if (!this._singleModeInitialized) {
+                this._initializeSingleMode();
+                this._singleModeInitialized = true;
+            }
+            this._singleMode = true;
+            if (r && r.id) {
+                let id : string = r.id;
+                this._resources = [r];
+                if (!this._loading[id] && !this._loadedResources[id]) {
+                    let dbResources : IdMap<T> = this._getDBResources();
+                    if (dbResources[id]) {
+                        this._loadedResources[id] = dbResources[id];
+                        this._setSubResources(dbResources[id]);
+                        resolve(dbResources[id]);
+                    } else {
+                        this._loading[id] = true;
+                        let req = store.dispatch(this.resourceGet(id));
+                        req.then((r:T) => {
+                            this._loading[id] = false;
+                            this._loadedResources[id] = r;
+                            this.requestUpdate();
+                            this._setSubResources(r);
+                            resolve(r);
+                        });
+                        req.catch(() => {
+                            this._error[id] = true;
+                            this._loading[id] = false;
+                            reject();
+                        });
+                    }
+                } else if (this._loadedResources[id]) {
+                    this._setSubResources(this._loadedResources[id]);
+                    resolve(this._loadedResources[id]);
+                }
+            } else {
+                this._resources = [];
+                this._orderedResources = [];
+                this._unsetSubResources();
+                resolve();
+            }
+        });
+    }
+
+    protected _duplicateResource (r:T) : Promise<T> {
+        let copy : T = { ...r, id: '' };
+        return new Promise((resolve, reject) => {
+            let inner : Promise<T> = this._duplicateInnerResources(copy);
+            inner.catch(reject);
+            inner.then((fullResource:T) => {
+                let post : Promise<T> = store.dispatch(this.resourcePost(fullResource));
+                post.catch(reject);
+                post.then(resolve);
+            });
+        });
+
+    }
+
+    protected _duplicateInnerResources (r:T) : Promise<T> {
+        //MUST be remplaced
+        return new Promise((resolve, reject) => {
+            resolve(r);
+        });
+    }
+
+    public duplicateAllResources () : Promise<T[]> {
+        return new Promise((resolve, reject) => {
+            //Check that all resources are loaded
+            if (this._resources.some((r:T) => !this._loadedResources[r.id]))
+                reject("Some resources have not been loaded.")
+            let allRes : Promise<T>[] = this._resources
+                    .map((r:T) => this._loadedResources[r.id])
+                    .map((r:T) => this._duplicateResource(r));
+            let p : Promise<T[]> = Promise.all(allRes);
+            p.catch(reject);
+            p.then(resolve);
+        });
+    }
+
+    public duplicate () : Promise<T> {
+        return new Promise((resolve, reject) => {
+            if (!this._singleMode || this._resources.length != 1 || !this._loadedResources[this._resources[0].id])
+                reject();
+            let p : Promise<T> = this._duplicateResource(this._loadedResources[this._resources[0].id]);
+            p.catch(reject);
+            p.then(resolve);
+        });
+    }
+
+    /* Complex resources could have inner resources. Must be initialized here */ 
+    protected _setSubResources (r:T) {
+    }
+
+    protected _unsetSubResources () {
     }
 
     public getResources () {
@@ -883,7 +1396,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         })
     }
 
-    public isSaved () {
+    public isSaved () : boolean {
         return !this.lazy || (Object.keys(this._resourcesToEdit).length === 0 && Object.keys(this._resourcesToCreate).length === 0);
     }
 
@@ -891,12 +1404,30 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         return {} as IdMap<T>;
     }
 
-    protected _loadAllResources () {
+    protected _loadAllResources () : Promise<IdMap<T>> {
         this._allResourcesLoading = true;
-        store.dispatch(this.resourcesGet()).then((resources:IdMap<T>) => {
+        let allr : Promise<IdMap<T>> = store.dispatch(this.resourcesGet());
+        allr.then((resources:IdMap<T>) => {
+            // This are the resources that are in memory but not on the dc
+            let nonDCResources = Object.values(this._loadedResources).filter((r:T) => !r.id.includes(PREFIX_URI));
+            let nonDC : IdMap<T> = {};
+            if (nonDCResources.length > 0)
+                nonDCResources.forEach((r:T) => nonDC[r.id] = r);
+            this._loadedResources = { ...nonDC, ...resources };
+            // Check that selected resources are in the resources loaded.
+            this._resources.forEach((r:T) => {
+                if (!Object.values(this._loadedResources).some((l:T) => l.id === r.id)) {
+                    console.warn("Selected resource not found on loaded resources, ", r);
+                    this._loadedResources[r.id] = r;
+                }
+            });
             this._allResourcesLoading = false;
-            this._loadedResources = resources;
             this._allResourcesLoaded = true;
         });
+        return allr;
+    }
+
+    public getAllResources () : Promise<IdMap<T>> {
+        return this._loadAllResources();
     }
 }

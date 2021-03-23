@@ -1,0 +1,7 @@
+mutation new_regions ($objects: [region_insert_input!]!) {
+    insert_region (objects: $objects) {
+        returning {
+            id
+        }
+    }
+}

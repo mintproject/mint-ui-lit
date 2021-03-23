@@ -4,11 +4,10 @@ import { RootState } from "../../app/store";
 import { Model, ModelParameter } from "./reducers";
 import { Dataset } from "../datasets/reducers";
 
-import { setupsSearchVariable } from 'model-catalog/actions';
-import { ModelConfigurationSetup, DatasetSpecification, SoftwareImage } from '@mintproject/modelcatalog_client';
+import { setupsSearchVariable, setupGetAll, sampleCollectionGet, getIdFromUri, getUser, sampleResourceGet } from 'model-catalog/actions';
+import { Model as MCModel, ModelConfigurationSetup, DatasetSpecification, SoftwareImage, ModelConfiguration, SoftwareVersion, SampleCollectionApi, SampleCollection, SampleResource, SampleResourceApi } from '@mintproject/modelcatalog_client';
 import { sortByPosition, getLabel } from 'model-catalog/util';
 
-import { getVariableProperty } from "offline_data/variable_list";
 import { IdMap } from "app/reducers";
 
 export const MODELS_VARIABLES_QUERY = 'MODELS_VARIABLES_QUERY';
@@ -74,6 +73,7 @@ const dsSpecToIO = (ds: DatasetSpecification) => {
         id: ds.id,
         name: ds.label ? ds.label[0] : ds.id,
         type: types.join(),
+        format: ds.hasFormat ? ds.hasFormat[0] : null,
         position: ds.position ? ds.position[0] : 0,
         variables: [], //TODO does not return hasInput -> hasPresentation -> hasStandarVariable
     }
@@ -99,15 +99,16 @@ export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages:
         id: setup.id,
         localname: setup.id.substr(setup.id.lastIndexOf("/") + 1),
         name: setup.label ? setup.label[0] : "",
-        calibrated_region: setup.hasRegion && setup.hasRegion.length > 0 ?
+        region_name: setup.hasRegion && setup.hasRegion.length > 0 ?
                 setup.hasRegion.map(getLabel).join(', ') : "",
         description: setup.description ? setup.description[0] : "",
-        category: setup.hasModelCategory ? setup.hasModelCategory[0] : "",
-        wcm_uri: setup.hasComponentLocation ? setup.hasComponentLocation[0] : "",
+        category: setup.hasModelCategory && setup.hasModelCategory.length > 0 ?
+                setup.hasModelCategory.map(getLabel).join(', ') : "",
+        code_url: setup.hasComponentLocation ? setup.hasComponentLocation[0] : "",
         input_files: [],
         input_parameters: [],
         output_files: [],
-        original_model: "", //FIXME row["modelName"] || "",
+        model_name: "", //FIXME row["modelName"] || "",
         model_version: "", //FIXME row["versionName"] || "",
         model_configuration: "", //FIXME row["configurationName"] || "",
         software_image: setup.hasSoftwareImage ? softwareImages[setup.hasSoftwareImage[0].id].label[0]: "",
@@ -116,7 +117,7 @@ export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages:
             .replace('Model', ' Model'),
         parameter_assignment: setup.parameterAssignmentMethod ? setup.parameterAssignmentMethod[0] : "",
         parameter_assignment_details: "",
-        target_variable_for_parameter_assignment: setup.calibrationTargetVariable ?
+        calibration_target_variable: setup.calibrationTargetVariable ?
                 setup.calibrationTargetVariable
                         .map((tv:any) => tv.label? tv.label[0] : '')
                         .filter((l:string) => !!l)
@@ -125,9 +126,18 @@ export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages:
         dimensionality: "",
         spatial_grid_type: "",
         spatial_grid_resolution: "",
-        minimum_output_time_interval: "",
+        output_time_interval: "",
         usage_notes: setup.hasUsageNotes ? setup.hasUsageNotes[0] : ""
     };
+    
+    if (setup.usefulForCalculatingIndex && setup.usefulForCalculatingIndex.length >0) {
+        model.indicators = setup.usefulForCalculatingIndex
+                .map(index => index.id)
+                .map(id => id.split('/').pop())
+                .map(name => name.replace('_',' '))
+                .map(name => name.length > 0 ? name.charAt(0).toUpperCase() + name.slice(1) : name)
+                .join(", ");
+    }
 
     if (setup.hasGrid && setup.hasGrid.length > 0) {
         let grid = setup.hasGrid[0];
@@ -172,15 +182,16 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
     //console.log('let variables =', variables);
     Promise.all(
         variables.map((variable:string) => {
+            /* FIXME
             let fromvar : string = getVariableProperty(variable, "created_from");
             if(fromvar) {
                 variable = fromvar;
-            }
+            }*/
             return setupsSearchVariable(variable);
         })
     ).then((resp) => {
         setups = resp.reduce((arr:ModelConfigurationSetup[], r:ModelConfigurationSetup[]) => arr.concat(r), []);
-        console.log('preview:', setups);
+        //console.log('preview:', setups);
         dispatch({
             type: MODELS_VARIABLES_QUERY,
             variables: response_variables,
@@ -189,3 +200,88 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
         });
     })
 };
+
+
+export const fetchModelsFromCatalog = async (
+            models: IdMap<Model>, 
+            allSoftwareImages: IdMap<SoftwareImage>, 
+            allConfigs: ModelConfiguration[],
+            allVersions: SoftwareVersion[],
+            allModels: MCModel[] ) =>  {
+
+        // GET all data for the selected models.
+        //console.log("getting all info", models);
+        return Promise.all(
+            Object.keys(models || {}).map((modelid) => setupGetAll(modelid))
+        ).then(async (setups) => {
+            let fixedModels = setups.map((setup) => setupToOldModel(setup, allSoftwareImages));
+            Object.values(fixedModels).forEach((model) => {
+                if (model.hasRegion)
+                    delete model.hasRegion;
+                    Object.values(allConfigs).forEach((cfg:ModelConfiguration) => {
+                        if ((cfg.hasSetup || []).some((setup:ModelConfigurationSetup) => setup.id === model.id))
+                            model.model_configuration = cfg.id;
+                    });
+                    if (model.model_configuration) {
+                        Object.values(allVersions).forEach((ver:SoftwareVersion) => {
+                            if ((ver.hasConfiguration || []).some((cfg:ModelConfiguration) => cfg.id === model.model_configuration))
+                                model.model_version = ver.id;
+                        });
+                    }
+                    if (model.model_version) {
+                        Object.values(allModels).forEach((mod:MCModel) => {
+                            if ((mod.hasVersion || []).some((ver:SoftwareVersion) => ver.id === model.model_version))
+                                model.model_name = mod.id;
+                        });
+                    }
+            });
+            let sampleCollectionApi = new SampleCollectionApi();
+            let sampleResourceApi = new SampleResourceApi();
+
+            // The api does not return collections of inputs. FIXME
+            let fixCollection = Promise.all( Object.values(fixedModels).map((model:Model) =>
+                Promise.all( model.input_files.map((input) => {
+                    if (input.value && input.value.id && input.value.resources && input.value.resources.length === 0) {
+                        console.log('Checking collection...', input.value.id);
+                        return new Promise((resolve, reject) => {
+                            let id : string = getIdFromUri(input.value.id);
+                            let user : string = getUser();
+                            let api : SampleCollectionApi = new SampleCollectionApi();
+                            sampleCollectionApi.samplecollectionsIdGet({username: user, id: id})
+                            .then((sc:SampleCollection) => {
+                                if (sc.hasPart) {
+                                    //console.log('hasPart:', sc.hasPart);
+                                    let pResources = Promise.all(sc.hasPart.map((sr:SampleResource) => {
+                                        let srid : string = getIdFromUri(sr.id);
+                                        return sampleResourceApi.sampleresourcesIdGet({username: user, id: srid})
+                                    }));
+                                    pResources.then((srs:SampleResource[]) => {
+                                        //console.log('all sample resources!');
+                                        input.value.resources = srs.map((sr:SampleResource) => {
+                                            return {
+                                                url: sr.value ? <unknown>sr.value[0] as string : "",
+                                                id: sr.id,
+                                                name: sr.label ? sr.label[0] : "",
+                                                selected: true
+                                            };
+                                        });
+                                        if (srs.length > 0 && srs[0].dataCatalogIdentifier) {
+                                            input.value.id = srs[0].dataCatalogIdentifier[0];
+                                        }
+                                        resolve();
+                                    });
+                                } else {
+                                    resolve();
+                                }
+                            });
+                        });
+
+                    } else {
+                        return Promise.resolve();
+                    }
+                }) )
+            ) );
+            await fixCollection;
+            return fixedModels;
+        });
+}

@@ -1,0 +1,10 @@
+query region_categories {
+  region_category {
+    id
+    name
+    citation
+    sub_categories {
+        region_category_id
+    }
+  }
+}

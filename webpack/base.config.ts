@@ -41,9 +41,14 @@ const config: webpack.Configuration = {
         use: {
           loader: 'babel-loader',
           options: {
-            cacheDirectory: true,
-          },
+            presets: ['@babel/preset-env', '@babel/preset-typescript', '@babel/preset-flow']
+          }
         },
+      },
+      {
+        test: /\.graphql$/,
+        exclude: /node_modules/,
+        loader: 'graphql-tag/loader',
       },
       {
         test: /\.s?[ac]ss$/,
@@ -98,6 +103,16 @@ const config: webpack.Configuration = {
       swDest: './service-worker.js',
       exclude: [/hot-update/, /images\/icons/, /browserconfig\.xml/, /robots\.txt/, /\.LICENSE$/],
     }),
+    new webpack.DefinePlugin({
+      'process.env.GOOGLE_MAPS_API_KEY': JSON.stringify(process.env.GOOGLE_MAPS_API_KEY || 'no-api-key'),
+      'process.env.FIREBASE_API_KEY': JSON.stringify(process.env.FIREBASE_API_KEY || 'no-api-key'),
+      'process.env.FIREBASE_AUTH_DOMAIN': JSON.stringify(process.env.FIREBASE_AUTH_DOMAIN || 'no-auth-domain'),
+      'process.env.FIREBASE_DATABASE_URL': JSON.stringify(process.env.FIREBASE_DATABASE_URL || 'no-database-url'),
+      'process.env.FIREBASE_PROJECT_ID': JSON.stringify(process.env.FIREBASE_PROJECT_ID || 'no-project-id'),
+      'process.env.FIREBASE_STORAGE_BUCKET': JSON.stringify(process.env.FIREBASE_STORAGE_BUCKET || 'no-storage-bucket'),
+      'process.env.FIREBASE_MESSAGING_SENDER_ID': JSON.stringify(process.env.FIREBASE_MESSAGING_SENDER_ID || 'no-sender-id'),
+      'process.env.FIREBASE_APP_ID': JSON.stringify(process.env.FIREBASE_APP_ID || 'no-app-id')
+    })
   ],
 };
 

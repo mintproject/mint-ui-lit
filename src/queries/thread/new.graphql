@@ -1,0 +1,7 @@
+mutation new_thread ($object: thread_insert_input!) {
+    insert_thread (objects: [$object]) {
+        returning {
+            id
+        }
+    }
+}

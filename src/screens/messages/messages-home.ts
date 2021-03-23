@@ -117,9 +117,9 @@ export class MessagesHome extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         //super.setRegionId(state);
         super.setSubPage(state);
-        if (state.ui && state.ui.selected_threadid && state.messages && state.messages.threads &&
-            state.messages.threads.threads && state.messages.threads.threads[state.ui.selected_threadid]) {
-            this._selectedThread = state.messages.threads.threads[state.ui.selected_threadid];
+        if (state.ui && state.ui.selected_thread_id && state.messages && state.messages.threads &&
+            state.messages.threads.threads && state.messages.threads.threads[state.ui.selected_thread_id]) {
+            this._selectedThread = state.messages.threads.threads[state.ui.selected_thread_id];
         }
     }
 }

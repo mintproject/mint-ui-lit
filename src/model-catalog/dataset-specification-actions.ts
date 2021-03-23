@@ -75,26 +75,19 @@ export const datasetSpecificationPost: ActionThunk<Promise<DatasetSpecification>
             return Promise.reject(new Error('Cannot create DatasetSpecification, object has ID'));
         } else {
             return new Promise((resolve,reject) => {
-                Promise.all( (datasetSpecification.hasFixedResource || []).map((sample:SampleResource|SampleCollection) => {
-                    return sample.type.indexOf('SampleCollection') >= 0 ? 
-                        dispatch(sampleCollectionPost(sample))
-                        : dispatch(sampleResourcePost(sample));
-                })).then((samples) => {
-                    datasetSpecification.hasFixedResource = samples;
-                    let api : DatasetSpecificationApi = new DatasetSpecificationApi(cfg);
-                    let req = api.datasetspecificationsPost({user: user, datasetSpecification: datasetSpecification}); // This should be my username on prod.
-                    req.then((resp:DatasetSpecification) => {
-                        debug('Response for POST', resp);
-                        dispatch({
-                            type: DATASET_SPECIFICATIONS_ADD,
-                            payload: createIdMap(resp)
-                        });
-                        resolve(resp);
+                let api : DatasetSpecificationApi = new DatasetSpecificationApi(cfg);
+                let req = api.datasetspecificationsPost({user: user, datasetSpecification: datasetSpecification});
+                req.then((resp:DatasetSpecification) => {
+                    debug('Response for POST', resp);
+                    dispatch({
+                        type: DATASET_SPECIFICATIONS_ADD,
+                        payload: createIdMap(resp)
                     });
-                    req.catch((err) => {
-                        console.error('Error on POST DatasetSpecification', err);
-                        reject(err);
-                    });
+                    resolve(resp);
+                });
+                req.catch((err) => {
+                    console.error('Error on POST DatasetSpecification', err);
+                    reject(err);
                 });
             });
         }

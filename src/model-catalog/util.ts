@@ -4,16 +4,41 @@ import { IdMap } from "app/reducers";
 const TAG_LATEST = "latest";
 const TAG_DEPRECATED = "deprecated";
 
+export const MODELTYPES = {
+    "https://w3id.org/okn/o/sdm#EmpiricalModel": "Empirical Model",
+    "https://w3id.org/okn/o/sdm#TheoryGuidedEmpiricalModel": "Theory-guided Empirical Model",
+    "https://w3id.org/okn/o/sdm#DataAssimilation": "Data Assimilation",
+    "https://w3id.org/okn/o/sdm#TheoryAndEmpiricalModel": "Theory and Empirical Model",
+    "https://w3id.org/okn/o/sdm#TheoryBasedModel": "Theory-based Model",
+    "https://w3id.org/okn/o/sdm#Theory-GuidedModel": "Theory Guided Model",
+    "https://w3id.org/okn/o/sdm#CoupledModel": "Coupled Model",
+    "https://w3id.org/okn/o/sdm#OtherModel": "Other",
+    "EmpiricalModel": "Empirical Model",
+    "TheoryGuidedEmpiricalModel": "Theory-guided Empirical Model",
+    "DataAssimilation": "Data Assimilation",
+    "TheoryAndEmpiricalModel": "Theory and Empirical Model",
+    "TheoryBasedModel": "Theory-based Model",
+    "Theory-GuidedModel": "Theory Guided Model",
+    "CoupledModel": "Coupled Model",
+    "OtherModel": "Other",
+}
+
+export const getModelTypeNames = (types:string[]) : string[] => {
+    return types
+            .filter((t:string) => t != "https://w3id.org/okn/o/sdm#Model" && t != "Model")
+            .map((t:string) => MODELTYPES[t] ? MODELTYPES[t] : t.replace("https://w3id.org/okn/o/sdm#", ''));
+}
+
 export const capitalizeFirstLetter = (s:string) : string => {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export const getURL = (model:Model|string, ver:SoftwareVersion|string, cfg:ModelConfiguration|string,
-        setup?:ModelConfigurationSetup|string) : string => {
+export const getURL = (model:Model|string, ver?:SoftwareVersion|string, 
+                       cfg?:ModelConfiguration|string, setup?:ModelConfigurationSetup|string) : string => {
     let modelid : string = typeof model === 'object' ? model.id : model;
-    let verid : string = typeof ver === 'object' ? ver.id : ver;
-    let cfgid : string = typeof cfg === 'object' ? cfg.id : cfg;
-    let setupid : string = typeof setup === 'object' ? setup.id : setup;
+    let verid : string = !!ver? (typeof ver === 'object' ? ver.id : ver) : '';
+    let cfgid : string = !!cfg? (typeof cfg === 'object' ? cfg.id : cfg) : '';
+    let setupid : string = !!setup? (typeof setup === 'object' ? setup.id : setup) : '';
     let url = uriToId(modelid);
     if (verid) {
         url += '/' + uriToId(verid);
@@ -48,6 +73,9 @@ export const isMainRegion = (region:Region) : boolean => {
     return region.id === "https://w3id.org/okn/i/mint/Kyrgyzstan"
         || region.id === "https://w3id.org/okn/i/mint/Ethiopia"
         || region.id === "https://w3id.org/okn/i/mint/South_Sudan"
+        || region.id === "https://w3id.org/okn/i/mint/United_States"
+        || region.id === "https://w3id.org/okn/i/mint/California"
+        || region.id === "https://w3id.org/okn/i/mint/ad19b302-f69a-4325-8214-4e03e06850d0" //California
         || region.id === "https://w3id.org/okn/i/mint/Texas";
 }
 
@@ -136,8 +164,6 @@ export const sortByPosition = (a,b) => {
 
 export const isExecutable = (config: ModelConfiguration|ModelConfigurationSetup) : boolean => {
     return  !!config &&
-            config.hasOutput &&
-            config.hasOutput.length > 0 &&
             config.hasComponentLocation &&
             config.hasComponentLocation.length > 0 &&
             config.hasSoftwareImage &&

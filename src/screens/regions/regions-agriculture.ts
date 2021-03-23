@@ -51,7 +51,7 @@ export class RegionsAgriculture extends connect(store)(PageViewElement)  {
         <div class="content">
             <regions-editor active
                 style="--map-height: 320px;"
-                regionType="Agriculture"
+                regionType="agriculture"
             ></regions-editor>
 
             ${items.length > 0 ? html`

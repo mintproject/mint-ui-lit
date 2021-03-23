@@ -1,0 +1,7 @@
+query model_configurations_for_model($regionId: String!, $modelType: String!) {
+  model(distinct_on:model_configuration where: {model_name: {_eq: $modelType}, thread_models: {thread: {_or: [{region_id: {_eq: $regionId}}, {region: {parent_region_id: {_eq: $regionId}}}]}}}) {
+    name
+    description
+    model_configuration
+  }
+}

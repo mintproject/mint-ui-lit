@@ -1,4 +1,4 @@
-import * as firebase from 'firebase/app';
+import firebase from 'firebase/app';
 import 'firebase/firestore';
 
 export const toTimeStamp = (dateString: string) : firebase.firestore.Timestamp => {
@@ -49,4 +49,16 @@ export const fromTimeStampToDateString = (timestamp: firebase.firestore.Timestam
 
 export const fromTimeStampToReadableString = (timestamp: firebase.firestore.Timestamp) : string => {
     return fromTimeStampToString(timestamp).replace(/T/,' at ').replace(/\..+$/,'');
+}
+
+export const toDateString = (date: Date) : string => {
+    if(!date)
+        return null;
+    return date.toISOString().split('T')[0]
+}
+
+export const toDateTimeString = (date: Date) : string => {
+    if(!date)
+        return null;
+    return date.toLocaleDateString() + " " + date.toLocaleTimeString();
 }

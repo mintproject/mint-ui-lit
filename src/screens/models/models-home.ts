@@ -11,6 +11,7 @@ import './model-explore/model-explore';
 import './models-register';
 import './models-calibrate';
 import './models-configure';
+import './models-edit';
 import '../../components/nav-title'
 
 store.addReducers({
@@ -67,8 +68,20 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     margin:auto;
                 }
 
+                .icongrid {
+                    grid-template-columns: 160px 160px 160px !important;
+                    margin-left: calc(50% - 240px) !important;
+                }
+
                 model-explorer {
                     height: calc(100% - 40px);
+                }
+
+                @media (max-width: 768px) {
+                    .icongrid {
+                        grid-template-columns: 120px 120px 120px !important;
+                        margin-left: calc(50% - 180px) !important;
+                    }
                 }
             `,
             SharedStyles
@@ -82,6 +95,10 @@ export class ModelsHome extends connect(store)(PageViewElement) {
         if (this._selectedConfig)
             return uri + '#model-configuration';
         return uri;
+    }
+
+    private _getAPILink () {
+        return "https://api.models.mint.isi.edu/latest/ui/";
     }
 
     protected render() {
@@ -105,12 +122,21 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             case 'compare':
                 nav.push({label: 'Compare Models', url: 'models/compare'});
                 break;
+            case 'edit':
+                nav.push({label: 'Edit Models', url: 'models/edit'});
+                break;
             default:
                 break;
         }
 
         return html`
             <nav-title .nav="${nav}" max="2">
+                <a slot="after" class="no-decoration" target="_blank" href="${this._getAPILink()}" style="margin-right: 0.5em;">
+                    <wl-button style="--button-padding: 8px;">
+                        <wl-icon style="margin-right: 5px;">help_outline</wl-icon>
+                        <b>API</b>
+                    </wl-button>
+                </a>
                 <a slot="after" class="no-decoration" target="_blank" href="${this._getHelpLink()}">
                     <wl-button style="--button-bg: forestgreen; --button-bg-hover: darkgreen; --button-padding: 8px;">
                         <wl-icon style="margin-right: 5px;">help_outline</wl-icon>
@@ -124,10 +150,18 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <wl-icon>search</wl-icon>
                     <div>Browse Models</div>
                 </a>
-                <!--a href="{this._regionid}/models/register"-->
-                <a disabled>
+                <a href="${this._regionid}/models/register">
+                <!--a disabled-->
                     <wl-icon>library_add</wl-icon>
                     <div>Add Models</div>
+                </a>
+                <a href="${this._regionid}/models/edit">
+                    <wl-icon>edit</wl-icon>
+                    <div>Edit Models</div>
+                </a>
+                <a href="${this._regionid}/models/compare">
+                    <wl-icon>compare</wl-icon>
+                    <div>Compare Models</div>
                 </a>
                 <a href="${this._regionid}/models/configure">
                     <wl-icon>perm_data_settings</wl-icon>
@@ -145,6 +179,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             <models-configure class="page" ?active="${this._subpage == 'configure'}"></models-configure>
             <models-calibrate class="page" ?active="${this._subpage == 'calibrate'}"></models-calibrate>
             <models-compare class="page" ?active="${this._subpage == 'compare'}"></models-compare>
+            <models-edit class="page" ?active="${this._subpage == 'edit'}"></models-edit>
         `
     }
 

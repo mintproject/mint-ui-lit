@@ -1,0 +1,47 @@
+mutation delete_thread($id: String!) {
+  # Delete thread provenance
+  delete_thread_permission(where: {thread_id: {_eq: $id}}) {
+    affected_rows
+  }
+  delete_thread_provenance(where: {thread_id: {_eq: $id}}) {
+    affected_rows
+  }
+
+  # Delete thread model executions
+  delete_thread_model_execution_summary(where: {thread_model: {thread_id: {_eq: $id}}}) {
+    affected_rows
+  }
+  delete_thread_model_execution(where: {thread_model: {thread_id: {_eq: $id}}}) {
+    affected_rows
+  }
+
+  # Delete thread model data binding
+  delete_thread_model_io(where: {thread_model: {thread_id: {_eq: $id}}}) {
+    affected_rows
+  }
+  # Delete thread model parameter binding
+  delete_thread_model_parameter(where: {thread_model: {thread_id: {_eq: $id}}}) {
+    affected_rows
+  }
+
+  # Delete thread data 
+  delete_dataslice_resource(where: {dataslice: {thread_data: {thread_id: {_eq: $id}}}}) {
+    affected_rows
+  }
+  delete_dataslice(where: {thread_data: {thread_id: {_eq: $id}}}) {
+    affected_rows
+  }
+  delete_thread_data(where: {thread_id: {_eq: $id}}) {
+    affected_rows
+  }  
+
+  # Delete thread models
+  delete_thread_model(where: {thread_id: {_eq: $id}}) {
+    affected_rows
+  }
+
+  # Delete thread
+  delete_thread_by_pk(id: $id) {
+    id
+  }
+}

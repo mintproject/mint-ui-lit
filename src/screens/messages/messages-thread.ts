@@ -152,9 +152,9 @@ export class MessagesThread extends connect(store)(PageViewElement) {
   }
 
   stateChanged(state: RootState) {
-    if (state.ui && state.ui.selected_threadid && state.ui.selected_threadid !== this._threadId) {
+    if (state.ui && state.ui.selected_thread_id && state.ui.selected_thread_id !== this._threadId) {
         // Selected new Thread
-        this._threadId = state.ui.selected_threadid;
+        this._threadId = state.ui.selected_thread_id;
         store.dispatch(listPosts(this._threadId));
         this._thread = null;
         this._posts = null;
