@@ -28,6 +28,17 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
                 --list-height: 200px;
                 --dialog-height: 100%;
             }
+            .inline-desc {
+                display: none;
+            }
+            .clickable-area > span > .inline-desc {
+                display: unset;
+                font-style: oblique;
+                font-family: sans-serif;
+                font-weight: 600;
+                color: #777;
+            }
+
         `];
     }
 
@@ -128,7 +139,7 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
         if (r) {
             let desc : string = r.description && r.description.length > 0 ? r.description[0] : '';
             let label : string = getLabel(r).replaceAll('_',' ');
-            let  units : string = r.usesUnit && r.usesUnit.length > 0 && this._allUnits != null ?
+            let units : string = r.usesUnit && r.usesUnit.length > 0 && this._allUnits != null ?
                     r.usesUnit.map((u:Unit) => getLabel(this._allUnits[u.id])).join(', ') : '';
             return html`
                 <span class="${desc ? 'tooltip small-tooltip': ''}" tip="${desc}" 
@@ -136,6 +147,7 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
                     <span>${label}</span>
                     ${units ? html`<span>&nbsp;(${units})</span>` : ''}
                 </span>
+                ${desc ? html`<span class="inline-desc">${desc}</span>` : ''}
             `;
         } else 
             return html`--`;
