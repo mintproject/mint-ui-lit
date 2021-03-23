@@ -14,6 +14,7 @@ import { PARAMETER_TYPES } from 'offline_data/parameter_types';
 
 import { ModelCatalogUnit } from './unit'
 import { ModelCatalogVariablePresentation } from './variable-presentation';
+import { ModelCatalogIntervention } from './intervention';
 
 import 'components/data-catalog-id-checker';
 import { Textfield } from 'weightless/textfield';
@@ -50,7 +51,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
             display: inline-block;
             width: 50%;
         }
-        #input-unit, #input-variable {
+        #input-unit, #input-variable, #input-intervention {
             --list-height: 200px;
             --dialog-height: 100%;
         }
@@ -77,6 +78,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     private _inputUnit : ModelCatalogUnit;
     private _vpDisplayer : IdMap<ModelCatalogVariablePresentation> = {};
     private _inputVariable : ModelCatalogVariablePresentation;
+    private _inputIntervention : ModelCatalogIntervention;
 
     public isSetup : boolean = false;
     public setAsSetup () {
@@ -93,6 +95,10 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         this._inputVariable = new ModelCatalogVariablePresentation();
         this._inputVariable.setActionMultiselect();
         this._inputVariable.setAttribute('id', 'input-variable');
+
+        this._inputIntervention = new ModelCatalogIntervention();
+        this._inputIntervention.setActionSelect();
+        this._inputIntervention.setAttribute('id', 'input-intervention');
     }
 
     protected _createResource () {
@@ -189,10 +195,9 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
     protected _editResource (r:Parameter) {
         super._editResource(r);
-        console.log(r);
-        //BUG: http://qudt.org/1.1/schema/qudt#Unit is not part of the model-catalog.
         this._inputUnit.setResources(r.usesUnit);
         this._inputVariable.setResources(r.hasPresentation);
+        this._inputIntervention.setResources(r.relevantForIntervention);
 
         let lr : Parameter = this._loadedResources[r.id];
         if (lr) {
@@ -249,6 +254,10 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
             <div style="margin-top: 5px;">
                 <b>Variables:</b> ${this._inputVariable}
+            </div>
+
+            <div style="margin-top: 5px;">
+                <b>Relevant for Intervention:</b> ${this._inputIntervention}
             </div>
 
             <div class="two-inputs">
@@ -391,6 +400,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 hasDataType: [datatype],
                 position: [position],
                 hasPresentation: this._inputVariable.getResources(),
+                relevantForIntervention: this._inputIntervention.getResources(),
                 usesUnit: this._inputUnit.getResources(),
             };
 
@@ -419,6 +429,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                     hasDataType: [datatype],
                     type: ["Parameter"],
                     hasPresentation: this._inputVariable.getResources(),
+                    relevantForIntervention: this._inputIntervention.getResources(),
                     usesUnit: this._inputUnit.getResources(),
                 };
                 if (aType) jsonRes["type"].push(aType);

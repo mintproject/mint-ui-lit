@@ -9,6 +9,7 @@ import { IdMap } from "app/reducers";
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
+import { ModelCatalogUnit } from './unit'
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
@@ -19,10 +20,15 @@ export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResourc
     static get styles() {
         return [ExplorerStyles, SharedStyles, this.getBasicStyles(), css`
         .two-inputs > wl-textfield, 
-        .two-inputs > wl-select {
+        .two-inputs > wl-select, .two-inputs > span {
             display: inline-block;
             width: 50%;
-        }`];
+        }
+        #input-unit {
+            --list-height: 140px;
+            --dialog-height: 100%;
+        }
+        `];
     }
 
     protected classes : string = "resource time-interval";
@@ -34,20 +40,24 @@ export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResourc
     protected resourcePut = timeIntervalPut;
     protected resourceDelete = timeIntervalDelete;
 
-    private _units : IdMap<Unit> = {
-        'https://w3id.org/okn/i/mint/minT':
-            { id: 'https://w3id.org/okn/i/mint/minT', label: ['min']},
-        'https://w3id.org/okn/i/mint/hourT':
-            { id: 'https://w3id.org/okn/i/mint/hourT', label: ['hour']},
-        'https://w3id.org/okn/i/mint/dayT':
-            { id: 'https://w3id.org/okn/i/mint/dayT', label: ['day']},
-        'https://w3id.org/okn/i/mint/month':
-            { id: 'https://w3id.org/okn/i/mint/month', label: ['month']},
-        'https://w3id.org/okn/i/mint/yearT':
-            { id: 'https://w3id.org/okn/i/mint/yearT', label: ['year']},
-        'https://w3id.org/okn/i/mint/variable':
-            { id: 'https://w3id.org/okn/i/mint/variable', label: ['variable']}
-    } as IdMap<Unit>;
+    private _inputUnit : ModelCatalogUnit;
+
+    constructor () {
+        super();
+        this._inputUnit = new ModelCatalogUnit();
+        this._inputUnit.setActionSelect();
+        this._inputUnit.setAttribute('id', 'input-unit');
+    }
+
+    protected _createResource () {
+        this._inputUnit.setResources(null);
+        super._createResource();
+    }
+
+    protected _editResource (r:TimeInterval) {
+        super._editResource(r);
+        this._inputUnit.setResources(r.intervalUnit);
+    }
 
     protected _renderResource (r:TimeInterval) {
         return html`
@@ -57,9 +67,7 @@ export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResourc
                 </span>
                 <span class="monospaced"> 
                     ${r.intervalValue}
-                    ${r.intervalUnit ? 
-                        getLabel(this._units[r.intervalUnit[0].id] ? this._units[r.intervalUnit[0].id] : r.intervalUnit[0])
-                        : ''}
+                    ${r.intervalUnit ?  getLabel(r.intervalUnit[0]) : ''}
                 </span>
             </span>
             <span style="line-height: 20px; font-style: oblique; color: gray;">
@@ -71,6 +79,8 @@ export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResourc
     protected _renderForm () {
         let edResource = this._getEditingResource();
         return html`
+            <div style="height:40px"> 
+            </div>
         <form>
             <wl-textfield id="time-interval-label" label="Name" required
                 value=${edResource ? getLabel(edResource) : ''}>
@@ -82,13 +92,10 @@ export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResourc
                 <wl-textfield id="time-interval-value" label="Interval value"
                     value="${edResource && edResource.intervalValue ? edResource.intervalValue[0] : ''}" >
                 </wl-textfield>
-                <wl-select id="time-interval-unit" label="Interval unit"
-                    value="${edResource && edResource.intervalUnit ? edResource.intervalUnit[0].id:''}">
-                    <option value="">None</option>
-                    ${Object.values(this._units).map((unit:Unit) => html`
-                        <option value="${unit.id}">${unit.label}</option>
-                    `)}
-                </wl-select>
+                <span>
+                    <span style="font-size: 0.75rem;color: rgb(86, 90, 93);">Unit:</span>
+                    ${this._inputUnit}
+                </span>
             </div>
         </form>`;
     }
@@ -98,19 +105,17 @@ export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResourc
         let inputLabel : Textfield = this.shadowRoot.getElementById('time-interval-label') as Textfield;
         let inputDesc : Textarea = this.shadowRoot.getElementById('time-interval-desc') as Textarea;
         let inputValue : Textfield = this.shadowRoot.getElementById('time-interval-value') as Textfield;
-        let inputUnit : Select = this.shadowRoot.getElementById('time-interval-unit') as Select;
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : '';
         let desc : string = inputDesc ? inputDesc.value : '';
         let value : string = inputValue ? inputValue.value : '';
-        let unit : string = inputUnit ? inputUnit.value : '';
         if (label && desc) {
             let jsonRes = {
                 type: ["TimeInterval"],
                 label: [label],
                 description: [desc],
+                intervalUnit: this._inputUnit.getResources(),
             };
-            if (unit) jsonRes['intervalUnit'] = [{id: unit}];
             if (value) jsonRes['intervalValue'] = [value];
             return TimeIntervalFromJSON(jsonRes);
         } else {

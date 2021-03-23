@@ -12,7 +12,8 @@ import { modelGet, versionGet, versionsGet, modelConfigurationGet, modelConfigur
          modelConfigurationSetupGet, imageGet, personGet, regionsGet, organizationGet, fundingInformationGet,
          timeIntervalGet, gridGet, processGet, setupGetAll, visualizationGet, sourceCodeGet, softwareImageGet,
          parameterGet, datasetSpecificationGet, interventionGet, variablePresentationGet } from 'model-catalog/actions';
-import { setupInRegion, capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition, isExecutable } from 'model-catalog/util';
+import { setupInRegion, capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition, isExecutable,
+         getModelTypeNames } from 'model-catalog/util';
 import { GalleryEntry } from 'components/image-gallery';
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -451,11 +452,13 @@ export class ModelView extends connect(store)(PageViewElement) {
         goToPage('models/configure/' + getURL(this._selectedModel, this._selectedVersion, this._selectedConfig) + '/new');
     }
 
+    private _lastSelectorTimeout : any = null;
     _updateConfigSelector () {
         let configSelectorWl : Select = this.shadowRoot!.getElementById('config-selector') as Select;
         let configSelector : HTMLSelectElement | null = configSelectorWl? configSelectorWl.getElementsByTagName('select')[0] : null;
         if (configSelectorWl && configSelector) {
-            //console.log('Updating Config Selector');
+            if (this._lastSelectorTimeout != null) clearTimeout(this._lastSelectorTimeout);
+            console.log('Updating Config Selector');
             this._shouldUpdateConfigs = false;
             while (configSelector.options.length > 0)
                 configSelector.remove(configSelector.options.length - 1);
@@ -492,7 +495,16 @@ export class ModelView extends connect(store)(PageViewElement) {
             let arrowEl = configSelectorWl.shadowRoot.getElementById('arrow');
             if (arrowEl) arrowEl.style.pointerEvents = "none";
             (<any>configSelectorWl).refreshAttributes();
-        } 
+        } else {
+            //when everything is loaded, this can be execubed before the selectors render...
+            if (this._lastSelectorTimeout == null) {
+                let me = this;
+                this._lastSelectorTimeout = setTimeout(() => {
+                    me._lastSelectorTimeout = null;
+                    me._updateConfigSelector();
+                }, 250);
+            }
+        }
     }
 
     _clearVariables () {
@@ -653,9 +665,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         if (!this._model)
             return html`NO MODEL`;
 
-        let modelType : string[] = this._model.type ?
-                this._model.type.map((t:string) => t.replace('Model', '')).filter(t => !!t)
-                : [];
+        let modelType : string[] = this._model.type ? getModelTypeNames(this._model.type) : [];
 
         return html`
             ${this._renderCLIDialog()}
@@ -747,6 +757,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 </span>`)}
                         </wl-text>` :''}
 
+                        ${this._model.hasProcess && this._model.hasProcess.length > 0 ? html`<wl-text><b>• Processes:</b>
+                            ${this._renderProcesses(this._model.hasProcess)}
+                        </wl-text>` :''}
+
                         ${this._model.keywords? html`<wl-text><b>• Keywords:</b>
                             ${ this._model.keywords.map((kws:string) => kws.split(/ *; */).map(capitalizeFirstLetter).join(', ') ).join(', ') }
                         </wl-text>` :''}
@@ -758,7 +772,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <wl-tab id="tab-overview" ?checked=${this._tab=='overview'} @click="${() => this._goToTab('overview')}"
                             >Overview</wl-tab>
                         <wl-tab id="tab-io" ?checked=${this._tab=='io'} @click="${() => this._goToTab('io')}"
-                            >Parameters and Files</wl-tab>
+                            >Inputs and Outputs</wl-tab>
                         <wl-tab id="tab-variable" ?checked=${this._tab=='variables'} @click="${() => this._goToTab('variables')}"
                             >Variables</wl-tab>
                         ${this._getExample() ? html`
@@ -777,7 +791,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                     ${(this._tab === 'example') ? this._renderTabExample() : ''}
                 </div>
             </div>
-            ${this._renderCLIDialog()} `
+            ${this._renderCLIDialog()} 
+            <div style="height: 50px;"></div>`
     }
 
     private _goToTab (tabid:tabType) {
@@ -822,9 +837,15 @@ export class ModelView extends connect(store)(PageViewElement) {
         //Do no show when the model does not have any technical property
         if (!resource.hasSoftwareImage && !resource.operatingSystems && !resource.memoryRequirements && 
             !resource.processorRequirements && !resource.softwareRequirements && !resource.hasDownloadURL &&
-            !resource.hasInstallationInstructions && !resource.hasComponentLocation && !resource.hasSourceCode) {
+            !resource.hasInstallationInstructions && !resource.hasComponentLocation && !resource.hasSourceCode &&
+            !resource.parameterization && !resource.runtimeEstimation && !resource.limitations) {
             return html``;
         }
+        
+        let instructionsIsUrl : boolean = resource.hasInstallationInstructions &&
+                                          resource.hasInstallationInstructions.length > 0 &&
+                                          resource.hasInstallationInstructions[0].substring(0,4) === 'http';
+
 
         return html`
             <table class="pure-table pure-table-striped">
@@ -870,6 +891,23 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <td><b>Software requirements:</b></td>
                         <td>${resource.softwareRequirements[0]}</td>
                     </tr>`: ''}
+
+                ${resource.parameterization && resource.parameterization.length > 0 ? html`
+                    <tr>
+                        <td><b>Parameterization:</b></td>
+                        <td>${resource.parameterization[0]}</td>
+                    </tr>`: ''}
+                ${resource.limitations && resource.limitations.length > 0 ? html`
+                    <tr>
+                        <td><b>Limitations:</b></td>
+                        <td>${resource.limitations[0]}</td>
+                    </tr>`: ''}
+                ${resource.runtimeEstimation && resource.runtimeEstimation.length > 0 ? html`
+                    <tr>
+                        <td><b>Runtime Estimation:</b></td>
+                        <td>${resource.runtimeEstimation[0]}</td>
+                    </tr>`: ''}
+
                 ${resource.hasDownloadURL && resource.hasDownloadURL.length > 0 ? html`
                     <tr>
                         <td><b>Download:</b></td>
@@ -878,31 +916,47 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${resource.hasInstallationInstructions && resource.hasInstallationInstructions.length > 0 ? html`
                     <tr>
                         <td><b>Installation instructions:</b></td>
-                        <td><a target="_blank" href="${resource.hasInstallationInstructions[0]}">${resource.hasInstallationInstructions[0]}</a></td>
+                        <td>
+                        ${instructionsIsUrl ? html`
+                            <a target="_blank" href="${resource.hasInstallationInstructions[0]}">${resource.hasInstallationInstructions[0]}</a>
+                        ` : html`
+                            <span>${resource.hasInstallationInstructions[0]}</span>
+                        `}
+                        </td>
                     </tr>`: ''}
                 ${resource.hasComponentLocation && resource.hasComponentLocation.length > 0 ? html`
                     <tr>
                         <td><b>Component location:</b></td>
                         <td><a target="_blank" href="${resource.hasComponentLocation[0]}">${resource.hasComponentLocation[0]}</a></td>
                     </tr>`: ''}
+
                 ${resource.hasSourceCode && resource.hasSourceCode.length > 0 ? html`
                     <tr>
                         <td><b>Source code:</b></td>
                         <td>${this._loading[resource.hasSourceCode[0].id] ? 
                             html`${resource.hasSourceCode[0].id} <loading-dots style="--width: 20px"></loading-dots>`
-                            : html`<a target="_blank" href="${this._sourceCodes[resource.hasSourceCode[0].id].codeRepository}">
-                                ${this._sourceCodes[resource.hasSourceCode[0].id].codeRepository}
-                            </a>`
+                            : (this._sourceCodes[resource.hasSourceCode[0].id].codeRepository ? 
+                                html`<a target="_blank" href="${this._sourceCodes[resource.hasSourceCode[0].id].codeRepository}">
+                                    ${getLabel(this._sourceCodes[resource.hasSourceCode[0].id])}
+                                </a>` : html`
+                                <span>${getLabel(this._sourceCodes[resource.hasSourceCode[0].id])}</span>
+                            `)
                         }</td>
-                    </tr>`: ''}
-                ${resource.hasSourceCode && resource.hasSourceCode.length > 0 ? html`
+                    </tr>
+                    ${!this._loading[resource.hasSourceCode[0].id] &&
+                       this._sourceCodes[resource.hasSourceCode[0].id].programmingLanguage ? html`
                     <tr>
                         <td><b>Programing languages:</b></td>
-                        <td>${this._loading[resource.hasSourceCode[0].id] ? 
-                            html`${resource.hasSourceCode[0].id} <loading-dots style="--width: 20px"></loading-dots>`
-                            : this._sourceCodes[resource.hasSourceCode[0].id].programmingLanguage
-                        }</td>
-                    </tr>`: ''}
+                        <td>${this._sourceCodes[resource.hasSourceCode[0].id].programmingLanguage}</td>
+                    </tr>` : ''}
+                    ${!this._loading[resource.hasSourceCode[0].id] &&
+                       this._sourceCodes[resource.hasSourceCode[0].id].license ? html`
+                    <tr>
+                        <td><b>License:</b></td>
+                        <td>${this._sourceCodes[resource.hasSourceCode[0].id].license}</td>
+                    </tr>` : ''}
+                `: ''}
+
                 ${titlePrefix == 'CONFIGURATION' || titlePrefix == 'SETUP' ? html`
                     <tr>
                         <td><b>DAME command:</b></td>
@@ -984,6 +1038,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </li>
                 `)}
             </ul>` :''}
+
+            ${this._model.theoreticalBasis && this._model.theoreticalBasis.length > 0 ? html`
+            <wl-title level="2" style="font-size: 16px; display: inline-block; margin-right: 4px;">Theoretical Basis:</wl-title>
+            <span> ${this._model.theoreticalBasis[0]} </span>`:''}
 
             ${this._model.hasAssumption && this._model.hasAssumption.length > 0 ? html`
             <wl-title level="2" style="font-size: 16px;">Assumptions:</wl-title>
@@ -1164,42 +1222,111 @@ export class ModelView extends connect(store)(PageViewElement) {
             </h3>`
         }
         return html`
-            <wl-title level="3"> Parameters: </wl-title> 
+            <wl-title level="3"> Inputs: </wl-title> 
+            <wl-title level="4"> Parameters: </wl-title> 
             ${this._renderParametersTable(this._setup ? this._setup : this._config)}
-            <wl-title level="3"> Files: </wl-title> 
-            <wl-text style="font-style: italic; padding-left: 20px;">
+            <wl-title level="4"> Files: </wl-title> 
+            ${this._renderInputFileTable(this._setup ? this._setup : this._config)}
+            <wl-title level="3"> Output Files: </wl-title> 
+            ${this._renderOutputFileTable(this._setup ? this._setup : this._config)}
+            <wl-text style="font-style: italic; padding-left: 20px; margin-top: 1em;">
                 Look at the Variables tab to see more information about the contents of the inputs and outputs.
             </wl-text>
-            ${this._renderIOTable(this._setup ? this._setup : this._config)}
         `
+    }
+
+    private _renderInputFileTable (resource:ModelConfiguration|ModelConfigurationSetup) {
+        let isSetup = resource.type.includes('ModelConfigurationSetup');
+        return html`
+            <table class="pure-table pure-table-striped" style="overflow: visible;">
+                <colgroup>
+                    <col span="1" style="width: 20%;">
+                    <col span="1">
+                    ${isSetup? html`<col span="1">` : ''}
+                    <col span="1" style="max-width: 140px;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        ${isSetup? html`
+                        <th style="text-align: right;">
+                            Value on setup
+                            <span class="tooltip table-tooltip" tip="If a value is not set up in this field, the configuration default value will be used.">
+                                <wl-icon>help</wl-icon>
+                            </span>
+                        </th>` : html``}
+                        <th style="text-align: right;">Format</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                ${!resource.hasInput || resource.hasInput.length === 0 ?  html`
+                    <tr>
+                        <td colspan="4">
+                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no input files.</div>
+                        </td>
+                    </tr>` : html`
+                    ${resource.hasInput
+                            .filter((ds:DatasetSpecification) => !this._loading[ds.id])
+                            .map((ds:DatasetSpecification) => this._datasetSpecifications[ds.id])
+                            .sort(sortByPosition)
+                            .map((ds:DatasetSpecification) => html`
+                    <tr>
+                        <td><span class="monospaced">${getLabel(ds)}</span></td>
+                        <td>${ds.description && ds.description.length > 0 ? ds.description : ''}</td>
+                        ${isSetup? html`
+                        <td style="text-align: right;">
+                            ${this._renderFixedResource(ds)}
+                        </td>` : ''}
+                        <td style="text-align: right;" class="number">
+                            ${ds.hasFormat && ds.hasFormat.length > 0 ? ds.hasFormat[0] : ''}
+                        </td>
+                    </tr>
+                    `)}
+                    ${resource.hasInput.filter((ds:DatasetSpecification) => this._loading[ds.id]).map((ds:DatasetSpecification) => html`
+                    <tr>
+                        <td colspan="4">
+                            <div class="text-centered">${getId(ds)} <loading-dots style="--height: 10px; margin-left:10px"></loading-dots></div>
+                        </td>
+                    </tr>
+                    `)}`
+                }
+                </tbody>
+            </table>`
     }
 
     _renderParametersTable (resource:ModelConfiguration|ModelConfigurationSetup) {
         let isSetup = resource.type.includes('ModelConfigurationSetup');
         return html`
             <table class="pure-table pure-table-striped" style="overflow: visible;" id="parameters-table">
-                <col span="1" style="width: 180;">
+                <col span="1" style="width: 20%;">
                 <col span="1">
-                <col span="1">
+                <col span="1" style="width: 100px;">
                 <col span="1" style="width: 130px;">
                 <thead>
-                    <th>Parameter</th>
-                    <th>Description</th>
-                    <th style="text-align: right;">Relevant for intervention</th>
-                    <th style="text-align: right;">
-                        ${isSetup? html`
-                        Value on setup 
-                        <span class="tooltip table-tooltip" tip="If a value is not set up in this field configuration default value will be used.">
-                            <wl-icon>help</wl-icon>
-                        </span>`
-                        : 'Default value'}
-                    </th>
+                    <tr style="vertical-align: middle;">
+                        <th>Parameter</th>
+                        <th>Description</th>
+                        <th style="text-align: right;">
+                            Relevant for intervention
+                            <span style="display: inline-block;">/ Control<span>
+                        </th>
+                        <th style="text-align: right;">
+                            ${isSetup? html`
+                            Value on setup 
+                            <span class="tooltip table-tooltip" tip="If a value is not set up in this field configuration default value will be used.">
+                                <wl-icon>help</wl-icon>
+                            </span>`
+                            : 'Default value'}
+                        </th>
+                    </tr>
                 </thead>
                 <tbody>
                 ${!resource.hasParameter || resource.hasParameter.length === 0 ?  html`
                     <tr>
-                        <td colspan="4">
-                            <div class="info-center">This ${isSetup? 'setup' : 'configuration'} has no parameters.</div>
+                        <td colspan="4" style="vertical-align: middle;">
+                            <div class="info-center">This ${isSetup? 'setup' : 'configuration'} has no input parameters.</div>
                         </td>
                     </tr>` : html`
                     ${resource.hasParameter.filter((p:Parameter) => !this._loading[p.id])
@@ -1249,12 +1376,11 @@ export class ModelView extends connect(store)(PageViewElement) {
             </table>`
     }
 
-    _renderIOTable (resource:ModelConfiguration|ModelConfigurationSetup) {
+    private _renderOutputFileTable (resource:ModelConfiguration|ModelConfigurationSetup) {
         let isSetup = resource.type.includes('ModelConfigurationSetup');
         return html`
             <table class="pure-table pure-table-striped" style="overflow: visible;">
                 <colgroup>
-                    <col span="1" style="width: 10px;">
                     <col span="1" style="width: 20%;">
                     <col span="1">
                     ${isSetup? html`<col span="1">` : ''}
@@ -1262,65 +1388,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                 </colgroup>
                 <thead>
                     <tr>
-                        <th colspan="${isSetup? 5 : 4}" class="table-title">Input files</th>
-                    </tr>
-                    <tr>
-                        <th></th>
-                        <th>Name</th>
-                        <th>Description</th>
-                        ${isSetup? html`
-                        <th style="text-align: right;">
-                            Value on setup
-                            <span class="tooltip table-tooltip" tip="If a value is not set up in this field, the configuration default value will be used.">
-                                <wl-icon>help</wl-icon>
-                            </span>
-                        </th>` : html``}
-                        <th style="text-align: right;">Format</th>
-                    </tr>
-                </thead>
-                <tbody>
-
-                ${!resource.hasInput || resource.hasInput.length === 0 ?  html`
-                    <tr>
-                        <td colspan="4">
-                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no inputs.</div>
-                        </td>
-                    </tr>` : html`
-                    ${resource.hasInput
-                            .filter((ds:DatasetSpecification) => !this._loading[ds.id])
-                            .map((ds:DatasetSpecification) => this._datasetSpecifications[ds.id])
-                            .sort(sortByPosition)
-                            .map((ds:DatasetSpecification) => html`
-                    <tr>
-                        <td></td>
-                        <td><span class="monospaced">${getLabel(ds)}</span></td>
-                        <td>${ds.description && ds.description.length > 0 ? ds.description : ''}</td>
-                        ${isSetup? html`
-                        <td style="text-align: right;">
-                            ${this._renderFixedResource(ds)}
-                        </td>` : ''}
-                        <td style="text-align: right;" class="number">
-                            ${ds.hasFormat && ds.hasFormat.length > 0 ? ds.hasFormat[0] : ''}
-                        </td>
-                    </tr>
-                    `)}
-                    ${resource.hasInput.filter((ds:DatasetSpecification) => this._loading[ds.id]).map((ds:DatasetSpecification) => html`
-                    <tr>
-                        <td colspan="4">
-                            <div class="text-centered">${getId(ds)} <loading-dots style="--height: 10px; margin-left:10px"></loading-dots></div>
-                        </td>
-                    </tr>
-                    `)}`
-                }
-
-                </tbody>
-
-                <thead>
-                    <tr>
-                        <th colspan="${isSetup? 5 : 4}" class="table-title">Output files</th>
-                    </tr>
-                    <tr>
-                        <th></th>
                         <th>Name</th>
                         <th colspan="${isSetup? 2 : 1}">Description</th>
                         <th style="text-align: right;">Format</th>
@@ -1330,14 +1397,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${!resource.hasOutput || resource.hasOutput.length === 0 ?  html`
                     <tr>
                         <td colspan="4">
-                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no outputs.</div>
+                            <div class="text-centered">This ${isSetup? 'setup' : 'configuration'} has no output files.</div>
                         </td>
                     </tr>` : html`
                     ${resource.hasOutput.filter((ds:DatasetSpecification) => !this._loading[ds.id])
                             .map((ds:DatasetSpecification) => this._datasetSpecifications[ds.id])
                             .sort(sortByPosition).map((ds:DatasetSpecification) => html`
                     <tr>
-                        <td></td>
                         <td><span class="monospaced">${getLabel(ds)}</span></td>
                         <td colspan="${isSetup? 2 : 1}">${ds.description && ds.description.length > 0 ? ds.description : ''}</td>
                         <td style="text-align: right;" class="number">
@@ -1375,31 +1441,38 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     private _renderTabVariables () {
-        if (!this._config) {
-            return html`
-            <br/>
-            <h3 style="margin-left:30px">
-                You must select a configuration or setup to see its variables.
-            </h3>`
-        }
         let resource : ModelConfiguration | ModelConfigurationSetup = this._setup ? this._setup : this._config;
         return html`
-            ${this._renderExpansionVariables(resource.hasInput, 'Inputs')}
-            ${this._renderExpansionVariables(resource.hasOutput, 'Outputs')}
+            ${this._config ? html`
+                <wl-title level="3">${this._setup ? 'Setup': 'Configuration'} variables:</wl-title>
+                ${this._renderExpansionVariables(resource.hasInput, 'Inputs')}
+                ${this._renderExpansionVariables(resource.hasOutput, 'Outputs')}
+                ${((!resource.hasInput || resource.hasInput.length === 0) &&
+                   (!resource.hasOutput || resource.hasOutput.length === 0)) ? html`
+                <br/>
+                <h3 style="margin-left:30px">
+                    This information has not been specified in the ${this._setup ? 'setup': 'configuration'} yet.
+                </h3>` : ''}
+            ` : ''}
 
-            ${((!resource.hasInput || resource.hasInput.length === 0) &&
-               (!resource.hasOutput || resource.hasOutput.length === 0)) ? html`
-            <br/>
-            <h3 style="margin-left:30px">
-                This information has not been specified yet.
-            </h3>` : ''}
+            ${this._model && (this._model.hasInputVariable || this._model.hasOutputVariable) ? html`
+                <wl-title level="3" style="margin-top: 1em;"> Model variables:</wl-title>
+                ${this._model.hasInputVariable && this._model.hasInputVariable.length > 0 ? html`
+                <wl-title level="2" style="font-size: 16px;">Input Variables:</wl-title>
+                ${this._renderVariablePresentationTable(this._model.hasInputVariable)}
+                ` : ''}
+                ${this._model.hasOutputVariable && this._model.hasOutputVariable.length > 0 ? html`
+                <wl-title level="2" style="font-size: 16px;">Output Variables:</wl-title>
+                ${this._renderVariablePresentationTable(this._model.hasOutputVariable)}
+                ` : ''}
+            ` : ''}
         `
     }
 
     private _renderExpansionVariables (dsArr: DatasetSpecification[], title: string) {
         if (!dsArr || dsArr.length === 0) return '';
         return html`
-            <wl-title level="3">${title}:</wl-title>
+            <wl-title level="2" style="font-size: 16px;">${title}:</wl-title>
             ${dsArr.map((ds:DatasetSpecification) => html`
             <wl-expansion id="${getLabel(ds)}" name="${title}" @click="${() => this._expandDS(ds)}"
                     .disabled=${this._loading[ds.id]}
@@ -1473,6 +1546,49 @@ export class ModelView extends connect(store)(PageViewElement) {
                 }
             </wl-expansion>`)}
         `
+    }
+
+    private _renderVariablePresentationTable (vps:VariablePresentation[]) {
+        return html`
+            <table class="pure-table pure-table-bordered">
+                <thead>
+                    <th>Name</th>
+                    <th>Long Name</th>
+                    <th>Description</th>
+                    <th>Standard Name</th>
+                    <th>Units</th>
+                </thead>
+                <tbody>
+                    ${vps.map((vp : VariablePresentation) => this._loading[vp.id] ? html`
+                    <tr>
+                        <td colspan="5">
+                            <div class="text-centered">
+                                ${getId(vp)} <loading-dots style="--height: 10px; margin-left:10px"></loading-dots>
+                            </div>
+                        </td>
+                    </tr>
+                    ` : html`
+                    <tr>
+                        <td>${getLabel(this._variablePresentations[vp.id])}</td>
+                        <td>${this._variablePresentations[vp.id].hasLongName}</td>
+                        <td>${this._variablePresentations[vp.id].description}</td>
+                        <td style="word-wrap: break-word;">
+                        ${this._variablePresentations[vp.id].hasStandardVariable && this._variablePresentations[vp.id].hasStandardVariable.length > 0 ? html`
+                            <a class="monospaced link" target="_blank" href="${this._variablePresentations[vp.id].hasStandardVariable[0].id}">
+                                ${getLabel(this._variablePresentations[vp.id].hasStandardVariable[0])}
+                            </a>
+                        ` : '-'}
+                        </td>
+                        <td style="min-width: 80px;">
+                            ${this._variablePresentations[vp.id].usesUnit && 
+                              this._variablePresentations[vp.id].usesUnit.length > 0 ?
+                                getLabel(this._variablePresentations[vp.id].usesUnit[0]) : '-'}
+                        </td>
+                    </tr>
+                    ` )}
+                </tbody>
+            </table>
+        `;
     }
 
     private _closeAllExpansions () {
@@ -1632,7 +1748,12 @@ export class ModelView extends connect(store)(PageViewElement) {
 
         this.setSubPage(state);
         if (this._subpage != "explore") {
-            if (this._selectedModel) this._selectedModel = '';
+            if (this._selectedModel) {
+                this._selectedModel = '';
+                this._selectedVersion = '';
+                this._selectedConfig = '';
+                this._selectedSetup = '';
+            }
             return;
         }
 
@@ -1653,6 +1774,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                 if (!this._selectedModel) {
                     this._clear();
                     return;
+                }
+                if (!this._selectedVersion) {
+                    this._shouldUpdateConfigs = true;
                 }
                 this._loading[this._selectedModel] = true;
                 store.dispatch(modelGet(this._selectedModel)).then((model:Model) => {
@@ -1688,6 +1812,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                     if (this._tab === 'tech') {
                         this._loadSourceCodes(this._model.hasSourceCode, db);
                     }
+                    this._loadProcesses(this._model.hasProcess, db);
+                    this._loadVariablePresentations(this._model.hasInputVariable, db);
+                    this._loadVariablePresentations(this._model.hasOutputVariable, db);
 
                     //FIXME: this is duplicated
                     if (this._model && !this._modelRegions && !this._loadingGlobals) {
@@ -1969,12 +2096,18 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _renderFundings (fundArray: FundingInformation[]) {
         return (fundArray || []).map((fund:FundingInformation) => this._loading[fund.id] ?
             html`${getId(fund)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
-            : (this._funding[fund.id].fundingSource || []).map((org:Organization) => 
-                this._loading[org.id] ? 
-                html`${getId(org)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
-                : html`<span class="resource organization">
-                    ${getLabel(this._organizations[org.id])}
-                </span>`)
+            : (this._funding[fund.id].fundingSource ? 
+                this._funding[fund.id].fundingSource.map((org:Organization) => 
+                    this._loading[org.id] ? 
+                    html`${getId(org)} <loading-dots style="--width: 20px"></loading-dots>&nbsp;`
+                    : html`<span class="resource organization">
+                        ${getLabel(this._organizations[org.id])}
+                    </span>`)
+                : (this._funding[fund.id].fundingGrant ? 
+                    html`<span>${this._funding[fund.id].fundingGrant}</span>`
+                    : html`${getLabel(this._funding[fund.id])}`
+                    )
+                )
             );
     }
 

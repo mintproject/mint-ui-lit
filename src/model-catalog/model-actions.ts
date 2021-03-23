@@ -41,7 +41,7 @@ export const modelsGet: ActionThunk<Promise<IdMap<Model>>, MCAModelsAdd> = () =>
                             type: MODELS_ADD,
                             payload: data2
                         });
-                        resolve({...data, data2});
+                        resolve({...data, ...data2});
                     });
                     req2.catch(reject);
                 } else {

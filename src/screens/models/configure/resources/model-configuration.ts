@@ -22,6 +22,7 @@ import { ModelCatalogRegion } from './region';
 import { ModelCatalogProcess } from './process';
 import { ModelCatalogParameter } from './parameter';
 import { ModelCatalogDatasetSpecification } from './dataset-specification';
+import { ModelCatalogSourceCode } from './source-code';
 
 import { goToPage } from 'app/actions';
 
@@ -117,6 +118,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
     private _inputParameter : ModelCatalogParameter;
     private _inputDSInput : ModelCatalogDatasetSpecification;
     private _inputDSOutput : ModelCatalogDatasetSpecification;
+    private _inputSourceCode : ModelCatalogSourceCode;
 
     constructor () {
         super();
@@ -131,6 +133,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         this._inputRegion = new ModelCatalogRegion();
         this._inputProcesses = new ModelCatalogProcess();
         this._inputSoftwareImage = new ModelCatalogSoftwareImage();
+        this._inputSourceCode = new ModelCatalogSourceCode();
 
         this._inputParameter = new ModelCatalogParameter();
         this._inputParameter.inline = false;
@@ -157,6 +160,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         this._inputParameter.setResources( r.hasParameter );
         this._inputDSInput.setResources( r.hasInput );
         this._inputDSOutput.setResources( r.hasOutput );
+        this._inputSourceCode.setResources( r.hasSourceCode );
     }
 
     protected _unsetSubResources () {
@@ -172,6 +176,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
             this._inputParameter.setResources(null);
             this._inputDSInput.setResources(null);
             this._inputDSOutput.setResources(null);
+            this._inputSourceCode.setResources(null);
         }
     }
 
@@ -187,6 +192,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         this._inputParameter.setActionEditOrAdd();
         this._inputDSInput.setActionEditOrAdd();
         this._inputDSOutput.setActionEditOrAdd();
+        this._inputSourceCode.setActionSelect();
     }
 
     protected _unsetSubActions () {
@@ -201,6 +207,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         if (this._inputParameter) this._inputParameter.unsetAction();
         if (this._inputDSInput) this._inputDSInput.unsetAction();
         if (this._inputDSOutput) this._inputDSOutput.unsetAction();
+        if (this._inputSourceCode) this._inputSourceCode.unsetAction();
     }
 
     private _parentInnerResourcesSet : boolean = false;
@@ -271,6 +278,19 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
                     </td>
                 </tr>` : '' }
 
+                <tr>
+                    <td>Keywords:</td>
+                    <td>
+                        ${r.keywords ? r.keywords[0] : ''}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Source Code:</td>
+                    <td>
+                        ${this._inputSourceCode}
+                    </td>
+                </tr>
 
                 <tr>
                     <td>Installation instructions:</td>
@@ -280,18 +300,35 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
                 </tr>
 
                 <tr>
-                    <td>Keywords:</td>
-                    <td>
-                        ${r.keywords ? r.keywords[0] : ''}
-                    </td>
-                </tr>
-
-                <tr>
                     <td>Assumptions:</td>
                     <td>
                         ${r.hasAssumption? r.hasAssumption[0] : ''}
                     </td>
                 </tr>
+
+                ${r.runtimeEstimation ? html`
+                <tr>
+                    <td>Runtime Estimation:</td>
+                    <td>
+                        ${r.runtimeEstimation ? r.runtimeEstimation[0] : ''}
+                    </td>
+                </tr>` : ''}
+
+                ${r.parameterization ? html`
+                <tr>
+                    <td>Parameterization:</td>
+                    <td>
+                        ${r.parameterization ? r.parameterization[0] : ''}
+                    </td>
+                </tr>` : ''}
+
+                ${r.limitations ? html`
+                <tr>
+                    <td>Limitations:</td>
+                    <td>
+                        ${r.limitations ? r.limitations[0] : ''}
+                    </td>
+                </tr>` : ''}
 
                 <tr>
                     <td>Website:</td>
@@ -315,7 +352,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
                 </tr>
 
                 <tr>
-                    <td>SoftwareImage:</td>
+                    <td>Software Image:</td>
                     <td>
                         ${this._inputSoftwareImage}
                     </td>
@@ -430,6 +467,21 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
                 </tr>
 
                 <tr>
+                    <td>Keywords:</td>
+                    <td>
+                        <wl-textfield id="i-keywords" name="Keywords"
+                                value="${edResource && edResource.keywords ? edResource.keywords[0] : ''}"></wl-textfield>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Source Code:</td>
+                    <td>
+                        ${this._inputSourceCode}
+                    </td>
+                </tr>
+
+                <tr>
                     <td>Installation instructions:</td>
                     <td>
                         <textarea id="i-install-instructions" name="Installation instructions" rows="5">${
@@ -439,19 +491,35 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
                 </tr>
 
                 <tr>
-                    <td>Keywords:</td>
-                    <td>
-                        <wl-textfield id="i-keywords" name="Keywords"
-                                value="${edResource && edResource.keywords ? edResource.keywords[0] : ''}"></wl-textfield>
-                    </td>
-                </tr>
-
-                <tr>
                     <td>Assumptions:</td>
                     <td>
                         <textarea id="i-assumption" name="Assumptions" rows="3">${
                             edResource && edResource.hasAssumption? edResource.hasAssumption[0] : ''
                         }</textarea>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Runtime Estimation:</td>
+                    <td>
+                        <wl-textfield id="i-runtime" name="Runtime Estimation"
+                                value="${edResource && edResource.runtimeEstimation? edResource.runtimeEstimation[0] : ''}"></wl-textfield>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Parameterization:</td>
+                    <td>
+                        <wl-textfield id="i-parameterization" name="Parameterization"
+                                value="${edResource && edResource.parameterization ? edResource.parameterization[0] : ''}"></wl-textfield>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Limitations:</td>
+                    <td>
+                        <wl-textfield id="i-limitations" name="Limitations"
+                                value="${edResource && edResource.limitations ? edResource.limitations[0] : ''}"></wl-textfield>
                     </td>
                 </tr>
 
@@ -479,7 +547,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
                 </tr>
 
                 <tr>
-                    <td>SoftwareImage:</td>
+                    <td>Software Image:</td>
                     <td>
                         ${this._inputSoftwareImage}
                     </td>
@@ -592,6 +660,10 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         let inputDocumentation : Textfield = this.shadowRoot.getElementById("i-documentation") as Textfield;
         let inputDownload : Textfield = this.shadowRoot.getElementById("i-download") as Textfield;
 
+        let inputRuntime : Textfield = this.shadowRoot.getElementById("i-runtime") as Textfield;
+        let inputParameterization : Textfield = this.shadowRoot.getElementById("i-parameterization") as Textfield;
+        let inputLimitations : Textfield = this.shadowRoot.getElementById("i-limitations") as Textfield;
+
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : ''; 
         let keywords : string = inputKeywords ? inputKeywords.value : ''; 
@@ -611,6 +683,10 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         let documentation : string = inputDocumentation ? inputDocumentation.value : ''; 
         let download : string = inputDownload ? inputDownload.value : ''; 
 
+        let runtime : string = inputRuntime ? inputRuntime.value : ''; 
+        let parameterization : string = inputParameterization ? inputParameterization.value : ''; 
+        let limitations : string = inputLimitations ? inputLimitations.value : ''; 
+
         let categories = this._inputCategory.getResources();
 
         if (label && desc && categories != null && categories.length > 0) {
@@ -629,6 +705,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
                 hasParameter: this._inputParameter.getResources(),
                 hasInput: this._inputDSInput.getResources(),
                 hasOutput: this._inputDSOutput.getResources(),
+                hasSourceCode: this._inputSourceCode.getResources(),
             };
             if (keywords) jsonRes["keywords"] = [keywords];
             if (shortDesc) jsonRes["shortDescription"] = [shortDesc];
@@ -650,6 +727,10 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
             if (example) jsonRes["hasExample"] = [example];
             if (documentation) jsonRes["hasDocumentation"] = [documentation];
             if (download) jsonRes["hasDownloadURL"] = [download];
+
+            if (runtime) jsonRes["runtimeEstimation"] = [runtime];
+            if (parameterization) jsonRes["parameterization"] = [parameterization];
+            if (limitations) jsonRes["limitations"] = [limitations];
 
             return ModelConfigurationFromJSON(jsonRes);
         } else {

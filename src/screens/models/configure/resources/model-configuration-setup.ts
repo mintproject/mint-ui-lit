@@ -23,6 +23,7 @@ import { ModelCatalogProcess } from './process';
 
 import { ModelCatalogParameter } from './parameter';
 import { ModelCatalogDatasetSpecification } from './dataset-specification';
+import { ModelCatalogSourceCode } from './source-code';
 
 import { goToPage } from 'app/actions';
 
@@ -117,6 +118,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
     private _inputParameter : ModelCatalogParameter;
     private _inputDSInput : ModelCatalogDatasetSpecification;
+    private _inputSourceCode : ModelCatalogSourceCode;
     //private _outputDSInput : ModelCatalogDatasetSpecification;
 
     constructor () {
@@ -134,6 +136,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputRegion = new ModelCatalogRegion();
         this._inputProcesses = new ModelCatalogProcess();
         this._inputSoftwareImage = new ModelCatalogSoftwareImage();
+        this._inputSourceCode = new ModelCatalogSourceCode();
 
         this._inputParameter = new ModelCatalogParameter();
         this._inputParameter.inline = false;
@@ -163,6 +166,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputSoftwareImage.setResources(r.hasSoftwareImage);
         this._inputParameter.setResources( r.hasParameter );
         this._inputDSInput.setResources( r.hasInput );
+        this._inputSourceCode.setResources( r.hasSourceCode );
     }
 
     protected _unsetSubResources () {
@@ -177,6 +181,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             this._inputSoftwareImage.setResources(null);
             this._inputParameter.setResources(null);
             this._inputDSInput.setResources(null);
+            this._inputSourceCode.setResources(null);
         }
     }
 
@@ -191,6 +196,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputSoftwareImage.setActionSelect();
         this._inputParameter.setActionEditOrAdd();
         this._inputDSInput.setActionEditOrAdd();
+        this._inputSourceCode.setActionSelect();
     }
 
     protected _unsetSubActions () {
@@ -204,6 +210,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         if (this._inputSoftwareImage) this._inputSoftwareImage.unsetAction();
         if (this._inputParameter) this._inputParameter.unsetAction();
         if (this._inputDSInput) this._inputDSInput.unsetAction();
+        if (this._inputSourceCode) this._inputSourceCode.unsetAction();
     }
 
     private _parentInnerResourcesSet : boolean = false;
@@ -307,7 +314,38 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 </tr>
 
                 <tr>
-                    <td>SoftwareImage:</td>
+                    <td>Source Code:</td>
+                    <td>
+                        ${this._inputSourceCode}
+                    </td>
+                </tr>
+
+                ${r.runtimeEstimation ? html`
+                <tr>
+                    <td>Runtime Estimation:</td>
+                    <td>
+                        ${r.runtimeEstimation ? r.runtimeEstimation[0] : ''}
+                    </td>
+                </tr>` : ''}
+
+                ${r.parameterization ? html`
+                <tr>
+                    <td>Parameterization:</td>
+                    <td>
+                        ${r.parameterization ? r.parameterization[0] : ''}
+                    </td>
+                </tr>` : ''}
+
+                ${r.limitations ? html`
+                <tr>
+                    <td>Limitations:</td>
+                    <td>
+                        ${r.limitations ? r.limitations[0] : ''}
+                    </td>
+                </tr>` : ''}
+
+                <tr>
+                    <td>Software Image:</td>
                     <td>
                         ${this._inputSoftwareImage}
                     </td>
@@ -454,7 +492,38 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 </tr>
 
                 <tr>
-                    <td>SoftwareImage:</td>
+                    <td>Source Code:</td>
+                    <td>
+                        ${this._inputSourceCode}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Runtime Estimation:</td>
+                    <td>
+                        <wl-textfield id="i-runtime" name="Runtime Estimation"
+                                value="${edResource && edResource.runtimeEstimation? edResource.runtimeEstimation[0] : ''}"></wl-textfield>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Parameterization:</td>
+                    <td>
+                        <wl-textfield id="i-parameterization" name="Parameterization"
+                                value="${edResource && edResource.parameterization ? edResource.parameterization[0] : ''}"></wl-textfield>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Limitations:</td>
+                    <td>
+                        <wl-textfield id="i-limitations" name="Limitations"
+                                value="${edResource && edResource.limitations ? edResource.limitations[0] : ''}"></wl-textfield>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Software Image:</td>
                     <td>
                         ${this._inputSoftwareImage}
                     </td>
@@ -545,6 +614,10 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         let inputDownload : Textfield = this.shadowRoot.getElementById("i-download") as Textfield;
         let inputInstallInstructions : Textfield = this.shadowRoot.getElementById("i-install-instructions") as Textfield;
 
+        let inputRuntime : Textfield = this.shadowRoot.getElementById("i-runtime") as Textfield;
+        let inputParameterization : Textfield = this.shadowRoot.getElementById("i-parameterization") as Textfield;
+        let inputLimitations : Textfield = this.shadowRoot.getElementById("i-limitations") as Textfield;
+
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : ''; 
         let keywords : string = inputKeywords ? inputKeywords.value : ''; 
@@ -562,6 +635,10 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         let documentation : string = inputDocumentation ? inputDocumentation.value : ''; 
         let download : string = inputDownload ? inputDownload.value : ''; 
         let installInstructions : string = inputInstallInstructions ? inputInstallInstructions.value : ''; 
+
+        let runtime : string = inputRuntime ? inputRuntime.value : ''; 
+        let parameterization : string = inputParameterization ? inputParameterization.value : ''; 
+        let limitations : string = inputLimitations ? inputLimitations.value : ''; 
 
         let categories = this._inputCategory.getResources();
 
@@ -581,6 +658,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 hasGrid: this._inputGrid.getResources(),
                 hasParameter: this._inputParameter.getResources(),
                 hasInput: this._inputDSInput.getResources(),
+                hasSourceCode: this._inputSourceCode.getResources(),
             };
             if (keywords) jsonRes["keywords"] = [keywords];
             if (shortDesc) jsonRes["shortDescription"] = [shortDesc];
@@ -595,6 +673,10 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             if (documentation) jsonRes["hasDocumentation"] = [documentation];
             if (download) jsonRes["hasDownloadURL"] = [download];
             if (installInstructions) jsonRes["hasInstallationInstructions"] = [installInstructions];
+
+            if (runtime) jsonRes["runtimeEstimation"] = [runtime];
+            if (parameterization) jsonRes["parameterization"] = [parameterization];
+            if (limitations) jsonRes["limitations"] = [limitations];
 
             return ModelConfigurationSetupFromJSON(jsonRes);
         } else {
