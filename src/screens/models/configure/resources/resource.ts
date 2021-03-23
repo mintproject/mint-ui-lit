@@ -816,7 +816,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         let resource = this._singleMode ? this._getResourceFromFullForm() : this._getResourceFromForm();
         if (resource && this._status != Status.NONE) {
             if ((this._status === Status.CREATE || this._status === Status.CUSTOM_CREATE)) {
-                if (this.uniqueLabel && this._checkLabelUniq(resource)) {
+                if (!this.uniqueLabel || this._checkLabelUniq(resource)) {
                     resource.id = "";
                 } else {
                     this._uniqueLabelError(resource);
