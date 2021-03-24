@@ -9,6 +9,7 @@ import { addRegions, addSubcategory } from './actions';
 import { GOOGLE_API_KEY } from 'config/firebase';
 import { IdMap } from 'app/reducers';
 import { Region, RegionCategory } from './reducers';
+import { CustomNotification } from 'components/notification';
 
 import 'components/google-map-custom';
 import 'weightless/progress-spinner';
@@ -156,10 +157,21 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         ];
     }
 
+    private _notification : CustomNotification;
+
+    public constructor () {
+        super();
+        this._notification = new CustomNotification();
+    }
+
 	// TODO: maybe move the description text outside and move the button to other place.
     protected render() {
-        let subcat = this._regionCategory[this._selectedSubcategory];
+        let citation : string = this._selectedSubcategory && this._regionCategory.subcategories ? 
+            this._regionCategory.subcategories.filter((c) => c.id === this._selectedSubcategory).pop()?.citation
+            : this._regionCategory.citation;
+
         return html`
+        ${this._notification}
         <div style="display: flex; margin-bottom: 10px;">
             <wl-tab-group align="center" style="width: 100%;">
                 <wl-tab @click="${() => this._selectSubcategory('')}" ?checked=${!this._selectedSubcategory}>
@@ -187,12 +199,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                     ${this.regionType ? this.regionType.toLowerCase() : ''} 
                     modeling in ${this._region.name || this._regionid}`)
                 : ''}
-            ${subcat ? html`
-                ${subcat.name ? html`<div>${subcat.name}</div>` : ''}
-                ${subcat.citation ?
-                    html`<div style="font-size: 13px; font-style: italic; padding-top: 3px;">${subcat.citation}</div>`
-                    : ''}
-            ` : ''}
+            ${citation ?
+                html`<div style="font-size: 13px; font-style: italic; padding-top: 3px;">${citation}</div>`
+                : ''}
             </div>
             <div style="grid-column: 2 / 3;">
                 <wl-icon @click="${this._showAddRegionsDialog}" style="float:right;"
@@ -314,6 +323,8 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     }
 
     _showAddSubcategoryDialog() {
+        this._notification.error("Sorry! Category creation is disabled in this moment.");
+        return;
         let input:HTMLInputElement = this.shadowRoot!.querySelector<HTMLInputElement>("#subcategory-name")!;
         input.value = '';
 
