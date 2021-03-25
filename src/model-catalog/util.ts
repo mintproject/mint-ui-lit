@@ -74,6 +74,12 @@ export const isMainRegion = (region:Region) : boolean => {
         || region.id === "https://w3id.org/okn/i/mint/Ethiopia"
         || region.id === "https://w3id.org/okn/i/mint/South_Sudan"
         || region.id === "https://w3id.org/okn/i/mint/United_States"
+        || region.id === "https://w3id.org/okn/i/mint/Djibouti"
+        || region.id === "https://w3id.org/okn/i/mint/Eritrea"
+        || region.id === "https://w3id.org/okn/i/mint/Kenya"
+        || region.id === "https://w3id.org/okn/i/mint/Somalia"
+        || region.id === "https://w3id.org/okn/i/mint/Sudan"
+        || region.id === "https://w3id.org/okn/i/mint/Uganda"
         || region.id === "https://w3id.org/okn/i/mint/California"
         || region.id === "https://w3id.org/okn/i/mint/ad19b302-f69a-4325-8214-4e03e06850d0" //California
         || region.id === "https://w3id.org/okn/i/mint/Texas";

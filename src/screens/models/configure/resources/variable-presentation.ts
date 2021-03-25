@@ -140,7 +140,7 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
             let desc : string = r.description && r.description.length > 0 ? r.description[0] : '';
             let label : string = getLabel(r).replaceAll('_',' ');
             let units : string = r.usesUnit && r.usesUnit.length > 0 && this._allUnits != null ?
-                    r.usesUnit.map((u:Unit) => getLabel(this._allUnits[u.id])).join(', ') : '';
+                    r.usesUnit.map((u:Unit) => u.id && this._allUnits[u.id] ? getLabel(this._allUnits[u.id]) : '').join(', ') : '';
             return html`
                 <span class="${desc ? 'tooltip small-tooltip': ''}" tip="${desc}" 
                       style="${units ? 'display: flex; justify-content: space-between;' : ''}">
