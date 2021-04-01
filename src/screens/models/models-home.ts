@@ -85,6 +85,13 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                 model-explorer {
                     height: calc(100% - 40px);
                 }
+
+                @media (max-width: 768px) {
+                    .icongrid {
+                        grid-template-columns: 120px 120px 120px !important;
+                        margin-left: calc(50% - 180px) !important;
+                    }
+                }
             `,
             SharedStyles
         ];
@@ -97,6 +104,10 @@ export class ModelsHome extends connect(store)(PageViewElement) {
         if (this._selectedConfig)
             return uri + '#model-configuration';
         return uri;
+    }
+
+    private _getAPILink () {
+        return "https://api.models.mint.isi.edu/latest/ui/";
     }
 
     protected render() {
@@ -129,6 +140,12 @@ export class ModelsHome extends connect(store)(PageViewElement) {
 
         return html`
             <nav-title .nav="${nav}" max="2">
+                <a slot="after" class="no-decoration" target="_blank" href="${this._getAPILink()}" style="margin-right: 0.5em;">
+                    <wl-button style="--button-padding: 8px;">
+                        <wl-icon style="margin-right: 5px;">help_outline</wl-icon>
+                        <b>API</b>
+                    </wl-button>
+                </a>
                 <a slot="after" class="no-decoration" target="_blank" href="${this._getHelpLink()}">
                     <wl-button style="--button-bg: forestgreen; --button-bg-hover: darkgreen; --button-padding: 8px;">
                         <wl-icon style="margin-right: 5px;">help_outline</wl-icon>

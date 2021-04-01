@@ -23,6 +23,7 @@ export class ModelCatalogStandardVariable extends connect(store)(ModelCatalogRes
     protected resourcePost = standardVariablePost;
     protected resourcePut = standardVariablePut;
     protected resourceDelete = standardVariableDelete;
+    public uniqueLabel : boolean = true;
 
     protected _renderForm () {
         let edResource = this._getEditingResource();
@@ -58,13 +59,10 @@ export class ModelCatalogStandardVariable extends connect(store)(ModelCatalogRes
     }
 
     protected _renderResource (r:StandardVariable) {
-        //No all SV has labels (can not load).
-        if (r) {
-            if (r.label) return html`${getLabel(r)}`;
-            let id = r.id ? r.id.split('/').pop() : '?'
-            return html`${id}`;
-        }
-        return html`-?-`;
+        if (!r) return html`---`;
+        return html`<span style="font-family: monospace;">
+            ${getLabel(r)}
+        </span>`;
     }
 
     protected _getDBResources () {

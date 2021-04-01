@@ -21,7 +21,7 @@ export const standardVariablesGet: ActionThunk<Promise<IdMap<StandardVariable>>,
         debug('Fetching all');
         let api : StandardVariableApi = new StandardVariableApi();
         standardVariablesPromise = new Promise((resolve, reject) => {
-            let req : Promise<StandardVariable[]> = api.standardvariablesGet({username: getUser()});
+            let req : Promise<StandardVariable[]> = api.standardvariablesGet({username: getUser(), perPage: 200});
             req.then((resp:StandardVariable[]) => {
                 let data = resp.reduce(idReducer, {}) as IdMap<StandardVariable>
                 dispatch({

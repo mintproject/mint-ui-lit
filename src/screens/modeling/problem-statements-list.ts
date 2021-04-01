@@ -57,6 +57,24 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
         font-size: 13px;
         color: black;
       }
+      .top-paragraph {
+        margin-left: 44px
+      }
+      div.caption {
+        width: 200px;
+      }
+      @media (max-width: 1024px) {
+        .big-screen {
+          display: none;
+        }
+        .top-paragraph {
+          margin-left: 10px
+        }
+        wl-list-item {
+          --list-item-padding: 10px;
+          --list-item-after-margin: 5px !important;
+        }
+      }
       `
     ];
   }
@@ -78,7 +96,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
         <wl-icon @click="${this._addProblemStatementDialog}" 
           class="actionIcon bigActionIcon addIcon" id="addProblemStatementIcon">note_add</wl-icon>
     </div>
-    <p style="margin-left: 44px">
+    <p class="top-paragraph">
     Choose an existing problem from the list below or click add to create a new one. 
     </p>
     <!-- Show ProblemStatement List -->
@@ -87,15 +105,18 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
         let last_event = getLatestEvent(problem_statement.events);
         let permissions = getUserPermission(problem_statement.permissions, problem_statement.events);
         let create_event = getLatestEventOfType(["CREATE"], problem_statement.events);
+        //console.log(problem_statement.preview);
         //let region = this._regions[problem_statement.regionid];
         if(problem_statement.regionid == this._top_regionid) {
           return html`
           <wl-list-item class="active"
               @click="${this._onSelectProblemStatement}"
               data-problem_statement_id="${problem_statement.id}">
-              <wl-icon slot="before">label_important</wl-icon>
+              <div class="big-screen" slot="before">
+                  <wl-icon>label_important</wl-icon>
+              </div>
               <div slot="after" style="display:flex">
-                <div class="caption">
+                <div class="caption big-screen">
                   Last updated by: ${last_event?.userid}<br/>
                   ${toDateTimeString(last_event?.timestamp)}
                 </div>
@@ -113,14 +134,22 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
                     `: ""}
                 </div>
               </div>
-              <wl-title level="4" style="margin: 0">${problem_statement.name}</wl-title>
-              ${last_event?.notes ? html`<div class="small-notes"><b>Notes:</b> ${last_event.notes}</div>` : ''}
-              <div>
-                Time Period: ${toDateString(problem_statement.dates.start_date)} to 
-                ${toDateString(problem_statement.dates.end_date)}
-              </div>
-              <div class="caption">
-                  Created by: ${create_event?.userid} at ${toDateTimeString(create_event?.timestamp)}
+              <div style="display: flex; justify-content: space-between;">
+                  <div>
+                      <wl-title level="4" style="margin: 0">${problem_statement.name}</wl-title>
+                      ${last_event?.notes ? html`<div class="small-notes"><b>Notes:</b> ${last_event.notes}</div>` : ''}
+                      <div>
+                        Time Period: ${toDateString(problem_statement.dates.start_date)} to 
+                        ${toDateString(problem_statement.dates.end_date)}
+                      </div>
+                      <div class="caption">
+                          Created by: ${create_event?.userid} at ${toDateTimeString(create_event?.timestamp)}
+                      </div>
+                </div>
+                <div class="big-screen" style="width: 250px;">
+                    ${problem_statement.preview && problem_statement.preview.length > 0?
+                        html`<b>Indicators:</b> ${problem_statement.preview.join(', ')}` :''}
+                </div>
               </div>
           </wl-list-item>
           `
@@ -224,18 +253,22 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
         let problem_statement_name = (form.elements["problem_statement_name"] as HTMLInputElement).value;
         let problem_statement_region = (form.elements["problem_statement_region"] as HTMLInputElement).value;
         let problem_statement_subregion = (form.elements["problem_statement_subregion"] as HTMLInputElement).value;
-        let problem_statement_from = (form.elements["problem_statement_from"] as HTMLInputElement).value;
-        let problem_statement_to = (form.elements["problem_statement_to"] as HTMLInputElement).value;
+        let problem_statement_from = new Date((form.elements["problem_statement_from"] as HTMLInputElement).value);
+        let problem_statement_to = new Date((form.elements["problem_statement_to"] as HTMLInputElement).value);
         let problem_statement_notes = (form.elements["problem_statement_notes"] as HTMLInputElement).value;
         let problem_statement_permissions = (form.querySelector("#problem_statement_permissions") as PermissionsEditor).permissions;
+        if(problem_statement_from >= problem_statement_to) {
+          alert("The start date should be before the end date");
+          return;
+        }
 
         let problem_statement = {
           name: problem_statement_name,
           regionid: problem_statement_region,
           subregionid: problem_statement_subregion,
           dates: {
-            start_date: new Date(problem_statement_from),
-            end_date: new Date(problem_statement_to)
+            start_date: problem_statement_from,
+            end_date: problem_statement_to
           },
           notes: problem_statement_notes,
           events: [],

@@ -130,11 +130,6 @@ export class MintApp extends connect(store)(LitElement) {
         width: 100%;
         transition: width 0.2s;
       }
-
-      .card {
-        height: calc(100% - 100px);
-        overflow: auto;
-      }
       
       .breadcrumbs {
         margin-left: 0px;
@@ -176,8 +171,152 @@ export class MintApp extends connect(store)(LitElement) {
       .message-button:hover {
         background-color: rgb(224, 224, 224);
       }
+
+      #breadcrumbs-menu-button {
+        display:none;
+      }
+      .small-screen {
+        display: none;
+      }
+
+      @media (max-width: 1024px) {
+        #main-breadcrumbs {
+          display: none;
+        }
+        #breadcrumbs-menu-button {
+          display: inline-block;
+        }
+        #breadcrumbs-popover wl-button {
+          display: block;
+        }
+        #main-breadcrumbs .emulator-button {
+          display: none;
+        }
+        wl-nav {
+          --nav-padding: 0px;
+        }
+        wl-button.active {
+          --button-bg: #629b30 !important;
+        }
+        .emulators-button {
+          display: none;
+        }
+        .small-screen {
+          display: flex;
+        }
+        .sectionframe {
+          display: block;
+          height: 100%;
+          width: 100%;
+          overflow: auto;
+          background: #F6F6F6;
+        }
+      }
       `
     ];
+  }
+
+  private _getMenuLinks() {
+    return html`
+        <a href="${this._selectedRegion ? this._selectedRegion.id : ""}/home"
+            class=${(this._page == 'home' ? 'active' : '')}>
+            <div style="vertical-align:middle">
+              ▶
+              ${this._selectedRegion ? 
+                this._selectedRegion.name.toUpperCase() : "Select Region"}
+            </div>
+        </a>
+        ${!this.user || !this._selectedRegion ? 
+          (!this.user ? html`
+          <a @click="${this._showLoginWindow}">Log in to see more</a>                
+          ` : "") : 
+          html`
+          <a href='${this._selectedRegion.id}/regions'
+              class=${(this._page == 'regions'? 'active': '')}
+            >Explore Areas</a>                
+          <a href='${this._selectedRegion.id}/models'
+              class=${(this._page == 'models'? 'active': '')}
+            >Prepare Models</a>
+          <a href='${this._selectedRegion.id}/datasets'
+              class=${(this._page == 'datasets'? 'active': '')}
+            >Browse Datasets</a>                  
+          <a href='${this._selectedRegion.id}/modeling'
+              class=${(this._page == 'modeling') ? 'active': ''}
+            class="active">Use Models</a>
+          <a href='${this._selectedRegion.id}/analysis/report'
+              class=${(this._page == 'analysis'? 'active': '')}
+            >Prepare Reports</a>
+          `
+        }
+    `;
+  }
+
+  private _getMenuButtons() {
+    return html`
+        <wl-button flat inverted @click="${() => goToPage("home")}">
+            ${this._selectedRegion ? 
+                "Change Region" : "Select Region"}
+        </wl-button>
+        ${!this.user || !this._selectedRegion ? 
+          (!this.user ? html`
+          <wl-button flat inverted @click="${this._showLoginWindow}">Log in to see more</wl-button>                
+          ` : "") : 
+          html`
+          <wl-button flat inverted class='${(this._page == 'regions'? 'active': '')}'
+            @click='${() => goToPage("regions")}'>
+            Explore Areas
+          </wl-button>
+          <wl-button flat inverted class="${(this._page == 'models'? 'active': '')}"
+            @click='${() => goToPage("models")}'>
+            Prepare Models
+          </wl-button>
+          <wl-button flat inverted class="${(this._page == 'datasets'? 'active': '')}"
+            @click='${() => goToPage("datasets")}'>
+            Browse Datasets
+          </wl-button>
+          <wl-button flat inverted class="${(this._page == 'modeling'? 'active': '')}"
+            @click='${() => goToPage("modeling")}'>
+            Use Models
+          </wl-button>
+          <wl-button flat inverted class="${(this._page == 'analysis'? 'active': '')}"
+            @click='${() => goToPage("analysis")}'>
+            Prepare Reports
+          </wl-button>
+          <wl-button flat inverted class="${this._page == 'emulators' ? 'active' : ''}" 
+            @click="${() => goToPage('emulators')}">
+            Emulators &#38; Results
+          </wl-button>
+          `
+        }
+    `;
+  }
+
+  private _getPageTitle() {
+    let title = "";
+    switch(this._page) {
+      case "regions":
+        title = "Explore Areas";
+        break;
+      case "models": 
+        title = "Prepare Models";
+        break;
+      case "datasets":
+        title = "Browse Datasets";
+        break;
+      case "modeling":
+        title = "Use Models";
+        break;
+      case "analysis":
+        title = "Prepare Reports";
+        break;
+      case "emulators":
+        title = "Emulators";
+        break;
+      default:
+        title = "";
+    }
+    let region = this._selectedRegion ? this._selectedRegion.name.toUpperCase() : "SELECT REGION";
+    return title + (title ? ": ": "") + region;
   }
 
   protected render() {
@@ -189,38 +328,25 @@ export class MintApp extends connect(store)(LitElement) {
     <div class="appframe">
       <!-- Navigation Bar -->
       <wl-nav>
+        <div class="small-screen" slot="left">
+          <wl-button id="breadcrumbs-menu-button" flat inverted @click="${this._onBreadcrumbsMenuButtonClicked}">
+            <wl-icon>menu</wl-icon>
+          </wl-button>
+          <wl-button style="display: inline-block" flat inverted @click="${this._onBreadcrumbsMenuButtonClicked}">
+            ${this._getPageTitle()}
+          </wl-button>
+          <wl-popover id="breadcrumbs-popover" anchor="#breadcrumbs-menu-button" fixed
+                transformOriginX="left" transformOriginY="top" anchorOriginX="left" anchorOriginY="bottom">
+              <div style="background: #fff; padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px; display: flex; flex-direction: column;">
+                <ul class="breadcrumbs">
+                  ${this._getMenuButtons()}
+                </ul>
+              </div>
+          </wl-popover>
+        </div>
         <div slot="title">
-          <ul class="breadcrumbs">
-            <a href="${this._selectedRegion ? this._selectedRegion.id : ""}/home"
-                class=${(this._page == 'home' ? 'active' : '')}>
-                <div style="vertical-align:middle">
-                  ▶
-                  ${this._selectedRegion ? 
-                    this._selectedRegion.name.toUpperCase() : "Select Region"}
-                </div>
-            </a>
-            ${!this.user || !this._selectedRegion ? 
-              (!this.user ? html`
-              <a @click="${this._showLoginWindow}">Log in to see more</a>                
-              ` : "") : 
-              html`
-              <a href='${this._selectedRegion.id}/regions'
-                  class=${(this._page == 'regions'? 'active': '')}
-                >Explore Areas</a>                
-              <a href='${this._selectedRegion.id}/models'
-                  class=${(this._page == 'models'? 'active': '')}
-                >Prepare Models</a>
-              <a href='${this._selectedRegion.id}/datasets'
-                  class=${(this._page == 'datasets'? 'active': '')}
-                >Browse Datasets</a>                  
-              <a href='${this._selectedRegion.id}/modeling'
-                  class=${(this._page == 'modeling') ? 'active': ''}
-                class="active">Use Models</a>
-              <a href='${this._selectedRegion.id}/analysis/report'
-                  class=${(this._page == 'analysis'? 'active': '')}
-                >Prepare Reports</a>
-              `
-            }
+          <ul id="main-breadcrumbs" class="breadcrumbs">
+            ${this._getMenuLinks()}
           </ul>
         </div>
         <div slot="right">
@@ -228,7 +354,7 @@ export class MintApp extends connect(store)(LitElement) {
             html`
             ${this._selectedRegion ? 
               html`
-              <wl-button flat inverted class="message-button ${this._page == 'emulators' ? 'selected' : ''}" @click="${() => goToPage('emulators')}">
+              <wl-button flat inverted class="message-button emulators-button ${this._page == 'emulators' ? 'selected' : ''}" @click="${() => goToPage('emulators')}">
                   Emulators &#38; Results
                   <wl-icon style="margin-left: 4px;">settings</wl-icon>
               </wl-button>
@@ -242,12 +368,9 @@ export class MintApp extends connect(store)(LitElement) {
             :
             html `
             ${this._selectedRegion ? 
-              html`
-              <wl-button flat inverted class="message-button ${this._page == 'messages' ? 'selected' : ''}" @click="${() => goToPage('messages')}">
-                Messages <wl-icon style="margin-left: 4px;">message</wl-icon>
-              </wl-button>              
+              html`              
               &nbsp;
-              <wl-button flat inverted class="message-button ${this._page == 'emulators' ? 'selected' : ''}" @click="${() => goToPage('emulators')}">
+              <wl-button flat inverted class="message-button emulators-button ${this._page == 'emulators' ? 'selected' : ''}" @click="${() => goToPage('emulators')}">
                   Emulators &#38; Results
                   <wl-icon style="margin-left: 4px;">settings</wl-icon>
               </wl-button>
@@ -260,6 +383,9 @@ export class MintApp extends connect(store)(LitElement) {
             <wl-popover id="user-popover" anchor="#user-button" fixed
                 transformOriginX="right" transformOriginY="top" anchorOriginX="right" anchorOriginY="bottom">
                 <div style="background: #fff; padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px; display: flex; flex-direction: column;">
+                    <wl-button flat inverted class="message-button ${this._page == 'messages' ? 'selected' : ''}" @click="${() => goToPage('messages')}">
+                      Messages <wl-icon style="margin-left: 4px;">message</wl-icon>
+                    </wl-button>                
                     <wl-button flat inverted @click="${this._showConfigWindow}"> CONFIGURE </wl-button>
                     <wl-button flat inverted @click="${signOut}"> LOGOUT </wl-button>
                 </div>
@@ -271,33 +397,25 @@ export class MintApp extends connect(store)(LitElement) {
 
       ${this.user ? 
         html `
-        <div class="sectionframe">
-          <div id="right">
-            <div class="card">
-              <!-- Main Pages -->
-              <app-home class="page fullpage" ?active="${this._page == 'home'}"></app-home>
-              <datasets-home class="page fullpage" ?active="${this._page == 'datasets'}"></datasets-home>
-              <regions-home class="page fullpage" ?active="${this._page == 'regions'}"></regions-home>
-              <variables-home class="page fullpage" ?active="${this._page == 'variables'}"></variables-home>
-              <models-home class="page fullpage" ?active="${this._page == 'models'}"></models-home>
-              <modeling-home class="page fullpage" ?active="${this._page == 'modeling'}"></modeling-home>
-              <analysis-home class="page fullpage" ?active="${this._page == 'analysis'}"></analysis-home>
-              <messages-home class="page fullpage" ?active="${this._page == 'messages'}"></messages-home>
-              <emulators-home class="page fullpage" ?active="${this._page == 'emulators'}"></emulators-home>
-            </div>
+          <div class="card">
+            <!-- Main Pages -->
+            <app-home class="page fullpage" ?active="${this._page == 'home'}"></app-home>
+            <datasets-home class="page fullpage" ?active="${this._page == 'datasets'}"></datasets-home>
+            <regions-home class="page fullpage" ?active="${this._page == 'regions'}"></regions-home>
+            <variables-home class="page fullpage" ?active="${this._page == 'variables'}"></variables-home>
+            <models-home class="page fullpage" ?active="${this._page == 'models'}"></models-home>
+            <modeling-home class="page fullpage" ?active="${this._page == 'modeling'}"></modeling-home>
+            <analysis-home class="page fullpage" ?active="${this._page == 'analysis'}"></analysis-home>
+            <messages-home class="page fullpage" ?active="${this._page == 'messages'}"></messages-home>
+            <emulators-home class="page fullpage" ?active="${this._page == 'emulators'}"></emulators-home>
           </div>
-        </div>
         `
         :
         html `
-          <div class="sectionframe">
-            <div id="right">
-              <div class="card">
-                <!-- Main Pages -->
-                <app-home class="page fullpage" ?active="${this._page == 'home'}"></app-home>
-                <emulators-home class="page fullpage" ?active="${this._page == 'emulators'}"></emulators-home>
-              </div>
-            </div>
+          <div class="card">
+            <!-- Main Pages -->
+            <app-home class="page fullpage" ?active="${this._page == 'home'}"></app-home>
+            <emulators-home class="page fullpage" ?active="${this._page == 'emulators'}"></emulators-home>
           </div>
         `
       }
@@ -310,6 +428,11 @@ export class MintApp extends connect(store)(LitElement) {
 
   _onUserButtonClicked () {
     let pop : Popover = this.shadowRoot.querySelector("#user-popover");
+    if (pop) pop.show();//.then(result => console.log(result));
+  }
+
+  _onBreadcrumbsMenuButtonClicked () {
+    let pop : Popover = this.shadowRoot.querySelector("#breadcrumbs-popover");
     if (pop) pop.show();//.then(result => console.log(result));
   }
 

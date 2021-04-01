@@ -73,6 +73,7 @@ const dsSpecToIO = (ds: DatasetSpecification) => {
         id: ds.id,
         name: ds.label ? ds.label[0] : ds.id,
         type: types.join(),
+        format: ds.hasFormat ? ds.hasFormat[0] : null,
         position: ds.position ? ds.position[0] : 0,
         variables: [], //TODO does not return hasInput -> hasPresentation -> hasStandarVariable
     }

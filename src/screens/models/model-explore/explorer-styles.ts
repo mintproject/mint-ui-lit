@@ -132,6 +132,14 @@ span.time-interval {
     border: 2px solid burlywood;
 }
 
+span.source-code {
+    border: 2px solid gray;
+}
+
+span.intervention {
+    border: 2px solid darkgrey;
+}
+
 span.grid {
     border: 2px solid teal;
 }

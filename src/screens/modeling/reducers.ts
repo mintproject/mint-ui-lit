@@ -76,6 +76,7 @@ export interface ProblemStatementInfo extends IdNameObject {
     dates: DateRange
     events?: ProblemStatementEvent[]
     permissions?: MintPermission[]
+    preview?: string[]
 }
 
 export interface DateRange {
@@ -115,6 +116,7 @@ export interface Thread extends ThreadInfo {
     visualizations?: Visualization[]
     events: ThreadEvent[]
     changed?: boolean
+    refresh?: boolean
     unsubscribe?: Function
 }
 
@@ -234,7 +236,7 @@ const modeling: Reducer<ModelingState, RootAction> = (state = INITIAL_STATE, act
                 ...action.details,
                 changed: true,
                 unsubscribe: state.problem_statement?.unsubscribe
-            } as ProblemStatement            
+            } as ProblemStatement           
             return {
                 ...state,
                 problem_statement: problem_statement

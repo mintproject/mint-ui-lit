@@ -160,7 +160,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
             return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
 
         const visibleSetup = (setup: ModelConfigurationSetup) =>
-            !!setup && (!setup.hasRegion || (setup.hasRegion||[]).some((region:Region) =>
+                !!setup && (!setup.hasRegion || setup.hasRegion.length == 0 || (setup.hasRegion||[]).some((region:Region) =>
                     isSubregion(this._region.model_catalog_uri, this._regions[region.id])));
 
         let categoryModels = {};
@@ -227,7 +227,6 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                             </span>
                         </span>
                         ${this._visible[version.id] ? html`
-                        ${Object.keys(this._configs).length === 0 ? html`<loading-dots style="--width: 20px;"></loading-dots>` : html`
                         <ul style="padding-left: 30px;">
                             ${(version.hasConfiguration || [])
                                 .filter(c => !!c.id)
@@ -249,7 +248,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                                     <li style="list-style:disc" ?selected="${this._selectedSetup === setup.id}">
                                         ${this._renderTag(setup.tag)}
                                         <a class="setup" @click="${()=>{this._select(model, version, config, setup)}}">
-                                            ${setup ? setup.label : this._getId(setup)}
+                                            ${setup && setup.label ? setup.label : this._getId(setup)}
                                         </a>
                                     </li>
                                     `)}
@@ -268,7 +267,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                                     Add new configuration
                                 </a>
                             </li>
-                        </ul>`}
+                        </ul>
                         ` : ''}
                     </li>`)}
                 </ul>

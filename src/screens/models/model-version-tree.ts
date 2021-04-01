@@ -174,7 +174,6 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
                     </span>
                 </span>
                 ${this._visible[model.id] ? html`
-                ${Object.keys(this._versions).length === 0 ? html`<loading-dots style="--width: 20px;"></loading-dots>` : html`
                 <ul>
                     ${(model.hasVersion||[])
                         .filter((v:any) => !!this._versions[v.id])
@@ -198,7 +197,6 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
                         </a>
                     </li>
                 </ul>
-                `}
                 ` : ''}
             </li>
         `)}

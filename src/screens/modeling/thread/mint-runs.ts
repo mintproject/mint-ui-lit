@@ -35,15 +35,10 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     @property({type: Number})
     private pageSize = 100;
     @property({type: String})
-    private orderBy = "start_time";
-    @property({type: Boolean})
-    private orderByDesc = false;
+    private orderBy = [{"status": "asc"}]; //, {"start_time": "asc"}];
 
     @property({type: String})
     private _log: string;
-
-    @property({type: Boolean})
-    private _waiting: Boolean = false;
 
     static get styles() {
         return [
@@ -74,7 +69,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
             `
         }
 
-        let done = (getThreadRunsStatus(this.thread.execution_summary) == TASK_DONE);
+        let done = (getThreadRunsStatus(this.thread) == TASK_DONE);
         
         // Group running executions
         let grouped_executions = {};
@@ -133,7 +128,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                     return `  `;
                 }
                 if(!summary.total_runs) {
-                    return ` `;
+                    return html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`;
                 }
                 
                 let grouped_ensemble = grouped_executions[modelid];
@@ -209,7 +204,8 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                     (${nInputs} input resources &#215; ${nParameters} parameters).
                     ${!finished ? "So far, " : ""} ${submitted_runs} model runs
                     ${!finished ? "have been" : "were"} submitted, out of which 
-                    ${successful_runs} succeeded, while ${failed_runs} failed.
+                    ${successful_runs} succeeded, while 
+                        <span .style="color:${failed_runs?'red': ''}">${failed_runs} failed</span>.
                     ${running > 0 ? html `${running} are currently running` : ""}
                     ${running > 0 && pending > 0 ? ', and ' : ''}
                     ${pending > 0 ? html `${pending} are waiting to be run` : ""}
@@ -272,8 +268,8 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                         </tr>
                                         <tr>
                                             <th>Run Status</th>
-                                            <th>Start Time</th>
-                                            <th>End Time</th>                                            
+                                            <th>Run Start Time</th>
+                                            <th>Run End Time</th>                                            
                                             <th>Run Log</th>
                                             ${grouped_ensemble.inputs.length + grouped_ensemble.params.length == 0 ?     
                                                 html`<th></th>` : ""
@@ -316,7 +312,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                                         // FIXME: This should be resolved to a collection of resources
                                                         let furl = this._getDatasetURL(res); 
                                                         return html`
-                                                            <td><a href="${furl}">${res.name}</a></td>
+                                                            <td><a target="_blank" href="${furl}">${res.name}</a></td>
                                                         `;
                                                     }
                                                 })}
@@ -389,11 +385,8 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                 alert("Could not connect to the Execution Manager!");
             }
         }, data, false);
-    }
 
-    _orderBy(threadid: string, modelid: string, orderBy: string) {
-        this.orderBy = orderBy;
-        this._fetchRuns(threadid, modelid)
+        this.selectAndContinue("runs");
     }
 
     _nextPage(threadid: string, modelid: string, offset:  number) {
@@ -411,6 +404,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
             onLoad: function(e: any) {
                 let log = e.target.responseText;
                 log = log.replace(/\\n/g, "\n");
+                log = log.replace(/\\r/g, "");
                 log = log.replace(/\\t/g, "\t");
                 log = log.replace(/\\u001b.+?m/g, "");
                 log = log.replace(/^"/, "");
@@ -450,16 +444,16 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     }
 
     async _fetchRuns (threadid: string, modelid: string) {
-        if(!this.currentPage[modelid])
-            this.currentPage[modelid] = 1;
-        let start = (this.currentPage[modelid] - 1)*this.pageSize;
-        let limit = this.pageSize;
-        let orderBy = {};
-        orderBy[this.orderBy] = this.orderByDesc ? "desc" : "asc";
-        store.dispatch(listThreadModelExecutionsAction(
-            threadid,
-            modelid, this.thread.model_ensembles[modelid].id, 
-            start, limit, orderBy));
+        if(this.thread.model_ensembles[modelid]) {
+            if(!this.currentPage[modelid])
+                this.currentPage[modelid] = 1;
+            let start = (this.currentPage[modelid] - 1)*this.pageSize;
+            let limit = this.pageSize;
+            store.dispatch(listThreadModelExecutionsAction(
+                threadid,
+                modelid, this.thread.model_ensembles[modelid].id, 
+                start, limit, this.orderBy));
+        }
     }
 
     async _reloadAllRuns() {
