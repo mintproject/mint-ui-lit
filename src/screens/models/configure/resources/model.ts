@@ -28,6 +28,8 @@ import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+
 @customElement('model-catalog-model')
 export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Model> {
     static get styles() {
@@ -90,11 +92,19 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
     protected classes : string = "resource model";
     protected name : string = "model";
     protected pname : string = "Model";
+    /*
     protected resourcesGet = modelsGet;
     protected resourceGet = modelGet;
     protected resourcePut = modelPut;
     protected resourceDelete = modelDelete;
     protected resourcePost = modelPost;
+    */
+
+    protected resourcesGet = ModelCatalogApi.myCatalog.model.getAll;
+    protected resourceGet = ModelCatalogApi.myCatalog.model.get;
+    protected resourcePut = ModelCatalogApi.myCatalog.model.put;
+    protected resourceDelete = ModelCatalogApi.myCatalog.model.delete;
+    protected resourcePost = ModelCatalogApi.myCatalog.model.post;
 
     public pageMax : number = 10
 
@@ -912,7 +922,9 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
     }
 
     protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.models;
+        /*let db = (store.getState() as RootState).modelCatalog;
+        return db.models;*/
+        let db = (store.getState() as RootState).modelCatalog2;
+        return db.model;
     }
 }
