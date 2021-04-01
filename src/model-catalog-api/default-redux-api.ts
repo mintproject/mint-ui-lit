@@ -8,17 +8,19 @@ import { IdObject } from './interfaces';
 import { DEFAULT_GRAPH, PREFIX_URI } from 'config/default-graph';
 
 export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
-    private _api : API;
-    private _username : string;
+    protected _api : API;
+    protected _username : string;
+    protected _redux : boolean = true;
+    protected _editable : boolean = false;
+    protected _cached : Promise<IdMap<T>>;
     private _name : string;
     private _lname : ModelCatalogTypes;
-    private _redux : boolean = true;
-    private _cached : Promise<IdMap<T>>;
 
     public constructor (ApiType: new (cfg?:Configuration) => API, user:string, config?:Configuration) {
-        if (config) 
+        if (config) {
             this._api = new ApiType(config);
-        else {
+            if (config.accessToken('')) this._editable = true;
+        } else {
             this._api = new ApiType();
             this._redux = false;
         }
@@ -43,7 +45,6 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
     }
 
     public getAll : ActionThunk<Promise<IdMap<T>>, MCActionAdd> = (ignoreCache:boolean=false) => (dispatch) => {
-        console.log('!!');
         if (ignoreCache || !this._cached) {
             this._cached = new Promise((resolve, reject) => {
                 let req : Promise<T[]> = this._api[this._lname + 'sGet']({
@@ -67,6 +68,7 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
     }
 
     public delete : ActionThunk<Promise<void>, MCActionDelete> = (uri:string) => (dispatch) => {
+        if (!this.isEditable()) return this._notAllowedError();
         let id : string = this._getIdFromUri(uri);
         let req : Promise<void> = this._api[this._lname + 'sIdDelete']({user: this._username, id: id});
         if (this._redux) req.then(() => {
@@ -80,6 +82,7 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
     }
 
     public put : ActionThunk<Promise<T>, MCActionAdd> = (resource:T) => (dispatch) => {
+        if (!this.isEditable()) return this._notAllowedError();
         let id : string = this._getIdFromUri(resource.id);
         let reqParams = {
             user: this._username,
@@ -98,7 +101,8 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
     }
 
     public post : ActionThunk<Promise<T>, MCActionAdd> = (resource:T) => (dispatch) => {
-        if (resource.id) return Promise.reject(new Error('PUT error. Resource has id:' + resource.id));
+        if (!this.isEditable()) return this._notAllowedError();
+        if (resource.id) return Promise.reject(new Error('POST error. Resource has id:' + resource.id));
         else {
             let reqParams = { user: this._username };
             reqParams[this._name] = resource;
@@ -114,16 +118,24 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
         }
     }
 
-    private _getIdFromUri (uri:string) : string {
+    public isEditable () : boolean {
+        return this._editable;
+    }
+
+    protected _notAllowedError () : Promise<any> {
+        return Promise.reject(new Error("You do not have permissions to modify the " + this._username + " catalog"));
+    }
+
+    protected _getIdFromUri (uri:string) : string {
         return uri.split('/').pop();
     }
 
-    private _idReducer (dic:IdMap<T>, elem:T) : IdMap<T> {
+    protected _idReducer (dic:IdMap<T>, elem:T) : IdMap<T> {
         dic[elem.id] = elem;
         return dic;
     }
 
-    private _createIdMap (item:T) : IdMap<T> {
+    protected _createIdMap (item:T) : IdMap<T> {
         let uri : string = PREFIX_URI + item.id
         let map : IdMap<T> = {} as IdMap<T>;
         map[uri] = item;

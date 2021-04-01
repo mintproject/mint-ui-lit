@@ -4,6 +4,8 @@ import { store } from 'app/store';
 import { DefaultReduxApi } from './default-redux-api';
 import { Model, ModelApi,
          SoftwareVersion, SoftwareVersionApi } from '@mintproject/modelcatalog_client';
+import { CustomModelApi } from './custom-model-api';
+import { UserCatalog } from './user-catalog';
 
 //export const FETCH_MODEL_CATALOG_ACCESS_TOKEN = 'FETCH_MODEL_CATALOG_ACCESS_TOKEN';
 //export const STATUS_MODEL_CATALOG_ACCESS_TOKEN = 'STATUS_MODEL_CATALOG_ACCESS_TOKEN';
@@ -73,10 +75,34 @@ export class ModelCatalogApi {
 
 
     //--- APIS:
-    private static _modelApi : DefaultReduxApi<Model, ModelApi>;
+    private static _userCatalog : UserCatalog;
+
+    private static _getMyCatalog () : UserCatalog {
+        if (!ModelCatalogApi._userCatalog) {
+            ModelCatalogApi._userCatalog = new UserCatalog(
+                ModelCatalogApi.username,
+                ModelCatalogApi.getApiConfiguration());
+        }
+        return ModelCatalogApi._userCatalog;
+    }
+
+    public static getCatalog (username:string) : UserCatalog {
+        return new UserCatalog(username);
+    }
+
+    public static get myCatalog () : UserCatalog {
+        return ModelCatalogApi._getMyCatalog();
+    }
+
+    /*private static _modelApi : DefaultReduxApi<Model, ModelApi>;
     public static get model () : DefaultReduxApi<Model, ModelApi> {
         if (!ModelCatalogApi._modelApi) {
-            ModelCatalogApi._modelApi = new DefaultReduxApi<Model, ModelApi>(
+            /*ModelCatalogApi._modelApi = new DefaultReduxApi<Model, ModelApi>(
+                ModelApi,
+                ModelCatalogApi.username,
+                ModelCatalogApi.getApiConfiguration()
+            );/
+            ModelCatalogApi._modelApi = new CustomModelApi(
                 ModelApi,
                 ModelCatalogApi.username,
                 ModelCatalogApi.getApiConfiguration()
@@ -96,5 +122,5 @@ export class ModelCatalogApi {
                 cfg ? cfg : null
             );
         }
-    }
+    }*/
 }

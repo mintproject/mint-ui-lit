@@ -8,59 +8,18 @@ import { CausalDiagram, ConfigurationSetup, DataTransformation, DataTransformati
          Parameter, Person, PointBasedGrid, Process, Region, SampleCollection, SampleExecution, SampleResource,
          Software, SoftwareConfiguration, SoftwareImage, SoftwareVersion, SourceCode, SpatialResolution,
          SpatiallyDistributedGrid, StandardVariable, TheoryGuidedModel, TimeInterval, Unit, Variable,
-         VariablePresentation, Visualization } from '@mintproject/modelcatalog_client';
+         VariablePresentation, Visualization, CatalogIdentifier, CoupledModel, ModelCategory 
+        } from '@mintproject/modelcatalog_client';
 import { IdMap } from 'app/reducers'
 
 export type ModelCatalogTypes = keyof ModelCatalogState2;
 
-/*export const ModelCatalogTypeName : IdMap<string> = {
-    causaldiagram:              "CausalDiagram",
-    configurationsetup:         "ConfigurationSetup",
-    datatransformation:         "DataTransformation",
-    datatransformationsetup:    "DataTransformationSetup",
-    datasetspecification:       "DatasetSpecification",
-    empiricalmodel:             "EmpiricalModel",
-    emulator:                   "Emulator",
-    equation:                   "Equation",
-    fundinginformation:         "FundingInformation",
-    geocoordinates:             "GeoCoordinates",
-    geoshape:                   "GeoShape",
-    grid:                       "Grid",
-    hybridmodel:                "HybridModel",
-    image:                      "Image",
-    intervention:               "Intervention",
-    model:                      "Model",
-    modelconfiguration:         "ModelConfiguration",
-    modelconfigurationsetup:    "ModelConfigurationSetup",
-    numericalindex:             "NumericalIndex",
-    organization:               "Organization",
-    parameter:                  "Parameter",
-    person:                     "Person",
-    pointbasedgrid:             "PointBasedGrid",
-    process:                    "Process",
-    region:                     "Region",
-    samplecollection:           "SampleCollection",
-    sampleexecution:            "SampleExecution",
-    sampleresource:             "SampleResource",
-    software:                   "Software",
-    softwareconfiguration:      "SoftwareConfiguration",
-    softwareimage:              "SoftwareImage",
-    softwareversion:            "SoftwareVersion",
-    sourcecode:                 "SourceCode",
-    spatialresolution:          "SpatialResolution",
-    spatiallydistributedgrid:   "SpatiallyDistributedGrid",
-    standardvariable:           "StandardVariable",
-    theoryguidedmodel:          "TheoryGuidedModel",
-    timeinterval:               "TimeInterval",
-    unit:                       "Unit",
-    variable:                   "Variable",
-    variablepresentation:       "VariablePresentation",
-    visualization:              "Visualization"
-}*/
-
+//Needs to be updated if we add new classes to the ontology.
 export interface ModelCatalogState2 {
+    catalogidentifier:          IdMap<CatalogIdentifier>;
     causaldiagram:              IdMap<CausalDiagram>;
     configurationsetup:         IdMap<ConfigurationSetup>;
+    coupledmodel:               IdMap<CoupledModel>;
     datatransformation:         IdMap<DataTransformation>;
     datatransformationsetup:    IdMap<DataTransformationSetup>;
     datasetspecification:       IdMap<DatasetSpecification>;
@@ -75,6 +34,7 @@ export interface ModelCatalogState2 {
     image:                      IdMap<Image>;
     intervention:               IdMap<Intervention>;
     model:                      IdMap<Model>;
+    modelcategory:              IdMap<ModelCategory>;
     modelconfiguration:         IdMap<ModelConfiguration>;
     modelconfigurationsetup:    IdMap<ModelConfigurationSetup>;
     numericalindex:             IdMap<NumericalIndex>;
@@ -104,8 +64,10 @@ export interface ModelCatalogState2 {
 }
 
 const INITIAL_STATE: ModelCatalogState2 = { 
+    catalogidentifier:          {} as IdMap<CatalogIdentifier>,
     causaldiagram:              {} as IdMap<CausalDiagram>,
     configurationsetup:         {} as IdMap<ConfigurationSetup>,
+    coupledmodel:               {} as IdMap<CoupledModel>,
     datatransformation:         {} as IdMap<DataTransformation>,
     datatransformationsetup:    {} as IdMap<DataTransformationSetup>,
     datasetspecification:       {} as IdMap<DatasetSpecification>,
@@ -120,6 +82,7 @@ const INITIAL_STATE: ModelCatalogState2 = {
     image:                      {} as IdMap<Image>,
     intervention:               {} as IdMap<Intervention>,
     model:                      {} as IdMap<Model>,
+    modelcategory:              {} as IdMap<ModelCategory>,
     modelconfiguration:         {} as IdMap<ModelConfiguration>,
     modelconfigurationsetup:    {} as IdMap<ModelConfigurationSetup>,
     numericalindex:             {} as IdMap<NumericalIndex>,
