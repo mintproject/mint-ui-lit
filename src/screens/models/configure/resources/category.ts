@@ -14,6 +14,10 @@ import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+
 @customElement('model-catalog-category')
 export class ModelCatalogCategory extends connect(store)(ModelCatalogResource)<ModelCategory> {
     static get styles() {
@@ -28,6 +32,9 @@ export class ModelCatalogCategory extends connect(store)(ModelCatalogResource)<M
     protected classes : string = "resource category";
     protected name : string = "category";
     protected pname : string = "categories";
+    
+    protected resourceApi : DefaultReduxApi<ModelCategory,BaseAPI> = ModelCatalogApi.myCatalog.modelCategory;
+
     protected resourcesGet = categoriesGet;
     protected resourceGet = categoryGet;
     protected resourcePost = categoryPost;

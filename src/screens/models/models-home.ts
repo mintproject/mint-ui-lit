@@ -20,9 +20,6 @@ store.addReducers({
 });
 
 import modelCatalog from 'model-catalog/reducers'
-import { modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet, processesGet, 
-         regionsGet, imagesGet } from '../../model-catalog/actions';
-
 store.addReducers({
     modelCatalog
 });
@@ -30,6 +27,7 @@ store.addReducers({
 import { Model } from '@mintproject/modelcatalog_client';
 import modelCatalog2 from 'model-catalog-api/reducers';
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+import { UserCatalog } from 'model-catalog-api/user-catalog';
 
 store.addReducers({
     modelCatalog2
@@ -193,29 +191,38 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     }
 
     firstUpdated() {
-        store.dispatch(modelsGet());
+        /*store.dispatch(modelsGet());
         store.dispatch(versionsGet());
         store.dispatch(modelConfigurationsGet());
         store.dispatch(modelConfigurationSetupsGet());
         store.dispatch(regionsGet());
-        store.dispatch(imagesGet());
-        store.dispatch(processesGet());
+        store.dispatch(imagesGet());*/
+
+        let api : UserCatalog = ModelCatalogApi.myCatalog;
+
+        store.dispatch(api.model.getAll());
+        store.dispatch(api.softwareVersion.getAll());
+        store.dispatch(api.modelConfiguration.getAll());
+        store.dispatch(api.modelConfigurationSetup.getAll());
+        store.dispatch(api.region.getAll());
+        store.dispatch(api.image.getAll());
+
         //TEST
         /*console.log('Getting SWAT from the model-catalog...');
-        store.dispatch(ModelCatalogApi.externalModel('mint@isi.edu').get("SWAT")).then((m:Model) => {
+        store.dispatch(ModelCatalogApi.getCatalog('mint@isi.edu').model.get("SWAT")).then((m:Model) => {
             console.log('Response from mint@isi.edu:', m);
             console.log('Copy to user graph...');
             let swatCopy = { ...m, id: '' }
-            if (swatCopy.dateCreated) delete swatCopy.dateCreated
-            store.dispatch(ModelCatalogApi.model.post(swatCopy)).then((s:Model) => {
+            //if (swatCopy.dateCreated) delete swatCopy.dateCreated
+            store.dispatch(ModelCatalogApi.myCatalog.model.post(swatCopy)).then((s:Model) => {
                 console.log('Response of post', s);
                 console.log('Editing...');
                 if (s && s.label && s.label.length > 0) {
                     s.label = [ s.label[0] + " (copy)" ];
-                    store.dispatch(ModelCatalogApi.model.put(s)).then((w:Model) => {
+                    store.dispatch(ModelCatalogApi.myCatalog.model.put(s)).then((w:Model) => {
                         console.log('Response of put', w);
                         console.log("Deleting...");
-                        store.dispatch(ModelCatalogApi.model.delete(w.id)).then(() => {
+                        store.dispatch(ModelCatalogApi.myCatalog.model.delete(w)).then(() => {
                             console.log("DONE");
                         });
                     });

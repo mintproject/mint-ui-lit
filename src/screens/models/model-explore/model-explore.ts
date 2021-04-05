@@ -447,10 +447,10 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             this._selectedUri = state.explorerUI.selectedModel;
         }
 
-        if (state.modelCatalog) {
-            let db = state.modelCatalog;
-            if (this._models != db.models && !isEmpty(db.models)) {
-                this._models = db.models;
+        if (state.modelCatalog2) {
+            let db = state.modelCatalog2;
+            if (this._models != db.model && !isEmpty(db.model)) {
+                this._models = db.model;
 
                 /* Computing full-text search */
                 this._fullText = {};

@@ -8,10 +8,12 @@ import { IdMap } from 'app/reducers'
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Organization, Region, FundingInformation, 
          Image, Grid, TimeInterval, Process, Visualization, SourceCode, SoftwareImage, Parameter, DatasetSpecification,
          Intervention, VariablePresentation } from '@mintproject/modelcatalog_client';
-import { modelGet, versionGet, versionsGet, modelConfigurationGet, modelConfigurationsGet, modelConfigurationSetupsGet,
-         modelConfigurationSetupGet, imageGet, personGet, regionsGet, organizationGet, fundingInformationGet,
-         timeIntervalGet, gridGet, processGet, setupGetAll, visualizationGet, sourceCodeGet, softwareImageGet,
-         parameterGet, datasetSpecificationGet, interventionGet, variablePresentationGet } from 'model-catalog/actions';
+
+import { setupGetAll } from 'model-catalog/actions';
+
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+import { ModelCatalogState2 } from 'model-catalog-api/reducers';
+
 import { setupInRegion, capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition, isExecutable,
          getModelTypeNames } from 'model-catalog/util';
 import { GalleryEntry } from 'components/image-gallery';
@@ -799,7 +801,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         //console.log('GoToTab:', tabid);
         this._tab = tabid;
         if (tabid === 'tech') {
-            let db = (store.getState() as RootState).modelCatalog;
+            let db = (store.getState() as RootState).modelCatalog2;
             this._loadSourceCodes(this._model.hasSourceCode, db);
             if (this._config) {
                 this._loadSourceCodes(this._config.hasSourceCode, db);
@@ -807,13 +809,13 @@ export class ModelView extends connect(store)(PageViewElement) {
             }
         } 
         if (tabid === 'io' && this._config) {
-            let db = (store.getState() as RootState).modelCatalog;
+            let db = (store.getState() as RootState).modelCatalog2;
             this._loadParameters(this._config.hasParameter, db);
             this._loadDatasetSpecifications(this._config.hasInput, db);
             this._loadDatasetSpecifications(this._config.hasOutput, db);
         }
         if (tabid === 'variables' && this._config) {
-            let db = (store.getState() as RootState).modelCatalog;
+            let db = (store.getState() as RootState).modelCatalog2;
             this._loadDatasetSpecifications(this._config.hasInput, db);
             this._loadDatasetSpecifications(this._config.hasOutput, db);
         }
@@ -1601,7 +1603,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _expandDS (ds: DatasetSpecification) {
         if (!this._loading[ds.id]) {
             if (!this._loadedPresentations[ds.id]) {
-                let db = (store.getState() as RootState).modelCatalog;
+                let db = (store.getState() as RootState).modelCatalog2;
                 this._loadedPresentations[ds.id] = true;
                 let dataset = this._datasetSpecifications[ds.id];
                 if (dataset.hasPresentation && dataset.hasPresentation.length > 0)
@@ -1726,10 +1728,10 @@ export class ModelView extends connect(store)(PageViewElement) {
     firstUpdated() {
         this._loadingGlobals = true;
         this._loadingRegions = true;
-        let rVer = store.dispatch(versionsGet());
-        let rCfg = store.dispatch(modelConfigurationsGet());
-        let rSet = store.dispatch(modelConfigurationSetupsGet());
-        let rReg = store.dispatch(regionsGet());
+        let rVer = store.dispatch(ModelCatalogApi.myCatalog.softwareVersion.getAll());
+        let rCfg = store.dispatch(ModelCatalogApi.myCatalog.modelConfiguration.getAll());
+        let rSet = store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getAll());
+        let rReg = store.dispatch(ModelCatalogApi.myCatalog.region.getAll());
         rVer.then(() => this._shouldUpdateConfigs = true);
         rCfg.then(() => this._shouldUpdateConfigs = true);
         rSet.then(() => this._shouldUpdateSetups = true);
@@ -1744,7 +1746,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         super.setRegion(state);
         let ui = state.explorerUI;
-        let db = state.modelCatalog;
+        let db = state.modelCatalog2;
 
         this.setSubPage(state);
         if (this._subpage != "explore") {
@@ -1763,10 +1765,10 @@ export class ModelView extends connect(store)(PageViewElement) {
         let configChanged : boolean = ui && (versionChanged || ui.selectedConfig !== this._selectedConfig);
         let setupChanged : boolean = ui && (ui.selectedCalibration !== this._selectedSetup);
         if (db) {
-            this._versions = db.versions;
-            this._configs = db.configurations;
-            this._setups = db.setups;
-            this._regions = db.regions;
+            this._versions = db.softwareversion;
+            this._configs = db.modelconfiguration;
+            this._setups = db.modelconfigurationsetup;
+            this._regions = db.region;
 
             if (modelChanged) {
                 this._selectedModel = ui.selectedModel;
@@ -1779,7 +1781,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     this._shouldUpdateConfigs = true;
                 }
                 this._loading[this._selectedModel] = true;
-                store.dispatch(modelGet(this._selectedModel)).then((model:Model) => {
+                store.dispatch(ModelCatalogApi.myCatalog.model.get(this._selectedModel)).then((model:Model) => {
                     this._loading[this._selectedModel] = false;
                     this._model = model;
                     this._modelRegions = null;
@@ -1788,11 +1790,11 @@ export class ModelView extends connect(store)(PageViewElement) {
                     this._logo = null;
                     if (this._model.logo && this._model.logo.length > 0) {
                         let logoId = (this._model.logo[0] as Image).id;
-                        if (db.images[logoId]) {
-                            this._logo = db.images[logoId];
+                        if (db.image[logoId]) {
+                            this._logo = db.image[logoId];
                         } else {
                             this._loading[logoId] = true;
-                            store.dispatch(imageGet(logoId)).then((logo: Image) => {
+                            store.dispatch(ModelCatalogApi.myCatalog.image.get(logoId)).then((logo: Image) => {
                                 this._loading[logoId] = false;
                                 this._logo = logo;
                             });
@@ -1826,13 +1828,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                                     .map((cfg:ModelConfiguration) => this._configs[cfg.id])
                                     .forEach((cfg:ModelConfiguration) => {
                                         (cfg.hasRegion || [])
-                                            .map((region:Region) => db.regions[region.id])
+                                            .map((region:Region) => db.region[region.id])
                                             .forEach((region:Region) => regions.add(region.id));
                                         (cfg.hasSetup || [])
                                             .map((setup:ModelConfigurationSetup) => this._setups[setup.id])
                                             .forEach((setup:ModelConfigurationSetup) => {
                                                 (setup && setup.hasRegion ? setup.hasRegion : [])
-                                                    .map((region:Region) => db.regions[region.id])
+                                                    .map((region:Region) => db.region[region.id])
                                                     .forEach((region:Region) => regions.add(region.id));
                                             });
                                     });
@@ -1845,9 +1847,9 @@ export class ModelView extends connect(store)(PageViewElement) {
             if (versionChanged) {
                 this._version = null;
                 if (ui.selectedVersion) {
-                    if (db.versions[ui.selectedVersion]) {
+                    if (db.softwareversion[ui.selectedVersion]) {
                         this._selectedVersion = ui.selectedVersion;
-                        this._version = db.versions[ui.selectedVersion];
+                        this._version = db.softwareversion[ui.selectedVersion];
                         this._loadImages(this._version.screenshot, db);
                         this._loadVisualizations(this._version.hasSampleVisualization, db);
                     }
@@ -1860,9 +1862,9 @@ export class ModelView extends connect(store)(PageViewElement) {
                 this._shouldUpdateSetups = true;
                 this._config = null;
                 if (ui.selectedConfig) {
-                    if (db.configurations[ui.selectedConfig]) {
+                    if (db.modelconfiguration[ui.selectedConfig]) {
                         this._selectedConfig = ui.selectedConfig;
-                        this._config = db.configurations[this._selectedConfig];
+                        this._config = db.modelconfiguration[this._selectedConfig];
                         this._shouldUpdateConfigs = true;
                         //--
                         this._loadAuthors(this._config.author, db);
@@ -1962,13 +1964,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                             .map((cfg:ModelConfiguration) => this._configs[cfg.id])
                             .forEach((cfg:ModelConfiguration) => {
                                 (cfg.hasRegion || [])
-                                    .map((region:Region) => db.regions[region.id])
+                                    .map((region:Region) => db.region[region.id])
                                     .forEach((region:Region) => regions.add(region.id));
                                 (cfg.hasSetup || [])
                                     .map((setup:ModelConfigurationSetup) => this._setups[setup.id])
                                     .forEach((setup:ModelConfigurationSetup) => {
                                         (setup && setup.hasRegion ? setup.hasRegion : [])
-                                            .map((region:Region) => db.regions[region.id])
+                                            .map((region:Region) => db.region[region.id])
                                             .forEach((region:Region) => regions.add(region.id));
                                     });
                             });
@@ -1978,25 +1980,25 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
     }
 
-    private _loadAuthors (authorArr: (Person|Organization)[], db: any) {
+    private _loadAuthors (authorArr: (Person|Organization)[], db: ModelCatalogState2) {
         (authorArr || []).forEach((author:Person|Organization) => {
             if (author.type && author.type.includes("Person")) {
-                if (db.persons[author.id]) {
-                    this._authors[author.id] = db.persons[author.id];
+                if (db.person[author.id]) {
+                    this._authors[author.id] = db.person[author.id];
                 } else {
                     this._loading[author.id] = true;
-                    store.dispatch(personGet(author.id)).then((person:Person) => {
+                    store.dispatch(ModelCatalogApi.myCatalog.person.get(author.id)).then((person:Person) => {
                         this._loading[author.id] = false;
                         this._authors[author.id] = person;
                         this.requestUpdate();
                     });
                 }
             } else if (author.type && author.type.includes("Organization")) {
-                if (db.organizations[author.id]) {
-                    this._organizations[author.id] = db.organizations[author.id];
+                if (db.organization[author.id]) {
+                    this._organizations[author.id] = db.organization[author.id];
                 } else {
                     this._loading[author.id] = true;
-                    store.dispatch(organizationGet(author.id)).then((organization:Organization) => {
+                    store.dispatch(ModelCatalogApi.myCatalog.organization.get(author.id)).then((organization:Organization) => {
                         this._loading[author.id] = false;
                         this._organizations[author.id] = organization;
                         this.requestUpdate();
@@ -2050,19 +2052,19 @@ export class ModelView extends connect(store)(PageViewElement) {
         });
     }
 
-    private _loadFundings (fundArray: FundingInformation[], db: any) {
+    private _loadFundings (fundArray: FundingInformation[], db: ModelCatalogState2) {
         if (fundArray && fundArray.length > 0) {
             Promise.all(
                 fundArray.map((fund:FundingInformation) => {
-                    if (db.fundingInformations[fund.id]) {
-                        this._funding[fund.id] = db.fundingInformations[fund.id];
+                    if (db.fundinginformation[fund.id]) {
+                        this._funding[fund.id] = db.fundinginformation[fund.id];
                         (this._funding[fund.id].fundingSource || []).forEach((org:Organization) => {
                             this._loading[org.id] = true;
                         });
                         return Promise.resolve(this._funding[fund.id]);
                     } else {
                         this._loading[fund.id] = true;
-                        let req = store.dispatch(fundingInformationGet(fund.id));
+                        let req = store.dispatch(ModelCatalogApi.myCatalog.fundingInformation.get(fund.id));
                         req.then((funding:FundingInformation) => {
                             this._loading[fund.id] = false;
                             this._funding[fund.id] = funding;
@@ -2077,11 +2079,11 @@ export class ModelView extends connect(store)(PageViewElement) {
             ).then((fundings:FundingInformation[]) => {
                 fundings.forEach((fund: FundingInformation) => {
                     (fund.fundingSource || []).forEach((org:Organization) => {
-                        if (db.organizations[org.id]) {
-                            this._organizations[org.id] = db.organizations[org.id];
+                        if (db.organization[org.id]) {
+                            this._organizations[org.id] = db.organization[org.id];
                             this._loading[org.id] = false;
                         } else {
-                            store.dispatch(organizationGet(org.id)).then((organization:Organization) => {
+                            store.dispatch(ModelCatalogApi.myCatalog.organization.get(org.id)).then((organization:Organization) => {
                                 this._organizations[org.id] = organization;
                                 this._loading[org.id] = false;
                                 this.requestUpdate();
@@ -2111,13 +2113,13 @@ export class ModelView extends connect(store)(PageViewElement) {
             );
     }
 
-    private _loadTimeIntervals (tiArr: TimeInterval[], db: any) {
+    private _loadTimeIntervals (tiArr: TimeInterval[], db: ModelCatalogState2) {
         (tiArr || []).forEach((ti:TimeInterval) => {
-            if (db.timeIntervals[ti.id]) {
-                this._timeIntervals[ti.id] = db.timeIntervals[ti.id];
+            if (db.timeinterval[ti.id]) {
+                this._timeIntervals[ti.id] = db.timeinterval[ti.id];
             } else {
                 this._loading[ti.id] = true;
-                store.dispatch(timeIntervalGet(ti.id)).then((ti:TimeInterval) => {
+                store.dispatch(ModelCatalogApi.myCatalog.timeInterval.get(ti.id)).then((ti:TimeInterval) => {
                     this._loading[ti.id] = false;
                     this._timeIntervals[ti.id] = ti;
                     this.requestUpdate();
@@ -2138,13 +2140,13 @@ export class ModelView extends connect(store)(PageViewElement) {
             </span>`
     }
 
-    private _loadGrids (gridArr: Grid[], db: any) {
+    private _loadGrids (gridArr: Grid[], db: ModelCatalogState2) {
         (gridArr || []).forEach((grid:Grid) => {
-            if (db.grids[grid.id]) {
-                this._grids[grid.id] = db.grids[grid.id];
+            if (db.grid[grid.id]) {
+                this._grids[grid.id] = db.grid[grid.id];
             } else {
                 this._loading[grid.id] = true;
-                store.dispatch(gridGet(grid.id)).then((grid:Grid) => {
+                store.dispatch(ModelCatalogApi.myCatalog.grid.get(grid.id)).then((grid:Grid) => {
                     this._loading[grid.id] = false;
                     this._grids[grid.id] = grid;
                     this.requestUpdate();
@@ -2184,13 +2186,13 @@ export class ModelView extends connect(store)(PageViewElement) {
             </span>`
     }
 
-    private _loadProcesses (processArr: Process[], db: any) {
+    private _loadProcesses (processArr: Process[], db: ModelCatalogState2) {
         (processArr || []).forEach((process:Process) => {
-            if (db.processes[process.id]) {
-                this._processes[process.id] = db.processes[process.id];
+            if (db.process[process.id]) {
+                this._processes[process.id] = db.process[process.id];
             } else {
                 this._loading[process.id] = true;
-                store.dispatch(processGet(process.id)).then((process:Process) => {
+                store.dispatch(ModelCatalogApi.myCatalog.process.get(process.id)).then((process:Process) => {
                     this._loading[process.id] = false;
                     this._processes[process.id] = process;
                     this.requestUpdate();
@@ -2207,13 +2209,13 @@ export class ModelView extends connect(store)(PageViewElement) {
             </span>`);
     }
 
-    private _loadImages (imagesArr: Image[], db: any) {
+    private _loadImages (imagesArr: Image[], db: ModelCatalogState2) {
         (imagesArr || []).forEach((image:Image) => {
-            if (db.images[image.id]) {
-                this._images[image.id] = db.images[image.id];
+            if (db.image[image.id]) {
+                this._images[image.id] = db.image[image.id];
             } else if (!this._loading[image.id]) {
                 this._loading[image.id] = true;
-                store.dispatch(imageGet(image.id)).then((image:Image) => {
+                store.dispatch(ModelCatalogApi.myCatalog.image.get(image.id)).then((image:Image) => {
                     this._loading[image.id] = false;
                     this._images[image.id] = image;
                     this.requestUpdate();
@@ -2222,13 +2224,13 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
-    private _loadVisualizations (visualizationsArr: Visualization[], db: any) {
+    private _loadVisualizations (visualizationsArr: Visualization[], db: ModelCatalogState2) {
         (visualizationsArr || []).forEach((visualization:Visualization) => {
-            if (db.visualizations[visualization.id]) {
-                this._visualizations[visualization.id] = db.visualizations[visualization.id];
+            if (db.visualization[visualization.id]) {
+                this._visualizations[visualization.id] = db.visualization[visualization.id];
             } else if (!this._loading[visualization.id]) {
                 this._loading[visualization.id] = true;
-                store.dispatch(visualizationGet(visualization.id)).then((visualization:Visualization) => {
+                store.dispatch(ModelCatalogApi.myCatalog.visualization.get(visualization.id)).then((visualization:Visualization) => {
                     this._loading[visualization.id] = false;
                     this._visualizations[visualization.id] = visualization;
                     this.requestUpdate();
@@ -2237,13 +2239,13 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
-    private _loadSourceCodes (sourceArr: SourceCode[], db: any) {
+    private _loadSourceCodes (sourceArr: SourceCode[], db: ModelCatalogState2) {
         (sourceArr || []).forEach((sourceCode:SourceCode) => {
-            if (db.sourceCodes[sourceCode.id]) {
-                this._sourceCodes[sourceCode.id] = db.sourceCodes[sourceCode.id];
+            if (db.sourcecode[sourceCode.id]) {
+                this._sourceCodes[sourceCode.id] = db.sourcecode[sourceCode.id];
             } else if (!this._loading[sourceCode.id]) {
                 this._loading[sourceCode.id] = true;
-                store.dispatch(sourceCodeGet(sourceCode.id)).then((sourceCode:SourceCode) => {
+                store.dispatch(ModelCatalogApi.myCatalog.sourceCode.get(sourceCode.id)).then((sourceCode:SourceCode) => {
                     this._loading[sourceCode.id] = false;
                     this._sourceCodes[sourceCode.id] = sourceCode;
                     this.requestUpdate();
@@ -2252,13 +2254,13 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
-    private _loadSoftwareImages (siArr: SoftwareImage[], db: any) {
+    private _loadSoftwareImages (siArr: SoftwareImage[], db: ModelCatalogState2) {
         (siArr || []).forEach((softwareImage:SoftwareImage) => {
-            if (db.softwareImages[softwareImage.id]) {
-                this._softwareImages[softwareImage.id] = db.softwareImages[softwareImage.id];
+            if (db.softwareimage[softwareImage.id]) {
+                this._softwareImages[softwareImage.id] = db.softwareimage[softwareImage.id];
             } else if (!this._loading[softwareImage.id]) {
                 this._loading[softwareImage.id] = true;
-                store.dispatch(softwareImageGet(softwareImage.id)).then((softwareImage:SoftwareImage) => {
+                store.dispatch(ModelCatalogApi.myCatalog.softwareImage.get(softwareImage.id)).then((softwareImage:SoftwareImage) => {
                     this._loading[softwareImage.id] = false;
                     this._softwareImages[softwareImage.id] = softwareImage;
                     this.requestUpdate();
@@ -2267,15 +2269,15 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
-    private _loadParameters (parametersArr: Parameter[], db: any) {
+    private _loadParameters (parametersArr: Parameter[], db: ModelCatalogState2) {
         (parametersArr || []).forEach((parameter:Parameter) => {
-            if (db.parameters[parameter.id]) {
-                this._parameters[parameter.id] = db.parameters[parameter.id];
+            if (db.parameter[parameter.id]) {
+                this._parameters[parameter.id] = db.parameter[parameter.id];
                 if (this._parameters[parameter.id].relevantForIntervention)
                     this._loadInterventions(this._parameters[parameter.id].relevantForIntervention, db);
             } else if (!this._loading[parameter.id]) {
                 this._loading[parameter.id] = true;
-                store.dispatch(parameterGet(parameter.id)).then((parameter:Parameter) => {
+                store.dispatch(ModelCatalogApi.myCatalog.parameter.get(parameter.id)).then((parameter:Parameter) => {
                     this._loading[parameter.id] = false;
                     this._parameters[parameter.id] = parameter;
                     if (parameter.relevantForIntervention)
@@ -2286,13 +2288,13 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
-    private _loadDatasetSpecifications (dsArr: DatasetSpecification[], db: any) {
+    private _loadDatasetSpecifications (dsArr: DatasetSpecification[], db: ModelCatalogState2) {
         (dsArr || []).forEach((ds:DatasetSpecification) => {
-            if (db.datasetSpecifications[ds.id]) {
-                this._datasetSpecifications[ds.id] = db.datasetSpecifications[ds.id];
+            if (db.datasetspecification[ds.id]) {
+                this._datasetSpecifications[ds.id] = db.datasetspecification[ds.id];
             } else if (!this._loading[ds.id]) {
                 this._loading[ds.id] = true;
-                store.dispatch(datasetSpecificationGet(ds.id)).then((datasetSpecification:DatasetSpecification) => {
+                store.dispatch(ModelCatalogApi.myCatalog.datasetSpecification.get(ds.id)).then((datasetSpecification:DatasetSpecification) => {
                     this._loading[datasetSpecification.id] = false;
                     this._datasetSpecifications[datasetSpecification.id] = datasetSpecification;
                     this.requestUpdate();
@@ -2301,13 +2303,13 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
-    private _loadInterventions (interventionsArr: Intervention[], db: any) {
+    private _loadInterventions (interventionsArr: Intervention[], db: ModelCatalogState2) {
         (interventionsArr || []).forEach((intervention:Intervention) => {
-            if (db.interventions[intervention.id]) {
-                this._interventions[intervention.id] = db.interventions[intervention.id];
+            if (db.intervention[intervention.id]) {
+                this._interventions[intervention.id] = db.intervention[intervention.id];
             } else if (!this._loading[intervention.id]) {
                 this._loading[intervention.id] = true;
-                store.dispatch(interventionGet(intervention.id)).then((intervention:Intervention) => {
+                store.dispatch(ModelCatalogApi.myCatalog.intervention.get(intervention.id)).then((intervention:Intervention) => {
                     this._loading[intervention.id] = false;
                     this._interventions[intervention.id] = intervention;
                     this.requestUpdate();
@@ -2316,13 +2318,13 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
-    private _loadVariablePresentations (vpArr: VariablePresentation[], db: any) {
+    private _loadVariablePresentations (vpArr: VariablePresentation[], db: ModelCatalogState2) {
         (vpArr || []).forEach((vp:VariablePresentation) => {
-            if (db.variablePresentations[vp.id]) {
-                this._variablePresentations[vp.id] = db.variablePresentations[vp.id];
+            if (db.variablepresentation[vp.id]) {
+                this._variablePresentations[vp.id] = db.variablepresentation[vp.id];
             } else if (!this._loading[vp.id]) {
                 this._loading[vp.id] = true;
-                store.dispatch(variablePresentationGet(vp.id)).then((variablePresentation:VariablePresentation) => {
+                store.dispatch(ModelCatalogApi.myCatalog.variablePresentation.get(vp.id)).then((variablePresentation:VariablePresentation) => {
                     this._loading[variablePresentation.id] = false;
                     this._variablePresentations[variablePresentation.id] = variablePresentation;
                     this.requestUpdate();

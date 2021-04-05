@@ -54,7 +54,6 @@ export class CustomModelApi extends DefaultReduxApi<Model, ModelApi> {
     }
 
     public getAll : ActionThunk<Promise<IdMap<Model|CoupledModel>>, MCActionAdd> = (ignoreCache:boolean=false) => (dispatch) => {
-        console.log('!!');
         if (ignoreCache || !this._cached) {
             this._cached = new Promise((resolve, reject) => {
                 let req : Promise<Model[]> = this._api.modelsGet({

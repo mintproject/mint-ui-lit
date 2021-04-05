@@ -38,6 +38,9 @@ export enum Status {
     NONE, CREATE, EDIT, CUSTOM_CREATE,
 }
 
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+
 @customElement('model-catalog-resource')
 export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     static get styles() {
@@ -183,6 +186,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected pname : string = "resources";
     public colspan : number = 2;
     protected positionAttr : string = "";
+
+    protected resourceApi : DefaultReduxApi<T,BaseAPI>;
+
     protected resourcesGet;
     protected resourceGet;
     protected resourcePut;

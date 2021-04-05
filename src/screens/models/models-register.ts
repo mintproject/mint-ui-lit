@@ -21,7 +21,6 @@ import { ModelCatalogModel } from './configure/resources/model';
 import { renderNotifications } from "util/ui_renders";
 import { showNotification } from 'util/ui_functions';
 
-import { modelGet, modelPost, modelPut, versionPost } from 'model-catalog/actions';
 import { Model, Person, ModelFromJSON, SoftwareVersion, SoftwareVersionFromJSON } from '@mintproject/modelcatalog_client';
 import { getId, getLabel, getURL } from 'model-catalog/util';
 
