@@ -190,6 +190,10 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
     protected _renderForm () {
         let edResource = this._getEditingResource();
         return html`
+        <div style="font-weight: bold; padding: 5px;">
+            A Dataset Specification is the description of an input/output file.
+            The variables set in this resource will be used to search relevant datasets.
+        </div>
         <form>
             <wl-textfield id="ds-label" label="Name" required
                 value=${edResource ? getLabel(edResource) : ''}>
@@ -201,7 +205,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
                 value="${edResource && edResource.hasFormat ? edResource.hasFormat[0] : ''}" >
             </wl-textfield>
             <div style="min-height:50px; padding: 10px 0px;">
-                <div style="padding: 5px 0px; font-weight: bold;">Variables:</div>
+                <div style="padding-top: 10px; font-weight: bold;">Variables:</div>
                 ${this._inputVariablePresentation}
             </div>
             ${this.isSetup ? html`
@@ -220,6 +224,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
                 ${this._inputDataTransformation}
             </div>
             `}
+            <br/>
         </form>`;
     }
 

@@ -217,6 +217,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 edResource.type.filter((p:string) => p != 'Parameter') : [];
         return html`
         <form>
+            <br/>
             ${this.isSetup ? html`
                 <div @click=${() => this.isAdjustable = !this.isAdjustable} style="padding-top: 10px;">
                     <wl-checkbox ?checked="${this.isAdjustable}"></wl-checkbox>
@@ -252,7 +253,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 `)}
             </wl-select>
 
-            <div style="margin-top: 5px;">
+            <div style="margin-top: 10px;">
                 <b>Variables:</b> ${this._inputVariable}
             </div>
 
@@ -339,6 +340,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
 
             <!-- TODO: relevantForIntervention, adjustsVariable -->
+            <br/>
         </form>`;
     }
 

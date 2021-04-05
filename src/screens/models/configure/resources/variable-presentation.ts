@@ -145,12 +145,14 @@ export interface VariablePresentation {
             <wl-textarea id="var-desc" label="Description"
                 value=${edResource && edResource.description ? edResource.description[0] : ''}>
             </wl-textarea>
-            <wl-textfield id="var-short-name" label="Short Name" 
-                value=${edResource && edResource.hasShortName ? edResource.hasShortName[0] : ''}>
-            </wl-textfield>
-            <wl-textfield id="var-long-name" label="Long Name" 
-                value=${edResource && edResource.hasLongName ? edResource.hasLongName[0] : ''}>
-            </wl-textfield>
+            <div class="two-inputs">
+                <wl-textfield id="var-short-name" label="Short Name" 
+                    value=${edResource && edResource.hasShortName ? edResource.hasShortName[0] : ''}>
+                </wl-textfield>
+                <wl-textfield id="var-long-name" label="Long Name" 
+                    value=${edResource && edResource.hasLongName ? edResource.hasLongName[0] : ''}>
+                </wl-textfield>
+            </div>
             <div class="two-inputs">
                 <wl-textfield id="var-min" label="Minimum Accepted Value" 
                     value=${edResource && edResource.hasMinimumAcceptedValue ? edResource.hasMinimumAcceptedValue[0] : ''}>
