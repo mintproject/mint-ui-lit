@@ -8,13 +8,16 @@ import { IdMap } from "app/reducers";
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
-import { parameterGet, parametersGet, parameterPost, parameterPut, parameterDelete } from 'model-catalog/actions';
 import { Parameter, Unit, ParameterFromJSON } from '@mintproject/modelcatalog_client';
 import { PARAMETER_TYPES } from 'offline_data/parameter_types';
 
 import { ModelCatalogUnit } from './unit'
 import { ModelCatalogVariablePresentation } from './variable-presentation';
 import { ModelCatalogIntervention } from './intervention';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import 'components/data-catalog-id-checker';
 import { Textfield } from 'weightless/textfield';
@@ -62,11 +65,9 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     protected name : string = "parameter";
     protected pname : string = "parameters";
     protected positionAttr : string = "position";
-    protected resourcesGet = parametersGet;
-    protected resourceGet = parameterGet;
-    protected resourcePost = parameterPost;
-    protected resourcePut = parameterPut;
-    protected resourceDelete = parameterDelete;
+
+    protected resourceApi : DefaultReduxApi<Parameter,BaseAPI> = ModelCatalogApi.myCatalog.parameter;
+
     public colspan = 3;
     public lazy = true;
     public onlyFixedValue = false;

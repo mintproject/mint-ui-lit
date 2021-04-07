@@ -4,7 +4,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { timeIntervalGet, timeIntervalsGet, timeIntervalPost, timeIntervalPut, timeIntervalDelete } from 'model-catalog/actions';
 import { IdMap } from "app/reducers";
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -14,6 +13,10 @@ import { ModelCatalogUnit } from './unit'
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 @customElement('model-catalog-time-interval')
 export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResource)<TimeInterval> {
@@ -34,11 +37,8 @@ export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResourc
     protected classes : string = "resource time-interval";
     protected name : string = "time interval";
     protected pname : string = "time intervals";
-    protected resourcesGet = timeIntervalsGet;
-    protected resourceGet = timeIntervalGet;
-    protected resourcePost = timeIntervalPost;
-    protected resourcePut = timeIntervalPut;
-    protected resourceDelete = timeIntervalDelete;
+
+    protected resourceApi : DefaultReduxApi<TimeInterval,BaseAPI> = ModelCatalogApi.myCatalog.timeInterval;
 
     private _inputUnit : ModelCatalogUnit;
 

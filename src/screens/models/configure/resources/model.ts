@@ -3,7 +3,6 @@ import { property, html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel, getModelTypeNames } from 'model-catalog/util';
-import { modelGet, modelsGet, modelPost, modelPut, modelDelete } from 'model-catalog/actions';
 import { Model, ModelFromJSON, CoupledModel, CoupledModelFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 import { renderExternalLink } from 'util/ui_renders';
@@ -17,7 +16,7 @@ import { ModelCatalogSourceCode } from './source-code';
 import { ModelCatalogNumericalIndex } from './numerical-index';
 import { ModelCatalogFundingInformation } from './funding-information';
 import { ModelCatalogVisualization } from './visualization';
-import { ModelCatalogCategory } from './category';
+import { ModelCatalogCategory } from './model-category';
 import { ModelCatalogImage } from './image';
 import { ModelCatalogProcess } from './process';
 import { ModelCatalogVariablePresentation } from './variable-presentation';
@@ -28,6 +27,8 @@ import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 @customElement('model-catalog-model')
@@ -92,19 +93,14 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
     protected classes : string = "resource model";
     protected name : string = "model";
     protected pname : string = "Model";
-    /*
-    protected resourcesGet = modelsGet;
-    protected resourceGet = modelGet;
-    protected resourcePut = modelPut;
-    protected resourceDelete = modelDelete;
-    protected resourcePost = modelPost;
-    */
 
     protected resourcesGet = ModelCatalogApi.myCatalog.model.getAll;
     protected resourceGet = ModelCatalogApi.myCatalog.model.get;
     protected resourcePut = ModelCatalogApi.myCatalog.model.put;
     protected resourceDelete = ModelCatalogApi.myCatalog.model.delete;
     protected resourcePost = ModelCatalogApi.myCatalog.model.post;
+
+    protected resourceApi : DefaultReduxApi<Model,BaseAPI> = ModelCatalogApi.myCatalog.model;
 
     public pageMax : number = 10
 

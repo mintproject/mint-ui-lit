@@ -3,7 +3,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { variablePresentationGet, variablePresentationsGet, variablePresentationPost, variablePresentationPut, variablePresentationDelete } from 'model-catalog/actions';
 import { VariablePresentation, VariablePresentationFromJSON, Unit } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 
@@ -15,6 +14,10 @@ import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 import { ModelCatalogStandardVariable } from './standard-variable';
 import { ModelCatalogUnit } from './unit';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 @customElement('model-catalog-variable-presentation')
 export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalogResource)<VariablePresentation> {
@@ -51,11 +54,9 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
     protected classes : string = "resource variable-presentation";
     protected name : string = "variable presentation";
     protected pname : string = "variable presentations";
-    protected resourcesGet = variablePresentationsGet;
-    protected resourceGet = variablePresentationGet;
-    protected resourcePost = variablePresentationPost;
-    protected resourcePut = variablePresentationPut;
-    protected resourceDelete = variablePresentationDelete;
+
+    protected resourceApi : DefaultReduxApi<VariablePresentation,BaseAPI> = ModelCatalogApi.myCatalog.variablePresentation;
+
     public uniqueLabel : boolean = true;
 
     private _inputStandardVariable : ModelCatalogStandardVariable;

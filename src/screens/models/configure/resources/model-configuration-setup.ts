@@ -3,7 +3,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { modelConfigurationSetupGet, modelConfigurationSetupsGet, modelConfigurationSetupPost, modelConfigurationSetupPut, modelConfigurationSetupDelete } from 'model-catalog/actions';
 import { Grid, TimeInterval, Parameter, DatasetSpecification, ModelConfiguration, ModelConfigurationSetup,
          ModelConfigurationSetupFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
@@ -15,7 +14,7 @@ import { ExplorerStyles } from '../../model-explore/explorer-styles'
 import { ModelCatalogPerson } from './person';
 import { ModelCatalogGrid } from './grid';
 import { ModelCatalogNumericalIndex } from './numerical-index';
-import { ModelCatalogCategory } from './category';
+import { ModelCatalogCategory } from './model-category';
 import { ModelCatalogSoftwareImage } from './software-image';
 import { ModelCatalogTimeInterval } from './time-interval';
 import { ModelCatalogRegion } from './region';
@@ -24,6 +23,10 @@ import { ModelCatalogProcess } from './process';
 import { ModelCatalogParameter } from './parameter';
 import { ModelCatalogDatasetSpecification } from './dataset-specification';
 import { ModelCatalogSourceCode } from './source-code';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import { goToPage } from 'app/actions';
 
@@ -91,16 +94,11 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
     protected classes : string = "resource setup";
     protected name : string = "setup";
     protected pname : string = "setups";
-    protected resourcesGet = modelConfigurationSetupsGet;
-    protected resourceGet = modelConfigurationSetupGet;
-    protected resourcePut = modelConfigurationSetupPut;
-    protected resourceDelete = modelConfigurationSetupDelete;
+
+    protected resourceApi : DefaultReduxApi<ModelConfigurationSetup,BaseAPI> = ModelCatalogApi.myCatalog.modelConfigurationSetup;
 
     protected resourcePost = (r:ModelConfigurationSetup) => {
-        if (this._parentConfig) {
-            return modelConfigurationSetupPost(r, this._parentConfig);
-        }
-        return Promise.reject();
+        return this.resourceApi.post(r, this._parentConfig?.id)
     };
 
     public pageMax : number = 10

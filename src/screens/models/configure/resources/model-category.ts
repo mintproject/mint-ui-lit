@@ -4,7 +4,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { categoryGet, categoriesGet, categoryPost, categoryPut, categoryDelete } from 'model-catalog/actions';
 import { IdMap } from "app/reducers";
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -34,12 +33,6 @@ export class ModelCatalogCategory extends connect(store)(ModelCatalogResource)<M
     protected pname : string = "categories";
     
     protected resourceApi : DefaultReduxApi<ModelCategory,BaseAPI> = ModelCatalogApi.myCatalog.modelCategory;
-
-    protected resourcesGet = categoriesGet;
-    protected resourceGet = categoryGet;
-    protected resourcePost = categoryPost;
-    protected resourcePut = categoryPut;
-    protected resourceDelete = categoryDelete;
 
     protected _getDBResources () {
         let db = (store.getState() as RootState).modelCatalog;

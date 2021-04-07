@@ -4,7 +4,6 @@ import { store, RootState } from 'app/store';
 
 import { Action, Status, ModelCatalogResource } from './resource';
 import { getLabel, isSubregion, isMainRegion } from 'model-catalog/util';
-import { regionGet, regionsGet, regionPost, regionPut, regionDelete } from 'model-catalog/actions';
 import { Region, RegionFromJSON, GeoShape, GeoShapeFromJSON } from '@mintproject/modelcatalog_client';
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -19,6 +18,10 @@ import { IdMap } from "app/reducers";
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 @customElement('model-catalog-region')
 export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Region> {
@@ -53,14 +56,11 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
     @property({type: String}) private _regionid : string = "";
     @property({type: Object}) private _selectedMapRegion : LocalRegion;
 
+    protected resourceApi : DefaultReduxApi<Region,BaseAPI> = ModelCatalogApi.myCatalog.region;
+
     protected classes : string = "resource region";
     protected name : string = "region";
     protected pname : string = "regions";
-    protected resourcesGet = regionsGet;
-    protected resourceGet = regionGet;
-    protected resourcePut = regionPut;
-    protected resourcePost = regionPost;
-    protected resourceDelete = regionDelete;
 
     constructor () {
         super();

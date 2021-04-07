@@ -3,7 +3,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { numericalIndexGet, numericalIndexsGet, numericalIndexPost, numericalIndexPut, numericalIndexDelete } from 'model-catalog/actions';
 import { NumericalIndex, NumericalIndexFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 import { ModelCatalogStandardVariable } from './standard-variable';
@@ -13,6 +12,10 @@ import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 @customElement('model-catalog-numerical-index')
 export class ModelCatalogNumericalIndex extends connect(store)(ModelCatalogResource)<NumericalIndex> {
@@ -27,11 +30,9 @@ export class ModelCatalogNumericalIndex extends connect(store)(ModelCatalogResou
     protected classes : string = "resource numerical-index";
     protected name : string = "numerical index";
     protected pname : string = "numerical indexes";
-    protected resourcesGet = numericalIndexsGet;
-    protected resourceGet = numericalIndexGet;
-    protected resourcePost = numericalIndexPost;
-    protected resourcePut = numericalIndexPut;
-    protected resourceDelete = numericalIndexDelete;
+
+    protected resourceApi : DefaultReduxApi<NumericalIndex,BaseAPI> = ModelCatalogApi.myCatalog.numericalIndex;
+
     public uniqueLabel : boolean = true;
 
     private _inputStandardVariable : ModelCatalogStandardVariable;

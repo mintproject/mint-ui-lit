@@ -4,7 +4,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { sampleResourceGet, sampleResourcesGet, sampleResourcePost, sampleResourcePut, sampleResourceDelete } from 'model-catalog/actions';
 import { IdMap } from "app/reducers";
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -14,16 +13,17 @@ import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+
 @customElement('model-catalog-sample-resource')
 export class ModelCatalogSampleResource extends connect(store)(ModelCatalogResource)<SampleResource> {
     protected classes : string = "resource sample-resource";
     protected name : string = "sample resource";
     protected pname : string = "sample resources";
-    protected resourcesGet = sampleResourcesGet;
-    protected resourceGet = sampleResourceGet;
-    protected resourcePost = sampleResourcePost;
-    protected resourcePut = sampleResourcePut;
-    protected resourceDelete = sampleResourceDelete;
+
+    protected resourceApi : DefaultReduxApi<SampleResource,BaseAPI> = ModelCatalogApi.myCatalog.sampleResource;
 
 /*export interface SampleResource {
     label?: Array<string> | null;

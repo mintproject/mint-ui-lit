@@ -3,7 +3,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { softwareImageGet, softwareImagesGet, softwareImagePost, softwareImagePut, softwareImageDelete } from 'model-catalog/actions';
 import { SoftwareImage, SoftwareImageFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 
@@ -14,16 +13,17 @@ import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+
 @customElement('model-catalog-software-image')
 export class ModelCatalogSoftwareImage extends connect(store)(ModelCatalogResource)<SoftwareImage> {
     protected classes : string = "resource software-image";
     protected name : string = "software image";
     protected pname : string = "software images";
-    protected resourcesGet = softwareImagesGet;
-    protected resourceGet = softwareImageGet;
-    protected resourcePost = softwareImagePost;
-    protected resourcePut = softwareImagePut;
-    protected resourceDelete = softwareImageDelete;
+
+    protected resourceApi : DefaultReduxApi<SoftwareImage,BaseAPI> = ModelCatalogApi.myCatalog.softwareImage;
 
     private _toUri (r:SoftwareImage) : string {
         let url : string = "";

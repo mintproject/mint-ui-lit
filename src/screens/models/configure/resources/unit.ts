@@ -3,7 +3,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { unitGet, unitsGet, unitPost, unitPut, unitDelete } from 'model-catalog/actions';
 import { Unit, UnitFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 
@@ -14,16 +13,17 @@ import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+
 @customElement('model-catalog-unit')
 export class ModelCatalogUnit extends connect(store)(ModelCatalogResource)<Unit> {
     protected classes : string = "resource unit";
     protected name : string = "unit";
     protected pname : string = "units";
-    protected resourcesGet = unitsGet;
-    protected resourceGet = unitGet;
-    protected resourcePost = unitPost;
-    protected resourcePut = unitPut;
-    protected resourceDelete = unitDelete;
+
+    protected resourceApi : DefaultReduxApi<Unit,BaseAPI> = ModelCatalogApi.myCatalog.unit;
 
     public pageMax : number = 10
 

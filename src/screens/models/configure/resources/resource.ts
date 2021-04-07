@@ -189,11 +189,11 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     protected resourceApi : DefaultReduxApi<T,BaseAPI>;
 
-    protected resourcesGet;
-    protected resourceGet;
-    protected resourcePut;
-    protected resourcePost;
-    protected resourceDelete;
+    protected resourcePost = (r:T) => {
+        //This should replaced
+        return this.resourceApi?.post(r);
+    }
+
     protected _filters : ((r:T) => boolean)[] = [
         (r:T) => this._resourceToText(r).toLowerCase().includes( this._textFilter ),
     ];
@@ -858,7 +858,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             inner.then((resource:T) => {
                 let req : Promise<T>;
                 if (resource.id) {
-                    req = store.dispatch(this.resourcePut(resource));
+                    req = store.dispatch(this.resourceApi.put(resource));
                 } else {
                     req = store.dispatch(this.resourcePost(resource));
                 }
@@ -981,7 +981,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             let edition = Object.values(this._resourcesToEdit)
                     .filter((r:T) => this._resources.some((r2:T) => r2.id === r.id))
                     .map((r:T) => {
-                let req = store.dispatch(this.resourcePut(r));
+                let req = store.dispatch(this.resourceApi.put(r));
                 req.then((resource: T) => {
                     this._loadedResources[resource.id] = resource;
                 });
@@ -1058,7 +1058,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 this._resources.splice(index,1);
                 this.requestUpdate();
             } 
-            store.dispatch(this.resourceDelete(r)).then(() => {
+            store.dispatch(this.resourceApi.delete(r)).then(() => {
                 this._notification.save(this.name + " deleted")
                 this._eventDelete(r);
             });
@@ -1154,7 +1154,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     protected _forceLoad (r:T) {
         this._loading[r.id] = true;
-        let req = store.dispatch(this.resourceGet(r.id));
+        let req = store.dispatch(this.resourceApi.get(r.id));
         this.requestUpdate();
         req.then((r2:T) => {
             this._loading[r.id] = false;
@@ -1179,7 +1179,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     this._loading[id] = false;
                     return Promise.resolve(this._loadedResources[id]);
                 } else {
-                    let req = store.dispatch(this.resourceGet(id));
+                    let req = store.dispatch(this.resourceApi.get(id));
                     req.then((r:T) => {
                         this._loadedResources[id] = r;
                         this._loading[id] = false;
@@ -1223,7 +1223,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                         return Promise.resolve(this._loadedResources[id]);
                     } else {
                         this._loading[id] = true;
-                        let req = store.dispatch(this.resourceGet(id));
+                        let req = store.dispatch(this.resourceApi.get(id));
                         req.then((r:T) => {
                             this._loading[id] = false;
                             this._loadedResources[id] = r;
@@ -1315,7 +1315,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                         resolve(dbResources[id]);
                     } else {
                         this._loading[id] = true;
-                        let req = store.dispatch(this.resourceGet(id));
+                        let req = store.dispatch(this.resourceApi.get(id));
                         req.then((r:T) => {
                             this._loading[id] = false;
                             this._loadedResources[id] = r;
@@ -1412,7 +1412,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     protected _loadAllResources () : Promise<IdMap<T>> {
         this._allResourcesLoading = true;
-        let allr : Promise<IdMap<T>> = store.dispatch(this.resourcesGet());
+        //let allr : Promise<IdMap<T>> = store.dispatch(this.resourcesGet()); FIXME
+        let allr : Promise<IdMap<T>> = store.dispatch(this.resourceApi.getAll());
         allr.then((resources:IdMap<T>) => {
             // This are the resources that are in memory but not on the dc
             let nonDCResources = Object.values(this._loadedResources).filter((r:T) => !r.id.includes(PREFIX_URI));

@@ -3,7 +3,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { interventionGet, interventionsGet, interventionPost, interventionPut, interventionDelete } from 'model-catalog/actions';
 import { Intervention, InterventionFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 
@@ -14,16 +13,17 @@ import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+
 @customElement('model-catalog-intervention')
 export class ModelCatalogIntervention extends connect(store)(ModelCatalogResource)<Intervention> {
     protected classes : string = "resource intervention";
     protected name : string = "intervention";
     protected pname : string = "interventions";
-    protected resourcesGet = interventionsGet;
-    protected resourceGet = interventionGet;
-    protected resourcePost = interventionPost;
-    protected resourcePut = interventionPut;
-    protected resourceDelete = interventionDelete;
+
+    protected resourceApi : DefaultReduxApi<Intervention,BaseAPI> = ModelCatalogApi.myCatalog.intervention;
 
     protected _renderResource (r:Intervention) {
         return html`

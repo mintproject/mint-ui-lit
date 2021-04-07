@@ -3,7 +3,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { modelConfigurationGet, modelConfigurationsGet, modelConfigurationPost, modelConfigurationPut, modelConfigurationDelete } from 'model-catalog/actions';
 import { Grid, TimeInterval, Parameter, DatasetSpecification, SoftwareVersion, ModelConfiguration,
          ModelConfigurationFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
@@ -15,7 +14,7 @@ import { ExplorerStyles } from '../../model-explore/explorer-styles'
 import { ModelCatalogPerson } from './person';
 import { ModelCatalogGrid } from './grid';
 import { ModelCatalogNumericalIndex } from './numerical-index';
-import { ModelCatalogCategory } from './category';
+import { ModelCatalogCategory } from './model-category';
 import { ModelCatalogSoftwareImage } from './software-image';
 import { ModelCatalogTimeInterval } from './time-interval';
 import { ModelCatalogRegion } from './region';
@@ -29,6 +28,10 @@ import { goToPage } from 'app/actions';
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 @customElement('model-catalog-model-configuration')
 export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogResource)<ModelConfiguration> {
@@ -90,16 +93,11 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
     protected classes : string = "resource configuration";
     protected name : string = "configuration";
     protected pname : string = "configurations";
-    protected resourcesGet = modelConfigurationsGet;
-    protected resourceGet = modelConfigurationGet;
-    protected resourcePut = modelConfigurationPut;
-    protected resourceDelete = modelConfigurationDelete;
+
+    protected resourceApi : DefaultReduxApi<ModelConfiguration,BaseAPI> = ModelCatalogApi.myCatalog.modelConfiguration;
 
     protected resourcePost = (r:ModelConfiguration) => {
-        if (this._parentVersion) {
-            return modelConfigurationPost(r, this._parentVersion);
-        }
-        return Promise.reject("Configuration does not have parent version!");
+        return this.resourceApi.post(r, this._parentVersion?.id);
     };
 
     public pageMax : number = 10
