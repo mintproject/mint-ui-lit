@@ -2,9 +2,6 @@ import { Configuration, DefaultApi } from '@mintproject/modelcatalog_client';
 import { store } from 'app/store';
 
 import { DefaultReduxApi } from './default-redux-api';
-import { Model, ModelApi,
-         SoftwareVersion, SoftwareVersionApi } from '@mintproject/modelcatalog_client';
-import { CustomModelApi } from './custom-model-api';
 import { UserCatalog } from './user-catalog';
 
 //export const FETCH_MODEL_CATALOG_ACCESS_TOKEN = 'FETCH_MODEL_CATALOG_ACCESS_TOKEN';
@@ -73,8 +70,7 @@ export class ModelCatalogApi {
         localStorage.removeItem('accessToken');
     }
 
-
-    //--- APIS:
+    //Catalogs:
     private static _userCatalog : UserCatalog;
 
     private static _getMyCatalog () : UserCatalog {
@@ -93,34 +89,4 @@ export class ModelCatalogApi {
     public static get myCatalog () : UserCatalog {
         return ModelCatalogApi._getMyCatalog();
     }
-
-    /*private static _modelApi : DefaultReduxApi<Model, ModelApi>;
-    public static get model () : DefaultReduxApi<Model, ModelApi> {
-        if (!ModelCatalogApi._modelApi) {
-            /*ModelCatalogApi._modelApi = new DefaultReduxApi<Model, ModelApi>(
-                ModelApi,
-                ModelCatalogApi.username,
-                ModelCatalogApi.getApiConfiguration()
-            );/
-            ModelCatalogApi._modelApi = new CustomModelApi(
-                ModelApi,
-                ModelCatalogApi.username,
-                ModelCatalogApi.getApiConfiguration()
-            );
-            console.log("ModelApi created!");
-        }
-        return ModelCatalogApi._modelApi;
-    }
-
-    public static externalModel (username:string, cfg?:Configuration) {
-        if (!username || username === ModelCatalogApi.username) {
-            return ModelCatalogApi.model;
-        } else {
-            return new DefaultReduxApi<Model, ModelApi>(
-                ModelApi,
-                username,
-                cfg ? cfg : null
-            );
-        }
-    }*/
 }

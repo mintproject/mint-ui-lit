@@ -1,8 +1,8 @@
 import { IdMap } from 'app/reducers'
-import { MCActionAdd, MCActionDelete, MODEL_CATALOG_ADD, MODEL_CATALOG_DELETE, ActionThunk } from './actions';
-import { ModelCatalogTypes } from './reducers';
+import { MCActionAdd, MCActionDelete, MODEL_CATALOG_ADD, MODEL_CATALOG_DELETE, ActionThunk } from '../actions';
+import { ModelCatalogTypes } from '../reducers';
 import { Configuration, BaseAPI } from '@mintproject/modelcatalog_client';
-import { DefaultReduxApi } from './default-redux-api';
+import { DefaultReduxApi } from '../default-redux-api';
 import { Model, ModelApi, CoupledModel, CoupledModelApi } from '@mintproject/modelcatalog_client';
 
 export class CustomModelApi extends DefaultReduxApi<Model, ModelApi> {

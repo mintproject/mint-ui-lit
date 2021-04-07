@@ -1,6 +1,5 @@
 import { Configuration } from '@mintproject/modelcatalog_client';
 import { DefaultReduxApi } from './default-redux-api';
-import { CustomModelApi } from './custom-model-api';
 
 import { CausalDiagram, ConfigurationSetup, DataTransformation, DataTransformationSetup, DatasetSpecification,
          EmpiricalModel, Emulator, Equation, FundingInformation, GeoCoordinates, GeoShape, Grid, HybridModel,
@@ -20,6 +19,11 @@ import { CausalDiagramApi, ConfigurationSetupApi, DataTransformationApi, DataTra
          SpatiallyDistributedGridApi, StandardVariableApi, TheoryGuidedModelApi, TimeIntervalApi, UnitApi, VariableApi,
          VariablePresentationApi, VisualizationApi, CatalogIdentifierApi, CoupledModelApi, ModelCategoryApi } 
         from '@mintproject/modelcatalog_client';
+
+import { CustomModelApi } from './custom-apis/model';
+import { CustomSoftwareVersionApi } from './custom-apis/software-version';
+import { CustomModelConfigurationApi } from './custom-apis/model-configuration';
+import { CustomModelConfigurationSetupApi } from './custom-apis/model-configuration-setup';
 
 export class UserCatalog {
     private configuration : Configuration;
@@ -173,7 +177,7 @@ export class UserCatalog {
 
     public get modelConfiguration () : DefaultReduxApi<ModelConfiguration,ModelConfigurationApi> {
         if (!this._modelConfigurationApi)
-            this._modelConfigurationApi = new DefaultReduxApi<ModelConfiguration,ModelConfigurationApi> (
+            this._modelConfigurationApi = new CustomModelConfigurationApi (
                 ModelConfigurationApi, this.username, this.configuration
             )
         return this._modelConfigurationApi;
@@ -181,7 +185,7 @@ export class UserCatalog {
 
     public get modelConfigurationSetup () : DefaultReduxApi<ModelConfigurationSetup,ModelConfigurationSetupApi> {
         if (!this._modelConfigurationSetupApi)
-            this._modelConfigurationSetupApi = new DefaultReduxApi<ModelConfigurationSetup,ModelConfigurationSetupApi> (
+            this._modelConfigurationSetupApi = new CustomModelConfigurationSetupApi (
                 ModelConfigurationSetupApi, this.username, this.configuration
             )
         return this._modelConfigurationSetupApi;
@@ -265,7 +269,7 @@ export class UserCatalog {
 
     public get softwareVersion () : DefaultReduxApi<SoftwareVersion,SoftwareVersionApi> {
         if (!this._softwareVersionApi)
-            this._softwareVersionApi = new DefaultReduxApi<SoftwareVersion,SoftwareVersionApi> (
+            this._softwareVersionApi = new CustomSoftwareVersionApi(
                 SoftwareVersionApi, this.username, this.configuration
             )
         return this._softwareVersionApi;
