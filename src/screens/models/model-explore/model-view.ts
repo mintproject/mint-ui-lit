@@ -9,8 +9,6 @@ import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Pe
          Image, Grid, TimeInterval, Process, Visualization, SourceCode, SoftwareImage, Parameter, DatasetSpecification,
          Intervention, VariablePresentation } from '@mintproject/modelcatalog_client';
 
-import { setupGetAll } from 'model-catalog/actions';
-
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { ModelCatalogState2 } from 'model-catalog-api/reducers';
 
@@ -1896,13 +1894,15 @@ export class ModelView extends connect(store)(PageViewElement) {
             }
 
             if (setupChanged) {
-                //This part uses setupGetAll
                 this._setup = null;
                 this._selectedSetup = ui.selectedCalibration;
                 if (this._selectedSetup) this._loading[this._selectedSetup] = true;
                 this._shouldUpdateSetups = true;
                 if (this._selectedSetup) {
-                    setupGetAll(this._selectedSetup).then((setup:ModelConfigurationSetup) => {
+                    let detailsRequest : Promise<ModelConfigurationSetup> = store.dispatch(
+                            ModelCatalogApi.myCatalog.modelConfigurationSetup.getDetails(this._selectedSetup)
+                    );
+                    detailsRequest.then((setup:ModelConfigurationSetup) => {
                         this._setupNotFound = false;
                         // Save authors 
                         (setup.author || []).forEach((author:Person|Organization) => {
@@ -1947,7 +1947,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                         this._setup = setup;
                         this._closeAllExpansions();
                         this._loading[this._selectedSetup] = false;
-                    }).catch((error) => {
+                    });
+                    detailsRequest.catch((error) => {
                         if (error.status == 404) {
                             this._setupNotFound = true;
                         }

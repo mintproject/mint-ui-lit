@@ -6,9 +6,9 @@ import ReactGA from 'react-ga';
 import { ModelMap, ModelEnsembleMap, ComparisonFeature } from "../reducers";
 import models, { VariableModels, Model, getPathFromModel } from "../../models/reducers";
 import { queryModelsByVariables, setupToOldModel } from "../../models/actions";
-import { setupGetAll, regionsGet, modelsGet, versionsGet, 
-    modelConfigurationsGet, softwareImagesGet } from 'model-catalog/actions';
 import { getId } from 'model-catalog/util';
+
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { cacheModelsFromCatalog, getThreadExecutionSummary, setThreadModels } from "../actions";
@@ -23,8 +23,8 @@ import { selectThreadSection } from "../../../app/ui-actions";
 import { MintThreadPage } from "./mint-thread-page";
 import { Region } from "screens/regions/reducers";
 import { IdMap } from "app/reducers";
-import { Model as MCModel, SoftwareVersion, 
-    ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
+import { Model as MCModel, Region as MCRegion, SoftwareVersion, SoftwareImage, ModelConfiguration,
+         ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
 
 import 'components/loading-dots';
 import { getLatestEventOfType } from "util/event_utils";
@@ -57,13 +57,13 @@ export class MintModels extends connect(store)(MintThreadPage) {
 
     @property({type: Boolean})
     private _baseLoaded : boolean = false;
-    private _allModels : any = {};
-    private _allVersions : any = {};
-    private _allConfigs : any = {};
-    private _allSoftwareImages: any = null;
+    private _allModels : IdMap<MCModel> = {};
+    private _allVersions : IdMap<SoftwareVersion> = {};
+    private _allConfigs : IdMap<ModelConfiguration> = {};
+    private _allSoftwareImages : IdMap<SoftwareImage> = {};
 
     @property({type: Object})
-    private _allRegions : any = {};
+    private _allRegions : IdMap<MCRegion> = {};
 
     private _dispatched: Boolean = false;
     private _pendingQuery: Boolean = false;
@@ -474,8 +474,10 @@ export class MintModels extends connect(store)(MintThreadPage) {
         Promise.all(
             this._modelsToCompare.map((m:Model) => {
                 if (!this._loadedModels[m.id]) {
-                    let p = setupGetAll(m.id);
-                    p.then((setup) => {
+                    //let p = setupGetAll(m.id);
+                    let p : Promise<ModelConfigurationSetup> =
+                            store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getDetails(m.id))
+                    p.then((setup:ModelConfigurationSetup) => {
                         this._loadedModels[setup.id] = setupToOldModel(setup, this._allSoftwareImages);
                     });
                     return p
@@ -537,21 +539,21 @@ export class MintModels extends connect(store)(MintThreadPage) {
     }
 
     protected firstUpdated () {
-        store.dispatch(regionsGet()).then((regions) => {
+        store.dispatch(ModelCatalogApi.myCatalog.region.getAll()).then((regions:IdMap<MCRegion>) => {
             //FIXME: this until the api return the region label.
             this._allRegions = regions;
         });
 
-        let pm = store.dispatch(modelsGet()).then((models) => {
+        let pm = store.dispatch(ModelCatalogApi.myCatalog.model.getAll()).then((models:IdMap<MCModel>) => {
             this._allModels = models;
         });
-        let pv = store.dispatch(versionsGet()).then((versions) => {
+        let pv = store.dispatch(ModelCatalogApi.myCatalog.softwareVersion.getAll()).then((versions:IdMap<SoftwareVersion>) => {
             this._allVersions = versions;
         });
-        let pc = store.dispatch(modelConfigurationsGet()).then((configs) => {
+        let pc = store.dispatch(ModelCatalogApi.myCatalog.modelConfiguration.getAll()).then((configs:IdMap<ModelConfiguration>) => {
             this._allConfigs = configs;
         });
-        let si = store.dispatch(softwareImagesGet()).then((images) => {
+        let si = store.dispatch(ModelCatalogApi.myCatalog.softwareImage.getAll()).then((images:IdMap<SoftwareImage>) => {
             this._allSoftwareImages = images;
             if(this._pendingQuery)
                 this._queryModelCatalog();

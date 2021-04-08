@@ -55,7 +55,7 @@ export class UserCatalog {
     private _modelApi : DefaultReduxApi<Model,ModelApi>;
     private _modelCategoryApi : DefaultReduxApi<ModelCategory,ModelCategoryApi>;
     private _modelConfigurationApi : DefaultReduxApi<ModelConfiguration,ModelConfigurationApi>;
-    private _modelConfigurationSetupApi : DefaultReduxApi<ModelConfigurationSetup,ModelConfigurationSetupApi>;
+    private _modelConfigurationSetupApi : CustomModelConfigurationSetupApi;
     private _numericalIndexApi : DefaultReduxApi<NumericalIndex,NumericalIndexApi>;
     private _organizationApi : DefaultReduxApi<Organization,OrganizationApi>;
     private _parameterApi : DefaultReduxApi<Parameter,ParameterApi>;
@@ -183,7 +183,7 @@ export class UserCatalog {
         return this._modelConfigurationApi;
     };
 
-    public get modelConfigurationSetup () : DefaultReduxApi<ModelConfigurationSetup,ModelConfigurationSetupApi> {
+    public get modelConfigurationSetup () : CustomModelConfigurationSetupApi {
         if (!this._modelConfigurationSetupApi)
             this._modelConfigurationSetupApi = new CustomModelConfigurationSetupApi (
                 ModelConfigurationSetupApi, this.username, this.configuration

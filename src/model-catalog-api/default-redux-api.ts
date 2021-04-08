@@ -7,6 +7,8 @@ import { Configuration, BaseAPI } from '@mintproject/modelcatalog_client';
 import { IdObject } from './interfaces';
 import { DEFAULT_GRAPH, PREFIX_URI } from 'config/default-graph';
 
+// This class adds redux and authentication capabilities to the modelcatalog-client generated APIs.
+// The provides the standard get, getAll, put, post and delete but can be customized. Check ./custom-api
 export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
     protected _api : API;
     protected _username : string;
@@ -15,6 +17,10 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
     protected _cached : Promise<IdMap<T>>;
     private _name : string;
     private _lname : ModelCatalogTypes;
+
+    public getName () : ModelCatalogTypes {
+        return this._lname;
+    }
 
     public constructor (ApiType: new (cfg?:Configuration) => API, user:string, config?:Configuration) {
         if (config) {
@@ -130,11 +136,13 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
         return uri.split('/').pop();
     }
 
+    // Moves resources to a hashmap (id -> resource)
     protected _idReducer (dic:IdMap<T>, elem:T) : IdMap<T> {
         dic[elem.id] = elem;
         return dic;
     }
 
+    // Creates hashmap (id -> resource)
     protected _createIdMap (item:T) : IdMap<T> {
         let uri : string = PREFIX_URI + item.id
         let map : IdMap<T> = {} as IdMap<T>;

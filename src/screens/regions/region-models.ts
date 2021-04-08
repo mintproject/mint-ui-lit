@@ -13,8 +13,7 @@ import { BoundingBox } from './reducers';
 import { setPreview } from './actions';
 import { selectSubRegion } from 'app/ui-actions';
 
-import { modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet, regionsGet, geoShapesGet,
-         datasetSpecificationGet, sampleResourceGet, sampleCollectionGet, setupGetAll } from 'model-catalog/actions';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import { isSubregion, isMainRegion, getLabel } from 'model-catalog/util';
 import { GeoShape, Region, Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
@@ -72,12 +71,12 @@ export class RegionModels extends connect(store)(PageViewElement)  {
     }
 
     protected firstUpdated() {
-        let pGeo = store.dispatch(geoShapesGet());
-        let pReg = store.dispatch(regionsGet());
-        let pMod = store.dispatch(modelsGet());
-        let pVer = store.dispatch(versionsGet());
-        let pCon = store.dispatch(modelConfigurationsGet());
-        let pSet = store.dispatch(modelConfigurationSetupsGet());
+        let pGeo = store.dispatch(ModelCatalogApi.myCatalog.geoShape.getAll());
+        let pReg = store.dispatch(ModelCatalogApi.myCatalog.region.getAll());
+        let pMod = store.dispatch(ModelCatalogApi.myCatalog.model.getAll());
+        let pVer = store.dispatch(ModelCatalogApi.myCatalog.softwareVersion.getAll());
+        let pCon = store.dispatch(ModelCatalogApi.myCatalog.modelConfiguration.getAll());
+        let pSet = store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getAll());
 
         this._loading = true;
         Promise.all([pGeo, pReg, pMod, pVer, pCon, pSet]).then((v) => {
@@ -221,7 +220,8 @@ export class RegionModels extends connect(store)(PageViewElement)  {
         this._matchingModelDatasets = [];
         this._loadingDatasets = true;
 
-        Promise.all(this._matchingSetups.map((setup:ModelConfigurationSetup) => setupGetAll(setup.id)))
+        Promise.all(this._matchingSetups.map((setup:ModelConfigurationSetup) =>
+                store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getDetails(setup.id))))
         .then((setups:ModelConfigurationSetup[]) => {
             let datasets : Set<string> = new Set();
             setups.forEach((setup:ModelConfigurationSetup) => {

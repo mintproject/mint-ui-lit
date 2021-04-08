@@ -818,9 +818,9 @@ export const addThreadEvent = (eventobj: ThreadEvent, thread: Thread) =>  {
 export const cacheModelsFromCatalog = async (
     models: Model[], 
     allSoftwareImages: IdMap<SoftwareImage>, 
-    allConfigs: ModelConfiguration[],
-    allVersions: SoftwareVersion[],
-    allModels: MCModel[] ) =>  {
+    allConfigs: IdMap<ModelConfiguration>,
+    allVersions: IdMap<SoftwareVersion>,
+    allModels: IdMap<MCModel>) =>  {
         let APOLLO_CLIENT = GraphQL.instance(auth);
         // First check if any of these models are already in GraphQL
         let result = await APOLLO_CLIENT.query({

@@ -205,9 +205,9 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
 export const fetchModelsFromCatalog = async (
             models: IdMap<Model>, 
             allSoftwareImages: IdMap<SoftwareImage>, 
-            allConfigs: ModelConfiguration[],
-            allVersions: SoftwareVersion[],
-            allModels: MCModel[] ) =>  {
+            allConfigs: IdMap<ModelConfiguration>,
+            allVersions: IdMap<SoftwareVersion>,
+            allModels: IdMap<MCModel>) =>  {
 
         // GET all data for the selected models.
         //console.log("getting all info", models);
