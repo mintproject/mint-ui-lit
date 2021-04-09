@@ -59,4 +59,8 @@ export class CustomModelConfigurationSetupApi extends DefaultReduxApi<ModelConfi
         });
         return req;
     }
+
+    public getSetupsForVariableLabel (variableLabel:string) : Promise<ModelConfigurationSetup[]> {
+        return this._api.customModelconfigurationsetupsVariableGet({username: this._username, label: variableLabel});
+    }
 }

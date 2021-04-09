@@ -52,7 +52,7 @@ export class UserCatalog {
     private _hybridModelApi : DefaultReduxApi<HybridModel,HybridModelApi>;
     private _imageApi : DefaultReduxApi<Image,ImageApi>;
     private _interventionApi : DefaultReduxApi<Intervention,InterventionApi>;
-    private _modelApi : DefaultReduxApi<Model,ModelApi>;
+    private _modelApi : CustomModelApi;
     private _modelCategoryApi : DefaultReduxApi<ModelCategory,ModelCategoryApi>;
     private _modelConfigurationApi : DefaultReduxApi<ModelConfiguration,ModelConfigurationApi>;
     private _modelConfigurationSetupApi : CustomModelConfigurationSetupApi;
@@ -156,7 +156,7 @@ export class UserCatalog {
         return this._interventionApi;
     };
 
-    public get model () : DefaultReduxApi<Model, ModelApi> {
+    public get model () : CustomModelApi {
         if (!this._modelApi) {
             this._modelApi = new CustomModelApi(
                 ModelApi,

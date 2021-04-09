@@ -144,4 +144,24 @@ export class CustomModelApi extends DefaultReduxApi<Model, ModelApi> {
             return req;
         }
     }
+
+    public getModelsByIndexLabel (indexLabel:string) : Promise<Model[]> {
+        return this._api.customModelIndexGet({username: this._username, label: indexLabel});
+    }
+
+    public getModelsByStandardVariableLabel (svLabel:string) : Promise<Model[]> {
+        return this._api.customModelsStandardVariableGet({username: this._username, label: svLabel});
+    }
+
+    public getModelsByInterventionLabel (interventionLabel:string) : Promise<Model[]> {
+        return this._api.customModelInterventionGet({username: this._username, label: interventionLabel});
+    }
+
+    public getModelsByRegionLabel (regionLabel:string) : Promise<Model[]> {
+        return this._api.customModelRegionGet({username: this._username, label: regionLabel});
+    }
+
+    /*let MApi : ModelApi = new ModelApi();
+    let req = MApi.customModelsStandardVariable({label:term, username: DEFAULT_GRAPH, customQueryName: ''});
+    return req;*/
 }

@@ -10,9 +10,9 @@ import { IdMap } from 'app/reducers';
 
 import { isEmpty, uriToId, getLabel } from 'model-catalog/util';
 import { Model, NumericalIndex } from '@mintproject/modelcatalog_client';
-import { modelsSearchIndex, modelsSearchIntervention, numericalIndexsGet,
-         modelsSearchRegion, modelsSearchStandardVariable } from 'model-catalog/actions';
 import { CustomNotification } from 'components/notification';
+
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import './model-preview'
 import './model-view'
@@ -324,7 +324,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             })
             this._lastTimeout = setTimeout(
                 ()=>{ 
-                    let req = modelsSearchStandardVariable(input);
+                    let req = ModelCatalogApi.myCatalog.model.getModelsByStandardVariableLabel(input);
                     req.then((result:any) => {
                         let validIds = result.map(x => x.id);
 
@@ -362,18 +362,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
                     }
                 })
             }
-            /*this._lastTimeout = setTimeout(
-                ()=>{ 
-                    let req = modelsSearchIndex(input);
-                    req.then((result:any) => {
-                        let validIds = result.map(x => x.id);
-
-                        Object.keys(this._models).forEach((key:string) => {
-                            this._activeModels[key] = (validIds.indexOf(key) >= 0);
-                        });
-                        this._loading=false;
-                    });
-                }, 750);*/
         } else {
             this._loading=false;
             this._clearSearchInput();
@@ -391,7 +379,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             })
             this._lastTimeout = setTimeout(
                 ()=>{ 
-                    let req = modelsSearchIntervention(input);
+                    let req = ModelCatalogApi.myCatalog.model.getModelsByInterventionLabel(input);
                     req.then((result:any) => {
                         let validIds = result.map(x => x.id);
 
@@ -418,7 +406,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             })
             this._lastTimeout = setTimeout(
                 ()=>{ 
-                    let req = modelsSearchRegion(input);
+                    let req = ModelCatalogApi.myCatalog.model.getModelsByRegionLabel(input);
                     req.then((result:any) => {
                         let validIds = result.map(x => x.id);
 
@@ -436,7 +424,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
     firstUpdated () {
         this._loadingIndex = true;
-        store.dispatch( numericalIndexsGet () ).then((indices:IdMap<NumericalIndex>) => {
+        store.dispatch( ModelCatalogApi.myCatalog.numericalIndex.getAll() ).then((indices:IdMap<NumericalIndex>) => {
             this._loadingIndex = false;
             this._index = indices;
         })

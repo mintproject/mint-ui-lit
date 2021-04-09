@@ -50,7 +50,6 @@ export class ModelCatalogApi {
         if (ModelCatalogApi._accessToken) return ModelCatalogApi._accessToken;
         let localToken : string = this.getLocalAccessToken();
         if (localToken) {
-            console.log('Access token was read from local storage.');
             ModelCatalogApi._accessToken = localToken;
             return localToken;
         }
