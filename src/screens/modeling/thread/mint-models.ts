@@ -60,7 +60,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
     private _allModels : IdMap<MCModel> = {};
     private _allVersions : IdMap<SoftwareVersion> = {};
     private _allConfigs : IdMap<ModelConfiguration> = {};
-    private _allSoftwareImages : IdMap<SoftwareImage> = {};
+    private _allSoftwareImages : IdMap<SoftwareImage>;
 
     @property({type: Object})
     private _allRegions : IdMap<MCRegion> = {};
@@ -265,7 +265,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
                 </p>
                 <ul>
                     <li>
-                    ${this._dispatched || this._allSoftwareImages == null ? 
+                    ${this._dispatched || !this._allSoftwareImages ? 
                         html`<wl-progress-bar></wl-progress-bar>`
                     :
                         html`

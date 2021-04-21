@@ -4,9 +4,11 @@ import { RootState } from "../../app/store";
 import { Model, ModelParameter } from "./reducers";
 import { Dataset } from "../datasets/reducers";
 
-import { setupsSearchVariable, setupGetAll, sampleCollectionGet, getIdFromUri, getUser, sampleResourceGet } from 'model-catalog/actions';
+import { getIdFromUri, getUser } from 'model-catalog/actions';
 import { Model as MCModel, ModelConfigurationSetup, DatasetSpecification, SoftwareImage, ModelConfiguration, SoftwareVersion, SampleCollectionApi, SampleCollection, SampleResource, SampleResourceApi } from '@mintproject/modelcatalog_client';
 import { sortByPosition, getLabel } from 'model-catalog/util';
+
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import { IdMap } from "app/reducers";
 
@@ -94,7 +96,9 @@ const dsSpecToIO = (ds: DatasetSpecification) => {
     return io;
 }
 
+// Transform to graphql representation TODO, FIXME
 export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages: IdMap<SoftwareImage>) :  Model => {
+    console.log('>> SW in setup:', setup.hasSoftwareImage[0], 'vs', softwareImages[setup.hasSoftwareImage[0].id]);
     let model: Model = {
         id: setup.id,
         localname: setup.id.substr(setup.id.lastIndexOf("/") + 1),
@@ -162,12 +166,11 @@ export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages:
     return model;
 }
 
-// Query Model Catalog By Output? Variables
+// Query Model Catalog By Output? Variables TODO FIXME
 type QueryModelsThunkResult = ThunkAction<void, RootState, undefined, ModelsActionVariablesQuery>;
 export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (response_variables: string[],
         driving_variables: string[], softwareImages: IdMap<SoftwareImage>) => (dispatch) => {
     let models = [] as Model[];
-    //console.log('queryModelsByVariables(', response_variables, ',', driving_variables, ')');
 
     dispatch({
         type: MODELS_VARIABLES_QUERY,
@@ -179,19 +182,17 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
     let variables : string[] = response_variables[0].split(/\s*,\s/);
 
     let setups : ModelConfigurationSetup[] = [];
-    //console.log('let variables =', variables);
     Promise.all(
-        variables.map((variable:string) => {
-            /* FIXME
+        variables.map((variable:string) => ModelCatalogApi.myCatalog.modelConfigurationSetup.getSetupsByVariableLabel(variable))
+        /*{ FIXME
             let fromvar : string = getVariableProperty(variable, "created_from");
             if(fromvar) {
                 variable = fromvar;
-            }*/
+            }
             return setupsSearchVariable(variable);
-        })
+        })*/
     ).then((resp) => {
         setups = resp.reduce((arr:ModelConfigurationSetup[], r:ModelConfigurationSetup[]) => arr.concat(r), []);
-        //console.log('preview:', setups);
         dispatch({
             type: MODELS_VARIABLES_QUERY,
             variables: response_variables,
@@ -202,6 +203,7 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
 };
 
 
+//THIS SHOULD BE A QUERY ! FIXME
 export const fetchModelsFromCatalog = async (
             models: IdMap<Model>, 
             allSoftwareImages: IdMap<SoftwareImage>, 
@@ -212,7 +214,7 @@ export const fetchModelsFromCatalog = async (
         // GET all data for the selected models.
         //console.log("getting all info", models);
         return Promise.all(
-            Object.keys(models || {}).map((modelid) => setupGetAll(modelid))
+            Object.keys(models || {}).map((modelid) => ModelCatalogApi.myCatalog.model.getDetails(modelid))
         ).then(async (setups) => {
             let fixedModels = setups.map((setup) => setupToOldModel(setup, allSoftwareImages));
             Object.values(fixedModels).forEach((model) => {
