@@ -8,7 +8,8 @@ import { Constraint, ConstraintFromJSON } from '@mintproject/modelcatalog_client
 import { IdMap } from "app/reducers";
 
 import { SharedStyles } from 'styles/shared-styles';
-import { ExplorerStyles } from '../../model-explore/explorer-styles'
+import { ExplorerStyles } from '../../model-explore/explorer-styles';
+import { ModelCatalogVariablePresentation } from './variable-presentation';
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
@@ -95,10 +96,10 @@ export class ModelCatalogConstraint extends connect(store)(ModelCatalogResource)
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : '';
         let desc : string = inputDesc ? inputDesc.value : '';
-        let minimum : string = inputMin ? inputMin.value : '';
-        let maximum : string = inputMax ? inputMax.value : '';
+        let min : string = inputMin ? inputMin.value : '';
+        let max : string = inputMax ? inputMax.value : '';
         
-        if (label && value) {
+        if (label) {
             let jsonRes = {
                 type: ["Constraint"],
                 label: [label],
@@ -112,7 +113,6 @@ export class ModelCatalogConstraint extends connect(store)(ModelCatalogResource)
         } else {
             // Show errors
             if (!label) (<any>inputLabel).onBlur();
-            if (!value) (<any>inputValue).onBlur();
         }
     }
 
