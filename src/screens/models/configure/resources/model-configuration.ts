@@ -23,6 +23,7 @@ import { ModelCatalogProcess } from './process';
 import { ModelCatalogParameter } from './parameter';
 import { ModelCatalogDatasetSpecification } from './dataset-specification';
 import { ModelCatalogSourceCode } from './source-code';
+import { ModelCatalogConstraint } from './constraint';
 
 import { goToPage } from 'app/actions';
 
@@ -119,6 +120,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
     private _inputDSInput : ModelCatalogDatasetSpecification;
     private _inputDSOutput : ModelCatalogDatasetSpecification;
     private _inputSourceCode : ModelCatalogSourceCode;
+    private _inputConstraint : ModelCatalogConstraint;
 
     constructor () {
         super();
@@ -134,6 +136,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         this._inputProcesses = new ModelCatalogProcess();
         this._inputSoftwareImage = new ModelCatalogSoftwareImage();
         this._inputSourceCode = new ModelCatalogSourceCode();
+        this._inputConstraint = new ModelCatalogConstraint();
 
         this._inputParameter = new ModelCatalogParameter();
         this._inputParameter.inline = false;
@@ -161,6 +164,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         this._inputDSInput.setResources( r.hasInput );
         this._inputDSOutput.setResources( r.hasOutput );
         this._inputSourceCode.setResources( r.hasSourceCode );
+        this._inputConstraint.setResources( r.hasConstraint );
     }
 
     protected _unsetSubResources () {
@@ -177,6 +181,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
             this._inputDSInput.setResources(null);
             this._inputDSOutput.setResources(null);
             this._inputSourceCode.setResources(null);
+            this._inputConstraint.setResources(null);
         }
     }
 
@@ -193,6 +198,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         this._inputDSInput.setActionEditOrAdd();
         this._inputDSOutput.setActionEditOrAdd();
         this._inputSourceCode.setActionSelect();
+        this._inputConstraint.setActionSelect();
     }
 
     protected _unsetSubActions () {
@@ -208,6 +214,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         if (this._inputDSInput) this._inputDSInput.unsetAction();
         if (this._inputDSOutput) this._inputDSOutput.unsetAction();
         if (this._inputSourceCode) this._inputSourceCode.unsetAction();
+        if (this._inputConstraint) this._inputConstraint.unsetAction();
     }
 
     private _parentInnerResourcesSet : boolean = false;
@@ -249,7 +256,6 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
             allp.then((_) => resolve(r));
         });
     }
-
 
     protected _renderFullResource (r:ModelConfiguration) {
         // Example, Type, operating system, versions?
@@ -608,6 +614,13 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
                     </td>
                 </tr>
 
+                <tr>
+                    <td>Constraints:</td>
+                    <td>
+                        ${this._inputConstraint}
+                    </td>
+                </tr>
+
             </table>
 
         <wl-title level="3" style="margin-top:1em">
@@ -706,6 +719,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
                 hasInput: this._inputDSInput.getResources(),
                 hasOutput: this._inputDSOutput.getResources(),
                 hasSourceCode: this._inputSourceCode.getResources(),
+                hasConstraint: this._inputConstraint.getResources(),
             };
             if (keywords) jsonRes["keywords"] = [keywords];
             if (shortDesc) jsonRes["shortDescription"] = [shortDesc];
