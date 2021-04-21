@@ -1,5 +1,5 @@
 {
-    "data_catalog_api": "https://api.mint-data-catalog.org",
+    "data_catalog_api": "https://data-catalog.mint.isi.edu",
     "ensemble_manager_api": "https://ensemble.wildfire.mint.isi.edu/v1",
     "execution_engine": "localex",
     "localex": {
