@@ -12,6 +12,7 @@ import './models-register';
 import './models-calibrate';
 import './models-configure';
 import './models-edit';
+import './models-cromo';
 import '../../components/nav-title'
 
 store.addReducers({
@@ -180,6 +181,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             <models-calibrate class="page" ?active="${this._subpage == 'calibrate'}"></models-calibrate>
             <models-compare class="page" ?active="${this._subpage == 'compare'}"></models-compare>
             <models-edit class="page" ?active="${this._subpage == 'edit'}"></models-edit>
+            <models-cromo class="page" ?active="${this._subpage == 'cromo'}"></models-cromo>
         `
     }
 
@@ -196,6 +198,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         super.setSubPage(state);
         super.setRegionId(state);
+        console.log(this._subpage);
         if (state && state.explorerUI) {
             this._selectedModelId = state.explorerUI.selectedModel.split('/').pop();
             this._selectedConfig = state.explorerUI.selectedConfig;
