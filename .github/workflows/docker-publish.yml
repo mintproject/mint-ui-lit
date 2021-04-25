@@ -39,7 +39,6 @@ jobs:
         with:
           name: nextjs-build
           path: ./build
-}
 
   push:
     needs: test
