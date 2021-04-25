@@ -35,11 +35,11 @@ jobs:
         run: npm run build --if-present
       - name: Test
         run: npm test
-      - name: Cache webpack
-        uses: actions/cache@v2
+      - uses: actions/upload-artifact@v2
         with:
+          name: nextjs-build
           path: ./build
-          key: ${{ runner.os }}-build
+}
 
   push:
     needs: test
@@ -48,7 +48,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - uses: actions/download-artifact@v2
+        with:
+          name: nextjs-build
+
+      - run: ls .
+
       - name: Build image
+        if: steps.cache-
         run: docker build . --file .Dockerfile-actions --tag $IMAGE_NAME
       
       - name: Login to GitHub Container Registry
