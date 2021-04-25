@@ -29,17 +29,25 @@ jobs:
           restore-keys: |
             ${{ runner.OS }}-node-
             ${{ runner.OS }}-
-      - run: npm install
-      - run: npm run build --if-present
-      - run: npm test
-  
+      - name: Install dependencies
+        run: npm install
+      - name: Build (webpack) 
+        run: npm run build --if-present
+      - name: Test
+        run: npm test
+      - name: Cache webpack
+        uses: actions/cache@v2
+        with:
+          path: ./build
+          key: ${{ runner.os }}-build
+
   push:
     needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Build image
         run: docker build . --file .Dockerfile-actions --tag $IMAGE_NAME
       
