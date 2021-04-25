@@ -54,7 +54,6 @@ jobs:
       - run: ls .
 
       - name: Build image
-        if: steps.cache-
         run: docker build . --file .Dockerfile-actions --tag $IMAGE_NAME
       
       - name: Login to GitHub Container Registry
