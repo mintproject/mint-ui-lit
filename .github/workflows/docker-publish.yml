@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - workflows
     tags:
       - v*
   pull_request:
@@ -51,7 +50,7 @@ jobs:
         with:
           name: nextjs-build
           path: build/
-          
+
       - name: Build image
         run: docker build . --file .Dockerfile-actions --tag $IMAGE_NAME
       
