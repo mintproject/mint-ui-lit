@@ -7,7 +7,7 @@ import { CausalDiagram, ConfigurationSetup, DataTransformation, DataTransformati
          Parameter, Person, PointBasedGrid, Process, Region, SampleCollection, SampleExecution, SampleResource,
          Software, SoftwareConfiguration, SoftwareImage, SoftwareVersion, SourceCode, SpatialResolution,
          SpatiallyDistributedGrid, StandardVariable, TheoryGuidedModel, TimeInterval, Unit, Variable,
-         VariablePresentation, Visualization, CatalogIdentifier, CoupledModel, ModelCategory }
+         VariablePresentation, Visualization, CatalogIdentifier, CoupledModel, ModelCategory, Constraint}
         from '@mintproject/modelcatalog_client';
 
 import { CausalDiagramApi, ConfigurationSetupApi, DataTransformationApi, DataTransformationSetupApi,
@@ -17,7 +17,8 @@ import { CausalDiagramApi, ConfigurationSetupApi, DataTransformationApi, DataTra
          ProcessApi, RegionApi, SampleCollectionApi, SampleExecutionApi, SampleResourceApi, SoftwareApi,
          SoftwareConfigurationApi, SoftwareImageApi, SoftwareVersionApi, SourceCodeApi, SpatialResolutionApi,
          SpatiallyDistributedGridApi, StandardVariableApi, TheoryGuidedModelApi, TimeIntervalApi, UnitApi, VariableApi,
-         VariablePresentationApi, VisualizationApi, CatalogIdentifierApi, CoupledModelApi, ModelCategoryApi } 
+         VariablePresentationApi, VisualizationApi, CatalogIdentifierApi, CoupledModelApi, ModelCategoryApi,
+         ConstraintApi } 
         from '@mintproject/modelcatalog_client';
 
 import { CustomModelApi } from './custom-apis/model';
@@ -37,6 +38,7 @@ export class UserCatalog {
     //APIs:
     private _catalogIdentifierApi : DefaultReduxApi<CatalogIdentifier,CatalogIdentifierApi>;
     private _causalDiagramApi : DefaultReduxApi<CausalDiagram,CausalDiagramApi>;
+    private _constraintApi : DefaultReduxApi<Constraint,ConstraintApi>;
     private _configurationSetupApi : DefaultReduxApi<ConfigurationSetup,ConfigurationSetupApi>;
     private _coupledModelApi : DefaultReduxApi<CoupledModel,CoupledModelApi>;
     private _dataTransformationApi : DefaultReduxApi<DataTransformation,DataTransformationApi>;
@@ -86,6 +88,14 @@ export class UserCatalog {
     //public get causalDiagram () : DefaultReduxApi<CausalDiagram,CausalDiagramApi> {};
     //public get configurationSetup () : DefaultReduxApi<ConfigurationSetup,ConfigurationSetupApi> {};
     //public get coupledModel () : DefaultReduxApi<CoupledModel,CoupledModelApi> {};
+
+    public get constraint () : DefaultReduxApi<Constraint,ConstraintApi> {
+        if (!this._constraintApi)
+            this._constraintApi = new DefaultReduxApi<Constraint,ConstraintApi> (
+                ConstraintApi, this.username, this.configuration
+            );
+        return this._constraintApi;
+    };
 
     public get dataTransformation () : DefaultReduxApi<DataTransformation,DataTransformationApi> {
         if (!this._dataTransformationApi)
