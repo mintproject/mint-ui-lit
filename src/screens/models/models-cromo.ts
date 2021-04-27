@@ -9,6 +9,7 @@ import { CustomNotification } from 'components/notification';
 
 import 'components/google-map-custom';
 import 'weightless/progress-spinner';
+import "weightless/expansion";
 
 import { renderNotifications } from "util/ui_renders";
 import { showNotification, showDialog, hideDialog, downloadFile, hideNotification } from 'util/ui_functions';
@@ -138,6 +139,16 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
                 padding: 3px 6px 4px 6px;
             }
 
+            .small-loading {
+                --progress-spinner-size: 30px;
+                margin-left: 0px !important;
+                margin-top: 0px !important;
+            }
+
+            .waiting {
+                --progress-spinner-color: gray;
+            }
+
             .tab-add-icon > wl-icon:hover {
                 color: rgb(48, 74, 145);
                 background: #E0E3EF;
@@ -213,30 +224,7 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
             
             <div style="padding-left:20px">
                 ${this._waiting ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
-                ${(this._modelconfigs || []).map((config) => {
-                    return html`
-                        <h3>${config.name}</h3>
-                        ${config.waiting ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : 
-                            (config.combos || []).map((combo) => {
-                                return html`
-                                ${combo.inputs.map((input) => {
-                                    return html`
-                                        ${input.input_id} = ${input.dataset.dataset_name}
-                                    `;
-                                })}                                
-                                <p><h4>${combo.validity.valid? "VALID" : "INVALID"}</h4></p>
-                                <p>Validity Reasons: </p>
-                                ${combo.validity.validity_reasons.map((reason) => {
-                                    return html`<li>${reason}</li>`;
-                                })}
-                                <p>Invalidity Reasons: </p>
-                                ${combo.validity.invalidity_reasons.map((reason) => {
-                                    return html`<li>${reason}</li>`;
-                                })}`
-                            })
-                        }
-                    `
-                })}
+                ${(this._modelconfigs || []).map(this.renderConfigurationResult)}
 
                 <br /><br />
                 <b>Note:</b>
@@ -253,6 +241,61 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
         ${renderNotifications()}`
     }
 
+    private renderConfigurationResult(config) {
+        let valid : boolean = config.combos && config.combos.length > 0 && 
+                              config.combos.every((cb) => cb.validity.valid);
+        let invalid : boolean = config.combos && config.combos.length > 0 && 
+                                !config.combos.every((cb) => cb.validity.valid);
+        return html`
+            <wl-expansion name="${config.combos?.lenght > 0 ? 'ok' : 'notok'}" style="overflow-y: hidden;">
+                <span slot="title">
+                    ${config.name}
+                </span>
+                <span slot="description" style="position: absolute; right: 60px;">
+                    ${config.waiting ? 
+                        html`<wl-progress-spinner class="loading small-loading"></wl-progress-spinner>` :
+                        (config.combos === undefined ? 
+                            html`<wl-progress-spinner class="waiting small-loading"></wl-progress-spinner>`
+                            : (config.combos.length == 0 ?
+                                html`<wl-icon>close</wl-icon>`
+                                : (invalid ? 
+                                    html`<wl-icon style="color:red">close</wl-icon>`
+                                    : html`<wl-icon style="color:${valid?'green':'gray'}">check</wl-icon>`)
+                            )
+                        )
+                    }
+                </span>
+                ${config.combos && config.combos.length == 0 ? html`
+                    <p>
+                        No datasets match this configuration with the current parameters.
+                    </p>
+                ` : ''}
+                ${(config.combos || []).map((combo) => html`
+                    <p>Datasets: </p>
+                    <ul>
+                    ${combo.inputs.map((input) => html`
+                        <li>
+                            <b>${input.input_id}</b> = ${input.dataset.dataset_name}
+                        </li>`
+                    )}
+                    </ul>
+                    <div>
+                        <h4>${combo.validity.valid ? "VALID" : "INVALID"}</h4>
+                        ${combo.validity?.validity_reasons?.length > 0 ? html`
+                            <p>Validity Reasons: </p>
+                            ${combo.validity.validity_reasons.map((reason) => html`<li>${reason}</li>`)}`
+                            : ''
+                        }
+                        ${combo.validity?.invalidity_reasons?.length > 0 ? html`
+                            <p>Invalidity Reasons: </p>
+                            ${combo.validity.invalidity_reasons.map((reason) => html`<li>${reason}</li>`)}`
+                            :''
+                        }
+                    </div>`
+                )}
+            </wl-expansion>
+        `;
+    }
 
     public addRegionsToMap() {   
         let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
@@ -320,8 +363,14 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
             let response = await fetch(this.prefs.mint.cromo_api + "/validity/" + cname, 
                 { method: "post", body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } })
             config.waiting = false;
-            if(response.status == 200) 
+            if(response.status == 200) {
                 config.combos = await response.json();
+                // Moving configs with results to the top.
+                let newOrder = this._modelconfigs.filter(c => c!=config);
+                newOrder.unshift(config);
+                this._modelconfigs = newOrder;
+            } else /*if (response.status == 204) TODO: some request fails, assuming empty */
+                config.combos = []
             this.requestUpdate();
         }
     }

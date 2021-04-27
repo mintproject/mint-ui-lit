@@ -201,7 +201,6 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         super.setSubPage(state);
         super.setRegionId(state);
-        console.log(this._subpage);
         if (state && state.explorerUI) {
             this._selectedModelId = state.explorerUI.selectedModel.split('/').pop();
             this._selectedConfig = state.explorerUI.selectedConfig;
