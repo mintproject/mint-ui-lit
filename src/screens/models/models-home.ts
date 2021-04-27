@@ -126,6 +126,9 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             case 'edit':
                 nav.push({label: 'Edit Models', url: 'models/edit'});
                 break;
+            case 'cromo':
+                nav.push({label: 'Constraint search', url: 'models/cromo'});
+                break;
             default:
                 break;
         }

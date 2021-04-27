@@ -260,12 +260,12 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
             if (this._regions.length > 0) {
                 this._mapEmpty = false;
                 try {
-                    map.setRegions(this._regions, this._selectedSubregionId);
+                    map.setRegions(this._regions, "region_0"); //FIXME: This maybe changes
                     this._mapReady = true;
                 }
                 catch {
                   map.addEventListener("google-map-ready", (e) => {
-                    map.setRegions(this._regions, this._selectedSubregionId);
+                    map.setRegions(this._regions, "region_0");
                     this._mapReady = true;
                   })
                 }
