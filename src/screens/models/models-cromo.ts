@@ -224,7 +224,7 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
             
             <div style="padding-left:20px">
                 ${this._waiting ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
-                ${(this._modelconfigs || []).map(this.renderConfigurationResult)}
+                ${(this._modelconfigs || []).sort((c1,c2)=>this.sortConfig(c1,c2)).map(this.renderConfigurationResult)}
 
                 <br /><br />
                 <b>Note:</b>
@@ -241,13 +241,28 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
         ${renderNotifications()}`
     }
 
+    private sortConfig(c1, c2) {
+        let valid1 : boolean = c1 && c1.combos && c1.combos.length > 0 && 
+            c1.combos.some((cb) => cb.validity.valid);
+        let valid2 : boolean = c2 && c2.combos && c2.combos.length > 0 && 
+            c2.combos.some((cb) => cb.validity.valid);
+        let empty1 = c1 && (!c1.combos || c1.combos.length == 0);
+        let empty2 = c2 && (!c2.combos || c2.combos.length == 0);
+        if(empty1 && !empty2) return 1
+        if(empty2 && !empty1) return -1;
+        if(valid1 && !valid2) return -1;
+        if(valid2 && !valid1) return 1;
+        return 0;
+    }
+
     private renderConfigurationResult(config) {
-        let valid : boolean = config.combos && config.combos.length > 0 && 
-                              config.combos.every((cb) => cb.validity.valid);
-        let invalid : boolean = config.combos && config.combos.length > 0 && 
-                                !config.combos.every((cb) => cb.validity.valid);
+        let valid : boolean = config && config.combos && config.combos.length > 0 && 
+            config.combos.some((cb) => cb.validity.valid);
+        let invalid : boolean = config && config.combos && config.combos.length > 0 && 
+            !config.combos.some((cb) => cb.validity.valid);
+
         return html`
-            <wl-expansion name="${config.combos?.lenght > 0 ? 'ok' : 'notok'}" style="overflow-y: hidden;">
+            <wl-expansion name="${config.combos?.length > 0 ? 'ok' : 'notok'}" style="overflow-y: hidden;">
                 <span slot="title">
                     ${config.name}
                 </span>
@@ -260,7 +275,7 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
                                 html`<wl-icon>close</wl-icon>`
                                 : (invalid ? 
                                     html`<wl-icon style="color:red">close</wl-icon>`
-                                    : html`<wl-icon style="color:${valid?'green':'gray'}">check</wl-icon>`)
+                                    : html`<wl-icon .style="color:${valid?'green':'gray'}">check</wl-icon>`)
                             )
                         )
                     }
@@ -276,21 +291,44 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
                     ${combo.inputs.map((input) => html`
                         <li>
                             <b>${input.input_id}</b> = ${input.dataset.dataset_name}
+                            <ul>
+                            ${input.dataset.derived_variables.map((dv) => {
+                                return html`
+                                    <li style='color:grey'><i>${dv.variable_id}</i> = ${dv.value}</li>`
+                            })}
+                            </ul>
+                            <br />
                         </li>`
                     )}
                     </ul>
                     <div>
-                        <h4>${combo.validity.valid ? "VALID" : "INVALID"}</h4>
-                        ${combo.validity?.validity_reasons?.length > 0 ? html`
-                            <p>Validity Reasons: </p>
-                            ${combo.validity.validity_reasons.map((reason) => html`<li>${reason}</li>`)}`
-                            : ''
-                        }
-                        ${combo.validity?.invalidity_reasons?.length > 0 ? html`
-                            <p>Invalidity Reasons: </p>
-                            ${combo.validity.invalidity_reasons.map((reason) => html`<li>${reason}</li>`)}`
-                            :''
-                        }
+                        <h4 .style="${combo.validity.valid ? "color:green": "color:red"}">
+                            ${combo.validity.valid ? "VALID" : "INVALID"}
+                        </h4>
+                        <ul style="list-style-type: none">
+                            ${combo.validity?.validity_reasons?.length > 0 ? html`
+                                ${combo.validity.validity_reasons.map((reason) => 
+                                    html`
+                                        <li style='color:green'>
+                                            <wl-icon style="--icon-size: 14px;color:green">check</wl-icon>
+                                            &nbsp;
+                                            ${reason}
+                                        </li>
+                                    `)}`
+                                : ''
+                            }
+                            ${combo.validity?.invalidity_reasons?.length > 0 ? html`
+                                ${combo.validity.invalidity_reasons.map((reason) => 
+                                    html`
+                                        <li style='color:red'>
+                                            <wl-icon style="--icon-size: 14px;color:red">close</wl-icon>
+                                            &nbsp;
+                                            ${reason}
+                                        </li>
+                                    `)}`
+                                :''
+                            }
+                        </ul>
                     </div>`
                 )}
             </wl-expansion>
