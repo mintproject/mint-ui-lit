@@ -403,10 +403,6 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
             config.waiting = false;
             if(response.status == 200) {
                 config.combos = await response.json();
-                // Moving configs with results to the top.
-                let newOrder = this._modelconfigs.filter(c => c!=config);
-                newOrder.unshift(config);
-                this._modelconfigs = newOrder;
             } else /*if (response.status == 204) TODO: some request fails, assuming empty */
                 config.combos = []
             this.requestUpdate();
