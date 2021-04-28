@@ -172,7 +172,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <div>Configure Models</div>
                 </a>
                 <!--a href="{this._regionid}/models/calibrate"-->
-                <a href="{this._regionid}/models/cromo">
+                <a href="${this._regionid}/models/cromo">
                     <wl-icon>manage_search</wl-icon>
                     <div>Constraint Search</div>
                 </a>
