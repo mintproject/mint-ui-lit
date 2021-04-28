@@ -70,18 +70,14 @@ export class ModelCatalogConstraint extends connect(store)(ModelCatalogResource)
                 value=${edResource && edResource.description ? edResource.description[0] : ''}>
             </wl-textfield>
 
+            <span style="margin: 10px 0px 3px 0px; display: block; font-size: small;">Rule:</span>
+            <textarea id="rule" name="Rule" style="width: 100%;" rows="5">${
+                edResource && edResource.hasRule ? edResource.hasRule : ''
+            }</textarea>
+
             <div style="min-height:50px; padding: 10px 0px;">
                 <div style="padding-top: 10px; font-weight: bold;">Variables:</div>
                 ${this._inputVariablePresentation}
-            </div>
-
-            <div class="two-inputs">
-                <wl-textfield type="number" id="minimum" label="Minimum (optional)"
-                    value="${edResource && edResource.hasMinimumValue ? edResource.hasMinimumValue[0] : '' }">
-                </wl-textfield>
-                <wl-textfield type="number" id="maximum" label="Maximum (optional)"
-                    value="${edResource && edResource.hasMaximumValue ? edResource.hasMaximumValue[0] : ''}">
-                </wl-textfield>
             </div>
         </form>`;
     }
@@ -90,14 +86,12 @@ export class ModelCatalogConstraint extends connect(store)(ModelCatalogResource)
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById('label') as Textfield;
         let inputDesc : Textfield = this.shadowRoot.getElementById('description') as Textfield;
-        let inputMin : Textfield = this.shadowRoot.getElementById('minimum') as Textfield;
-        let inputMax : Textfield = this.shadowRoot.getElementById('maximum') as Textfield;
+        let inputRule : Textarea = this.shadowRoot.getElementById('rule') as Textarea;
 
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : '';
         let desc : string = inputDesc ? inputDesc.value : '';
-        let min : string = inputMin ? inputMin.value : '';
-        let max : string = inputMax ? inputMax.value : '';
+        let rule : string = inputRule ? inputRule.value : '';
         
         if (label) {
             let jsonRes = {
@@ -106,8 +100,7 @@ export class ModelCatalogConstraint extends connect(store)(ModelCatalogResource)
                 hasVariable: this._inputVariablePresentation.getResources(),
             };
             jsonRes["description"] = (desc) ? [desc] : [];
-            jsonRes["hasMinimumValue"] = (min) ? [min] : [];
-            jsonRes["hasMaximumValue"] = (max) ? [max] : [];
+            jsonRes["hasRule"] = (rule) ? [rule] : [];
 
             return ConstraintFromJSON(jsonRes);
         } else {
