@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+      - dev
+      - trigger
     tags:
       - v*
   pull_request:
