@@ -50,7 +50,18 @@ export interface MintPreferences {
   graphql?: GraphQLPreferences,
   wings_api?: string,
   //maps
-  google_maps_key: string
+  google_maps_key: string,
+  firebasePreferences: FirebasePreferences
+}
+
+export interface FirebasePreferences {
+  apiKey: string,
+  authDomain: string,
+  databaseURL: string,
+  projectId: string,
+  storageBucket: string,
+  messagingSenderId: string,
+  appId: string
 }
 
 export interface GraphQLPreferences {
