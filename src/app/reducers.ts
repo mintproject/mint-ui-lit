@@ -51,10 +51,6 @@ export interface MintPreferences {
   wings_api?: string,
   //maps
   google_maps_key: string,
-  firebasePreferences: FirebasePreferences
-}
-
-export interface FirebasePreferences {
   apiKey: string,
   authDomain: string,
   databaseURL: string,

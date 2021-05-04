@@ -16,5 +16,5 @@
     },
     "visualization_url": "https://dev.viz.mint.isi.edu",
     "ingestion_api": "https://node1.ingestion.mint.isi.edu/v1.3.0",
-    "google_maps_key":  "your_google_maps_key",
+    "google_maps_key":  "your_google_maps_key"
 }
