@@ -32,7 +32,10 @@ interface CromoInputsValidity {
 interface CromoValidity {
     valid: boolean,
     invalidity_reasons: string[],
-    validity_reasons: string[]
+    validity_reasons: string[],
+    recommended: boolean,
+    recommendation_reasons: string[],
+    non_recommendation_reasons: string[]    
 }
 interface CromoModelInput {
     input_id: string,
@@ -229,7 +232,7 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
                 <br /><br />
                 <b>Note:</b>
                 CROMO queries the Model Catalog, Data Catalog and Metadata Sensing APIs 
-                to find valid models based on the scenario, region highlighted in the map, and the time period.
+                to find recommended models based on the scenario, region highlighted in the map, and the time period.
             </div>
 
         </div>
@@ -246,12 +249,18 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
             c1.combos.some((cb) => cb.validity.valid);
         let valid2 : boolean = c2 && c2.combos && c2.combos.length > 0 && 
             c2.combos.some((cb) => cb.validity.valid);
+        let recommended1 : boolean = c1 && c1.combos && c1.combos.length > 0 && 
+            c1.combos.some((cb) => cb.validity.recommended);
+        let recommended2 : boolean = c2 && c2.combos && c2.combos.length > 0 && 
+            c2.combos.some((cb) => cb.validity.recommended);
         let empty1 = c1 && (!c1.combos || c1.combos.length == 0);
         let empty2 = c2 && (!c2.combos || c2.combos.length == 0);
         if(empty1 && !empty2) return 1
         if(empty2 && !empty1) return -1;
         if(valid1 && !valid2) return -1;
         if(valid2 && !valid1) return 1;
+        if(recommended1 && !recommended2) return -1;
+        if(recommended2 && !recommended1) return 1;        
         return 0;
     }
 
@@ -260,6 +269,10 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
             config.combos.some((cb) => cb.validity.valid);
         let invalid : boolean = config && config.combos && config.combos.length > 0 && 
             !config.combos.some((cb) => cb.validity.valid);
+        let recommended : boolean = config && config.combos && config.combos.length > 0 && 
+            config.combos.some((cb) => cb.validity.recommended);
+        let non_recommended : boolean = config && config.combos && config.combos.length > 0 && 
+            !config.combos.some((cb) => cb.validity.recommended);
 
         return html`
             <wl-expansion name="${config.combos?.length > 0 ? 'ok' : 'notok'}" style="overflow-y: hidden;">
@@ -275,7 +288,11 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
                                 html`<wl-icon>close</wl-icon>`
                                 : (invalid ? 
                                     html`<wl-icon style="color:red">close</wl-icon>`
-                                    : html`<wl-icon .style="color:${valid?'green':'gray'}">check</wl-icon>`)
+                                    : (valid && !recommended ? 
+                                        html`<wl-icon style="color:green">close</wl-icon>`
+                                        : (recommended ? html`<wl-icon style="color:green">done_all</wl-icon>`: "")
+                                        )
+                                )
                             )
                         )
                     }
@@ -302,14 +319,36 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
                     )}
                     </ul>
                     <div>
-                        <h4 .style="${combo.validity.valid ? "color:green": "color:red"}">
-                            ${combo.validity.valid ? "VALID" : "INVALID"}
+                        <h4 .style="${combo.validity.recommended ? "color:green": (combo.validity.valid ? "color:grey": "color:red")}">
+                            ${combo.validity.recommended ? "RECOMMENDED" : (combo.validity.valid ? "VALID, NOT RECOMMENDED": "INVALID")}
                         </h4>
                         <ul style="list-style-type: none">
+                            ${combo.validity?.recommendation_reasons?.length > 0 ? html`
+                                ${combo.validity.recommendation_reasons.map((reason) => 
+                                    html`
+                                        <li style='color:green'>
+                                            <wl-icon style="--icon-size: 14px;color:green">done_all</wl-icon>
+                                            &nbsp;
+                                            ${reason}
+                                        </li>
+                                    `)}`
+                                : ''
+                            }
+                            ${combo.validity?.non_recommendation_reasons?.length > 0 ? html`
+                                ${combo.validity.non_recommendation_reasons.map((reason) => 
+                                    html`
+                                        <li style='color:grey'>
+                                            <wl-icon style="--icon-size: 14px;color:gray">close</wl-icon>
+                                            &nbsp;
+                                            ${reason}
+                                        </li>
+                                    `)}`
+                                :''
+                            }
                             ${combo.validity?.validity_reasons?.length > 0 ? html`
                                 ${combo.validity.validity_reasons.map((reason) => 
                                     html`
-                                        <li style='color:green'>
+                                        <li style='color:grey'>
                                             <wl-icon style="--icon-size: 14px;color:green">check</wl-icon>
                                             &nbsp;
                                             ${reason}
