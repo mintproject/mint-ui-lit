@@ -48,7 +48,8 @@ export interface MintPreferences {
   // Wings Execution  
   wings?: WingsPreferences,  
   graphql?: GraphQLPreferences,
-  wings_api?: string
+  wings_api?: string,
+  cromo_api?: string
 }
 
 export interface GraphQLPreferences {

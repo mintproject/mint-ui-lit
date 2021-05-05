@@ -12,6 +12,7 @@ import './models-register';
 import './models-calibrate';
 import './models-configure';
 import './models-edit';
+import './models-cromo';
 import '../../components/nav-title'
 
 store.addReducers({
@@ -125,6 +126,9 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             case 'edit':
                 nav.push({label: 'Edit Models', url: 'models/edit'});
                 break;
+            case 'cromo':
+                nav.push({label: 'Constraint search', url: 'models/cromo'});
+                break;
             default:
                 break;
         }
@@ -168,9 +172,9 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <div>Configure Models</div>
                 </a>
                 <!--a href="{this._regionid}/models/calibrate"-->
-                <a disabled>
-                    <wl-icon>settings_input_composite</wl-icon>
-                    <div>Calibrate Models</div>
+                <a href="${this._regionid}/models/cromo">
+                    <wl-icon>manage_search</wl-icon>
+                    <div>Constraint Search</div>
                 </a>
             </div>
 
@@ -180,6 +184,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             <models-calibrate class="page" ?active="${this._subpage == 'calibrate'}"></models-calibrate>
             <models-compare class="page" ?active="${this._subpage == 'compare'}"></models-compare>
             <models-edit class="page" ?active="${this._subpage == 'edit'}"></models-edit>
+            <models-cromo class="page" ?active="${this._subpage == 'cromo'}"></models-cromo>
         `
     }
 
