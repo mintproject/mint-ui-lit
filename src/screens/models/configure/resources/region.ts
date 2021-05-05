@@ -131,6 +131,15 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
         </form>`;
     }*/
 
+    public getResources () {
+        let rs : Region[] = super.getResources();
+        //FIXME: server is failing with GeoShape
+        return rs.map((r:Region) => {
+            if (r.geo) delete r.geo;
+            return r;
+        })
+    }
+
     protected _getResourceFromForm () {
         // GET ELEMENTS
         if (this._tabMap) {

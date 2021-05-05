@@ -12,11 +12,11 @@ import { ComparisonEntry } from './model-explore/ui-reducers';
 import { IdMap } from "app/reducers";
 import { setupGetAll } from 'model-catalog/actions';
 import { ComparisonFeature } from "../modeling/reducers";
-import { uriToId, getLabel, getId } from 'model-catalog/util';
 
 import { modelGet, versionGet, modelConfigurationGet, modelConfigurationSetupGet,
          modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet, regionsGet } from 'model-catalog/actions';
-import { isSubregion, sortVersions, sortConfigurations, sortSetups } from 'model-catalog/util';
+import { uriToId, getLabel, getId, isSubregion, sortVersions, sortConfigurations, sortSetups,
+         getModelTypeNames } from 'model-catalog/util';
 
 import './models-tree'
 
@@ -32,6 +32,7 @@ import { ModelCatalogProcess } from './configure/resources/process';
 import { ModelCatalogParameter } from './configure/resources/parameter';
 import { ModelCatalogSoftwareImage } from './configure/resources/software-image';
 import { ModelCatalogTimeInterval } from './configure/resources/time-interval';
+import { ModelCatalogVariablePresentation } from './configure/resources/variable-presentation';
 
 import { TreeNode } from 'components/tree-node';
 import { TreeRoot } from 'components/tree-root';
@@ -86,17 +87,19 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
     private _iProcess : IdMap<ModelCatalogProcess> = {};
     private _iSoftwareImage : IdMap<ModelCatalogSoftwareImage> = {};
     private _iTimeInterval : IdMap<ModelCatalogTimeInterval> = {};
+    private _iInputVariable : IdMap<ModelCatalogVariablePresentation> = {};
+    private _iOutputVariable : IdMap<ModelCatalogVariablePresentation> = {};
 
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
             name: "Type",
             fn: (m:modelLike) => m.type && m.type.length > 0 ?
-                    m.type.join(", ") : html`<span style="color:#999">None<span>`
+                    getModelTypeNames(m.type).join(", ") : html`<span style="color:#999">None<span>`
         },
         {
             name: "Category",
             fn: (setup:ModelConfigurationSetup) => setup.hasModelCategory && setup.hasModelCategory.length > 0 ?
-                    setup.hasModelCategory[setup.hasModelCategory.length-1] : html`<span style="color:#999">None<span>`
+                    setup.hasModelCategory.map(getLabel).join(', ') : html`<span style="color:#999">None<span>`
         },
         {
             name: "Keywords",
@@ -108,9 +111,60 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
             }
         },
         {
+            name: "Authors",
+            fn: (m:modelLike) => m.author && m.author.length > 0 ?
+                    this._iPerson[m.id]
+                    : html`<span style="color:#999">None specified<span>`
+        },
+        {
             name: "Description",
             fn: (setup:ModelConfigurationSetup) => setup.description && setup.description.length > 0 ?
                     setup.description[setup.description.length -1] : html`<span style="color:#999">None provided<span>`
+        },
+        {
+            name: "Theoretical Basis",
+            fn: (model:ModelConfigurationSetup) => model.theoreticalBasis && model.theoreticalBasis.length > 0 ?
+                    model.theoreticalBasis[0] : html`<span style="color:#999">None<span>`
+        },
+        {
+            name: "Runtime Estimation",
+            fn: (model:ModelConfigurationSetup) => model.runtimeEstimation && model.runtimeEstimation.length > 0 ?
+                    model.runtimeEstimation[0] : html`<span style="color:#999">None<span>`
+        },
+        {
+            name: "Parameterization",
+            fn: (model:ModelConfigurationSetup) => model.parameterization && model.parameterization.length > 0 ?
+                    model.parameterization[0] : html`<span style="color:#999">None<span>`
+        },
+        {
+            name: "Limitations",
+            fn: (model:ModelConfigurationSetup) => model.limitations && model.limitations.length > 0 ?
+                    model.limitations[0] : html`<span style="color:#999">None<span>`
+        },
+        {
+            name: "Modeled processes",
+            fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasProcess && m.hasProcess.length > 0 ? 
+                    this._iProcess[m.id]
+                    : html`<span style="color:#999">None specified<span>`
+        },
+        {
+            name: "Input variables:",
+            fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasInputVariable && m.hasInputVariable.length > 0 ? 
+                    this._iInputVariable[m.id]
+                    : html`<span style="color:#999">None specified<span>`
+        },
+        {
+            name: "Output variables:",
+            fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasOutputVariable && m.hasOutputVariable.length > 0 ? 
+                    this._iOutputVariable[m.id]
+                    : html`<span style="color:#999">None specified<span>`
+        },
+
+        {
+            name: "Regions",
+            fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasRegion && m.hasRegion.length > 0 ?
+                    this._iRegion[m.id]
+                    : html`<span style="color:#999">None specified<span>`
         },
         {
             name: "Parameter assignment/estimation",
@@ -118,18 +172,6 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                     model.parameterAssignmentMethod[model.parameterAssignmentMethod.length -1] : html`<span style="color:#999">None<span>`
         },
 
-        {
-            name: "Authors",
-            fn: (m:modelLike) => m.author && m.author.length > 0 ?
-                    this._iPerson[m.id]
-                    : html`<span style="color:#999">None specified<span>`
-        },
-        {
-            name: "Regions",
-            fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasRegion && m.hasRegion.length > 0 ?
-                    this._iRegion[m.id]
-                    : html`<span style="color:#999">None specified<span>`
-        },
         {
             name: "Adjustable variables",
             fn: (setup:ModelConfigurationSetup) => setup.adjustableParameter && setup.adjustableParameter.length > 0 ?
@@ -148,7 +190,6 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                     this._iGrid[m.id]
                     : html`<span style="color:#999">None specified<span>`
         },
-
         {
             name: "Time Interval",
             fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasOutputTimeInterval && m.hasOutputTimeInterval.length > 0 ?
@@ -171,12 +212,6 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
             name: "Software Image",
             fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasSoftwareImage && m.hasSoftwareImage.length > 0 ?
                     this._iSoftwareImage[m.id]
-                    : html`<span style="color:#999">None specified<span>`
-        },
-        {
-            name: "Modeled processes",
-            fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasProcess && m.hasProcess.length > 0 ? 
-                    this._iProcess[m.id]
                     : html`<span style="color:#999">None specified<span>`
         },
         /*{
@@ -400,6 +435,8 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         if (this._iParameter[c.uri]) delete this._iParameter[c.uri];
         if (this._iTimeInterval[c.uri]) delete this._iTimeInterval[c.uri];
         if (this._iSoftwareImage[c.uri]) delete this._iSoftwareImage[c.uri];
+        if (this._iInputVariable[c.uri]) delete this._iInputVariable[c.uri];
+        if (this._iOutputVariable[c.uri]) delete this._iOutputVariable[c.uri];
         goToPage('models/compare/' + this._getURL(newC));
     }
 
@@ -470,6 +507,14 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                             this._iSoftwareImage[c.uri] = new ModelCatalogSoftwareImage();
                             this._iSoftwareImage[c.uri].setResources(r['hasSoftwareImage']);
                         }
+                        if (r['hasInputVariable'] && r['hasInputVariable'].length > 0) {
+                            this._iInputVariable[c.uri] = new ModelCatalogVariablePresentation();
+                            this._iInputVariable[c.uri].setResources(r['hasInputVariable']);
+                        }
+                        if (r['hasOutputVariable'] && r['hasOutputVariable'].length > 0) {
+                            this._iOutputVariable[c.uri] = new ModelCatalogVariablePresentation();
+                            this._iOutputVariable[c.uri].setResources(r['hasOutputVariable']);
+                        }
                     });
                 }
             });
@@ -531,7 +576,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         Object.values(this._allModels).forEach((m:Model) => {
             // Model nodes.
             let category : string = m.hasModelCategory && m.hasModelCategory.length > 0 ?
-                    m.hasModelCategory[0] : 'Uncategorized';
+                    getLabel(m.hasModelCategory[0]) : 'Uncategorized';
             if (!this._nodes[category]) {
                 let newNode : TreeNode = new TreeNode();
                 newNode.setName(category);

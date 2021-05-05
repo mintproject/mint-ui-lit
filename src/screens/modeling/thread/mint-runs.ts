@@ -11,13 +11,13 @@ import { MintThreadPage } from "./mint-thread-page";
 import { showNotification, hideDialog, showDialog, hideNotification } from "util/ui_functions";
 import { renderNotifications } from "util/ui_renders";
 import { Model } from "screens/models/reducers";
-import { Execution, ModelExecutions } from "../reducers";
-import { IdMap } from "app/reducers";
-import { listThreadExecutions, getAllThreadExecutionIds, threadSummaryChanged, threadTotalRunsChanged } from "../actions";
+import { Execution, ExecutionSummary, ModelExecutions } from "../reducers";
+import { listThreadModelExecutionsAction, subscribeThreadExecutionSummary } from "../actions";
 import { DataResource } from "screens/datasets/reducers";
 import { postJSONResource, getResource } from "util/mint-requests";
 import { getThreadRunsStatus, TASK_DONE, getThreadParametersStatus } from "util/state_functions";
 import { getPathFromModel } from "../../models/reducers";
+import { toDateTimeString } from "util/date-utils";
 
 @customElement('mint-runs')
 export class MintRuns extends connect(store)(MintThreadPage) {
@@ -26,7 +26,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     private _executions: ModelExecutions;
 
     @property({type: String})
-    private _task_id: string;
+    private _thread_id: string;
 
     @property({type: Object})
     private totalPages : Map<string, number> = {} as Map<string, number>;
@@ -34,16 +34,11 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     private currentPage : Map<string, number> = {} as Map<string, number>;
     @property({type: Number})
     private pageSize = 100;
+    @property({type: String})
+    private orderBy = [{"status": "asc"}]; //, {"start_time": "asc"}];
 
     @property({type: String})
     private _log: string;
-
-    @property({type: Boolean})
-    private _waiting: Boolean = false;    
-
-    private _initialSubmit: boolean = false;
-
-    private threadModelExecutionIds: IdMap<string[]> = {};
 
     static get styles() {
         return [
@@ -52,7 +47,12 @@ export class MintRuns extends connect(store)(MintThreadPage) {
           `
         ]
     }
-    
+
+    private _scrollInto (id:string) {
+        let el = this.shadowRoot!.getElementById(id);
+        if (el) el.scrollIntoView({block: "start", behavior: "smooth"});
+    }
+
     protected render() {
         if(!this.thread) {
             return html ``;
@@ -119,9 +119,18 @@ export class MintRuns extends connect(store)(MintThreadPage) {
         <wl-title level="3">Runs</wl-title>
         <div class="clt">
             <ul>
-            ${Object.keys(this.thread.execution_summary).map((modelid) => {
+            ${Object.keys(this.thread.execution_summary ?? {}).map((modelid) => {
                 let summary = this.thread.execution_summary[modelid];
                 let model = this.thread.models![modelid];
+                if (!model) {
+                    console.warn("modelid:", modelid, "is not on this thread!", this.thread);
+                    //TODO: For some reason the modelid is of other model...
+                    return `  `;
+                }
+                if(!summary.total_runs) {
+                    return html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`;
+                }
+                
                 let grouped_ensemble = grouped_executions[modelid];
                 this.totalPages[modelid] = Math.ceil(summary.total_runs/this.pageSize);
 
@@ -134,8 +143,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                 let nInputs : number = model.input_files.map((input) => input.value ? 
                     (input.value.resources || []).filter(r => r.selected != false).length
                     : (this.thread.model_ensembles[modelid].bindings[input.id] || [])
-                            .map((dsid) => this.thread.data[dsid].resources)
-                            .map((dsres) => (dsres || []).filter((r) => r.selected).length)
+                            .map((dsid) => this.thread.data[dsid].selected_resources)
                             .reduce((ac,len) => ac*len, 1)
                 ).reduce((ac,len) => ac*len, 1);
 
@@ -153,7 +161,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
 
                 /*
                 if(!grouped_ensemble && model) {
-                    this._fetchRuns(model.id, 1, this.pageSize)
+                    this._fetchRuns(model.id)
                 }
                 */
                 if(!model) {
@@ -196,28 +204,47 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                     (${nInputs} input resources &#215; ${nParameters} parameters).
                     ${!finished ? "So far, " : ""} ${submitted_runs} model runs
                     ${!finished ? "have been" : "were"} submitted, out of which 
-                    ${successful_runs} succeeded, while ${failed_runs} failed.
+                    ${successful_runs} succeeded, while 
+                        <span .style="color:${failed_runs?'red': ''}">${failed_runs} failed</span>.
                     ${running > 0 ? html `${running} are currently running` : ""}
                     ${running > 0 && pending > 0 ? ', and ' : ''}
                     ${pending > 0 ? html `${pending} are waiting to be run` : ""}
                     </p>
 
-                    <div style="width: 100%; border:1px solid #EEE;border-bottom:0px;">
+                    <div style="width: 100%; border:1px solid #EEE;border-bottom:0px; line-height: 30px;">
                         ${grouped_ensemble && !grouped_ensemble.loading ? 
                         html`
                         ${this.currentPage[model.id] > 1 ? 
-                            html `<wl-button flat inverted @click=${() => this._nextPage(model.id, -1)}>Back</wl-button>` :
+                            html `<wl-button flat inverted @click=${() => this._nextPage(this.thread.id, model.id, -1)}>Back</wl-button>` :
                             html `<wl-button flat inverted disabled>Back</wl-button>`
                         }
                         Page ${this.currentPage[model.id]} of ${this.totalPages[model.id]}
                         ${this.currentPage[model.id] < this.totalPages[model.id] ? 
-                            html `<wl-button flat inverted @click=${() => this._nextPage(model.id, 1)}>Next</wl-button>` :
+                            html `<wl-button flat inverted @click=${() => this._nextPage(this.thread.id, model.id, 1)}>Next</wl-button>` :
                             html `<wl-button flat inverted disabled>Next</wl-button>`
                         }
                         ` : ""
                         }
-                        <wl-button type="button" flat inverted style="float:right"
-                            @click="${() => this._fetchRuns(model.id, 1, this.pageSize)}">Reload</wl-button>
+                        <span style="float:right">
+                            <span>Scroll to:</span>
+                            <wl-button type="button" flat inverted  style="padding: 6px; border-radius: 4px;"
+                                @click="${() => this._scrollInto('run')}"> Run</wl-button>
+                            ${grouped_ensemble && !grouped_ensemble.loading ?
+                                html`
+                                    ${grouped_ensemble.inputs.length > 0 ? html`
+                                <wl-button type="button" flat inverted  style="padding: 6px; border-radius: 4px;"
+                                    @click="${() => this._scrollInto('in')}"> Inputs</wl-button>
+                                    ` : html``}
+                                    ${grouped_ensemble.params.length > 0 ? html`
+                                <wl-button type="button" flat inverted  style="padding: 6px; border-radius: 4px;"
+                                    @click="${() => this._scrollInto('param')}"> Parameters</wl-button>
+                                    ` : html``}
+                                `
+                                : html``}
+                            |
+                            <wl-button type="button" flat inverted style="float:right"
+                                @click="${() => (this.currentPage[model.id] = 1) && this._fetchRuns(this.thread.id, model.id)}">Reload</wl-button>
+                        </span>
                     </div>
                     <div style="height:400px;overflow:auto;width:100%;border:1px solid #EEE">
                         ${grouped_ensemble ? 
@@ -233,15 +260,17 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                         html `<colgroup span="${grouped_ensemble.params.length}"></colgroup>` : ""} <!-- Parameters -->
                                     <thead>
                                         <tr>
-                                            <th colspan="2">Run</th> <!-- Run Status -->
+                                            <th colspan="4" id="run">Run</th> <!-- Run Status -->
                                             ${grouped_ensemble.inputs.length > 0 ? 
-                                                html `<th colspan="${grouped_ensemble.inputs.length}">Inputs</th>` : ""} <!-- Inputs -->
+                                                html `<th colspan="${grouped_ensemble.inputs.length}" id="in">Inputs</th>` : ""} <!-- Inputs -->
                                             ${grouped_ensemble.params.length > 0 ? 
-                                                html `<th colspan="${grouped_ensemble.params.length}">Parameters</th>` : ""} <!-- Parameters -->
+                                                html `<th colspan="${grouped_ensemble.params.length}" id="param">Parameters</th>` : ""} <!-- Parameters -->
                                         </tr>
                                         <tr>
                                             <th>Run Status</th>
-                                            <th>Run Log</th>                                            
+                                            <th>Run Start Time</th>
+                                            <th>Run End Time</th>                                            
+                                            <th>Run Log</th>
                                             ${grouped_ensemble.inputs.length + grouped_ensemble.params.length == 0 ?     
                                                 html`<th></th>` : ""
                                             }
@@ -251,7 +280,8 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                     </thead>
                                     <!-- Body -->
                                     <tbody>
-                                    ${Object.keys(grouped_ensemble.executions).map((index:string) => {
+                                    ${grouped_ensemble.executions && Object.keys(grouped_ensemble.executions).length > 0 ?
+                                    Object.keys(grouped_ensemble.executions).map((index:string) => {
                                         let ensemble: Execution = grouped_ensemble.executions[index];
                                         let model = this.thread.models![ensemble.modelid];
                                         let param_defaults = {};
@@ -261,6 +291,12 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                                 <td>
                                                     <wl-progress-bar mode="determinate" class="${ensemble.status}"
                                                         value="${ensemble.status == "FAILURE" ? 100 : (ensemble.run_progress || 0)}"></wl-progress-bar>
+                                                </td>
+                                                <td class='caption'>
+                                                    ${toDateTimeString(ensemble.start_time)}
+                                                </td>
+                                                <td class='caption'>
+                                                    ${toDateTimeString(ensemble.end_time)}
                                                 </td>
                                                 <td>
                                                     <wl-button style="--button-padding: 2px; --button-border-radius: 2px" 
@@ -276,7 +312,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                                         // FIXME: This should be resolved to a collection of resources
                                                         let furl = this._getDatasetURL(res); 
                                                         return html`
-                                                            <td><a href="${furl}">${res.name}</a></td>
+                                                            <td><a target="_blank" href="${furl}">${res.name}</a></td>
                                                         `;
                                                     }
                                                 })}
@@ -288,7 +324,17 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                                 </td>` )}
                                             </tr>
                                         `;
-                                    })}
+                                    })
+                                    : html`
+                                    <tr>
+                                        <td colspan="${grouped_ensemble.inputs.length + grouped_ensemble.params.length == 0 ? 
+                                            5 
+                                            : grouped_ensemble.inputs.length + grouped_ensemble.params.length + 4}">
+                                            <wl-progress-bar style="display: inline-block; margin-right: 15px"></wl-progress-bar>
+                                            <p style="display: inline-block;">Downloading software image and data...</p>
+                                        </td>
+                                    </tr>
+                                    `}
                                     </tbody>
                                 </table>`
                             )
@@ -324,26 +370,28 @@ export class MintRuns extends connect(store)(MintThreadPage) {
             thread_id: this.thread.id,
             model_id: modelid
         };
-        this._initialSubmit = true;
         showNotification("runNotification", this.shadowRoot);
         let me = this;
         this._waiting = true;
         postJSONResource({
             url: mint.ensemble_manager_api + "/executions" + (mint.execution_engine == "localex" ? "Local" : ""),
             onLoad: function(e: any) {
-                this._waiting = false;
+                me._waiting = false;
                 hideNotification("runNotification", me.shadowRoot);
             },
             onError: function() {
-                this._waiting = false;
+                me._waiting = false;
                 hideNotification("runNotification", me.shadowRoot);
                 alert("Could not connect to the Execution Manager!");
             }
         }, data, false);
+
+        this.selectAndContinue("runs");
     }
 
-    _nextPage(modelid: string, offset:  number) {
-        this._fetchRuns(modelid, this.currentPage[modelid] + offset, this.pageSize)
+    _nextPage(threadid: string, modelid: string, offset:  number) {
+        this.currentPage[modelid] += offset;
+        this._fetchRuns(threadid, modelid)
     }
 
     _viewRunLog(ensembleid: string) {
@@ -356,6 +404,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
             onLoad: function(e: any) {
                 let log = e.target.responseText;
                 log = log.replace(/\\n/g, "\n");
+                log = log.replace(/\\r/g, "");
                 log = log.replace(/\\t/g, "\t");
                 log = log.replace(/\\u001b.+?m/g, "");
                 log = log.replace(/^"/, "");
@@ -394,16 +443,17 @@ export class MintRuns extends connect(store)(MintThreadPage) {
         `;
     }
 
-    async _fetchRuns (modelid: string, currentPage: number, pageSize: number) {
-        this.currentPage[modelid] = currentPage;
-        console.log("Fetch Runs called");
-        
-        if(!this.threadModelExecutionIds[modelid] || this.threadModelExecutionIds[modelid].length == 0) {
-            this.threadModelExecutionIds[modelid] =  await getAllThreadExecutionIds(this.thread.id, modelid);
+    async _fetchRuns (threadid: string, modelid: string) {
+        if(this.thread.model_ensembles[modelid]) {
+            if(!this.currentPage[modelid])
+                this.currentPage[modelid] = 1;
+            let start = (this.currentPage[modelid] - 1)*this.pageSize;
+            let limit = this.pageSize;
+            store.dispatch(listThreadModelExecutionsAction(
+                threadid,
+                modelid, this.thread.model_ensembles[modelid].id, 
+                start, limit, this.orderBy));
         }
-        
-        let ensembleids = this.threadModelExecutionIds[modelid].slice((currentPage - 1)*pageSize, currentPage*pageSize);
-        store.dispatch(listThreadExecutions(this.thread.id, modelid, ensembleids));
     }
 
     async _reloadAllRuns() {
@@ -412,7 +462,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
             if(!this.currentPage[modelid])
                 this.currentPage[modelid] = 1;
             console.log("Fetch runs for model " + modelid);
-            promises.push(this._fetchRuns(modelid, this.currentPage[modelid] , this.pageSize));
+            promises.push(this._fetchRuns(this.thread.id, modelid));
         })
         await Promise.all(promises);
     }
@@ -443,35 +493,22 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     stateChanged(state: RootState) {
         super.setUser(state);
         super.setRegionId(state);
+        super.setThread(state);
 
-        // Before resetting thread, check if the thread run status has changed
-        let runs_changed = this._initialSubmit || threadSummaryChanged(this.thread, state.modeling.thread);
-        let runs_total_changed = this._initialSubmit || threadTotalRunsChanged(this.thread, state.modeling.thread);
+        let thread_id = this.thread?.id
 
-        super.setThread(state) 
-
-        if(state.ui && state.ui.selected_task_id) {
-            this._task_id = state.ui.selected_task_id;
-        }
-
-        let cando = this.thread && (getThreadParametersStatus(this.thread) == TASK_DONE);
-        // If run status has changed, then reload all runs
-        if(runs_changed && cando) {
-            this._initialSubmit = false;
-            if(runs_total_changed) {
-                console.log("Total runs changed !");
-                this.threadModelExecutionIds = {};
+        for(let modelid in this.thread?.execution_summary ?? {}) {
+            let summary : ExecutionSummary = this.thread.execution_summary[modelid];
+            if(summary.changed) {
+                // If the execution summary has changed, then fetch runs
+                // TODO: Batch fetching of runs (otherwise it refreshes too much)
+                summary.changed = false;
+                this._fetchRuns(thread_id, modelid);
             }
-            state.modeling.executions = null;
-            this._executions = null;            
-            console.log("Reloading runs");
-            this._reloadAllRuns().then(() => {
-                console.log("Reload finished");
-            });
         }
 
         if(state.modeling.executions) {
-            this._executions = state.modeling.executions; 
+            this._executions = state.modeling.executions[thread_id]; 
         }
     }
 }

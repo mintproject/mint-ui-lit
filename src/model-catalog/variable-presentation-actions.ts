@@ -27,7 +27,7 @@ export const variablePresentationsGet: ActionThunk<Promise<IdMap<VariablePresent
         debug('Fetching all');
         let api : VariablePresentationApi = new VariablePresentationApi();
         variablePresentationsPromise = new Promise((resolve, reject) => {
-            let req : Promise<VariablePresentation[]> = api.variablepresentationsGet({username: getUser()});
+            let req : Promise<VariablePresentation[]> = api.variablepresentationsGet({username: getUser(), perPage:200});
             req.then((resp:VariablePresentation[]) => {
                 let data = resp.reduce(idReducer, {}) as IdMap<VariablePresentation>
                 dispatch({

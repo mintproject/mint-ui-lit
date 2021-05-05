@@ -1,5 +1,5 @@
 {
-    "data_catalog_api": "https://api.mint-data-catalog.org",
+    "data_catalog_api": "https://data-catalog.mint.isi.edu",
     "ensemble_manager_api": "https://dev.ensemble.mint.isi.edu/v1",
     "execution_engine": "localex",
     "localex": {
@@ -9,7 +9,11 @@
         "logdir": "/data/storage/mint/data-catalog/production/local-execution/logs",
         "logurl": "https://data.mint.isi.edu/files/local-execution/logs",
         "parallelism": 50
-    }, 
+    },
+    "graphql": {
+        "endpoint": "graphql.mint.isi.edu/v1/graphql",
+        "secret": "WmGrIc4MxU"
+    },
     "visualization_url": "https://dev.viz.mint.isi.edu",
     "ingestion_api": "https://node1.ingestion.mint.isi.edu/v1.3.0"    
 }

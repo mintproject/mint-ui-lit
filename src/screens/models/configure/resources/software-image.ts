@@ -25,38 +25,60 @@ export class ModelCatalogSoftwareImage extends connect(store)(ModelCatalogResour
     protected resourcePut = softwareImagePut;
     protected resourceDelete = softwareImageDelete;
 
+    private _toUri (r:SoftwareImage) : string {
+        let url : string = "";
+        if (r && r.availableInRegistry && r.availableInRegistry.length > 0) {
+            let registry : string = r.availableInRegistry[0];
+            switch (registry) {
+                case 'https://hub.docker.com/repository/docker/':
+                    let label : string = getLabel(r);
+                    let sp : string[] = label.split(':');
+                    url = (sp.length > 0) ? "https://hub.docker.com/r/" + sp[0] + "/tags" : '';
+                    break;
+                default: break;
+            }
+        }
+        return url;
+    }
+
     protected _renderResource (r:SoftwareImage) {
-        let label : string = getLabel(r);
-        let sp : string[] = label.split(':');
-        let url : string = (sp.length > 0) ? 
-                "https://hub.docker.com/r/" + sp[0] + "/tags" : '#';
-        return html`<a target="_blank" href="${url}">${getLabel(r)}</a>`;
+        let url = this._toUri(r);
+        return url ? 
+            html`<a target="_blank" href="${url}">${getLabel(r)}</a>` 
+            : html`<span>${getLabel(r)}</span>`;
     }
 
     protected _renderForm () {
         let edResource = this._getEditingResource();
         return html`
         <form>
-            <wl-textfield id="time-interval-label" label="Name" required
+            <wl-textfield id="label" label="Name" required
                 value=${edResource ? getLabel(edResource) : ''}>
+            </wl-textfield>
+            <wl-textfield id="registry" label="Registry" required
+                value=${edResource && edResource.availableInRegistry ? edResource.availableInRegistry[0] : ''}>
             </wl-textfield>
         </form>`;
     }
 
     protected _getResourceFromForm () {
         // GET ELEMENTS
-        let inputLabel : Textfield = this.shadowRoot.getElementById('time-interval-label') as Textfield;
+        let inputLabel : Textfield = this.shadowRoot.getElementById('label') as Textfield;
+        let inputRegistry : Textfield = this.shadowRoot.getElementById('registry') as Textfield;
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : '';
-        if (label) {
+        let registry : string = inputRegistry ? inputRegistry.value : '';
+        if (label && registry) {
             let jsonRes = {
                 type: ["SoftwareImage"],
                 label: [label],
+                availableInRegistry: [registry]
             };
             return SoftwareImageFromJSON(jsonRes);
         } else {
             // Show errors
             if (!label) (<any>inputLabel).onBlur();
+            if (!registry) (<any>inputRegistry).onBlur();
         }
     }
 

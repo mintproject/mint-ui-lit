@@ -17,12 +17,13 @@ import { getThreadVariablesStatus, TASK_NOT_STARTED, getThreadModelsStatus,
     getThreadDatasetsStatus, getThreadRunsStatus, getThreadResultsStatus, 
     TASK_DONE, TASK_PARTLY_DONE, 
     getUISelectedTask, getThreadParametersStatus } from "../../../util/state_functions";
-import { Task, Thread } from "../reducers";
+import { Execution, ExecutionSummary, Task, Thread } from "../reducers";
 import { BASE_HREF } from "../../../app/actions";
 import { MintThreadPage } from "./mint-thread-page";
 import { hideNotification } from "util/ui_functions";
-import { subscribeThread } from "../actions";
+import { subscribeThread, subscribeThreadExecutionSummary } from "../actions";
 import { getLatestEvent } from "util/event_utils";
+import { IdMap } from "app/reducers";
 
 @customElement('mint-thread')
 export class MintThread extends connect(store)(MintThreadPage) {
@@ -34,6 +35,12 @@ export class MintThread extends connect(store)(MintThreadPage) {
 
     @property({type: Boolean})
     private _dispatched: boolean = false;
+
+    @property({type: Object})
+    private _sectionDoneMap: IdMap<string> = {};
+
+    @property({type: Boolean})
+    private _dispatched_execution_summary: boolean = false;
 
     static get styles() {
         return [
@@ -75,61 +82,52 @@ export class MintThread extends connect(store)(MintThreadPage) {
             height: calc(100% - 100px);
             overflow: auto;
             background: #FFFFFF;
+          }
+
+          @media (max-width: 1024px) {
+            .breadcrumbs {
+                display: flex;
+                justify-content: center;
+            }
         }
         `
         ];
     }
 
-    private _renderProgressBar() {
+    private _renderProgressBar(sectionDoneMap: IdMap<string>) {
         return html`
             <ul class="breadcrumbs">
                 <a id="models_breadcrumb" 
-                    class="${this._getBreadcrumbClass('models')}" 
+                    class="${this._getBreadcrumbClass('models', sectionDoneMap)}" 
                     href="${this._getModeURL('models')}">Models</li>
                 <a id="datasets_breadcrumb" 
-                    class="${this._getBreadcrumbClass('datasets')}" 
+                    class="${this._getBreadcrumbClass('datasets', sectionDoneMap)}" 
                     href="${this._getModeURL('datasets')}">Datasets</li>
                 <a id="parameters_breadcrumb" 
-                    class="${this._getBreadcrumbClass('parameters')}" 
+                    class="${this._getBreadcrumbClass('parameters', sectionDoneMap)}" 
                     href="${this._getModeURL('parameters')}">Parameters</li>
                 <a id="runs_breadcrumb" 
-                    class="${this._getBreadcrumbClass('runs')}" 
+                    class="${this._getBreadcrumbClass('runs', sectionDoneMap)}" 
                     href="${this._getModeURL('runs')}">Runs</li>
                 <a id="results_breadcrumb" 
-                    class="${this._getBreadcrumbClass('results')}" 
+                    class="${this._getBreadcrumbClass('results', sectionDoneMap)}" 
                     href="${this._getModeURL('results')}">Results</li>
                 <a id="visualize_breadcrumb" 
-                    class="${this._getBreadcrumbClass('visualize')}" 
+                    class="${this._getBreadcrumbClass('visualize', sectionDoneMap)}" 
                     href="${this._getModeURL('visualize')}">Visualize</li>
             </ul>
         `;
     }
 
-    private _getSectionStatus(section:string) {
-        let status = TASK_NOT_STARTED;
-        switch(section) {
-            case "variables":
-                status = getThreadVariablesStatus(this.thread);
-                break;
-            case "models":
-                status = getThreadModelsStatus(this.thread);
-                break;
-            case "datasets":
-                status = getThreadDatasetsStatus(this.thread);
-                break;
-            case "parameters":
-                status = getThreadParametersStatus(this.thread);
-                break;
-            case "runs":
-                status = getThreadRunsStatus(this.thread);
-                break;
-            case "results":
-                status = getThreadResultsStatus(this.thread);
-                break;
-            default:
-                break;
-        }
-        return status;
+    private _setSectionStatusMap() {
+        let map = {};
+        map["variables"] = getThreadVariablesStatus(this.thread);
+        map["models"] = getThreadModelsStatus(this.thread);
+        map["datasets"] = getThreadDatasetsStatus(this.thread);
+        map["parameters"] = getThreadParametersStatus(this.thread);
+        map["runs"] = getThreadRunsStatus(this.thread);
+        map["results"] = getThreadResultsStatus(this.thread);
+        this._sectionDoneMap = map;
     }
 
     private _getNextMode() {
@@ -143,7 +141,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
             "visualize"
         ];
         for(let i=0; i<modes.length; i++) {
-            let status = this._getSectionStatus(modes[i]);
+            let status = this._sectionDoneMap[modes[i]];
             if(status != TASK_DONE) {
                 return modes[i];
             }
@@ -151,8 +149,8 @@ export class MintThread extends connect(store)(MintThreadPage) {
         return "visualize";
     }
 
-    private _getBreadcrumbClass(section: string) {
-        let status = this._getSectionStatus(section);
+    private _getBreadcrumbClass(section: string, sectionDoneMap: IdMap<string>) {
+        let status = sectionDoneMap[section];
         let cls = "";
         if(this._currentMode == section)
             cls += " active";
@@ -186,6 +184,9 @@ export class MintThread extends connect(store)(MintThreadPage) {
             }
         }
         this._currentMode = mode;
+        
+        // Scroll to top
+        this.shadowRoot.querySelector(".card2")?.scrollTo(0,0);
 
         // TODO: Change the url to reflect mode change.
         if(this.task && this.thread) {
@@ -210,7 +211,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
         }
 
         return html`
-            ${this._renderProgressBar()}
+            ${this._renderProgressBar(this._sectionDoneMap)}
 
             <div class="card2">
                 <mint-variables class="page" 
@@ -253,21 +254,41 @@ export class MintThread extends connect(store)(MintThreadPage) {
         this.task = getUISelectedTask(state);
 
         let thread_id = state.ui!.selected_thread_id;
+
+        // If models have changed, then fetch the thread again
+        if(this.thread && this.thread.refresh) {
+            console.log("Models Changed. Fetch Thread again");
+            this._dispatched_execution_summary = false;
+            this._dispatched = false;
+        }
+
         // If a thread has been selected, fetch thread details
         if(thread_id && this.user) {
-            if(!this._dispatched && (!state.modeling.thread || (state.modeling.thread.id != thread_id))) {
+            if(!this._dispatched && 
+                (this.thread?.refresh || !state.modeling.thread ||  (state.modeling.thread.id != thread_id))) {
                 // Unsubscribe to any existing thread details listener
                 if(state.modeling.thread && state.modeling.thread.unsubscribe) {
                     console.log("Unsubscribing to thread " + state.modeling.thread.id);
                     state.modeling.thread.unsubscribe();
                 }
-                console.log("Subscribing to thread " + thread_id);
+                if(state.modeling.thread?.id && state.modeling.execution_summaries) {
+                    console.log("Unsubscribing to model execution summary for thread " + state.modeling.thread.id);
+                    for(let modelid in ((state.modeling.execution_summaries ?? {})[state.modeling.thread.id] ?? {})) {
+                        let summary : ExecutionSummary = state.modeling.execution_summaries[state.modeling.thread.id][modelid];
+                        summary.unsubscribe();
+                    }
+                }
 
+                console.log("Subscribing to thread " + thread_id);
                 // Reset the problem_statement details
                 this.thread = null;
                 this._dispatched = true;
-                // Make a subscription call for the new problem_statement id
-                store.dispatch(subscribeThread(thread_id));
+                this._dispatched_execution_summary = false;
+                state.modeling.executions = null;
+                state.modeling.execution_summaries = null;
+                
+                // Make a subscription call for the new thread id
+                store.dispatch(subscribeThread(thread_id));              
                 return;
             }
 
@@ -278,10 +299,30 @@ export class MintThread extends connect(store)(MintThreadPage) {
                 state.modeling.thread.changed) {
 
                 this._dispatched = false;
+                this._waiting = false;
                 state.modeling.thread.changed = false;
                 this.thread = state.modeling.thread;
+                
+                this._setSectionStatusMap();
                 if(!state.ui.selected_thread_section)
                     this._selectMode(this._getNextMode());
+
+                if(!this._dispatched_execution_summary) {
+                    // Make a subscription call for execution summaries for the new thread id
+                    console.log("Subscribing to model execution summaries for "+thread_id);
+                    if(state.modeling.thread.model_ensembles) {
+                        for(let modelid in state.modeling.thread.model_ensembles) {
+                            if(state.modeling.execution_summaries) {
+                                delete state.modeling.execution_summaries[modelid];
+                                if(state.modeling && state.modeling.executions)
+                                    delete state.modeling.executions[modelid];
+                            }
+                            store.dispatch(subscribeThreadExecutionSummary(thread_id, modelid, 
+                                state.modeling.thread.model_ensembles[modelid].id));
+                            this._dispatched_execution_summary = true;
+                        }
+                    }
+                }
             }
             else if(!state.modeling.thread) {
                 this._dispatched = false;
@@ -291,7 +332,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
         if(this.thread && state.ui.selected_thread_section) {
           //console.log(state.ui.selected_thread_section);
           this._selectMode(state.ui.selected_thread_section);
-          state.ui.selected_thread_section = "";
+          //state.ui.selected_thread_section = "";
         }
 
         if(state.modeling && state.ui && state.ui.selected_thread_id == null) {
@@ -299,9 +340,25 @@ export class MintThread extends connect(store)(MintThreadPage) {
                 console.log("Unsubscribing to thread " + state.modeling.thread.id);
                 state.modeling.thread.unsubscribe();
             }
+            if(state.modeling.thread?.id && state.modeling.execution_summaries) {
+                console.log("Unsubscribing to model execution summary for " + state.modeling.thread.id);
+                for(let modelid in (state.modeling.execution_summaries[state.modeling.thread.id] ?? {})) {
+                    let summary : ExecutionSummary = state.modeling.execution_summaries[state.modeling.thread.id][modelid];
+                    summary.unsubscribe();
+                }
+            }
             state.modeling.thread = null;
+            state.modeling.execution_summaries = null;
+            state.modeling.executions = null;
             this.thread = null;
-        }        
+        }
+
+        if(this.thread && state.modeling.execution_summaries && state.modeling.execution_summaries[thread_id]) {
+            this.thread.execution_summary = state.modeling.execution_summaries[thread_id];
+            this._setSectionStatusMap();
+            if(!state.ui.selected_thread_section)
+                this._selectMode(this._getNextMode());
+        }
 
         if(!this.user && state.modeling.thread) {
             // Logged out, Unsubscribe
@@ -340,3 +397,4 @@ export class MintThread extends connect(store)(MintThreadPage) {
         return false;
     }
 }
+

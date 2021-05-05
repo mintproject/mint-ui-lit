@@ -10,7 +10,7 @@
   "private": true,
   "scripts": {
     "gulp": "gulp -f gulp/config.ts --cwd .",
-    "start": "cross-env BROWSERSLIST=\"edge > 12\" webpack-dev-server --config webpack/dev.config.ts --hot --color --compress --overlay --history-api-fallback --open",
+    "start": "cross-env BROWSERSLIST=\"edge > 12\" webpack-dev-server --config webpack/dev.config.ts --hot --color --compress --overlay --history-api-fallback",
     "start-wildfire": "cross-env BROWSERSLIST=\"edge > 12\" webpack-dev-server --config webpack/wildfire`.config.ts --hot --color --compress --overlay --history-api-fallback --open",
     "build:static": "cross-env STATIC=true npm run gulp build:es6",
     "create-build": "webpack --config webpack/prod.config.ts",
@@ -24,7 +24,7 @@
     "@apollo/client": "^3.1.3",
     "@babel/polyfill": "^7.10.4",
     "@babel/runtime-corejs2": "^7.11.2",
-    "@mintproject/modelcatalog_client": "^5.0.0",
+    "@mintproject/modelcatalog_client": "^8.0.0",
     "@polymer/app-layout": "^3.0.2",
     "@polymer/polymer": "^3.1.0",
     "@types/codemirror": "^0.0.78",
@@ -49,7 +49,7 @@
     "subscriptions-transport-ws": "^0.9.18",
     "ts-md5": "^1.2.6",
     "tslib": "^1.9.3",
-    "weightless": "0.0.37"
+    "weightless": "^0.0.37"
   },
   "devDependencies": {
     "@babel/core": "^7.11.4",
@@ -99,14 +99,12 @@
     "jest-axe": "^3.1.1",
     "jest-puppeteer": "^3.9.0",
     "loader-utils": "^1.2.3",
-    "node-sass": "^4.11.0",
     "optimize-css-assets-webpack-plugin": "^5.0.1",
     "pixelmatch": "^4.0.2",
     "pngjs": "^3.3.3",
     "postcss-loader": "^3.0.0",
     "postcss-preset-env": "^6.5.0",
     "puppeteer": "^1.12.2",
-    "sass-loader": "^7.1.0",
     "script-ext-html-webpack-plugin": "^2.1.3",
     "stylelint": "^9.10.1",
     "stylelint-config-recommended": "^2.1.0",

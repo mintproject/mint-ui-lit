@@ -8,12 +8,12 @@ import { showNotification } from "../../../util/ui_functions";
 import { Execution, Task, ModelIOBindings, Visualization, ThreadEvent } from "../reducers";
 import { getUISelectedTask, getVisualizationURLs } from "../../../util/state_functions";
 import { MintThreadPage } from "./mint-thread-page";
-import { getVariableLongName } from "../../../offline_data/variable_list";
 
 import "weightless/button";
 import { getLatestEventOfType, getLatestEvent } from "util/event_utils";
 import { getCustomEvent } from "../../../util/graphql_adapter";
 import { addThreadEvent } from "../actions";
+import { VariableMap } from "screens/variables/reducers";
 
 @customElement('mint-visualize')
 export class MintVisualize extends connect(store)(MintThreadPage) {
@@ -26,6 +26,9 @@ export class MintVisualize extends connect(store)(MintThreadPage) {
     @property({type: Object})
     private _lastLinks : string[] = [];
 
+    @property({type: Object})
+    private _variableMap: VariableMap = {};
+    
     static get styles() {
         return [
           SharedStyles,
@@ -54,7 +57,7 @@ export class MintVisualize extends connect(store)(MintThreadPage) {
         }
         let vizurls = getVisualizationURLs(this.thread, this._task, this.problem_statement, this.prefs.mint)
         let responseV = this.thread.response_variables.length > 0?
-            getVariableLongName(this.thread.response_variables[0]) : '';
+            this._variableMap[this.thread.response_variables[0]]?.name : '';
 
         if (this._lastLinks.length != vizurls.length ||
             this._lastLinks.some((vizurl:string, i:number) => vizurl != vizurls[i])) {
@@ -127,11 +130,11 @@ export class MintVisualize extends connect(store)(MintThreadPage) {
                             <ul>
                                 <li>Response: 
                                     ${this.thread.response_variables.map((v)=>
-                                        getVariableLongName(v) + " (" + v + ")").join(", ")}
+                                        this._variableMap[v].name + " (" + v + ")").join(", ")}
                                 </li>
                                 <li>Driving: 
                                     ${this.thread.driving_variables.map((v)=>
-                                        getVariableLongName(v) + " (" + v + ")").join(", ")}
+                                        this._variableMap[v].name + " (" + v + ")").join(", ")}
                                 </li>
                             </ul>
                         </li>
@@ -225,5 +228,9 @@ export class MintVisualize extends connect(store)(MintThreadPage) {
         super.setUser(state);
         super.setThread(state);
         this._task = getUISelectedTask(state)!;
+
+        if(state.variables && state.variables.variables) {
+            this._variableMap = state.variables.variables;
+        }
     }
 }

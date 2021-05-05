@@ -7,7 +7,7 @@ let config: webpack.Configuration;
 console.log("NODE_ENV:", process.env.NODE_ENV);
 console.log("TRAVIS_BRANCH:", process.env.TRAVIS_BRANCH);
 
-if (process.env.NODE_ENV === "production" || process.env.TRAVIS_BRANCH == 'master') {
+if (process.env.NODE_ENV === "production" || process.env.TRAVIS_BRANCH == 'master' || process.env.TRAVIS_BRANCH == 'dev') {
     config = prod;
 } else {
     config = dev;

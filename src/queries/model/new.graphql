@@ -1,5 +1,11 @@
 mutation new_models ($objects: [model_insert_input!]!) {
-    insert_model (objects: $objects) {
+    insert_model (
+        objects: $objects,
+        on_conflict: {
+            constraint: model_pkey,
+            update_columns: [name]
+        }
+    ) {
         returning {
             id
         }

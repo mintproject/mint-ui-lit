@@ -1,7 +1,8 @@
 import { Action } from "redux";
 import { IdMap } from 'app/reducers'
-import { Configuration, ModelConfiguration, ModelConfigurationApi } from '@mintproject/modelcatalog_client';
-import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, fixObjects, getUser } from './actions';
+import { Configuration, ModelConfiguration, SoftwareVersion, ModelConfigurationApi } from '@mintproject/modelcatalog_client';
+import { ActionThunk, getIdFromUri, createIdMap, idReducer, getStatusConfigAndUser, fixObjects, getUser,
+         versionGet, versionPut } from './actions';
 
 function debug (...args: any[]) { console.log('[MC ModelConfiguration]', ...args); }
 
@@ -87,7 +88,11 @@ export const modelConfigurationGet: ActionThunk<Promise<ModelConfiguration>, MCA
     return req;
 }
 
-export const modelConfigurationPost: ActionThunk<Promise<ModelConfiguration>, MCAModelConfigurationsAdd> = (modelConfiguration:ModelConfiguration) => (dispatch) => {
+export const modelConfigurationPost: ActionThunk<Promise<ModelConfiguration>, MCAModelConfigurationsAdd> = 
+        (modelConfiguration:ModelConfiguration, version:SoftwareVersion) => (dispatch) => {
+    if (!version || !version.id) {
+        return Promise.reject(new Error('Configuration creation needs a valid software version.'));
+    }
     let status : string, cfg : Configuration, user : string;
     [status, cfg, user] = getStatusConfigAndUser();
     if (status === 'DONE') {
@@ -101,6 +106,19 @@ export const modelConfigurationPost: ActionThunk<Promise<ModelConfiguration>, MC
                     type: MODEL_CONFIGURATIONS_ADD,
                     payload: createIdMap(resp)
                 });
+
+                // ADD Configuration to Version
+                dispatch(versionGet(version.id)).then((sVersion:SoftwareVersion) => {
+                    let syncVersion : SoftwareVersion = { ...sVersion };
+                    if (syncVersion.hasConfiguration) syncVersion.hasConfiguration.push(resp);
+                    else syncVersion.hasConfiguration = [resp];
+                    //FIXME: --> FIX DATES
+                    if (syncVersion.dateCreated) delete syncVersion.dateCreated;
+                    dispatch(versionPut(syncVersion)).then((rVersion:SoftwareVersion) => {
+                        resolve(resp);
+                    });
+                });
+
                 resolve(resp);
             });
             req.catch((err) => {

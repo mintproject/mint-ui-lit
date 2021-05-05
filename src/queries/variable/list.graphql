@@ -1,0 +1,23 @@
+query list_variables {
+  variable(where: {
+    _or: [
+      {is_adjustment_variable: {_eq:true}}
+      {is_indicator: {_eq:true}}
+    ]
+  }) {
+    id
+    name
+    description
+    url
+    is_adjustment_variable
+    is_indicator
+    categories {
+      category
+    }
+    intervention {
+      id
+      name
+      description
+    }
+  }
+}

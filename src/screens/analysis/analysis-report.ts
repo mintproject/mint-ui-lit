@@ -10,15 +10,15 @@ import { Model } from "../models/reducers";
 
 import { IdMap, UserPreferences } from 'app/reducers';
 import { ProblemStatementInfo, ProblemStatementList, ThreadInfo, ThreadEvent, Task, Thread } from 'screens/modeling/reducers';
-import { subscribeProblemStatementsList, subscribeProblemStatement, subscribeThread } from 'screens/modeling/actions';
+import { fetchThread, fetchProblemStatement, fetchProblemStatementsList } from './actions';
 
 import { fromTimeStampToDateString } from "util/date-utils";
-import { getVariableLongName } from "offline_data/variable_list";
 import { getURL } from 'model-catalog/util';
 
 import '../../components/nav-title'
 import { getVisualizationURLs } from 'util/state_functions';
 import { Region, RegionMap } from 'screens/regions/reducers';
+import { VariableMap } from '@apollo/client/core/LocalState';
 
 const PREFIX_REPORT = 'analysis/report/';
 
@@ -59,6 +59,9 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
 
   @property({type: Object})
   private prefs: UserPreferences;
+
+  @property({type: Object})
+  private _variableMap: VariableMap = {};
 
   static get styles() {
     return [SharedStyles, css`
@@ -174,7 +177,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
   private _getTasks(ps:ProblemStatementInfo) {
     if (!this._tasks[ps.id]) {
       this._loading[ps.id] = true;
-      store.dispatch(subscribeProblemStatement(ps.id));
+      store.dispatch(fetchProblemStatement(ps.id));
     }
   }
 
@@ -200,11 +203,6 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
         if (ev.notes) notes[ev.event] = ev.notes;
       });
     }
-
-    let responseV = thread.response_variables && thread.response_variables.length > 0 ?
-        getVariableLongName(thread.response_variables[0]) : '';
-    let drivingV = thread.driving_variables && thread.driving_variables.length > 0?
-        getVariableLongName(thread.driving_variables[0]) : '';
 
     let vizurls = getVisualizationURLs(thread, task, ps, this.prefs.mint)
 
@@ -240,13 +238,13 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
         <span>
           ${!task.response_variables || task.response_variables.length == 0 ?
             'No indicators' : task.response_variables.map((rv) => html`
-            <div>${getVariableLongName(rv)} (<span class="monospaced">${rv}</span>)</div>`)}
+            <div>${this._variableMap[rv]?.name ?? ""} (<span class="monospaced">${rv}</span>)</div>`)}
         </span>
         <wl-title level="4">Adjustable variables:</wl-title>
         <span>
           ${!task.driving_variables || task.driving_variables.length == 0 ?
           'No adjustable variables' : task.driving_variables.map((dv) => html`
-            <div>${getVariableLongName(dv)} (<span class="monospaced">${dv}</span>)</div>`)}
+            <div>${this._variableMap[dv]?.name ?? ""} (<span class="monospaced">${dv}</span>)</div>`)}
         </span>
       </div>`
   }
@@ -352,9 +350,9 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
   }
 
   private _getThreadInfoSummaryText (t: ThreadInfo) {
-    let response = t.response_variables ? getVariableLongName(t.response_variables[0]) : "";
+    let response = t.response_variables ? this._variableMap[t.response_variables[0]] : null;
     let regionname = t.regionid && this._regions && this._regions[t.regionid] ? this._regions[t.regionid].name : this._region.name;
-    return (response ? response + ": " : "") + regionname
+    return (response ? response.name + ": " : "") + regionname
   }
 
   private _renderDates (thread: ThreadInfo) {
@@ -365,42 +363,44 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
   }
 
   // checking executable_ensemble_summary
-  private _subscribeToProblemStatementList() {
+  private _fetchProblemStatementList() {
     if(this._list && this._list.unsubscribe)
       this._list.unsubscribe();
     this._dispatched = true;
-    console.log("Subscribing to Problem Statement List for " + this._top_regionid);
-    store.dispatch(subscribeProblemStatementsList(this._top_regionid));
+    console.log("Fetching Problem Statement List for " + this._top_regionid);
+    store.dispatch(fetchProblemStatementsList(this._top_regionid));
   }
 
   stateChanged(state: RootState) {
-    /* This could stay active when moving to another page for links, so autoupdate active property */
-    super.setSubPage(state);
-    this.active = (this._subpage === 'report');
     this.prefs = state.app.prefs;
 
-    if (state.modeling) {
-      if (state.modeling.problem_statements) {
-        this._list = state.modeling.problem_statements;
+    if (state.analysis) {
+      if (state.analysis.problem_statements) {
+        this._list = state.analysis.problem_statements;
         this._dispatched = false;
       }
-      if (state.modeling.problem_statement && (!this._tasks[state.modeling.problem_statement.id])) {
-        this._tasks[state.modeling.problem_statement.id] = state.modeling.problem_statement.tasks;
-        this._loading[state.modeling.problem_statement.id] = false;
+      if (state.analysis.problem_statement && (!this._tasks[state.analysis.problem_statement.id])) {
+        this._tasks[state.analysis.problem_statement.id] = state.analysis.problem_statement.tasks;
+        this._loading[state.analysis.problem_statement.id] = false;
         this.requestUpdate();
       }
-      if (state.modeling.thread && !this._thread && (state.modeling.thread.id === state.ui.selected_thread_id)) {
-        this._thread = state.modeling.thread;
+      if (state.analysis.thread && !this._thread && (state.analysis.thread.id === state.ui.selected_thread_id)) {
+        this._thread = state.analysis.thread;
         this.requestUpdate();
       }
     }
+
+    if(state.variables && state.variables.variables) {
+      this._variableMap = state.variables.variables;
+    }
+
     if (state.ui) {
       this._selectedProblemStatementId = state.ui.selected_problem_statement_id
       this._selectedTaskId = state.ui.selected_task_id;
       if (state.ui.selected_thread_id && state.ui.selected_thread_id != this._selectedThreadId) {
         this._thread = undefined;
         this._selectedThreadId = state.ui.selected_thread_id;
-        store.dispatch( subscribeThread(this._selectedThreadId) );
+        store.dispatch( fetchThread(this._selectedThreadId) );
       }
       this._selectedThreadId = state.ui.selected_thread_id;
       if (state.ui.selected_top_regionid && state.regions!.regions &&
@@ -408,7 +408,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
         this._top_regionid = state.ui.selected_top_regionid;
         this._regions = state.regions!.regions;
         this._top_region = this._regions[this._top_regionid];
-        this._subscribeToProblemStatementList();
+        this._fetchProblemStatementList();
       } 
     }
     super.setRegionId(state);

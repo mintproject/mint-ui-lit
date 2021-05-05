@@ -9,7 +9,7 @@ import { goToPage } from '../../../app/actions';
 import { ExplorerStyles } from './explorer-styles'
 
 import { getId, isEmpty, isSubregion, getLatestVersion, getLatestConfiguration, getLatestSetup,
-         isExecutable } from 'model-catalog/util';
+         isExecutable, getLabel, getModelTypeNames } from 'model-catalog/util';
 import { IdMap } from 'app/reducers';
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Parameter, SoftwareImage,
          Person, Process, SampleResource, SampleCollection, Region, Image } from '@mintproject/modelcatalog_client';
@@ -185,6 +185,10 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                 loading-dots {
                     --width: 20px;
                 }
+
+                .title:hover {
+                    color:rgb(15, 122, 207);
+                }
             `
         ];
     }
@@ -192,9 +196,8 @@ export class ModelPreview extends connect(store)(PageViewElement) {
     protected render() {
         if (this._model) {
             //console.log(this._model);
-            let modelType : string[] = this._model.type ?
-                    this._model.type.map(t => t.replace('Model', '')).filter(t => !!t)
-                    : [];
+            let modelType : string[] = this._model.type ? getModelTypeNames(this._model.type) : [];
+            let modelUri : string = this._regionid + (this._url? this._url : this.PREFIX + getId(this._model));
         return html`
             <table>
               <tr>
@@ -210,22 +213,28 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                   </div>
                   <div>
                     <span class="helper"></span>
+                    <a href="${modelUri}" style="color: unset; text-decoration: none;">
                     ${this._loadingLogo ? html`<wl-progress-spinner></wl-progress-spinner>`
                       : (this._logo && this._logo.value ? html`<img src="${this._logo.value[0]}"/>`
                         : html`<wl-icon id="img-placeholder">image</wl-icon>`
                       )
                     }
+                    </a>
                   </div>
                   <div class="text-centered two-lines">
-                    Category: ${this._model.hasModelCategory ? html`${this._model.hasModelCategory[0]}` : html`-`}
+                    Category: ${this._model.hasModelCategory ? html`${this._model.hasModelCategory.map(getLabel).join(', ')}` : html`-`}
+                    ${modelType && modelType.length > 0? html`
                     <br/>
-                    Type: ${modelType ? modelType : '-'}
+                    Type: ${modelType.join(', ')}
+                    ` : html``}
                   </div>
                 </td>
 
                 <td class="right">
                   <div class="header"> 
-                    <span class="title">${this._model.label}</span>
+                    <a href="${modelUri}" style="color: unset; text-decoration: none;">
+                        <span class="title">${this._model.label}</span>
+                    </a>
                     <span class="icon">
                         <slot name="extra-icon"></slot>
                     </span>
@@ -252,7 +261,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                         ${this._model.keywords && this._model.keywords.length > 0 ? 
                             this._model.keywords.join(';').split(/ *; */).join(', ') : 'No keywords'}
                     </span>
-                    <a href="${this._regionid + (this._url? this._url : this.PREFIX + getId(this._model))}" class="details-button"> 
+                    <a href="${modelUri}" class="details-button"> 
                         More details
                     </a>
                   </div>
@@ -313,7 +322,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
         }
 
         if (this._nConfigs > 0 && this._nSetups < 0 && !this._regions && this._region &&
-                ![db.configurations, db.setups, db.regions].map(isEmpty).some(b=>b)) {
+                ![db.configurations, db.regions].map(isEmpty).some(b=>b)) {
             // We filter for region, so we need to compute the url, local setups and regions.
             this._regions = new Set();
             this._nLocalSetups = 0;

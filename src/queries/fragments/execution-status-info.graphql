@@ -1,0 +1,10 @@
+fragment execution_info on execution {
+    id
+    start_time
+    end_time
+    status
+    run_progress
+    run_id
+    execution_engine
+    model_id
+}

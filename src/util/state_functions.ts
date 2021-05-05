@@ -1,7 +1,6 @@
-import { Thread, ModelIOBindings, InputBindings, Task, ProblemStatementInfo } from "../screens/modeling/reducers";
+import { Thread, ModelIOBindings, InputBindings, Task, ProblemStatementInfo, ExecutionSummary } from "../screens/modeling/reducers";
 import { RootState } from "../app/store";
-import { getVariableLongName } from "offline_data/variable_list";
-import { MintPreferences } from "app/reducers";
+import { IdMap, MintPreferences } from "app/reducers";
 import { getLatestEventOfType } from "./event_utils";
 
 export const matchVariables = (variables1: string[], variables2: string[], fullmatch: boolean) => {
@@ -90,8 +89,8 @@ export const getThreadParametersStatus = (thread:Thread) => {
     return TASK_NOT_STARTED;
 }
 
-export const getThreadRunsStatus = (thread:Thread) => {
-    let sum = thread.execution_summary;
+export const getThreadRunsStatus = (thread: Thread) => {
+    let sum = thread?.execution_summary;
     if (sum && Object.keys(sum).length > 0) {
         let ok = true;
         Object.keys(sum).map((modelid) => {
@@ -106,11 +105,11 @@ export const getThreadRunsStatus = (thread:Thread) => {
     return TASK_NOT_STARTED;
 }
 
-export const getThreadResultsStatus = (thread:Thread) => {
+export const getThreadResultsStatus = (thread: Thread) => {
     if(getThreadRunsStatus(thread) != TASK_DONE)
         return TASK_NOT_STARTED;
     
-    let sum = thread.execution_summary;
+    let sum = thread?.execution_summary;
     if (sum && Object.keys(sum).length > 0) {
         let ok = true;
         Object.keys(sum).map((modelid) => {
@@ -165,10 +164,7 @@ export const getUISelectedSubgoalRegion = (state: RootState) => {
 
 export const getVisualizationURLs = (thread: Thread, task: Task, problem_statement: ProblemStatementInfo, prefs: MintPreferences) => {
     if(getThreadResultsStatus(thread) == "TASK_DONE") {
-        let responseV = thread.response_variables.length > 0?
-            getVariableLongName(thread.response_variables[0]) : '';
-        let drivingV = thread.driving_variables.length > 0?
-            getVariableLongName(thread.driving_variables[0]) : '';
+        let responseV = thread.response_variables.length > 0? thread.response_variables[0] : '';
 
         let visualizations = [];
         let data = {
@@ -179,14 +175,14 @@ export const getVisualizationURLs = (thread: Thread, task: Task, problem_stateme
         let qs = new URLSearchParams(data);
         let query : string = qs.toString();
         // FIXME: Hack
-        if (responseV == "Flooding Contour") {
+        if (responseV == "flooding_contour") {
             visualizations.push(prefs.visualization_url + "/hand?" + query);
-        } else if(responseV == "Streamflow Duration Index" || 
-            responseV == "Flood Severity Index" || 
-            responseV == "River Discharge") {
+        } else if(responseV == "channel~stream_water__flow_duration_index" || 
+            responseV == "channel_water_flow__flood_volume-flux_severity_index" || 
+            responseV == "downstream_volume_flow_rate") {
             visualizations.push(prefs.visualization_url + "/images?" + query);
         } else {
-            if(responseV == "Potential Crop Production")
+            if(responseV == "grain~dry__mass-per-area_yield")
                 visualizations.push(prefs.visualization_url + "/cycles?" + query);
             visualizations.push(prefs.visualization_url + "/upload?" + query);
         }

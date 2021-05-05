@@ -47,7 +47,13 @@ export interface MintPreferences {
   localex?: LocalExecutionPreferences,
   // Wings Execution  
   wings?: WingsPreferences,  
+  graphql?: GraphQLPreferences,
   wings_api?: string
+}
+
+export interface GraphQLPreferences {
+  endpoint: string,
+  secret: string
 }
 
 export interface WingsPreferences {

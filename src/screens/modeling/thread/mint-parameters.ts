@@ -8,7 +8,7 @@ import { SharedStyles } from "../../../styles/shared-styles";
 import { Model, ModelParameter } from "../../models/reducers";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
 import { TASK_DONE, getThreadParametersStatus } from "../../../util/state_functions";
-import { setThreadParameters } from "../actions";
+import { getThreadExecutionSummary, setThreadParameters, subscribeThreadExecutionSummary } from "../actions";
 import { showNotification } from "../../../util/ui_functions";
 import { selectThreadSection } from "../../../app/ui-actions";
 import { MintThreadPage } from "./mint-thread-page";
@@ -32,9 +32,6 @@ export class MintParameters extends connect(store)(MintThreadPage) {
 
     @property({type: Boolean})
     private _editMode: Boolean = false;
-
-    @property({type: Boolean})
-    private _waiting: Boolean = false;
 
     static get styles() {
         return [
@@ -183,7 +180,8 @@ export class MintParameters extends connect(store)(MintThreadPage) {
                                             :
                                             html`
                                             <div class="input_full">
-                                                <input type="text" name="${input.id}" 
+                                                <input type="text" name="${input.id}"
+                                                    placeholder="${input.default? input.default : ''}"
                                                     @change="${() => this._validateInput(model, input)}"
                                                     value="${(bindings||[]).join(", ")}"></input>
                                             </div>
@@ -434,7 +432,8 @@ export class MintParameters extends connect(store)(MintThreadPage) {
         let notes = (this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
         this._waiting = true;
         await setThreadParameters(model_ensembles, execution_summary, notes, this.thread);
-        this._waiting = false;
+
+        this.selectAndContinue("parameters");
     }
 
     stateChanged(state: RootState) {

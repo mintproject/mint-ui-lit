@@ -1,6 +1,6 @@
 import { Reducer } from "redux";
 import { RootAction } from "../../app/store";
-import { PROBLEM_STATEMENTS_LIST, PROBLEM_STATEMENT_DETAILS, PROBLEM_STATEMENT_SUBSCRIPTION, THREAD_SUBSCRIPTION, THREAD_DETAILS, THREAD_EXECUTIONS_LIST, TASKS_LIST, THREADS_LIST, TASK_DETAILS, THREADS_LIST_SUBSCRIPTION, TASKS_LIST_SUBSCRIPTION } from "./actions";
+import { PROBLEM_STATEMENTS_LIST, PROBLEM_STATEMENT_DETAILS, PROBLEM_STATEMENT_SUBSCRIPTION, THREAD_SUBSCRIPTION, THREAD_DETAILS, THREAD_EXECUTIONS_LIST, TASKS_LIST, THREADS_LIST, TASK_DETAILS, THREADS_LIST_SUBSCRIPTION, TASKS_LIST_SUBSCRIPTION, THREAD_EXECUTION_SUMMARY_SUBSCRIPTION, THREAD_EXECUTION_SUMMARY } from "./actions";
 import { Model } from "../models/reducers";
 import { Dataset, DataResource, Dataslice } from "../datasets/reducers";
 import { IdMap, IdNameObject } from "../../app/reducers";
@@ -11,14 +11,32 @@ export interface ModelingState {
     problem_statements?: ProblemStatementList
     problem_statement?: ProblemStatement
     thread?: Thread
-    executions?: ModelExecutions
+    execution_summaries?: ThreadModelExecutionSummary
+    executions?: ThreadModelExecutions
 }
 
 export interface ExecutionsWithStatus {
     loading: boolean,
+    changed: boolean,
     executions: Execution[]
 }
-export type ModelExecutions = Map<string, ExecutionsWithStatus[]>
+
+export type ModelExecutions = {
+    [modelid: string] : ExecutionsWithStatus
+}
+
+export type ThreadModelExecutions = {
+    [threadid: string] : ModelExecutions
+}
+
+
+export type ThreadModelExecutionSummary = {
+    [threadid: string] : ModelExecutionSummary
+}
+
+export type ModelExecutionSummary = {
+    [modelid: string]: ExecutionSummary
+}
 
 export interface MintPermission {
     userid: string,
@@ -58,6 +76,7 @@ export interface ProblemStatementInfo extends IdNameObject {
     dates: DateRange
     events?: ProblemStatementEvent[]
     permissions?: MintPermission[]
+    preview?: string[]
 }
 
 export interface DateRange {
@@ -97,6 +116,7 @@ export interface Thread extends ThreadInfo {
     visualizations?: Visualization[]
     events: ThreadEvent[]
     changed?: boolean
+    refresh?: boolean
     unsubscribe?: Function
 }
 
@@ -148,7 +168,9 @@ export interface ModelIOBindings {
 }
 
 export interface ExecutionSummary {
-    workflow_name: string
+    workflow_name?: string
+    changed?: boolean
+    unsubscribe?: Function
 
     submitted_for_execution: boolean
     submission_time: Date    
@@ -213,8 +235,8 @@ const modeling: Reducer<ModelingState, RootAction> = (state = INITIAL_STATE, act
             let problem_statement = {
                 ...action.details,
                 changed: true,
-                unsubscribe: state.problem_statement!.unsubscribe
-            } as ProblemStatement            
+                unsubscribe: state.problem_statement?.unsubscribe
+            } as ProblemStatement           
             return {
                 ...state,
                 problem_statement: problem_statement
@@ -274,7 +296,7 @@ const modeling: Reducer<ModelingState, RootAction> = (state = INITIAL_STATE, act
             let thread = {
                 ...action.details,
                 changed: true,
-                unsubscribe: state.thread!.unsubscribe
+                unsubscribe: state.thread?.unsubscribe
             } as Thread            
             return {
                 ...state,
@@ -282,14 +304,38 @@ const modeling: Reducer<ModelingState, RootAction> = (state = INITIAL_STATE, act
             }
         case THREAD_EXECUTIONS_LIST: 
             state.executions = { ...state.executions };
-            state.executions[action.modelid] = state.executions[action.modelid] || [];
-            state.executions[action.modelid] = {
+            state.executions[action.thread_id] = { ...state.executions[action.thread_id] }
+            state.executions[action.thread_id][action.model_id] = {
                 loading: action.loading,
+                changed: true,
                 executions: action.executions
             }
             return {
                 ...state
-            };   
+            };
+        case THREAD_EXECUTION_SUMMARY: 
+            state.execution_summaries = { ...state.execution_summaries };
+            state.execution_summaries[action.thread_id] = { ...state.execution_summaries[action.thread_id] }
+            let unsubscribefn = state.execution_summaries[action.thread_id][action.model_id]?.unsubscribe;
+            state.execution_summaries[action.thread_id][action.model_id] = {
+                ...action.execution_summary,
+                changed: true,
+                unsubscribe: unsubscribefn
+            }
+            if(unsubscribefn) {
+                return { ...state };
+            }
+        case THREAD_EXECUTION_SUMMARY_SUBSCRIPTION: 
+            state.execution_summaries = { ...state.execution_summaries };
+            state.execution_summaries[action.thread_id] = { ...state.execution_summaries[action.thread_id] }
+            let summary = state.execution_summaries[action.thread_id][action.model_id];
+            state.execution_summaries[action.thread_id][action.model_id] = {
+                ...summary,
+                unsubscribe: action.unsubscribe
+            }
+            if(summary) {
+                return { ...state };
+            }
         default:
             return state;
     }

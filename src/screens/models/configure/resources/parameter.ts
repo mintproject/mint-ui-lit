@@ -12,13 +12,20 @@ import { parameterGet, parametersGet, parameterPost, parameterPut, parameterDele
 import { Parameter, Unit, ParameterFromJSON } from '@mintproject/modelcatalog_client';
 import { PARAMETER_TYPES } from 'offline_data/parameter_types';
 
+import { ModelCatalogUnit } from './unit'
+import { ModelCatalogVariablePresentation } from './variable-presentation';
+import { ModelCatalogIntervention } from './intervention';
+
 import 'components/data-catalog-id-checker';
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
+import 'weightless/checkbox';
 
 const renderParameterType = (param:Parameter) => {
-    let ptype = param.type.filter(p => p != 'Parameter').map(uri => uri.split('#').pop())
+    let ptype = param.type
+            .filter(p => p != "Parameter" && p != "https://w3id.org/okn/o/sd#Parameter")
+            .map(uri => uri.split('#').pop())
     return html`
         ${ptype} ${param.hasDataType ? html`(<span class="monospaced">${param.hasDataType}</span>)` : ''}
         ${(param.hasMinimumAcceptedValue || param.hasMaximumAcceptedValue) ?
@@ -44,33 +51,12 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
             display: inline-block;
             width: 50%;
         }
+        #input-unit, #input-variable, #input-intervention {
+            --list-height: 200px;
+            --dialog-height: 100%;
+        }
         `];
     }
-
-    private _units : IdMap<Unit> = {
-        'https://w3id.org/okn/i/mint/%25': 
-            { id: 'https://w3id.org/okn/i/mint/%25', label: ['%'] },
-        'https://w3id.org/okn/i/mint/dayT':
-            { id: 'https://w3id.org/okn/i/mint/dayT', label: ['day']},
-        'https://w3id.org/okn/i/mint/hourT':
-            { id: 'https://w3id.org/okn/i/mint/hourT', label: ['hour']},
-        'https://w3id.org/okn/i/mint/yearT':
-            { id: 'https://w3id.org/okn/i/mint/yearT', label: ['year']},
-        'https://w3id.org/okn/i/mint/minT':
-            { id: 'https://w3id.org/okn/i/mint/minT', label: ['min']},
-        'https://w3id.org/okn/i/mint/date':
-            { id: 'https://w3id.org/okn/i/mint/date', label: ['date']},
-        'https://w3id.org/okn/i/mint/pixel':
-            { id: 'https://w3id.org/okn/i/mint/pixel', label: ['pixel']},
-        'https://w3id.org/okn/i/mint/second':
-            { id: 'https://w3id.org/okn/i/mint/second', label: ['second']},
-        'https://w3id.org/okn/i/mint/month':
-            { id: 'https://w3id.org/okn/i/mint/month', label: ['month']},
-        'https://w3id.org/okn/i/mint/degree':
-            { id: 'https://w3id.org/okn/i/mint/degree', label: ['degree']},
-        'https://w3id.org/okn/i/mint/kg_ha_1M_L_2':
-            { id: 'https://w3id.org/okn/i/mint/kg_ha_1M_L_2', label: ['kg ha-1']},
-    } as IdMap<Unit>;
 
     protected classes : string = "resource parameter";
     protected name : string = "parameter";
@@ -84,34 +70,100 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     public colspan = 3;
     public lazy = true;
     public onlyFixedValue = false;
-
+    
+    @property({type: Boolean}) private isAdjustable = false;
+    @property({type: Boolean}) private showDefaults = false;
     @property({type: String}) private _formPart : string = "";
+
+    private _inputUnit : ModelCatalogUnit;
+    private _vpDisplayer : IdMap<ModelCatalogVariablePresentation> = {};
+    private _inputVariable : ModelCatalogVariablePresentation;
+    private _inputIntervention : ModelCatalogIntervention;
+
+    public isSetup : boolean = false;
+    public setAsSetup () {
+        this.isSetup = true;
+        this.colspan = 4;
+    }
 
     constructor () {
         super();
+        this._inputUnit = new ModelCatalogUnit();
+        this._inputUnit.setActionSelect();
+        this._inputUnit.setAttribute('id', 'input-unit');
+        
+        this._inputVariable = new ModelCatalogVariablePresentation();
+        this._inputVariable.setActionMultiselect();
+        this._inputVariable.setAttribute('id', 'input-variable');
+
+        this._inputIntervention = new ModelCatalogIntervention();
+        this._inputIntervention.setActionSelect();
+        this._inputIntervention.setAttribute('id', 'input-intervention');
+    }
+
+    protected _createResource () {
+        this._inputUnit.setResources(null);
+        super._createResource();
     }
 
     protected _renderTableHeader () {
         return html`
             <th><b>Name</b></th>
             <th><b>Type</b></th>
-            <th><b>Default Value</b></th>
+            <th style="white-space: nowrap;">${this.isSetup ? 
+                html`
+                    <b>Value in this setup</b>
+                    <span class="tooltip" style="white-space:normal;"
+                     tip="If a value is set up in this field, you will not be able to change it in run time. For example, a price adjustment is set up to be 10%, it won't be editable when running the the model">
+                        <wl-icon>help</wl-icon>
+                    </span>
+                `
+                : html`<b>Default Value</b>`}
+            </th>
+            ${this.isSetup ? html`
+            <th style="white-space: nowrap;">
+                <b>Adjustable</b>
+                <span class="tooltip" style="white-space:normal;"
+                 tip="An adjustable parameter is a knob that a user will be able to fill with a value when executing the model">
+                    <wl-icon>help</wl-icon>
+                </span>
+            </th>
+            ` : html``}
         `;
     }
 
+    private _prepareVariablePresentation (r:Parameter) {
+        if (r.hasPresentation && r.hasPresentation.length > 0) {
+            if (!this._vpDisplayer[r.id])
+                this._vpDisplayer[r.id] = new ModelCatalogVariablePresentation();
+            this._vpDisplayer[r.id].setResources(r.hasPresentation);
+        }
+    }
+
     protected _renderRow (r:Parameter) {
+        this._prepareVariablePresentation(r);
         let label : string = getLabel(r);
         let dcata : boolean = r.hasDefaultValue && 
                 (label == "gldas_dataset_id" || label == "shapefile_dataset_id" || label == "data_set_id");
         return html`
             <td>
                 <code>${label}</code><br/>
-                <b>${r.description ? r.description[0] : ''}</b>
+                <b>${r.description ? r.description[0].split(',').join(', ') : ''}</b>
+                ${r.hasPresentation && r.hasPresentation.length > 0 ? html`
+                    <div style="padding-top: 10px">
+                        <b>Variables:</b> ${this._vpDisplayer[r.id]}
+                    </div>
+                ` : '' }
             </td>
             <td>${renderParameterType(r)}</td>
             <td>
                 ${this._renderTypedValue(r)}
             </td>
+            ${this.isSetup ? html`
+            <td style="text-align: center;">
+                <wl-icon>${r.hasFixedValue && r.hasFixedValue.length > 0 ?  'check_box_outline_blank' : 'check_box'}</wl-icon>
+            </td>
+            ` : html``}
         `;
     }
 
@@ -137,17 +189,24 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         }
 
         return html`
-            ${value} ${isDefault && this.onlyFixedValue ? '(default)' : ''}
+            ${value} ${isDefault && this.isSetup ? '(default)' : ''}
             ${r.usesUnit ? r.usesUnit[0].label : ''}`;
     }
 
     protected _editResource (r:Parameter) {
         super._editResource(r);
+        this._inputUnit.setResources(r.usesUnit);
+        this._inputVariable.setResources(r.hasPresentation);
+        this._inputIntervention.setResources(r.relevantForIntervention);
+
         let lr : Parameter = this._loadedResources[r.id];
-        if (lr && lr.hasDataType && lr.hasDataType.length > 0) {
-            let dt = lr.hasDataType[0];
-            if (dt === 'integer') dt = 'int';
-            this._formPart = dt;
+        if (lr) {
+            if (lr.hasDataType && lr.hasDataType.length > 0) {
+                let dt = lr.hasDataType[0];
+                if (dt === 'integer') dt = 'int';
+                this._formPart = dt;
+            }
+            this.isAdjustable = !lr.hasFixedValue;
         }
     }
 
@@ -158,13 +217,34 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 edResource.type.filter((p:string) => p != 'Parameter') : [];
         return html`
         <form>
-            <wl-textfield id="parameter-label" label="Name" required
-                value=${edResource ? getLabel(edResource) : ''}>
-            </wl-textfield>
-            <wl-textarea id="parameter-desc" label="Description" required
-                value=${edResource && edResource.description ? edResource.description[0] : ''}>
-            </wl-textarea>
+            <br/>
+            ${this.isSetup ? html`
+                <div @click=${() => this.isAdjustable = !this.isAdjustable} style="padding-top: 10px;">
+                    <wl-checkbox ?checked="${this.isAdjustable}"></wl-checkbox>
+                    <label style="padding-left: 10px;">Is Adjustable</label>
+                </div>
+                ${this.isAdjustable ? html`` : html`
+                <wl-textfield id="fixed-value"  required
+                              label="Value in this setup"
+                              value="${edResource ? (edResource.hasFixedValue && edResource.hasFixedValue.length > 0 ?
+                                edResource.hasFixedValue[0] 
+                                : (edResource.hasDefaultValue ? edResource.hasDefaultValue[0] : '')) : ''}">
+                </wl-textfield>
+                `}
+                <div @click=${() => this.showDefaults = !this.showDefaults} style="padding-top: 10px;">
+                    <wl-checkbox ?checked="${this.showDefaults}"></wl-checkbox>
+                    <label style="padding-left: 10px;">Show defaults</label>
+                </div>
+            ` : html`
+                <wl-textfield id="parameter-label" label="Name" required
+                    value=${edResource ? getLabel(edResource) : ''}>
+                </wl-textfield>
+                <wl-textarea id="parameter-desc" label="Description" required
+                    value=${edResource && edResource.description ? edResource.description[0] : ''}>
+                </wl-textarea>
+            `}
 
+            ${(!this.isSetup || this.showDefaults) ? html`
             <wl-select id="parameter-type" label="Parameter type" 
                 value=${(additionalTypes.length > 0)? additionalTypes[0] : ''}>
                 <option value="">None</option>
@@ -172,6 +252,14 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                     <option value="${id}">${PARAMETER_TYPES[id]}</option>
                 `)}
             </wl-select>
+
+            <div style="margin-top: 10px;">
+                <b>Variables:</b> ${this._inputVariable}
+            </div>
+
+            <div style="margin-top: 5px;">
+                <b>Relevant for Intervention:</b> ${this._inputIntervention}
+            </div>
 
             <div class="two-inputs">
                 <wl-select id="parameter-datatype" label="Data type" required @change="${this._onDataTypeChanged}"
@@ -182,20 +270,18 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                     <option value="boolean">Boolean</option>
                 </wl-select>
 
-                <wl-select id="parameter-unit" label="Parameter unit"
-                    value="${edResource && edResource.usesUnit ? edResource.usesUnit[0].id:''}">
-                    <option value="">None</option>
-                    ${Object.values(this._units).map((unit:Unit) => html`
-                        <option value="${unit.id}">${unit.label}</option>
-                    `)}
-                </wl-select>
+                <span>
+                    <span style="font-size: 0.75rem;color: rgb(86, 90, 93);">Unit:</span>
+                    ${this._inputUnit}
+                </span>
+
             </div>
 
             <div class="min-max-input" style="display: ${this._formPart === 'int' ? 'grid' : 'none'}">
                 <wl-textfield type="number" step="1" id="part-int-min" label="Minimum"
                     value="${edResource && edResource.hasMinimumAcceptedValue ? edResource.hasMinimumAcceptedValue[0] : '' }">
                 </wl-textfield>
-                <wl-textfield required type="number" id="part-int-default" label="Default value" required
+                <wl-textfield type="number" id="part-int-default" label="Default value" required
                     value="${edResource && edResource.hasDefaultValue ? edResource.hasDefaultValue[0] : '' }">
                 </wl-textfield>
                 <wl-textfield type="number" id="part-int-max" label="Maximum"
@@ -250,8 +336,11 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                     <option value="TRUE">True</option>
                 </wl-select>
             </div>
+            ` : html``}
+
 
             <!-- TODO: relevantForIntervention, adjustsVariable -->
+            <br/>
         </form>`;
     }
 
@@ -285,63 +374,141 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     }
 
     protected _getResourceFromForm () {
-        if (this.onlyFixedValue) return this._getFixedValue();
+        if (this.onlyFixedValue) return this._getFixedValue(); //This is used on modeling.
+        let edResource = this._getEditingResource();
+        let position = edResource && edResource.position && edResource.position.length === 1 ?
+            edResource.position[0] : this._resources.length + 1;
 
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById('parameter-label') as Textfield;
         let inputDesc : Textarea = this.shadowRoot.getElementById('parameter-desc') as Textarea;
         let inputDatatype : Textfield = this.shadowRoot.getElementById("parameter-datatype") as Textfield;
-        let inputUnit : Select = this.shadowRoot.getElementById("parameter-unit") as Select;
         let inputType : Select = this.shadowRoot.getElementById("parameter-type") as Select;
+        let inputFixed : Textfield = this.shadowRoot.getElementById('fixed-value') as Textfield;
 
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : '';
         let desc : string = inputDesc ? inputDesc.value : '';
         let datatype : string = inputDatatype ? inputDatatype.value : '';
-        let unit : string = inputUnit ? inputUnit.value : '';
         let aType : string = inputType ? inputType.value : '';
-        if (label && desc && datatype) {
+        let fixed : string = inputFixed ? inputFixed.value : '';
+
+        if (!this.isSetup && label && desc && datatype) {
 
             let jsonRes = {
                 type: ["Parameter"],
                 description: [desc],
                 label: [label],
                 hasDataType: [datatype],
-                position: [this._resources.length + 1]
+                position: [position],
+                hasPresentation: this._inputVariable.getResources(),
+                relevantForIntervention: this._inputIntervention.getResources(),
+                usesUnit: this._inputUnit.getResources(),
             };
 
-            if (unit) jsonRes["usesUnit"] = [{id: unit}];
             if (aType) jsonRes["type"].push(aType);
 
-            let jsonRes2 = undefined;
+            let jsonRes2 = this._getDefaultsPart(datatype);
 
-            switch (datatype) {
-                case "int":
-                    jsonRes2 = this._getPartIntFromForm();
-                    break;
-                case "float":
-                    jsonRes2 = this._getPartFloatFromForm();
-                    break;
-                case "string":
-                    jsonRes2 = this._getPartStringFromForm();
-                    break;
-                case "boolean":
-                    jsonRes2 = this._getPartBooleanFromForm();
-                    break;
-                default:
-                    console.warn('unrecognized datatype');
-                    return;
-                    break;
-            }
-
-            if (jsonRes2) {
+            if (jsonRes2)
                 return ParameterFromJSON({...jsonRes, ...jsonRes2});
+        } else if (this.isSetup) {
+            if (this.isAdjustable && !this.showDefaults) {
+                // Remove old fixed values to use the default one
+                return ParameterFromJSON({hasFixedValue: []})
+            }
+            if (!this.isAdjustable && !fixed) {
+                (<any>inputFixed).onBlur();
+                return;
+            }
+            if (!this.showDefaults) { 
+                if (this._validateDataTypedValue(fixed))
+                    return ParameterFromJSON({ hasFixedValue: [fixed] });
+                else 
+                    console.warn("Error validating data-type.");
+            } else {
+                let jsonRes = {
+                    hasDataType: [datatype],
+                    type: ["Parameter"],
+                    hasPresentation: this._inputVariable.getResources(),
+                    relevantForIntervention: this._inputIntervention.getResources(),
+                    usesUnit: this._inputUnit.getResources(),
+                };
+                if (aType) jsonRes["type"].push(aType);
+                let jsonRes2 = this._getDefaultsPart(datatype);
+                if (jsonRes2)
+                    return ParameterFromJSON({...jsonRes, ...jsonRes2});
             }
         } else {
             // Show errors
-            if (!label) (<any>inputLabel).onBlur();
-            if (!desc) (<any>inputDesc).onBlur();
-            if (!datatype) (<any>inputDatatype).onBlur();
+            if (!this.isSetup) {
+                if (!label) (<any>inputLabel).onBlur();
+                if (!desc) (<any>inputDesc).onBlur();
+                if (!datatype) (<any>inputDatatype).onBlur();
+            }
+        }
+    }
+
+    private _validateDataTypedValue (value:string, ed? : Parameter ) : boolean {
+        let edR : Parameter = ed ? ed : this._getEditingResource();
+        let datatype : string = edR.hasDataType && edR.hasDataType.length === 1 ? edR.hasDataType[0] : '';
+        switch (datatype) {
+            case "int":
+            case "float":
+                let val : number = datatype == "int" ? parseInt(value) : parseFloat(value);;
+                let min : number = edR.hasMinimumAcceptedValue && edR.hasMinimumAcceptedValue.length === 1 ? 
+                        parseFloat(edR.hasMinimumAcceptedValue[0]) : undefined;
+                let max : number = edR.hasMaximumAcceptedValue && edR.hasMaximumAcceptedValue.length === 1 ?
+                        parseFloat(edR.hasMaximumAcceptedValue[0]) : undefined;
+                if (min != undefined && min > val) {
+                    this._notification.error("Parameter value must be greater than " + min);
+                    return false;
+                }
+                if (max != undefined && max < val) {
+                    this._notification.error("Parameter value must be less than " + max);
+                    return false;
+                }
+                break;
+            case "string":
+                if (edR.hasAcceptedValues && edR.hasAcceptedValues.length === 1) {
+                    let av : string[] = edR.hasAcceptedValues[0].split(/ *, */);
+                    if (!av.includes(value)) {
+                        this._notification.error("Parameter value must be an accepted value");
+                        return false;
+                    }
+                }
+                break;
+            case "boolean":
+                let bol : string = value.toLowerCase();
+                if (!(bol == 'true' || bol == 'false')) {
+                    this._notification.error("Parameter value must be True or False");
+                    return false;
+                }
+                break;
+            default:
+                console.warn('unrecognized datatype');
+                break;
+        }
+        return true;
+    }
+
+    private _getDefaultsPart (datatype:string) {
+        switch (datatype) {
+            case "int":
+                return this._getPartIntFromForm();
+                break;
+            case "float":
+                return this._getPartFloatFromForm();
+                break;
+            case "string":
+                return this._getPartStringFromForm();
+                break;
+            case "boolean":
+                 return this._getPartBooleanFromForm();
+                break;
+            default:
+                console.warn('unrecognized datatype');
+                return;
         }
     }
 
@@ -354,30 +521,14 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let def: string = inputDef ? inputDef.value : '';
         if (def) {
             let jsonRes = {
+                hasDataType: ["int"],
                 hasDefaultValue: [def]
             };
+            if (min) jsonRes['hasMinimumAcceptedValue'] = [min];
+            if (max) jsonRes['hasMaximumAcceptedValue'] = [max];
 
-            let idef : number = parseInt(def);
-            let imin : number = undefined;
-            let imax : number = undefined;
-
-            if (min) {
-                jsonRes['hasMinimumAcceptedValue'] = [min];
-                imin = parseInt(min);
-                if (idef < imin) {
-                    //TODO: notify
-                    return;
-                }
-            }
-            if (max) {
-                jsonRes['hasMaximumAcceptedValue'] = [max];
-                imax = parseInt(max);
-                if (idef > imax) {
-                    //TODO: notify
-                    return;
-                }
-            }
-            return jsonRes;
+            if (this._validateDataTypedValue(def, jsonRes))
+                return jsonRes;
         } else {
             (<any>inputDef).onBlur();
         }
@@ -389,35 +540,19 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let inputMin : Textfield = this.shadowRoot.getElementById('part-float-min') as Textfield;
         let inputMax : Textfield = this.shadowRoot.getElementById('part-float-max') as Textfield;
         let def : string = inputDef ? inputDef.value : '';
-        let inc : string = inputInc ? inputInc.value : '';
+        let inc : number = inputInc ? parseInt(inputInc.value) : NaN;
         let min : string = inputMin ? inputMin.value : '';
         let max : string = inputMax ? inputMax.value : '';
         if (def) {
             let jsonRes = {
-                hasDefaultValue: [parseFloat(def)]
+                hasDataType: ["float"],
+                hasDefaultValue: [def]
             };
             if (inc) jsonRes['recommendedIncrement'] = [inc];
-            let idef : number = parseInt(def);
-            let imin : number = undefined;
-            let imax : number = undefined;
-
-            if (min) {
-                jsonRes['hasMinimumAcceptedValue'] = [min];
-                imin = parseInt(min);
-                if (idef < imin) {
-                    //TODO: notify
-                    return;
-                }
-            }
-            if (max) {
-                jsonRes['hasMaximumAcceptedValue'] = [max];
-                imax = parseInt(max);
-                if (idef > imax) {
-                    //TODO: notify
-                    return;
-                }
-            }
-            return jsonRes;
+            if (min) jsonRes['hasMinimumAcceptedValue'] = [min];
+            if (max) jsonRes['hasMaximumAcceptedValue'] = [max];
+            if (this._validateDataTypedValue(def, jsonRes))
+                return jsonRes;
         } else {
             (<any>inputDef).onBlur();
         }
@@ -430,16 +565,12 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let acc : string = inputAcc ? inputAcc.value : '';
         if (def) {
             let jsonRes = {
+                hasDataType: ["string"],
                 hasDefaultValue: [def]
             };
-            if (acc) {
-                let acceptedValues : string[] = acc.split(/ *, */);
-                jsonRes['hasAcceptedValues'] = [acceptedValues.join(', ')];
-                if (!acceptedValues.includes(def)) {
-                    //TODO notify!
-                }
-            }
-            return jsonRes;
+            if (acc) jsonRes['hasAcceptedValues'] = [acc];
+            if (this._validateDataTypedValue(def, jsonRes))
+                return jsonRes;
         } else {
             (<any>inputDef).onBlur();
         }
@@ -450,9 +581,11 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let def : string = inputDef ? inputDef.value : '';
         if (def) {
             let jsonRes = {
+                hasDataType: ["boolean"],
                 hasDefaultValue: [def]
             };
-            return jsonRes;
+            if (this._validateDataTypedValue(def, jsonRes))
+                return jsonRes;
         } else {
             (<any>inputDef).onBlur();
         }

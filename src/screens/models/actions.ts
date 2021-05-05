@@ -8,7 +8,6 @@ import { setupsSearchVariable, setupGetAll, sampleCollectionGet, getIdFromUri, g
 import { Model as MCModel, ModelConfigurationSetup, DatasetSpecification, SoftwareImage, ModelConfiguration, SoftwareVersion, SampleCollectionApi, SampleCollection, SampleResource, SampleResourceApi } from '@mintproject/modelcatalog_client';
 import { sortByPosition, getLabel } from 'model-catalog/util';
 
-import { getVariableProperty } from "offline_data/variable_list";
 import { IdMap } from "app/reducers";
 
 export const MODELS_VARIABLES_QUERY = 'MODELS_VARIABLES_QUERY';
@@ -74,6 +73,7 @@ const dsSpecToIO = (ds: DatasetSpecification) => {
         id: ds.id,
         name: ds.label ? ds.label[0] : ds.id,
         type: types.join(),
+        format: ds.hasFormat ? ds.hasFormat[0] : null,
         position: ds.position ? ds.position[0] : 0,
         variables: [], //TODO does not return hasInput -> hasPresentation -> hasStandarVariable
     }
@@ -102,7 +102,8 @@ export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages:
         region_name: setup.hasRegion && setup.hasRegion.length > 0 ?
                 setup.hasRegion.map(getLabel).join(', ') : "",
         description: setup.description ? setup.description[0] : "",
-        category: setup.hasModelCategory ? setup.hasModelCategory[0] : "",
+        category: setup.hasModelCategory && setup.hasModelCategory.length > 0 ?
+                setup.hasModelCategory.map(getLabel).join(', ') : "",
         code_url: setup.hasComponentLocation ? setup.hasComponentLocation[0] : "",
         input_files: [],
         input_parameters: [],
@@ -181,10 +182,11 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
     //console.log('let variables =', variables);
     Promise.all(
         variables.map((variable:string) => {
+            /* FIXME
             let fromvar : string = getVariableProperty(variable, "created_from");
             if(fromvar) {
                 variable = fromvar;
-            }
+            }*/
             return setupsSearchVariable(variable);
         })
     ).then((resp) => {

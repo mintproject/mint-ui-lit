@@ -1,5 +1,6 @@
 #import "../fragments/problem-statement-events.graphql"
 #import "../fragments/problem-statement-permissions.graphql"
+#import "../fragments/thread_previews.graphql"
 
 fragment problem_statement_info on problem_statement {
     id
@@ -7,6 +8,7 @@ fragment problem_statement_info on problem_statement {
     start_date
     end_date
     region_id
+    ...thread_previews
     ...problem_statement_events
     ...problem_statement_permissions
 }

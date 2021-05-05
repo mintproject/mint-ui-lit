@@ -11,16 +11,15 @@ import { setupGetAll, regionsGet, modelsGet, versionsGet,
 import { getId } from 'model-catalog/util';
 
 import { SharedStyles } from "../../../styles/shared-styles";
-import { cacheModelsFromCatalog, setThreadModels } from "../actions";
+import { cacheModelsFromCatalog, getThreadExecutionSummary, setThreadModels } from "../actions";
 import { getUISelectedSubgoalRegion } from "../../../util/state_functions";
-import { isSubregion } from "model-catalog/util";
+import { isSubregion, getLabel } from "model-catalog/util";
 
 import "weightless/tooltip";
 import "weightless/popover-card";
 import { renderNotifications, renderLastUpdateText } from "../../../util/ui_renders";
 import { showNotification, showDialog } from "../../../util/ui_functions";
 import { selectThreadSection } from "../../../app/ui-actions";
-import { getVariableLongName } from "../../../offline_data/variable_list";
 import { MintThreadPage } from "./mint-thread-page";
 import { Region } from "screens/regions/reducers";
 import { IdMap } from "app/reducers";
@@ -29,6 +28,7 @@ import { Model as MCModel, SoftwareVersion,
 
 import 'components/loading-dots';
 import { getLatestEventOfType } from "util/event_utils";
+import variables, { VariableMap } from "screens/variables/reducers";
 
 store.addReducers({
     models
@@ -64,14 +64,15 @@ export class MintModels extends connect(store)(MintThreadPage) {
 
     @property({type: Object})
     private _allRegions : any = {};
-    @property({type:Boolean})
-    private _waiting: boolean = false;
 
     private _dispatched: Boolean = false;
     private _pendingQuery: Boolean = false;
 
     private _responseVariables: string[] = [];
     private _drivingVariables: string[] = [];
+
+    @property({type: Object})
+    private _variableMap: VariableMap = {};
 
     private _comparisonFeatures: Array<ComparisonFeature> = [
         {
@@ -147,6 +148,11 @@ export class MintModels extends connect(store)(MintThreadPage) {
         ]
     }
 
+    private _createModelCatalogUri(region: Region) {
+        let prefix="https://w3id.org/okn/i/mint/";
+        return (prefix + region.name).replace(/\s/g,'_');
+    }
+
     protected render() {
         if(!this.thread) {
             return html ``;
@@ -154,12 +160,35 @@ export class MintModels extends connect(store)(MintThreadPage) {
                 
         let modelids = Object.keys((this.thread.models || {})) || [];
         let done = (this.thread.models && modelids.length > 0);
+        if(!this._responseVariables)
+            return;
+            
         let availableModels = this._queriedModels[this._responseVariables.join(",")] || [];
-        let regionModels = availableModels.filter((model: Model) =>
-            !model.hasRegion ||
-            model.hasRegion.length == 0 ||
-            (model.hasRegion||[]).some((region) => isSubregion(this._region.model_catalog_uri, region))
-        );
+        
+        // Filter all available models by region        
+        let regionModels = [];
+        // Filter by subregion first
+        if(this._subregion) {
+            // If no model catalog uri for this region, create one
+            if(!this._subregion.model_catalog_uri)
+                this._subregion.model_catalog_uri = this._createModelCatalogUri(this._subregion);
+            regionModels = availableModels.filter((model: Model) =>
+                !model.hasRegion ||
+                model.hasRegion.length == 0 ||
+                (model.hasRegion||[]).some((region) => isSubregion(this._subregion.model_catalog_uri, region))
+            );  
+        }
+        // Then filter by main region if no models for subregion
+        if(regionModels.length == 0) {
+            if(!this._region.model_catalog_uri)
+                this._region.model_catalog_uri = this._createModelCatalogUri(this._region);
+            regionModels = availableModels.filter((model: Model) =>
+                !model.hasRegion ||
+                model.hasRegion.length == 0 ||
+                (model.hasRegion||[]).some((region) => isSubregion(this._region.model_catalog_uri, region))
+            );
+        }
+
         let latest_update_event = getLatestEventOfType(["CREATE", "UPDATE"], this.thread.events);
         let latest_model_event = getLatestEventOfType(["SELECT_MODELS"], this.thread.events);
         return html`
@@ -224,12 +253,12 @@ export class MintModels extends connect(store)(MintThreadPage) {
                 </wl-title>
                 <p>
                     The models below generate data that includes the indicator that you selected earlier: 
-                    <b>"${this.thread.response_variables.map((variable) => getVariableLongName(variable)).join(", ")}"</b>.
+                    "${this.thread.response_variables.map((variable) => (this._variableMap[variable]?.name ?? "")).join(", ")}".
                     Other models that are available in the system do not generate that kind of result.
                     ${this.thread.driving_variables.length ? 
                         html`
                         These models also allow adjusting the adjustable variable you selected earlier:
-                        "${this.thread.driving_variables.map((variable) => getVariableLongName(variable)).join(", ")}".
+                        "${this.thread.driving_variables.map((variable) => (this._variableMap[variable]?.name ?? "")).join(", ")}".
                         `
                         : ""
                     }
@@ -246,8 +275,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
                                     <th></th>
                                     <th><b>Model</b></th>
                                     <th>Category</th>
-                                    <th>Region</th>
-                                    <th>Indicator</th>
+                                    <th>Calibration Region</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -255,6 +283,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
                                     availableModels.map((model: Model) => {
                                         if(!model)
                                             return;
+                                        //console.log('>>', model);
                                         if(this._showAllModels || regionModels.indexOf(model) >=0) {
                                             return html`
                                             <tr>
@@ -267,14 +296,11 @@ export class MintModels extends connect(store)(MintThreadPage) {
                                                 <td>${model.category}</td>
                                                 <td>
                                                 ${model.hasRegion ?
-                                                    model.hasRegion.map((region:any) => 
-                                                    this._allRegions[region.id] ? 
-                                                    html`${this._allRegions[region.id].label[0]}` : ''
-                                                ) : ''}
+                                                    model.hasRegion
+                                                        .map((region:any) => this._allRegions[region.id])
+                                                        .map(getLabel).join(', ')
+                                                : ''}
                                                 </td>
-                                                <td>
-                                                    ${model.indicators ? html`<div>${model.indicators}</div>` : ''}
-                                                </td> 
                                             </tr>
                                             `;
                                         }
@@ -336,7 +362,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
     }
 
     _renderDialogs() {
-        let compUrl : string = this._regionid + '/models/compare/setup=' + this._modelsToCompare.map(getId).join('&setup=');
+        let compUrl : string = this._regionid + '/models/compare/' + this._modelsToCompare.map(getId).join('/');
         let loading : boolean = this._modelsToCompare.some((m:Model) => !this._loadedModels[m.id]);
         return html`
         <wl-dialog class="comparison" fixed backdrop blockscrolling id="comparisonDialog">
@@ -488,8 +514,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
         // FIXME: Warn user that this will delete existing data/parameter/runs ?
 
         await setThreadModels(models, notes, this.thread);
-
-        this._waiting = false;
+        this.selectAndContinue("models");
     }
 
     _queryModelCatalog() {
@@ -557,6 +582,10 @@ export class MintModels extends connect(store)(MintThreadPage) {
         if(state.models && !state.models.loading && this._dispatched) {
             this._queriedModels = state.models!.models;
             this._dispatched = false;
+        }
+
+        if(state.variables && state.variables.variables) {
+            this._variableMap = state.variables.variables;
         }
     }
 }

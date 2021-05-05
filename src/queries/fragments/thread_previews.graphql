@@ -1,0 +1,9 @@
+fragment thread_previews on problem_statement {
+  tasks {
+    threads {
+      response_variable {
+        name
+      }
+    }
+  }
+}
