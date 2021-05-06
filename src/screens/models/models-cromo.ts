@@ -246,13 +246,13 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
 
     private sortConfig(c1, c2) {
         let valid1 : boolean = c1 && c1.combos && c1.combos.length > 0 && 
-            c1.combos.some((cb) => cb.validity.valid);
+            c1.combos.some((cb) => (cb.validity.valid == true));
         let valid2 : boolean = c2 && c2.combos && c2.combos.length > 0 && 
-            c2.combos.some((cb) => cb.validity.valid);
+            c2.combos.some((cb) => (cb.validity.valid == true));
         let recommended1 : boolean = c1 && c1.combos && c1.combos.length > 0 && 
-            c1.combos.some((cb) => cb.validity.recommended);
+            c1.combos.some((cb) => (cb.validity.recommended == true));
         let recommended2 : boolean = c2 && c2.combos && c2.combos.length > 0 && 
-            c2.combos.some((cb) => cb.validity.recommended);
+            c2.combos.some((cb) => (cb.validity.recommended == true));
         let empty1 = c1 && (!c1.combos || c1.combos.length == 0);
         let empty2 = c2 && (!c2.combos || c2.combos.length == 0);
         if(empty1 && !empty2) return 1
@@ -266,13 +266,13 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
 
     private renderConfigurationResult(config) {
         let valid : boolean = config && config.combos && config.combos.length > 0 && 
-            config.combos.some((cb) => cb.validity.valid);
+            config.combos.some((cb) => (cb.validity.valid == true || cb.validity.valid == null));
         let invalid : boolean = config && config.combos && config.combos.length > 0 && 
-            !config.combos.some((cb) => cb.validity.valid);
+            config.combos.every((cb) => (cb.validity.valid == false));
         let recommended : boolean = config && config.combos && config.combos.length > 0 && 
-            config.combos.some((cb) => cb.validity.recommended);
+            config.combos.some((cb) => (cb.validity.recommended == true));
         let non_recommended : boolean = config && config.combos && config.combos.length > 0 && 
-            !config.combos.some((cb) => cb.validity.recommended);
+            config.combos.every((cb) => (cb.validity.recommended == false));
 
         return html`
             <wl-expansion name="${config.combos?.length > 0 ? 'ok' : 'notok'}" style="overflow-y: hidden;">
@@ -288,10 +288,10 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
                                 html`<wl-icon>close</wl-icon>`
                                 : (invalid ? 
                                     html`<wl-icon style="color:red">close</wl-icon>`
-                                    : (valid && !recommended ? 
-                                        html`<wl-icon style="color:green">close</wl-icon>`
-                                        : (recommended ? html`<wl-icon style="color:green">done_all</wl-icon>`: "")
-                                        )
+                                    : (non_recommended ?
+                                        html`<wl-icon style="color:gray">close</wl-icon>`
+                                        : html`<wl-icon style="color:green">done_all</wl-icon>`
+                                    )
                                 )
                             )
                         )
@@ -319,8 +319,8 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
                     )}
                     </ul>
                     <div>
-                        <h4 .style="${combo.validity.recommended ? "color:green": (combo.validity.valid ? "color:grey": "color:red")}">
-                            ${combo.validity.recommended ? "RECOMMENDED" : (combo.validity.valid ? "VALID, NOT RECOMMENDED": "INVALID")}
+                        <h4 .style="${combo.validity.recommended == true ? "color:green": "color:gray"}">
+                            ${combo.validity.recommended == true ? "RECOMMENDED" : (combo.validity.recommended == false ? "NOT RECOMMENDED": "")}
                         </h4>
                         <ul style="list-style-type: none">
                             ${combo.validity?.recommendation_reasons?.length > 0 ? html`
@@ -345,6 +345,11 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
                                     `)}`
                                 :''
                             }
+                        </ul>
+                        <h4 .style="${combo.validity.valid == true ? "color:green": "color:red"}">
+                            ${combo.validity.valid == true ? "VALID" : (combo.validity.valid == false ? "NOT VALID": "")}
+                        </h4>
+                        <ul>
                             ${combo.validity?.validity_reasons?.length > 0 ? html`
                                 ${combo.validity.validity_reasons.map((reason) => 
                                     html`
