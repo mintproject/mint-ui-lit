@@ -178,7 +178,7 @@ export const signOut = () => {
 };
 
 const modelCatalogLogin = (username: string, password: string) => {
-  let fetchApiUrl = "https://api.models.wildfire.mint.isi.edu/v1.5.0"
+  let fetchApiUrl = "https://api.models.wildfire.mint.isi.edu/v1.8.0"
   let cfg_parameters = {basePath: fetchApiUrl} as ConfigurationParameters
   let cfg : Configuration = new Configuration(cfg_parameters);
   let API = new DefaultApi(cfg);
