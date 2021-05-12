@@ -10,7 +10,7 @@ import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Pe
          Intervention, VariablePresentation } from '@mintproject/modelcatalog_client';
 
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
-import { ModelCatalogState2 } from 'model-catalog-api/reducers';
+import { ModelCatalogState } from 'model-catalog-api/reducers';
 
 import { setupInRegion, capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition, isExecutable,
          getModelTypeNames } from 'model-catalog/util';
@@ -799,7 +799,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         //console.log('GoToTab:', tabid);
         this._tab = tabid;
         if (tabid === 'tech') {
-            let db = (store.getState() as RootState).modelCatalog2;
+            let db = (store.getState() as RootState).modelCatalog;
             this._loadSourceCodes(this._model.hasSourceCode, db);
             if (this._config) {
                 this._loadSourceCodes(this._config.hasSourceCode, db);
@@ -807,13 +807,13 @@ export class ModelView extends connect(store)(PageViewElement) {
             }
         } 
         if (tabid === 'io' && this._config) {
-            let db = (store.getState() as RootState).modelCatalog2;
+            let db = (store.getState() as RootState).modelCatalog;
             this._loadParameters(this._config.hasParameter, db);
             this._loadDatasetSpecifications(this._config.hasInput, db);
             this._loadDatasetSpecifications(this._config.hasOutput, db);
         }
         if (tabid === 'variables' && this._config) {
-            let db = (store.getState() as RootState).modelCatalog2;
+            let db = (store.getState() as RootState).modelCatalog;
             this._loadDatasetSpecifications(this._config.hasInput, db);
             this._loadDatasetSpecifications(this._config.hasOutput, db);
         }
@@ -1601,7 +1601,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     private _expandDS (ds: DatasetSpecification) {
         if (!this._loading[ds.id]) {
             if (!this._loadedPresentations[ds.id]) {
-                let db = (store.getState() as RootState).modelCatalog2;
+                let db = (store.getState() as RootState).modelCatalog;
                 this._loadedPresentations[ds.id] = true;
                 let dataset = this._datasetSpecifications[ds.id];
                 if (dataset.hasPresentation && dataset.hasPresentation.length > 0)
@@ -1744,7 +1744,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         super.setRegion(state);
         let ui = state.explorerUI;
-        let db = state.modelCatalog2;
+        let db = state.modelCatalog;
 
         this.setSubPage(state);
         if (this._subpage != "explore") {
@@ -1981,7 +1981,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         }
     }
 
-    private _loadAuthors (authorArr: (Person|Organization)[], db: ModelCatalogState2) {
+    private _loadAuthors (authorArr: (Person|Organization)[], db: ModelCatalogState) {
         (authorArr || []).forEach((author:Person|Organization) => {
             if (author.type && author.type.includes("Person")) {
                 if (db.person[author.id]) {
@@ -2053,7 +2053,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         });
     }
 
-    private _loadFundings (fundArray: FundingInformation[], db: ModelCatalogState2) {
+    private _loadFundings (fundArray: FundingInformation[], db: ModelCatalogState) {
         if (fundArray && fundArray.length > 0) {
             Promise.all(
                 fundArray.map((fund:FundingInformation) => {
@@ -2114,7 +2114,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             );
     }
 
-    private _loadTimeIntervals (tiArr: TimeInterval[], db: ModelCatalogState2) {
+    private _loadTimeIntervals (tiArr: TimeInterval[], db: ModelCatalogState) {
         (tiArr || []).forEach((ti:TimeInterval) => {
             if (db.timeinterval[ti.id]) {
                 this._timeIntervals[ti.id] = db.timeinterval[ti.id];
@@ -2141,7 +2141,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             </span>`
     }
 
-    private _loadGrids (gridArr: Grid[], db: ModelCatalogState2) {
+    private _loadGrids (gridArr: Grid[], db: ModelCatalogState) {
         (gridArr || []).forEach((grid:Grid) => {
             if (db.grid[grid.id]) {
                 this._grids[grid.id] = db.grid[grid.id];
@@ -2187,7 +2187,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             </span>`
     }
 
-    private _loadProcesses (processArr: Process[], db: ModelCatalogState2) {
+    private _loadProcesses (processArr: Process[], db: ModelCatalogState) {
         (processArr || []).forEach((process:Process) => {
             if (db.process[process.id]) {
                 this._processes[process.id] = db.process[process.id];
@@ -2210,7 +2210,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             </span>`);
     }
 
-    private _loadImages (imagesArr: Image[], db: ModelCatalogState2) {
+    private _loadImages (imagesArr: Image[], db: ModelCatalogState) {
         (imagesArr || []).forEach((image:Image) => {
             if (db.image[image.id]) {
                 this._images[image.id] = db.image[image.id];
@@ -2225,7 +2225,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
-    private _loadVisualizations (visualizationsArr: Visualization[], db: ModelCatalogState2) {
+    private _loadVisualizations (visualizationsArr: Visualization[], db: ModelCatalogState) {
         (visualizationsArr || []).forEach((visualization:Visualization) => {
             if (db.visualization[visualization.id]) {
                 this._visualizations[visualization.id] = db.visualization[visualization.id];
@@ -2240,7 +2240,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
-    private _loadSourceCodes (sourceArr: SourceCode[], db: ModelCatalogState2) {
+    private _loadSourceCodes (sourceArr: SourceCode[], db: ModelCatalogState) {
         (sourceArr || []).forEach((sourceCode:SourceCode) => {
             if (db.sourcecode[sourceCode.id]) {
                 this._sourceCodes[sourceCode.id] = db.sourcecode[sourceCode.id];
@@ -2255,7 +2255,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
-    private _loadSoftwareImages (siArr: SoftwareImage[], db: ModelCatalogState2) {
+    private _loadSoftwareImages (siArr: SoftwareImage[], db: ModelCatalogState) {
         (siArr || []).forEach((softwareImage:SoftwareImage) => {
             if (db.softwareimage[softwareImage.id]) {
                 this._softwareImages[softwareImage.id] = db.softwareimage[softwareImage.id];
@@ -2270,7 +2270,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
-    private _loadParameters (parametersArr: Parameter[], db: ModelCatalogState2) {
+    private _loadParameters (parametersArr: Parameter[], db: ModelCatalogState) {
         (parametersArr || []).forEach((parameter:Parameter) => {
             if (db.parameter[parameter.id]) {
                 this._parameters[parameter.id] = db.parameter[parameter.id];
@@ -2289,7 +2289,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
-    private _loadDatasetSpecifications (dsArr: DatasetSpecification[], db: ModelCatalogState2) {
+    private _loadDatasetSpecifications (dsArr: DatasetSpecification[], db: ModelCatalogState) {
         (dsArr || []).forEach((ds:DatasetSpecification) => {
             if (db.datasetspecification[ds.id]) {
                 this._datasetSpecifications[ds.id] = db.datasetspecification[ds.id];
@@ -2304,7 +2304,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
-    private _loadInterventions (interventionsArr: Intervention[], db: ModelCatalogState2) {
+    private _loadInterventions (interventionsArr: Intervention[], db: ModelCatalogState) {
         (interventionsArr || []).forEach((intervention:Intervention) => {
             if (db.intervention[intervention.id]) {
                 this._interventions[intervention.id] = db.intervention[intervention.id];
@@ -2319,7 +2319,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         })
     }
 
-    private _loadVariablePresentations (vpArr: VariablePresentation[], db: ModelCatalogState2) {
+    private _loadVariablePresentations (vpArr: VariablePresentation[], db: ModelCatalogState) {
         (vpArr || []).forEach((vp:VariablePresentation) => {
             if (db.variablepresentation[vp.id]) {
                 this._variablePresentations[vp.id] = db.variablepresentation[vp.id];

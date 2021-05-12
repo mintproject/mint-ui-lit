@@ -764,9 +764,4 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             });
         });
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.setups;
-    }
 }

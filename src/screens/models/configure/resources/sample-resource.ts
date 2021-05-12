@@ -95,9 +95,4 @@ export class ModelCatalogSampleResource extends connect(store)(ModelCatalogResou
             //TODO show value as required
         }
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.sampleResources;
-    }
 }

@@ -435,8 +435,8 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
             this._selectedUri = state.explorerUI.selectedModel;
         }
 
-        if (state.modelCatalog2) {
-            let db = state.modelCatalog2;
+        if (state.modelCatalog) {
+            let db = state.modelCatalog;
             if (this._models != db.model && !isEmpty(db.model)) {
                 this._models = db.model;
 

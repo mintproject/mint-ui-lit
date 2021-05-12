@@ -124,9 +124,4 @@ export interface SampleCollection {
         this._inputSampleResources.setResources(null);
         super._createResource();
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.sampleCollections;
-    }
 }

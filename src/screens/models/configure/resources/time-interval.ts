@@ -124,9 +124,4 @@ export class ModelCatalogTimeInterval extends connect(store)(ModelCatalogResourc
             if (!desc) (<any>inputDesc).onBlur();
         }
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.timeIntervals;
-    }
 }

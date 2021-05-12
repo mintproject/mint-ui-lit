@@ -62,9 +62,4 @@ export class ModelCatalogImage extends connect(store)(ModelCatalogResource)<Imag
             if (!value) (<any>inputValue).onBlur();
         }
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.images;
-    }
 }

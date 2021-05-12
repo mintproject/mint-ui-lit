@@ -233,8 +233,8 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
                 this._visible[this._selectedVersion] = true;
             }
 
-            if (state.modelCatalog2) {
-                let db = state.modelCatalog2;
+            if (state.modelCatalog) {
+                let db = state.modelCatalog;
                 this._models = db.model;
                 this._versions = db.softwareversion;
             }

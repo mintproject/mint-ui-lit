@@ -65,9 +65,4 @@ export class ModelCatalogStandardVariable extends connect(store)(ModelCatalogRes
             ${getLabel(r)}
         </span>`;
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.standardVariables;
-    }
 }

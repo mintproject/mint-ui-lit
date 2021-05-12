@@ -19,18 +19,13 @@ store.addReducers({
     models
 });
 
-import modelCatalog from 'model-catalog/reducers'
-store.addReducers({
-    modelCatalog
-});
-
 import { Model } from '@mintproject/modelcatalog_client';
-import modelCatalog2 from 'model-catalog-api/reducers';
+import modelCatalog from 'model-catalog-api/reducers';
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { UserCatalog } from 'model-catalog-api/user-catalog';
 
 store.addReducers({
-    modelCatalog2
+    modelCatalog
 });
 
 @customElement('models-home')

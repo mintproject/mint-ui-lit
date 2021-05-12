@@ -221,8 +221,8 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
                     this._iVersion.setResource(null);
             }
 
-            if (state.modelCatalog2) {
-                let db = state.modelCatalog2;
+            if (state.modelCatalog) {
+                let db = state.modelCatalog;
                 // Set selected resource
                 if (!this._model && db.model && this._selectedModel && db.model[this._selectedModel]) {
                     this._model = db.model[this._selectedModel];

@@ -294,9 +294,4 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             if (presentation.length == 0) console.log('You must select at least a presentation!');
         }
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.datasetSpecifications;
-    }
 }

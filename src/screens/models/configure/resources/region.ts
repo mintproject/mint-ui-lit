@@ -318,11 +318,6 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
         console.log('MapClicked');
     }
 
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.regions;
-    }
-
     stateChanged(state: RootState) {
         if (state.ui && state.regions) {
             this._regionid = state.ui.selected_top_regionid;

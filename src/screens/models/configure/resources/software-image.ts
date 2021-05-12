@@ -81,9 +81,4 @@ export class ModelCatalogSoftwareImage extends connect(store)(ModelCatalogResour
             if (!registry) (<any>inputRegistry).onBlur();
         }
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.softwareImages;
-    }
 }

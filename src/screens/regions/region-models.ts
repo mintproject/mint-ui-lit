@@ -365,12 +365,12 @@ export class RegionModels extends connect(store)(PageViewElement)  {
 
         if (state && state.modelCatalog) {
             let db = state.modelCatalog;
-            this._geoShapes = db.geoShapes;
-            this._regions = db.regions;
-            this._models = db.models;
-            this._versions = db.versions;
-            this._configs = db.configurations;
-            this._setups = db.setups;
+            this._geoShapes = db.geoshape;
+            this._regions = db.region;
+            this._models = db.model;
+            this._versions = db.softwareversion;
+            this._configs = db.modelconfiguration;
+            this._setups = db.modelconfigurationsetup;
         }
     }
 }

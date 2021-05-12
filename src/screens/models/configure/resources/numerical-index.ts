@@ -97,9 +97,4 @@ export class ModelCatalogNumericalIndex extends connect(store)(ModelCatalogResou
             if (!desc) (<any>inputDesc).onBlur();
         }
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.numericalIndexes;
-    }
 }

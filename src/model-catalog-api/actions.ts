@@ -20,4 +20,4 @@ export interface MCActionDelete extends Action<'MODEL_CATALOG_DELETE'> {
     uri: string 
 };
 
-export type ModelCatalogAction2 = MCActionAdd | MCActionDelete;
+export type ModelCatalogAction = MCActionAdd | MCActionDelete;

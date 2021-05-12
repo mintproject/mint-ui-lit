@@ -591,9 +591,4 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
             (<any>inputDef).onBlur();
         }
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.parameters;
-    }
 }

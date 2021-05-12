@@ -68,9 +68,4 @@ export class ModelCatalogUnit extends connect(store)(ModelCatalogResource)<Unit>
             if (!label) (<any>inputLabel).onBlur();
         }
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.units;
-    }
 }

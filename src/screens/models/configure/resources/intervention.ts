@@ -66,9 +66,4 @@ export class ModelCatalogIntervention extends connect(store)(ModelCatalogResourc
             if (!label) (<any>inputLabel).onBlur();
         }
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.interventions;
-    }
 }

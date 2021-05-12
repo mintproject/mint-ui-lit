@@ -103,9 +103,4 @@ export class ModelCatalogProcess extends connect(store)(ModelCatalogResource)<Pr
             if (!label) (<any>inputLabel).onBlur();
         }
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.processes;
-    }
 }

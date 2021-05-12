@@ -63,9 +63,4 @@ export class ModelCatalogPerson extends connect(store)(ModelCatalogResource)<Per
             if (!label) (<any>inputLabel).onBlur();
         }
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.persons;
-    }
 }

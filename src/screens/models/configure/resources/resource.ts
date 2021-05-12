@@ -402,10 +402,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 </wl-button>` : ''}
             </div>
             <div>
-                <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat ?disabled="">
+                <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat>
                     Cancel
                 </wl-button>
-                <wl-button class="submit" ?disabled="" @click="${this._onSelectButtonClicked}">
+                <wl-button class="submit" @click="${this._onSelectButtonClicked}">
                     Select
                 </wl-button>
             </div>
@@ -1406,8 +1406,11 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         return !this.lazy || (Object.keys(this._resourcesToEdit).length === 0 && Object.keys(this._resourcesToCreate).length === 0);
     }
 
+    // Gets the resources from Redux
     protected _getDBResources () : IdMap<T> {
-        return {} as IdMap<T>;
+        let db = (store.getState() as RootState).modelCatalog;
+        let dbname : string = this.resourceApi.getName();
+        return db[dbname] as IdMap<T>;
     }
 
     protected _loadAllResources () : Promise<IdMap<T>> {

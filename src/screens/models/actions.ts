@@ -4,7 +4,6 @@ import { RootState } from "../../app/store";
 import { Model, ModelParameter } from "./reducers";
 import { Dataset } from "../datasets/reducers";
 
-import { getIdFromUri, getUser } from 'model-catalog/actions';
 import { Model as MCModel, ModelConfigurationSetup, DatasetSpecification, SoftwareImage, ModelConfiguration, SoftwareVersion, SampleCollectionApi, SampleCollection, SampleResource, SampleResourceApi } from '@mintproject/modelcatalog_client';
 import { sortByPosition, getLabel } from 'model-catalog/util';
 
@@ -240,7 +239,7 @@ export const fetchModelsFromCatalog = async (
             let sampleCollectionApi = new SampleCollectionApi();
             let sampleResourceApi = new SampleResourceApi();
 
-            // The api does not return collections of inputs. FIXME
+            /* The api does not return collections of inputs. FIXME
             let fixCollection = Promise.all( Object.values(fixedModels).map((model:Model) =>
                 Promise.all( model.input_files.map((input) => {
                     if (input.value && input.value.id && input.value.resources && input.value.resources.length === 0) {
@@ -283,7 +282,7 @@ export const fetchModelsFromCatalog = async (
                     }
                 }) )
             ) );
-            await fixCollection;
+            await fixCollection;*/
             return fixedModels;
         });
 }

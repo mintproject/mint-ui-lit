@@ -277,7 +277,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         let lastParentRegion = this._regionid
         super.setRegionId(state);
-        let db = state.modelCatalog2;
+        let db = state.modelCatalog;
         /* Load this model and, if is needed versions, configs and setups */
         if (db && db.model[this.id] && (db.model[this.id] != this._model || lastParentRegion != this._regionid)) {
             this._model = db.model[this.id];

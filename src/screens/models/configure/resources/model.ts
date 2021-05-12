@@ -918,9 +918,7 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
     }
 
     protected _getDBResources () {
-        /*let db = (store.getState() as RootState).modelCatalog;
-        return db.models;*/
-        let db = (store.getState() as RootState).modelCatalog2;
+        let db = (store.getState() as RootState).modelCatalog;
         return db.model;
     }
 }

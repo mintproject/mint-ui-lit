@@ -143,9 +143,4 @@ export class ModelCatalogGrid extends connect(store)(ModelCatalogResource)<Grid>
             if (!desc) (<any>inputDesc).refreshAttributes();
         }
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.grids;
-    }
 }

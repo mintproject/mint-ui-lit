@@ -8,18 +8,19 @@ import { CausalDiagram, ConfigurationSetup, DataTransformation, DataTransformati
          Parameter, Person, PointBasedGrid, Process, Region, SampleCollection, SampleExecution, SampleResource,
          Software, SoftwareConfiguration, SoftwareImage, SoftwareVersion, SourceCode, SpatialResolution,
          SpatiallyDistributedGrid, StandardVariable, TheoryGuidedModel, TimeInterval, Unit, Variable,
-         VariablePresentation, Visualization, CatalogIdentifier, CoupledModel, ModelCategory 
+         VariablePresentation, Visualization, CatalogIdentifier, CoupledModel, ModelCategory, Constraint
         } from '@mintproject/modelcatalog_client';
 import { IdMap } from 'app/reducers'
 
-export type ModelCatalogTypes = keyof ModelCatalogState2;
+export type ModelCatalogTypes = keyof ModelCatalogState;
 
 //Needs to be updated if we add new classes to the ontology.
-export interface ModelCatalogState2 {
+export interface ModelCatalogState {
     catalogidentifier:          IdMap<CatalogIdentifier>;
     causaldiagram:              IdMap<CausalDiagram>;
     configurationsetup:         IdMap<ConfigurationSetup>;
     coupledmodel:               IdMap<CoupledModel>;
+    constraint:                 IdMap<Constraint>;
     datatransformation:         IdMap<DataTransformation>;
     datatransformationsetup:    IdMap<DataTransformationSetup>;
     datasetspecification:       IdMap<DatasetSpecification>;
@@ -63,11 +64,12 @@ export interface ModelCatalogState2 {
     visualization:              IdMap<Visualization>;
 }
 
-const INITIAL_STATE: ModelCatalogState2 = { 
+const INITIAL_STATE: ModelCatalogState = { 
     catalogidentifier:          {} as IdMap<CatalogIdentifier>,
     causaldiagram:              {} as IdMap<CausalDiagram>,
     configurationsetup:         {} as IdMap<ConfigurationSetup>,
     coupledmodel:               {} as IdMap<CoupledModel>,
+    constraint:                 {} as IdMap<Constraint>,
     datatransformation:         {} as IdMap<DataTransformation>,
     datatransformationsetup:    {} as IdMap<DataTransformationSetup>,
     datasetspecification:       {} as IdMap<DatasetSpecification>,
@@ -109,10 +111,10 @@ const INITIAL_STATE: ModelCatalogState2 = {
     variable:                   {} as IdMap<Variable>,
     variablepresentation:       {} as IdMap<VariablePresentation>,
     visualization:              {} as IdMap<Visualization>
-} as ModelCatalogState2;
+} as ModelCatalogState;
 
-const modelCatalog2: Reducer<ModelCatalogState2, RootAction> = (state = INITIAL_STATE, action) => {
-    let newState : ModelCatalogState2;
+const modelCatalog: Reducer<ModelCatalogState, RootAction> = (state = INITIAL_STATE, action) => {
+    let newState : ModelCatalogState;
     let newMap : IdMap<any>;
     switch (action.type) {
         case MODEL_CATALOG_ADD:
@@ -131,4 +133,4 @@ const modelCatalog2: Reducer<ModelCatalogState2, RootAction> = (state = INITIAL_
     }
 }
 
-export default modelCatalog2;
+export default modelCatalog;

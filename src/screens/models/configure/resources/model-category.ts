@@ -33,9 +33,4 @@ export class ModelCatalogCategory extends connect(store)(ModelCatalogResource)<M
     protected pname : string = "categories";
     
     protected resourceApi : DefaultReduxApi<ModelCategory,BaseAPI> = ModelCatalogApi.myCatalog.modelCategory;
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.categories;
-    }
 }

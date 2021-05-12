@@ -369,9 +369,4 @@ export class ModelCatalogSoftwareVersion extends connect(store)(ModelCatalogReso
             }
         }
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.versions;
-    }
 }

@@ -75,9 +75,4 @@ export class ModelCatalogFundingInformation extends connect(store)(ModelCatalogR
             if (!label) (<any>inputLabel).onBlur();
         }
     }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.fundingInformations;
-    }
 }
