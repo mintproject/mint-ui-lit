@@ -214,7 +214,7 @@ export const fetchModelsFromCatalog = async (
         // GET all data for the selected models.
         //console.log("getting all info", models);
         return Promise.all(
-            Object.keys(models || {}).map((modelid) => ModelCatalogApi.myCatalog.model.getDetails(modelid))
+            Object.keys(models || {}).map((modelid) => ModelCatalogApi.myCatalog.modelConfigurationSetup.getDetailsNoRedux(modelid))
         ).then(async (setups) => {
             let fixedModels = setups.map((setup) => setupToOldModel(setup, allSoftwareImages));
             Object.values(fixedModels).forEach((model) => {

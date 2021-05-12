@@ -46,11 +46,8 @@ export class CustomModelConfigurationSetupApi extends DefaultReduxApi<ModelConfi
 
     //CUSTOM QUERY
     public getDetails : ActionThunk<Promise<ModelConfigurationSetup>, MCActionAdd> = (uri:string) => (dispatch) => {
-        console.log('Fetching setup (all info)', uri);
-        let id : string = this._getIdFromUri(uri);
-        let req : Promise<ModelConfigurationSetup> = this._api.customModelconfigurationsetupsIdGet({username: this._username, id: id});
+        let req : Promise<ModelConfigurationSetup> = this.getDetailsNoRedux(uri);
         if (this._redux) req.then((resp:ModelConfigurationSetup) => {
-            console.log('xs>', resp);
             dispatch({
                 type: MODEL_CATALOG_ADD,
                 kind: this.getName(),
@@ -58,6 +55,11 @@ export class CustomModelConfigurationSetupApi extends DefaultReduxApi<ModelConfi
             });
         });
         return req;
+    }
+
+    public getDetailsNoRedux (uri:string) : Promise<ModelConfigurationSetup> {
+        let id : string = this._getIdFromUri(uri);
+        return this._api.customModelconfigurationsetupsIdGet({username: this._username, id: id});
     }
 
     public getSetupsByVariableLabel (variableLabel:string) : Promise<ModelConfigurationSetup[]> {
