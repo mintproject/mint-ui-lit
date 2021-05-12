@@ -35,7 +35,7 @@ export class DataCatalogIdChecker extends LitElement {
     }
 
     private _load () {
-        let req = fetch("https://api.mint-data-catalog.org/datasets/get_dataset_info", {
+        let req = fetch("https://data-catalog.mint.isi.edu/datasets/get_dataset_info", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({"dataset_id": this.id})
