@@ -146,6 +146,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                     this._iProcess[m.id]
                     : html`<span style="color:#999">None specified<span>`
         },
+
         {
             name: "Input variables:",
             fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasInputVariable && m.hasInputVariable.length > 0 ? 

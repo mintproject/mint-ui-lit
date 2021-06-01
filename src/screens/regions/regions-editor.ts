@@ -166,12 +166,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
 	// TODO: maybe move the description text outside and move the button to other place.
     protected render() {
-        let citation : string = this._selectedSubcategory && this._regionCategory.subcategories ? 
-            this._regionCategory.subcategories.filter((c) => c.id === this._selectedSubcategory).pop()?.citation
-            : this._regionCategory.citation;
-
+        let subcat = this._regionCategory[this._selectedSubcategory];
         return html`
-        ${this._notification}
+        <!-- TABS -->
         <div style="display: flex; margin-bottom: 10px;">
             <wl-tab-group align="center" style="width: 100%;">
                 <wl-tab @click="${() => this._selectSubcategory('')}" ?checked=${!this._selectedSubcategory}>
@@ -189,6 +186,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             </div>
         </div>
 
+        <!-- Description, citation... -->
         <div class="desc-grid">
             <div style="grid-column: 1 / 2;">
             ${this.regionType && this._region ?
@@ -199,9 +197,12 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                     ${this.regionType ? this.regionType.toLowerCase() : ''} 
                     modeling in ${this._region.name || this._regionid}`)
                 : ''}
-            ${citation ?
-                html`<div style="font-size: 13px; font-style: italic; padding-top: 3px;">${citation}</div>`
-                : ''}
+            ${subcat ? html`
+                ${subcat.name ? html`<div>${subcat.name}</div>` : ''}
+                ${subcat.citation ?
+                    html`<div style="font-size: 13px; font-style: italic; padding-top: 3px;">${subcat.citation}</div>`
+                    : ''}
+            ` : ''}
             </div>
             <div style="grid-column: 2 / 3;">
                 <wl-icon @click="${this._showAddRegionsDialog}" style="float:right;"
@@ -209,6 +210,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             </div>
         </div>
 
+        <!-- MAP -->
         ${!this._mapReady ?  html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
         <google-map-custom class="map" api-key="${GOOGLE_API_KEY}" 
             .style="visibility: ${this._mapReady? 'visible': 'hidden'}; display: ${this._mapEmpty? 'unset' : 'block'}"
@@ -228,6 +230,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         </div>
         ` : ''}
 
+        <!-- INFO -->
         ${this._selectedRegion ? html`
         <div class="bottom-panel">
             <span style="display: inline-block; width: auto;">
@@ -299,6 +302,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                   })
                 }
             } else {
+                this._mapReady = true;
                 this._mapEmpty = true;
             }
         }
@@ -356,6 +360,20 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                 }
                 let index = checkbox.value;
                 let geomobj = this._new_geometries[index];
+
+                //Fix not closed multipoligons.
+                geomobj.geometries.forEach(element => {
+                    if (element.type == "MultiPolygon") {
+                        element.coordinates.forEach(ca => {
+                            let coords = ca[0];
+                            let len = coords.length
+                            if (len > 2 && (coords[0][0] != coords[len-1][0] || coords[0][1] != coords[len-1][1])) {
+                                coords.push(coords[0]);
+                            }
+                        });
+                    }
+                });
+
                 let region = {
                     geometries: geomobj.geometries,
                     name: input.value,
@@ -368,6 +386,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
             alert("Please select some/all regions to add");
             return;
         }
+
         
         addRegions(this._regionid, newregions).then(() => {
             hideDialog("addRegionDialog", this.shadowRoot);

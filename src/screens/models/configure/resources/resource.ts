@@ -1298,7 +1298,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     /* Set a single resource */
     public setResource (r:T) {
-        return new Promise((resolve, reject) => {
+        return new Promise<T>((resolve, reject) => {
             if (!this._singleModeInitialized) {
                 this._initializeSingleMode();
                 this._singleModeInitialized = true;
@@ -1337,7 +1337,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 this._resources = [];
                 this._orderedResources = [];
                 this._unsetSubResources();
-                resolve();
+                resolve(null);
             }
         });
     }

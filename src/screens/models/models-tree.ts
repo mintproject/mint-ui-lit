@@ -10,7 +10,6 @@ import { goToPage } from '../../app/actions';
 import { IdMap } from 'app/reducers';
 import { ModelConfigurationSetup, ModelConfiguration, SoftwareVersion, Model, Region } from '@mintproject/modelcatalog_client';
 import { getLabel, isSubregion, sortVersions, sortConfigurations, sortSetups } from 'model-catalog/util';
-
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import "weightless/progress-spinner";

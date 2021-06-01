@@ -24,7 +24,6 @@ import { dexplorerSelectDataset, dexplorerSelectDatasetArea } from 'screens/data
 import { selectEmulatorModel } from 'screens/emulators/actions';
 
 import * as mintConfig from '../config/config.json';
-
 import ReactGA from 'react-ga';
 
 export const BASE_HREF = document.getElementsByTagName("base")[0].href.replace(/^http(s)?:\/\/.*?\//, "/");

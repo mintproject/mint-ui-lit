@@ -54,8 +54,6 @@ import { VariablesState } from 'screens/variables/reducers';
 import { VariablesAction } from 'screens/variables/actions';
 import { AnalysisState } from 'screens/analysis/reducers';
 import { AnalysisAction } from 'screens/analysis/actions';
-
-// -- 
 import { ModelCatalogAction } from 'model-catalog-api/actions';
 import { ModelCatalogState } from 'model-catalog-api/reducers';
 
@@ -78,8 +76,7 @@ export interface RootState {
 
 export type RootAction = AppAction | ModelingAction | ModelsAction | DatasetsAction | EmulatorsAction |
                          RegionsAction | UIAction | ExplorerUIAction | VariablesAction |
-                         MessagesAction | DExplorerUIAction | AnalysisAction |
-                         ModelCatalogAction ;
+                         MessagesAction | ModelCatalogAction | DExplorerUIAction | AnalysisAction;
 
 // Sets up a Chrome extension for time travel debugging.
 // See https://github.com/zalmoxisus/redux-devtools-extension for more information.

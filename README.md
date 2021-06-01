@@ -63,8 +63,9 @@ You can see that the actual version is v0.0.1
 yarn install
 ```
 
-You will need to set the configuration for firebase through enviroment variables:
+You will need to set the configuration for firebase (authentication) and google maps through enviroment variables:
 ```
+//Authentication
 export FIREBASE_API_KEY=
 export FIREBASE_AUTH_DOMAIN=
 export FIREBASE_DATABASE_URL=
@@ -72,16 +73,25 @@ export FIREBASE_PROJECT_ID=
 export FIREBASE_STORAGE_BUCKET=
 export FIREBASE_MESSAGING_SENDER_ID=
 export FIREBASE_APP_ID=
+//Google maps
 export GOOGLE_MAPS_API_KEY=
 ```
 
 If you want to add new variables, please check `webpack/base.config.ts`
 
+## SERVICES
+
+The portal is connected to an Hasura GraphQL database, an execution engine and the model-catalog.
+
+To change the version of the model-catalog you must change it on `package.json`
+
+To edit the configuration of other services please edit `/src/config/config.json`
+
 ## BUILDING
 
 To create the production build use:
 ```
-yarn create-build
+yarn build
 ```
 
 You can start the development server with:

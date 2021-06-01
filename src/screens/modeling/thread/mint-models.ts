@@ -25,7 +25,6 @@ import { Region } from "screens/regions/reducers";
 import { IdMap } from "app/reducers";
 import { Model as MCModel, Region as MCRegion, SoftwareVersion, SoftwareImage, ModelConfiguration,
          ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
-
 import 'components/loading-dots';
 import { getLatestEventOfType } from "util/event_utils";
 import variables, { VariableMap } from "screens/variables/reducers";

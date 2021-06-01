@@ -139,7 +139,6 @@ export class DataTransformationList extends connect(store)(PageViewElement) {
         </ul>`
     }
 
-
     protected firstUpdated () {
         this._loadingAll = true;
         store.dispatch(ModelCatalogApi.myCatalog.dataTransformation.getAll()).then((dts) => {

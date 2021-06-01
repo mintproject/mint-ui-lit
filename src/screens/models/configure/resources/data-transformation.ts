@@ -293,7 +293,6 @@ export class ModelCatalogDataTransformation extends connect(store)(ModelCatalogR
 
     protected _getResourceFromFullForm () {
         // GET ELEMENTS
-        console.log('asdasd');
         let inputLabel : Textfield = this.shadowRoot.getElementById('dt-label') as Textfield;
         let inputDesc : Textarea = this.shadowRoot.getElementById('dt-desc') as Textarea;
         let inputCompLoc : Textarea = this.shadowRoot.getElementById('dt-comp-loc') as Textarea;
