@@ -2,9 +2,8 @@ import { Action, ActionCreator } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "../../app/store";
 import { Model, ModelParameter } from "./reducers";
-import { Dataset } from "../datasets/reducers";
 
-import { Model as MCModel, ModelConfigurationSetup, DatasetSpecification, SoftwareImage, ModelConfiguration, SoftwareVersion, SampleCollectionApi, SampleCollection, SampleResource, SampleResourceApi } from '@mintproject/modelcatalog_client';
+import { Model as MCModel, ModelConfigurationSetup, DatasetSpecification, SoftwareImage, ModelConfiguration, SoftwareVersion } from '@mintproject/modelcatalog_client';
 import { sortByPosition, getLabel } from 'model-catalog/util';
 
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
@@ -97,7 +96,7 @@ const dsSpecToIO = (ds: DatasetSpecification) => {
 
 // Transform to graphql representation TODO, FIXME
 export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages: IdMap<SoftwareImage>) :  Model => {
-    console.log('>> SW in setup:', setup.hasSoftwareImage[0], 'vs', softwareImages[setup.hasSoftwareImage[0].id]);
+    //console.log('>> SW in setup:', setup.hasSoftwareImage[0], 'vs', softwareImages[setup.hasSoftwareImage[0].id]);
     let model: Model = {
         id: setup.id,
         localname: setup.id.substr(setup.id.lastIndexOf("/") + 1),
@@ -219,70 +218,24 @@ export const fetchModelsFromCatalog = async (
             Object.values(fixedModels).forEach((model) => {
                 if (model.hasRegion)
                     delete model.hasRegion;
-                    Object.values(allConfigs).forEach((cfg:ModelConfiguration) => {
-                        if ((cfg.hasSetup || []).some((setup:ModelConfigurationSetup) => setup.id === model.id))
-                            model.model_configuration = cfg.id;
+                Object.values(allConfigs).forEach((cfg:ModelConfiguration) => {
+                    if ((cfg.hasSetup || []).some((setup:ModelConfigurationSetup) => setup.id === model.id))
+                        model.model_configuration = cfg.id;
+                });
+                if (model.model_configuration) {
+                    Object.values(allVersions).forEach((ver:SoftwareVersion) => {
+                        if ((ver.hasConfiguration || []).some((cfg:ModelConfiguration) => cfg.id === model.model_configuration))
+                            model.model_version = ver.id;
                     });
-                    if (model.model_configuration) {
-                        Object.values(allVersions).forEach((ver:SoftwareVersion) => {
-                            if ((ver.hasConfiguration || []).some((cfg:ModelConfiguration) => cfg.id === model.model_configuration))
-                                model.model_version = ver.id;
-                        });
-                    }
-                    if (model.model_version) {
-                        Object.values(allModels).forEach((mod:MCModel) => {
-                            if ((mod.hasVersion || []).some((ver:SoftwareVersion) => ver.id === model.model_version))
-                                model.model_name = mod.id;
-                        });
-                    }
+                }
+                if (model.model_version) {
+                    Object.values(allModels).forEach((mod:MCModel) => {
+                        if ((mod.hasVersion || []).some((ver:SoftwareVersion) => ver.id === model.model_version))
+                            model.model_name = mod.id;
+                    });
+                }
             });
-            let sampleCollectionApi = new SampleCollectionApi();
-            let sampleResourceApi = new SampleResourceApi();
 
-            /* The api does not return collections of inputs. FIXME
-            let fixCollection = Promise.all( Object.values(fixedModels).map((model:Model) =>
-                Promise.all( model.input_files.map((input) => {
-                    if (input.value && input.value.id && input.value.resources && input.value.resources.length === 0) {
-                        console.log('Checking collection...', input.value.id);
-                        return new Promise((resolve, reject) => {
-                            let id : string = getIdFromUri(input.value.id);
-                            let user : string = getUser();
-                            let api : SampleCollectionApi = new SampleCollectionApi();
-                            sampleCollectionApi.samplecollectionsIdGet({username: user, id: id})
-                            .then((sc:SampleCollection) => {
-                                if (sc.hasPart) {
-                                    //console.log('hasPart:', sc.hasPart);
-                                    let pResources = Promise.all(sc.hasPart.map((sr:SampleResource) => {
-                                        let srid : string = getIdFromUri(sr.id);
-                                        return sampleResourceApi.sampleresourcesIdGet({username: user, id: srid})
-                                    }));
-                                    pResources.then((srs:SampleResource[]) => {
-                                        //console.log('all sample resources!');
-                                        input.value.resources = srs.map((sr:SampleResource) => {
-                                            return {
-                                                url: sr.value ? <unknown>sr.value[0] as string : "",
-                                                id: sr.id,
-                                                name: sr.label ? sr.label[0] : "",
-                                                selected: true
-                                            };
-                                        });
-                                        if (srs.length > 0 && srs[0].dataCatalogIdentifier) {
-                                            input.value.id = srs[0].dataCatalogIdentifier[0];
-                                        }
-                                        resolve();
-                                    });
-                                } else {
-                                    resolve();
-                                }
-                            });
-                        });
-
-                    } else {
-                        return Promise.resolve();
-                    }
-                }) )
-            ) );
-            await fixCollection;*/
             return fixedModels;
         });
 }
