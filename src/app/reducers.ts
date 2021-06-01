@@ -38,7 +38,7 @@ export interface UserPreferences {
 
 export interface MintPreferences {
   data_catalog_api: string,
-  //model_catalog_api?: string  // Model Catalog API isn't used from here any more
+  model_catalog_api?: string,
   ensemble_manager_api: string,
   ingestion_api: string,
   visualization_url: string,  

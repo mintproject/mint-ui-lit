@@ -1,8 +1,12 @@
-import { Configuration, DefaultApi } from '@mintproject/modelcatalog_client';
+import { Configuration, ConfigurationParameters, DefaultApi } from '@mintproject/modelcatalog_client';
 import { store } from 'app/store';
 
 import { DefaultReduxApi } from './default-redux-api';
 import { UserCatalog } from './user-catalog';
+import * as mintConfig from 'config/config.json';
+import { MintPreferences } from 'app/reducers';
+
+let prefs = mintConfig["default"] as MintPreferences;
 
 //export const FETCH_MODEL_CATALOG_ACCESS_TOKEN = 'FETCH_MODEL_CATALOG_ACCESS_TOKEN';
 //export const STATUS_MODEL_CATALOG_ACCESS_TOKEN = 'STATUS_MODEL_CATALOG_ACCESS_TOKEN';
@@ -19,11 +23,12 @@ export class ModelCatalogApi {
     public static getApiConfiguration () : Configuration {
         if (ModelCatalogApi.defaultConfiguration) return ModelCatalogApi.defaultConfiguration;
         let token : string = ModelCatalogApi.getAccessToken();
-        if (token) {
-            ModelCatalogApi.defaultConfiguration = new Configuration({accessToken: token});
-            return ModelCatalogApi.defaultConfiguration;
-        }
-        return new Configuration();
+        let cfg : ConfigurationParameters = {};
+        if (token) cfg.accessToken = token;
+        if (prefs.model_catalog_api) cfg.basePath = prefs.model_catalog_api;
+
+        ModelCatalogApi.defaultConfiguration = new Configuration(cfg);
+        return ModelCatalogApi.defaultConfiguration;
     }
 
     public static login (username: string, password:string, dispatch:boolean = true) : Promise<string> {
