@@ -48,7 +48,16 @@ export interface MintPreferences {
   // Wings Execution  
   wings?: WingsPreferences,  
   graphql?: GraphQLPreferences,
-  wings_api?: string
+  wings_api?: string,
+  //maps
+  google_maps_key: string,
+  apiKey: string,
+  authDomain: string,
+  databaseURL: string,
+  projectId: string,
+  storageBucket: string,
+  messagingSenderId: string,
+  appId: string
 }
 
 export interface GraphQLPreferences {

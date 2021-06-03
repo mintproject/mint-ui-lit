@@ -103,3 +103,12 @@ Or build the development version with:
 ```
 yarn create-build-dev
 ```
+
+
+### Encrypting
+
+
+```bash
+gpg --symmetric --cipher-algo AES256 src/config/config-tacc.json; mv src/config/config-tacc.json.gpg . 
+```
+

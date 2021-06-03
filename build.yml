@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - master
-      - dev
-      - trigger
     tags:
       - v*
   pull_request:
@@ -17,6 +15,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      #- name: Inject slug/short variables
+      #  uses: rlespinasse/github-slug-action@v3.x
       - uses: actions/checkout@v2
       - name: Use Node.js
         uses: actions/setup-node@v1
@@ -32,10 +32,6 @@ jobs:
             ${{ runner.OS }}-
       - name: Install dependencies
         run: npm install
-      - name: Decrypt large secret
-        run: ./.github/scripts/decrypt_secret.sh
-        env:
-          LARGE_SECRET_PASSPHRASE: ${{ secrets.LARGE_SECRET_PASSPHRASE }}
       - name: Build (webpack) 
         run: npm run build --if-present
       - name: Test
