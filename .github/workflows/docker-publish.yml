@@ -3,9 +3,9 @@ name: Docker
 on:
   push:
     branches:
+      - tacc
       - master
       - dev
-      - trigger
     tags:
       - v*
   pull_request:
