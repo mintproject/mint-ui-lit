@@ -13,15 +13,15 @@ import "weightless/dialog";
 import "components/google-map-custom";
 
 import { ComparisonFeature } from 'screens/modeling/reducers';
-import { fromTimeStampToDateString } from 'util/date-utils';
-import { GOOGLE_API_KEY } from 'config/firebase';
 import { BoundingBox, Point, Region } from 'screens/regions/reducers';
 import { queryDatasetResources } from './actions';
 import { GoogleMapCustom } from 'components/google-map-custom';
-import { UserPreferences } from 'app/reducers';
-import { getRegionDetails } from 'screens/regions/actions';
+import { UserPreferences, MintPreferences  } from 'app/reducers';
 import { showDialog, hideDialog } from 'util/ui_functions';
 
+import * as mintConfig from 'config/config.json';
+let prefs = mintConfig["default"] as MintPreferences;
+const GOOGLE_API_KEY = prefs.google_maps_key;   
 
 @customElement('dataset-detail')
 export class DatasetDetail extends connect(store)(PageViewElement) {
@@ -31,7 +31,7 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _filterby_region: Region;
 
-    @property({type: Array})
+    @property({type: Object})
     private _dataset: DatasetWithStatus;
 
     @property({type: Boolean})

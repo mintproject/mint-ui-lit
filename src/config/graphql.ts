@@ -1,7 +1,7 @@
 import { ApolloClient, createHttpLink, InMemoryCache, split, NormalizedCacheObject } from '@apollo/client';
 import { WebSocketLink } from '@apollo/client/link/ws';
 import { getMainDefinition } from '@apollo/client/utilities';
-import { MintPreferences } from 'app/reducers';
+import { MintPreferences, User } from 'app/reducers';
 import { SubscriptionClient } from 'subscriptions-transport-ws';
 
 import * as mintConfig from './config.json';
@@ -18,11 +18,11 @@ export class GraphQL {
   static client : ApolloClient<NormalizedCacheObject>;
   static userId;
 
-  static instance = (auth) => {
+  static instance = (auth:User) => {
 
-    if(GraphQL.client != null && auth.currentUser?.email == GraphQL.userId)
+    if(GraphQL.client != null && auth?.email == GraphQL.userId)
       return GraphQL.client
-    GraphQL.userId = auth.currentUser?.email;
+    GraphQL.userId = auth?.email;
 
     const splitLink = split(
       ({ query }) => {

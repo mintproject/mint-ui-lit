@@ -5,26 +5,27 @@ import { PageViewElement } from '../../components/page-view-element';
 import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { listTopRegions, calculateMapDetails } from '../regions/actions';
-import { Region, RegionMap } from '../regions/reducers';
-import { GOOGLE_API_KEY } from '../../config/firebase';
+import { Region } from '../regions/reducers';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
 
 import "../../components/stats-blurb";
 import "../../thirdparty/google-map/src/google-map";
 import "../../components/google-map-custom";
-import { selectTopRegion } from '../../app/ui-actions';
 import { GoogleMapCustom } from 'components/google-map-custom';
-import { goToPage, goToRegionPage } from 'app/actions';
-import { User } from 'app/reducers';
+import { goToRegionPage } from 'app/actions';
+import { MintPreferences, User } from 'app/reducers';
+
+import * as mintConfig from 'config/config.json';
+let prefs = mintConfig["default"] as MintPreferences;
+const GOOGLE_API_KEY = prefs.google_maps_key;   
 
 @customElement('app-home')
 export class AppHome extends connect(store)(PageViewElement) {
     @property({type: Array})
     private _regionids!: string[];
 
-    @property({type: Object})
+    @property({type: Array})
     private _regions!: Region[];
 
     @property({type: String})

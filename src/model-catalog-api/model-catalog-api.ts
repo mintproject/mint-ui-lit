@@ -15,6 +15,15 @@ export class ModelCatalogApi {
         ModelCatalogApi.username = username;
     }
 
+    public static setAccessToken (token:string) {
+        ModelCatalogApi.saveAccessToken(token);
+    }
+
+    private static saveAccessToken (token:string) {
+        localStorage.setItem('accessToken', token);
+        ModelCatalogApi._accessToken = token;
+    }
+
     public static getApiConfiguration () : Configuration {
         if (ModelCatalogApi.defaultConfiguration) return ModelCatalogApi.defaultConfiguration;
         let token : string = ModelCatalogApi.getAccessToken();
@@ -32,10 +41,8 @@ export class ModelCatalogApi {
         req.then((data:string) => {
             let accessToken : string = JSON.parse(data)['access_token'];
             if (accessToken) {
-                console.log('Access token was retrieved and stored.');
-                localStorage.setItem('accessToken', accessToken);
-                ModelCatalogApi._accessToken = accessToken;
-                ModelCatalogApi.username = username;
+                ModelCatalogApi.saveAccessToken(accessToken);
+                ModelCatalogApi.setUsername(username);
             } else {
                 console.error('Error fetching the model catalog token!');
             }

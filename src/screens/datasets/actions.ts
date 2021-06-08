@@ -5,7 +5,6 @@ import { Dataset, DatasetDetail, DatasetQueryParameters, DataResource } from "./
 import { OFFLINE_DEMO_MODE } from "../../app/actions";
 import { IdMap, MintPreferences } from "app/reducers";
 import { DateRange } from "screens/modeling/reducers";
-import { fromTimeStampToString, fromTimeStampToString2 } from "util/date-utils";
 import { Region } from "screens/regions/reducers";
 
 export const DATASETS_VARIABLES_QUERY = 'DATASETS_VARIABLES_QUERY';

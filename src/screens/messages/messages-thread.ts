@@ -5,8 +5,6 @@ import { store, RootState } from '../../app/store';
 import { connect } from "pwa-helpers/connect-mixin";
 
 import { listThreads, listPosts, addPost } from './actions';
-import { fromTimeStampToReadableString } from 'util/date-utils';
-import { formElementsComplete, showNotification, resetForm } from '../../util/ui_functions';
 
 import '../../components/loading-dots'
 import marked from 'marked';
@@ -85,7 +83,7 @@ export class MessagesThread extends connect(store)(PageViewElement) {
             <div>
                 <span class="user">
                     ${this._thread.username}<br/>
-                    ${fromTimeStampToReadableString(this._thread.timestamp)}
+                    ${this._thread.timestamp}
                 </span>
             </div>`
             : html`<loading-dots style="--width: 20px"></loading-dots>`}
@@ -99,7 +97,7 @@ export class MessagesThread extends connect(store)(PageViewElement) {
                         <div id="${p.id}"></div>
                         <span class="user">
                             ${p.username}<br/>
-                            ${fromTimeStampToReadableString(p.timestamp)}
+                            ${p.timestamp}
                         </span>
                     </div>`)
             )}
@@ -171,9 +169,7 @@ export class MessagesThread extends connect(store)(PageViewElement) {
     }
 
     if (state.messages && state.messages.posts && state.messages.posts.posts) {
-        this._posts = Object.values(state.messages.posts.posts).filter(p => p.threadid === this._threadId).sort((a, b) => {
-            return a.timestamp.seconds - b.timestamp.seconds;
-        });
+        this._posts = Object.values(state.messages.posts.posts).filter(p => p.threadid === this._threadId);
     }
   }
 }

@@ -4,10 +4,7 @@ import { PageViewElement } from '../../components/page-view-element';
 import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { goToPage } from '../../app/actions';
 import { addRegions, addSubcategory } from './actions';
-import { GOOGLE_API_KEY } from 'config/firebase';
-import { IdMap } from 'app/reducers';
 import { Region, RegionCategory } from './reducers';
 import { CustomNotification } from 'components/notification';
 
@@ -24,6 +21,11 @@ import "./region-models";
 import "./region-datasets";
 import { geometriesToGeoJson, geoJsonToGeometries } from 'util/geometry_functions';
 
+import { MintPreferences } from 'app/reducers';
+import * as mintConfig from 'config/config.json';
+let prefs = mintConfig["default"] as MintPreferences;
+const GOOGLE_API_KEY = prefs.google_maps_key;   
+
 @customElement('regions-editor')
 export class RegionsEditor extends connect(store)(PageViewElement)  {
 
@@ -36,7 +38,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     @property({type: String})
     private _selectedSubregionId: string;
 
-    @property({type: Object})
+    @property({type: Array})
     private _regions: Region[];
 
     @property({type: Object})

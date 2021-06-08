@@ -2,9 +2,6 @@ import { Action, ActionCreator } from "redux";
 import { ThreadList, PostList, Thread, Post } from "./reducers";
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "app/store";
-import { db } from "config/firebase";
-import { IdMap } from "app/reducers";
-import { toTimeStampFromDate } from "util/date-utils";
 
 export const THREAD_LIST = 'THREAD_LIST';
 export const POST_LIST = 'POST_LIST';
@@ -27,6 +24,7 @@ export interface MessagesActionThreadSubscription extends Action<'THREAD_SUBSCRI
 // List Scenarios
 type ThreadListThunkResult = ThunkAction<void, RootState, undefined, MessagesActionThreadList>;
 export const listThreads: ActionCreator<ThreadListThunkResult> = () => (dispatch) => {
+    /* TODO: Add this to graphql
     db.collection("message_threads").onSnapshot((querySnapshot) => {
         let threads:IdMap<Thread> = {};
         let threadids:string[] = [];
@@ -46,12 +44,13 @@ export const listThreads: ActionCreator<ThreadListThunkResult> = () => (dispatch
             type: THREAD_LIST,
             list
         })
-    });
+    }); */
 };
 
 // List Scenarios
 type PostListThunkResult = ThunkAction<void, RootState, undefined, MessagesActionPostList | MessagesActionThreadSubscription>;
 export const listPosts: ActionCreator<PostListThunkResult> = (threadid: string) => (dispatch) => {
+    /* TODO: Add this to graphql
     let unsubscribe = db.collection("message_posts").where("threadid", "==", threadid).onSnapshot((querySnapshot) => {
         let posts:IdMap<Post> = {};
         let postids:string[] = [];
@@ -78,27 +77,29 @@ export const listPosts: ActionCreator<PostListThunkResult> = (threadid: string) 
         type: THREAD_SUBSCRIPTION,
         threadid: threadid,
         unsubscribe: unsubscribe
-    });
+    });*/
 };
 
 // Add Thread
 export const addThread = (thread:Thread, uid: string, uname: string) =>  {
+    /* TODO: Add this to graphql
     let threadRef = db.collection("message_threads").doc();
     thread.timestamp = toTimeStampFromDate(new Date());
     thread.userid = uid;
     thread.username = uname;
     threadRef.set(thread);
-    return threadRef.id;
+    return threadRef.id; */
 };
 
 // Add Post
 export const addPost = (post: Post, uid: string, uname: string) => {
+    /* TODO: Add this to graphql
     let postRef = db.collection("message_posts").doc();
     post.timestamp = toTimeStampFromDate(new Date());
     post.userid = uid;
     post.username = uname;
     postRef.set(post);
-    return postRef.id;
+    return postRef.id; */
 }
 
 export type MessagesAction =  MessagesActionThreadList | MessagesActionPostList | MessagesActionThreadSubscription;

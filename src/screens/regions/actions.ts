@@ -1,9 +1,7 @@
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "../../app/store";
 import { ActionCreator, Action } from "redux";
-import { db, auth } from "../../config/firebase";
 import { Region, BoundingBox, Point, RegionMap, RegionCategory } from "./reducers";
-import { OFFLINE_DEMO_MODE } from "../../app/actions";
 import { GraphQL } from "config/graphql";
 
 import listTopRegionsGQL from '../../queries/region/list-top.graphql';
@@ -14,6 +12,7 @@ import addRegionsGQL from '../../queries/region/new.graphql';
 
 import { IdMap } from "app/reducers";
 import { regionFromGQL, regionToGQL } from "util/graphql_adapter";
+import { KeycloakAdapter } from "util/keycloak-adapter";
 
 export const REGIONS_LIST_CATEGORIES = 'REGIONS_LIST_CATEGORIES';
 export const REGIONS_LIST_TOP_REGIONS = 'REGIONS_LIST_TOP_REGIONS';
@@ -52,7 +51,7 @@ export const setPreview: ActionCreator<BBoxPreviewThunkResult> = (bbox: Bounding
 // List Region Categories
 type ListCategoriesThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListCategories>;
 export const listRegionCategories: ActionCreator<ListCategoriesThunkResult> = () => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: listRegionCategoriesGQL
     }).then(result => {
@@ -92,7 +91,7 @@ export const listRegionCategories: ActionCreator<ListCategoriesThunkResult> = ()
 // List Regions
 type ListRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListTopRegions>;
 export const listTopRegions: ActionCreator<ListRegionsThunkResult> = () => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: listTopRegionsGQL
     }).then(result => {
@@ -148,7 +147,7 @@ const _calculateBoundingBox = (geometries: any[]) => {
 // Query for Sub Regions
 type SubRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListSubRegions>;
 export const listSubRegions: ActionCreator<SubRegionsThunkResult> = (regionid: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: listSubRegionsGQL,
         variables: {
@@ -183,7 +182,7 @@ export const filterRegionsOfType = (regionids: string[], regions: RegionMap, typ
 
 // Get details about a particular region/subregion
 export const getRegionDetails = (regionid: string, subregionid: string) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     return new Promise<Region>((resolve, reject) => {
         APOLLO_CLIENT.query({
             query: getRegionDetailsGQL,
@@ -217,7 +216,7 @@ function chunkRegions(array: Region[], size: number) {
 }
 
 export const addRegions = (parent_regionid: string, regions: Region[]) : Promise<any[]> =>  {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     let chunks = chunkRegions(regions, 500);
     return Promise.all(chunks.map((regionlist) => {
         let objects = regionlist.map((region: Region) => {
@@ -236,6 +235,8 @@ export const addRegions = (parent_regionid: string, regions: Region[]) : Promise
 
 export const addSubcategory = (parent_regionid: string, category: string, subcategory_name: string,
         subcategory_desc: string) : Promise<any> => {
+    return Promise.reject();
+    /* TODO: Change to work with graphql
     let regionRef = db.collection('regions').doc(parent_regionid);
     return new Promise ((resolve, reject) => {
         regionRef.get().then((doc) => {
@@ -245,10 +246,12 @@ export const addSubcategory = (parent_regionid: string, category: string, subcat
             let setWithMerge = regionRef.set({subcategories: subcategories}, {merge: true});
             setWithMerge.then(resolve);
         })
-    });
+    }); */
 };
 
 export const removeSubcategory = (parent_regionid: string, category: string, subcategory: string) : Promise<any> => {
+    return Promise.reject();
+    /* TODO: Change to work with graphql
     let regionRef = db.collection('regions').doc(parent_regionid);
 
     return new Promise ((resolve, reject) => {
@@ -275,16 +278,17 @@ export const removeSubcategory = (parent_regionid: string, category: string, sub
                 reject();
             }
         })
-    });
+    });*/
 };
 
 export const renameSubcategory = (parent_regionid: string, old_category: string, new_category: string) => {
+    /* TODO: Change to work with graphql
     let renameQuery = db.collection('regions/' + parent_regionid + '/subregions').where('region_type', '==', old_category);
     renameQuery.get().then((querySnapshot) => {
         querySnapshot.forEach((doc) => {
             db.collection('regions/' + parent_regionid + '/subregions' ).doc(doc.id).update({'region_type': new_category});
         });
-    });
+    });*/
 };
 
 

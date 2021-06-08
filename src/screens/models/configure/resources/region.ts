@@ -9,15 +9,10 @@ import { Region, RegionFromJSON, GeoShape, GeoShapeFromJSON } from '@mintproject
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
-import { GOOGLE_API_KEY } from 'config/firebase';
-import { GoogleMapCustom } from 'components/google-map-custom';
-import { RegionCategory } from "screens/regions/reducers";
 import { Region as LocalRegion} from "screens/regions/reducers";
-import { IdMap } from "app/reducers";
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
-import { Select } from 'weightless/select';
 
 import { BaseAPI } from '@mintproject/modelcatalog_client';
 import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';

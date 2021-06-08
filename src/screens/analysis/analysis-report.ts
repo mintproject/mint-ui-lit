@@ -12,7 +12,6 @@ import { IdMap, UserPreferences } from 'app/reducers';
 import { ProblemStatementInfo, ProblemStatementList, ThreadInfo, ThreadEvent, Task, Thread } from 'screens/modeling/reducers';
 import { fetchThread, fetchProblemStatement, fetchProblemStatementsList } from './actions';
 
-import { fromTimeStampToDateString } from "util/date-utils";
 import { getURL } from 'model-catalog/util';
 
 import '../../components/nav-title'
@@ -45,7 +44,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
   @property({type: Object})
   private _thread : Thread;
 
-  @property({type: Boolean})
+  @property({type: Object})
   private _loading : IdMap<boolean> = {};
 
   @property({type: String})
@@ -228,6 +227,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
             })
           }
           </div>
+        </div>
     `;
   }
 
