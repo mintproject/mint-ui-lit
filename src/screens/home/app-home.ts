@@ -17,6 +17,7 @@ import "../../components/google-map-custom";
 import { selectTopRegion } from '../../app/ui-actions';
 import { GoogleMapCustom } from 'components/google-map-custom';
 import { goToPage, goToRegionPage } from 'app/actions';
+import { User } from 'app/reducers';
 
 @customElement('app-home')
 export class AppHome extends connect(store)(PageViewElement) {
@@ -222,13 +223,13 @@ export class AppHome extends connect(store)(PageViewElement) {
 
     // This is called every time something is updated in the store.
     stateChanged(state: RootState) {
-        if (state.app && state.app.prefs && state.app.prefs.profile) {
-            let profile = state.app.prefs.profile;
-            if (profile.mainRegion != this._mainRegion) {
-                if (!profile.mainRegion) {
+        if (state.app && state.app.user) {
+            let user : User = state.app.user;
+            if (user.region != this._mainRegion) {
+                if (!user.region) {
                     this._mainRegion = 'south_sudan';
                 } else {
-                    this._mainRegion = profile.mainRegion;
+                    this._mainRegion = user.region;
                 }
                 if (this._regions) this._addRegions();
             }

@@ -1,15 +1,10 @@
 import { Configuration, ConfigurationParameters, DefaultApi } from '@mintproject/modelcatalog_client';
-import { store } from 'app/store';
 
-import { DefaultReduxApi } from './default-redux-api';
 import { UserCatalog } from './user-catalog';
 import * as mintConfig from 'config/config.json';
 import { MintPreferences } from 'app/reducers';
 
 let prefs = mintConfig["default"] as MintPreferences;
-
-//export const FETCH_MODEL_CATALOG_ACCESS_TOKEN = 'FETCH_MODEL_CATALOG_ACCESS_TOKEN';
-//export const STATUS_MODEL_CATALOG_ACCESS_TOKEN = 'STATUS_MODEL_CATALOG_ACCESS_TOKEN';
 
 export class ModelCatalogApi {
     private static _accessToken : string;
@@ -33,7 +28,6 @@ export class ModelCatalogApi {
 
     public static login (username: string, password:string, dispatch:boolean = true) : Promise<string> {
         let API : DefaultApi = new DefaultApi();
-        //if (dispatch) store.dispatch({type: STATUS_MODEL_CATALOG_ACCESS_TOKEN, status: 'LOADING'})
         let req : Promise<string> = API.userLoginPost({user: {username: username, password: password}});
         req.then((data:string) => {
             let accessToken : string = JSON.parse(data)['access_token'];
@@ -42,13 +36,18 @@ export class ModelCatalogApi {
                 localStorage.setItem('accessToken', accessToken);
                 ModelCatalogApi._accessToken = accessToken;
                 ModelCatalogApi.username = username;
-                //if (dispatch) store.dispatch({type: FETCH_MODEL_CATALOG_ACCESS_TOKEN, accessToken: accessToken});
             } else {
-                //if (dispatch) store.dispatch({type: STATUS_MODEL_CATALOG_ACCESS_TOKEN, status: 'ERROR'})
                 console.error('Error fetching the model catalog token!');
             }
         });
         return req;
+    }
+
+    public static logout () {
+        ModelCatalogApi.clearLocalAccessToken();
+        ModelCatalogApi._accessToken = undefined;
+        ModelCatalogApi.username = undefined;
+        //TODO: Maybe should clear all the APIs of the catalog
     }
 
     private static getAccessToken () : string {
