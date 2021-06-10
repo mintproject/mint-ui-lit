@@ -1,7 +1,7 @@
 import { Action, ActionCreator } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "../../../app/store";
-import { PREFIX_URI } from 'model-catalog/actions';
+import { PREFIX_URI } from 'config/default-graph';
 import { ComparisonEntry } from './ui-reducers'
 
 export const EXPLORER_SELECT_MODEL = 'EXPLORER_SELECT_MODEL'

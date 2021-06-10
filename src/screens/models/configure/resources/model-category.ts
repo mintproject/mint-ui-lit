@@ -4,7 +4,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { categoryGet, categoriesGet, categoryPost, categoryPut, categoryDelete } from 'model-catalog/actions';
 import { IdMap } from "app/reducers";
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -13,6 +12,10 @@ import { ExplorerStyles } from '../../model-explore/explorer-styles'
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 @customElement('model-catalog-category')
 export class ModelCatalogCategory extends connect(store)(ModelCatalogResource)<ModelCategory> {
@@ -28,14 +31,6 @@ export class ModelCatalogCategory extends connect(store)(ModelCatalogResource)<M
     protected classes : string = "resource category";
     protected name : string = "category";
     protected pname : string = "categories";
-    protected resourcesGet = categoriesGet;
-    protected resourceGet = categoryGet;
-    protected resourcePost = categoryPost;
-    protected resourcePut = categoryPut;
-    protected resourceDelete = categoryDelete;
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.categories;
-    }
+    
+    protected resourceApi : DefaultReduxApi<ModelCategory,BaseAPI> = ModelCatalogApi.myCatalog.modelCategory;
 }

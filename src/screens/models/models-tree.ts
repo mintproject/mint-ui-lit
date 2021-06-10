@@ -9,8 +9,8 @@ import { goToPage } from '../../app/actions';
 
 import { IdMap } from 'app/reducers';
 import { ModelConfigurationSetup, ModelConfiguration, SoftwareVersion, Model, Region } from '@mintproject/modelcatalog_client';
-import { regionsGet } from 'model-catalog/actions';
 import { getLabel, isSubregion, sortVersions, sortConfigurations, sortSetups } from 'model-catalog/util';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import "weightless/progress-spinner";
 import 'components/loading-dots'
@@ -293,7 +293,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
     }
 
     protected firstUpdated () {
-        store.dispatch(regionsGet());
+        store.dispatch(ModelCatalogApi.myCatalog.region.getAll());
     }
 
     stateChanged(state: RootState) {
@@ -325,11 +325,11 @@ export class ModelsTree extends connect(store)(PageViewElement) {
 
             if (state.modelCatalog) {
                 let db = state.modelCatalog;
-                this._models = db.models;
-                this._versions = db.versions;
-                this._configs = db.configurations;
-                this._setups = db.setups;
-                this._regions = db.regions;
+                this._models = db.model;
+                this._versions = db.softwareversion;
+                this._configs = db.modelconfiguration;
+                this._setups = db.modelconfigurationsetup;
+                this._regions = db.region;
             }
         }
     }

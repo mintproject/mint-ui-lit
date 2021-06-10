@@ -2,10 +2,8 @@ import { property } from "lit-element";
 import { RootState, store } from "../../../app/store";
 import { PageViewElement } from "../../../components/page-view-element";
 
-import { Thread, ProblemStatementInfo, MintPermission, ModelingState } from "../reducers";
-import { getUISelectedThread } from "../../../util/state_functions";
-import { User } from "firebase";
-import { UserPreferences } from "app/reducers";
+import { Thread, ProblemStatementInfo, MintPermission } from "../reducers";
+import { User, UserPreferences } from "app/reducers";
 import { getUserPermission } from "util/permission_utils";
 import { selectThreadSection } from "app/ui-actions";
 

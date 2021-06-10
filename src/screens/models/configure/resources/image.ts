@@ -3,7 +3,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { imageGet, imagesGet, imagePost, imagePut, imageDelete } from 'model-catalog/actions';
 import { Image, ImageFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 
@@ -14,16 +13,17 @@ import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+
 @customElement('model-catalog-image')
 export class ModelCatalogImage extends connect(store)(ModelCatalogResource)<Image> {
     protected classes : string = "resource image";
     protected name : string = "image";
     protected pname : string = "images";
-    protected resourcesGet = imagesGet;
-    protected resourceGet = imageGet;
-    protected resourcePost = imagePost;
-    protected resourcePut = imagePut;
-    protected resourceDelete = imageDelete;
+
+    protected resourceApi : DefaultReduxApi<Image,BaseAPI> = ModelCatalogApi.myCatalog.image;
 
     public pageMax : number = 10
 
@@ -61,10 +61,5 @@ export class ModelCatalogImage extends connect(store)(ModelCatalogResource)<Imag
             if (!label) (<any>inputLabel).onBlur();
             if (!value) (<any>inputValue).onBlur();
         }
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.images;
     }
 }

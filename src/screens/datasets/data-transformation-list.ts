@@ -7,11 +7,10 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { IdMap } from 'app/reducers';
 import { goToPage } from 'app/actions';
 
-import { dataTransformationsGet, dataTransformationGet, dataTransformationSetupsGet, dataTransformationPut,
-         dataTransformationPost, dataTransformationDelete } from 'model-catalog/actions';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { DataTransformation, DataTransformationFromJSON } from '@mintproject/modelcatalog_client';
 import { getId, getLabel } from 'model-catalog/util';
-import { PREFIX_URI } from 'model-catalog/actions';
+import { PREFIX_URI } from 'config/default-graph';
 import { renderExternalLink } from 'util/ui_renders';
 
 import "components/loading-dots";
@@ -140,27 +139,13 @@ export class DataTransformationList extends connect(store)(PageViewElement) {
         </ul>`
     }
 
-    /*private _onDuplicateButtonClicked () {
-        let dt = this._dts[this._dtid];
-        let name = window.prompt("Enter the name of the new Data Transformation", getLabel(dt) + " copy");
-        if (name) {
-            let jsonObj = { ...dt };
-            jsonObj.id = "";
-            jsonObj.label = [name];
-            store.dispatch(dataTransformationPost(DataTransformationFromJSON(jsonObj))).then((ndt) => {
-                this._dts[ndt.id] = ndt;
-                goToPage('datasets/data-transformations/' + getId(ndt));
-            })
-        }
-    }*/
-
     protected firstUpdated () {
         this._loadingAll = true;
-        store.dispatch(dataTransformationsGet()).then((dts) => {
+        store.dispatch(ModelCatalogApi.myCatalog.dataTransformation.getAll()).then((dts) => {
             this._loadingAll = false;
             this._dts = { ... dts };
         });
-        store.dispatch(dataTransformationSetupsGet()).then((dtss) => {
+        store.dispatch(ModelCatalogApi.myCatalog.dataTransformationSetup.getAll()).then((dtss) => {
             //TODO
         });
     }

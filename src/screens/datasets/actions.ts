@@ -5,7 +5,6 @@ import { Dataset, DatasetDetail, DatasetQueryParameters, DataResource } from "./
 import { OFFLINE_DEMO_MODE } from "../../app/actions";
 import { IdMap, MintPreferences } from "app/reducers";
 import { DateRange } from "screens/modeling/reducers";
-import { fromTimeStampToString, fromTimeStampToString2 } from "util/date-utils";
 import { Region } from "screens/regions/reducers";
 
 export const DATASETS_VARIABLES_QUERY = 'DATASETS_VARIABLES_QUERY';
@@ -340,7 +339,7 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
         loading: true
     });
     let dataset: Dataset;
-    let prom1 = new Promise((resolve, reject) => {
+    let prom1 = new Promise<void>((resolve, reject) => {
         let req = fetch(prefs.data_catalog_api + "/datasets/get_dataset_info", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -357,7 +356,7 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
     })
 
     let resources;
-    let prom2 = new Promise((resolve, reject) => {
+    let prom2 = new Promise<void>((resolve, reject) => {
         let req = fetch(prefs.data_catalog_api + "/datasets/dataset_resources", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},

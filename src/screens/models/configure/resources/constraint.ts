@@ -3,13 +3,16 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { constraintGet, constraintsGet, constraintPost, constraintPut, constraintDelete } from 'model-catalog/actions';
 import { Constraint, ConstraintFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles';
 import { ModelCatalogVariablePresentation } from './variable-presentation';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
@@ -32,12 +35,8 @@ export class ModelCatalogConstraint extends connect(store)(ModelCatalogResource)
     protected classes : string = "resource constraint";
     protected name : string = "constraint";
     protected pname : string = "constraints";
-    protected resourcesGet = constraintsGet;
-    protected resourceGet = constraintGet;
-    protected resourcePost = constraintPost;
-    protected resourcePut = constraintPut;
-    protected resourceDelete = constraintDelete;
 
+    protected resourceApi : DefaultReduxApi<Constraint,BaseAPI> = ModelCatalogApi.myCatalog.constraint;
     private _inputVariablePresentation : ModelCatalogVariablePresentation;
 
     public pageMax : number = 10
@@ -54,9 +53,8 @@ export class ModelCatalogConstraint extends connect(store)(ModelCatalogResource)
     //    type?: Array<string> | null;
     //    label?: Array<string> | null;
     //    description?: Array<string> | null;
-    //    hasMinimumValue?: Array<string> | null;
-    //    hasMaximumValue?: Array<string> | null;
     //    hasVariable?: Array<VariablePresentation> | null;
+    //    hasRule?: string | null;
     //}
 
     protected _renderForm () {
@@ -118,10 +116,5 @@ export class ModelCatalogConstraint extends connect(store)(ModelCatalogResource)
         super._editResource(r);
         let ed : Constraint = this._getEditingResource();
         this._inputVariablePresentation.setResources( ed.hasVariable );
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.constraints;
     }
 }

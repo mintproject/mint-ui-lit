@@ -10,13 +10,12 @@ import { showNotification } from "../../util/ui_functions";
 import { ExplorerStyles } from './model-explore/explorer-styles';
 import { ComparisonEntry } from './model-explore/ui-reducers';
 import { IdMap } from "app/reducers";
-import { setupGetAll } from 'model-catalog/actions';
 import { ComparisonFeature } from "../modeling/reducers";
 
-import { modelGet, versionGet, modelConfigurationGet, modelConfigurationSetupGet,
-         modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet, regionsGet } from 'model-catalog/actions';
 import { uriToId, getLabel, getId, isSubregion, sortVersions, sortConfigurations, sortSetups,
          getModelTypeNames } from 'model-catalog/util';
+
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import './models-tree'
 
@@ -66,10 +65,10 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
     private _setups : IdMap<ModelConfigurationSetup> = {};
 
     private _gets = {
-        "Model": modelGet,
-        "SoftwareVersion": versionGet,
-        "ModelConfiguration": modelConfigurationGet,
-        "ModelConfigurationSetup": modelConfigurationSetupGet,
+        "Model": ModelCatalogApi.myCatalog.model.get,
+        "SoftwareVersion": ModelCatalogApi.myCatalog.softwareVersion.get,
+        "ModelConfiguration": ModelCatalogApi.myCatalog.modelConfiguration.get,
+        "ModelConfigurationSetup": ModelCatalogApi.myCatalog.modelConfigurationSetup.get,
     }
 
     private _dbs = {
@@ -147,6 +146,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                     this._iProcess[m.id]
                     : html`<span style="color:#999">None specified<span>`
         },
+
         {
             name: "Input variables:",
             fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasInputVariable && m.hasInputVariable.length > 0 ? 
@@ -537,26 +537,26 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
 
     protected firstUpdated () {
         this._modelTree = new TreeRoot();
-        store.dispatch(modelsGet()).then((models:IdMap<Model>) => {
+        store.dispatch(ModelCatalogApi.myCatalog.model.getAll()).then((models:IdMap<Model>) => {
             this._loadingAllModels = false;
             this._allModels = models;
         });
-        store.dispatch(versionsGet()).then((versions:IdMap<SoftwareVersion>) => {
+        store.dispatch(ModelCatalogApi.myCatalog.softwareVersion.getAll()).then((versions:IdMap<SoftwareVersion>) => {
             this._loadingAllVersions = false;
             this._allVersions = versions;
             Object.keys(versions).forEach((vid:string) => !!this._nodes[vid] && this._nodes[vid].refresh());
         });
-        store.dispatch(modelConfigurationsGet()).then((cfgs:IdMap<ModelConfiguration>) => {
+        store.dispatch(ModelCatalogApi.myCatalog.modelConfiguration.getAll()).then((cfgs:IdMap<ModelConfiguration>) => {
             this._loadingAllConfigs = false;
             this._allConfigs = cfgs;
             Object.keys(cfgs).forEach((cid:string) => !!this._nodes[cid] && this._nodes[cid].refresh());
         });
-        let setupReq = store.dispatch(modelConfigurationSetupsGet())
+        let setupReq = store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getAll())
         setupReq.then((setups:IdMap<ModelConfigurationSetup>) => {
             this._allSetups = setups;
             Object.keys(setups).forEach((sid:string) => !!this._nodes[sid] && this._nodes[sid].refresh());
         });
-        let regionReq = store.dispatch(regionsGet());
+        let regionReq = store.dispatch(ModelCatalogApi.myCatalog.region.getAll());
         regionReq.then((regions:IdMap<Region>) => {
             this._allRegions = regions;
         });

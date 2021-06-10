@@ -3,7 +3,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { standardVariableGet, standardVariablesGet, standardVariablePost, standardVariablePut, standardVariableDelete } from 'model-catalog/actions';
 import { StandardVariable, StandardVariableFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 
@@ -13,16 +12,18 @@ import { ExplorerStyles } from '../../model-explore/explorer-styles'
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+
 @customElement('model-catalog-standard-variable')
 export class ModelCatalogStandardVariable extends connect(store)(ModelCatalogResource)<StandardVariable> {
     protected classes : string = "resource standard-variable";
     protected name : string = "standard variable";
     protected pname : string = "standard variables";
-    protected resourcesGet = standardVariablesGet;
-    protected resourceGet = standardVariableGet;
-    protected resourcePost = standardVariablePost;
-    protected resourcePut = standardVariablePut;
-    protected resourceDelete = standardVariableDelete;
+
+    protected resourceApi : DefaultReduxApi<StandardVariable,BaseAPI> = ModelCatalogApi.myCatalog.standardVariable;
+
     public uniqueLabel : boolean = true;
 
     protected _renderForm () {
@@ -63,10 +64,5 @@ export class ModelCatalogStandardVariable extends connect(store)(ModelCatalogRes
         return html`<span style="font-family: monospace;">
             ${getLabel(r)}
         </span>`;
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.standardVariables;
     }
 }

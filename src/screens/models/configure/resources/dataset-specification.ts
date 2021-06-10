@@ -5,7 +5,6 @@ import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
 import { IdMap } from "app/reducers";
 
-import { datasetSpecificationGet, datasetSpecificationsGet, datasetSpecificationPost, datasetSpecificationPut, datasetSpecificationDelete } from 'model-catalog/actions';
 import { DatasetSpecification, VariablePresentation, DataTransformation, DatasetSpecificationFromJSON } from '@mintproject/modelcatalog_client';
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -21,6 +20,10 @@ import './data-transformation';
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 @customElement('model-catalog-dataset-specification')
 export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalogResource)<DatasetSpecification> {
@@ -57,13 +60,10 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
     protected classes : string = "resource dataset-specification";
     protected name : string = "dataset specification";
     protected pname : string = "dataset specifications";
-    protected resourcesGet = datasetSpecificationsGet;
-    protected resourceGet = datasetSpecificationGet;
-    protected resourcePost = datasetSpecificationPost;
-    protected resourcePut = datasetSpecificationPut;
-    protected resourceDelete = datasetSpecificationDelete;
     protected positionAttr : string = "position";
     public colspan = 3;
+
+    protected resourceApi : DefaultReduxApi<DatasetSpecification,BaseAPI> = ModelCatalogApi.myCatalog.datasetSpecification;
 
     public isSetup : boolean = false;
     private sampleResources : IdMap<ModelCatalogSampleResource> = {};
@@ -293,10 +293,5 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             if (!format) (<any>inputFormat).onBlur();
             if (presentation.length == 0) console.log('You must select at least a presentation!');
         }
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.datasetSpecifications;
     }
 }

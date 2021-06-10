@@ -6,11 +6,10 @@ import { ThunkAction } from "redux-thunk";
 import { ProblemStatement, ProblemStatementInfo, ProblemStatementList, Thread } from "screens/modeling/reducers";
 import { problemStatementFromGQL, threadFromGQL } from "util/graphql_adapter";
 
-import { auth } from 'config/firebase';
-
 import fetchProblemStatementsListGQL from '../../queries/problem-statement/list.graphql';
 import fetchProblemStatementGQL from '../../queries/problem-statement/get.graphql';
 import fetchThreadGQL from '../../queries/thread/get.graphql';
+import { KeycloakAdapter } from "util/keycloak-adapter";
 
 export const ANALYSIS_LIST = 'ANALYSIS_LIST';
 
@@ -33,7 +32,7 @@ export type AnalysisAction =  AnalysisActionList | ProblemStatementsAction | Thr
 // Get ProblemStatement details
 type ProblemDetailsThunkResult = ThunkAction<void, RootState, undefined, ProblemStatementsActionDetails>;
 export const fetchProblemStatement: ActionCreator<ProblemDetailsThunkResult> = (problem_statement_id: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: fetchProblemStatementGQL,
         variables: {
@@ -62,7 +61,7 @@ export const fetchProblemStatement: ActionCreator<ProblemDetailsThunkResult> = (
 // Get Thread details
 type ThreadDetailsThunkResult = ThunkAction<void, RootState, undefined, ThreadsActionDetails>;
 export const fetchThread: ActionCreator<ThreadDetailsThunkResult> = (threadid: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: fetchThreadGQL,
         variables: {
@@ -92,7 +91,7 @@ export const fetchThread: ActionCreator<ThreadDetailsThunkResult> = (threadid: s
 // List ProblemStatements
 type ProblemListThunkResult = ThunkAction<void, RootState, undefined, ProblemStatementsActionList>;
 export const fetchProblemStatementsList: ActionCreator<ProblemListThunkResult> = (regionid: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: fetchProblemStatementsListGQL,
         variables: {

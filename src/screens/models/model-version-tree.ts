@@ -9,7 +9,6 @@ import { goToPage } from '../../app/actions';
 
 import { IdMap } from 'app/reducers';
 import { SoftwareVersion, Model, ModelCategory } from '@mintproject/modelcatalog_client';
-import { regionsGet } from 'model-catalog/actions';
 import { getLabel, sortVersions, getURL} from 'model-catalog/util';
 
 import "weightless/progress-spinner";
@@ -236,8 +235,8 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
 
             if (state.modelCatalog) {
                 let db = state.modelCatalog;
-                this._models = db.models;
-                this._versions = db.versions;
+                this._models = db.model;
+                this._versions = db.softwareversion;
             }
         }
     }

@@ -3,7 +3,9 @@ name: Docker
 on:
   push:
     branches:
+      - tacc
       - master
+      - dev
     tags:
       - v*
   pull_request:
@@ -30,8 +32,10 @@ jobs:
             ${{ runner.OS }}-
       - name: Install dependencies
         run: npm install
-      - name: set environment variables
-        uses: rlespinasse/github-slug-action@v3.x
+      - name: Decrypt large secret
+        run: ./.github/scripts/decrypt_secret.sh
+        env:
+          LARGE_SECRET_PASSPHRASE: ${{ secrets.LARGE_SECRET_PASSPHRASE }}
       - name: Build (webpack) 
         run: npm run build --if-present
       - name: Test

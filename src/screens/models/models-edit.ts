@@ -224,14 +224,14 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
             if (state.modelCatalog) {
                 let db = state.modelCatalog;
                 // Set selected resource
-                if (!this._model && db.models && this._selectedModel && db.models[this._selectedModel]) {
-                    this._model = db.models[this._selectedModel];
+                if (!this._model && db.model && this._selectedModel && db.model[this._selectedModel]) {
+                    this._model = db.model[this._selectedModel];
                     this._iModel.disableSingleResourceCreation();
                     this._iModel.setResource(this._model);
                 }
 
-                if (!this._version && db.versions && this._selectedVersion && db.versions[this._selectedVersion]) {
-                    this._version = db.versions[this._selectedVersion];
+                if (!this._version && db.softwareversion && this._selectedVersion && db.softwareversion[this._selectedVersion]) {
+                    this._version = db.softwareversion[this._selectedVersion];
                     this._iVersion.disableSingleResourceCreation();
                     this._iVersion.setResource(this._version);
                 }

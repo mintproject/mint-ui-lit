@@ -1,6 +1,5 @@
 import { Task, Thread, ProblemStatementInfo, ProblemStatement, ThreadInfo, MintEvent, ModelEnsembleMap, 
     ModelIOBindings, Execution, ExecutionSummary, DataMap, ThreadModelMap, MintPermission } from "../screens/modeling/reducers"
-import { auth } from "config/firebase";
 import { Model, ModelIO, ModelParameter } from "screens/models/reducers";
 import { Dataset, DataResource, Dataslice } from "screens/datasets/reducers";
 import { Region } from "screens/regions/reducers";
@@ -9,6 +8,7 @@ import { uuidv4 } from "screens/models/configure/util";
 
 import * as crypto from 'crypto';
 import { Variable } from "screens/variables/reducers";
+import { KeycloakAdapter } from "./keycloak-adapter";
 
 export const regionToGQL = (region: Region) => {
     let regionobj = {
@@ -560,7 +560,7 @@ export const getCreateEvent = (notes: string) => {
     return {
         event: "CREATE",
         timestamp: new Date(),
-        userid: auth.currentUser.email,
+        userid: KeycloakAdapter.getUser().email,
         notes: notes
     } as MintEvent;
 }
@@ -569,7 +569,7 @@ export const getUpdateEvent = (notes: string) => {
     return {
         event: "UPDATE",
         timestamp: new Date(),
-        userid: auth.currentUser.email,
+        userid: KeycloakAdapter.getUser().email,
         notes: notes
     } as MintEvent;
 }
@@ -578,7 +578,7 @@ export const getCustomEvent = (event:string, notes: string) => {
     return {
         event: event,
         timestamp: new Date(),
-        userid: auth.currentUser.email,
+        userid: KeycloakAdapter.getUser().email,
         notes: notes
     } as MintEvent;
 }

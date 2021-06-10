@@ -47,8 +47,6 @@ import { ExplorerUIState } from '../screens/models/model-explore/ui-reducers';
 import { MessagesState } from 'screens/messages/reducers';
 import { MessagesAction } from 'screens/messages/actions';
 
-import { ModelCatalogAction } from 'model-catalog/actions';
-import { ModelCatalogState } from 'model-catalog/reducers';
 import { DExplorerUIAction } from 'screens/datasets/ui-actions';
 import { EmulatorsState } from 'screens/emulators/reducers';
 import { EmulatorsAction } from 'screens/emulators/actions';
@@ -56,6 +54,8 @@ import { VariablesState } from 'screens/variables/reducers';
 import { VariablesAction } from 'screens/variables/actions';
 import { AnalysisState } from 'screens/analysis/reducers';
 import { AnalysisAction } from 'screens/analysis/actions';
+import { ModelCatalogAction } from 'model-catalog-api/actions';
+import { ModelCatalogState } from 'model-catalog-api/reducers';
 
 // Overall state extends static states and partials lazy states.
 export interface RootState {

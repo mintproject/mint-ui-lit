@@ -20,7 +20,7 @@ import { toDateString } from "util/date-utils";
 import "weightless/snackbar";
 import 'components/loading-dots';
 import { Region } from "screens/regions/reducers";
-import { datasetSpecificationGet, dataTransformationGet } from "model-catalog/actions";
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { getLabel } from "model-catalog/util";
 import { DatasetSpecification, DataTransformation } from '@mintproject/modelcatalog_client';
 
@@ -900,13 +900,13 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                         (m.input_files || []).forEach((i) => {
                             if (!this._loading[i.id] && !this._dsInputs[i.id]) {
                                 this._loading[i.id] = true;
-                                store.dispatch(datasetSpecificationGet(i.id)).then((ds:DatasetSpecification) => {
+                                store.dispatch(ModelCatalogApi.myCatalog.datasetSpecification.get(i.id)).then((ds:DatasetSpecification) => {
                                     this._dsInputs[ds.id] = ds;
                                     this._loading[ds.id] = false;
                                     (ds.hasDataTransformation || []).forEach((dt) => {
                                         if (!this._loading[dt.id] && !this._dataTransformations[dt.id]) {
                                             this._loading[dt.id] = true;
-                                            store.dispatch(dataTransformationGet(dt.id)).then((DT) => {
+                                            store.dispatch(ModelCatalogApi.myCatalog.dataTransformation.get(dt.id)).then((DT) => {
                                                 this._dataTransformations[DT.id] = DT;
                                                 this._loading[DT.id] = false;
                                                 if (!this._inputDT[i.id]) this._inputDT[i.id] = [];

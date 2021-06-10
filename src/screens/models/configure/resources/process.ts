@@ -3,7 +3,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { processGet, processesGet, processPost, processPut, processDelete } from 'model-catalog/actions';
 import { Process, ProcessFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 
@@ -11,17 +10,17 @@ import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
 
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+
 @customElement('model-catalog-process')
 export class ModelCatalogProcess extends connect(store)(ModelCatalogResource)<Process> {
-
     protected classes : string = "resource process";
     protected name : string = "process";
     protected pname : string = "processs";
-    protected resourcesGet = processesGet;
-    protected resourceGet = processGet;
-    protected resourcePost = processPost;
-    protected resourcePut = processPut;
-    protected resourceDelete = processDelete;
+
+    protected resourceApi : DefaultReduxApi<Process,BaseAPI> = ModelCatalogApi.myCatalog.process;
 
     private _selectedInfluencers : IdMap<boolean> = {};
     private _lastId : string = '';
@@ -103,10 +102,5 @@ export class ModelCatalogProcess extends connect(store)(ModelCatalogResource)<Pr
             // Show errors
             if (!label) (<any>inputLabel).onBlur();
         }
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.processes;
     }
 }

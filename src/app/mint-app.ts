@@ -19,9 +19,8 @@ import { store, RootState } from './store';
 
 // These are the actions needed by this element.
 import {
-  navigate, fetchUser, signOut, signIn, signUp, goToPage, fetchMintConfig, setUserProfile, resetPassword,
+  navigate, fetchUser, signOut, signIn, signUp, goToPage, fetchMintConfig, resetPassword,
 } from './actions';
-import { UserPreferences, UserProfile } from './reducers';
 import { listTopRegions, listSubRegions, listRegionCategories } from '../screens/regions/actions';
 
 import '../screens/modeling/modeling-home';
@@ -44,9 +43,9 @@ import { CustomNotification } from 'components/notification';
 
 import { SharedStyles } from '../styles/shared-styles';
 import { showDialog, hideDialog, formElementsComplete } from '../util/ui_functions';
-import { User } from 'firebase';
 import { Region } from 'screens/regions/reducers';
 import { listVariables } from 'screens/variables/actions';
+import { User } from './reducers';
 
 @customElement('mint-app')
 export class MintApp extends connect(store)(LitElement) {
@@ -387,7 +386,7 @@ export class MintApp extends connect(store)(LitElement) {
                       Messages <wl-icon style="margin-left: 4px;">message</wl-icon>
                     </wl-button>                
                     <wl-button flat inverted @click="${this._showConfigWindow}"> CONFIGURE </wl-button>
-                    <wl-button flat inverted @click="${signOut}"> LOGOUT </wl-button>
+                    <wl-button flat inverted @click="${this._onLogOutButtonClicked}"> LOGOUT </wl-button>
                 </div>
             </wl-popover>
             `
@@ -426,6 +425,10 @@ export class MintApp extends connect(store)(LitElement) {
     `;
   }
 
+  _onLogOutButtonClicked () {
+    store.dispatch(signOut());
+  }
+
   _onUserButtonClicked () {
     let pop : Popover = this.shadowRoot.querySelector("#user-popover");
     if (pop) pop.show();//.then(result => console.log(result));
@@ -461,12 +464,12 @@ export class MintApp extends connect(store)(LitElement) {
           </div>
           `}
         </form>
-        ${this._creatingAccount || this._resetingPassword ? 
+        ${true || this._creatingAccount || this._resetingPassword ? 
             ''
             : html`<p></p><a @click="${() => {this._resetingPassword = true;}}">Reset your password</a>`}
       </div>
       <div slot="footer" style="justify-content: space-between;">
-          ${this._creatingAccount || this._resetingPassword ? 
+          ${true || this._creatingAccount || this._resetingPassword ? 
             html`<span></span>` :
             html`<wl-button @click="${this._createAccountActivate}">Create account</wl-button>`}
           <span>
@@ -544,11 +547,12 @@ export class MintApp extends connect(store)(LitElement) {
     let inputPrivateGraph : Radio  = this.shadowRoot.getElementById('gpersonal') as Radio;
     let notification : CustomNotification = this.shadowRoot.querySelector<CustomNotification>("#custom-notification")!;
     if (inputRegion && inputPublicGraph && inputPrivateGraph) {
-        let profile : UserProfile = {
-            mainRegion: inputRegion.value,
+        let profile = {
+            region: inputRegion.value,
             graph: inputPrivateGraph.checked ? this.user.email : ''
         }
         console.log('new profile:', profile);
+        /* TODO: needs a function to update!
         store.dispatch(
             setUserProfile(this.user, profile)
         ).then(() => {
@@ -557,7 +561,7 @@ export class MintApp extends connect(store)(LitElement) {
             window.location.reload(false);
         }).catch((error) => {
             if (notification) notification.error("Could not save changes.");
-        });
+        });*/
     }
   }
 
@@ -575,9 +579,9 @@ export class MintApp extends connect(store)(LitElement) {
     if (!this._resetingPassword && formElementsComplete(form, ["username", "password"])) {
         let username = (form.elements["username"] as HTMLInputElement).value;
         let password = (form.elements["password"] as HTMLInputElement).value;
-        if (this._creatingAccount) {
-            signUp(username, password)
-                    .then((resp) => {
+        if (this._creatingAccount) { // FIXME: user creation is not working on keycloak
+            store.dispatch(signUp(username, password))
+                    .then(() => {
                 if (notification) notification.save("Account created!");
                     })
                     .catch((error) => {
@@ -585,15 +589,15 @@ export class MintApp extends connect(store)(LitElement) {
             });
             this._creatingAccount = false;
         } else {
-            signIn(username, password).catch((error) => {
+            store.dispatch(signIn(username, password)).catch((error) => {
                 if (notification) notification.error("Username or password is incorrect");
             });
         }
         this._onLoginCancel();
     } else if (this._resetingPassword && formElementsComplete(form, ["username"])) {
         let username = (form.elements["username"] as HTMLInputElement).value;
-        resetPassword(username)
-                .then((resp) => {
+        store.dispatch(resetPassword(username))
+                .then(() => {
             if (notification) notification.save("Email send");
             this._resetingPassword = false;
                 })
@@ -634,6 +638,11 @@ export class MintApp extends connect(store)(LitElement) {
     this._page = state.app!.page;
     this.user = state.app!.user!;
 
+    if (this.user) {
+      this._mainRegion = this.user.region;
+      this._defGraph = this.user.graph;
+    }
+
     if(!state.app.prefs || !state.app.prefs.mint) {
       if(!this._dispatchedConfigQuery) {
         console.log("Fetching config");
@@ -673,12 +682,6 @@ export class MintApp extends connect(store)(LitElement) {
         this._dispatchedVariablesQuery = true;
         store.dispatch(listVariables());
       }
-    }
-
-    if (state.app && state.app.prefs && state.app.prefs.profile) {
-        let profile = state.app.prefs.profile;
-        this._mainRegion = profile.mainRegion;
-        this._defGraph = profile.graph;
     }
 
     if (state.regions) this._topRegions = state.regions.top_region_ids;

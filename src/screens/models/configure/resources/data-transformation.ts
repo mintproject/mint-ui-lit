@@ -3,7 +3,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { dataTransformationGet, dataTransformationsGet, dataTransformationPost, dataTransformationPut, dataTransformationDelete } from 'model-catalog/actions';
 import { DataTransformation, DataTransformationFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 import { renderExternalLink } from 'util/ui_renders';
@@ -15,6 +14,10 @@ import { ModelCatalogSoftwareImage } from './software-image';
 import { ModelCatalogParameter } from './parameter';
 import { ModelCatalogPerson } from './person';
 import { ModelCatalogDatasetSpecification } from './dataset-specification';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
@@ -80,11 +83,7 @@ export class ModelCatalogDataTransformation extends connect(store)(ModelCatalogR
     protected classes : string = "resource data-transformation";
     protected name : string = "data transformation";
     protected pname : string = "data transformations";
-    protected resourcesGet = dataTransformationsGet;
-    protected resourceGet = dataTransformationGet;
-    protected resourcePost = dataTransformationPost;
-    protected resourcePut = dataTransformationPut;
-    protected resourceDelete = dataTransformationDelete;
+    protected resourceApi : DefaultReduxApi<DataTransformation,BaseAPI> = ModelCatalogApi.myCatalog.dataTransformation;
 
     public pageMax : number = 10
 
@@ -294,7 +293,6 @@ export class ModelCatalogDataTransformation extends connect(store)(ModelCatalogR
 
     protected _getResourceFromFullForm () {
         // GET ELEMENTS
-        console.log('asdasd');
         let inputLabel : Textfield = this.shadowRoot.getElementById('dt-label') as Textfield;
         let inputDesc : Textarea = this.shadowRoot.getElementById('dt-desc') as Textarea;
         let inputCompLoc : Textarea = this.shadowRoot.getElementById('dt-comp-loc') as Textarea;
@@ -323,10 +321,5 @@ export class ModelCatalogDataTransformation extends connect(store)(ModelCatalogR
             // Show errors
             if (!label) (<any>inputLabel).onBlur();
         }
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.dataTransformations;
     }
 }

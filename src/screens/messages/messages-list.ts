@@ -13,11 +13,10 @@ import "weightless/list-item";
 import "weightless/icon";
 import EasyMDE from 'easymde';
 
-import { navigate, BASE_HREF, goToPage } from '../../app/actions';
+import { goToPage } from '../../app/actions';
 import { PageViewElement } from '../../components/page-view-element';
 import { renderNotifications } from '../../util/ui_renders';
 import { formElementsComplete, showDialog, hideDialog, showNotification, resetForm } from '../../util/ui_functions';
-import { fromTimeStampToReadableString } from 'util/date-utils';
 
 @customElement('messages-list')
 export class MessagesList extends connect(store)(PageViewElement) {
@@ -50,7 +49,7 @@ export class MessagesList extends connect(store)(PageViewElement) {
             <wl-icon slot="before">question_answer</wl-icon>
             <span slot="after">
                 ${thread.username}<br/>
-                ${fromTimeStampToReadableString(thread.timestamp)}
+                ${thread.timestamp}
             </span>
             <wl-title level="4" style="margin: 0">${thread.name}</wl-title>
             <div>
@@ -154,9 +153,6 @@ export class MessagesList extends connect(store)(PageViewElement) {
     if(state.messages) {
       if(state.messages.threads) {
         this._list = state.messages.threads;
-        this._list.threadids.sort((id1,id2) => {
-          return this._list.threads[id2].timestamp.seconds - this._list.threads[id1].timestamp.seconds;
-        });
       }
     }
     if(state.app.user) {

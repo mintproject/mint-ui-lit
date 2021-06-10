@@ -17,7 +17,7 @@ export interface ThreadList {
 export interface Thread extends IdNameObject {
     text: string,
     reference: ThreadReference,
-    timestamp: firebase.firestore.Timestamp,
+    timestamp: string,
     unsubscribe: Function,
     userid: string,
     username: string,
@@ -41,7 +41,7 @@ export interface Post extends IdNameObject {
     username: string,
     threadid: string,
     reference: ThreadReference,
-    timestamp: firebase.firestore.Timestamp
+    timestamp: string,
 }
 
 

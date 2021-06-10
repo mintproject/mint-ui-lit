@@ -4,7 +4,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { gridGet, gridsGet, gridPost, gridPut, gridDelete } from 'model-catalog/actions';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
@@ -12,6 +11,10 @@ import { ExplorerStyles } from '../../model-explore/explorer-styles'
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 @customElement('model-catalog-grid')
 export class ModelCatalogGrid extends connect(store)(ModelCatalogResource)<Grid> {
@@ -27,11 +30,8 @@ export class ModelCatalogGrid extends connect(store)(ModelCatalogResource)<Grid>
     protected classes : string = "resource grid";
     protected name : string = "grid";
     protected pname : string = "grids";
-    protected resourcesGet = gridsGet;
-    protected resourceGet = gridGet;
-    protected resourcePut = gridPut;
-    protected resourcePost = gridPost;
-    protected resourceDelete = gridDelete;
+
+    protected resourceApi : DefaultReduxApi<Grid,BaseAPI> = ModelCatalogApi.myCatalog.grid;
 
     protected _renderResource (r:Grid) {
         let additionalTypes : string[] = (r.type || []).filter((s:string) => s != "Grid" && s != "https://w3id.org/okn/o/sdm#Grid");
@@ -142,10 +142,5 @@ export class ModelCatalogGrid extends connect(store)(ModelCatalogResource)<Grid>
             if (!label) (<any>inputLabel).refreshAttributes();
             if (!desc) (<any>inputDesc).refreshAttributes();
         }
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.grids;
     }
 }

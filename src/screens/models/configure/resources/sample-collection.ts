@@ -4,7 +4,6 @@ import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel } from 'model-catalog/util';
-import { sampleCollectionGet, sampleCollectionsGet, sampleCollectionPost, sampleCollectionPut, sampleCollectionDelete } from 'model-catalog/actions';
 import { IdMap } from "app/reducers";
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -13,6 +12,10 @@ import { ExplorerStyles } from '../../model-explore/explorer-styles'
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import { ModelCatalogSampleResource } from './sample-resource';
 
@@ -30,11 +33,9 @@ export class ModelCatalogSampleCollection extends connect(store)(ModelCatalogRes
     protected classes : string = "resource sample-collection";
     protected name : string = "sample collection";
     protected pname : string = "sample collection";
-    protected resourcesGet = sampleCollectionsGet;
-    protected resourceGet = sampleCollectionGet;
-    protected resourcePost = sampleCollectionPost;
-    protected resourcePut = sampleCollectionPut;
-    protected resourceDelete = sampleCollectionDelete;
+
+    protected resourceApi : DefaultReduxApi<SampleCollection,BaseAPI> = ModelCatalogApi.myCatalog.sampleCollection;
+
     private _inputSampleResources : ModelCatalogSampleResource;
 
     constructor () {
@@ -122,10 +123,5 @@ export interface SampleCollection {
         //TODO: This should be general
         this._inputSampleResources.setResources(null);
         super._createResource();
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.sampleCollections;
     }
 }
