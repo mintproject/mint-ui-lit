@@ -101,7 +101,7 @@ export const signIn: ActionCreator<UserThunkResult> = (email: string, password: 
   return new Promise<User>((resolve, reject) => {
     KeycloakAdapter.signIn(email, password)
       .then(() => {
-        ModelCatalogApi.login(email, password);
+        ModelCatalogApi.setAccessToken(KeycloakAdapter.getAccessToken())
         let user : User = KeycloakAdapter.getUser();
         dispatch({
           type: FETCH_USER,

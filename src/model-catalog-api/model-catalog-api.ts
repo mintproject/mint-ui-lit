@@ -35,28 +35,6 @@ export class ModelCatalogApi {
         return ModelCatalogApi.defaultConfiguration;
     }
 
-    public static login (username: string, password:string, dispatch:boolean = true) : Promise<string> {
-        let API : DefaultApi = new DefaultApi();
-        let req : Promise<string> = API.userLoginPost({user: {username: username, password: password}});
-        req.then((data:string) => {
-            let accessToken : string = JSON.parse(data)['access_token'];
-            if (accessToken) {
-                ModelCatalogApi.saveAccessToken(accessToken);
-                ModelCatalogApi.setUsername(username);
-            } else {
-                console.error('Error fetching the model catalog token!');
-            }
-        });
-        return req;
-    }
-
-    public static logout () {
-        ModelCatalogApi.clearLocalAccessToken();
-        ModelCatalogApi._accessToken = undefined;
-        ModelCatalogApi.username = undefined;
-        //TODO: Maybe should clear all the APIs of the catalog
-    }
-
     private static getAccessToken () : string {
         if (ModelCatalogApi._accessToken) return ModelCatalogApi._accessToken;
         let localToken : string = this.getLocalAccessToken();
@@ -68,9 +46,8 @@ export class ModelCatalogApi {
     }
 
     private static getLocalAccessToken () : string {
-        let accessToken = localStorage.getItem('accessToken');
+        let accessToken = localStorage.getItem('access-token');
         if (accessToken) return accessToken;
-                
         console.info('No access token on local storage');
         //maybe should log out here.
         return '';
