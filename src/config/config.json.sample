@@ -1,6 +1,12 @@
 {
-  "data_catalog_api": "https://api.mint-data-catalog.org",
+  "data_catalog_api": "https://data.dev.mint.mosorio.dev",
+  "google_maps_key": "secret",
+  "model_catalog_api": "https://api.models.dev.mint.mosorio.dev/v1.8.0",
   "ensemble_manager_api": "https://dev.ensemble.mint.isi.edu/v2",
+  "graphql": {
+    "endpoint": "graphql.dev.mint.mosorio.dev/v1/graphql",
+    "secret": "secret"
+  },
   "execution_engine": "localex",
   "localex": {
     "codedir": "/data/storage/mint/local-execution/code",
@@ -10,18 +16,6 @@
     "logurl": "https://data.mint.isi.edu/files/local-execution/logs",
     "parallelism": 51
   },
-  "graphql": {
-    "endpoint": "graphql.mint.isi.edu/v1/graphql",
-    "secret": "secret"
-  },
   "visualization_url": "https://dev.viz.mint.isi.edu",
   "ingestion_api": "https://node2.ingestion.mint.isi.edu/v1.3.0",
-  "google_maps_key": "secret",
-  "apiKey": "secret",
-  "authDomain": "mint-full.firebaseapp.com",
-  "databaseURL": "https://mint-full.firebaseio.com",
-  "projectId": "mint-full",
-  "storageBucket": "mint-full.appspot.com",
-  "messagingSenderId": "secret",
-  "appId": "secret"
 }
