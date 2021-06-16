@@ -8,8 +8,8 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
 
 import { IdMap } from 'app/reducers';
-import { ModelConfigurationSetup, ModelConfiguration, SoftwareVersion, Model, Region } from '@mintproject/modelcatalog_client';
-import { regionsGet } from 'model-catalog/actions';
+import { ModelConfigurationSetup, ModelConfiguration, SoftwareVersion, Model, Region, ModelCategory } from '@mintproject/modelcatalog_client';
+import { categoriesGet, regionsGet } from 'model-catalog/actions';
 import { getLabel, isSubregion, sortVersions, sortConfigurations, sortSetups } from 'model-catalog/util';
 
 import "weightless/progress-spinner";
@@ -31,6 +31,9 @@ export class ModelsTree extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _setups : IdMap<ModelConfigurationSetup> = {} as IdMap<ModelConfigurationSetup>;
+
+    @property({type: Object})
+    private _categories : IdMap<ModelCategory>;
 
     @property({type: Object})
     private _visible : IdMap<boolean> = {};
@@ -156,28 +159,38 @@ export class ModelsTree extends connect(store)(PageViewElement) {
     }
 
     protected render() {
-        if (!this._models || !this._region || !this._regions) 
+        if (!this._models || !this._region || !this._regions || !this._categories) 
             return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
 
         const visibleSetup = (setup: ModelConfigurationSetup) =>
                 !!setup && (!setup.hasRegion || setup.hasRegion.length == 0 || (setup.hasRegion||[]).some((region:Region) =>
                     isSubregion(this._region.model_catalog_uri, this._regions[region.id])));
 
-        let categoryModels = {};
+        let categoryModels = {"Uncategorized": []};
+        Object.values(this._categories).forEach((cat:ModelCategory) => {
+            categoryModels[getLabel(cat)] = []
+        })
+
         Object.values(this._models).forEach((m:Model) => {
             if (m.hasModelCategory && m.hasModelCategory.length > 0) {
-                m.hasModelCategory.map(getLabel).forEach((category:string) => {
-                    if (!categoryModels[category]) categoryModels[category] = [];
+                m.hasModelCategory.forEach((cat:ModelCategory) => {
+                    let category : string = getLabel(this._categories[cat.id]);
                     categoryModels[category].push(m);
                     if (this._selectedModel === m.id) this._visible[category] = true;
                 });
             } else {
                 let category : string = 'Uncategorized';
-                if (!categoryModels[category]) categoryModels[category] = [];
                 categoryModels[category].push(m);
                 if (this._selectedModel === m.id) this._visible[category] = true;
             }
         });
+
+        //Remove empty categories
+        Object.keys(categoryModels).forEach((cat:string) => {
+            if (categoryModels[cat].length == 0) {
+                delete categoryModels[cat];
+            }
+        })
 
         return html`
         <ul style="padding-left: 10px; margin-top: 4px;">
@@ -294,6 +307,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
 
     protected firstUpdated () {
         store.dispatch(regionsGet());
+        store.dispatch(categoriesGet());
     }
 
     stateChanged(state: RootState) {
@@ -330,6 +344,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                 this._configs = db.configurations;
                 this._setups = db.setups;
                 this._regions = db.regions;
+                this._categories = db.categories;
             }
         }
     }

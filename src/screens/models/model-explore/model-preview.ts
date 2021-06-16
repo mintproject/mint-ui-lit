@@ -12,9 +12,10 @@ import { getId, isEmpty, isSubregion, getLatestVersion, getLatestConfiguration, 
          isExecutable, getLabel, getModelTypeNames } from 'model-catalog/util';
 import { IdMap } from 'app/reducers';
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Parameter, SoftwareImage,
-         Person, Process, SampleResource, SampleCollection, Region, Image } from '@mintproject/modelcatalog_client';
+         Person, Process, SampleResource, SampleCollection, Region, Image, ModelCategory } from '@mintproject/modelcatalog_client';
 
 import '../../../components/loading-dots';
+import { categoriesGet } from 'model-catalog/category-actions';
 
 @customElement('model-preview')
 export class ModelPreview extends connect(store)(PageViewElement) {
@@ -28,6 +29,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
     @property({type: Object}) private _model!   : Model;
     @property({type: Object}) private _logo!    : Image;
     @property({type: Boolean}) private _loadingLogo : boolean = false;
+    @property({type: String}) private _modelCategories : string = '...';
 
     private PREFIX : string = '/models/explore/';
 
@@ -222,7 +224,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                     </a>
                   </div>
                   <div class="text-centered two-lines">
-                    Category: ${this._model.hasModelCategory ? html`${this._model.hasModelCategory.map(getLabel).join(', ')}` : html`-`}
+                    Category: ${this._modelCategories}
                     ${modelType && modelType.length > 0? html`
                     <br/>
                     Type: ${modelType.join(', ')}
@@ -297,6 +299,19 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                 this._nLocalSetups = 0;
                 this._regions = new Set();
                 this._url = this.PREFIX + getId(this._model);
+            }
+        }
+
+        /* Set model categories */
+        if (db && db.categories) {
+            if (!this._model.hasModelCategory || this._model.hasModelCategory.length == 0) {
+                this._modelCategories = "-";
+            } else {
+                this._modelCategories = this._model.hasModelCategory
+                    .filter((c:ModelCategory) => !!db.categories[c.id])
+                    .map((c:ModelCategory) => db.categories[c.id])
+                    .map(getLabel)
+                    .join(', ')
             }
         }
 

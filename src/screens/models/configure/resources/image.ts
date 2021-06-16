@@ -34,7 +34,10 @@ export class ModelCatalogImage extends connect(store)(ModelCatalogResource)<Imag
             <wl-textfield id="label" label="Name" required
                 value=${edResource ? getLabel(edResource) : ''}>
             </wl-textfield>
-            <wl-textfield id="value" label="Value (URL)" required
+            <wl-textfield id="desc" label="Description"
+                value=${edResource && edResource.description ? edResource.description[0] : ''}>
+            </wl-textfield>
+            <wl-textfield id="value" label="URL to image" required
                 value=${edResource && edResource.value ? edResource.value[0] : ''}>
             </wl-textfield>
         </form>`;
@@ -44,16 +47,19 @@ export class ModelCatalogImage extends connect(store)(ModelCatalogResource)<Imag
         // GET ELEMENTS
         let inputLabel : Textfield = this.shadowRoot.getElementById('label') as Textfield;
         let inputValue : Textfield = this.shadowRoot.getElementById('value') as Textfield;
+        let inputDesc  : Textfield = this.shadowRoot.getElementById('desc') as Textfield;
 
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : '';
         let value : string = inputValue ? inputValue.value : '';
+        let desc  : string = inputDesc ? inputDesc.value : '';
 
         if (label && value) {
             let jsonRes = {
                 type: ["Image"],
                 label: [label],
                 value: [value],
+                description: desc? [desc] : []
             };
             return ImageFromJSON(jsonRes);
         } else {

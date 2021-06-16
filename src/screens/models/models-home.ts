@@ -21,7 +21,7 @@ store.addReducers({
 
 import modelCatalog from 'model-catalog/reducers'
 import { modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet, processesGet, 
-         regionsGet, imagesGet } from '../../model-catalog/actions';
+         regionsGet, imagesGet, categoriesGet } from '../../model-catalog/actions';
 
 store.addReducers({
     modelCatalog
@@ -189,6 +189,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     }
 
     firstUpdated() {
+        store.dispatch(categoriesGet());
         store.dispatch(modelsGet());
         store.dispatch(versionsGet());
         store.dispatch(modelConfigurationsGet());

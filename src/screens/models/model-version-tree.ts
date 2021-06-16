@@ -24,6 +24,9 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
     private _versions : IdMap<SoftwareVersion> = {} as IdMap<SoftwareVersion>;
 
     @property({type: Object})
+    private _categories : IdMap<ModelCategory>;
+
+    @property({type: Object})
     private _visible : IdMap<boolean> = {};
 
     @property({type: String})
@@ -126,21 +129,31 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
         if (!this._models) 
             return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
 
-        let categoryModels = {};
+        let categoryModels = {"Uncategorized": []};
+        Object.values(this._categories).forEach((cat:ModelCategory) => {
+            categoryModels[getLabel(cat)] = []
+        })
+
         Object.values(this._models).forEach((m:Model) => {
             if (m.hasModelCategory && m.hasModelCategory.length > 0) {
-                m.hasModelCategory.map(getLabel).forEach((category:string) => {
-                    if (!categoryModels[category]) categoryModels[category] = [];
+                m.hasModelCategory.forEach((cat:ModelCategory) => {
+                    let category : string = getLabel(this._categories[cat.id]);
                     categoryModels[category].push(m);
                     if (this._selectedModel === m.id) this._visible[category] = true;
                 });
             } else {
                 let category : string = 'Uncategorized';
-                if (!categoryModels[category]) categoryModels[category] = [];
                 categoryModels[category].push(m);
                 if (this._selectedModel === m.id) this._visible[category] = true;
             }
         });
+
+        //Remove empty categories
+        Object.keys(categoryModels).forEach((cat:string) => {
+            if (categoryModels[cat].length == 0) {
+                delete categoryModels[cat];
+            }
+        })
 
         return html`
         <ul style="padding-left: 10px; margin-top: 4px;">
@@ -238,6 +251,7 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
                 let db = state.modelCatalog;
                 this._models = db.models;
                 this._versions = db.versions;
+                this._categories = db.categories;
             }
         }
     }
