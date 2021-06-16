@@ -13,6 +13,11 @@ import "weightless/title";
 import "./datasets-search";
 import "./dataset-detail";
 
+import * as mintConfig from 'config/config.json';
+import { MintPreferences, User } from 'app/reducers';
+
+let prefs = mintConfig["default"] as MintPreferences;
+
 @customElement('datasets-browse')
 export class DatasetsBrowse extends connect(store)(PageViewElement) {
     @property({type: String})
@@ -56,7 +61,7 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
                 <dataset-detail class="page" ?active="${this._dsid}"></dataset-detail>
             </div>`;
         else return html`
-            <iframe class="datacatalog" src="https://data-catalog.mint.isi.edu"></iframe>`;
+            <iframe class="datacatalog" src="${prefs.data_catalog_api}"></iframe>`;
     }
 
     stateChanged(state: RootState) {
