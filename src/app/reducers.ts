@@ -54,6 +54,12 @@ export interface MintPreferences {
   wings_api?: string,
   //maps
   google_maps_key: string,
+  //auth
+  auth_server: string,
+  auth_realm: string,
+  auth_client_id: string,
+
+  //old
   apiKey: string,
   authDomain: string,
   databaseURL: string,

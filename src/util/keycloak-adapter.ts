@@ -27,9 +27,9 @@ interface decodedToken {
 }
 
 export class KeycloakAdapter {
-    private static server : string = "https://auth.mint.mosorio.dev/auth/";
-    private static realm : string = "development";
-    private static clientId : string = "MINT-UI";
+    private static server : string = prefs.auth_server;
+    private static realm : string = prefs.auth_realm;
+    private static clientId : string = prefs.auth_client_id;
     // Return values
     private static accessToken : string;
     private static refreshToken : string;
@@ -160,6 +160,13 @@ export class KeycloakAdapter {
                 resolve(false);
             }
         });
+    }
+
+
+    public static getAccessToken () {
+        if (KeycloakAdapter.accessToken)
+            return KeycloakAdapter.accessToken;
+        return undefined;
     }
 
     public static getAccessTokenHeader () {
