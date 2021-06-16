@@ -121,7 +121,6 @@ export const signUp: ActionCreator<UserThunkResult> = (email: string, password: 
 export const signOut: ActionCreator<UserThunkResult> = () => (dispatch) => {
   return new Promise<User>((resolve, reject) => {
     KeycloakAdapter.signOut();
-    ModelCatalogApi.logout();
     dispatch({
       type: FETCH_USER,
       user: null
