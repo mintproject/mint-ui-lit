@@ -91,7 +91,7 @@ export class KeycloakAdapter {
         });
     }
 
-    public static refresh (token?: string) : Promise<void> {
+    public static refresh (token?: string) : Promise<boolean> {
         let uri : string = KeycloakAdapter.getTokenUri();
         let data = {
             client_id: KeycloakAdapter.clientId,
@@ -99,7 +99,7 @@ export class KeycloakAdapter {
             refresh_token: token ? token : KeycloakAdapter.refreshToken
         }
 
-        return new Promise<void>((resolve, reject) => {
+        return new Promise<boolean>((resolve, reject) => {
             let req : Promise<Response> = fetch(uri, {
                 method: 'POST',
                 headers: {'Content-Type': "application/x-www-form-urlencoded"},
@@ -110,10 +110,10 @@ export class KeycloakAdapter {
                 if (response.status === 200) {
                     response.json().then((tkn : tokenResponse) => {
                         KeycloakAdapter.saveTokenResponse(tkn);
-                        resolve();
+                        resolve(true);
                     });
                 } else {
-                    reject();
+                    resolve(false);
                 }
             });
         });
@@ -152,9 +152,9 @@ export class KeycloakAdapter {
                 //Check if access token is still valid, if not, try to refresh.
                 if (false) { //KeycloakAdapter.checkToken()) {
                 } else {
-                    let ref : Promise<void> = KeycloakAdapter.refresh(refreshToken);
+                    let ref : Promise<boolean> = KeycloakAdapter.refresh(refreshToken);
                     ref.catch(() => resolve(false));
-                    ref.then(() => resolve(true));
+                    ref.then((b:boolean) => resolve(b));
                 }
             } else {
                 resolve(false);

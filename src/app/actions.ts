@@ -86,6 +86,7 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
             });
             resolve(user);
           } else {
+            console.log("Could not load session from local storage");
             dispatch({
               type: FETCH_USER,
               user: null

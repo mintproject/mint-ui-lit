@@ -166,9 +166,9 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         this._notification = new CustomNotification();
     }
 
-	// TODO: maybe move the description text outside and move the button to other place.
-    protected render() {
-        let subcat = this._regionCategory[this._selectedSubcategory];
+	// TODO: Can be a problem here, check when graphql is working.
+    protected render() { 
+        let subcat = this._selectedSubcategory ? this._regionCategory[this._selectedSubcategory] : null;
         return html`
         <!-- TABS -->
         <div style="display: flex; margin-bottom: 10px;">
@@ -512,6 +512,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                                                     <span>
                                                     ${(newgeometry.geometries.length > 1 ? 
                                                                 ' (' + newgeometry.geometries.length +' parts)':  '')}
+                                                    </span>
                                                 </div>
                                             </td>
                                         </tr>
