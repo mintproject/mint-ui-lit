@@ -2,10 +2,6 @@ import { customElement, LitElement, property, html, css } from "lit-element";
 
 import "weightless/button";
 import "weightless/icon";
-import * as mintConfig from 'config/config.json';
-import { MintPreferences, User } from 'app/reducers';
-
-let prefs = mintConfig["default"] as MintPreferences;
 
 @customElement('data-catalog-id-checker')
 export class DataCatalogIdChecker extends LitElement {
@@ -39,7 +35,7 @@ export class DataCatalogIdChecker extends LitElement {
     }
 
     private _load () {
-        let req = fetch(prefs.data_catalog_api + "/datasets/get_dataset_info", {
+        let req = fetch("https://data-catalog.mint.isi.edu/datasets/get_dataset_info", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({"dataset_id": this.id})
