@@ -127,7 +127,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                 nav.push({label: 'Edit Models', url: 'models/edit'});
                 break;
             case 'cromo':
-                nav.push({label: 'Constraint search', url: 'models/cromo'});
+                nav.push({label: 'Recommend Models', url: 'models/cromo'});
                 break;
             default:
                 break;
@@ -173,8 +173,8 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                 </a>
                 <!--a href="{this._regionid}/models/calibrate"-->
                 <a href="${this._regionid}/models/cromo">
-                    <wl-icon>manage_search</wl-icon>
-                    <div>Constraint Search</div>
+                    <wl-icon style="margin-top:0px">manage_search</wl-icon>
+                    <div style="margin-top: -10px;">Recommend Models</div>
                 </a>
             </div>
 

@@ -225,14 +225,14 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
                 <wl-button @click="${this._onSubmitToCromo}" class="submit" id="dialog-submit-button">Search Models</wl-button>
             </div>        
             
-            <div style="padding-left:20px">
+            <div style="padding-left:20px; width: 100%;">
                 ${this._waiting ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
                 ${(this._modelconfigs || []).sort((c1,c2)=>this.sortConfig(c1,c2)).map(this.renderConfigurationResult)}
 
-                <br /><br />
+                <br/>
                 <b>Note:</b>
-                CROMO queries the Model Catalog, Data Catalog and Metadata Sensing APIs 
-                to find recommended models based on the scenario, region highlighted in the map, and the time period.
+                When you specify a time period and a region, the system will calculate key characteristics 
+                of that region and recommend the models that will work best.
             </div>
 
         </div>
@@ -311,7 +311,7 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
                             <ul>
                             ${input.dataset.derived_variables.map((dv) => {
                                 return html`
-                                    <li style='color:grey'><i>${dv.variable_id}</i> = ${dv.value}</li>`
+                                    <li style='color:grey'><i>${dv.variable_id}</i> = ${dv.value.toFixed(2)}</li>`
                             })}
                             </ul>
                             <br />
