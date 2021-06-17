@@ -202,7 +202,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputParameter.setActionEditOrAdd();
         this._inputDSInput.setActionEditOrAdd();
         this._inputSourceCode.setActionSelect();
-        this._inputConstraint.setActionMultiSelect();
+        this._inputConstraint.setActionMultiselect();
     }
 
     protected _unsetSubActions () {
