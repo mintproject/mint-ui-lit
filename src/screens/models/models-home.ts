@@ -99,7 +99,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     }
 
     private _getAPILink () {
-        return "https://api.models.mint.isi.edu/latest/ui/";
+        return "https://api.models.wildfire.mint.isi.edu/latest/ui/";
     }
 
     protected render() {
