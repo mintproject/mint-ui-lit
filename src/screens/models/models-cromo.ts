@@ -20,6 +20,7 @@ import { geometriesToGeoJson, geoJsonToGeometries } from 'util/geometry_function
 import { Region } from 'screens/regions/reducers';
 import { getResource, postJSONResource } from 'util/mint-requests';
 import { IdNameObject, UserPreferences } from 'app/reducers';
+import { ExplorerStyles } from './model-explore/explorer-styles';
 
 interface CromoConfig extends IdNameObject {
     waiting?: boolean
@@ -94,6 +95,7 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
 
     static get styles() {
         return [
+            ExplorerStyles,
             SharedStyles,
             css `
             :host {
@@ -150,6 +152,11 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
 
             .waiting {
                 --progress-spinner-color: gray;
+            }
+
+            .small-tooltip:hover:after {
+                right: 0%;
+                left: 10%;
             }
 
             .tab-add-icon > wl-icon:hover {
@@ -303,24 +310,37 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
                     </p>
                 ` : ''}
                 ${(config.combos || []).map((combo) => html`
-                    <p>Datasets: </p>
+                    <p><b>Input Datasets</b> for this model for the selected region and time period: </p>
                     <ul>
-                    ${combo.inputs.map((input) => html`
-                        <li>
-                            <b>${input.input_id}</b> = ${input.dataset.dataset_name}
-                            <ul>
-                            ${input.dataset.derived_variables.map((dv) => {
-                                return html`
-                                    <li style='color:grey'><i>${dv.variable_id}</i> = ${dv.value.toFixed(2)}</li>`
-                            })}
-                            </ul>
-                            <br />
-                        </li>`
+                    ${combo.inputs.map((input) => {
+                        let dvs = input.dataset.derived_variables
+                        return html`
+                            <li>
+                                Input <b>${input.input_id}</b> has data "${input.dataset.dataset_name}", with the following characteristics:
+                                <br /><br />
+                                <ul>
+                                ${dvs.map((dv) => {
+                                    let v = dv.variable;
+                                    return html`
+                                        <li style='color:grey'>
+                                            <span class="${v.description ? 'tooltip small-tooltip': ''}" tip="${v.description}">
+                                            <span><a>${v.label}</a></span> = ${v.value.toFixed(2)}
+                                            ${v.units ? html`<span>&nbsp;${v.units}</span>` : ''}
+                                        </li>
+                                    `
+                                })}
+                                </ul>
+                                <br />
+                            </li>`
+                        }
                     )}
                     </ul>
                     <div>
                         <h4 .style="${combo.validity.recommended == true ? "color:green": "color:gray"}">
-                            ${combo.validity.recommended == true ? "RECOMMENDED" : (combo.validity.recommended == false ? "NOT RECOMMENDED": "")}
+                            ${combo.validity.recommended == true ? 
+                                "This Model is RECOMMENDED as there are datasets available for this region that satisfy the following model recommendations:" : 
+                                (combo.validity.recommended == false ? 
+                                "This Model is NOT RECOMMENDED as there are no datasets available for this region that satisfy the following model recommendations:": "")}
                         </h4>
                         <ul style="list-style-type: none">
                             ${combo.validity?.recommendation_reasons?.length > 0 ? html`
@@ -347,7 +367,10 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
                             }
                         </ul>
                         <h4 .style="${combo.validity.valid == true ? "color:green": "color:red"}">
-                            ${combo.validity.valid == true ? "VALID" : (combo.validity.valid == false ? "NOT VALID": "")}
+                            ${combo.validity.valid == true ? 
+                                "This Model is VALID as there are datasets available for this region that satisfy the following model requirements:" : 
+                            (combo.validity.valid == false ? 
+                                "This Model is NOT VALID as there are no datasets available for this region that satisfy the following model requirements:" : "")}
                         </h4>
                         <ul>
                             ${combo.validity?.validity_reasons?.length > 0 ? html`
@@ -435,6 +458,7 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
         this._waiting = true;
         let response = await fetch(this.prefs.mint.cromo_api + "/searchModels/" + scenario, { method: "post" })
         this._modelconfigs = await response.json();
+        // TESTING: // this._modelconfigs = [this._modelconfigs[0], this._modelconfigs[1], this._modelconfigs[2]];
         this._waiting = false;
 
         for(let i=0; i<this._modelconfigs.length; i++) {
