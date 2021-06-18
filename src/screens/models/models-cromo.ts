@@ -91,6 +91,9 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
     @property({type: Boolean})
     private _mapEmpty: boolean = true;
 
+    @property({type: Boolean})
+    private _dummyRunning: boolean = false;
+
     private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
 
     static get styles() {
@@ -234,7 +237,7 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
             
             <div style="padding-left:20px; width: 100%;">
                 ${this._waiting ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
-                ${(this._modelconfigs || []).sort((c1,c2)=>this.sortConfig(c1,c2)).map(this.renderConfigurationResult)}
+                ${(this._modelconfigs || []).sort((c1,c2)=>this.sortConfig(c1,c2)).map((c) => this.renderConfigurationResult(c))}
 
                 <br/>
                 <b>Note:</b>
@@ -396,10 +399,18 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
                                 :''
                             }
                         </ul>
+                        <div .style="${combo.validity.recommended == true ? "display:block": "display:none"}">
+                            <wl-button ?disabled="${this._dummyRunning}"
+                                @click="${() => this._dummyRun()}">${this._dummyRunning ? "Running..." : "Select"}</wl-button>
+                        </div>
                     </div>`
                 )}
             </wl-expansion>
         `;
+    }
+
+    public _dummyRun() {
+        this._dummyRunning = true;
     }
 
     public addRegionsToMap() {   
@@ -458,7 +469,7 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
         this._waiting = true;
         let response = await fetch(this.prefs.mint.cromo_api + "/searchModels/" + scenario, { method: "post" })
         this._modelconfigs = await response.json();
-        // TESTING: // this._modelconfigs = [this._modelconfigs[0], this._modelconfigs[1], this._modelconfigs[2]];
+        // TESTING: this._modelconfigs = [this._modelconfigs[2], this._modelconfigs[6], this._modelconfigs[7]];
         this._waiting = false;
 
         for(let i=0; i<this._modelconfigs.length; i++) {
