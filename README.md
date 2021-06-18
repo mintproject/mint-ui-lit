@@ -1,93 +1,33 @@
 # mint-ui-lit [![Build Status](https://travis-ci.com/mintproject/mint-ui-lit.svg?branch=master)](https://travis-ci.com/mintproject/mint-ui-lit)
 
-New version of the MINT-UI 
+MINT assists analysts to easily use sophisticated simulation models and data in order to explore the role of weather and climate in water on food availability in select regions of the world. 
 
-## Version
+## Installation
 
-### Active
+The portal is connected to an Hasura GraphQL database, an execution engine and the model-catalog. You can follow the following repository to install them: [MINT installation package](https://github.com/mintproject/installation_public)
 
-| Url                            | Name        | GitHub                                       | Firebase  |
-|--------------------------------|-------------|----------------------------------------------|-----------|
-| https://dev.mint.isi.edu       | Development | The last commit on dev branch                | MINT-FULL |
-| https://formative.mint.isi.edu | Formative   | The last commit on MINT-Formative branch     | MINT      |
-| https://mint.isi.edu           | Full        | The last release on master branch            | MINT-FULL |
-| https://demo.mint.isi.edu      | Demo        | The last commit on MINT-demo branch          | MINT-DEMO |
+To connect the ui with the other servicesm, please copy the configuration sample file `./src/config/config.json.sample`
 
-### Snapshots
-- <https://demo.mint.isi.edu> DEMO release
-- <https://old.mint.isi.edu> Old release
-
-## Deploy
-
-The deployment of the following the services is full-automatic:
-
-- <https://dev.mint.isi.edu>
-- <https://formative.mint.isi.edu>
-
-The deployment of the production webpage needs a manual step.
-
-- <https://mint.isi.edu> points the last release/tag on GitHub - MINT version: Full
-
-Wait! How I can deploy a new version?
-
-- Create a release on GitHub https://github.com/mintproject/mint-ui-lit/releases
-- For example, I created the version 0.1 https://github.com/mintproject/mint-ui-lit/releases/tag/v0.1
-- If the deploy is correct then you can login on mint-server as mintui and see the directory.
-- You can check the status of deploy at travis-ci.com/mintproject/mint-ui-lit/builds/
-
-```
-[mintui@mint ~]$ ssh mint.isi.edu -l mintui
-[mintui@mint ~]$ ls -l
-lrwxrwxrwx 1 mintui mintui 11 Aug 20 08:20 mintui_production -> mintui_v0.0.1
-drwxrwxr-x 3 mintui mintui 50 Aug 20 08:18 mintui_v0.1
-```
-
-You can see that the actual version is v0.0.1
-
-- In this case, we want change the production version from v0.0.1 to v0.1. How?
-
-```
-[mintui@mint ~]$ unlink mintui_production; ln -s mintui_v0.1 mintui_production
-```
-
-- Yay, you did it!
-- Is the release broken? Relax, you can rollback to a previous version. How?
-
-```
-[mintui@mint ~]$ unlink mintui_production; ln -s mintui_v0.0.1 mintui_production
+```bash
+$ cp ./src/config/config.json.sample ./src/config/config.json
 ```
 
 
-## INSTALL
-```
-yarn install
-```
+### Using Docker 
 
-You will need to set the configuration for firebase (authentication) and google maps through enviroment variables:
+Build the image
+
 ```
-//Authentication
-export FIREBASE_API_KEY=
-export FIREBASE_AUTH_DOMAIN=
-export FIREBASE_DATABASE_URL=
-export FIREBASE_PROJECT_ID=
-export FIREBASE_STORAGE_BUCKET=
-export FIREBASE_MESSAGING_SENDER_ID=
-export FIREBASE_APP_ID=
-//Google maps
-export GOOGLE_MAPS_API_KEY=
+$ docker build . --file .Dockerfile-actions mint_ui
 ```
 
-If you want to add new variables, please check `webpack/base.config.ts`
+Push the image
 
-## SERVICES
+```bash
+$ docker push mint_ui <your_username>/mint_ui
+```
 
-The portal is connected to an Hasura GraphQL database, an execution engine and the model-catalog.
-
-To change the version of the model-catalog you must change it on `package.json`
-
-To edit the configuration of other services please edit `/src/config/config.json`
-
-## BUILDING
+### Without Docker
 
 To create the production build use:
 ```
@@ -99,7 +39,14 @@ You can start the development server with:
 yarn start
 ```
 
-Or build the development version with:
+
+## Deploy using GitHub actions
+
+
+Remember to encrypt
+
+
+```bash
+gpg --symmetric --cipher-algo AES256 src/config/config-tacc.json; mv src/config/config-tacc.json.gpg . 
 ```
-yarn create-build-dev
-```
+
