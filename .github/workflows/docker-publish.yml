@@ -80,11 +80,8 @@ jobs:
 
   update:
     needs: push
-
-    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v2
-
       - name: Update the image
         run: |  
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
