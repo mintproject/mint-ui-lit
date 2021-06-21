@@ -78,3 +78,17 @@ jobs:
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
 
+  update:
+    needs: push
+
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Update the image
+        VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+        [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+        run: curl -H "webhook:${KEY}" https://webhook.mint.isi.edu/hooks/ui_${VERSION}
+        with:
+          key: ${{ secrets.WEBHOOK }}
+
