@@ -87,6 +87,6 @@ jobs:
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
           curl -H "webhook:${KEY}" https://webhook.mint.isi.edu/hooks/ui_${VERSION}
-        with:
+        env:
           key: ${{ secrets.WEBHOOK }}
 
