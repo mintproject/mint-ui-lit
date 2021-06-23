@@ -3,9 +3,7 @@ name: Docker
 on:
   push:
     branches:
-      - tacc
-      - master
-      - dev
+      - *
     tags:
       - v*
   pull_request:
