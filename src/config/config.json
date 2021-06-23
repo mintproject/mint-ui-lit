@@ -15,7 +15,7 @@
         "parallelism": 50
     },
     "graphql": {
-        "endpoint": "dev.graphql.mint.isi.edu/v1/graphql",
+        "endpoint": "graphql.dev.mint.isi.edu/v1/graphql",
         "secret": "2sYei3crGyCOJBCBUgyL"
     },
     "visualization_url": "https://dev.viz.mint.isi.edu",
