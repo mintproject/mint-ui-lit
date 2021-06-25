@@ -3,6 +3,7 @@ import { WebSocketLink } from '@apollo/client/link/ws';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { MintPreferences, User } from 'app/reducers';
 import { SubscriptionClient } from 'subscriptions-transport-ws';
+import { KeycloakAdapter } from 'util/keycloak-adapter';
 
 import * as mintConfig from './config.json';
 
@@ -55,11 +56,7 @@ export class GraphQL {
         reconnect: true,
         lazy: true,
         connectionParams: {
-          headers: {
-            "X-Hasura-Admin-Secret": prefs.graphql.secret,
-            "X-Hasura-User-Id": GraphQL.userId,
-            "X-Hasura-Role": "user"
-          }
+          headers: KeycloakAdapter.getAccessTokenHeader()
         }
       }
     );
@@ -73,11 +70,7 @@ export class GraphQL {
     // Normal HTTP Link
     return createHttpLink({
       uri: "https://" + prefs.graphql.endpoint,
-      headers: {
-        "X-Hasura-Admin-Secret": prefs.graphql.secret,
-        "X-Hasura-User-Id": GraphQL.userId,
-        "X-Hasura-Role": "user"
-      }
+      headers: KeycloakAdapter.getAccessTokenHeader()
     });
   }
 }
