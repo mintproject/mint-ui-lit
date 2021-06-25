@@ -49,9 +49,11 @@ export class GraphQL {
 
   static getSubscriptionLink() {
     let prefs = mintConfig["default"] as MintPreferences;
+    let protocol = prefs.graphql.enable_ssl? "wss://" : "ws://"
+    let uri = protocol + prefs.graphql.endpoint
     // Subscription Link
     const subscriptionClient = new SubscriptionClient(
-      "wss://" + prefs.graphql.endpoint,
+      uri,
       {
         reconnect: true,
         lazy: true,
@@ -68,8 +70,10 @@ export class GraphQL {
   static getHTTPSLink() {
     let prefs = mintConfig["default"] as MintPreferences;
     // Normal HTTP Link
+    let protocol = prefs.graphql.enable_ssl? "https://" : "http://"
+    let uri = protocol + prefs.graphql.endpoint
     return createHttpLink({
-      uri: "https://" + prefs.graphql.endpoint,
+      uri: uri,
       headers: KeycloakAdapter.getAccessTokenHeader()
     });
   }

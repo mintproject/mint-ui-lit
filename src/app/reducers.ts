@@ -71,7 +71,7 @@ export interface MintPreferences {
 
 export interface GraphQLPreferences {
   endpoint: string,
-  secret: string
+  enable_ssl: boolean,
 }
 
 export interface WingsPreferences {

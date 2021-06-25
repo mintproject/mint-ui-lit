@@ -170,6 +170,7 @@ export class KeycloakAdapter {
     }
 
     public static getAccessTokenHeader () {
+        console.log("asking token")
         if (KeycloakAdapter.accessToken)
             return {'Authorization': "Bearer " + KeycloakAdapter.accessToken};
         return undefined;
