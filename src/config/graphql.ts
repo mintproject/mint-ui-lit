@@ -3,6 +3,7 @@ import { WebSocketLink } from '@apollo/client/link/ws';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { MintPreferences, User } from 'app/reducers';
 import { SubscriptionClient } from 'subscriptions-transport-ws';
+import { KeycloakAdapter } from 'util/keycloak-adapter';
 
 import * as mintConfig from './config.json';
 
@@ -48,18 +49,16 @@ export class GraphQL {
 
   static getSubscriptionLink() {
     let prefs = mintConfig["default"] as MintPreferences;
+    let protocol = prefs.graphql.enable_ssl? "wss://" : "ws://"
+    let uri = protocol + prefs.graphql.endpoint
     // Subscription Link
     const subscriptionClient = new SubscriptionClient(
-      "wss://" + prefs.graphql.endpoint,
+      uri,
       {
         reconnect: true,
         lazy: true,
         connectionParams: {
-          headers: {
-            "X-Hasura-Admin-Secret": prefs.graphql.secret,
-            "X-Hasura-User-Id": GraphQL.userId,
-            "X-Hasura-Role": "user"
-          }
+          headers: KeycloakAdapter.getAccessTokenHeader()
         }
       }
     );
@@ -71,13 +70,11 @@ export class GraphQL {
   static getHTTPSLink() {
     let prefs = mintConfig["default"] as MintPreferences;
     // Normal HTTP Link
+    let protocol = prefs.graphql.enable_ssl? "https://" : "http://"
+    let uri = protocol + prefs.graphql.endpoint
     return createHttpLink({
-      uri: "https://" + prefs.graphql.endpoint,
-      headers: {
-        "X-Hasura-Admin-Secret": prefs.graphql.secret,
-        "X-Hasura-User-Id": GraphQL.userId,
-        "X-Hasura-Role": "user"
-      }
+      uri: uri,
+      headers: KeycloakAdapter.getAccessTokenHeader()
     });
   }
 }

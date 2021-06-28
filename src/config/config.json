@@ -16,7 +16,7 @@
     },
     "graphql": {
         "endpoint": "graphql.dev.mint.isi.edu/v1/graphql",
-        "secret": "2sYei3crGyCOJBCBUgyL"
+    	"enable_ssl": true
     },
     "visualization_url": "https://dev.viz.mint.isi.edu",
     "ingestion_api": "https://node1.ingestion.mint.isi.edu/v1.3.0"
