@@ -39,12 +39,22 @@ You can start the development server with:
 yarn start
 ```
 
-
 ## Deploy using GitHub actions
 
+## SERVICES
 
-Remember to encrypt
+The portal is connected to an Hasura GraphQL database, an execution engine and the model-catalog.
 
+To change the version of the model-catalog you must change it on `package.json`
+
+To edit the configuration of other services please edit `/src/config/config.json`
+
+## BUILDING
+
+To create the production build use:
+```
+yarn build
+```
 
 ```bash
 gpg --symmetric --cipher-algo AES256 src/config/config-tacc.json; mv src/config/config-tacc.json.gpg . 
