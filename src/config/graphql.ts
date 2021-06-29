@@ -20,8 +20,7 @@ export class GraphQL {
   static userId;
 
   static instance = (auth:User) => {
-
-    if(GraphQL.client != null && auth?.email == GraphQL.userId)
+    if(GraphQL.client != null && auth.email && auth.email == GraphQL.userId)
       return GraphQL.client
     GraphQL.userId = auth?.email;
 
