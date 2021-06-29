@@ -77,11 +77,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Set webhook deployment master-isi
+        if: endsWith(github.ref, '/master')
+        run: |
+          echo "WEBHOOK_SERVER=webhook.mint.isi.edu" >> $GITHUB_ENV
+      - name: Set webhook deployment
+        if: endsWith(github.ref, '/dev')
+        run: |
+          echo "WEBHOOK_SERVER=webhook.dev.mint.isi.edu" >> $GITHUB_ENV
       - name: Update the image
         run: |  
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          curl -H "webhook:${KEY}" https://dev.webhook.mint.isi.edu/hooks/ui
+          [[ ! -z "${WEBHOOK_SERVER}" ]]  && curl -H "webhook:${KEY}" https://${WEBHOOK_SERVER}/hooks/ui|| echo "skipping ci"
         env:
           key: ${{ secrets.WEBHOOK }}
 
