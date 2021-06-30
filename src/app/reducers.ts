@@ -52,7 +52,6 @@ export interface MintPreferences {
   wings?: WingsPreferences,  
   graphql?: GraphQLPreferences,
   wings_api?: string,
-<<<<<<< HEAD
   //maps
   google_maps_key: string,
   //auth
@@ -67,10 +66,8 @@ export interface MintPreferences {
   projectId: string,
   storageBucket: string,
   messagingSenderId: string,
-  appId: string
-=======
+  appId: string,
   cromo_api?: string
->>>>>>> wildfire
 }
 
 export interface GraphQLPreferences {

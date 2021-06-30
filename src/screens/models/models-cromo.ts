@@ -4,7 +4,6 @@ import { PageViewElement } from '../../components/page-view-element';
 import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { GOOGLE_API_KEY } from 'config/firebase';
 import { CustomNotification } from 'components/notification';
 
 import 'components/google-map-custom';
@@ -12,15 +11,18 @@ import 'weightless/progress-spinner';
 import "weightless/expansion";
 
 import { renderNotifications } from "util/ui_renders";
-import { showNotification, showDialog, hideDialog, downloadFile, hideNotification } from 'util/ui_functions';
+import { showDialog, hideDialog }  from 'util/ui_functions';
 import { GoogleMapCustom } from 'components/google-map-custom';
 import { selectSubRegion } from 'app/ui-actions';
 
-import { geometriesToGeoJson, geoJsonToGeometries } from 'util/geometry_functions';
 import { Region } from 'screens/regions/reducers';
-import { getResource, postJSONResource } from 'util/mint-requests';
 import { IdNameObject, UserPreferences } from 'app/reducers';
 import { ExplorerStyles } from './model-explore/explorer-styles';
+
+import { MintPreferences } from 'app/reducers';
+import * as mintConfig from 'config/config.json';
+let prefs = mintConfig["default"] as MintPreferences;
+const GOOGLE_API_KEY = prefs.google_maps_key;   
 
 interface CromoConfig extends IdNameObject {
     waiting?: boolean
