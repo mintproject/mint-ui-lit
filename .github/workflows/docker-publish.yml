@@ -72,3 +72,23 @@ jobs:
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
 
+  update:
+    needs: push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set webhook deployment master-isi
+        if: endsWith(github.ref, '/master')
+        run: |
+          echo "WEBHOOK_SERVER=webhook.mint.isi.edu" >> $GITHUB_ENV
+      - name: Set webhook deployment
+        if: endsWith(github.ref, '/dev')
+        run: |
+          echo "WEBHOOK_SERVER=webhook.dev.mint.isi.edu" >> $GITHUB_ENV
+      - name: Update the image
+        run: |  
+          [[ ! -z "${WEBHOOK_SERVER}" ]]  && curl -H "webhook:${KEY}" https://${WEBHOOK_SERVER}/hooks/ui|| echo "skipping ci"
+        env:
+          KEY: ${{ secrets.WEBHOOK }}
+
+
