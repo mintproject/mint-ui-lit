@@ -676,14 +676,13 @@ export class MintApp extends connect(store)(LitElement) {
       }
     }
 
-    /* Why this is necesary? Is failing when the graphql instance does not have variables. FIXME
     if(!state.variables || !state.variables.variables) {
       if(!this._dispatchedVariablesQuery) {
         console.log("Dispatching Variables Query")
         this._dispatchedVariablesQuery = true;
         store.dispatch(listVariables());
       }
-    }*/
+    }
 
     if (state.regions) this._topRegions = state.regions.top_region_ids;
   }
