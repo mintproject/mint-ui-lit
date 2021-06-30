@@ -4,7 +4,7 @@ services:
   prod:
     build: 
       context: .
-    image: "mint-project/ui-demo:latest"
+    image: "mint-project/ui"
     volumes:
       - ./default.conf:/etc/nginx/conf.d/default.conf
     ports:

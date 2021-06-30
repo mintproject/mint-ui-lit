@@ -326,16 +326,46 @@ export const calculateMapDetails = (regions: Region[], mapWidth: number, mapHeig
       xmin: 99999, xmax: -99999,
       ymin: 99999, ymax: -99999
     }
-    regions.map((region) => {
-      let bbox = region.bounding_box;
-      if(bbox.xmin < extent.xmin)
-          extent.xmin = bbox.xmin;
-      if(bbox.ymin < extent.ymin)
-          extent.ymin = bbox.ymin;            
-      if(bbox.xmax > extent.xmax)
-          extent.xmax = bbox.xmax;
-      if(bbox.ymax > extent.ymax)
-          extent.ymax = bbox.ymax;
+    regions.forEach((region) => {
+        if (region.bounding_box) {
+            let bbox = region.bounding_box;
+            if (bbox.xmin < extent.xmin)
+                extent.xmin = bbox.xmin;
+            if (bbox.ymin < extent.ymin)
+                extent.ymin = bbox.ymin;
+            if (bbox.xmax > extent.xmax)
+                extent.xmax = bbox.xmax;
+            if (bbox.ymax > extent.ymax)
+                extent.ymax = bbox.ymax;
+        } else if (region.geometries && region.geometries.length > 0) {
+            region.geometries.forEach((geometry) => {
+                if ((geometry.type == "Polygon" || geometry.type == "MultiPolygon") &&
+                    geometry.coordinates && geometry.coordinates.length > 0) {
+                    geometry.coordinates.forEach((polygon) => {
+                        if (polygon && polygon.length > 0) {
+                            if (geometry.type == "Polygon") polygon.forEach((coord) => {
+                                if (coord && coord.length == 2) {
+                                    if (coord[0] < extent.xmin) extent.xmin = coord[0];
+                                    if (coord[0] > extent.xmax) extent.xmax = coord[0];
+                                    if (coord[1] < extent.ymin) extent.ymin = coord[1];
+                                    if (coord[1] > extent.ymax) extent.ymax = coord[1];
+                                }
+                            });
+                            else if (geometry.type == "MultiPolygon") {
+                                polygon.forEach((pol2) => pol2.map((coord) => {
+                                if (coord && coord.length == 2) {
+                                    if (coord[0] < extent.xmin) extent.xmin = coord[0];
+                                    if (coord[0] > extent.xmax) extent.xmax = coord[0];
+                                    if (coord[1] < extent.ymin) extent.ymin = coord[1];
+                                    if (coord[1] > extent.ymax) extent.ymax = coord[1];
+                                }
+                            }));
+                            }
+                        }
+                    });
+                }
+            });
+        }
     })
 
     let zoom = _calculateZoom(extent, mapWidth, mapHeight)

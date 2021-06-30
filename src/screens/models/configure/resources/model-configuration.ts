@@ -196,7 +196,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         this._inputDSInput.setActionEditOrAdd();
         this._inputDSOutput.setActionEditOrAdd();
         this._inputSourceCode.setActionSelect();
-        this._inputConstraint.setActionSelect();
+        this._inputConstraint.setActionMultiselect();
     }
 
     protected _unsetSubActions () {

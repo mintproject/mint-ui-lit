@@ -19,7 +19,7 @@ import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import './models-tree'
 
-import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Region } from '@mintproject/modelcatalog_client';
+import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Region, ModelCategory } from '@mintproject/modelcatalog_client';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
 
@@ -49,7 +49,7 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _loading : IdMap<boolean> = {};
 
-    @property({type: Object})
+    @property({type: Array})
     private _compare : ComparisonEntry[] = [];
 
     @property({type: Object})
@@ -63,6 +63,9 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
 
     @property({type: Object})
     private _setups : IdMap<ModelConfigurationSetup> = {};
+
+    @property({type: Object})
+    private _categories : IdMap<ModelCategory>;
 
     private _gets = {
         "Model": ModelCatalogApi.myCatalog.model.get,
@@ -93,12 +96,12 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         {
             name: "Type",
             fn: (m:modelLike) => m.type && m.type.length > 0 ?
-                    getModelTypeNames(m.type).join(", ") : html`<span style="color:#999">None<span>`
+                    getModelTypeNames(m.type).join(", ") : html`<span style="color:#999">None</span>`
         },
         {
             name: "Category",
             fn: (setup:ModelConfigurationSetup) => setup.hasModelCategory && setup.hasModelCategory.length > 0 ?
-                    setup.hasModelCategory.map(getLabel).join(', ') : html`<span style="color:#999">None<span>`
+                    setup.hasModelCategory.map(getLabel).join(', ') : html`<span style="color:#999">None</span>`
         },
         {
             name: "Keywords",
@@ -106,113 +109,113 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
                 if (model.keywords && model.keywords.length > 0 )
                     return model.keywords[0].split(';').join(', ');
                 else
-                    return html`<span style="color:#999">None specified<span>`
+                    return html`<span style="color:#999">None specified</span>`
             }
         },
         {
             name: "Authors",
             fn: (m:modelLike) => m.author && m.author.length > 0 ?
                     this._iPerson[m.id]
-                    : html`<span style="color:#999">None specified<span>`
+                    : html`<span style="color:#999">None specified</span>`
         },
         {
             name: "Description",
             fn: (setup:ModelConfigurationSetup) => setup.description && setup.description.length > 0 ?
-                    setup.description[setup.description.length -1] : html`<span style="color:#999">None provided<span>`
+                    setup.description[setup.description.length -1] : html`<span style="color:#999">None provided</span>`
         },
         {
             name: "Theoretical Basis",
             fn: (model:ModelConfigurationSetup) => model.theoreticalBasis && model.theoreticalBasis.length > 0 ?
-                    model.theoreticalBasis[0] : html`<span style="color:#999">None<span>`
+                    model.theoreticalBasis[0] : html`<span style="color:#999">None</span>`
         },
         {
             name: "Runtime Estimation",
             fn: (model:ModelConfigurationSetup) => model.runtimeEstimation && model.runtimeEstimation.length > 0 ?
-                    model.runtimeEstimation[0] : html`<span style="color:#999">None<span>`
+                    model.runtimeEstimation[0] : html`<span style="color:#999">None</span>`
         },
         {
             name: "Parameterization",
             fn: (model:ModelConfigurationSetup) => model.parameterization && model.parameterization.length > 0 ?
-                    model.parameterization[0] : html`<span style="color:#999">None<span>`
+                    model.parameterization[0] : html`<span style="color:#999">None</span>`
         },
         {
             name: "Limitations",
             fn: (model:ModelConfigurationSetup) => model.limitations && model.limitations.length > 0 ?
-                    model.limitations[0] : html`<span style="color:#999">None<span>`
+                    model.limitations[0] : html`<span style="color:#999">None</span>`
         },
         {
             name: "Modeled processes",
             fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasProcess && m.hasProcess.length > 0 ? 
                     this._iProcess[m.id]
-                    : html`<span style="color:#999">None specified<span>`
+                    : html`<span style="color:#999">None specified</span>`
         },
 
         {
             name: "Input variables:",
             fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasInputVariable && m.hasInputVariable.length > 0 ? 
                     this._iInputVariable[m.id]
-                    : html`<span style="color:#999">None specified<span>`
+                    : html`<span style="color:#999">None specified</span>`
         },
         {
             name: "Output variables:",
             fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasOutputVariable && m.hasOutputVariable.length > 0 ? 
                     this._iOutputVariable[m.id]
-                    : html`<span style="color:#999">None specified<span>`
+                    : html`<span style="color:#999">None specified</span>`
         },
 
         {
             name: "Regions",
             fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasRegion && m.hasRegion.length > 0 ?
                     this._iRegion[m.id]
-                    : html`<span style="color:#999">None specified<span>`
+                    : html`<span style="color:#999">None specified</span>`
         },
         {
             name: "Parameter assignment/estimation",
             fn: (model:ModelConfigurationSetup) => model.parameterAssignmentMethod && model.parameterAssignmentMethod.length > 0 ?
-                    model.parameterAssignmentMethod[model.parameterAssignmentMethod.length -1] : html`<span style="color:#999">None<span>`
+                    model.parameterAssignmentMethod[model.parameterAssignmentMethod.length -1] : html`<span style="color:#999">None</span>`
         },
 
         {
             name: "Adjustable variables",
             fn: (setup:ModelConfigurationSetup) => setup.adjustableParameter && setup.adjustableParameter.length > 0 ?
                     setup.adjustableParameter.map((p) => html`<span class="resource">${getLabel(p)}</span>`)
-                    : html`<span style="color:#999">None specified<span>`
+                    : html`<span style="color:#999">None specified</span>`
         },
         {
             name: "Inputs",
             fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasInput && m.hasInput.length > 0 ?
                     this._iInput[m.id]
-                    : html`<span style="color:#999">None specified<span>`
+                    : html`<span style="color:#999">None specified</span>`
         },
         {
             name: "Grid",
             fn: (m: Model | ModelConfiguration | ModelConfigurationSetup) => m.hasGrid && m.hasGrid.length > 0 ?
                     this._iGrid[m.id]
-                    : html`<span style="color:#999">None specified<span>`
+                    : html`<span style="color:#999">None specified</span>`
         },
         {
             name: "Time Interval",
             fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasOutputTimeInterval && m.hasOutputTimeInterval.length > 0 ?
                     this._iTimeInterval[m.id]
-                    : html`<span style="color:#999">None specified<span>`
+                    : html`<span style="color:#999">None specified</span>`
         },
         {
             name: "Parameters",
             fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasParameter && m.hasParameter.length > 0 ?
                     this._iParameter[m.id]
-                    : html`<span style="color:#999">None specified<span>`
+                    : html`<span style="color:#999">None specified</span>`
         },
         {
             name: "Component Location",
             fn: (setup:ModelConfigurationSetup) => setup.hasComponentLocation && setup.hasComponentLocation.length > 0 ?
                     html`<span style="word-break: break-all;">${setup.hasComponentLocation[setup.hasComponentLocation.length -1]}</span>`
-                    : html`<span style="color:#999">None specified<span>`
+                    : html`<span style="color:#999">None specified</span>`
         },
         {
             name: "Software Image",
             fn: (m: ModelConfiguration | ModelConfigurationSetup) => m.hasSoftwareImage && m.hasSoftwareImage.length > 0 ?
                     this._iSoftwareImage[m.id]
-                    : html`<span style="color:#999">None specified<span>`
+                    : html`<span style="color:#999">None specified</span>`
         },
         /*{
             name: "Adjustable variables",
@@ -537,6 +540,9 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
 
     protected firstUpdated () {
         this._modelTree = new TreeRoot();
+        store.dispatch(ModelCatalogApi.myCatalog.modelCategory.getAll()).then((categories:IdMap<ModelCategory>) => {
+            this._categories = categories;
+        });
         store.dispatch(ModelCatalogApi.myCatalog.model.getAll()).then((models:IdMap<Model>) => {
             this._loadingAllModels = false;
             this._allModels = models;
@@ -576,7 +582,10 @@ export class ModelsCompare extends connect(store)(PageViewElement) {
         Object.values(this._allModels).forEach((m:Model) => {
             // Model nodes.
             let category : string = m.hasModelCategory && m.hasModelCategory.length > 0 ?
-                    getLabel(m.hasModelCategory[0]) : 'Uncategorized';
+                    getLabel(this._categories && this._categories[m.hasModelCategory[0].id] ?
+                        this._categories[m.hasModelCategory[0].id]
+                        : m.hasModelCategory[0])
+                    : 'Uncategorized';
             if (!this._nodes[category]) {
                 let newNode : TreeNode = new TreeNode();
                 newNode.setName(category);

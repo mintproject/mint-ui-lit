@@ -1,5 +1,6 @@
 {
     "data_catalog_api": "https://data-catalog.mint.isi.edu",
+    "cromo_api": "https://cromo.wildfire.mint.isi.edu/v1.0",
     "ensemble_manager_api": "https://dev.ensemble.mint.isi.edu/v1",
     "execution_engine": "localex",
     "google_maps_key": "AIzaSyBl8J85KibSuhHEw_j0JTlITVTBb8oXiMo",

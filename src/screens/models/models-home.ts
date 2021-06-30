@@ -13,13 +13,13 @@ import './models-register';
 import './models-calibrate';
 import './models-configure';
 import './models-edit';
+import './models-cromo';
 import '../../components/nav-title'
 
 store.addReducers({
     models
 });
 
-import { Model } from '@mintproject/modelcatalog_client';
 import modelCatalog from 'model-catalog-api/reducers';
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { UserCatalog } from 'model-catalog-api/user-catalog';
@@ -100,7 +100,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     }
 
     private _getAPILink () {
-        return "https://api.models.mint.isi.edu/latest/ui/";
+        return "https://api.models.wildfire.mint.isi.edu/latest/ui/";
     }
 
     protected render() {
@@ -126,6 +126,9 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                 break;
             case 'edit':
                 nav.push({label: 'Edit Models', url: 'models/edit'});
+                break;
+            case 'cromo':
+                nav.push({label: 'Recommend Models', url: 'models/cromo'});
                 break;
             default:
                 break;
@@ -170,9 +173,9 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <div>Configure Models</div>
                 </a>
                 <!--a href="{this._regionid}/models/calibrate"-->
-                <a disabled>
-                    <wl-icon>settings_input_composite</wl-icon>
-                    <div>Calibrate Models</div>
+                <a href="${this._regionid}/models/cromo">
+                    <wl-icon style="margin-top:0px">manage_search</wl-icon>
+                    <div style="margin-top: -10px;">Recommend Models</div>
                 </a>
             </div>
 
@@ -182,17 +185,11 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             <models-calibrate class="page" ?active="${this._subpage == 'calibrate'}"></models-calibrate>
             <models-compare class="page" ?active="${this._subpage == 'compare'}"></models-compare>
             <models-edit class="page" ?active="${this._subpage == 'edit'}"></models-edit>
+            <models-cromo class="page" ?active="${this._subpage == 'cromo'}"></models-cromo>
         `
     }
 
     firstUpdated() {
-        /*store.dispatch(modelsGet());
-        store.dispatch(versionsGet());
-        store.dispatch(modelConfigurationsGet());
-        store.dispatch(modelConfigurationSetupsGet());
-        store.dispatch(regionsGet());
-        store.dispatch(imagesGet());*/
-
         let api : UserCatalog = ModelCatalogApi.myCatalog;
 
         store.dispatch(api.model.getAll());
@@ -201,6 +198,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
         store.dispatch(api.modelConfigurationSetup.getAll());
         store.dispatch(api.region.getAll());
         store.dispatch(api.image.getAll());
+        store.dispatch(api.modelCategory.getAll());
 
         //TEST
         /*console.log('Getting SWAT from the model-catalog...');

@@ -59,3 +59,10 @@ yarn build
 ```bash
 gpg --symmetric --cipher-algo AES256 src/config/config-tacc.json; mv src/config/config-tacc.json.gpg . 
 ```
+
+Or build the wildfire version with:
+```bash
+yarn create-build-wildfire
+```
+
+
