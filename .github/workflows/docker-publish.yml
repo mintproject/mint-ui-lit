@@ -89,6 +89,6 @@ jobs:
         run: |  
           [[ ! -z "${WEBHOOK_SERVER}" ]]  && curl -H "webhook:${KEY}" https://${WEBHOOK_SERVER}/hooks/ui|| echo "skipping ci"
         env:
-          key: ${{ secrets.WEBHOOK }}
+          KEY: ${{ secrets.WEBHOOK }}
 
 
