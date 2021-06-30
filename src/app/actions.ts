@@ -78,7 +78,8 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
             let user : User = KeycloakAdapter.getUser();
 
             ReactGA.set({ userId: user.email });
-            ModelCatalogApi.setUsername(user.email);
+            ModelCatalogApi.setUsername("mint@isi.edu");//FIXME use: user.email);
+            ModelCatalogApi.setAccessToken(KeycloakAdapter.getAccessToken());
             //Should login with the model-cata? TODO
             dispatch({
               type: FETCH_USER,
@@ -102,8 +103,9 @@ export const signIn: ActionCreator<UserThunkResult> = (email: string, password: 
   return new Promise<User>((resolve, reject) => {
     KeycloakAdapter.signIn(email, password)
       .then(() => {
-        ModelCatalogApi.setAccessToken(KeycloakAdapter.getAccessToken())
         let user : User = KeycloakAdapter.getUser();
+        ModelCatalogApi.setAccessToken(KeycloakAdapter.getAccessToken());
+        ModelCatalogApi.setUsername("mint@isi.edu");//FIXME use: user.email);
         dispatch({
           type: FETCH_USER,
           user: user

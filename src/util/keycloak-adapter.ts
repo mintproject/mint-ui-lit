@@ -60,6 +60,7 @@ export class KeycloakAdapter {
         KeycloakAdapter.username = decoded.preferred_username;
         KeycloakAdapter.userid = decoded.sub
         KeycloakAdapter.email = decoded.email
+        //FIXME
         KeycloakAdapter.region = decoded.profile ? decoded.profile.region : undefined;
         KeycloakAdapter.graph = decoded.profile ? decoded.profile.graph : undefined;
     }
@@ -81,12 +82,16 @@ export class KeycloakAdapter {
             });
             req.catch(reject);
             req.then((response:Response) => {
-                let jsn = response.json();
-                jsn.catch(reject);
-                jsn.then((tkn:tokenResponse) => {
-                    KeycloakAdapter.saveTokenResponse(tkn);
-                    resolve();
-                })
+                if (response.status === 200) {
+                    let jsn = response.json();
+                    jsn.catch(reject);
+                    jsn.then((tkn:tokenResponse) => {
+                        KeycloakAdapter.saveTokenResponse(tkn);
+                        resolve();
+                    })
+                } else {
+                    reject();
+                }
             });
         });
     }
