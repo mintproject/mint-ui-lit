@@ -37,8 +37,8 @@ import "weightless/popover";
 import "weightless/radio";
 import { Select } from 'weightless/select';
 import { Radio } from 'weightless/radio';
-
 import { Popover } from "weightless/popover";
+
 import { CustomNotification } from 'components/notification';
 
 import { SharedStyles } from '../styles/shared-styles';
@@ -426,12 +426,20 @@ export class MintApp extends connect(store)(LitElement) {
   }
 
   _onLogOutButtonClicked () {
-    store.dispatch(signOut());
+    this._closeUserPopover();
+    store.dispatch(signOut()).then(() => {
+      goToPage("home");
+    });
   }
 
   _onUserButtonClicked () {
     let pop : Popover = this.shadowRoot.querySelector("#user-popover");
     if (pop) pop.show();//.then(result => console.log(result));
+  }
+
+  _closeUserPopover () {
+    let pop : Popover = this.shadowRoot.querySelector("#user-popover");
+    if (pop) pop.hide();
   }
 
   _onBreadcrumbsMenuButtonClicked () {
@@ -530,6 +538,7 @@ export class MintApp extends connect(store)(LitElement) {
   }
 
   _showConfigWindow() {
+    this._closeUserPopover();
     showDialog("configDialog", this.shadowRoot!);
   }
 
@@ -632,7 +641,6 @@ export class MintApp extends connect(store)(LitElement) {
       });
     }
   }
-
 
   stateChanged(state: RootState) {
     this._page = state.app!.page;
