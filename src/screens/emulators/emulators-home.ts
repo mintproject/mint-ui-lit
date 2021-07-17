@@ -674,7 +674,8 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         super.setRegionId(state);
         super.setSubPage(state);
-        if(this._emulatorRegion != this._regionid && this._regionid && this._subpage == "emulators") {
+        if(this._emulatorRegion != this._regionid && this._regionid && 
+                (state?.app?.page == "emulators" || this._subpage == "home")) {
             if(this._emulatorRegion) {
                 this._selectedModel = null;            
                 state.emulators.selected_model = null;
