@@ -257,7 +257,7 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
         spatial_coverage__intersects: region.geometries[0],
         end_time__gte: dates?.start_date?.toISOString()?.replace(/\.\d{3}Z$/,''),
         start_time__lte: dates?.end_date?.toISOString()?.replace(/\.\d{3}Z$/,''),
-        limit: 100
+        limit: 1000
     }
 
     fetch(prefs.data_catalog_api + "/datasets/find", {
