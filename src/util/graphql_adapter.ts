@@ -163,7 +163,7 @@ export const taskToGQL = (task: Task, problem_statement: ProblemStatementInfo) =
         end_date: toDateString(task.dates.end_date),
         region_id: task.regionid,
         response_variable_id: task.response_variables[0],
-        driving_variable_id: task.driving_variables.length > 0 ? task.driving_variables[0] : null,
+        driving_variable_id: task.driving_variables && task.driving_variables.length > 0 ? task.driving_variables[0] : null,
         events: {
             data: task.events.map(eventToGQL),
         },
@@ -237,8 +237,9 @@ export const threadInfoToGQL = (thread: ThreadInfo, taskid: string, regionid: st
         start_date: toDateString(thread.dates.start_date),
         end_date: toDateString(thread.dates.end_date),
         region_id: regionid,
-        response_variable_id: thread.response_variables[0],
-        driving_variable_id: thread.driving_variables.length > 0 ? thread.driving_variables[0] : null,
+        response_variable_id: thread.response_variables ? thread.response_variables[0] : "",
+        driving_variable_id: thread.driving_variables && thread.driving_variables.length > 0 ?
+                thread.driving_variables[0] : null,
         events: {
             data: thread.events.map(eventToGQL),
         },

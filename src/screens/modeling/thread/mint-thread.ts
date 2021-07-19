@@ -95,26 +95,27 @@ export class MintThread extends connect(store)(MintThreadPage) {
     }
 
     private _renderProgressBar(sectionDoneMap: IdMap<string>) {
+        //FIXME;
         return html`
             <ul class="breadcrumbs">
-                <a id="models_breadcrumb" 
+                <li><a id="models_breadcrumb" 
                     class="${this._getBreadcrumbClass('models', sectionDoneMap)}" 
-                    href="${this._getModeURL('models')}">Models</li>
-                <a id="datasets_breadcrumb" 
+                    href="${this._getModeURL('models')}">Models</a></li>
+                <li><a id="datasets_breadcrumb" 
                     class="${this._getBreadcrumbClass('datasets', sectionDoneMap)}" 
-                    href="${this._getModeURL('datasets')}">Datasets</li>
-                <a id="parameters_breadcrumb" 
+                    href="${this._getModeURL('datasets')}">Datasets</a></li>
+                <li><a id="parameters_breadcrumb" 
                     class="${this._getBreadcrumbClass('parameters', sectionDoneMap)}" 
-                    href="${this._getModeURL('parameters')}">Parameters</li>
-                <a id="runs_breadcrumb" 
+                    href="${this._getModeURL('parameters')}">Parameters</a></li>
+                <li><a id="runs_breadcrumb" 
                     class="${this._getBreadcrumbClass('runs', sectionDoneMap)}" 
-                    href="${this._getModeURL('runs')}">Runs</li>
-                <a id="results_breadcrumb" 
+                    href="${this._getModeURL('runs')}">Runs</a></li>
+                <li><a id="results_breadcrumb" 
                     class="${this._getBreadcrumbClass('results', sectionDoneMap)}" 
-                    href="${this._getModeURL('results')}">Results</li>
-                <a id="visualize_breadcrumb" 
+                    href="${this._getModeURL('results')}">Results</a></li>
+                <li><a id="visualize_breadcrumb" 
                     class="${this._getBreadcrumbClass('visualize', sectionDoneMap)}" 
-                    href="${this._getModeURL('visualize')}">Visualize</li>
+                    href="${this._getModeURL('visualize')}">Visualize</a></li>
             </ul>
         `;
     }

@@ -24,14 +24,31 @@ import { MintThreadPage } from "./mint-thread-page";
 import { Region } from "screens/regions/reducers";
 import { IdMap } from "app/reducers";
 import { Model as MCModel, Region as MCRegion, SoftwareVersion, SoftwareImage, ModelConfiguration,
-         ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
+         ModelConfigurationSetup, 
+         ModelCategory,
+         DatasetSpecification,
+         VariablePresentation,
+         Parameter,
+         Intervention,
+         StandardVariable} from '@mintproject/modelcatalog_client';
 import 'components/loading-dots';
 import { getLatestEventOfType } from "util/event_utils";
 import variables, { VariableMap } from "screens/variables/reducers";
+import { ModelRule, ModelRuleSelector } from "components/model-rule-selector";
 
 store.addReducers({
     models
 });
+
+interface ModelInfo {
+    id: string,
+    name: string, 
+    description?: string,
+    url: string,
+    category : string, 
+    region: string,
+    selected: boolean,
+};
 
 @customElement('mint-models')
 export class MintModels extends connect(store)(MintThreadPage) {
@@ -39,7 +56,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
     @property({type: Object})
     private _queriedModels: VariableModels = {} as VariableModels;
 
-    @property({type: Object})
+    @property({type: Boolean})
     private _editMode: Boolean = false;
 
     @property({type: Array})
@@ -54,15 +71,27 @@ export class MintModels extends connect(store)(MintThreadPage) {
     @property({type: Object})
     private _loadedModels : IdMap<Model> = {};
 
+    @property({type:String})
+    private _textFilter: string = "";
+
+    @property({type: Boolean})
+    private _loading : boolean = false;
+
     @property({type: Boolean})
     private _baseLoaded : boolean = false;
+
     private _allModels : IdMap<MCModel> = {};
     private _allVersions : IdMap<SoftwareVersion> = {};
     private _allConfigs : IdMap<ModelConfiguration> = {};
+    private _allSetups : IdMap<ModelConfigurationSetup> = {};
     private _allSoftwareImages : IdMap<SoftwareImage>;
-
-    @property({type: Object})
     private _allRegions : IdMap<MCRegion> = {};
+    private _allCategories : IdMap<ModelCategory> = {};
+
+    private ruleSelector : ModelRuleSelector;
+
+    @property({type: Number})
+    private _nresults : number = 0;
 
     private _dispatched: Boolean = false;
     private _pendingQuery: Boolean = false;
@@ -83,7 +112,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
                         return values.map((ip) => ip.name).join(', ');
                     }
                 }
-                return html`<span style="color:#999">None<span>`
+                return html`<span style="color:#999">None</span>`
             }
         },
         {
@@ -93,7 +122,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
         {
             name: "Modeled processes",
             fn: (model:Model) => model.modeled_processes.length > 0 ?
-                    model.modeled_processes : html`<span style="color:#999">None specified<span>`
+                    model.modeled_processes : html`<span style="color:#999">None specified</span>`
         },
         {
             name: "Parameter assignment/estimation",
@@ -106,36 +135,36 @@ export class MintModels extends connect(store)(MintThreadPage) {
         {
             name: "Target variable for parameter assignment/estimation",
             fn: (model:Model) => model.calibration_target_variable ? 
-                    model.calibration_target_variable : html`<span style="color:#999">No specified<span>`
+                    model.calibration_target_variable : html`<span style="color:#999">No specified</span>`
         },
         {
             name: "Configuration region",
             fn: (model:Model) => model.region_name ?
-                    model.region_name : html`<span style="color:#999">No specified<span>`
+                    model.region_name : html`<span style="color:#999">No specified</span>`
         },
         {
             name: "Spatial dimensionality",
             fn: (model:Model) => model.dimensionality ? 
                     html`<span style="font-family: system-ui;"> ${model.dimensionality} </span>`
-                    : html`<span style="color:#999">No specified<span>`
+                    : html`<span style="color:#999">No specified</span>`
         },
         {
             name: "Spatial grid type",
             fn: (model:Model) => model.spatial_grid_type ? 
                     model.spatial_grid_type
-                    : html`<span style="color:#999">No specified<span>`
+                    : html`<span style="color:#999">No specified</span>`
         },
         {
             name: "Spatial grid resolution",
             fn: (model:Model) => model.spatial_grid_resolution ?
                     model.spatial_grid_resolution 
-                    : html`<span style="color:#999">No specified<span>`
+                    : html`<span style="color:#999">No specified</span>`
         },
         {
             name: "Minimum output time interval",
             fn: (model:Model) => model.output_time_interval ?
                     model.output_time_interval
-                    : html`<span style="color:#999">No specified<span>`
+                    : html`<span style="color:#999">No specified</span>`
         }
     ]
 
@@ -152,16 +181,146 @@ export class MintModels extends connect(store)(MintThreadPage) {
         return (prefix + region.name).replace(/\s/g,'_');
     }
 
-    protected render() {
+    constructor () {
+        super();
+        this.ruleSelector = new ModelRuleSelector();
+        let me = this;
+        this.ruleSelector.setCallback(() => {
+            me.requestUpdate();
+        });
+    }
+
+    private onSearchBarChange (ev) {
+        console.log(ev);
+        let intext : HTMLInputElement = this.shadowRoot!.getElementById("searchBar") as HTMLInputElement;
+        if (intext) {
+            this._textFilter = intext.value;
+        }
+    }
+
+    protected render () {
+        return html`
+        <p> Showing models for <b>${this._region.name}</b>:</p>
+        ${this.ruleSelector}
+        <br/>
+        <div class="clt">
+            <input id="searchBar" placeholder="Search..." type="text" style="width:100%; padding: 0px;" @input=${this.onSearchBarChange}/>
+            <table class="pure-table pure-table-striped">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th><b>Model</b></th>
+                        <th>Category</th>
+                        <th>Region</th>
+                    </tr>
+                </thead>
+                <tbody>
+                ${this._loading ? html`
+                    <tr>
+                        <td colspan="4"> <wl-progress-bar style="width: 100%;"></wl-progress-bar> </td>
+                    </tr>` : ''
+                }
+                ${!this._baseLoaded ? html`
+                    <tr>
+                        <td colspan="4"> <wl-progress-bar style="width: 100%;"></wl-progress-bar> </td>
+                    </tr>` 
+                    : this.renderMatchingModels()
+                }
+                </tbody>
+            </table>
+        </div>`;
+    }
+
+    private computedURLs : IdMap<string> = {};
+    private getSetupURL (setup: ModelConfigurationSetup) {
+        if (!this.computedURLs[setup.id]) {
+            let url : string = this._regionid + '/models/explore/';
+            let config : ModelConfiguration = Object.values(this._allConfigs)
+                    .filter((cfg:ModelConfiguration) => cfg.hasSetup && cfg.hasSetup.some((s:ModelConfigurationSetup) => s.id === setup.id)).pop();
+            if (config) {
+                let version : SoftwareVersion = Object.values(this._allVersions)
+                        .filter((ver:SoftwareVersion) => ver.hasConfiguration && ver.hasConfiguration.some((c:ModelConfiguration) => c.id === config.id)).pop();
+                if (version) {
+                    let model : MCModel = Object.values(this._allModels).filter((m:MCModel) => 
+                            m.hasVersion && m.hasVersion.some((v:SoftwareVersion) => v.id === version.id)).pop();
+                    if (model) {
+                        this.computedURLs[setup.id] = url + getId(model) + '/' + getId(version) + "/" + getId(config) + "/" + getId(setup);
+                    }
+                }
+            }
+        }
+        return this.computedURLs[setup.id];
+    }
+
+    private renderMatchingModels () {
+        //Filter for main region;
+        let matchingModels : ModelInfo[] = [];
+
+        // all setups should be the setups after being filtered
+        let setups : ModelConfigurationSetup[] = Object.values(this._allSetups)
+                .filter((s:ModelConfigurationSetup) => 
+                        !s.hasRegion || s.hasRegion.some((r:MCRegion) => isSubregion(this._region.model_catalog_uri, this._allRegions[r.id] )));
+        if (this._textFilter) {
+            let t = this._textFilter.toLowerCase();
+            setups = setups.filter((s:ModelConfigurationSetup) => 
+                    getLabel(s).toLowerCase().includes(t) || (s.description && s.description[0].toLowerCase().includes(t)) ||
+                    (s.hasRegion && s.hasRegion.some(r => getLabel(this._allRegions[r.id]).toLowerCase().includes(t)))
+            );
+        }
+
+        let rules : ModelRule[] = this.ruleSelector.getSelectedRules();
+        for (let rule of rules) {
+            setups = rule.apply(setups, rule.values);
+            this.ruleSelector.setRuleResults(rule.id, setups.length);
+        }
+        this.ruleSelector.requestUpdate();
+
+        matchingModels = setups.map((setup:ModelConfigurationSetup) => {
+            return {
+                id: setup.id,
+                name: getLabel(setup),
+                description: setup.description ? setup.description : "",
+                url: this.getSetupURL(setup),
+                category : setup.hasModelCategory ? 
+                        setup.hasModelCategory.map(c => getLabel(this._allCategories[c.id])).join(", ") : "",
+                region: setup.hasRegion ? setup.hasRegion.map(r => getLabel(this._allRegions[r.id])).join(", ") : "",
+                selected: false //FIXME
+            } as ModelInfo;
+        });
+        return matchingModels.length == 0 ?
+            html`
+                <tr>
+                    <td colspan="4" style="text-align:center; color: rgb(153, 153, 153);">
+                        - No models found -
+                    </td>
+                </tr>
+            ` : matchingModels.map(this.renderModelRow);
+    }
+
+    private renderModelRow (model: ModelInfo) {
+        return html`
+        <tr>
+            <td><input class="checkbox" type="checkbox" data-modelid="${model.id}"
+                ?checked="${model.selected}"></input></td>
+            <td>
+                <a target="_blank" href="${model.url}">${model.name}</a>
+                ${model.description ? html`<div>${model.description}</div>` : ''}
+            </td> 
+            <td>${model.category}</td>
+            <td> ${model.region} </td>
+        </tr>`;
+    }
+
+    protected oldrender() {
         if(!this.thread) {
             return html ``;
         }
                 
         let modelids = Object.keys((this.thread.models || {})) || [];
         let done = (this.thread.models && modelids.length > 0);
-        if(!this._responseVariables)
-            return;
-            
+        //if(!this._responseVariables) Not necesary now
+        //    return;
+
         let availableModels = this._queriedModels[this._responseVariables.join(",")] || [];
         
         // Filter all available models by region        
@@ -539,8 +698,8 @@ export class MintModels extends connect(store)(MintThreadPage) {
 
     protected firstUpdated () {
         store.dispatch(ModelCatalogApi.myCatalog.region.getAll()).then((regions:IdMap<MCRegion>) => {
-            //FIXME: this until the api return the region label.
             this._allRegions = regions;
+            ModelRuleSelector.setRegions(regions);
         });
 
         let pm = store.dispatch(ModelCatalogApi.myCatalog.model.getAll()).then((models:IdMap<MCModel>) => {
@@ -557,7 +716,32 @@ export class MintModels extends connect(store)(MintThreadPage) {
             if(this._pendingQuery)
                 this._queryModelCatalog();
         });
-        Promise.all([pm,pv,pc,si]).then(() => {
+        let st = store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getAll()).then((setups:IdMap<ModelConfigurationSetup>) => {
+            this._allSetups = setups;
+        });
+        let cat = store.dispatch(ModelCatalogApi.myCatalog.modelCategory.getAll()).then((cats:IdMap<ModelCategory>) => {
+            this._allCategories = cats;
+            ModelRuleSelector.setCategories(cats);
+        });
+
+        let ds = store.dispatch(ModelCatalogApi.myCatalog.datasetSpecification.getAll()).then((dss:IdMap<DatasetSpecification>) => {
+            ModelRuleSelector.setDatasetSpecification(dss);
+        });
+        let vp = store.dispatch(ModelCatalogApi.myCatalog.variablePresentation.getAll()).then((vps:IdMap<VariablePresentation>) => {
+            ModelRuleSelector.setVariablePresentations(vps);
+        });
+        let sv = store.dispatch(ModelCatalogApi.myCatalog.standardVariable.getAll()).then((svs:IdMap<StandardVariable>) => {
+            ModelRuleSelector.setStandardVariable(svs);
+        });
+        let pp = store.dispatch(ModelCatalogApi.myCatalog.parameter.getAll()).then((params:IdMap<Parameter>) => {
+            ModelRuleSelector.setParameters(params);
+        });
+        let inter = store.dispatch(ModelCatalogApi.myCatalog.intervention.getAll()).then((ints:IdMap<Intervention>) => {
+            ModelRuleSelector.setInterventions(ints);
+        });
+
+
+        Promise.all([pm,pv,pc,si, st, cat, ds, vp, sv, pp, inter]).then(() => {
             this._baseLoaded = true;
         });
     }
@@ -566,8 +750,10 @@ export class MintModels extends connect(store)(MintThreadPage) {
         super.setUser(state);
         super.setRegionId(state);
         //let thread_id = this.thread ? this.thread.id : null;
+        if (this._region && this._region.model_catalog_uri)
+            ModelRuleSelector.setMainRegion(this._region.model_catalog_uri);
         super.setThread(state);
-        
+
         this._subregion = getUISelectedSubgoalRegion(state);
 
         if(this.thread && 
@@ -587,6 +773,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
 
         if(state.variables && state.variables.variables) {
             this._variableMap = state.variables.variables;
+            ModelRuleSelector.setVariableMap(this._variableMap);
         }
     }
 }
