@@ -199,6 +199,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
         store.dispatch(api.region.getAll());
         store.dispatch(api.image.getAll());
         store.dispatch(api.modelCategory.getAll());
+        store.dispatch(api.variablePresentation.getAll());
 
         //TEST
         /*console.log('Getting SWAT from the model-catalog...');
@@ -215,7 +216,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     store.dispatch(ModelCatalogApi.myCatalog.model.put(s)).then((w:Model) => {
                         console.log('Response of put', w);
                         console.log("Deleting...");
-                        store.dispatch(ModelCatalogApi.myCatalog.model.delete(w)).then(() => {
+                        store.dispatch(ModelCatalogApi.myCatalog.model.delete(w.id)).then(() => {
                             console.log("DONE");
                         });
                     });

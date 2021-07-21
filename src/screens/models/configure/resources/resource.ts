@@ -152,8 +152,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected _selectedResources : IdMap<boolean> = {};
 
     // FLAGS
-    @property({type: String}) protected _action : Action = Action.NONE; //NONE, SELECT, MULTISELECT, EDIT_OR_ADD,
-    @property({type: String}) protected _status : Status = Status.NONE; //NONE, CREATE, EDIT, CUSTOM_CREATE,
+    @property({type: Number}) protected _action : Action = Action.NONE; //NONE, SELECT, MULTISELECT, EDIT_OR_ADD,
+    @property({type: Number}) protected _status : Status = Status.NONE; //NONE, CREATE, EDIT, CUSTOM_CREATE,
 
     @property({type: Boolean}) public inline : boolean = true;
     @property({type: Boolean}) public uniqueLabel : boolean = false;
@@ -161,8 +161,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: Boolean}) protected _waiting : boolean = false;
     @property({type: Boolean}) protected _singleMode : boolean = false;
 
-    @property({type: Object}) protected _resources : T[] = [] as T[];
-    @property({type: Object}) protected _orderedResources : T[] = [] as T[];
+    @property({type: Array}) protected _resources : T[] = [] as T[];
+    @property({type: Array}) protected _orderedResources : T[] = [] as T[];
 
     @property({type: String}) protected _textFilter : string = "";
     @property({type: Boolean}) protected _creationEnabled : boolean = true;
@@ -1058,7 +1058,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 this._resources.splice(index,1);
                 this.requestUpdate();
             } 
-            store.dispatch(this.resourceApi.delete(r)).then(() => {
+            store.dispatch(this.resourceApi.delete(r.id)).then(() => {
                 this._notification.save(this.name + " deleted")
                 this._eventDelete(r);
             });
@@ -1348,6 +1348,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             let inner : Promise<T> = this._duplicateInnerResources(copy);
             inner.catch(reject);
             inner.then((fullResource:T) => {
+                fullResource.id = undefined;
                 let post : Promise<T> = store.dispatch(this.resourcePost(fullResource));
                 post.catch(reject);
                 post.then(resolve);
