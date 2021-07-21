@@ -7,6 +7,8 @@ import { Configuration, BaseAPI } from '@mintproject/modelcatalog_client';
 import { IdObject } from './interfaces';
 import { DEFAULT_GRAPH, PREFIX_URI } from 'config/default-graph';
 
+const PERPAGE = 200; //This is the max the API allows
+
 // This class adds redux and authentication capabilities to the modelcatalog-client generated APIs.
 // The provides the standard get, getAll, put, post and delete but can be customized. Check ./custom-api
 export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
@@ -52,25 +54,57 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
 
     public getAll : ActionThunk<Promise<IdMap<T>>, MCActionAdd> = (ignoreCache:boolean=false) => (dispatch) => {
         if (ignoreCache || !this._cached) {
+            // Create the promise that will run several requests
             this._cached = new Promise((resolve, reject) => {
-                let req : Promise<T[]> = this._api[this._lname + 'sGet']({
-                    username: this._username,
-                    perPage: 200
+
+                let getNextPage = (page:number) => new Promise<T[]> ((resolve, reject) => {
+                    let curPage = this.getAllFromPage(page);
+                    curPage.catch(reject);
+                    curPage.then((resp:T[]) => {
+                        // Fist add data to redux:
+                        if (resp.length > 0 && this._redux) {
+                            let data : IdMap<T> = resp.reduce(this._idReducer, {});
+                            dispatch({
+                                type: MODEL_CATALOG_ADD,
+                                kind: this._lname,
+                                payload: data
+                            });
+                        }
+
+                        // Then check if we need next page
+                        if (resp.length >= PERPAGE) {
+                            let nextPage : Promise<T[]> = getNextPage(page+1);
+                            nextPage.then((innerResp: T[]) => {
+                                resolve(resp.concat(innerResp));
+                            });
+                            nextPage.catch((err) => {
+                                console.error("Error getting page " + page + " of " + this._name);
+                                resolve(resp);
+                            });
+                        } else {
+                            resolve(resp);
+                        }
+                    })
                 });
 
-                req.then((resp:T[]) => {
+                let all : Promise<T[]> = getNextPage(1);
+
+                all.then((resp:T[]) => {
                     let data : IdMap<T> = resp.reduce(this._idReducer, {});
-                    if (this._redux) dispatch({
-                        type: MODEL_CATALOG_ADD,
-                        kind: this._lname,
-                        payload: data
-                    });
                     resolve(data);
                 });
-                req.catch((err) => reject(err));
+                all.catch((err) => reject(err));
             });
         }
         return this._cached;
+    }
+
+    private getAllFromPage (currentPage:number=1) : Promise<T[]> {
+        return this._api[this._lname + 'sGet']({
+                username: this._username,
+                perPage: PERPAGE,
+                page: currentPage
+        });
     }
 
     public delete : ActionThunk<Promise<void>, MCActionDelete> = (uri:string) => (dispatch) => {
