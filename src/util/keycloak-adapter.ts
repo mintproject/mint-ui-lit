@@ -87,6 +87,8 @@ export class KeycloakAdapter {
                     jsn.catch(reject);
                     jsn.then((tkn:tokenResponse) => {
                         KeycloakAdapter.saveTokenResponse(tkn);
+                        //Logged in, we need to start to auto refresh
+                        setTimeout(() => { KeycloakAdapter.refresh(KeycloakAdapter.refreshToken) }, KeycloakAdapter.refreshExpiresIn * 100);
                         resolve();
                     })
                 } else {
@@ -115,6 +117,8 @@ export class KeycloakAdapter {
                 if (response.status === 200) {
                     response.json().then((tkn : tokenResponse) => {
                         KeycloakAdapter.saveTokenResponse(tkn);
+                        // Everything is ok autorefresh
+                        setTimeout(() => { KeycloakAdapter.refresh(KeycloakAdapter.refreshToken) }, KeycloakAdapter.refreshExpiresIn * 100);
                         resolve(true);
                     });
                 } else {
@@ -154,13 +158,10 @@ export class KeycloakAdapter {
             let accessToken : string = localStorage.getItem('access-token');
             let refreshToken : string = localStorage.getItem('refresh-token');
             if (accessToken && refreshToken) {
-                //Check if access token is still valid, if not, try to refresh.
-                if (false) { //KeycloakAdapter.checkToken()) {
-                } else {
-                    let ref : Promise<boolean> = KeycloakAdapter.refresh(refreshToken);
-                    ref.catch(() => resolve(false));
-                    ref.then((b:boolean) => resolve(b));
-                }
+                // Check if the refresh token is still valid:
+                let ref : Promise<boolean> = KeycloakAdapter.refresh(refreshToken);
+                ref.catch(() => resolve(false));
+                ref.then((b:boolean) => resolve(b));
             } else {
                 resolve(false);
             }
