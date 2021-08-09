@@ -7,7 +7,7 @@ import "weightless/icon";
 
 @customElement('nav-title')
 export class NavTitle extends LitElement {
-    @property({type:Object})
+    @property({type:Array})
     nav = [];
 
     @property({type:Number})

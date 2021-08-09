@@ -39,8 +39,8 @@ export class MintModels extends connect(store)(MintThreadPage) {
     @property({type: Object})
     private _queriedModels: VariableModels = {} as VariableModels;
 
-    @property({type: Object})
-    private _editMode: Boolean = false;
+    @property({type: Boolean})
+    private _editMode: boolean = false;
 
     @property({type: Array})
     private _modelsToCompare: Model[] = [];
@@ -83,7 +83,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
                         return values.map((ip) => ip.name).join(', ');
                     }
                 }
-                return html`<span style="color:#999">None<span>`
+                return html`<span style="color:#999">None</span>`
             }
         },
         {
@@ -93,7 +93,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
         {
             name: "Modeled processes",
             fn: (model:Model) => model.modeled_processes.length > 0 ?
-                    model.modeled_processes : html`<span style="color:#999">None specified<span>`
+                    model.modeled_processes : html`<span style="color:#999">None specified</span>`
         },
         {
             name: "Parameter assignment/estimation",
@@ -106,36 +106,36 @@ export class MintModels extends connect(store)(MintThreadPage) {
         {
             name: "Target variable for parameter assignment/estimation",
             fn: (model:Model) => model.calibration_target_variable ? 
-                    model.calibration_target_variable : html`<span style="color:#999">No specified<span>`
+                    model.calibration_target_variable : html`<span style="color:#999">No specified</span>`
         },
         {
             name: "Configuration region",
             fn: (model:Model) => model.region_name ?
-                    model.region_name : html`<span style="color:#999">No specified<span>`
+                    model.region_name : html`<span style="color:#999">No specified</span>`
         },
         {
             name: "Spatial dimensionality",
             fn: (model:Model) => model.dimensionality ? 
                     html`<span style="font-family: system-ui;"> ${model.dimensionality} </span>`
-                    : html`<span style="color:#999">No specified<span>`
+                    : html`<span style="color:#999">No specified</span>`
         },
         {
             name: "Spatial grid type",
             fn: (model:Model) => model.spatial_grid_type ? 
                     model.spatial_grid_type
-                    : html`<span style="color:#999">No specified<span>`
+                    : html`<span style="color:#999">No specified</span>`
         },
         {
             name: "Spatial grid resolution",
             fn: (model:Model) => model.spatial_grid_resolution ?
                     model.spatial_grid_resolution 
-                    : html`<span style="color:#999">No specified<span>`
+                    : html`<span style="color:#999">No specified</span>`
         },
         {
             name: "Minimum output time interval",
             fn: (model:Model) => model.output_time_interval ?
                     model.output_time_interval
-                    : html`<span style="color:#999">No specified<span>`
+                    : html`<span style="color:#999">No specified</span>`
         }
     ]
 
@@ -162,7 +162,10 @@ export class MintModels extends connect(store)(MintThreadPage) {
         if(!this._responseVariables)
             return;
             
-        let availableModels = this._queriedModels[this._responseVariables.join(",")] || [];
+        let availableModels : Model[] = this._queriedModels[this._responseVariables.join(",")] || [];
+
+        // Filter out all models without component location
+        availableModels = availableModels.filter((m:Model) => !!m.code_url)
         
         // Filter all available models by region        
         let regionModels = [];
@@ -454,7 +457,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
         return models; 
     }
 
-    _setEditMode(mode: Boolean) {
+    _setEditMode(mode: boolean) {
         if(!this.permission.write)
             mode = false;
         this._editMode = mode;

@@ -24,7 +24,7 @@ export class MintThreadPage extends PageViewElement {
     protected permission: MintPermission = null;
 
     @property({type: Boolean})
-    protected _waiting: Boolean = false;    
+    protected _waiting: boolean = false;    
     
     selectAndContinue(section) {
         if(section == "models") {
@@ -33,7 +33,7 @@ export class MintThreadPage extends PageViewElement {
         store.dispatch(selectThreadSection(null));        
     }
 
-    setThread(state: RootState): Boolean {
+    setThread(state: RootState): boolean {
         let thread_id = state.ui!.selected_thread_id;
         this.thread = state.modeling.thread;
         if(this.thread != null) {

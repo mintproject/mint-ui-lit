@@ -122,6 +122,9 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
     private _inputConstraint : ModelCatalogConstraint;
     //private _outputDSInput : ModelCatalogDatasetSpecification;
 
+    private _parentInnerResourcesSet : boolean = false;
+    private _parentComponentLocation : string = "";
+
     constructor () {
         super();
     }
@@ -228,7 +231,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         if (this._inputConstraint) this._inputConstraint.unsetAction();
     }
 
-    private _parentInnerResourcesSet : boolean = false;
     public enableSingleResourceCreation (parentConfig:ModelConfiguration) {
         super.enableSingleResourceCreation();
         this._parentConfig = parentConfig;
@@ -247,6 +249,9 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             this._inputDSInput.setResourcesAsCopy( r.hasInput );
             this._inputDSOutput.setResourcesAsCopy( r.hasOutput );
             this._inputConstraint.setResourcesAsCopy( r.hasConstraint );
+            // Adds component location
+            this._parentComponentLocation = r.hasComponentLocation && r.hasComponentLocation.length > 0 ?
+                    r.hasComponentLocation[0] : "";
         }
     }
 
@@ -562,7 +567,12 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 <tr>
                     <td>Component Location:</td>
                     <td>
-                        <textarea id="i-comploc" rows="2">${edResource && edResource.hasComponentLocation ?  edResource.hasComponentLocation[0] : ''}</textarea>
+                        <textarea id="i-comploc" rows="2">${
+                            (edResource === null) ?
+                                (this._parentInnerResourcesSet ? this._parentComponentLocation : "")
+                                :
+                                (edResource.hasComponentLocation ? edResource.hasComponentLocation[0] : "")
+                        }</textarea>
                     </td>
                 </tr>
 
