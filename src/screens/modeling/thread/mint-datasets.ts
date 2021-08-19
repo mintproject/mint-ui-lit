@@ -283,7 +283,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                 <li>
                                     Select an input dataset for <b>${input.name}</b>. (You can select more than one dataset if you want several runs). 
                                     Datasets matching the driving variable specied (if any) are in <b>bold</b>.
-                                    <p />
+                                    <p></p>
                                     ${loading ? 
                                     html`<wl-progress-bar></wl-progress-bar>`
                                     :
@@ -369,7 +369,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                     ${this._inputDT[input.id] && this._inputDT[input.id].length > 0 ? html`
                                         You can also use the following <b>data transformations</b> to generate 
                                         <b>${input.name}</b>:
-                                        <p/>
+                                        <p></p>
                                         <table class="pure-table pure-table-striped">
                                             <thead>
                                                 <tr>

@@ -252,7 +252,7 @@ export class TaskEditor extends connect(store)(LitElement) {
         (form.elements["taskid"] as HTMLInputElement).value = task.id;
         (form.elements["task_name"] as HTMLInputElement).value = task.name;
 
-        (form.elements["task_region_category"] as HTMLInputElement).value = this._regions[task.regionid].category_id ?? "";
+        (form.elements["task_region_category"] as HTMLInputElement).value = this._regions && this._regions[task.regionid] ? this._regions[task.regionid].category_id : "";
         this._onRegionCategoryChange();
 
         (form.elements["task_region"] as HTMLInputElement).value = task.regionid;                
@@ -277,7 +277,7 @@ export class TaskEditor extends connect(store)(LitElement) {
         let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#taskForm")!;
         let category_id = (form.elements["task_region_category"] as HTMLSelectElement).value;
         let selector = form.elements["task_region"] as HTMLSelectElement
-        if (category_id != this._selectedCategory?.id && selector) {
+        if (category_id && category_id != this._selectedCategory?.id && selector) {
             this._selectedCategory = this._regionCategories[category_id];
             while (selector.options.length > 0) {
                 selector.remove(selector.options.length - 1);
@@ -404,14 +404,14 @@ export class TaskEditor extends connect(store)(LitElement) {
         if(state.regions.categories && !this._regionCategories) {
             this._regionCategories = state.regions.categories;
         }
-        if(state.regions.sub_region_ids && this._regionid && state.regions.sub_region_ids[this._regionid]) {
-            let all_regionids = state.regions.sub_region_ids[this._regionid];
-            this._regions = state.regions.regions;
-            if(all_regionids != this._subRegionIds) {
-                this._subRegionIds = all_regionids;
+
+        if(state.regions.sub_region_ids && this._regionid) {
+            if (state.regions.sub_region_ids && state.regions.sub_region_ids[this._regionid] != this._subRegionIds) {
+                this._subRegionIds = state.regions.sub_region_ids[this._regionid];
                 this._categorizedRegions = getCategorizedRegions(state);
             }
-        }
+        } 
+
         if(state.variables && state.variables.variables) {
             this._variableMap = state.variables.variables;
         }        

@@ -415,6 +415,16 @@ export class MintApp extends connect(store)(LitElement) {
             <!-- Main Pages -->
             <app-home class="page fullpage" ?active="${this._page == 'home'}"></app-home>
             <emulators-home class="page fullpage" ?active="${this._page == 'emulators'}"></emulators-home>
+            ${this._page != "home" && this._page != "emulators" ? 
+              html`
+                <div style="display: flex; color: #888; flex-direction: column; width: 100%; height: 100%; align-items: center; justify-content: center;">
+                  <div style="font-size: 2em;">Unauthorized</div>
+                  <div style="font-size: 1.5em;">
+                    Please <a style="cursor: pointer;" @click="${this._showLoginWindow}">log in</a> or go to the <a href="/">home page</a>
+                  </div>
+                </div>
+              `
+              : ""}
           </div>
         `
       }
