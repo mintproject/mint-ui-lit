@@ -14,7 +14,7 @@ export class HasCategoryQuestion extends ModelQuestion {
             id:string = "hasCategoryQuestion",
             name:string = "Model is part of a specific category",
             template:string = "That are part of ?category models",
-            pattern: string = "?model <https://w3id.org/okn/o/sdm#hasModelCategory ?category"
+            pattern: string = "?model <https://w3id.org/okn/o/sdm#hasModelCategory> ?category ."
         ) {
         super(id, name, template, pattern);
 

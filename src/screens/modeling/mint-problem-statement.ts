@@ -226,7 +226,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                     <wl-icon>arrow_back_ios</wl-icon>
                 </wl-button>
                 <div class="cltmain navtop">
-                    <wl-title level="3" nowrap="true">${this._problem_statement!.name}</wl-title>
+                    <wl-title level="3" ?nowrap="${true}">${this._problem_statement!.name}</wl-title>
                 </div>
             </div>
 

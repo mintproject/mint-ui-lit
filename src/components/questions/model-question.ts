@@ -150,4 +150,13 @@ export class ModelQuestion extends LitElement {
     public applyFilter (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
         throw new Error("Method not implemented.");
     }
+
+    public getPattern () {
+        let p = this.pattern.replaceAll(/\s+/g," ");
+        p = p.replaceAll(" ."," .\n");
+        this.varNames.forEach((varname:string) => {
+            p = p.replaceAll(varname, "<" + this.settedOptions[varname] + ">")
+        })
+        return p;
+    }
 }

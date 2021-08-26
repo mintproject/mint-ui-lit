@@ -14,7 +14,7 @@ export class HasSubRegionQuestion extends ModelQuestion {
             id:string = "hasSubRegionQuestion",
             name:string = "Model is configured to work on an especific region",
             template:string = "That are configured to work on ?region",
-            pattern: string = "?model <https://w3id.org/okn/o/sdm#hasRegion> ?region"
+            pattern: string = "?model <https://w3id.org/okn/o/sdm#hasRegion> ?region ."
         ) {
         super(id, name, template, pattern);
 
@@ -34,11 +34,7 @@ export class HasSubRegionQuestion extends ModelQuestion {
             let regionOptions : {[key:string] : string} = {};
             matchingSetups.forEach((s:ModelConfigurationSetup) =>
                 (s.hasRegion||[]).forEach((r:Region) => {
-                    if (this.optionCount[r.id]) {
-                        this.optionCount[r.id] += 1;
-                    } else {
-                        this.optionCount[r.id] = 1;
-                    }
+                    this.countOption(r.id);
                     regionOptions[r.id] = getLabel(this.regions[r.id] ? this.regions[r.id] : getLabel(r));
                 })
             );

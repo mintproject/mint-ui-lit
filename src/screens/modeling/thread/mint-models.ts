@@ -34,8 +34,8 @@ import { Model as MCModel, Region as MCRegion, SoftwareVersion, SoftwareImage, M
 import 'components/loading-dots';
 import { getLatestEventOfType } from "util/event_utils";
 import variables, { VariableMap } from "screens/variables/reducers";
-import { ModelRule, ModelRuleSelector } from "components/model-rule-selector";
 import { ModelQuestionComposer } from "components/questions/model-question-composer";
+import { HasIndicatorQuestion } from "components/questions/custom_questions/has-indicator";
 
 store.addReducers({
     models
@@ -88,8 +88,6 @@ export class MintModels extends connect(store)(MintThreadPage) {
     private _allSoftwareImages : IdMap<SoftwareImage>;
     private _allRegions : IdMap<MCRegion> = {};
     private _allCategories : IdMap<ModelCategory> = {};
-
-    private ruleSelector : ModelRuleSelector;
 
     @property({type: Number})
     private _nresults : number = 0;
@@ -185,16 +183,10 @@ export class MintModels extends connect(store)(MintThreadPage) {
     private questionComposer;
     constructor () {
         super();
-        this.ruleSelector = new ModelRuleSelector();
-        let me = this;
-        this.ruleSelector.setCallback(() => {
-            me.requestUpdate();
-        });
         this.questionComposer = new ModelQuestionComposer();
     }
 
     private onSearchBarChange (ev) {
-        console.log(ev);
         let intext : HTMLInputElement = this.shadowRoot!.getElementById("searchBar") as HTMLInputElement;
         if (intext) {
             this._textFilter = intext.value;
@@ -204,35 +196,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
     protected render () {
         return html`
         ${this.questionComposer}
-        <p> Showing models for <b>${this._region.name}</b>:</p>
-        ${this.ruleSelector}
-        <br/>
-        <div class="clt">
-            <input id="searchBar" placeholder="Search..." type="text" style="width:100%; padding: 0px;" @input=${this.onSearchBarChange}/>
-            <table class="pure-table pure-table-striped">
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th><b>Model</b></th>
-                        <th>Category</th>
-                        <th>Region</th>
-                    </tr>
-                </thead>
-                <tbody>
-                ${this._loading ? html`
-                    <tr>
-                        <td colspan="4"> <wl-progress-bar style="width: 100%;"></wl-progress-bar> </td>
-                    </tr>` : ''
-                }
-                ${!this._baseLoaded ? html`
-                    <tr>
-                        <td colspan="4"> <wl-progress-bar style="width: 100%;"></wl-progress-bar> </td>
-                    </tr>` 
-                    : this.renderMatchingModels()
-                }
-                </tbody>
-            </table>
-        </div>`;
+        `;
     }
 
     private computedURLs : IdMap<string> = {};
@@ -271,13 +235,6 @@ export class MintModels extends connect(store)(MintThreadPage) {
                     (s.hasRegion && s.hasRegion.some(r => getLabel(this._allRegions[r.id]).toLowerCase().includes(t)))
             );
         }
-
-        let rules : ModelRule[] = this.ruleSelector.getSelectedRules();
-        for (let rule of rules) {
-            setups = rule.apply(setups, rule.values);
-            this.ruleSelector.setRuleResults(rule.id, setups.length);
-        }
-        this.ruleSelector.requestUpdate();
 
         matchingModels = setups.map((setup:ModelConfigurationSetup) => {
             return {
@@ -705,7 +662,6 @@ export class MintModels extends connect(store)(MintThreadPage) {
     protected firstUpdated () {
         store.dispatch(ModelCatalogApi.myCatalog.region.getAll()).then((regions:IdMap<MCRegion>) => {
             this._allRegions = regions;
-            ModelRuleSelector.setRegions(regions);
         });
 
         let pm = store.dispatch(ModelCatalogApi.myCatalog.model.getAll()).then((models:IdMap<MCModel>) => {
@@ -727,27 +683,9 @@ export class MintModels extends connect(store)(MintThreadPage) {
         });
         let cat = store.dispatch(ModelCatalogApi.myCatalog.modelCategory.getAll()).then((cats:IdMap<ModelCategory>) => {
             this._allCategories = cats;
-            ModelRuleSelector.setCategories(cats);
         });
 
-        let ds = store.dispatch(ModelCatalogApi.myCatalog.datasetSpecification.getAll()).then((dss:IdMap<DatasetSpecification>) => {
-            ModelRuleSelector.setDatasetSpecification(dss);
-        });
-        let vp = store.dispatch(ModelCatalogApi.myCatalog.variablePresentation.getAll()).then((vps:IdMap<VariablePresentation>) => {
-            ModelRuleSelector.setVariablePresentations(vps);
-        });
-        let sv = store.dispatch(ModelCatalogApi.myCatalog.standardVariable.getAll()).then((svs:IdMap<StandardVariable>) => {
-            ModelRuleSelector.setStandardVariable(svs);
-        });
-        let pp = store.dispatch(ModelCatalogApi.myCatalog.parameter.getAll()).then((params:IdMap<Parameter>) => {
-            ModelRuleSelector.setParameters(params);
-        });
-        let inter = store.dispatch(ModelCatalogApi.myCatalog.intervention.getAll()).then((ints:IdMap<Intervention>) => {
-            ModelRuleSelector.setInterventions(ints);
-        });
-
-
-        Promise.all([pm,pv,pc,si, st, cat, ds, vp, sv, pp, inter]).then(() => {
+        Promise.all([pm,pv,pc,si, st, cat]).then(() => {
             this._baseLoaded = true;
         });
     }
@@ -758,8 +696,6 @@ export class MintModels extends connect(store)(MintThreadPage) {
 
         this.questionComposer.setMainRegion(this._region);
         //let thread_id = this.thread ? this.thread.id : null;
-        if (this._region && this._region.model_catalog_uri)
-            ModelRuleSelector.setMainRegion(this._region.model_catalog_uri);
         super.setThread(state);
 
         this._subregion = getUISelectedSubgoalRegion(state);
@@ -781,7 +717,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
 
         if(state.variables && state.variables.variables) {
             this._variableMap = state.variables.variables;
-            ModelRuleSelector.setVariableMap(this._variableMap);
+            HasIndicatorQuestion.setVariablesMap(this._variableMap);
         }
     }
 }

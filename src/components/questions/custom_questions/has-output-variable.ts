@@ -6,17 +6,17 @@ import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { getLabel } from "model-catalog/util";
 import { ModelQuestion } from '../model-question';
 
-@customElement("has-input-variable-question")
-export class HasInputVariableQuestion extends ModelQuestion {
+@customElement("has-output-variable-question")
+export class HasOutputVariableQuestion extends ModelQuestion {
     private datasetSpecifications : IdMap<DatasetSpecification>;
     private variablePresentations : IdMap<VariablePresentation>;
 
     constructor (
-            id:string = "hasInputVariable",
-            name:string = "Model requires a specific input variable",
-            template:string = "That requires the variable ?variable as input",
-            pattern: string = "?model <https://w3id.org/okn/o/sdm#hasInput> ?input .\n\
-                               ?input <https://w3id.org/okn/o/sdm#hasPresentation> ?variable ."
+            id:string = "hasOutputVariable",
+            name:string = "Model requires a specific output variable",
+            template:string = "That requires the variable ?variable as output",
+            pattern: string = "?model <https://w3id.org/okn/o/sdm#hasOutput> ?output .\n\
+                               ?output <https://w3id.org/okn/o/sdm#hasPresentation> ?variable ."
         ) {
         super(id, name, template, pattern);
 
@@ -42,10 +42,10 @@ export class HasInputVariableQuestion extends ModelQuestion {
         if (this.datasetSpecifications && this.variablePresentations) {
             let variablePresentationOptions : {[key:string] : string} = {};
             matchingSetups.forEach((s:ModelConfigurationSetup) =>
-                (s.hasInput||[])
-                    .map((input:DatasetSpecification) => this.datasetSpecifications[input.id])
-                    .forEach((input:DatasetSpecification) => 
-                        (input.hasPresentation||[])
+                (s.hasOutput||[])
+                    .map((output:DatasetSpecification) => this.datasetSpecifications[output.id])
+                    .forEach((output:DatasetSpecification) => 
+                        (output.hasPresentation||[])
                             .map((vp:VariablePresentation) => this.variablePresentations[vp.id])
                             .forEach((vp:VariablePresentation) => {
                                 this.countOption(vp.id);
@@ -58,18 +58,18 @@ export class HasInputVariableQuestion extends ModelQuestion {
         }
     }
 
-    public createCopy () : HasInputVariableQuestion {
-        return new HasInputVariableQuestion(this.id, this.name, this.template, this.pattern);
+    public createCopy () : HasOutputVariableQuestion {
+        return new HasOutputVariableQuestion(this.id, this.name, this.template, this.pattern);
     }
 
     public applyFilter (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
         let varid : string = this.settedOptions["?variable"];
         return modelsToFilter.filter((s:ModelConfigurationSetup) => 
-            !!s.hasInput && 
-            s.hasInput
-                .map((input:DatasetSpecification) => this.datasetSpecifications[input.id])
-                .some((input:DatasetSpecification) => 
-                    (input.hasPresentation||[])
+            !!s.hasOutput && 
+            s.hasOutput
+                .map((output:DatasetSpecification) => this.datasetSpecifications[output.id])
+                .some((output:DatasetSpecification) => 
+                    (output.hasPresentation||[])
                         .map((vp:VariablePresentation) => this.variablePresentations[vp.id])
                         .some((vp:VariablePresentation) => vp.id === varid)
                 )

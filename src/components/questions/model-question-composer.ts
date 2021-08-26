@@ -13,6 +13,9 @@ import { SharedStyles } from "styles/shared-styles";
 import { HasSubRegionQuestion } from "./custom_questions/has-subregion-question";
 import { HasCategoryQuestion } from "./custom_questions/has-category";
 import { HasInputVariableQuestion } from "./custom_questions/has-input-variable";
+import { HasOutputVariableQuestion } from "./custom_questions/has-output-variable";
+import { HasIndicatorQuestion } from "./custom_questions/has-indicator";
+import { HasStandardVariableQuestion } from "./custom_questions/has-standard-variable";
 
 
 @customElement("model-question-composer")
@@ -42,14 +45,13 @@ export class ModelQuestionComposer extends LitElement {
         let hasInputVariable = new HasInputVariableQuestion();
         this.questionCatalog[hasInputVariable.id] = hasInputVariable;
 
-        let generatesIndicator : ModelQuestion = new ModelQuestion(
-            "generatesIndicator",
-            "Model generates specific indicator",
-            "Generates indicator ?indicator ",
-            "?model <https://w3id.org/okn/o/sdm#hasOutput> ?output .\n\
-             ?output <https://w3id.org/okn/o/sdm#hasPresentation> ?pre . \n\
-             ?pre <https://w3id.org/okn/o/sdm#hasStandardVariable> ?sv"
-        );
+        let hasOutputVariable = new HasOutputVariableQuestion();
+        this.questionCatalog[hasOutputVariable.id] = hasOutputVariable;
+
+        let hasStandardVariable = new HasStandardVariableQuestion();
+        this.questionCatalog[hasStandardVariable.id] = hasStandardVariable;
+
+        let generatesIndicator = new HasIndicatorQuestion();
         this.questionCatalog[generatesIndicator.id] = generatesIndicator;
     }
 
@@ -70,7 +72,7 @@ export class ModelQuestionComposer extends LitElement {
         return html`
             <!-- If a main region is selected, filter by main region first -->
             ${this.mainRegion != null ?
-                html`<p> Showing models for <b>${this.mainRegion.name}</b>:</p>`
+                html`<p> Showing models for <b @click="${this.printComposedQuestion}">${this.mainRegion.name}</b>:</p>`
                 : html`<p>Filtering models:</p>`
             }
 
@@ -270,5 +272,11 @@ export class ModelQuestionComposer extends LitElement {
 
     public setMainRegion (reg: GQLRegion) : void {
         this.mainRegion = reg;
+    }
+
+    public printComposedQuestion () {
+        let composed : string = "?model a <https://w3id.org/okn/o/sdm#ModelConfigurationSetup> .\n";
+        this.selectedQuestions.forEach((question:ModelQuestion) => composed += question.getPattern());
+        console.log(composed);
     }
 }
