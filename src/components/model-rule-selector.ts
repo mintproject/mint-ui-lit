@@ -259,7 +259,6 @@ export class ModelRuleSelector extends LitElement {
 
     public static setDatasetSpecification (dss: IdMap<DatasetSpecification>) {
         ModelRuleSelector.datasetSpecifications = dss;
-        console.log(dss);
     }
 
     public static setVariablePresentations (vars: IdMap<VariablePresentation>) {
@@ -268,7 +267,6 @@ export class ModelRuleSelector extends LitElement {
 
     public static setStandardVariable (vars: IdMap<StandardVariable>) {
         ModelRuleSelector.standardVariables = vars;
-        console.log(vars);
     }
 
     public static setParameters (params: IdMap<Parameter>) {

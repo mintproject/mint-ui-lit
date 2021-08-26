@@ -35,6 +35,7 @@ import 'components/loading-dots';
 import { getLatestEventOfType } from "util/event_utils";
 import variables, { VariableMap } from "screens/variables/reducers";
 import { ModelRule, ModelRuleSelector } from "components/model-rule-selector";
+import { ModelQuestionComposer } from "components/questions/model-question-composer";
 
 store.addReducers({
     models
@@ -181,6 +182,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
         return (prefix + region.name).replace(/\s/g,'_');
     }
 
+    private questionComposer;
     constructor () {
         super();
         this.ruleSelector = new ModelRuleSelector();
@@ -188,6 +190,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
         this.ruleSelector.setCallback(() => {
             me.requestUpdate();
         });
+        this.questionComposer = new ModelQuestionComposer();
     }
 
     private onSearchBarChange (ev) {
@@ -200,6 +203,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
 
     protected render () {
         return html`
+        ${this.questionComposer}
         <p> Showing models for <b>${this._region.name}</b>:</p>
         ${this.ruleSelector}
         <br/>
@@ -592,7 +596,6 @@ export class MintModels extends connect(store)(MintThreadPage) {
             }
         }
 
-
         return this._regionid + '/models/explore/';
     }
 
@@ -749,6 +752,8 @@ export class MintModels extends connect(store)(MintThreadPage) {
     stateChanged(state: RootState) {
         super.setUser(state);
         super.setRegionId(state);
+
+        this.questionComposer.setMainRegion(this._region);
         //let thread_id = this.thread ? this.thread.id : null;
         if (this._region && this._region.model_catalog_uri)
             ModelRuleSelector.setMainRegion(this._region.model_catalog_uri);
