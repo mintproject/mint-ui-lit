@@ -259,7 +259,10 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         // Example, Type, operating system, versions?
         return html`
             <table class="details-table">
-                <colgroup wir.="150px">
+                <colgroup>
+                    <col width="150px">
+                    <col>
+                </colgroup>
                 <tr>
                     <td>Category:</td>
                     <td>
@@ -436,7 +439,10 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         return html`
             <div id="page-top"></div>
             <table class="details-table">
-                <colgroup width="150px">
+                <colgroup>
+                    <col width="150px">
+                    <col>
+                </colgroup>
                 <tr>
                     <td colspan="2" style="padding: 5px 20px;">
                         <wl-textfield id="i-label" label="Model name" 

@@ -42,10 +42,10 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
     @property({type: String})
     private _tableType : string = 'filter';
     
-    @property({type: Array})
+    @property({type: Object})
     private _emulators : EmulatorsListWithStatus;
 
-    @property({type: Array})
+    @property({type: Object})
     private _filtered_emulators : EmulatorsListWithStatus;
 
     @property({type: Boolean})
@@ -131,6 +131,9 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
             }
             table.halfnhalf td select {
                 width: 100%
+            }
+            .NA {
+                color: #888;
             }
             `,
             SharedStyles
@@ -401,7 +404,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                     <!-- Emulator Executions -->
                     <div style="display: flex; align-items: center;">
                         <h2 style="padding: 0px 10px;">${this._selectedModel} Emulators</h2>
-                        <wl-tab-group align="left">
+                        <wl-tab-group align="start">
                             <wl-tab @click="${() => this._tableType = 'filter'}" ?checked="${this._tableType==='filter'}">
                                 Filter executions
                             </wl-tab>
@@ -464,7 +467,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                                         return true;
                                                     }).map((input) => {
                                                         if(input.name == this._selectedModelInput?.name) {
-                                                            return html`<option value="${input.name}" selected="true"
+                                                            return html`<option value="${input.name}" ?selected="${true}"
                                                             >${input.name}</option>`;
                                                         }
                                                         else {
@@ -489,7 +492,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                                     (!this._selectedModelInput.values ?
                                                         html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>` :
                                                         html`
-                                                        <select id="model_input_values" multiple="true">
+                                                        <select id="model_input_values" ?multiple="${true}">
                                                         ${(this._selectedModelInput.values || []).map((value) => {
                                                             if(this._selectedModelInput.type == "parameter") {
                                                                 return html`
@@ -590,11 +593,13 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                                         `;
                                                     }
                                                     else {
-                                                        return html`<td></td>`;
+                                                        return html`<td class="NA">N/A</td>`;
                                                     }
                                                 })}
                                                 ${params.map((param) => html`<td>
-                                                    ${ensemble.bindings[param.name]}
+                                                    ${ensemble.bindings[param.name]?  
+                                                        ensemble.bindings[param.name] :
+                                                        html`<span class="NA">N/A</span>`}
                                                 </td>`
                                                 )}
                                                 ${outputs.map((output:any) => {
@@ -605,7 +610,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
                                                         return html`<td><a href="${furl}">${fname}</a></td>`;
                                                     }
                                                     else {
-                                                        return html`<td></td>`;
+                                                        return html`<td class="NA">N/A</td>`;
                                                     }
                                                 })}                                                            
                                             </tr>
@@ -674,7 +679,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
     stateChanged(state: RootState) {
         super.setRegionId(state);
         super.setSubPage(state);
-        if(this._emulatorRegion != this._regionid && this._regionid && this._subpage == "emulators") {
+        if(this._emulatorRegion != this._regionid && this._regionid && state?.app?.page == "emulators") {
             if(this._emulatorRegion) {
                 this._selectedModel = null;            
                 state.emulators.selected_model = null;

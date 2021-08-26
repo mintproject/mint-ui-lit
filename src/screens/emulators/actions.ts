@@ -2,7 +2,6 @@ import { Action, ActionCreator } from "redux";
 import { GraphQL } from "config/graphql";
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "app/store";
-import { Emulator } from "@mintproject/modelcatalog_client";
 
 import modelTypesQuery from "../../queries/emulator/model-types.graphql";
 import modelExecutionsQuery from "../../queries/emulator/model-executions.graphql";
@@ -11,10 +10,7 @@ import threadExecutionsQuery from "../../queries/emulator/thread-executions.grap
 import modelTypeIOQuery from "../../queries/emulator/get-model-type-io.graphql";
 import modelTypeInputValuesQuery from "../../queries/emulator/get-model-input-values.graphql";
 import modelTypeParameterValuesQuery from "../../queries/emulator/get-model-parameter-values.graphql";
-
 import executionInfoFragment from "../../queries/fragments/emulator-execution-info.graphql";
-import modelTypeConfigsQuery from "../../queries/emulator/get-model-type-configs.graphql";
-import modelConfigInputsQuery from "../../queries/emulator/get-model-config-inputs.graphql";
 
 import { EmulatorModelIO, EmulatorSearchConstraint } from "./reducers";
 import { DataResource } from "screens/datasets/reducers";

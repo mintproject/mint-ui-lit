@@ -76,8 +76,9 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
             #model-search-results {
                 margin: 0 auto;
-                overflow: scroll;
-                height: calc(100% - 160px);
+                overflow-y: scroll;
+                overflow-x: hidden;
+                height: calc(100% - 140px);
                 width: 100%;
             }
 
@@ -109,7 +110,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
             #model-search-form {
                 margin: 0 auto;
-                overflow: scroll;
                 width: 75%;
                 padding-bottom: 1em;
             }

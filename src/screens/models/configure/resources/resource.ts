@@ -1058,7 +1058,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 this._resources.splice(index,1);
                 this.requestUpdate();
             } 
-            store.dispatch(this.resourceApi.delete(r)).then(() => {
+            store.dispatch(this.resourceApi.delete(r.id)).then(() => {
                 this._notification.save(this.name + " deleted")
                 this._eventDelete(r);
             });
@@ -1348,6 +1348,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             let inner : Promise<T> = this._duplicateInnerResources(copy);
             inner.catch(reject);
             inner.then((fullResource:T) => {
+                fullResource.id = undefined;
                 let post : Promise<T> = store.dispatch(this.resourcePost(fullResource));
                 post.catch(reject);
                 post.then(resolve);

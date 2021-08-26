@@ -23,7 +23,7 @@ export class CustomModelConfigurationApi extends DefaultReduxApi<ModelConfigurat
                         dispatch(ModelCatalogApi.myCatalog.softwareVersion.get(versionid));
                 parentSoftwareVersionGet.catch(reject);
                 parentSoftwareVersionGet.then((version:SoftwareVersion) => {
-                    if (version.hasVersion) {
+                    if (version.hasConfiguration) {
                         version.hasConfiguration.push(newConfig);
                     } else {
                         version.hasConfiguration = [ newConfig ];

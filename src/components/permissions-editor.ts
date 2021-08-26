@@ -7,7 +7,7 @@ import { getAllUsersPermission } from "util/permission_utils";
 
 @customElement('permissions-editor')
 export class PermissionsEditor extends LitElement {
-    @property({type: Object})
+    @property({type: Array})
     public permissions: MintPermission[];
 
     @property({type: Object})

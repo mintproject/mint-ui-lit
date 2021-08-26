@@ -58,7 +58,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
     private _queriedModels: VariableModels = {} as VariableModels;
 
     @property({type: Boolean})
-    private _editMode: Boolean = false;
+    private _editMode: boolean = false;
 
     @property({type: Array})
     private _modelsToCompare: Model[] = [];
@@ -322,10 +322,13 @@ export class MintModels extends connect(store)(MintThreadPage) {
                 
         let modelids = Object.keys((this.thread.models || {})) || [];
         let done = (this.thread.models && modelids.length > 0);
+
         //if(!this._responseVariables) Not necesary now
         //    return;
+        let availableModels : Model[] = this._queriedModels[this._responseVariables.join(",")] || [];
 
-        let availableModels = this._queriedModels[this._responseVariables.join(",")] || [];
+        // Filter out all models without component location
+        availableModels = availableModels.filter((m:Model) => !!m.code_url)
         
         // Filter all available models by region        
         let regionModels = [];
@@ -616,7 +619,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
         return models; 
     }
 
-    _setEditMode(mode: Boolean) {
+    _setEditMode(mode: boolean) {
         if(!this.permission.write)
             mode = false;
         this._editMode = mode;

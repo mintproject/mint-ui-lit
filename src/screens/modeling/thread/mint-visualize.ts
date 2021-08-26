@@ -20,10 +20,10 @@ export class MintVisualize extends connect(store)(MintThreadPage) {
     @property({type: Object})
     private _task!: Task;
 
-    @property({type: String})
+    @property({type: Boolean})
     private _bigViz : boolean = false;
 
-    @property({type: Object})
+    @property({type: Array})
     private _lastLinks : string[] = [];
 
     @property({type: Object})
@@ -50,7 +50,7 @@ export class MintVisualize extends connect(store)(MintThreadPage) {
           `
         ]
     }
-    
+
     protected render() {
         if(!this.thread || !this._task || !this.problem_statement) {
             return html ``;
@@ -64,9 +64,10 @@ export class MintVisualize extends connect(store)(MintThreadPage) {
             this._lastLinks = vizurls;
             this._bigViz = (responseV == "Flooding Contour");
         }
-        
+
         let latest_viz_event = getLatestEventOfType(["VISUALIZE"], this.thread.events);
-        
+        console.log(vizurls);
+
         return html`
         <style>
         i {
@@ -75,7 +76,7 @@ export class MintVisualize extends connect(store)(MintThreadPage) {
             color: #999;
         }
         </style>
-        ${(vizurls)? html`
+        ${(vizurls && vizurls.length > 0)? html`
             <h2>Visualization
                 ${responseV? 'of indicator ' + responseV : ''}
             </h2>
@@ -102,7 +103,16 @@ export class MintVisualize extends connect(store)(MintThreadPage) {
                 ${this._renderSummary()}
             </details>
         ` : html`
-            ${this._renderSummary()}
+            <h2>Visualization
+                ${responseV? 'of indicator ' + responseV : ''}
+            </h2>
+            <p>
+                Visualization is a complex problem and a work in progress.
+            </p>
+            <p>
+                For some models, you will see visualizations here.
+                For other models, we recommend that you download the model outputs that appear in the Results tab.
+            </p>
         `}
         `;
     }
@@ -123,7 +133,7 @@ export class MintVisualize extends connect(store)(MintThreadPage) {
         <div class="clt">
             <ul>
                 <li>
-                    <h2>Task: ${this._task.name}</h3>
+                    <h2>Task: ${this._task.name}</h2>
                     <ul>
                         <li>
                             Variables:

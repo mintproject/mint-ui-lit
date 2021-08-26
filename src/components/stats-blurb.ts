@@ -21,9 +21,6 @@ export class StatsBlurb extends LitElement {
 
     static get styles() {
         return css`
-            .blurb {
-                /*text-align: center;*/
-            }
             .top {
                 font-size: 14px;
             }

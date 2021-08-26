@@ -117,9 +117,13 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
     private _inputParameter : ModelCatalogParameter;
     private _inputDSInput : ModelCatalogDatasetSpecification;
+    private _inputDSOutput : ModelCatalogDatasetSpecification;
     private _inputSourceCode : ModelCatalogSourceCode;
     private _inputConstraint : ModelCatalogConstraint;
     //private _outputDSInput : ModelCatalogDatasetSpecification;
+
+    private _parentInnerResourcesSet : boolean = false;
+    private _parentComponentLocation : string = "";
 
     constructor () {
         super();
@@ -153,6 +157,11 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputDSInput.disableDeletion();
         this._inputDSInput.setAsSetup();
 
+        this._inputDSOutput = new ModelCatalogDatasetSpecification();
+        this._inputDSOutput.inline = false;
+        this._inputDSOutput.lazy = true;
+        this._inputDSOutput.disableCreation();
+        this._inputDSOutput.disableDeletion();
     }
 
     //when this happens ?
@@ -167,6 +176,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputSoftwareImage.setResources(r.hasSoftwareImage);
         this._inputParameter.setResources( r.hasParameter );
         this._inputDSInput.setResources( r.hasInput );
+        this._inputDSOutput.setResources( r.hasOutput );
         this._inputSourceCode.setResources( r.hasSourceCode );
         this._inputConstraint.setResources( r.hasConstraint );
     }
@@ -183,6 +193,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             this._inputSoftwareImage.setResources(null);
             this._inputParameter.setResources(null);
             this._inputDSInput.setResources(null);
+            this._inputDSOutput.setResources(null);
             this._inputSourceCode.setResources(null);
             this._inputConstraint.setResources(null);
         }
@@ -199,6 +210,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         this._inputSoftwareImage.setActionSelect();
         this._inputParameter.setActionEditOrAdd();
         this._inputDSInput.setActionEditOrAdd();
+        this._inputDSOutput.setActionEditOrAdd();
         this._inputSourceCode.setActionSelect();
         this._inputConstraint.setActionMultiselect();
     }
@@ -214,11 +226,11 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         if (this._inputSoftwareImage) this._inputSoftwareImage.unsetAction();
         if (this._inputParameter) this._inputParameter.unsetAction();
         if (this._inputDSInput) this._inputDSInput.unsetAction();
+        if (this._inputDSOutput) this._inputDSOutput.unsetAction();
         if (this._inputSourceCode) this._inputSourceCode.unsetAction();
         if (this._inputConstraint) this._inputConstraint.unsetAction();
     }
 
-    private _parentInnerResourcesSet : boolean = false;
     public enableSingleResourceCreation (parentConfig:ModelConfiguration) {
         super.enableSingleResourceCreation();
         this._parentConfig = parentConfig;
@@ -235,7 +247,11 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             this._inputSoftwareImage.setResources(r.hasSoftwareImage);
             this._inputParameter.setResourcesAsCopy( r.hasParameter );
             this._inputDSInput.setResourcesAsCopy( r.hasInput );
+            this._inputDSOutput.setResourcesAsCopy( r.hasOutput );
             this._inputConstraint.setResourcesAsCopy( r.hasConstraint );
+            // Adds component location
+            this._parentComponentLocation = r.hasComponentLocation && r.hasComponentLocation.length > 0 ?
+                    r.hasComponentLocation[0] : "";
         }
     }
 
@@ -254,11 +270,13 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             r.label = [r.label[0] + " (copy)"];
             let newParams : Promise<Parameter[]> = this._inputParameter.duplicateAllResources();
             let newIn : Promise<DatasetSpecification[]> = this._inputDSInput.duplicateAllResources();
+            let newOut : Promise<DatasetSpecification[]> = this._inputDSOutput.duplicateAllResources();
 
             newParams.then((params: Parameter[]) => r.hasParameter = params);
             newIn.then((inputs: DatasetSpecification[]) => r.hasInput = inputs);
+            newOut.then((outputs: DatasetSpecification[]) => r.hasOutput = outputs);
 
-            let allp = Promise.all([newParams, newIn]);
+            let allp = Promise.all([newParams, newIn, newOut]);
             allp.catch(reject);
             allp.then((_) => resolve(r));
         });
@@ -268,7 +286,10 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         // Example, Type, operating system, versions?
         return html`
             <table class="details-table">
-                <colgroup wir.="150px">
+                <colgroup>
+                    <col width="150px">
+                    <col>
+                </colgroup>
 
                 ${r.shortDescription ? html`
                 <tr>
@@ -412,6 +433,11 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             Files:
         </wl-title>
         ${this._inputDSInput}
+
+        <wl-title level="3" style="margin-top:1em">
+            Output files:
+        </wl-title>
+        ${this._inputDSOutput}
         `
     }
 
@@ -430,7 +456,10 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         return html`
             <div id="page-top"></div>
             <table class="details-table">
-                <colgroup width="150px">
+                <colgroup>
+                    <col width="150px">
+                    <col>
+                </colgroup>
                 <tr>
                     <td colspan="2" style="padding: 5px 20px;">
                         <wl-textfield id="i-label" label="Model name" 
@@ -538,7 +567,12 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 <tr>
                     <td>Component Location:</td>
                     <td>
-                        <textarea id="i-comploc" rows="2">${edResource && edResource.hasComponentLocation ?  edResource.hasComponentLocation[0] : ''}</textarea>
+                        <textarea id="i-comploc" rows="2">${
+                            (edResource === null) ?
+                                (this._parentInnerResourcesSet ? this._parentComponentLocation : "")
+                                :
+                                (edResource.hasComponentLocation ? edResource.hasComponentLocation[0] : "")
+                        }</textarea>
                     </td>
                 </tr>
 
@@ -596,7 +630,12 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         <wl-title level="4" style="margin-top:1em">
             Files:
         </wl-title>
-        ${this._inputDSInput}`;
+        ${this._inputDSInput}
+
+        <wl-title level="3" style="margin-top:1em">
+            Output files:
+        </wl-title>
+        ${this._inputDSOutput}`;
     }
 
     protected _getResourceFromFullForm () {
@@ -606,6 +645,9 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
         }
         if (!this._inputDSInput.isOrdered() && confirm("Inputs are not ordered, use automatic order?")) {
             this._inputDSInput.forceOrder();
+        }
+        if (!this._inputDSOutput.isOrdered() && confirm("Outputs are not ordered, use automatic order?")) {
+            this._inputDSOutput.forceOrder();
         }
 
         // GET ELEMENTS
@@ -670,6 +712,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 hasGrid: this._inputGrid.getResources(),
                 hasParameter: this._inputParameter.getResources(),
                 hasInput: this._inputDSInput.getResources(),
+                hasOutput: this._inputDSOutput.getResources(),
                 hasSourceCode: this._inputSourceCode.getResources(),
                 hasConstraint: this._inputConstraint.getResources(),
             };
@@ -756,8 +799,11 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
 
             let reqInput : Promise<DatasetSpecification[]> = this._inputDSInput.save();
             reqInput.then((inputs:DatasetSpecification[]) => copy.hasInput = inputs);
+
+            let reqOutput : Promise<DatasetSpecification[]> = this._inputDSOutput.save();
+            reqOutput.then((outputs:DatasetSpecification[]) => copy.hasOutput = outputs);
  
-            let all : Promise<any> = Promise.all([reqGrid,reqTi,reqParams,reqInput]);
+            let all : Promise<any> = Promise.all([reqGrid,reqTi,reqParams,reqInput, reqOutput]);
             all.catch(reject);
             all.then((x:any) => {
                 resolve(copy);
