@@ -30,16 +30,17 @@ jobs:
             ${{ runner.OS }}-
       - name: Install dependencies
         run: npm install
+      - name: Copy the tacc config as default
+        run: cp ./src/config/config-tacc.json ./src/config/config.json
       - name: Build (webpack) 
         run: npm run create-build
       - name: Test
         run: npm test
       - uses: actions/upload-artifact@v2
         with:
-          name: nextjs-build
+          name: nextjs-build-tacc
           path: ./build/
           retention-days: 1
-
   push:
     needs: test
     runs-on: ubuntu-latest
@@ -49,7 +50,7 @@ jobs:
 
       - uses: actions/download-artifact@v2
         with:
-          name: nextjs-build
+          name: nextjs-build-tacc
           path: build/
 
       - name: Build image
@@ -63,7 +64,7 @@ jobs:
 
       - name: Push image
         run: |
-          IMAGE_ID=${{ github.repository }}
+          IMAGE_ID=${{ github.repository }}_tacc
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
