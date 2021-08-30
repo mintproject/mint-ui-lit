@@ -18,7 +18,7 @@ $ cp ./src/config/config.json.sample ./src/config/config.json
 Build the image
 
 ```
-$ docker build . --file .Dockerfile-actions mint_ui
+$ docker build  mint_ui .
 ```
 
 Push the image
