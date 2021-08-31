@@ -33,7 +33,7 @@ jobs:
       - name: Copy the tacc config as default
         run: cp ./src/config/config-tacc.json ./src/config/config.json
       - name: Build (webpack) 
-        run: npm run create-build
+        run: npm run create-build-dev
       - name: Test
         run: npm test
       - uses: actions/upload-artifact@v2

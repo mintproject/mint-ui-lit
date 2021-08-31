@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Build (webpack) 
-        run: npm run create-build
+        run: npm run create-build-dev
       - name: Test
         run: npm test
       - uses: actions/upload-artifact@v2
