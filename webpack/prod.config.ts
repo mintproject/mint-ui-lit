@@ -27,6 +27,7 @@ const config: webpack.Configuration = smartMerge({
         },
       },
     },
+    minimize: false,
     minimizer: [
       new TerserPlugin({
         cache: true,
