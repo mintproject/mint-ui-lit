@@ -12,7 +12,7 @@ import { IdMap, UserPreferences } from 'app/reducers';
 import { ProblemStatementInfo, ProblemStatementList, ThreadInfo, ThreadEvent, Task, Thread } from 'screens/modeling/reducers';
 import { fetchThread, fetchProblemStatement, fetchProblemStatementsList } from './actions';
 
-import { getURL } from 'model-catalog/util';
+import { getURL } from 'model-catalog-api/util';
 
 import '../../components/nav-title'
 import { getVisualizationURLs } from 'util/state_functions';

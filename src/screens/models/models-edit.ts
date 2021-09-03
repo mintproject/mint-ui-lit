@@ -13,7 +13,7 @@ import './model-version-tree'
 
 import { ModelCatalogModel } from './configure/resources/model';
 import { ModelCatalogSoftwareVersion } from './configure/resources/software-version';
-import { getLabel, getURL } from 'model-catalog/util';
+import { getLabel, getURL } from 'model-catalog-api/util';
 import { SoftwareVersion, Model } from '@mintproject/modelcatalog_client';
 
 import "weightless/progress-spinner";

@@ -5,14 +5,12 @@ import { store, RootState } from '../../../app/store';
 
 import { html, property, customElement, css } from 'lit-element';
 
-import { goToPage } from '../../../app/actions';
 import { ExplorerStyles } from './explorer-styles'
 
-import { getId, isEmpty, isSubregion, getLatestVersion, getLatestConfiguration, getLatestSetup,
-         isExecutable, getLabel, getModelTypeNames } from 'model-catalog/util';
-import { IdMap } from 'app/reducers';
-import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Parameter, SoftwareImage,
-         Person, Process, SampleResource, SampleCollection, Region, Image, ModelCategory } from '@mintproject/modelcatalog_client';
+import { getId, isEmpty, isSubregion, getLatestVersion, getLatestConfiguration,
+         isExecutable, getLabel, getModelTypeNames } from 'model-catalog-api/util';
+import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, 
+         Region, Image, ModelCategory } from '@mintproject/modelcatalog_client';
 
 import '../../../components/loading-dots';
 

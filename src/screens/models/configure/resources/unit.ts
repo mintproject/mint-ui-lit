@@ -2,7 +2,7 @@ import { ModelCatalogResource } from './resource';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
+import { getLabel } from 'model-catalog-api/util';
 import { Unit, UnitFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 

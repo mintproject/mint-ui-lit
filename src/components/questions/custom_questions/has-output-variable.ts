@@ -1,9 +1,9 @@
-import { DatasetSpecification, DatasetSpecificationFromJSON, ModelCategory, ModelConfigurationSetup, VariablePresentation } from "@mintproject/modelcatalog_client";
+import { DatasetSpecification, ModelConfigurationSetup, VariablePresentation } from "@mintproject/modelcatalog_client";
 import { IdMap } from "app/reducers";
 import { store } from "app/store";
-import { customElement, LitElement, property, html, css, TemplateResult } from "lit-element";
+import { customElement } from "lit-element";
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
-import { getLabel } from "model-catalog/util";
+import { getLabel } from "model-catalog-api/util";
 import { ModelQuestion } from '../model-question';
 
 @customElement("has-output-variable-question")

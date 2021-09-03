@@ -8,7 +8,7 @@ import "weightless/button";
 import "weightless/icon";
 import { Region as GQLRegion } from "screens/regions/reducers";
 import { IdMap } from "app/reducers";
-import { getLabel, isSubregion } from "model-catalog/util";
+import { getLabel, isSubregion } from "model-catalog-api/util";
 import { SharedStyles } from "styles/shared-styles";
 import { HasSubRegionQuestion } from "./custom_questions/has-subregion-question";
 import { HasCategoryQuestion } from "./custom_questions/has-category";

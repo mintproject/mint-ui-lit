@@ -13,7 +13,7 @@ import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { ModelCatalogState } from 'model-catalog-api/reducers';
 
 import { setupInRegion, capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition, isExecutable,
-         getModelTypeNames } from 'model-catalog/util';
+         getModelTypeNames } from 'model-catalog-api/util';
 import { GalleryEntry } from 'components/image-gallery';
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -582,13 +582,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${this._selectedConfig ? html`
                 <a class="no-decoration" style="text-align: center;" target="_blank" href="${this._selectedConfig}">
                     <wl-button flat inverted>
-                        <span class="rdf-icon">
+                        <span class="rdf-icon"></span>
                     </wl-button>
                 </a>`
                 : html `
                 <span>
                     <wl-button flat inverted disabled>
-                        <span class="rdf-icon" disabled>
+                        <span class="rdf-icon" disabled></span>
                     </wl-button>
                 </span>
                 `}
@@ -620,13 +620,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${this._selectedSetup ? html`
                     <a class="no-decoration" style="text-align: center;" target="_blank" href="${this._selectedSetup}">
                         <wl-button flat inverted>
-                            <span class="rdf-icon">
+                            <span class="rdf-icon"></span>
                         </wl-button>
                     </a>`
                     : html`
                     <span>
                         <wl-button flat inverted disabled>
-                            <span class="rdf-icon" disabled>
+                            <span class="rdf-icon" disabled></span>
                         </wl-button>
                     </span>`
                 }
@@ -673,7 +673,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <wl-title level="2">
                     <a class="no-decoration" style="" target="_blank" href="${this._selectedModel}">
                         <wl-button flat inverted>
-                            <span class="rdf-icon">
+                            <span class="rdf-icon"></span>
                         </wl-button>
                     </a>
                     <span>${getLabel(this._model)}</span>
@@ -740,7 +740,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                           html`<wl-text><b>• Publication date:</b> ${ this._model.datePublished }</wl-text>`
                           :''}
                         ${this._model.citation && this._model.citation.length > 0 ?
-                          html`<wl-text><b>• Preferred citation:</b> <i>${ urlify(this._model.citation[0]) }<i></wl-text>` 
+                          html`<wl-text><b>• Preferred citation:</b> <i>${ urlify(this._model.citation[0]) }</i></wl-text>` 
                           :''}
                         ${this._model.hasDocumentation?
                           html`<wl-text>
@@ -1201,13 +1201,15 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 : html`, <code class="clickable" @click="${() => this._changeTab('io','parameters')}">
                                     ${getLabel(p)}
                                 </code>`)
-                        }` :''}
+                            }
+                           </wl-text>` :''}
                     ${this._setup.calibrationTargetVariable && this._setup.calibrationTargetVariable.length > 0 ? 
                         html`<wl-text><b>• Target variables:</b> ${
                             this._setup.calibrationTargetVariable.map((v:VariablePresentation, i:number) => (i === 0) ?
                                 html`<code>${getLabel(v)}</code>`
                                 : html`, <code>${getLabel(v)}</code>`)
-                        }` :''}
+                            }
+                            </wl-text>` :''}
                 </div>
             </fieldset>
         `
@@ -1310,7 +1312,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <th>Description</th>
                         <th style="text-align: right;">
                             Relevant for intervention
-                            <span style="display: inline-block;">/ Control<span>
+                            <span style="display: inline-block;">/ Control</span>
                         </th>
                         <th style="text-align: right;">
                             ${isSetup? html`

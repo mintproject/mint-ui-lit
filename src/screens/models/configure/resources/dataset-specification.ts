@@ -1,11 +1,11 @@
 import { ModelCatalogResource } from './resource';
 import { property, html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 import { IdMap } from "app/reducers";
 
-import { DatasetSpecification, VariablePresentation, DataTransformation, DatasetSpecificationFromJSON } from '@mintproject/modelcatalog_client';
+import { DatasetSpecification, VariablePresentation, DatasetSpecificationFromJSON } from '@mintproject/modelcatalog_client';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
@@ -18,8 +18,6 @@ import './variable-presentation';
 import './data-transformation';
 
 import { Textfield } from 'weightless/textfield';
-import { Textarea } from 'weightless/textarea';
-import { Select } from 'weightless/select';
 
 import { BaseAPI } from '@mintproject/modelcatalog_client';
 import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
@@ -162,7 +160,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             <td>
                 <code>${getLabel(r)}</code> 
                 ${r.hasFormat && r.hasFormat.length === 1 ?  
-                        html`<span class="monospaced" style="color: gray;">(.${r.hasFormat})<span>` : ''}
+                        html`<span class="monospaced" style="color: gray;">(.${r.hasFormat})</span>` : ''}
             </td>
             <td>
                 <b>${r.description ? r.description[0] : ''}</b>

@@ -21,14 +21,14 @@ import "weightless/snackbar";
 import 'components/loading-dots';
 import { Region } from "screens/regions/reducers";
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
-import { getLabel } from "model-catalog/util";
+import { getLabel } from "model-catalog-api/util";
 import { DatasetSpecification, DataTransformation } from '@mintproject/modelcatalog_client';
 
 //import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
 import { ModelCatalogParameter } from 'screens/models/configure/resources/parameter';
 import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
 import { getLatestEventOfType } from "util/event_utils";
-import { uuidv4 } from "screens/models/configure/util";
+import { uuidv4 } from "util/helpers";
 
 store.addReducers({
     datasets
@@ -385,7 +385,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                                     <td>
                                                         <input class="${this._valid(modelid)}_${this._valid(input.id!)}_dt_checkbox" 
                                                             type="checkbox" data-transformationid="${dt.id}"
-                                                            ?checked=""></input>
+                                                            ?checked="${false}"></input>
                                                     </td>
                                                     <td><b>${getLabel(dt)}</b></td>
                                                     <td>${dt.description ? dt.description[0] : ''}</td>

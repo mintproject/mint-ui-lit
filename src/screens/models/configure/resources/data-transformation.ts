@@ -1,10 +1,9 @@
 import { ModelCatalogResource } from './resource';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 import { DataTransformation, DataTransformationFromJSON } from '@mintproject/modelcatalog_client';
-import { IdMap } from "app/reducers";
 import { renderExternalLink } from 'util/ui_renders';
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -21,7 +20,6 @@ import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
-import { Select } from 'weightless/select';
 
 @customElement('model-catalog-data-transformation')
 export class ModelCatalogDataTransformation extends connect(store)(ModelCatalogResource)<DataTransformation> {
@@ -147,7 +145,6 @@ export class ModelCatalogDataTransformation extends connect(store)(ModelCatalogR
         console.log(r);
         return html`
             <table class="details-table">
-                <colgroup wir.="150px">
                 <tr>
                     <td colspan="2" style="padding: 5px 20px;">
                         <wl-title level="3"> ${getLabel(r)} </wl-title>
@@ -194,7 +191,6 @@ export class ModelCatalogDataTransformation extends connect(store)(ModelCatalogR
         let edResource = this._getEditingResource();
         return html`
             <table class="details-table">
-                <colgroup width="150px">
                 <tr>
                     <td colspan="2" style="padding: 5px 20px;">
                         <wl-textfield id="dt-label" label="Data transformation name" 

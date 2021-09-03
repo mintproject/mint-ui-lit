@@ -1,14 +1,14 @@
 import { ModelCatalogResource, Action } from './resource';
 import { property, html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 import { IdMap } from "app/reducers";
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
-import { Parameter, Unit, ParameterFromJSON } from '@mintproject/modelcatalog_client';
+import { Parameter, ParameterFromJSON } from '@mintproject/modelcatalog_client';
 import { PARAMETER_TYPES } from 'offline_data/parameter_types';
 
 import { ModelCatalogUnit } from './unit'
@@ -185,7 +185,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
         if (additionalType == "https://w3id.org/wings/export/MINT#DataCatalogId") {
             return html`
-                <data-catalog-id-checker id=${value}><data-catalog-id-checker>
+                <data-catalog-id-checker id=${value}></data-catalog-id-checker>
             `;
         }
 

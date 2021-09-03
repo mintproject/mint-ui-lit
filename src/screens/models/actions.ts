@@ -4,7 +4,7 @@ import { RootState } from "../../app/store";
 import { Model, ModelParameter } from "./reducers";
 
 import { Model as MCModel, ModelConfigurationSetup, DatasetSpecification, SoftwareImage, ModelConfiguration, SoftwareVersion } from '@mintproject/modelcatalog_client';
-import { sortByPosition, getLabel } from 'model-catalog/util';
+import { sortByPosition, getLabel } from 'model-catalog-api/util';
 
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 

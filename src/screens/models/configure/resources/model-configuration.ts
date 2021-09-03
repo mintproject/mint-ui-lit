@@ -1,11 +1,9 @@
 import { ModelCatalogResource } from './resource';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
-import { Grid, TimeInterval, Parameter, DatasetSpecification, SoftwareVersion, ModelConfiguration,
+import { store } from 'app/store';
+import { Parameter, DatasetSpecification, SoftwareVersion, ModelConfiguration,
          ModelConfigurationFromJSON } from '@mintproject/modelcatalog_client';
-import { IdMap } from "app/reducers";
 import { renderExternalLink } from 'util/ui_renders';
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -23,8 +21,6 @@ import { ModelCatalogParameter } from './parameter';
 import { ModelCatalogDatasetSpecification } from './dataset-specification';
 import { ModelCatalogSourceCode } from './source-code';
 import { ModelCatalogConstraint } from './constraint';
-
-import { goToPage } from 'app/actions';
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';

@@ -6,14 +6,13 @@ import ReactGA from 'react-ga';
 import { ModelMap, ModelEnsembleMap, ComparisonFeature } from "../reducers";
 import models, { VariableModels, Model, getPathFromModel } from "../../models/reducers";
 import { queryModelsByVariables, setupToOldModel } from "../../models/actions";
-import { getId } from 'model-catalog/util';
 
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { cacheModelsFromCatalog, getThreadExecutionSummary, setThreadModels } from "../actions";
 import { getUISelectedSubgoalRegion } from "../../../util/state_functions";
-import { isSubregion, getLabel } from "model-catalog/util";
+import { getId, isSubregion, getLabel } from "model-catalog-api/util";
 
 import "weightless/tooltip";
 import "weightless/popover-card";

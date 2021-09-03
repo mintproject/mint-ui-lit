@@ -4,7 +4,7 @@ import { Model, ModelIO, ModelParameter } from "screens/models/reducers";
 import { Dataset, DataResource, Dataslice } from "screens/datasets/reducers";
 import { Region } from "screens/regions/reducers";
 import { toDateString, fromTimestampIntegerToDateString } from "./date-utils";
-import { uuidv4 } from "screens/models/configure/util";
+import { uuidv4 } from "./helpers";
 
 import * as crypto from 'crypto';
 import { Variable } from "screens/variables/reducers";

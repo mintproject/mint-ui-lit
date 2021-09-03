@@ -5,23 +5,19 @@ import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from '../../app/actions';
-import { renderNotifications } from "../../util/ui_renders";
-import { showNotification } from "../../util/ui_functions";
 import { ExplorerStyles } from './model-explore/explorer-styles';
 import { ComparisonEntry } from './model-explore/ui-reducers';
 import { IdMap } from "app/reducers";
 import { ComparisonFeature } from "../modeling/reducers";
 
-import { uriToId, getLabel, getId, isSubregion, sortVersions, sortConfigurations, sortSetups,
-         getModelTypeNames } from 'model-catalog/util';
+import { uriToId, getLabel, isSubregion, sortVersions, sortConfigurations, sortSetups,
+         getModelTypeNames } from 'model-catalog-api/util';
 
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import './models-tree'
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Region, ModelCategory } from '@mintproject/modelcatalog_client';
-
-import { showDialog, hideDialog } from 'util/ui_functions';
 
 import { ModelCatalogPerson } from './configure/resources/person';
 import { ModelCatalogRegion } from './configure/resources/region';

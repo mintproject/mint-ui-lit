@@ -1,10 +1,9 @@
 import { ModelCatalogResource } from './resource';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 import { Constraint, ConstraintFromJSON } from '@mintproject/modelcatalog_client';
-import { IdMap } from "app/reducers";
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles';
@@ -16,7 +15,6 @@ import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
-import { Select } from 'weightless/select';
 
 @customElement('model-catalog-constraint')
 export class ModelCatalogConstraint extends connect(store)(ModelCatalogResource)<Constraint> {

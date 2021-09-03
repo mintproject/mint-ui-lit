@@ -5,7 +5,7 @@ import { SharedStyles } from '../styles/shared-styles';
 import "weightless/icon";
 import { IdMap } from "app/reducers";
 import { DatasetSpecification, Intervention, ModelCategory, ModelConfigurationSetup, Parameter, Region, StandardVariable, VariablePresentation } from "@mintproject/modelcatalog_client";
-import { getLabel, isSubregion } from "model-catalog/util";
+import { getLabel, isSubregion } from "model-catalog-api/util";
 import { VariableMap } from "screens/variables/reducers";
 
 export interface ModelRule {

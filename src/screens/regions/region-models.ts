@@ -15,7 +15,7 @@ import { selectSubRegion } from 'app/ui-actions';
 
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
-import { isSubregion, isMainRegion, getLabel } from 'model-catalog/util';
+import { isSubregion, isMainRegion, getLabel } from 'model-catalog-api/util';
 import { GeoShape, Region, Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
 import { Dataset } from "screens/datasets/reducers";
 

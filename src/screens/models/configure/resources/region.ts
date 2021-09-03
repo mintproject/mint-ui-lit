@@ -3,7 +3,7 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 
 import { Action, Status, ModelCatalogResource } from './resource';
-import { getLabel, isSubregion, isMainRegion } from 'model-catalog/util';
+import { getLabel, isSubregion, isMainRegion } from 'model-catalog-api/util';
 import { Region, RegionFromJSON, GeoShape, GeoShapeFromJSON } from '@mintproject/modelcatalog_client';
 
 import { SharedStyles } from 'styles/shared-styles';
