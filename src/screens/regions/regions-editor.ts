@@ -435,16 +435,6 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         } else {
             showNotification("formValuesIncompleteNotification", this.shadowRoot!);
             return;
-            /* This remove the region:
-            removeSubcategory(this._regionid, this.regionType, name).then((value) => {
-                hideDialog("addSubcategoryDialog", this.shadowRoot);
-                this._subcategories.splice(index, 1);
-                Object.values(this._regions).filter(r => r.region_type == name).forEach(r => {
-                    delete this._regions[r.id];
-                });
-                if (this._selectedSubcategory == name) this._selectSubcategory('');
-                else this.requestUpdate();
-            })*/
         }
     }
 

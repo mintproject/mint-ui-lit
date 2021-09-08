@@ -3,6 +3,7 @@ import { RootState } from "../../app/store";
 import { ActionCreator, Action } from "redux";
 import { Region, BoundingBox, Point, RegionMap, RegionCategory } from "./reducers";
 import { GraphQL } from "config/graphql";
+import { GeoShape } from "@mintproject/modelcatalog_client";
 
 import listTopRegionsGQL from '../../queries/region/list-top.graphql';
 import listSubRegionsGQL from '../../queries/region/list-subregions.graphql';
@@ -142,6 +143,26 @@ const _calculateBoundingBox = (geometries: any[]) => {
       xmax: xmax+0.01, 
       ymax: ymax+0.01
     } as BoundingBox;
+}
+
+export const getBoundingBoxFromGeoShape = (shape:GeoShape) : BoundingBox => {
+    let bb : BoundingBox = null;
+    if (shape && shape.box && shape.box.length > 0) {
+        let coords : string[] = shape.box[0].split(/,| /);
+        if (coords.length === 4) {
+            try {
+                bb = {
+                    xmin: parseFloat(coords[0]),
+                    ymin: parseFloat(coords[1]),
+                    xmax: parseFloat(coords[2]),
+                    ymax: parseFloat(coords[3])
+                };
+            } catch (error) {
+                console.warn("Could not parse bounding box '" + shape.box[0] + "'");
+            }
+        }
+    }
+    return bb; 
 }
 
 // Query for Sub Regions
