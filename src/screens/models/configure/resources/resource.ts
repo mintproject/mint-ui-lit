@@ -880,7 +880,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         return Promise.resolve(r);
     }
 
-    private _postSaveUpdate (r:T) {
+    protected _postSaveUpdate (r:T) {
         this._clearStatus();
         if (this._action === Action.EDIT_OR_ADD && this._resources.filter((s:T) => s.id===r.id).length === 0) {
             //Check if saved resource is already selected.

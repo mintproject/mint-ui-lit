@@ -9,7 +9,7 @@ import { Region, RegionFromJSON, GeoShape, GeoShapeFromJSON } from '@mintproject
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
-import { Region as LocalRegion} from "screens/regions/reducers";
+import { Region as LocalRegion, RegionCategory} from "screens/regions/reducers";
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
@@ -17,6 +17,13 @@ import { Textarea } from 'weightless/textarea';
 import { BaseAPI } from '@mintproject/modelcatalog_client';
 import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+import { IdMap } from 'app/reducers';
+import { GoogleMapCustom } from 'components/google-map-custom';
+
+import { MintPreferences } from 'app/reducers';
+import * as mintConfig from 'config/config.json';
+let prefs = mintConfig["default"] as MintPreferences;
+const GOOGLE_API_KEY = prefs.google_maps_key;   
 
 @customElement('model-catalog-region')
 export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Region> {
@@ -34,11 +41,8 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
 
     private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
 
-    @property({type: String})
-    private _selectedCategory: string = '';
-
-    @property({type: Boolean})
-    private _mapReady: boolean = false;
+    @property({type: String}) private _selectedCategory: string = '';
+    @property({type: Boolean}) private _mapReady: boolean = false;
 
     @property({type: String}) private _topRegionUri : string = "";
     @property({type: Boolean}) protected _creationEnabled : boolean = false;
@@ -46,10 +50,12 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
     @property({type: Boolean}) protected _deleteEnabled : boolean = false;
     @property({type: Boolean}) protected _tabMap : boolean = false;
 
-    @property({type: Object}) private _region : LocalRegion;
-    @property({type: Object}) private _mapRegions : LocalRegion[] = [];
-    @property({type: String}) private _regionid : string = "";
+    @property({type: Object}) private topRegion : LocalRegion;
+    @property({type: Array}) private _mapRegions : LocalRegion[] = [];
+    @property({type: String}) private topRegionId : string = "";
     @property({type: Object}) private _selectedMapRegion : LocalRegion;
+    
+    @property({type: Object}) private categories : IdMap<RegionCategory>;
 
     protected resourceApi : DefaultReduxApi<Region,BaseAPI> = ModelCatalogApi.myCatalog.region;
 
@@ -64,68 +70,6 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
         );
     }
 
-
-    /*protected _renderResource (r:Region) {
-        return html`
-            <div class="one-line" style="text-decoration:underline; color:black;">
-                ${getLabel(r)}
-            </div>
-            <div class="one-line" style="display: flex; justify-content: space-between;">
-                <span style="margin-right: 10px;">
-                    <span style="font-size:12px">Spatial res:</span>
-                    <span class="monospaced" style="color:black">
-                        ${r.hasSpatialResolution && r.hasSpatialResolution.length > 0 ? r.hasSpatialResolution[0] : '-'}
-                    </span>
-                </span>
-                <span style="margin-right: 10px;">
-                    <span style="font-size:12px">Dimensions:</span>
-                    <span class="number" style="color:black">
-                        ${r.hasDimension && r.hasDimension.length > 0 ? r.hasDimension[0] : '-'}
-                    </span>
-                </span>
-                <span style="margin-right: 10px;" class="one-line">
-                    <span style="font-size:12px">Shape:</span>
-                    <span class="monospaced" style="color:black">
-                        ${r.hasShape && r.hasShape.length > 0 ? r.hasShape[0] : '-'}
-                    </span>
-                </span>
-            </div>
-        `;
-    }
-
-    protected _renderForm () {
-        let edResource = this._getEditingResource();
-        return html`
-        <form>
-            <wl-textfield id="region-name" label="Name" required
-                value=${edResource ? getLabel(edResource) : ''}>
-            </wl-textfield>
-            <wl-textarea id="region-desc" label="Description" required
-                value=${edResource && edResource.description ? edResource.description[0] : ''}>
-            </wl-textarea>
-            <wl-textfield id="region-spatial-res" label="Spatial resolution"
-                value=${edResource && edResource.hasSpatialResolution ? edResource.hasSpatialResolution[0] : ''}>
-            </wl-textfield>
-            <div class="two-inputs">
-                <wl-select id="region-dim" label="Dimension"
-                    value=${edResource && edResource.hasDimension ? edResource.hasDimension[0] : ''}>
-                    <option value selected>None</option>
-                    <option value="0D">0D</option>
-                    <option value="1D">1D</option>
-                    <option value="2D">2D</option>
-                    <option value="3D">3D</option>
-                </wl-select>
-                <wl-select id="region-shape" label="Shape"
-                    value=${edResource && edResource.hasShape ? edResource.hasShape[0] : ''}>
-                    <option value selected>None</option>
-                    <option value="Point">Point</option>
-                    <option value="Triangular">Triangular</option>
-                    <option value="Block structure">Block structure</option>
-                </wl-select>
-            </div>
-        </form>`;
-    }*/
-
     public getResources () {
         let rs : Region[] = super.getResources();
         //FIXME: server is failing with GeoShape
@@ -138,7 +82,16 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
     protected _getResourceFromForm () {
         // GET ELEMENTS
         if (this._tabMap) {
-            let selected = this._selectedMapRegion;
+            let selected : LocalRegion = this._selectedMapRegion;
+            // Check if this region is already on the model catalog
+            let mcRegion : Region[] = Object.values(this._loadedResources).filter((region:Region) =>
+                region.label[0] === selected.name
+            );
+            if (mcRegion.length > 0) {
+                this._postSaveUpdate(mcRegion[0]);
+                return null;
+            }
+
             let jsonRes = {
                 type: ["Region"],
                 label: [selected.name],
@@ -198,7 +151,7 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
         </div>
         <div slot="footer">
             ${this._tabMap ? html`
-            <wl-button @click="${this._closeMap}" style="margin-right: 5px;" inverted flat ?disabled="">
+            <wl-button @click="${this._closeMap}" style="margin-right: 5px;" inverted flat>
                 Cancel
             </wl-button>
             <wl-button class="submit" ?disabled="${this._waiting || !this._selectedMapRegion}" @click="${this._onSaveButtonClicked}">
@@ -206,10 +159,10 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
                 ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
             </wl-button>
             ` : html`
-            <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat ?disabled="">
+            <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat>
                 Cancel
             </wl-button>
-            <wl-button class="submit" ?disabled="" @click="${this._onSelectButtonClicked}">
+            <wl-button class="submit" @click="${this._onSelectButtonClicked}">
                 Select
             </wl-button>
             `}
@@ -220,7 +173,7 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
         return html`
             <wl-tab-group align="center">
                 <wl-tab ?checked="${!this._tabMap}" @click="${() => {this._tabMap = false;}}">Search Region</wl-tab>
-                <wl-tab ?checked="${this._tabMap}" @click="${this._enableMap}" disabled>Map</wl-tab>
+                <wl-tab ?checked="${this._tabMap}" @click="${this._enableMap}">Map</wl-tab>
             </wl-tab-group>
         `;
     }
@@ -233,20 +186,18 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
     }
 
     private _renderMapTab () {
-        //FIXME: Add region->category->subcategory relations.
-        return html`Disabled`;
-        /*return html`
+        return html`
             <form id="regionForm">
                 <div class="input_half">
                     <label>Region category</label>
                     <select name="category-selector" value="" @change="${this._onRegionCategoryChange}">
                         <option value="">None</option>
-                        ${this._region.categories.map((cat: RegionCategory) => {
-                            let subCategories = this._region.subcategories[cat.id] || [];
+                        ${Object.values(this.categories).map((cat: RegionCategory) => {
+                            let subCategories : RegionCategory[] = cat.subcategories;
                             return html`
-                            <option value="${cat.id}">${cat.id}</option>
+                            <option value="${cat.id}">${cat.name}</option>
                             ${subCategories.length > 0 ? subCategories.map((subcat: RegionCategory) => {
-                                return html`<option value="${subcat.id}">&nbsp;&nbsp;&nbsp;&nbsp;${subcat.id}</option>`;
+                                return html`<option value="${subcat.id}">&nbsp;&nbsp;&nbsp;&nbsp;${subcat.name}</option>`;
                             }) : html`
                                 <option disabled>&nbsp;&nbsp;&nbsp;&nbsp;No subcategories</option>
                             `}`
@@ -260,7 +211,7 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
             ` : ''}
             <google-map-custom class="map" api-key="${GOOGLE_API_KEY}" 
                 .style="height:400px; visibility: ${this._mapReady ? 'visible': 'hidden'}"
-                disable-default-ui="true" draggable="true"
+                ?disable-default-ui="${true}" draggable="true"
                 @click="${this._handleMapClick}"
                 mapTypeId="terrain" styles="${this._mapStyles}">
             </google-map-custom>
@@ -270,10 +221,10 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
             <b>Bounding Box:</b>
                 ${ this._selectedMapRegion.bounding_box.xmin.toFixed(4) + ',' + this._selectedMapRegion.bounding_box.ymin.toFixed(4) }
                 ${ this._selectedMapRegion.bounding_box.xmax.toFixed(4) + ',' + this._selectedMapRegion.bounding_box.ymax.toFixed(4) }
-            ` : ''}`*/
+            ` : ''}`
     }
 
-    /*private _onRegionCategoryChange () {
+    private _onRegionCategoryChange () {
         let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#regionForm")!;
         let category = (form.elements["category-selector"] as HTMLSelectElement).value;
         if (category != this._selectedCategory) {
@@ -282,22 +233,21 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
         }
     }
 
-    public addRegionsToMap() {   
+    public addRegionsToMap() {
         let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
-        let visibleRegions = this._mapRegions.filter((region) => region.region_type == this._selectedCategory);
-        if(map && visibleRegions) {
+        let visibleRegions = this._mapRegions.filter((region:LocalRegion) => region.category_id == this._selectedCategory);
+        if (map && visibleRegions) {
             try {
-                map.setRegions(visibleRegions, this._regionid);
-              this._mapReady = true;
-            }
-            catch {
-              map.addEventListener("google-map-ready", (e) => {
-                map.setRegions(visibleRegions, this._regionid);
+                map.setRegions(visibleRegions, this.topRegionId);
                 this._mapReady = true;
-              })
+            } catch {
+                map.addEventListener("google-map-ready", (e) => {
+                    map.setRegions(visibleRegions, this.topRegionId);
+                    this._mapReady = true;
+                })
             }
         }
-    }*/
+    }
 
     private _handleMapClick(ev: any) {
         if(ev.detail && ev.detail.id) {
@@ -309,22 +259,20 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
         this._tabMap = false;
     }
 
-    private _onMapButtonClicked () {
-        console.log('MapClicked');
-    }
-
     stateChanged(state: RootState) {
         if (state.ui && state.regions) {
-            this._regionid = state.ui.selected_top_regionid;
-            if (this._regionid && state.regions.regions && state.regions.regions[this._regionid]) {
-                this._region = state.regions.regions[this._regionid];
-                if (this._region.model_catalog_uri != this._topRegionUri)
-                    this._topRegionUri = this._region.model_catalog_uri;
+            this.topRegionId = state.ui.selected_top_regionid
+            if (this.topRegionId && state.regions.regions && state.regions.regions[this.topRegionId]) {
+                this.topRegion = state.regions.regions[this.topRegionId];
+                if (this.topRegion.model_catalog_uri != this._topRegionUri)
+                    this._topRegionUri = this.topRegion.model_catalog_uri;
             }
-            let sr = state.regions.sub_region_ids;
-            if (this._regionid && sr && sr[this._regionid]) {
-                this._mapRegions = sr[this._regionid].map((regionid) => state.regions.regions[regionid]);
+            let subRegionIds : IdMap<string[]> = state.regions.sub_region_ids;
+            if (this.topRegionId && subRegionIds && subRegionIds[this.topRegionId]) {
+                this._mapRegions = subRegionIds[this.topRegionId].map((regionid:string) => state.regions.regions[regionid]);
             }
+
+            this.categories = state.regions.categories;
         }
     }
 }
