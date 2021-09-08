@@ -25,6 +25,7 @@ import { CustomModelApi } from './custom-apis/model';
 import { CustomSoftwareVersionApi } from './custom-apis/software-version';
 import { CustomModelConfigurationApi } from './custom-apis/model-configuration';
 import { CustomModelConfigurationSetupApi } from './custom-apis/model-configuration-setup';
+import { CustomRegionApi } from './custom-apis/region';
 
 export class UserCatalog {
     private configuration : Configuration;
@@ -64,7 +65,7 @@ export class UserCatalog {
     private _personApi : DefaultReduxApi<Person,PersonApi>;
     private _pointBasedGridApi : DefaultReduxApi<PointBasedGrid,PointBasedGridApi>;
     private _processApi : DefaultReduxApi<Process,ProcessApi>;
-    private _regionApi : DefaultReduxApi<Region,RegionApi>;
+    private _regionApi : CustomRegionApi;
     private _sampleCollectionApi : DefaultReduxApi<SampleCollection,SampleCollectionApi>;
     private _sampleExecutionApi : DefaultReduxApi<SampleExecution,SampleExecutionApi>;
     private _sampleResourceApi : DefaultReduxApi<SampleResource,SampleResourceApi>;
@@ -242,11 +243,13 @@ export class UserCatalog {
         return this._processApi;
     };
 
-    public get region () : DefaultReduxApi<Region,RegionApi> {
+    public get region () : CustomRegionApi {
         if (!this._regionApi)
-            this._regionApi = new DefaultReduxApi<Region,RegionApi> (
-                RegionApi, this.username, this.configuration
-            )
+            this._regionApi = new  CustomRegionApi(
+                RegionApi,
+                this.username,
+                this.configuration
+            );
         return this._regionApi;
     };
 
