@@ -1,7 +1,7 @@
 import { IdMap } from 'app/reducers'
 import { Action } from "redux";
 import { MCActionAdd, MCActionDelete, MODEL_CATALOG_ADD, MODEL_CATALOG_DELETE, ActionThunk } from './actions';
-import { ModelCatalogTypes } from './reducers';
+import { apiNameToCaptionName, ModelCatalogTypes } from './reducers';
 
 import { Configuration, BaseAPI } from '@mintproject/modelcatalog_client';
 import { IdObject } from './interfaces';
@@ -24,6 +24,22 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
         return this._lname;
     }
 
+    private getNameFromPrototype (obj:API) : string {
+        let proto : object = Object.getPrototypeOf(this._api);
+        let fregex : RegExp = /(\w*?)sIdGetRaw/;
+        if (!!proto) {
+            let name : string;
+            Object.getOwnPropertyNames(proto).forEach((funcname:string) => {
+                let matches = fregex.exec(funcname);
+                if (matches != null && matches.length == 2) {
+                    name = matches[1];
+                }
+            });
+            if (!!name) return name;
+        }
+        return this._api.constructor.name; // This can be an error if the js is simplified.
+    }
+
     public constructor (ApiType: new (cfg?:Configuration) => API, user:string, config?:Configuration) {
         if (config) {
             this._api = new ApiType(config);
@@ -32,10 +48,8 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
             this._api = new ApiType();
             this._redux = false;
         }
-        let apiName : string = this._api.constructor.name;
-        let name = apiName.replace('Api','');
-        this._lname = name.toLowerCase() as ModelCatalogTypes;
-        this._name = name.charAt(0).toLowerCase() + name.slice(1);
+        this._lname =  this.getNameFromPrototype(this._api) as ModelCatalogTypes;
+        this._name = apiNameToCaptionName[this._lname];
         this._username = user;
     }
 

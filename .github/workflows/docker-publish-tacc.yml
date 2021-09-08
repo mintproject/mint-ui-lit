@@ -1,4 +1,4 @@
-name: Docker
+name: Pushing image for TACC
 
 on:
   push:
@@ -30,16 +30,17 @@ jobs:
             ${{ runner.OS }}-
       - name: Install dependencies
         run: npm install
+      - name: Copy the tacc config as default
+        run: cp ./src/config/config-tacc.json ./src/config/config.json
       - name: Build (webpack) 
         run: npm run create-build
       - name: Test
         run: npm test
       - uses: actions/upload-artifact@v2
         with:
-          name: nextjs-build
+          name: nextjs-build-tacc
           path: ./build/
           retention-days: 1
-
   push:
     needs: test
     runs-on: ubuntu-latest
@@ -49,7 +50,7 @@ jobs:
 
       - uses: actions/download-artifact@v2
         with:
-          name: nextjs-build
+          name: nextjs-build-tacc
           path: build/
 
       - name: Build image
@@ -68,28 +69,28 @@ jobs:
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
           [ "$VERSION" == "master" ] && VERSION=latest
-          echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
-          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:$VERSION
+          echo IMAGE_ID=${IMAGE_ID}
+          echo VERSION=${VERSION}
+          docker tag $IMAGE_NAME $IMAGE_ID:${VERSION}_tacc
+          docker push $IMAGE_ID:${VERSION}_tacc
 
-  update:
-    needs: push
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set webhook deployment master-isi
-        if: endsWith(github.ref, '/master')
-        run: |
-          echo "WEBHOOK_SERVER=webhook.mint.isi.edu" >> $GITHUB_ENV
-      - name: Set webhook deployment
-        if: endsWith(github.ref, '/dev')
-        run: |
-          echo "WEBHOOK_SERVER=webhook.dev.mint.isi.edu" >> $GITHUB_ENV
-      - name: Update the image
-        run: |  
-          [[ ! -z "${WEBHOOK_SERVER}" ]]  && curl -H "webhook:${KEY}" https://${WEBHOOK_SERVER}/hooks/ui|| echo "skipping ci"
-        env:
-          KEY: ${{ secrets.WEBHOOK }}
-
+#  update:
+#    needs: push
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#      - name: Set webhook deployment master-isi
+#        if: endsWith(github.ref, '/master')
+#        run: |
+#          echo "WEBHOOK_SERVER=webhook.tacc.mint.isi.edu" >> $GITHUB_ENV
+#      - name: Set webhook deployment
+#        if: endsWith(github.ref, '/dev')
+#        run: |
+#          echo "WEBHOOK_SERVER=webhook.dev.tacc.mint.isi.edu" >> $GITHUB_ENV
+#      - name: Update the image
+#        run: |  
+#          [[ ! -z "${WEBHOOK_SERVER}" ]]  && curl -H "webhook:${KEY}" https://${WEBHOOK_SERVER}/hooks/ui|| echo "skipping ci"
+#        env:
+#          KEY: ${{ secrets.WEBHOOK }}
+#
 

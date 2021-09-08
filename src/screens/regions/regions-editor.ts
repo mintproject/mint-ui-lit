@@ -74,7 +74,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
     @property({type: Array})
     private _bbox_preview: BoundingBox[] = [];
 
-    private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
+    private _mapStyles : string = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
 
     static get styles() {
         return [
@@ -168,7 +168,17 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
 	// TODO: Can be a problem here, check when graphql is working.
     protected render() { 
-        let subcat = this._selectedSubcategory ? this._regionCategory[this._selectedSubcategory] : null;
+        let currentCategory : RegionCategory;
+        if (this._selectedSubcategory && this._regionCategory && this._regionCategory.subcategories) {
+            // Search for the subcategory.
+            this._regionCategory.subcategories.forEach((cat:RegionCategory) => {
+                if (cat.id === this._selectedSubcategory)
+                    currentCategory = cat;
+            });
+        } else {
+            currentCategory = this._regionCategory;
+        }
+
         return html`
         <!-- TABS -->
         <div style="display: flex; margin-bottom: 10px;">
@@ -199,10 +209,10 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
                     ${this.regionType ? this.regionType.toLowerCase() : ''} 
                     modeling in ${this._region.name || this._regionid}`)
                 : ''}
-            ${subcat ? html`
-                ${subcat.name ? html`<div>${subcat.name}</div>` : ''}
-                ${subcat.citation ?
-                    html`<div style="font-size: 13px; font-style: italic; padding-top: 3px;">${subcat.citation}</div>`
+
+            ${currentCategory && currentCategory.citation ? html`
+                ${currentCategory.citation ?
+                    html`<div style="font-size: 13px; font-style: italic; padding-top: 3px;">${currentCategory.citation}</div>`
                     : ''}
             ` : ''}
             </div>
@@ -216,7 +226,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         ${!this._mapReady ?  html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
         <google-map-custom class="map" api-key="${GOOGLE_API_KEY}" 
             .style="visibility: ${this._mapReady? 'visible': 'hidden'}; display: ${this._mapEmpty? 'unset' : 'block'}"
-            disable-default-ui="true" draggable="true"
+            ?disable-default-ui="${true}" draggable="true"
             @click="${this._handleMapClick}"
             mapTypeId="terrain" styles="${this._mapStyles}">
         </google-map-custom>
@@ -425,16 +435,6 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
         } else {
             showNotification("formValuesIncompleteNotification", this.shadowRoot!);
             return;
-            /* This remove the region:
-            removeSubcategory(this._regionid, this.regionType, name).then((value) => {
-                hideDialog("addSubcategoryDialog", this.shadowRoot);
-                this._subcategories.splice(index, 1);
-                Object.values(this._regions).filter(r => r.region_type == name).forEach(r => {
-                    delete this._regions[r.id];
-                });
-                if (this._selectedSubcategory == name) this._selectSubcategory('');
-                else this.requestUpdate();
-            })*/
         }
     }
 

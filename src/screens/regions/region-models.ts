@@ -9,8 +9,8 @@ import { PageViewElement } from 'components/page-view-element';
 import { SharedStyles } from 'styles/shared-styles';
 import { goToPage } from 'app/actions';
 import { UserPreferences, IdMap } from 'app/reducers';
-import { BoundingBox } from './reducers';
-import { setPreview } from './actions';
+import { BoundingBox, Region as GQLRegion } from './reducers';
+import { getBoundingBoxFromGeoShape, setPreview } from './actions';
 import { selectSubRegion } from 'app/ui-actions';
 
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
@@ -21,17 +21,13 @@ import { Dataset } from "screens/datasets/reducers";
 
 import { queryDatasetResourcesAndSave, queryDatasetResourcesRaw } from 'screens/datasets/actions';
 
-interface GeoShapeBBox extends GeoShape {
-    bbox?: BoundingBox
-}
-
 @customElement('region-models')
 export class RegionModels extends connect(store)(PageViewElement)  {
     @property({type: Object})
     private prefs : UserPreferences;
 
     @property({type: Object})
-    protected _selectedRegion: any;
+    protected _selectedRegion: GQLRegion;
 
     @property({type: Boolean})
     private _loading : boolean = false;
@@ -40,7 +36,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
     public regionType : string = '';
 
     /* Model catalog data */
-    @property({type: Object}) private _geoShapes : IdMap<GeoShapeBBox> = {};
+    @property({type: Object}) private _geoShapes : IdMap<GeoShape> = {};
     @property({type: Object}) private _regions : IdMap<Region> = {};
     @property({type: Object}) private _models : IdMap<Model> = {};
     @property({type: Object}) private _versions : IdMap<SoftwareVersion> = {};
@@ -174,9 +170,9 @@ export class RegionModels extends connect(store)(PageViewElement)  {
         Object.values(this._regions).forEach((region:Region) => {
             if (!isMainRegion(region))
                 (region.geo || []).forEach((geo:GeoShape) => {
-                    let geoshape = this._geoShapes[geo.id];
-                    if (geoshape && geoshape.bbox) {
-                        let bbox : BoundingBox = geoshape.bbox;
+                    let geoshape : GeoShape= this._geoShapes[geo.id];
+                    let bbox : BoundingBox = getBoundingBoxFromGeoShape(geoshape);
+                    if (geoshape && bbox) {
                         if (bbox && bbox.xmin && this._doBoxesIntersect(bbox, selbox) && isSubregion(parentRegion, region)) {
                             // A point inside the bbox does not mean that the point is inside the polygon
                             let area : number = (bbox.xmax - bbox.xmin) * (bbox.ymax - bbox.ymin);
@@ -195,7 +191,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
                 setups.add(setup.id);
             }
         });
-        //console.log('setups': setups);
+        //console.log('setups:', setups);
 
         this._matchingSetups = Array.from(setups).map((sid:string) => this._setups[sid]);
 
@@ -277,7 +273,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
         })
 
         store.dispatch(setPreview(
-            Array.from(selGeo).map((gid) => this._geoShapes[gid].bbox)
+            Array.from(selGeo).map((gid) => getBoundingBoxFromGeoShape(this._geoShapes[gid]))
         ));
     }
 
