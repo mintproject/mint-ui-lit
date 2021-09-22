@@ -165,7 +165,6 @@ export class ModelView extends connect(store)(PageViewElement) {
                   background-color: red;
                   width: 1.3em;
                   overflow: hidden;
-                  float: right;
                   cursor: pointer;
                 }
 
@@ -582,13 +581,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${this._selectedConfig ? html`
                 <a class="no-decoration" style="text-align: center;" target="_blank" href="${this._selectedConfig}">
                     <wl-button flat inverted>
-                        <span class="rdf-icon">
+                        <span class="rdf-icon"></span>
                     </wl-button>
                 </a>`
                 : html `
                 <span>
                     <wl-button flat inverted disabled>
-                        <span class="rdf-icon" disabled>
+                        <span class="rdf-icon" disabled></span>
                     </wl-button>
                 </span>
                 `}
@@ -620,13 +619,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                 ${this._selectedSetup ? html`
                     <a class="no-decoration" style="text-align: center;" target="_blank" href="${this._selectedSetup}">
                         <wl-button flat inverted>
-                            <span class="rdf-icon">
+                            <span class="rdf-icon"></span>
                         </wl-button>
                     </a>`
                     : html`
                     <span>
                         <wl-button flat inverted disabled>
-                            <span class="rdf-icon" disabled>
+                            <span class="rdf-icon" disabled></span>
                         </wl-button>
                     </span>`
                 }
@@ -673,7 +672,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                 <wl-title level="2">
                     <a class="no-decoration" style="" target="_blank" href="${this._selectedModel}">
                         <wl-button flat inverted>
-                            <span class="rdf-icon">
+                            <span class="rdf-icon"></span>
                         </wl-button>
                     </a>
                     <span>${getLabel(this._model)}</span>
@@ -740,7 +739,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                           html`<wl-text><b>• Publication date:</b> ${ this._model.datePublished }</wl-text>`
                           :''}
                         ${this._model.citation && this._model.citation.length > 0 ?
-                          html`<wl-text><b>• Preferred citation:</b> <i>${ urlify(this._model.citation[0]) }<i></wl-text>` 
+                          html`<wl-text><b>• Preferred citation:</b> <i>${ urlify(this._model.citation[0]) }</i></wl-text>` 
                           :''}
                         ${this._model.hasDocumentation?
                           html`<wl-text>
@@ -936,7 +935,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <td>${this._loading[resource.hasSourceCode[0].id] ? 
                             html`${resource.hasSourceCode[0].id} <loading-dots style="--width: 20px"></loading-dots>`
                             : (this._sourceCodes[resource.hasSourceCode[0].id].codeRepository ? 
-                                html`<a target="_blank" href="${this._sourceCodes[resource.hasSourceCode[0].id].codeRepository}">
+                                html`<a target="_blank" href="${this._sourceCodes[resource.hasSourceCode[0].id].codeRepository[0]}">
                                     ${getLabel(this._sourceCodes[resource.hasSourceCode[0].id])}
                                 </a>` : html`
                                 <span>${getLabel(this._sourceCodes[resource.hasSourceCode[0].id])}</span>
@@ -1201,13 +1200,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                                 : html`, <code class="clickable" @click="${() => this._changeTab('io','parameters')}">
                                     ${getLabel(p)}
                                 </code>`)
-                        }` :''}
+                        }</wl-text>` :''}
                     ${this._setup.calibrationTargetVariable && this._setup.calibrationTargetVariable.length > 0 ? 
                         html`<wl-text><b>• Target variables:</b> ${
                             this._setup.calibrationTargetVariable.map((v:VariablePresentation, i:number) => (i === 0) ?
                                 html`<code>${getLabel(v)}</code>`
                                 : html`, <code>${getLabel(v)}</code>`)
-                        }` :''}
+                        } </wl-text>` :''}
                 </div>
             </fieldset>
         `
@@ -1310,7 +1309,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                         <th>Description</th>
                         <th style="text-align: right;">
                             Relevant for intervention
-                            <span style="display: inline-block;">/ Control<span>
+                            <span style="display: inline-block;">/ Control</span>
                         </th>
                         <th style="text-align: right;">
                             ${isSetup? html`
@@ -2323,6 +2322,7 @@ export class ModelView extends connect(store)(PageViewElement) {
         (vpArr || []).forEach((vp:VariablePresentation) => {
             if (db.variablepresentation[vp.id]) {
                 this._variablePresentations[vp.id] = db.variablepresentation[vp.id];
+                this.requestUpdate();
             } else if (!this._loading[vp.id]) {
                 this._loading[vp.id] = true;
                 store.dispatch(ModelCatalogApi.myCatalog.variablePresentation.get(vp.id)).then((variablePresentation:VariablePresentation) => {
