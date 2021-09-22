@@ -609,7 +609,11 @@ export class MintApp extends connect(store)(LitElement) {
             this._creatingAccount = false;
         } else {
             store.dispatch(signIn(username, password)).catch((error) => {
-                if (notification) notification.error("Username or password is incorrect");
+                if (notification) {
+                  if (!error) notification.error("Username or password is incorrect");
+                  else if (error.message) notification.error(error.message);
+                  else notification.error("Unexpected error when log in");
+                }
             });
         }
         this._onLoginCancel();
