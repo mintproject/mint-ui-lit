@@ -165,6 +165,45 @@ export const getBoundingBoxFromGeoShape = (shape:GeoShape) : BoundingBox => {
     return bb; 
 }
 
+export const pointInPolygon = (point, polygon) => {
+    let x = point[0];
+    let y = point[1];
+    let inside = false;
+
+    for (let i = 0, j = polygon.length -1; i < polygon.length; j = i++) {
+        let xi = polygon[i][0];
+        let yi = polygon[i][1];
+        let xj = polygon[j][0];
+        let yj = polygon[j][1];
+        
+        let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
+
+export const bboxInRegion = (bbox: BoundingBox, region: Region) : boolean=> {
+    let points = [
+        [bbox.xmin, bbox.ymin],
+        [bbox.xmin, bbox.ymax],
+        [bbox.xmax, bbox.ymin],
+        [bbox.xmax, bbox.ymax]
+    ];
+    
+    for (let index in region.geometries) {
+        let geometry: any = region.geometries[index];
+        let poly = geometry.coordinates[0][0];
+        if(points.some((point) => pointInPolygon(point, poly)))
+            return true;
+    }
+    return false;
+}
+
+export const doBoxesIntersect = (box1: BoundingBox, box2: BoundingBox) : boolean => {
+    return(box1.xmin <= box2.xmax && box1.xmax >= box2.xmin &&
+        box1.ymin <= box2.ymax && box1.ymax >= box2.ymin);
+}
+
 // Query for Sub Regions
 type SubRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListSubRegions>;
 export const listSubRegions: ActionCreator<SubRegionsThunkResult> = (regionid: string) => (dispatch) => {

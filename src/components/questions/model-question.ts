@@ -123,7 +123,7 @@ export class ModelQuestion extends LitElement {
         // Specific to each question.
     }
 
-    private onAddClicked () {
+    protected onAddClicked () {
         this.varNames.forEach((varname:string) => {
             //Check that the variable is set.
             if (!this.varOptions[varname]) return;

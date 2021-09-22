@@ -193,8 +193,31 @@ export class MintModels extends connect(store)(MintThreadPage) {
     }
 
     protected render () {
+        let modelids = Object.keys((this.thread.models || {})) || [];
+        let done = (this.thread.models && modelids.length > 0);
+        let latest_update_event = getLatestEventOfType(["CREATE", "UPDATE"], this.thread.events);
+        let latest_model_event = getLatestEventOfType(["SELECT_MODELS"], this.thread.events);
+
         return html`
         ${this.questionComposer}
+
+        <div class="footer">
+            <wl-button type="button" flat inverted outlined @click="${this._compareModels}">Compare Selected Models</wl-button>
+            <div style="flex-grow: 1">&nbsp;</div>
+            ${this._editMode ? html `<wl-button @click="${()=>{this._editMode=false}}" flat inverted>CANCEL</wl-button>`: html``}
+            <wl-button type="button" class="submit" @click="${this._selectThreadModels}" ?disabled=${this._waiting}>
+                Select &amp; Continue
+                ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`: ''}
+            </wl-button>
+        </div>
+
+        <fieldset class="notes">
+            <legend>Notes</legend>
+            <textarea id="notes">${latest_model_event?.notes ? latest_model_event.notes : ""}</textarea>
+        </fieldset>
+
+        ${renderNotifications()}
+        ${this._renderDialogs()}
         `;
     }
 
@@ -560,7 +583,13 @@ export class MintModels extends connect(store)(MintThreadPage) {
 
     _getSelectedModels() {
         let models:ModelMap = {};
-        this.shadowRoot!.querySelectorAll("input.checkbox").forEach((cbox) => {
+
+        let selectedSetups : ModelConfigurationSetup[] = this.questionComposer.getModels();
+        selectedSetups.forEach((s:ModelConfigurationSetup) => {
+            models[s.id] = setupToOldModel(s, this._allSoftwareImages);
+        });
+
+        /*this.shadowRoot!.querySelectorAll("input.checkbox").forEach((cbox) => {
             let cboxinput = (cbox as HTMLInputElement);
             let modelid = cboxinput.dataset["modelid"];
             if(cboxinput.checked) {
@@ -571,7 +600,8 @@ export class MintModels extends connect(store)(MintThreadPage) {
                     }
                 });
             }
-        });       
+        });*/
+
         return models; 
     }
 
@@ -694,8 +724,12 @@ export class MintModels extends connect(store)(MintThreadPage) {
         super.setRegionId(state);
 
         this.questionComposer.setMainRegion(this._region);
-        //let thread_id = this.thread ? this.thread.id : null;
+        let thread_id = this.thread ? this.thread.id : null;
         super.setThread(state);
+        if (this.thread && thread_id != this.thread.id) {
+            let modelids = Object.keys((this.thread.models || {})) || [];
+            this.questionComposer.setModelsIds(modelids);
+        }
 
         this._subregion = getUISelectedSubgoalRegion(state);
 

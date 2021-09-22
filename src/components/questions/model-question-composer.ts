@@ -16,7 +16,9 @@ import { HasInputVariableQuestion } from "./custom_questions/has-input-variable"
 import { HasOutputVariableQuestion } from "./custom_questions/has-output-variable";
 import { HasIndicatorQuestion } from "./custom_questions/has-indicator";
 import { HasStandardVariableQuestion } from "./custom_questions/has-standard-variable";
+import { IsInBoundingBoxQuestion } from "./custom_questions/is-in-bounding-box";
 
+const PER_PAGE = 10;
 
 @customElement("model-question-composer")
 export class ModelQuestionComposer extends LitElement {
@@ -30,8 +32,11 @@ export class ModelQuestionComposer extends LitElement {
     @property({type: Object}) private questionCatalog : IdMap<ModelQuestion> = {};
     @property({type: String}) private selectedQuestionId: string;
     @property({type: Array}) private selectedQuestions : ModelQuestion[] = [];
-
     @property({type: String}) private textFilter : string = "";
+
+    //Pagination
+    @property({type: Number}) private currentPage: number = 1;
+    @property({type: Number}) private maxPage: number = 1;
 
     constructor () {
         super();
@@ -53,14 +58,17 @@ export class ModelQuestionComposer extends LitElement {
 
         let generatesIndicator = new HasIndicatorQuestion();
         this.questionCatalog[generatesIndicator.id] = generatesIndicator;
+
+        let isInBoundingBox = new IsInBoundingBoxQuestion();
+        this.questionCatalog[isInBoundingBox.id] = isInBoundingBox;
     }
 
     static get styles () : CSSResult [] {
         return [ SharedStyles, css`
             #searchBar {
-                width: calc(100% - 15px);
-                padding: 0px 10px 0px 5px;
-                border: 0px;
+                width: 100%;
+                padding: 5px 5px 5px 5px;
+                border: 0px solid black;
             }
         `]
     }
@@ -110,35 +118,34 @@ export class ModelQuestionComposer extends LitElement {
                 : ""
             }
 
-            <!-- Input text to search -->
-            <div style="display: flex; border-top: 1px solid #f0f0f0; margin-top: 1em;">
-                <input id="searchBar" placeholder="Search..." type="text" @input=${this.onSearchInputChange}/>
-                <wl-icon @click="${this.clearSearchInput}" id="clearIcon" class="actionIcon">close</wl-icon>
-            </div>
+            <div style="border: 1px solid #EEE; margin: 10px 0px;">
+                <!-- Input text to search -->
+                ${this.renderPaginator(matchingSetups.length)}
 
-            <!-- Table with filtered models -->
-            <table class="pure-table pure-table-striped">
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th><b>Model</b></th>
-                        <th>Category</th>
-                        <th>Region</th>
-                    </tr>
-                </thead>
-                <tbody>
-                ${this.loadingModelCatalog ?
-                    html`
+                <!-- Table with filtered models -->
+                <table class="pure-table pure-table-striped">
+                    <thead>
                         <tr>
-                            <td colspan="4">
-                                <wl-progress-bar style="width: 100%;"></wl-progress-bar>
-                            </td>
+                            <th></th>
+                            <th><b>Model</b></th>
+                            <th>Category</th>
+                            <th>Region</th>
                         </tr>
-                    `
-                    : this.renderMatchingModels(matchingSetups)
-                }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                    ${this.loadingModelCatalog ?
+                        html`
+                            <tr>
+                                <td colspan="4">
+                                    <wl-progress-bar style="width: 100%;"></wl-progress-bar>
+                                </td>
+                            </tr>
+                        `
+                        : this.renderMatchingModels(matchingSetups)
+                    }
+                    </tbody>
+                </table>
+            </div>
         `;
     }
 
@@ -153,17 +160,42 @@ export class ModelQuestionComposer extends LitElement {
         let inputEl : HTMLInputElement = this.shadowRoot!.getElementById("searchBar") as HTMLInputElement;
         if (inputEl)
             this.textFilter = inputEl.value.toLowerCase();
+            this.currentPage = 1;
     }
 
     private clearSearchInput () : void {
         let inputEl : HTMLInputElement = this.shadowRoot!.getElementById("searchBar") as HTMLInputElement;
         if (inputEl) {
             inputEl.value = "";
+            if (!this.textFilter) this.currentPage = 1;
             this.textFilter = "";
         }
     }
 
+    private renderPaginator (maxElements : number) : TemplateResult {
+        return html`<div style="display: flex; align-items: center; padding: 0px 8px;">
+            <wl-icon>search</wl-icon>
+            <input id="searchBar" placeholder="Search..." type="text" @input=${this.onSearchInputChange}/>
+            <wl-icon @click="${this.clearSearchInput}" id="clearIcon" class="actionIcon">close</wl-icon>
+            <span style="font-size: 20px; font-weight: 200; color: #EEE;">|</span>
+            <wl-button flat inverted ?disabled=${this.loadingModelCatalog || this.currentPage === 1} @click=${this.onPrevPage}>Back</wl-button>
+            <span style="display: block; white-space: nowrap;">
+                Page ${this.currentPage} of ${this.maxPage}
+            </span>
+            <wl-button flat inverted ?disabled=${this.loadingModelCatalog || this.currentPage * PER_PAGE > maxElements} @click=${this.onNextPage}>Next</wl-button>
+        </div>`;
+    }
+
     private renderMatchingModels (matchingSetups: ModelConfigurationSetup[]) : TemplateResult {
+        let mx : number = (this.currentPage * PER_PAGE);
+        let visibleSetups : ModelConfigurationSetup[] = matchingSetups.slice(
+            (this.currentPage - 1) * PER_PAGE,
+            mx > matchingSetups.length ? matchingSetups.length : mx
+        );
+        let selectedSetups : ModelConfigurationSetup[] = Object.keys(this.selectedSetups)
+                .filter((key:string) => this.selectedSetups[key])
+                .map((key:string) => this.setups[key]);
+
         if (matchingSetups.length === 0)
             return html`
                 <tr>
@@ -174,16 +206,18 @@ export class ModelQuestionComposer extends LitElement {
             `;
         else
             return html`
-                ${matchingSetups.map((s:ModelConfigurationSetup) => this.renderRow(s))}
+                ${selectedSetups.map((s:ModelConfigurationSetup) => this.renderRow(s, true))}
+                ${visibleSetups.map((s:ModelConfigurationSetup) => this.renderRow(s, false))}
             `;
     }
 
-    private renderRow (setup:ModelConfigurationSetup) : TemplateResult {
+    private renderRow (setup:ModelConfigurationSetup, selected:boolean) : TemplateResult {
         return html`
         <tr>
             <td>
                 <input class="checkbox" type="checkbox" data-modelid="${setup.id}"
-                        ?checked="${this.selectedSetups[setup.id]}"></input>
+                        @change=${ this.toggleSelection }
+                        .checked=${selected}></input>
             </td>
             <td>
                 <a target="_blank" href="${this.getModelUrl(setup)}">${getLabel(setup)}</a>
@@ -202,8 +236,25 @@ export class ModelQuestionComposer extends LitElement {
         </tr>`;
     }
 
+    private toggleSelection (ev:Event) {
+        ev.stopPropagation();
+        ev.preventDefault();
+
+        let path : EventTarget[] = ev.composedPath();
+        let chbox : HTMLInputElement = path[0] as HTMLInputElement;
+        let modelid : string = chbox.getAttribute("data-modelid");
+        if (modelid) {
+            chbox.checked = this.selectedSetups[modelid];
+            this.selectedSetups[modelid] = !this.selectedSetups[modelid];
+            this.requestUpdate();
+        }
+    }
+
     public applyAllFilters () : ModelConfigurationSetup[] {
         let filteredModels : ModelConfigurationSetup[] = Object.values(this.setups);
+        // Filter selected models selected
+        filteredModels = filteredModels.filter((s:ModelConfigurationSetup) => !this.selectedSetups[s.id]);
+
         // If theres a main region, filter.
         if (this.mainRegion != null && filteredModels.length > 0) {
             filteredModels = filteredModels.filter((s:ModelConfigurationSetup) => 
@@ -228,7 +279,28 @@ export class ModelQuestionComposer extends LitElement {
                 return modelText.toLowerCase().includes(this.textFilter);
             });
         }
+
+        // Update pagination
+        this.maxPage = Math.ceil(filteredModels.length / PER_PAGE);
         return filteredModels;
+    }
+
+    public onPrevPage () : void {
+        this.currentPage -= 1;
+    }
+
+    public onNextPage () : void {
+        this.currentPage += 1;
+    }
+
+    public getModels () : ModelConfigurationSetup[] {
+        return Object.keys(this.selectedSetups)
+                .filter((key:string) => this.selectedSetups[key])
+                .map((key:string) => this.setups[key]);
+    }
+
+    public setModelsIds (listid:string[]) : void {
+        listid.forEach((id:string) => this.selectedSetups[id] = true);
     }
 
     public getModelUrl (setup: ModelConfigurationSetup) : string {
