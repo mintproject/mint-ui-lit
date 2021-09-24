@@ -34,6 +34,8 @@ export class ModelQuestionComposer extends LitElement {
     @property({type: Array}) private selectedQuestions : ModelQuestion[] = [];
     @property({type: String}) private textFilter : string = "";
 
+    @property({type: Object}) private regionQuestion : IsInBoundingBoxQuestion;
+
     //Pagination
     @property({type: Number}) private currentPage: number = 1;
     @property({type: Number}) private maxPage: number = 1;
@@ -59,8 +61,8 @@ export class ModelQuestionComposer extends LitElement {
         let generatesIndicator = new HasIndicatorQuestion();
         this.questionCatalog[generatesIndicator.id] = generatesIndicator;
 
-        let isInBoundingBox = new IsInBoundingBoxQuestion();
-        this.questionCatalog[isInBoundingBox.id] = isInBoundingBox;
+        this.regionQuestion = new IsInBoundingBoxQuestion();
+        this.regionQuestion.postActivation = true;
     }
 
     static get styles () : CSSResult [] {
@@ -77,26 +79,25 @@ export class ModelQuestionComposer extends LitElement {
         let matchingSetups : ModelConfigurationSetup[] = this.loadingModelCatalog ? [] : this.applyAllFilters();
         if (this.selectedQuestionId)
             this.questionCatalog[this.selectedQuestionId].filterPossibleOptions(matchingSetups);
+
         return html`
             <!-- If a main region is selected, filter by main region first -->
-            ${this.mainRegion != null ?
-                html`<p> Showing models for <b @click="${this.printComposedQuestion}">${this.mainRegion.name}</b>:</p>`
-                : html`<p>Filtering models:</p>`
-            }
-
-            <!-- Show active question filters -->
-            ${this.selectedQuestions.length > 0 ?
-                html`
-                <ul>
-                    ${this.selectedQuestions.map((q:ModelQuestion) => html`
+            <p>Filtering models:</p>
+            <ul>
+                <li style="line-height: 20px; vertical-align: middle;">
+                    ${this.regionQuestion}
+                </li>
+                <!-- Show active question filters -->
+                ${this.selectedQuestions.length > 0 ?
+                    this.selectedQuestions.map((q:ModelQuestion) => html`
                         <li style="line-height: 20px; vertical-align: middle;">
                             ${q}
                             <wl-icon @click="${() => this.removeQuestion(q)}" class="actionIcon" style="vertical-align: middle; margin-left:10px;">close</wl-icon>
                         </li>`
-                    )}
-                </ul>`
-                : ""
-            }
+                    )
+                    : ""
+                }
+            </ul>
 
             <!-- Select from a list of questions -->
             <select id="questionSelector" @change="${this.onQuestionSelectorChange}">
@@ -255,13 +256,14 @@ export class ModelQuestionComposer extends LitElement {
         // Filter selected models selected
         filteredModels = filteredModels.filter((s:ModelConfigurationSetup) => !this.selectedSetups[s.id]);
 
-        // If theres a main region, filter.
-        if (this.mainRegion != null && filteredModels.length > 0) {
+        // If theres a main region, filter. OLD
+        /*if (this.mainRegion != null && filteredModels.length > 0) {
             filteredModels = filteredModels.filter((s:ModelConfigurationSetup) => 
                     !s.hasRegion || 
                     s.hasRegion.some((r:Region) => isSubregion(this.mainRegion.model_catalog_uri, this.regions[r.id]))
             );
-        }
+        }*/
+        filteredModels = this.regionQuestion.applyFilter(filteredModels);
 
         // For each selected model question, apply the filter:
         this.selectedQuestions.forEach((question:ModelQuestion) => {
@@ -342,13 +344,19 @@ export class ModelQuestionComposer extends LitElement {
         }
     }
 
-    public setMainRegion (reg: GQLRegion) : void {
-        this.mainRegion = reg;
+    public setMainRegion (localRegionId: string) : void {
+        this.regionQuestion.setSelected(localRegionId);
+        //FIXME:
+        this.requestUpdate();
     }
 
     public printComposedQuestion () {
         let composed : string = "?model a <https://w3id.org/okn/o/sdm#ModelConfigurationSetup> .\n";
         this.selectedQuestions.forEach((question:ModelQuestion) => composed += question.getPattern());
         console.log(composed);
+    }
+
+    public stateChanged (state: RootState) {
+        this.regionQuestion.stateChanged(state);
     }
 }

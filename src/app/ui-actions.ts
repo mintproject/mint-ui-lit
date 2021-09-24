@@ -22,7 +22,6 @@ export type UIAction = UIActionSelectProblemStatement | UIActionSelectTask | UIA
     | UIActionSelectDataTransformation;
 
 export const selectProblemStatement: ActionCreator<UIActionSelectProblemStatement> = (problem_statement_id:string) => {
-    console.log("selectProblemStatement:" + problem_statement_id);
     return {
         type: UI_SELECT_PROBLEM_STATEMENT,
         problem_statement_id: problem_statement_id
@@ -30,7 +29,6 @@ export const selectProblemStatement: ActionCreator<UIActionSelectProblemStatemen
 };
 
 export const selectTask: ActionCreator<UIActionSelectTask> = (task_id:string) => {
-    console.log("selectTask:" + task_id);
     return {
         type: UI_SELECT_TASK,
         task_id: task_id
@@ -38,7 +36,6 @@ export const selectTask: ActionCreator<UIActionSelectTask> = (task_id:string) =>
 };
 
 export const selectThread: ActionCreator<UIActionSelectThread> = (thread_id:string) => {
-    console.log("selectThread:" + thread_id);
     return {
         type: UI_SELECT_THREAD,
         thread_id: thread_id
@@ -46,7 +43,6 @@ export const selectThread: ActionCreator<UIActionSelectThread> = (thread_id:stri
 };
 
 export const selectThreadSection: ActionCreator<UIActionSelectThreadSection> = (section:string) => {
-    //console.log("selectThreadSection:" + section);
     return {
         type: UI_SELECT_THREAD_SECTION,
         section: section

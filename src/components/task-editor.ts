@@ -306,9 +306,9 @@ export class TaskEditor extends connect(store)(LitElement) {
             let task_name = (form.elements["task_name"] as HTMLInputElement).value;
             let task_from = new Date((form.elements["task_from"] as HTMLInputElement).value);
             let task_to = new Date((form.elements["task_to"] as HTMLInputElement).value);
-            /*let task_region = (form.elements["task_region"] as HTMLInputElement).value;
-            if(!task_region)
-                task_region = this._regionid;*/
+            //let task_region = (form.elements["task_region"] as HTMLInputElement).value;
+            //if(!task_region)
+            let task_region = this._regionid;
             let task_permissions = (form.querySelector("#task_permissions") as PermissionsEditor).permissions;
             if(task_from >= task_to) {
                 alert("The start date should be before the end date");
@@ -356,15 +356,15 @@ export class TaskEditor extends connect(store)(LitElement) {
                 // Add Task
 
                 //FIXME: adds some random id as response variable, will be edited on the first step.
-                let response_variable = Object.values(this._variableMap)[0].id;
+                //let response_variable = Object.values(this._variableMap)[0].id;
 
                 //let response_variable = (form.elements["response_variable"] as HTMLInputElement).value;
                 //let driving_variable = (form.elements["driving_variable"] as HTMLInputElement).value || "";
                 this.task = {
                     name: task_name,
-                    //regionid: task_region,
+                    regionid: task_region,
                     //driving_variables: driving_variable ? [driving_variable] : [],
-                    response_variables: [response_variable],
+                    //response_variables: [response_variable],
                     dates: {
                         start_date: task_from,
                         end_date: task_to
@@ -377,7 +377,7 @@ export class TaskEditor extends connect(store)(LitElement) {
                 // Create a default thread for this task
                 let thread = {
                     //driving_variables: driving_variable ? [driving_variable] : [],
-                    response_variables: [response_variable],
+                    //response_variables: [response_variable],
                     dates: {
                         start_date: task_from,
                         end_date: task_to

@@ -77,7 +77,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
             }
 
             .right_full .card2 {
-                height: 100%;
+                height: calc(100% - 15px);
             }
 
             .twocolumns {
@@ -183,7 +183,6 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         if(this._dispatched)
             return html`<wl-progress-spinner class="loading"></wl-progress-spinner>`;
 
-        //console.log("rendering");
         if(!this._problem_statement) {
             return html``;
         }
@@ -222,17 +221,23 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         return html`
             <!-- Top ProblemStatement Heading -->
             <div class="cltrow problem_statementrow">
-                <wl-button flat inverted @click="${()=> goToPage('modeling')}">
+                <wl-button flat inverted @click="${()=> true || !selectedThread ? goToPage('modeling') : ()=> this._deselectTasks()}">
                     <wl-icon>arrow_back_ios</wl-icon>
                 </wl-button>
                 <div class="cltmain navtop">
-                    <wl-title level="3" ?nowrap="${true}">${this._problem_statement!.name}</wl-title>
+                    <wl-title level="3" ?nowrap=${true}>
+                        ${this._problem_statement!.name}
+                        ${this._selectedTask && this._selectedTask.name ? " - " + this._selectedTask.name : ""} 
+                        ${selectedThread ?
+                            ": " +
+                            (!selectedThread.name || selectedThread.name == this._selectedTask.name ? "Default thread" : selectedThread.name)
+                            : ""}
+                    </wl-title>
                 </div>
             </div>
 
             <!-- Two Columns Section -->
             <div class="twocolumns">
-
                 <!-- Left Column : List of Tasks -->
                 <div class="${this._hideTasks ? 'left_closed' : 'left'} ${this._selectedTask ? 'left_sm_closed' : ''}">
                     <div class="clt">
@@ -357,7 +362,6 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
 
                             </ul>
 
-
                                         `
                                         : ""
                                     }
@@ -378,32 +382,13 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                     <div class="card2">
                     ${this._selectedTask ?
                         html`
-                        <div class="clt">
-                            <div class="cltrow problem_statementrow">
-                                <div class="cltmain" style="display: flex; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                                <!-- Top ProblemStatement Heading -->
-                                    <wl-button flat inverted @click="${()=> this._deselectTasks()}" class="small-screen">
-                                        <wl-icon>arrow_back_ios</wl-icon>
-                                    </wl-button>
-                                    <wl-title level="4">
-                                        ${this._selectedTask.name} 
-                                        ${selectedThread ? 
-                                            ": " + (!selectedThread.name || selectedThread.name == this._selectedTask.name ? "Default thread" : selectedThread.name)
-                                            : ""}
-                                    </wl-title>
-                                </div>
-
-                                <wl-icon @click="${() => this._hideTasks = !this._hideTasks}"
-                                    class="actionIcon bigActionIcon" style="vertical-align:bottom">
-                                    ${!this._hideTasks ? "fullscreen" : "fullscreen_exit"}</wl-icon>
-                            </div>
-                        </div>
-
+                        <wl-icon @click="${() => this._hideTasks = !this._hideTasks}"
+                            class="actionIcon bigActionIcon" style="position: absolute; right: 12px;">
+                            ${!this._hideTasks ? "fullscreen" : "fullscreen_exit"}</wl-icon>
                         <mint-thread ?active="${!!this._selectedTask}"
                             .problem_statement=${this._problem_statement}></mint-thread>
+                    ` : ''}
                     </div>
-                    ` : ''
-                    }
                 </div>
             </div>
         </div>

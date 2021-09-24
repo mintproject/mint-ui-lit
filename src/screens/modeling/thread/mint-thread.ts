@@ -3,7 +3,7 @@ import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 import { SharedStyles } from "../../../styles/shared-styles";
 
-import "./mint-variables";
+import "./mint-configure";
 import "./mint-models";
 import "./mint-datasets";
 import "./mint-parameters";
@@ -46,7 +46,6 @@ export class MintThread extends connect(store)(MintThreadPage) {
         return [
           SharedStyles,
           css`
-
           .breadcrumbs a.active, .breadcrumbs a.done.active {
             background-color: #0f7acf;
             color: white;
@@ -72,14 +71,11 @@ export class MintThread extends connect(store)(MintThreadPage) {
           }
 
           .card2 {
-            margin: 0px;
-            padding: 10px;
-            margin-top: 5px;
-            margin-bottom: 10px;
+            padding: 5px 10px;
             border: 1px solid #F0F0F0;
             left: 0px;
             right: 0px;
-            height: calc(100% - 100px);
+            height: calc(100% - 50px);
             overflow: auto;
             background: #FFFFFF;
           }
@@ -98,6 +94,11 @@ export class MintThread extends connect(store)(MintThreadPage) {
         //FIXME;
         return html`
             <ul class="breadcrumbs">
+                <a id="configure_breadcrumb" style="min-width: 20px;"
+                    class="${this._getBreadcrumbClass('configure', sectionDoneMap)}" 
+                    href="${this._getModeURL('configure')}">
+                    <wl-icon style="vertical-align: middle;">settings</wl-icon>
+                </a>
                 <a id="models_breadcrumb" 
                     class="${this._getBreadcrumbClass('models', sectionDoneMap)}" 
                     href="${this._getModeURL('models')}">Models</a>
@@ -122,7 +123,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
 
     private _setSectionStatusMap() {
         let map = {};
-        map["variables"] = getThreadVariablesStatus(this.thread);
+        map["configure"] = getThreadVariablesStatus(this.thread);
         map["models"] = getThreadModelsStatus(this.thread);
         map["datasets"] = getThreadDatasetsStatus(this.thread);
         map["parameters"] = getThreadParametersStatus(this.thread);
@@ -133,7 +134,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
 
     private _getNextMode() {
         let modes = [
-            "variables",
+            "configure",
             "models",
             "datasets",
             "parameters",
@@ -215,10 +216,10 @@ export class MintThread extends connect(store)(MintThreadPage) {
             ${this._renderProgressBar(this._sectionDoneMap)}
 
             <div class="card2">
-                <mint-variables class="page" 
+                <mint-configure class="page" 
                     .problem_statement="${this.problem_statement}"
-                    ?active="${this._currentMode == 'variables'}">
-                </mint-variables>
+                    ?active="${this._currentMode == 'configure'}">
+                </mint-configure>
                 <mint-models class="page" 
                     .problem_statement="${this.problem_statement}"
                     ?active="${this._currentMode == 'models'}">

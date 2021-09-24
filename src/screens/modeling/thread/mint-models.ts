@@ -722,14 +722,17 @@ export class MintModels extends connect(store)(MintThreadPage) {
     stateChanged(state: RootState) {
         super.setUser(state);
         super.setRegionId(state);
+        this.questionComposer.stateChanged(state);
 
-        this.questionComposer.setMainRegion(this._region);
         let thread_id = this.thread ? this.thread.id : null;
         super.setThread(state);
         if (this.thread && thread_id != this.thread.id) {
             let modelids = Object.keys((this.thread.models || {})) || [];
             this.questionComposer.setModelsIds(modelids);
         }
+
+        if (this.thread && this.thread.regionid)
+            this.questionComposer.setMainRegion(this.thread.regionid);
 
         this._subregion = getUISelectedSubgoalRegion(state);
 

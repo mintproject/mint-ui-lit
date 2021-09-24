@@ -43,8 +43,11 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
     @property({type: String}) private topRegionUri : string = "";
     @property({type: Object}) private topRegion : LocalRegion;
     @property({type: Object}) private selectedMapRegion : LocalRegion;
+    @property({type: String}) private selectedRegionId : string = "";
     @property({type: Array})  private mapRegions : LocalRegion[] = [];
-    @property({type: Boolean}) private neverUpdated : boolean = true;
+    @property({type: Boolean}) public showButton : boolean = true;
+    @property({type: Boolean}) public isEditable : boolean = true;
+    @property({type: Boolean}) public postActivation : boolean = false;
 
     constructor (
             id:string = "isInboundingBoxQuestion",
@@ -99,7 +102,7 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
         Object.values(this.regions).forEach((r:Region) => {
             if (r.geo && r.geo.map((shape:GeoShape) => this.geoshapes[shape.id]).some((shape:GeoShape) => {
                 let bb : BoundingBox = getBoundingBoxFromGeoShape(shape);
-                return !!bb && !isMainRegion(r) && doBoxesIntersect(bb, selected.bounding_box);
+                return !!bb && !isMainRegion(r) && selected.bounding_box && doBoxesIntersect(bb, selected.bounding_box);
             })) {
                 regionsInBoundingBox.push(r);
             }
@@ -114,31 +117,35 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
 
     public renderForm () : TemplateResult {
         return html`
-            <form id="regionForm">
-                <label>Region category</label>
-                <select name="category-selector" value="" @change="${this.onRegionCategoryChange}">
-                    <option value="">None</option>
-                    ${Object.values(this.categories||{}).map((cat: RegionCategory) => {
-                        let subCategories : RegionCategory[] = cat.subcategories;
-                        return html`
-                        <option value="${cat.id}">${cat.name}</option>
-                        ${subCategories.length > 0 ? subCategories.map((subcat: RegionCategory) => {
-                            return html`<option value="${subcat.id}">&nbsp;&nbsp;&nbsp;&nbsp;${subcat.name}</option>`;
-                        }) : html`
-                            <option disabled>&nbsp;&nbsp;&nbsp;&nbsp;No subcategories</option>
-                        `}`
-                    })}
-                </select>
-            </form>
+            ${this.isEditable ? html`
+                <form id="regionForm">
+                    <label>Region category</label>
+                    <select name="category-selector" value="" @change="${this.onRegionCategoryChange}">
+                        <option value="">None</option>
+                        ${Object.values(this.categories||{}).map((cat: RegionCategory) => {
+                            let subCategories : RegionCategory[] = cat.subcategories;
+                            return html`
+                            <option value="${cat.id}">${cat.name}</option>
+                            ${subCategories.length > 0 ? subCategories.map((subcat: RegionCategory) => {
+                                return html`<option value="${subcat.id}">&nbsp;&nbsp;&nbsp;&nbsp;${subcat.name}</option>`;
+                            }) : html`
+                                <option disabled>&nbsp;&nbsp;&nbsp;&nbsp;No subcategories</option>
+                            `}`
+                        })}
+                    </select>
+                </form>
+            ` : ""}
             ${!this.mapReady ? html`
                 <span>Please select a region category</span>
             ` : ""}
-            <google-map-custom class="map" api-key="${GOOGLE_API_KEY}" 
-                .style="height: ${this.mapReady ? '400px' : '0px'}; visibility: ${this.mapReady ? 'visible': 'hidden'}"
-                ?disable-default-ui="${true}" draggable="true"
-                @click="${this.handleMapClick}"
-                mapTypeId="terrain" styles="${this._mapStyles}">
-            </google-map-custom>
+            <div style="cursor: ${this.isEditable ? "auto" : "not-allowed"}; width: fit-content;">
+                <google-map-custom class="map" api-key="${GOOGLE_API_KEY}" 
+                    .style="height: ${this.mapReady ? '400px' : '0px'}; visibility: ${this.mapReady ? 'visible': 'hidden'}; pointer-events: ${this.isEditable ? "auto" : "none"};"
+                    ?disable-default-ui="${true}" draggable="true"
+                    @click="${this.handleMapClick}"
+                    mapTypeId="terrain" styles="${this._mapStyles}">
+                </google-map-custom>
+            </div>
 
             ${this.mapReady && this.selectedMapRegion ? html`
                 <div class="mapFooter">
@@ -151,7 +158,9 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
                         ` : ''}
                     </div>
                     <div>
-                        <button @click="${this.onAddClicked}">Filter using this region</button>
+                        ${this.showButton ? html`
+                            <button @click="${this.onAddClicked}">Filter using this region</button>
+                        ` : ""}
                     </div>
                 </div>` : ""}
 
@@ -169,14 +178,46 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
 
     public addRegionsToMap() {
         let map = this.shadowRoot.querySelector("google-map-custom") as GoogleMapCustom;
-        let visibleRegions = this.mapRegions.filter((region:LocalRegion) => region.category_id == this.selectedCategory);
+        let selectedRegion : string = this.selectedRegionId ? this.selectedRegionId : this.topRegionId;
+
+        let visibleRegions : LocalRegion[] = []
+        if (this.topRegionId === selectedRegion && !this.selectedCategory) {
+            visibleRegions = [this.topRegion];
+        } else {
+            if (this.selectedCategory) {
+                visibleRegions = this.mapRegions.filter((region:LocalRegion) => region.category_id == this.selectedCategory);
+            } else {
+                //Search for Id on all regions.
+                let candidates : LocalRegion[] = this.mapRegions.filter((region:LocalRegion) => region.id == selectedRegion);
+                if (candidates.length > 0) {
+                    this.selectedMapRegion =  candidates[0];
+                    this.selectedCategory = this.selectedMapRegion.category_id;
+                    visibleRegions = this.mapRegions.filter((region:LocalRegion) => region.category_id == this.selectedCategory);
+                }
+            }
+        }
+        
+        if (this.selectedMapRegion && this.postActivation) {
+            this.postActivation = false;
+            let options = {};
+            options[this.selectedMapRegion.id] = this.selectedMapRegion.name;
+            this.setVariableOptions("?region", options);
+            this.settedOptions["?region"] = this.selectedMapRegion.id;
+            this.requestUpdate();
+            return;
+        }
+        
+        (!this.selectedCategory && this.topRegionId)?
+                [this.topRegion]
+                : this.mapRegions.filter((region:LocalRegion) => region.category_id == this.selectedCategory);
+
         if (map && visibleRegions) {
             try {
-                map.setRegions(visibleRegions, this.topRegionId);
+                map.setRegions(visibleRegions, selectedRegion);
                 this.mapReady = true;
             } catch {
                 map.addEventListener("google-map-ready", (e) => {
-                    map.setRegions(visibleRegions, this.topRegionId);
+                    map.setRegions(visibleRegions, selectedRegion);
                     this.mapReady = true;
                 })
             }
@@ -199,14 +240,40 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
         }
     }
 
-    private handleMapClick(ev: any) {
-        if(ev.detail && ev.detail.id) {
-            this.selectedMapRegion = this.mapRegions.filter(r => r.id === ev.detail.id)[0];
+    private handleMapClick (ev: any) : void {
+        if (ev.detail && ev.detail.id)
+            this._setSelected(ev.detail.id);
+    }
+
+    private _setSelected (localRegionId:string) : boolean {
+        this.selectedMapRegion = (localRegionId === this.topRegionId) ? 
+                this.topRegion
+                : this.mapRegions.filter(r => r.id === localRegionId)[0];
+        if (this.selectedMapRegion) this.selectedRegionId = localRegionId;
+        return !!this.selectedMapRegion;
+    }
+
+    public setSelected (localRegionId:string) : boolean {
+        if (this.mapReady || (this.topRegion && this.mapRegions && this.mapRegions.length > 0)) {
+            return this._setSelected(localRegionId);
+        } else {
+            this.selectedRegionId = localRegionId;
+            return false;
         }
     }
-    
+
+    public getSelectedRegionId () : string {
+        return this.selectedRegionId;
+    }
+
+    public updateMap () : void {
+        this.addRegionsToMap();
+    }
+
     protected firstUpdated () {
-        this.stateChanged(store.getState() as RootState);
+        if (this.topRegion && this.mapRegions && this.mapRegions.length > 0) {
+            this.updateMap();
+        }
     }
 
     stateChanged(state: RootState) {
@@ -223,7 +290,9 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
             }
 
             this.categories = state.regions.categories;
-            this.neverUpdated = false;
+            if (this.topRegion && this.mapRegions && this.mapRegions.length > 0 && !this.mapReady) {
+                this.updateMap();
+            }
         }
     }
 }

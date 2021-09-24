@@ -218,9 +218,10 @@ export const subscribeProblemStatementsList: ActionCreator<SubProblemListThunkRe
                 if (problem["tasks"]) {
                     let varnameset : Set<string> = new Set();
                     problem["tasks"].forEach(t =>  
-                        t["threads"].forEach(th => 
-                            varnameset.add(th.response_variable.name)
-                        )
+                        t["threads"].forEach(th => {
+                            if (th.response_variable && th.response_variable.name)
+                                varnameset.add(th.response_variable.name)
+                        })
                     );
                     problem["preview"] = Array.from(varnameset);
                     delete problem["tasks"]
