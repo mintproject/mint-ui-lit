@@ -179,6 +179,12 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         ];
     }
 
+    protected firstUpdated () {
+        this.addEventListener('on-thread-maximize', (e:Event) => {
+            this._hideTasks = e['detail'];
+        })
+    }
+
     protected render() {
         if(this._dispatched)
             return html`<wl-progress-spinner class="loading"></wl-progress-spinner>`;
@@ -382,11 +388,9 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                     <div class="card2">
                     ${this._selectedTask ?
                         html`
-                        <wl-icon @click="${() => this._hideTasks = !this._hideTasks}"
-                            class="actionIcon bigActionIcon" style="position: absolute; right: 12px;">
-                            ${!this._hideTasks ? "fullscreen" : "fullscreen_exit"}</wl-icon>
                         <mint-thread ?active="${!!this._selectedTask}"
-                            .problem_statement=${this._problem_statement}></mint-thread>
+                            .problem_statement=${this._problem_statement}
+                            ?maximized=${this._hideTasks}></mint-thread>
                     ` : ''}
                     </div>
                 </div>

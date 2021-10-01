@@ -42,9 +42,11 @@ export class MintThread extends connect(store)(MintThreadPage) {
     @property({type: Boolean})
     private _dispatched_execution_summary: boolean = false;
 
+    @property({type: Boolean})
+    public maximized: boolean;
+    
     static get styles() {
-        return [
-          SharedStyles,
+        return [ SharedStyles,
           css`
           .breadcrumbs a.active, .breadcrumbs a.done.active {
             background-color: #0f7acf;
@@ -80,19 +82,24 @@ export class MintThread extends connect(store)(MintThreadPage) {
             background: #FFFFFF;
           }
 
+          .thread-header {
+              display: flex;
+              align-items: center;
+          }
+
           @media (max-width: 1024px) {
-            .breadcrumbs {
-                display: flex;
-                justify-content: center;
-            }
-        }
-        `
+        }`
         ];
+    }
+    
+    public constructor () {
+        super();
     }
 
     private _renderProgressBar(sectionDoneMap: IdMap<string>) {
         //FIXME;
         return html`
+        <div class="thread-header">
             <ul class="breadcrumbs">
                 <a id="configure_breadcrumb" style="min-width: 20px;"
                     class="${this._getBreadcrumbClass('configure', sectionDoneMap)}" 
@@ -118,7 +125,20 @@ export class MintThread extends connect(store)(MintThreadPage) {
                     class="${this._getBreadcrumbClass('visualize', sectionDoneMap)}" 
                     href="${this._getModeURL('visualize')}">Visualize</a>
             </ul>
+            <wl-icon @click="${this.toggleMaximize}" class="actionIcon bigActionIcon">
+                ${!this.maximized ? "fullscreen" : "fullscreen_exit"}
+            </wl-icon>
+        </div>
         `;
+    }
+
+    public toggleMaximize () : void {
+        let event : CustomEvent = new CustomEvent("on-thread-maximize", {
+            bubbles: true,
+            composed: true,
+            detail: !this.maximized
+        });
+        this.dispatchEvent(event);
     }
 
     private _setSectionStatusMap() {
