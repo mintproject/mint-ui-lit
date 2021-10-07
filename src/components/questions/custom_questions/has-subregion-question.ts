@@ -47,7 +47,7 @@ export class HasSubRegionQuestion extends ModelQuestion {
         return new HasSubRegionQuestion(this.id, this.name, this.template, this.pattern);
     }
 
-    public applyFilter (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
+    public filterModels (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
         let regionid : string = this.settedOptions["?region"];
         return modelsToFilter.filter((s:ModelConfigurationSetup) => !!s.hasRegion && s.hasRegion.some((r:Region) => r.id === regionid));
     }

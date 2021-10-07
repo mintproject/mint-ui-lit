@@ -72,7 +72,7 @@ export class HasStandardVariableQuestion extends ModelQuestion {
         return new HasStandardVariableQuestion(this.id, this.name, this.template, this.pattern);
     }
 
-    public applyFilter (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
+    public filterModels (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
         let indid : string = this.settedOptions["?standardVariable"];
         return modelsToFilter.filter((s:ModelConfigurationSetup) => 
             !!s.hasOutput && 

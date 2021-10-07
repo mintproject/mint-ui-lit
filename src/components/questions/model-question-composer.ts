@@ -1,5 +1,6 @@
 import { Model, ModelCategory, ModelConfigurationSetup, Region } from "@mintproject/modelcatalog_client";
 import { RootState, store } from "app/store";
+import { connect } from "pwa-helpers/connect-mixin";
 import { customElement, LitElement, property, html, css, CSSResult, TemplateResult } from "lit-element";
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { ModelQuestion } from "./model-question";
@@ -21,7 +22,7 @@ import { IsInBoundingBoxQuestion } from "./custom_questions/is-in-bounding-box";
 const PER_PAGE = 10;
 
 @customElement("model-question-composer")
-export class ModelQuestionComposer extends LitElement {
+export class ModelQuestionComposer extends connect(store)(LitElement) {
     private static idCount : number = 0;
     @property({type: Boolean}) protected loadingModelCatalog: boolean = true;
     @property({type: Object}) private categories : IdMap<ModelCategory>;
@@ -39,6 +40,12 @@ export class ModelQuestionComposer extends LitElement {
     //Pagination
     @property({type: Number}) private currentPage: number = 1;
     @property({type: Number}) private maxPage: number = 1;
+
+    //Computed numbers
+    public matchingModels : number = -1;
+    public matchingDatasets : number = -1;
+
+    public onFilteringComplete : (matchingModels:ModelConfigurationSetup[]) => void;
 
     constructor () {
         super();
@@ -61,8 +68,19 @@ export class ModelQuestionComposer extends LitElement {
         let generatesIndicator = new HasIndicatorQuestion();
         this.questionCatalog[generatesIndicator.id] = generatesIndicator;
 
-        this.regionQuestion = new IsInBoundingBoxQuestion();
-        this.regionQuestion.postActivation = true;
+        let reg = new IsInBoundingBoxQuestion();
+        this.questionCatalog[reg.id] = reg;
+        //this.selectedQuestions  = [reg];
+
+        this.regionQuestion = reg;
+    }
+
+    public getRegionQuestion () : IsInBoundingBoxQuestion {
+        return this.regionQuestion;
+    }
+
+    public getQuestion (questionId:string) : ModelQuestion {
+        return this.questionCatalog[questionId];
     }
 
     static get styles () : CSSResult [] {
@@ -76,7 +94,7 @@ export class ModelQuestionComposer extends LitElement {
     }
 
     protected render () : TemplateResult {
-        let matchingSetups : ModelConfigurationSetup[] = this.loadingModelCatalog ? [] : this.applyAllFilters();
+        let matchingSetups : ModelConfigurationSetup[] = this.loadingModelCatalog ? [] : this.applyAllModelFilters();
         if (this.selectedQuestionId)
             this.questionCatalog[this.selectedQuestionId].filterPossibleOptions(matchingSetups);
 
@@ -85,7 +103,7 @@ export class ModelQuestionComposer extends LitElement {
             <p>Filtering models:</p>
             <ul>
                 <li style="line-height: 20px; vertical-align: middle;">
-                    ${this.regionQuestion}
+                    ${this.regionQuestion.renderTextRepresentation()}
                 </li>
                 <!-- Show active question filters -->
                 ${this.selectedQuestions.length > 0 ?
@@ -104,7 +122,7 @@ export class ModelQuestionComposer extends LitElement {
                 <option value="" ?selected="${!this.selectedQuestionId}" disabled>
                     - Add a new filter -
                 </option>
-                ${Object.values(this.questionCatalog).map((mq:ModelQuestion) => html`
+                ${Object.values(this.questionCatalog).filter((mq:ModelQuestion) => mq.canBeAdded).map((mq:ModelQuestion) => html`
                     <option value="${mq.id}" ?selected="${this.selectedQuestionId === mq.id}">
                         ${mq.getOptionName()}
                     </option>
@@ -251,7 +269,7 @@ export class ModelQuestionComposer extends LitElement {
         }
     }
 
-    public applyAllFilters () : ModelConfigurationSetup[] {
+    public applyAllModelFilters () : ModelConfigurationSetup[] {
         let filteredModels : ModelConfigurationSetup[] = Object.values(this.setups);
         // Filter selected models selected
         filteredModels = filteredModels.filter((s:ModelConfigurationSetup) => !this.selectedSetups[s.id]);
@@ -263,11 +281,11 @@ export class ModelQuestionComposer extends LitElement {
                     s.hasRegion.some((r:Region) => isSubregion(this.mainRegion.model_catalog_uri, this.regions[r.id]))
             );
         }*/
-        filteredModels = this.regionQuestion.applyFilter(filteredModels);
+        filteredModels = this.regionQuestion.filterModels(filteredModels);
 
         // For each selected model question, apply the filter:
         this.selectedQuestions.forEach((question:ModelQuestion) => {
-            filteredModels = question.applyFilter(filteredModels);
+            filteredModels = question.filterModels(filteredModels);
         });
 
         // Finally filter by text search
@@ -284,7 +302,13 @@ export class ModelQuestionComposer extends LitElement {
 
         // Update pagination
         this.maxPage = Math.ceil(filteredModels.length / PER_PAGE);
+        if (this.onFilteringComplete) this.onFilteringComplete(filteredModels);
+        this.matchingModels = filteredModels.length;
         return filteredModels;
+    }
+
+    public applyAllDataFilters () : void {
+        //TODO
     }
 
     public onPrevPage () : void {
@@ -309,7 +333,8 @@ export class ModelQuestionComposer extends LitElement {
         return "TODO";
     }
 
-    protected firstUpdated () : void {
+    public init () : void {
+        console.log("Composer initialized!");
         let setupReq = store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getAll());
         let categoryReq = store.dispatch(ModelCatalogApi.myCatalog.modelCategory.getAll());
         let regionReq = store.dispatch(ModelCatalogApi.myCatalog.region.getAll());
@@ -320,6 +345,7 @@ export class ModelQuestionComposer extends LitElement {
 
         Promise.all([setupReq, categoryReq, regionReq]).then(() => {
             this.loadingModelCatalog = false;
+            this.applyAllModelFilters();
         });
         
         // Add event listeners
@@ -344,12 +370,6 @@ export class ModelQuestionComposer extends LitElement {
         }
     }
 
-    public setMainRegion (localRegionId: string) : void {
-        this.regionQuestion.setSelected(localRegionId);
-        //FIXME:
-        this.requestUpdate();
-    }
-
     public printComposedQuestion () {
         let composed : string = "?model a <https://w3id.org/okn/o/sdm#ModelConfigurationSetup> .\n";
         this.selectedQuestions.forEach((question:ModelQuestion) => composed += question.getPattern());
@@ -357,6 +377,8 @@ export class ModelQuestionComposer extends LitElement {
     }
 
     public stateChanged (state: RootState) {
-        this.regionQuestion.stateChanged(state);
+        Object.values(this.questionCatalog).forEach((q:ModelQuestion) => {
+            if (q["stateChanged"]) q["stateChanged"](state);
+        });
     }
 }

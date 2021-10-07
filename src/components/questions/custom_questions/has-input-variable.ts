@@ -62,7 +62,7 @@ export class HasInputVariableQuestion extends ModelQuestion {
         return new HasInputVariableQuestion(this.id, this.name, this.template, this.pattern);
     }
 
-    public applyFilter (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
+    public filterModels (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
         let varid : string = this.settedOptions["?variable"];
         return modelsToFilter.filter((s:ModelConfigurationSetup) => 
             !!s.hasInput && 

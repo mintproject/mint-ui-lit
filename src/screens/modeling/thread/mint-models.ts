@@ -35,6 +35,7 @@ import { getLatestEventOfType } from "util/event_utils";
 import variables, { VariableMap } from "screens/variables/reducers";
 import { ModelQuestionComposer } from "components/questions/model-question-composer";
 import { HasIndicatorQuestion } from "components/questions/custom_questions/has-indicator";
+import { IsInBoundingBoxQuestion } from "components/questions/custom_questions/is-in-bounding-box";
 
 store.addReducers({
     models
@@ -167,22 +168,12 @@ export class MintModels extends connect(store)(MintThreadPage) {
     ]
 
     static get styles() {
-        return [
-          SharedStyles,
-          css`
-          `
-        ]
+        return [SharedStyles, css``]
     }
 
     private _createModelCatalogUri(region: Region) {
         let prefix="https://w3id.org/okn/i/mint/";
         return (prefix + region.name).replace(/\s/g,'_');
-    }
-
-    private questionComposer;
-    constructor () {
-        super();
-        this.questionComposer = new ModelQuestionComposer();
     }
 
     private onSearchBarChange (ev) {
@@ -722,10 +713,11 @@ export class MintModels extends connect(store)(MintThreadPage) {
     stateChanged(state: RootState) {
         super.setUser(state);
         super.setRegionId(state);
-        this.questionComposer.stateChanged(state);
 
         let thread_id = this.thread ? this.thread.id : null;
         super.setThread(state);
+
+        /*
         if (this.thread && thread_id != this.thread.id) {
             let modelids = Object.keys((this.thread.models || {})) || [];
             this.questionComposer.setModelsIds(modelids);
@@ -733,6 +725,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
 
         if (this.thread && this.thread.regionid)
             this.questionComposer.setMainRegion(this.thread.regionid);
+        */
 
         this._subregion = getUISelectedSubgoalRegion(state);
 

@@ -26,6 +26,7 @@ import { toDateString } from "util/date-utils";
 import { getLatestEventOfType } from "util/event_utils";
 import { getCreateEvent } from "util/graphql_adapter";
 import 'components/loading-dots';
+import { ModelQuestionComposer } from "components/questions/model-question-composer";
 
 store.addReducers({
     variables
@@ -54,14 +55,23 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
         `]
     }
 
-    public constructor () {
-        super();
-        this.regionSelector = new IsInBoundingBoxQuestion();
-        this.regionSelector.showButton = false;
-        this.regionSelector.isEditable = false;
+    public setQuestionComposer (composer:ModelQuestionComposer) : void {
+        super.setQuestionComposer(composer);
+        this.regionSelector = composer.getRegionQuestion();
     }
     
     protected render () : TemplateResult {
+        if (this.lastActive != this.active) {
+            // This happens when we go back without chaning anything
+            this.lastActive = this.active;
+            this.regionSelector.setSelected(this.thread.regionid);
+            this.regionSelector.isEditable = this.editMode;
+            setTimeout(() => { 
+                this.regionSelector.updateMap()
+                this.requestUpdate();
+            }, 200);
+            return html`<wl-progress-spinner class="loading"></wl-progress-spinner>`;
+        }
         return html `
             <div class="clt">
                 <wl-title level="3">
@@ -90,7 +100,7 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
                         : ""
                     }
                     <wl-button type="button" class="submit" @click="${this.onContinueClicked}" ?disabled=${this.loading}>
-                        ${this.editMode ? html`Select &amp;` : ""} Continue
+                        ${this.editMode ? "Save" : "Continue"} 
                         ${this.loading ? html`<loading-dots style="--width: 20px"></loading-dots>` : ""}
                     </wl-button>
                 </div>
@@ -107,6 +117,12 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
                         <td> Thread name: </td>
                         <td> ${thread.name ? thread.name : ""} </td>
                     </tr>
+                    ${threadEvent.notes ? 
+                        html`<tr>
+                            <td> Notes: </td>
+                            <td> ${threadEvent.notes} </td>
+                        </tr>`
+                        : ''}
                     <tr>
                         <td> Time Period: </td>
                         <td>
@@ -126,10 +142,6 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
                         <td>
                             ${this.regionSelector}
                         </td>
-                    </tr>
-                    <tr>
-                        <td> Notes: </td>
-                        <td> ${threadEvent.notes} </td>
                     </tr>
                     <tr>
                         <td></td>
@@ -152,6 +164,14 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
                         <td> <input id="thread_name" value="${thread.name ? thread.name : ""}"></input> </td>
                     </tr>
                     <tr>
+                        <td> <label>Notes:</label> </td>
+                        <td>
+                            <textarea style="color:unset; font: unset;" id="thread_notes" rows="4">${
+                                threadEvent.notes
+                            }</textarea>
+                        </td>
+                    </tr>
+                    <tr>
                         <td> <label>Time Period:</label> </td>
                         <td>
                             <div class="formRow">
@@ -172,11 +192,9 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
                         </td>
                     </tr>
                     <tr>
-                        <td> <label>Notes:</label> </td>
+                        <td> <label>Indicator:</label> </td>
                         <td>
-                            <textarea style="color:unset; font: unset;" id="thread_notes" rows="4">${
-                                threadEvent.notes
-                            }</textarea>
+                            IDICATOR HERE
                         </td>
                     </tr>
                     <tr>
@@ -212,8 +230,9 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
             this.loading = false;
             hideNotification("saveNotification", this.shadowRoot!);
             this.onCancelClicked();
+        } else {
+            store.dispatch(selectThreadSection("models"));
         }
-        store.dispatch(selectThreadSection("models"));
     }
 
     private getThreadFromForm () : ThreadInfo {
@@ -260,16 +279,16 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
         this.regionSelector.updateMap();
     }
 
-    private lastThreadId : string;
+    private lastActive : boolean;
+    private lastThread : Thread;
     stateChanged(state: RootState) {
         super.setUser(state);
         if (super.setThread(state)) {
             hideNotification("saveNotification", this.shadowRoot!);
         }
-        this.regionSelector.stateChanged(state);
-        if (this.thread && this.lastThreadId != this.thread.id) {
-            this.lastThreadId = this.thread.id;
-            this.regionSelector.setSelected(this.thread.regionid);
+        if (this.regionSelector) {
+            this.regionSelector.isEditable = this.editMode;
         }
+        this.lastActive = this.active;
     }
 }

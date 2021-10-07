@@ -83,7 +83,7 @@ export class HasIndicatorQuestion extends ModelQuestion {
         }
     }
 
-    public applyFilter (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
+    public filterModels (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
         let indid : string = this.settedOptions["?indicator"];
         return modelsToFilter.filter((s:ModelConfigurationSetup) => 
             !!s.hasOutput && 

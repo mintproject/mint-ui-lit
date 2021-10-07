@@ -6,6 +6,7 @@ import { Thread, ProblemStatementInfo, MintPermission } from "../reducers";
 import { User, UserPreferences } from "app/reducers";
 import { getUserPermission } from "util/permission_utils";
 import { selectThreadSection } from "app/ui-actions";
+import { ModelQuestionComposer } from "components/questions/model-question-composer";
 
 export class MintThreadPage extends PageViewElement {
     @property({type: Object})
@@ -25,6 +26,13 @@ export class MintThreadPage extends PageViewElement {
 
     @property({type: Boolean})
     protected _waiting: boolean = false;    
+
+    @property({type: Object})
+    protected questionComposer: ModelQuestionComposer;
+
+    public setQuestionComposer (composer:ModelQuestionComposer) : void {
+        this.questionComposer = composer;
+    }
     
     selectAndContinue(section) {
         if(section == "models") {
@@ -36,13 +44,12 @@ export class MintThreadPage extends PageViewElement {
     setThread(state: RootState): boolean {
         let thread_id = state.ui!.selected_thread_id;
         this.thread = state.modeling.thread;
-        if(this.thread != null) {
+        if (this.thread != null) {
             this.permission = getUserPermission(this.thread.permissions ?? [], this.thread.events ?? []);
-        }
-        else {
+        } else {
             this.permission = null;
         }
-        if(state.modeling.thread && state.modeling.thread.id == thread_id) {
+        if (state.modeling.thread && state.modeling.thread.id == thread_id) {
             return false;
         }
         this._waiting = false;

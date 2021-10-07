@@ -47,7 +47,7 @@ export class HasCategoryQuestion extends ModelQuestion {
         return new HasCategoryQuestion(this.id, this.name, this.template, this.pattern);
     }
 
-    public applyFilter (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
+    public filterModels (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
         let catid : string = this.settedOptions["?category"];
         return modelsToFilter.filter((s:ModelConfigurationSetup) => !!s.hasModelCategory && s.hasModelCategory.some((c:ModelCategory) => c.id === catid));
     }

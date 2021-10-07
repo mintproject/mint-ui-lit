@@ -20,6 +20,9 @@ export class ModelQuestion extends LitElement {
     @property({type: Object}) protected settedOptions : {[key:string] : string} = {};     // map varname -> user selected option (optid)
     @property({type: Object}) protected optionCount : {[key:string] : number} = {};     // map optid -> number of conincidences on possible setups.
 
+    @property({type: Boolean}) protected textRepresentation : boolean = true;
+    @property({type: Boolean}) public isEditable  : boolean = false;
+    @property({type: Boolean}) public canBeAdded  : boolean = true;
     protected possibleSetups: ModelConfigurationSetup[];
 
     constructor (id:string, name:string, template:string, pattern: string) {
@@ -39,11 +42,27 @@ export class ModelQuestion extends LitElement {
         `];
     }
 
-    protected render () : TemplateResult {
-        // Check that all variables have been set:
-        if (this.varNames.some((varName:string) => !this.settedOptions[varName]))
-            return this.renderForm();
+    public enableTextRepresentation () : void {
+        this.textRepresentation = true;
+    }
 
+    public disableTextRepresentation () : void {
+        this.textRepresentation = false;
+    }
+
+    protected render () : TemplateResult {
+        // Check that all variables have been set, if not show render:
+        if (this.varNames.some((varName:string) => !this.settedOptions[varName]) || this.isEditable)
+            return this.renderForm(true);
+
+        // If all where set, show text representation or non editable form:
+        if (!this.textRepresentation)
+            return this.renderForm(false);
+
+        return this.renderTextRepresentation();
+    }
+
+    public renderTextRepresentation () : TemplateResult {
         let templateParts : string[] = this.template.split(SPARQL_VAR_RE);
         if (templateParts.length > 0 && templateParts[templateParts.length-1] === "") {
             templateParts.pop();
@@ -66,7 +85,7 @@ export class ModelQuestion extends LitElement {
         return this.name;
     }
 
-    public renderForm () : TemplateResult {
+    public renderForm (isEditable : boolean) : TemplateResult {
         let templateParts : string[] = this.template.split(SPARQL_VAR_RE);
         if (templateParts.length > 0 && templateParts[templateParts.length-1] === "") {
             templateParts.pop();
@@ -147,7 +166,7 @@ export class ModelQuestion extends LitElement {
         return new ModelQuestion(this.id, this.name, this.template, this.pattern);
     }
 
-    public applyFilter (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
+    public filterModels (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
         throw new Error("Method not implemented.");
     }
 

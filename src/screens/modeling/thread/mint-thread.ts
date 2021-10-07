@@ -17,13 +17,15 @@ import { getThreadVariablesStatus, TASK_NOT_STARTED, getThreadModelsStatus,
     getThreadDatasetsStatus, getThreadRunsStatus, getThreadResultsStatus, 
     TASK_DONE, TASK_PARTLY_DONE, 
     getUISelectedTask, getThreadParametersStatus } from "../../../util/state_functions";
-import { Execution, ExecutionSummary, Task, Thread } from "../reducers";
+import { ExecutionSummary, Task, Thread } from "../reducers";
 import { BASE_HREF } from "../../../app/actions";
 import { MintThreadPage } from "./mint-thread-page";
-import { hideNotification } from "util/ui_functions";
 import { subscribeThread, subscribeThreadExecutionSummary } from "../actions";
 import { getLatestEvent } from "util/event_utils";
 import { IdMap } from "app/reducers";
+import { ModelQuestionComposer } from "components/questions/model-question-composer";
+import { IsInBoundingBoxQuestion } from "components/questions/custom_questions/is-in-bounding-box";
+import { ModelConfigurationSetup } from "@mintproject/modelcatalog_client";
 
 @customElement('mint-thread')
 export class MintThread extends connect(store)(MintThreadPage) {
@@ -44,6 +46,11 @@ export class MintThread extends connect(store)(MintThreadPage) {
 
     @property({type: Boolean})
     public maximized: boolean;
+
+    @property({type: Number}) private nModels : number = -1;
+    @property({type: Number}) private nDatasets : number = -1;
+
+    private regionSelector : IsInBoundingBoxQuestion;
     
     static get styles() {
         return [ SharedStyles,
@@ -72,6 +79,34 @@ export class MintThread extends connect(store)(MintThreadPage) {
             border-left-color: #06436c;
           }
 
+          .thread-good {
+              background-color: lightgreen !important;
+          }
+
+          .breadcrumbs a.warning {
+            background-color: red;
+            color: white;
+          }
+          .breadcrumbs a.warning:before {
+            border-color: red;
+            border-left-color: transparent;
+          }
+          .breadcrumbs a.warning:after {
+            border-left-color: red;
+          }
+
+          .breadcrumbs a.pending {
+            background-color: cadetblue;
+            color: white;
+          }
+          .breadcrumbs a.pending:before {
+            border-color: cadetblue;
+            border-left-color: transparent;
+          }
+          .breadcrumbs a.pending:after {
+            border-left-color: cadetblue;
+          }
+
           .card2 {
             padding: 5px 10px;
             border: 1px solid #F0F0F0;
@@ -92,26 +127,32 @@ export class MintThread extends connect(store)(MintThreadPage) {
         ];
     }
     
-    public constructor () {
-        super();
-    }
-
     private _renderProgressBar(sectionDoneMap: IdMap<string>) {
-        //FIXME;
         return html`
         <div class="thread-header">
             <ul class="breadcrumbs">
                 <a id="configure_breadcrumb" style="min-width: 20px;"
                     class="${this._getBreadcrumbClass('configure', sectionDoneMap)}" 
+                    .question_composer=${this.questionComposer}
                     href="${this._getModeURL('configure')}">
                     <wl-icon style="vertical-align: middle;">settings</wl-icon>
                 </a>
                 <a id="models_breadcrumb" 
                     class="${this._getBreadcrumbClass('models', sectionDoneMap)}" 
-                    href="${this._getModeURL('models')}">Models</a>
+                    href="${this._getModeURL('models')}">
+                        Models
+                        ${(this.nModels<0)? 
+                            html`<loading-dots style="--width: 20px"></loading-dots>`
+                            : html` [${this.nModels}]`}
+                </a>
                 <a id="datasets_breadcrumb" 
                     class="${this._getBreadcrumbClass('datasets', sectionDoneMap)}" 
-                    href="${this._getModeURL('datasets')}">Datasets</a>
+                    href="${this._getModeURL('datasets')}">
+                        Datasets
+                        ${(this.nDatasets<0)? 
+                            html`<loading-dots style="--width: 20px"></loading-dots>`
+                            : html` [${this.nDatasets}]`}
+                    </a>
                 <a id="parameters_breadcrumb" 
                     class="${this._getBreadcrumbClass('parameters', sectionDoneMap)}" 
                     href="${this._getModeURL('parameters')}">Parameters</a>
@@ -186,6 +227,16 @@ export class MintThread extends connect(store)(MintThreadPage) {
                 break;
             case TASK_NOT_STARTED:
                 break;
+        }
+
+        if (this._currentMode != section && section == "configure") {
+            cls += " done";
+        }
+
+        if ((this._currentMode != section) && ((section == "models" && this.nModels >= 0 ) || (section == "datasets" && this.nDatasets >= 0))) {
+            if ((section == "models" && this.nModels == 0) || (section == "datasets" && this.nDatasets == 0))
+                cls += " warning";
+            else cls += " pending";
         }
         return cls;
     }
@@ -391,6 +442,58 @@ export class MintThread extends connect(store)(MintThreadPage) {
             state.modeling.thread = undefined;
             this.thread = null;
         }
+
+        this.threadSectionChanged(state.ui.selected_thread_section, this.thread);
+    }
+
+
+    private lastSection : string;
+    private lastThread : Thread;
+    threadSectionChanged(newSection:string, newThread: Thread) {
+        if (newThread && this.lastThread != newThread) {
+            // Thread has changed, create a new Question composer and bind it to initial parameters.
+            console.log("Creating new question composer...")
+            this.setQuestionComposer(new ModelQuestionComposer());
+            this.questionComposer.init();
+            this.questionComposer.onFilteringComplete = (setups:ModelConfigurationSetup[]) => {
+                this.nModels = setups.length;
+                if (this.nModels >= 0) this.nDatasets = 0; //FIXME
+            }
+            this.regionSelector = this.questionComposer.getRegionQuestion();
+            if (newThread.regionid) this.regionSelector.setSelected(newThread.regionid);
+            this.lastThread = newThread;
+            this.lastSection = undefined; // To reload page specifics
+        }
+
+        if (this.questionComposer && this.thread && newSection && this.lastSection != newSection) {
+            console.log(this.lastSection + " changed to " + newSection);
+            this.lastSection = newSection;
+
+            let configPage : MintThreadPage = this.shadowRoot.querySelector("mint-configure");
+            let modelsPage : MintThreadPage = this.shadowRoot.querySelector("mint-models");
+
+            let regionQuestion = this.regionSelector;
+            switch (newSection) {
+                case "configure":
+                    if (configPage != null) {
+                        regionQuestion.disableTextRepresentation();
+                        configPage.setQuestionComposer(this.questionComposer);
+                    } else 
+                        this.lastSection = undefined; //Do no accept change if we cannot bind 
+                    break;
+                case "models":
+                    if (modelsPage != null) {
+                        regionQuestion.setSelected(this.thread.regionid);
+                        regionQuestion.isEditable = false;
+                        regionQuestion.enableTextRepresentation();
+                        modelsPage.setQuestionComposer(this.questionComposer);
+                    } else
+                        this.lastSection = undefined; //Do no accept change if we cannot bind 
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
     threadChanged(oldp: Thread, newp: Thread) {
@@ -419,4 +522,3 @@ export class MintThread extends connect(store)(MintThreadPage) {
         return false;
     }
 }
-

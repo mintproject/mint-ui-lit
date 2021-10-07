@@ -2,9 +2,11 @@ import { ModelConfigurationSetup, Region, GeoShape } from "@mintproject/modelcat
 import { IdMap } from "app/reducers";
 import { RootState, store } from "app/store";
 import { customElement, LitElement, property, html, css, TemplateResult } from "lit-element";
+import { connect } from "pwa-helpers/connect-mixin";
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { getLabel, isMainRegion } from "model-catalog-api/util";
 import { ModelQuestion } from '../model-question';
+import { mapStyles } from "styles/map-style";
 
 import { BoundingBox, Region as LocalRegion, RegionCategory} from "screens/regions/reducers";
 
@@ -13,13 +15,12 @@ import * as mintConfig from 'config/config.json';
 import { GoogleMapCustom } from "components/google-map-custom";
 import { bboxInRegion, doBoxesIntersect, getBoundingBoxFromGeoShape } from "screens/regions/actions";
 let prefs = mintConfig["default"] as MintPreferences;
-const GOOGLE_API_KEY = prefs.google_maps_key;   
+const GOOGLE_API_KEY = prefs.google_maps_key;
 
 @customElement("is-in-bounding-box-question")
-export class IsInBoundingBoxQuestion extends ModelQuestion {
+export class IsInBoundingBoxQuestion extends connect(store)(ModelQuestion) {
     private regions : IdMap<Region>;
     private geoshapes : IdMap<GeoShape>;
-    private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
 
     static get styles() {
         return [css`
@@ -45,9 +46,8 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
     @property({type: Object}) private selectedMapRegion : LocalRegion;
     @property({type: String}) private selectedRegionId : string = "";
     @property({type: Array})  private mapRegions : LocalRegion[] = [];
-    @property({type: Boolean}) public showButton : boolean = true;
-    @property({type: Boolean}) public isEditable : boolean = true;
-    @property({type: Boolean}) public postActivation : boolean = false;
+    @property({type: Boolean}) private mustUpdateSelected : boolean = false;
+    @property({type: Boolean}) public canBeAdded : boolean = false;
 
     constructor (
             id:string = "isInboundingBoxQuestion",
@@ -76,27 +76,20 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
 
     public filterPossibleOptions(matchingSetups: ModelConfigurationSetup[]) {
         super.filterPossibleOptions(matchingSetups);
-
-        /*if (this.regions && this.geoshapes) {
-            let regionOptions : {[key:string] : string} = {};
-            matchingSetups.forEach((s:ModelConfigurationSetup) =>
-                (s.hasRegion||[]).forEach((r:Region) => {
-                    this.countOption(r.id);
-                    regionOptions[r.id] = getLabel(this.regions[r.id] ? this.regions[r.id] : getLabel(r));
-                })
-            );
-
-            this.setVariableOptions("?region", regionOptions);
-        }*/
     }
 
     public createCopy () : IsInBoundingBoxQuestion {
         return new IsInBoundingBoxQuestion(this.id, this.name, this.template, this.pattern);
     }
 
-    public applyFilter (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
+    public filterModels (modelsToFilter: ModelConfigurationSetup[]): ModelConfigurationSetup[] {
         let regionid : string = this.settedOptions["?region"];
-        let selected : LocalRegion = this.mapRegions.filter(r => r.id === regionid)[0];
+        if (!regionid) return [];
+        let selected : LocalRegion;
+        if (regionid === this.topRegionId)
+            selected = this.topRegion;
+        else
+            selected = this.mapRegions.filter(r => r.id === regionid)[0];
         let regionsInBoundingBox : Region[] = [];
 
         Object.values(this.regions).forEach((r:Region) => {
@@ -115,9 +108,9 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
         );
     }
 
-    public renderForm () : TemplateResult {
+    public renderForm (isEditable : boolean) : TemplateResult {
         return html`
-            ${this.isEditable ? html`
+            ${isEditable ? html`
                 <form id="regionForm">
                     <label>Region category</label>
                     <select name="category-selector" value="" @change="${this.onRegionCategoryChange}">
@@ -127,7 +120,7 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
                             return html`
                             <option value="${cat.id}">${cat.name}</option>
                             ${subCategories.length > 0 ? subCategories.map((subcat: RegionCategory) => {
-                                return html`<option value="${subcat.id}">&nbsp;&nbsp;&nbsp;&nbsp;${subcat.name}</option>`;
+                                return html`<option value="${subcat.id}" ?selected=${subcat.id == this.selectedCategory}>&nbsp;&nbsp;&nbsp;&nbsp;${subcat.name}</option>`;
                             }) : html`
                                 <option disabled>&nbsp;&nbsp;&nbsp;&nbsp;No subcategories</option>
                             `}`
@@ -135,15 +128,16 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
                     </select>
                 </form>
             ` : ""}
-            ${!this.mapReady ? html`
-                <span>Please select a region category</span>
-            ` : ""}
-            <div style="cursor: ${this.isEditable ? "auto" : "not-allowed"}; width: fit-content;">
+            ${!this.mapReady ? (isEditable ? 
+                html`<span>Please select a region category</span>`
+                : html`<loading-dots style="--width: 20px"></loading-dots>`
+            ) : ""}
+            <div style="cursor: ${isEditable ? "auto" : "not-allowed"}; width: fit-content;">
                 <google-map-custom class="map" api-key="${GOOGLE_API_KEY}" 
-                    .style="height: ${this.mapReady ? '400px' : '0px'}; visibility: ${this.mapReady ? 'visible': 'hidden'}; pointer-events: ${this.isEditable ? "auto" : "none"};"
+                    .style="height: ${this.mapReady ? '400px' : '0px'}; visibility: ${this.mapReady ? 'visible': 'hidden'}; pointer-events: ${isEditable ? "auto" : "none"};"
                     ?disable-default-ui="${true}" draggable="true"
                     @click="${this.handleMapClick}"
-                    mapTypeId="terrain" styles="${this._mapStyles}">
+                    mapTypeId="terrain" .styles=${mapStyles}>
                 </google-map-custom>
             </div>
 
@@ -158,7 +152,7 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
                         ` : ''}
                     </div>
                     <div>
-                        ${this.showButton ? html`
+                        ${this.textRepresentation ? html`
                             <button @click="${this.onAddClicked}">Filter using this region</button>
                         ` : ""}
                     </div>
@@ -196,21 +190,13 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
                 }
             }
         }
-        
-        if (this.selectedMapRegion && this.postActivation) {
-            this.postActivation = false;
-            let options = {};
-            options[this.selectedMapRegion.id] = this.selectedMapRegion.name;
-            this.setVariableOptions("?region", options);
-            this.settedOptions["?region"] = this.selectedMapRegion.id;
-            this.requestUpdate();
-            return;
+
+        if (this.mustUpdateSelected && (this.mapReady || (this.topRegion && this.mapRegions && this.mapRegions.length > 0))) {
+            this.mustUpdateSelected = false;
+            this._setSelected(this.selectedRegionId);
+            return this.addRegionsToMap();
         }
         
-        (!this.selectedCategory && this.topRegionId)?
-                [this.topRegion]
-                : this.mapRegions.filter((region:LocalRegion) => region.category_id == this.selectedCategory);
-
         if (map && visibleRegions) {
             try {
                 map.setRegions(visibleRegions, selectedRegion);
@@ -249,7 +235,20 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
         this.selectedMapRegion = (localRegionId === this.topRegionId) ? 
                 this.topRegion
                 : this.mapRegions.filter(r => r.id === localRegionId)[0];
-        if (this.selectedMapRegion) this.selectedRegionId = localRegionId;
+        if (this.selectedMapRegion) {
+            this.selectedRegionId = localRegionId;
+
+            let options : {[key:string]:string;} = {};
+            options[this.selectedMapRegion.id] = this.selectedMapRegion.name;
+            this.setVariableOptions("?region", options);
+            this.settedOptions["?region"] = this.selectedMapRegion.id;
+
+        } else {
+            console.log("- ? -");
+        }
+
+        if (!!this.selectedMapRegion && !this.textRepresentation) this.addRegionsToMap();
+
         return !!this.selectedMapRegion;
     }
 
@@ -258,6 +257,7 @@ export class IsInBoundingBoxQuestion extends ModelQuestion {
             return this._setSelected(localRegionId);
         } else {
             this.selectedRegionId = localRegionId;
+            this.mustUpdateSelected = true;
             return false;
         }
     }
