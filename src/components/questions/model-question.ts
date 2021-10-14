@@ -96,6 +96,7 @@ export class ModelQuestion extends LitElement {
                 ${this.varNames && this.varNames.length > i ?
                     html`
                         <select id="${this.varNames[i]}">
+                            <option value="">None selected</option>
                             ${this.varOptions[this.varNames[i]] ? 
                                 Object.keys(this.varOptions[this.varNames[i]]).map((key:string) => {
                                     let curopt = this.varOptions[this.varNames[i]][key];

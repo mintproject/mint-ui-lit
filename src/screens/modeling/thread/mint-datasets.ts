@@ -131,6 +131,18 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         ]
     }
 
+    @property({type: Array}) _questionDatasets: Dataset[];
+    public setDatasets (datasets:Dataset[]) {
+        this._questionDatasets = datasets;
+    }
+
+    private renderDatasetTable (datasets:Dataset[]) {
+        return datasets.map((ds:Dataset) => {
+            //console.log(ds);
+            return html`<li><p>${ds.name}</p></li>`
+        })
+    }
+
     protected render() {
         if(!this.thread) {
             return html ``;
@@ -138,12 +150,15 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         
         // If no models selected
         if(!this.thread.models || !Object.keys(this.thread.models).length) {
-            return html `
-            <p>
-                This step is for selecting datasets for each of the models that you selected earlier.
-            </p>
-            Please select model(s) first
-            `
+            if (this.questionComposer) {
+                if (this._questionDatasets) {
+                    return html`${this._questionDatasets.length} datasets found: <ul>${this.renderDatasetTable(this._questionDatasets)}</ul>`
+                } else return html`No datasets found`;
+            } else return html`
+                <p>
+                    This step is for selecting datasets for each of the models that you selected earlier.
+                </p>
+                Please select model(s) first`
         }
 
         let done = (getThreadDatasetsStatus(this.thread) == TASK_DONE);

@@ -262,6 +262,14 @@ export class IsInBoundingBoxQuestion extends connect(store)(ModelQuestion) {
         }
     }
 
+    public getSelectedRegion () : LocalRegion {
+        let regionid : string = this.settedOptions["?region"];
+        if (!regionid) return;
+        if (regionid === this.topRegionId)
+            return this.topRegion;
+        return this.mapRegions.filter(r => r.id === regionid)[0];
+    }
+
     public getSelectedRegionId () : string {
         return this.selectedRegionId;
     }

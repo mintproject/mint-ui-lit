@@ -26,6 +26,8 @@ import { IdMap } from "app/reducers";
 import { ModelQuestionComposer } from "components/questions/model-question-composer";
 import { IsInBoundingBoxQuestion } from "components/questions/custom_questions/is-in-bounding-box";
 import { ModelConfigurationSetup } from "@mintproject/modelcatalog_client";
+import { Dataset } from "screens/datasets/reducers";
+import { MintDatasets } from "./mint-datasets";
 
 @customElement('mint-thread')
 export class MintThread extends connect(store)(MintThreadPage) {
@@ -151,7 +153,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
                         Datasets
                         ${(this.nDatasets<0)? 
                             html`<loading-dots style="--width: 20px"></loading-dots>`
-                            : html` [${this.nDatasets}]`}
+                            : html` [${this.nDatasets > 99 ? "99+" : this.nDatasets}]`}
                     </a>
                 <a id="parameters_breadcrumb" 
                     class="${this._getBreadcrumbClass('parameters', sectionDoneMap)}" 
@@ -446,6 +448,19 @@ export class MintThread extends connect(store)(MintThreadPage) {
         this.threadSectionChanged(state.ui.selected_thread_section, this.thread);
     }
 
+    private _countModels = (setups:ModelConfigurationSetup[]) => {
+        this.nModels = setups.length;
+    }
+
+    private _countDatasets = (dss:Dataset[]) => {
+        if (dss == null) {
+            this.nDatasets = -1;
+        } else {
+            this.nDatasets = dss.length;
+        }
+    }
+
+
 
     private lastSection : string;
     private lastThread : Thread;
@@ -453,14 +468,17 @@ export class MintThread extends connect(store)(MintThreadPage) {
         if (newThread && this.lastThread != newThread) {
             // Thread has changed, create a new Question composer and bind it to initial parameters.
             console.log("Creating new question composer...")
-            this.setQuestionComposer(new ModelQuestionComposer());
-            this.questionComposer.init();
-            this.questionComposer.onFilteringComplete = (setups:ModelConfigurationSetup[]) => {
-                this.nModels = setups.length;
-                if (this.nModels >= 0) this.nDatasets = 0; //FIXME
-            }
+            this.setQuestionComposer(new ModelQuestionComposer(newThread));
+            this.questionComposer.onFilteringModelsComplete = this._countModels;
+            this.questionComposer.onFilteringDataComplete =  this._countDatasets;
+
+
+            //This is specific
             this.regionSelector = this.questionComposer.getRegionQuestion();
-            if (newThread.regionid) this.regionSelector.setSelected(newThread.regionid);
+            if (newThread.regionid) {
+                this.regionSelector.setSelected(newThread.regionid);
+                this.questionComposer.applyAllDataFilters();
+            }
             this.lastThread = newThread;
             this.lastSection = undefined; // To reload page specifics
         }
@@ -471,6 +489,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
 
             let configPage : MintThreadPage = this.shadowRoot.querySelector("mint-configure");
             let modelsPage : MintThreadPage = this.shadowRoot.querySelector("mint-models");
+            let datasetsPage : MintDatasets = this.shadowRoot.querySelector("mint-datasets");
 
             let regionQuestion = this.regionSelector;
             switch (newSection) {
@@ -486,7 +505,18 @@ export class MintThread extends connect(store)(MintThreadPage) {
                         regionQuestion.setSelected(this.thread.regionid);
                         regionQuestion.isEditable = false;
                         regionQuestion.enableTextRepresentation();
+                        this.questionComposer.applyAllDataFilters();
                         modelsPage.setQuestionComposer(this.questionComposer);
+                    } else
+                        this.lastSection = undefined; //Do no accept change if we cannot bind 
+                    break;
+                case "datasets":
+                    if (datasetsPage != null) {
+                        this.questionComposer.onFilteringDataComplete = (dss:Dataset[]) => {
+                            this._countDatasets(dss);
+                            datasetsPage.setDatasets(dss);
+                        }
+                        datasetsPage.setQuestionComposer(this.questionComposer);
                     } else
                         this.lastSection = undefined; //Do no accept change if we cannot bind 
                     break;

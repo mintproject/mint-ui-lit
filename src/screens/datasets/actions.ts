@@ -44,7 +44,7 @@ export interface DatasetsActionDetail extends Action<'DATASETS_DETAIL'> { datase
 export type DatasetsAction = DatasetsActionVariablesQuery | DatasetsActionGeneralQuery | DatasetsActionRegionQuery |
                              DatasetsActionDatasetResourceQuery | DatasetsActionDatasetAdd;
 
-const getDatasetsFromDCResponse = (obj: any, queryParameters: DatasetQueryParameters) => {
+export const getDatasetsFromDCResponse = (obj: any, queryParameters: DatasetQueryParameters) => {
     let datasets = obj.datasets.map(ds => {
         let dmeta = ds['dataset_metadata'];
         return {

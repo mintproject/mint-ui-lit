@@ -27,6 +27,7 @@ import { getLatestEventOfType } from "util/event_utils";
 import { getCreateEvent } from "util/graphql_adapter";
 import 'components/loading-dots';
 import { ModelQuestionComposer } from "components/questions/model-question-composer";
+import { HasIndicatorQuestion } from "components/questions/custom_questions/has-indicator";
 
 store.addReducers({
     variables
@@ -37,6 +38,7 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
     @property({type: Boolean}) private editMode: boolean = false;
     @property({type: Boolean}) private loading: boolean = false;
     @property({type: Object}) private regionSelector : IsInBoundingBoxQuestion;
+    @property({type: Object}) private indicatorSelector : HasIndicatorQuestion;
     
     static get styles() {
         return [ SharedStyles, css`
@@ -58,6 +60,7 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
     public setQuestionComposer (composer:ModelQuestionComposer) : void {
         super.setQuestionComposer(composer);
         this.regionSelector = composer.getRegionQuestion();
+        this.indicatorSelector = composer.getIndicatorQuestion();
     }
     
     protected render () : TemplateResult {
@@ -66,6 +69,7 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
             this.lastActive = this.active;
             this.regionSelector.setSelected(this.thread.regionid);
             this.regionSelector.isEditable = this.editMode;
+            this.questionComposer.applyAllDataFilters();
             setTimeout(() => { 
                 this.regionSelector.updateMap()
                 this.requestUpdate();
@@ -194,7 +198,7 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
                     <tr>
                         <td> <label>Indicator:</label> </td>
                         <td>
-                            IDICATOR HERE
+                            ${this.indicatorSelector}
                         </td>
                     </tr>
                     <tr>
@@ -218,7 +222,7 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
                 regionid: formThread.regionid,
                 name: formThread.name,
                 dates: formThread.dates,
-                response_variables: curThread.response_variables,
+                response_variables: formThread.response_variables,
                 driving_variables: curThread.driving_variables,
                 events: formThread.events,
                 permissions: curThread.permissions
@@ -246,7 +250,8 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
         let to : Date = toEl ? new Date(toEl.value) : null;
         let notes : string = notesEl ? notesEl.value : "";
         let regionid : string = this.regionSelector.getSelectedRegionId();
-
+        let indicatorid : string = this.indicatorSelector.getSelectedId();
+        
         if (!name || !from || !to || !regionid) {
             alert("You must fill all inputs");
             return;
@@ -264,6 +269,7 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
             },
             events: [getCreateEvent(notes)],
             regionid: regionid,
+            response_variables: indicatorid ? [indicatorid] : [],
             //permissions: thread_permissions
         } as ThreadInfo;
     }

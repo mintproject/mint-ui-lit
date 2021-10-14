@@ -38,9 +38,7 @@ export class HasIndicatorQuestion extends ModelQuestion {
         })
 
         Promise.all([dsReq, vpReq, svReq]).then(() => {
-            if (this.possibleSetups) {
-                this.filterPossibleOptions(this.possibleSetups);
-            }
+            this.filterPossibleOptions(this.possibleSetups);
         });
     }
 
@@ -49,27 +47,51 @@ export class HasIndicatorQuestion extends ModelQuestion {
 
         if (this.datasetSpecifications && this.variablePresentations && this.standardVariables) {
             let indicatorOptions : {[key:string] : string} = {};
-            matchingSetups.forEach((s:ModelConfigurationSetup) =>
-                (s.hasOutput||[])
-                    .map((output:DatasetSpecification) => this.datasetSpecifications[output.id])
-                    .forEach((output:DatasetSpecification) => 
-                        (output.hasPresentation||[])
-                            .map((vp:VariablePresentation) => this.variablePresentations[vp.id])
-                            .forEach((vp:VariablePresentation) =>
-                                (vp.hasStandardVariable||[])
-                                    .map((sv:StandardVariable) => this.standardVariables[sv.id])
-                                    .forEach((sv:StandardVariable) => {
-                                        let svLabel : string = getLabel(sv);
-                                        if (HasIndicatorQuestion.indicators[svLabel]) {
-                                            this.countOption(sv.id);
-                                            indicatorOptions[sv.id] = HasIndicatorQuestion.indicators[svLabel].name;
-                                        }
-                                    })
-                            )
-                    )
-            );
+            if (matchingSetups && matchingSetups.length > 0) {
+                matchingSetups.forEach((s:ModelConfigurationSetup) =>
+                    (s.hasOutput||[])
+                        .map((output:DatasetSpecification) => this.datasetSpecifications[output.id])
+                        .forEach((output:DatasetSpecification) => 
+                            (output.hasPresentation||[])
+                                .map((vp:VariablePresentation) => this.variablePresentations[vp.id])
+                                .forEach((vp:VariablePresentation) =>
+                                    (vp.hasStandardVariable||[])
+                                        .map((sv:StandardVariable) => this.standardVariables[sv.id])
+                                        .forEach((sv:StandardVariable) => {
+                                            let svLabel : string = getLabel(sv);
+                                            if (HasIndicatorQuestion.indicators[svLabel]) {
+                                                this.countOption(sv.id);
+                                                indicatorOptions[sv.id] = HasIndicatorQuestion.indicators[svLabel].name;
+                                            }
+                                        })
+                                )
+                        )
+                );
+            } else {
+                Object.values(this.standardVariables).forEach((sv:StandardVariable) => {
+                    let svLabel : string = getLabel(sv);
+                    if (HasIndicatorQuestion.indicators[svLabel]) {
+                        //this.countOption(sv.id);
+                        indicatorOptions[sv.id] = HasIndicatorQuestion.indicators[svLabel].name;
+                    }
+
+                })
+            }
 
             this.setVariableOptions("?indicator", indicatorOptions);
+        }
+    }
+
+    public getSelectedId () : string {
+        let varname : string = "?indicator";
+        let selectEl : HTMLSelectElement = this.shadowRoot.getElementById(varname) as HTMLSelectElement;
+        if (selectEl && selectEl.value) {
+            let cand = Object.values(this.standardVariables).filter((sv:StandardVariable) => sv.id === selectEl.value);
+            if (cand.length === 1) {
+                let label : string = getLabel(cand[0]);
+                if (HasIndicatorQuestion.indicators[label])
+                    return HasIndicatorQuestion.indicators[label].id;
+            }
         }
     }
 
@@ -80,6 +102,7 @@ export class HasIndicatorQuestion extends ModelQuestion {
     public static setVariablesMap (map: VariableMap) {
         if (HasIndicatorQuestion.indicators != map) {
             HasIndicatorQuestion.indicators = map;
+            console.log("SET!");
         }
     }
 

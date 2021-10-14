@@ -9,7 +9,7 @@ import "weightless/button";
 import "weightless/icon";
 import { Region as GQLRegion } from "screens/regions/reducers";
 import { IdMap } from "app/reducers";
-import { getLabel, isSubregion } from "model-catalog-api/util";
+import { getLabel } from "model-catalog-api/util";
 import { SharedStyles } from "styles/shared-styles";
 import { HasSubRegionQuestion } from "./custom_questions/has-subregion-question";
 import { HasCategoryQuestion } from "./custom_questions/has-category";
@@ -18,24 +18,41 @@ import { HasOutputVariableQuestion } from "./custom_questions/has-output-variabl
 import { HasIndicatorQuestion } from "./custom_questions/has-indicator";
 import { HasStandardVariableQuestion } from "./custom_questions/has-standard-variable";
 import { IsInBoundingBoxQuestion } from "./custom_questions/is-in-bounding-box";
+import { Dataset, DatasetQueryParameters } from "screens/datasets/reducers";
+
+import { MintPreferences } from 'app/reducers';
+import * as mintConfig from 'config/config.json';
+import { getDatasetsFromDCResponse } from "screens/datasets/actions";
+import { DataCatalogAdapter, DatasetQuery } from "util/data-catalog-adapter";
+import { Thread } from "screens/modeling/reducers";
+let prefs = mintConfig["default"] as MintPreferences;
+const DATA_CATALOG = prefs.data_catalog_api;
 
 const PER_PAGE = 10;
+
+interface QuestionInfo {
+    value: ModelQuestion;
+    isEditable: boolean;
+    isRequired: boolean;
+}
 
 @customElement("model-question-composer")
 export class ModelQuestionComposer extends connect(store)(LitElement) {
     private static idCount : number = 0;
-    @property({type: Boolean}) protected loadingModelCatalog: boolean = true;
-    @property({type: Object}) private categories : IdMap<ModelCategory>;
+    //Data
+    @property({type: Object}) private thread : Thread;
+    @property({type: Object}) private categories : IdMap<ModelCategory>; //why
     @property({type: Object}) private regions : IdMap<Region>;
     @property({type: Object}) private setups : IdMap<ModelConfigurationSetup>;
-    @property({type: Object}) private selectedSetups : IdMap<boolean> = {};
-    @property({type: Object}) protected mainRegion: GQLRegion;
     @property({type: Object}) private questionCatalog : IdMap<ModelQuestion> = {};
+    @property({type: Object}) protected mainRegion: GQLRegion;
+
+    //State
+    @property({type: Boolean}) protected loadingModelCatalog: boolean = true;
+    @property({type: Object}) private selectedSetups : IdMap<boolean> = {};
     @property({type: String}) private selectedQuestionId: string;
     @property({type: Array}) private selectedQuestions : ModelQuestion[] = [];
     @property({type: String}) private textFilter : string = "";
-
-    @property({type: Object}) private regionQuestion : IsInBoundingBoxQuestion;
 
     //Pagination
     @property({type: Number}) private currentPage: number = 1;
@@ -45,10 +62,66 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
     public matchingModels : number = -1;
     public matchingDatasets : number = -1;
 
-    public onFilteringComplete : (matchingModels:ModelConfigurationSetup[]) => void;
+    public onFilteringModelsComplete : (matchingModels:ModelConfigurationSetup[]) => void;
+    public onFilteringDataComplete : (matchingDatasets:Dataset[]) => void;
 
-    constructor () {
+    // Standard questions
+    @property({type: Object}) private regionQuestion : IsInBoundingBoxQuestion;
+    @property({type: Object}) private indicatorQuestion : HasIndicatorQuestion;
+
+    static get styles () : CSSResult [] {
+        return [ SharedStyles, css`
+            #searchBar {
+                width: 100%;
+                padding: 5px 5px 5px 5px;
+                border: 0px solid black;
+            }
+        `]
+    }
+
+    private onModelQuestionAdded : (e:Event) => void = (e:Event) => {
+        let question : ModelQuestion = e['detail'];
+        // Change id of added question and add a new copy to the list of questions.
+        let copy : ModelQuestion = question.createCopy();
+        question.id = question.id + ModelQuestionComposer.idCount;
+        ModelQuestionComposer.idCount += 1;
+        this.selectedQuestions.push(question);
+
+        this.questionCatalog[copy.id] = copy;
+        this.selectedQuestionId = "";
+    };
+
+    constructor (thread:Thread) {
         super();
+        this.thread = thread;
+
+        this.indicatorQuestion = new HasIndicatorQuestion();
+        this.regionQuestion = new IsInBoundingBoxQuestion();
+
+        this.questionCatalog[this.indicatorQuestion.id] = this.indicatorQuestion;
+        this.questionCatalog[this.regionQuestion.id] = this.regionQuestion;
+
+        this.createModelFilters();
+
+        // Load data from the model-catalog
+        let setupReq    = store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getAll());
+        let categoryReq = store.dispatch(ModelCatalogApi.myCatalog.modelCategory.getAll());
+        let regionReq   = store.dispatch(ModelCatalogApi.myCatalog.region.getAll());
+
+        setupReq.then((setups:IdMap<ModelConfigurationSetup>) => { this.setups = setups });
+        categoryReq.then((categories:IdMap<ModelCategory>) => { this.categories = categories });
+        regionReq.then((regions:IdMap<Region>) => { this.regions = regions });
+
+        Promise.all([setupReq, categoryReq, regionReq]).then(() => {
+            this.loadingModelCatalog = false;
+            this.applyAllModelFilters();
+        });
+        
+        // Add event listeners
+        this.addEventListener('model-question-added', this.onModelQuestionAdded)
+    }
+
+    private createModelFilters () : void {
         // Create common filters:
         let hasSubRegion = new HasSubRegionQuestion();
         this.questionCatalog[hasSubRegion.id] = hasSubRegion;
@@ -65,32 +138,18 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
         let hasStandardVariable = new HasStandardVariableQuestion();
         this.questionCatalog[hasStandardVariable.id] = hasStandardVariable;
 
-        let generatesIndicator = new HasIndicatorQuestion();
-        this.questionCatalog[generatesIndicator.id] = generatesIndicator;
-
-        let reg = new IsInBoundingBoxQuestion();
-        this.questionCatalog[reg.id] = reg;
-        //this.selectedQuestions  = [reg];
-
-        this.regionQuestion = reg;
     }
 
     public getRegionQuestion () : IsInBoundingBoxQuestion {
         return this.regionQuestion;
     }
 
-    public getQuestion (questionId:string) : ModelQuestion {
-        return this.questionCatalog[questionId];
+    public getIndicatorQuestion () : HasIndicatorQuestion {
+        return this.indicatorQuestion;
     }
 
-    static get styles () : CSSResult [] {
-        return [ SharedStyles, css`
-            #searchBar {
-                width: 100%;
-                padding: 5px 5px 5px 5px;
-                border: 0px solid black;
-            }
-        `]
+    public getQuestion (questionId:string) : ModelQuestion {
+        return this.questionCatalog[questionId];
     }
 
     protected render () : TemplateResult {
@@ -274,13 +333,6 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
         // Filter selected models selected
         filteredModels = filteredModels.filter((s:ModelConfigurationSetup) => !this.selectedSetups[s.id]);
 
-        // If theres a main region, filter. OLD
-        /*if (this.mainRegion != null && filteredModels.length > 0) {
-            filteredModels = filteredModels.filter((s:ModelConfigurationSetup) => 
-                    !s.hasRegion || 
-                    s.hasRegion.some((r:Region) => isSubregion(this.mainRegion.model_catalog_uri, this.regions[r.id]))
-            );
-        }*/
         filteredModels = this.regionQuestion.filterModels(filteredModels);
 
         // For each selected model question, apply the filter:
@@ -302,13 +354,37 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
 
         // Update pagination
         this.maxPage = Math.ceil(filteredModels.length / PER_PAGE);
-        if (this.onFilteringComplete) this.onFilteringComplete(filteredModels);
+        if (this.onFilteringModelsComplete) this.onFilteringModelsComplete(filteredModels);
         this.matchingModels = filteredModels.length;
         return filteredModels;
     }
 
-    public applyAllDataFilters () : void {
-        //TODO
+    private lastDatasets : Dataset[];
+    public async applyAllDataFilters () : Promise<Dataset[]> {
+        //TODO: Data filters cannot accept queries, so all filters on only one query here:
+        let selectedRegion : GQLRegion = this.regionQuestion.getSelectedRegion();
+        if (!selectedRegion) {
+            setTimeout(() => { 
+                    this.applyAllDataFilters();
+            }, 500);
+            return;
+        }
+
+        let datasetQuery : DatasetQuery = {};
+        console.log(selectedRegion);
+        datasetQuery.spatial_coverage__intersects = selectedRegion.geometries[0];
+
+        if (this.thread.dates) {
+            if (this.thread.dates.start_date) datasetQuery.start_time = this.thread.dates.start_date;
+            if (this.thread.dates.end_date) datasetQuery.end_time = this.thread.dates.end_date;
+        }
+        
+        if (this.thread.response_variables && this.thread.response_variables.length > 0)
+            datasetQuery.standard_variable_names__in = this.thread.response_variables;
+
+        this.lastDatasets = await DataCatalogAdapter.findDataset(datasetQuery);
+        if (this.onFilteringDataComplete) this.onFilteringDataComplete(this.lastDatasets);
+        return this.lastDatasets;
     }
 
     public onPrevPage () : void {
@@ -331,35 +407,6 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
 
     public getModelUrl (setup: ModelConfigurationSetup) : string {
         return "TODO";
-    }
-
-    public init () : void {
-        console.log("Composer initialized!");
-        let setupReq = store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getAll());
-        let categoryReq = store.dispatch(ModelCatalogApi.myCatalog.modelCategory.getAll());
-        let regionReq = store.dispatch(ModelCatalogApi.myCatalog.region.getAll());
-
-        setupReq.then((setups:IdMap<ModelConfigurationSetup>) => { this.setups = setups });
-        categoryReq.then((categories:IdMap<ModelCategory>) => { this.categories = categories });
-        regionReq.then((regions:IdMap<Region>) => { this.regions = regions });
-
-        Promise.all([setupReq, categoryReq, regionReq]).then(() => {
-            this.loadingModelCatalog = false;
-            this.applyAllModelFilters();
-        });
-        
-        // Add event listeners
-        this.addEventListener('model-question-added', (e:Event) => {
-            let question : ModelQuestion = e['detail'];
-            // Change id of added question and add a new copy to the list of questions.
-            let copy : ModelQuestion = question.createCopy();
-            question.id = question.id + ModelQuestionComposer.idCount;
-            ModelQuestionComposer.idCount += 1;
-            this.selectedQuestions.push(question);
-
-            this.questionCatalog[copy.id] = copy;
-            this.selectedQuestionId = "";
-        })
     }
 
     private removeQuestion (question: ModelQuestion) {
