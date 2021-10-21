@@ -1,4 +1,4 @@
-import { Model, ModelCategory, ModelConfigurationSetup, Region } from "@mintproject/modelcatalog_client";
+import { ModelConfiguration, ModelConfigurationSetup, Region } from "@mintproject/modelcatalog_client";
 import { RootState, store } from "app/store";
 import { connect } from "pwa-helpers/connect-mixin";
 import { customElement, LitElement, property, html, css, CSSResult, TemplateResult } from "lit-element";
@@ -9,7 +9,6 @@ import "weightless/button";
 import "weightless/icon";
 import { Region as GQLRegion } from "screens/regions/reducers";
 import { IdMap } from "app/reducers";
-import { getLabel } from "model-catalog-api/util";
 import { SharedStyles } from "styles/shared-styles";
 import { HasSubRegionQuestion } from "./custom_questions/has-subregion-question";
 import { HasCategoryQuestion } from "./custom_questions/has-category";
@@ -20,15 +19,9 @@ import { HasStandardVariableQuestion } from "./custom_questions/has-standard-var
 import { IsInBoundingBoxQuestion } from "./custom_questions/is-in-bounding-box";
 import { Dataset, DatasetQueryParameters } from "screens/datasets/reducers";
 
-import { MintPreferences } from 'app/reducers';
-import * as mintConfig from 'config/config.json';
-import { getDatasetsFromDCResponse } from "screens/datasets/actions";
 import { DataCatalogAdapter, DatasetQuery } from "util/data-catalog-adapter";
 import { Thread } from "screens/modeling/reducers";
-let prefs = mintConfig["default"] as MintPreferences;
-const DATA_CATALOG = prefs.data_catalog_api;
-
-const PER_PAGE = 10;
+import { ModelSelector } from "components/model-selector";
 
 interface QuestionInfo {
     value: ModelQuestion;
@@ -41,22 +34,12 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
     private static idCount : number = 0;
     //Data
     @property({type: Object}) private thread : Thread;
-    @property({type: Object}) private categories : IdMap<ModelCategory>; //why
-    @property({type: Object}) private regions : IdMap<Region>;
-    @property({type: Object}) private setups : IdMap<ModelConfigurationSetup>;
     @property({type: Object}) private questionCatalog : IdMap<ModelQuestion> = {};
     @property({type: Object}) protected mainRegion: GQLRegion;
 
     //State
-    @property({type: Boolean}) protected loadingModelCatalog: boolean = true;
-    @property({type: Object}) private selectedSetups : IdMap<boolean> = {};
     @property({type: String}) private selectedQuestionId: string;
     @property({type: Array}) private selectedQuestions : ModelQuestion[] = [];
-    @property({type: String}) private textFilter : string = "";
-
-    //Pagination
-    @property({type: Number}) private currentPage: number = 1;
-    @property({type: Number}) private maxPage: number = 1;
 
     //Computed numbers
     public matchingModels : number = -1;
@@ -68,6 +51,7 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
     // Standard questions
     @property({type: Object}) private regionQuestion : IsInBoundingBoxQuestion;
     @property({type: Object}) private indicatorQuestion : HasIndicatorQuestion;
+    @property({type: Object}) private modelSelector : ModelSelector;
 
     static get styles () : CSSResult [] {
         return [ SharedStyles, css`
@@ -78,18 +62,6 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
             }
         `]
     }
-
-    private onModelQuestionAdded : (e:Event) => void = (e:Event) => {
-        let question : ModelQuestion = e['detail'];
-        // Change id of added question and add a new copy to the list of questions.
-        let copy : ModelQuestion = question.createCopy();
-        question.id = question.id + ModelQuestionComposer.idCount;
-        ModelQuestionComposer.idCount += 1;
-        this.selectedQuestions.push(question);
-
-        this.questionCatalog[copy.id] = copy;
-        this.selectedQuestionId = "";
-    };
 
     constructor (thread:Thread) {
         super();
@@ -103,22 +75,11 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
 
         this.createModelFilters();
 
-        // Load data from the model-catalog
-        let setupReq    = store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getAll());
-        let categoryReq = store.dispatch(ModelCatalogApi.myCatalog.modelCategory.getAll());
-        let regionReq   = store.dispatch(ModelCatalogApi.myCatalog.region.getAll());
-
-        setupReq.then((setups:IdMap<ModelConfigurationSetup>) => { this.setups = setups });
-        categoryReq.then((categories:IdMap<ModelCategory>) => { this.categories = categories });
-        regionReq.then((regions:IdMap<Region>) => { this.regions = regions });
-
-        Promise.all([setupReq, categoryReq, regionReq]).then(() => {
-            this.loadingModelCatalog = false;
-            this.applyAllModelFilters();
-        });
+        this.modelSelector = new ModelSelector();
         
         // Add event listeners
         this.addEventListener('model-question-added', this.onModelQuestionAdded)
+        this.addEventListener('model-selector-loaded', this.onModelSelectorLoaded)
     }
 
     private createModelFilters () : void {
@@ -153,7 +114,7 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
     }
 
     protected render () : TemplateResult {
-        let matchingSetups : ModelConfigurationSetup[] = this.loadingModelCatalog ? [] : this.applyAllModelFilters();
+        let matchingSetups : ModelConfigurationSetup[] = this.applyAllModelFilters();
         if (this.selectedQuestionId)
             this.questionCatalog[this.selectedQuestionId].filterPossibleOptions(matchingSetups);
 
@@ -196,34 +157,7 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
                 : ""
             }
 
-            <div style="border: 1px solid #EEE; margin: 10px 0px;">
-                <!-- Input text to search -->
-                ${this.renderPaginator(matchingSetups.length)}
-
-                <!-- Table with filtered models -->
-                <table class="pure-table pure-table-striped">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th><b>Model</b></th>
-                            <th>Category</th>
-                            <th>Region</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    ${this.loadingModelCatalog ?
-                        html`
-                            <tr>
-                                <td colspan="4">
-                                    <wl-progress-bar style="width: 100%;"></wl-progress-bar>
-                                </td>
-                            </tr>
-                        `
-                        : this.renderMatchingModels(matchingSetups)
-                    }
-                    </tbody>
-                </table>
-            </div>
+            ${this.modelSelector}
         `;
     }
 
@@ -234,128 +168,24 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
         }
     }
 
-    private onSearchInputChange () : void {
-        let inputEl : HTMLInputElement = this.shadowRoot!.getElementById("searchBar") as HTMLInputElement;
-        if (inputEl)
-            this.textFilter = inputEl.value.toLowerCase();
-            this.currentPage = 1;
-    }
+    public applyAllModelFilters () : (ModelConfiguration|ModelConfigurationSetup)[] {
+        let allModels : (ModelConfiguration|ModelConfigurationSetup)[] = this.modelSelector.getAll();
+        if (!allModels) return [];
 
-    private clearSearchInput () : void {
-        let inputEl : HTMLInputElement = this.shadowRoot!.getElementById("searchBar") as HTMLInputElement;
-        if (inputEl) {
-            inputEl.value = "";
-            if (!this.textFilter) this.currentPage = 1;
-            this.textFilter = "";
-        }
-    }
-
-    private renderPaginator (maxElements : number) : TemplateResult {
-        return html`<div style="display: flex; align-items: center; padding: 0px 8px;">
-            <wl-icon>search</wl-icon>
-            <input id="searchBar" placeholder="Search..." type="text" @input=${this.onSearchInputChange}/>
-            <wl-icon @click="${this.clearSearchInput}" id="clearIcon" class="actionIcon">close</wl-icon>
-            <span style="font-size: 20px; font-weight: 200; color: #EEE;">|</span>
-            <wl-button flat inverted ?disabled=${this.loadingModelCatalog || this.currentPage === 1} @click=${this.onPrevPage}>Back</wl-button>
-            <span style="display: block; white-space: nowrap;">
-                Page ${this.currentPage} of ${this.maxPage}
-            </span>
-            <wl-button flat inverted ?disabled=${this.loadingModelCatalog || this.currentPage * PER_PAGE > maxElements} @click=${this.onNextPage}>Next</wl-button>
-        </div>`;
-    }
-
-    private renderMatchingModels (matchingSetups: ModelConfigurationSetup[]) : TemplateResult {
-        let mx : number = (this.currentPage * PER_PAGE);
-        let visibleSetups : ModelConfigurationSetup[] = matchingSetups.slice(
-            (this.currentPage - 1) * PER_PAGE,
-            mx > matchingSetups.length ? matchingSetups.length : mx
-        );
-        let selectedSetups : ModelConfigurationSetup[] = Object.keys(this.selectedSetups)
-                .filter((key:string) => this.selectedSetups[key])
-                .map((key:string) => this.setups[key]);
-
-        if (matchingSetups.length === 0)
-            return html`
-                <tr>
-                    <td colspan="4" style="text-align:center; color: rgb(153, 153, 153);">
-                        - No models found -
-                    </td>
-                </tr>
-            `;
-        else
-            return html`
-                ${selectedSetups.map((s:ModelConfigurationSetup) => this.renderRow(s, true))}
-                ${visibleSetups.map((s:ModelConfigurationSetup) => this.renderRow(s, false))}
-            `;
-    }
-
-    private renderRow (setup:ModelConfigurationSetup, selected:boolean) : TemplateResult {
-        return html`
-        <tr>
-            <td>
-                <input class="checkbox" type="checkbox" data-modelid="${setup.id}"
-                        @change=${ this.toggleSelection }
-                        .checked=${selected}></input>
-            </td>
-            <td>
-                <a target="_blank" href="${this.getModelUrl(setup)}">${getLabel(setup)}</a>
-                ${setup.description ? html`<div>${setup.description[0]}</div>` : ''}
-            </td> 
-            <td> 
-                ${setup.hasModelCategory && setup.hasModelCategory.length > 0 ? 
-                    setup.hasModelCategory.map((c:ModelCategory) => this.categories[c.id]).map(getLabel).join(", ")
-                    : ""}
-            </td>
-            <td>
-                ${setup.hasRegion && setup.hasRegion.length > 0 ? 
-                    setup.hasRegion.map((r:Region) => this.regions[r.id]).map(getLabel).join(", ")
-                    : ""}
-            </td>
-        </tr>`;
-    }
-
-    private toggleSelection (ev:Event) {
-        ev.stopPropagation();
-        ev.preventDefault();
-
-        let path : EventTarget[] = ev.composedPath();
-        let chbox : HTMLInputElement = path[0] as HTMLInputElement;
-        let modelid : string = chbox.getAttribute("data-modelid");
-        if (modelid) {
-            chbox.checked = this.selectedSetups[modelid];
-            this.selectedSetups[modelid] = !this.selectedSetups[modelid];
-            this.requestUpdate();
-        }
-    }
-
-    public applyAllModelFilters () : ModelConfigurationSetup[] {
-        let filteredModels : ModelConfigurationSetup[] = Object.values(this.setups);
-        // Filter selected models selected
-        filteredModels = filteredModels.filter((s:ModelConfigurationSetup) => !this.selectedSetups[s.id]);
-
-        filteredModels = this.regionQuestion.filterModels(filteredModels);
+        let filteredModels = this.regionQuestion.filterModels(allModels);
 
         // For each selected model question, apply the filter:
         this.selectedQuestions.forEach((question:ModelQuestion) => {
             filteredModels = question.filterModels(filteredModels);
         });
 
-        // Finally filter by text search
-        if (this.textFilter != "" && filteredModels.length > 0) {
-            filteredModels = filteredModels.filter((s:ModelConfigurationSetup) => {
-                let modelText = getLabel(s);
-                if (s.description) modelText += s.description.join();
-                if (s.shortDescription) modelText += s.shortDescription.join();
-                if (s.hasModelCategory) modelText += s.hasModelCategory.map(cat => this.categories[cat.id]).map(getLabel).join();
-                if (s.hasRegion) modelText += s.hasRegion.map(reg => this.regions[reg.id]).map(getLabel).join();
-                return modelText.toLowerCase().includes(this.textFilter);
-            });
-        }
-
-        // Update pagination
-        this.maxPage = Math.ceil(filteredModels.length / PER_PAGE);
         if (this.onFilteringModelsComplete) this.onFilteringModelsComplete(filteredModels);
         this.matchingModels = filteredModels.length;
+
+        this.modelSelector.setVisible(
+            new Set(filteredModels.map(m => m.id))
+        );
+
         return filteredModels;
     }
 
@@ -371,7 +201,6 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
         }
 
         let datasetQuery : DatasetQuery = {};
-        console.log(selectedRegion);
         datasetQuery.spatial_coverage__intersects = selectedRegion.geometries[0];
 
         if (this.thread.dates) {
@@ -387,26 +216,12 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
         return this.lastDatasets;
     }
 
-    public onPrevPage () : void {
-        this.currentPage -= 1;
-    }
-
-    public onNextPage () : void {
-        this.currentPage += 1;
-    }
-
     public getModels () : ModelConfigurationSetup[] {
-        return Object.keys(this.selectedSetups)
-                .filter((key:string) => this.selectedSetups[key])
-                .map((key:string) => this.setups[key]);
+        return this.modelSelector.getSelectedModels();
     }
 
     public setModelsIds (listid:string[]) : void {
-        listid.forEach((id:string) => this.selectedSetups[id] = true);
-    }
-
-    public getModelUrl (setup: ModelConfigurationSetup) : string {
-        return "TODO";
+        this.modelSelector.setSelected(new Set(listid));
     }
 
     private removeQuestion (question: ModelQuestion) {
@@ -427,5 +242,22 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
         Object.values(this.questionCatalog).forEach((q:ModelQuestion) => {
             if (q["stateChanged"]) q["stateChanged"](state);
         });
+    }
+
+    // Events
+    private onModelQuestionAdded : (e:Event) => void = (e:Event) => {
+        let question : ModelQuestion = e['detail'];
+        // Change id of added question and add a new copy to the list of questions.
+        let copy : ModelQuestion = question.createCopy();
+        question.id = question.id + ModelQuestionComposer.idCount;
+        ModelQuestionComposer.idCount += 1;
+        this.selectedQuestions.push(question);
+
+        this.questionCatalog[copy.id] = copy;
+        this.selectedQuestionId = "";
+    };
+
+    private onModelSelectorLoaded : (e:Event) => void = (e:Event) => {
+        this.applyAllModelFilters();
     }
 }
