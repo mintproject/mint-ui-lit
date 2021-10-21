@@ -2,7 +2,6 @@ import { ModelConfiguration, ModelConfigurationSetup, Region } from "@mintprojec
 import { RootState, store } from "app/store";
 import { connect } from "pwa-helpers/connect-mixin";
 import { customElement, LitElement, property, html, css, CSSResult, TemplateResult } from "lit-element";
-import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { ModelQuestion } from "./model-question";
 
 import "weightless/button";
@@ -17,7 +16,7 @@ import { HasOutputVariableQuestion } from "./custom_questions/has-output-variabl
 import { HasIndicatorQuestion } from "./custom_questions/has-indicator";
 import { HasStandardVariableQuestion } from "./custom_questions/has-standard-variable";
 import { IsInBoundingBoxQuestion } from "./custom_questions/is-in-bounding-box";
-import { Dataset, DatasetQueryParameters } from "screens/datasets/reducers";
+import { Dataset } from "screens/datasets/reducers";
 
 import { DataCatalogAdapter, DatasetQuery } from "util/data-catalog-adapter";
 import { Thread } from "screens/modeling/reducers";
@@ -76,6 +75,7 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
         this.createModelFilters();
 
         this.modelSelector = new ModelSelector();
+        this.modelSelector.setSelected(new Set(Object.keys(thread.models)));
         
         // Add event listeners
         this.addEventListener('model-question-added', this.onModelQuestionAdded)
@@ -220,10 +220,6 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
         return this.modelSelector.getSelectedModels();
     }
 
-    public setModelsIds (listid:string[]) : void {
-        this.modelSelector.setSelected(new Set(listid));
-    }
-
     private removeQuestion (question: ModelQuestion) {
         let index : number = this.selectedQuestions.indexOf(question);
         if (index >= -1) {
@@ -258,6 +254,7 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
     };
 
     private onModelSelectorLoaded : (e:Event) => void = (e:Event) => {
+        console.log("Model selector loaded!")
         this.applyAllModelFilters();
     }
 }

@@ -114,6 +114,7 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
 
     renderView (thread: Thread): TemplateResult {
         let threadEvent = getLatestEventOfType(["CREATE", "UPDATE"], thread.events);
+        console.log( "THREAD:", thread);
         return html`
             <table class="thread-detail-table">
                 <tbody>
@@ -147,6 +148,14 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
                             ${this.regionSelector}
                         </td>
                     </tr>
+                    ${this.thread.response_variables && this.thread.response_variables.length > 0 ? html`
+                    <tr>
+                        <td> <label>Indicator:</label> </td>
+                        <td>
+                            ${this.thread.response_variables}
+                        </td>
+                    </tr>`: ""
+                    }
                     <tr>
                         <td></td>
                         <td>

@@ -31,24 +31,16 @@ import { MintDatasets } from "./mint-datasets";
 
 @customElement('mint-thread')
 export class MintThread extends connect(store)(MintThreadPage) {
-    @property({type: Object })
-    private task: Task | null = null;
+    @property({type: Object}) private task: Task | null = null;
+    @property({type: Object}) private _sectionDoneMap: IdMap<string> = {};
 
-    @property({ type: String })
-    private _currentMode: string = "";
+    // State
+    @property({type: Boolean}) private _maximized: boolean;
+    @property({type: String})  private _currentMode: string = "";
+    @property({type: Boolean}) private _dispatched: boolean = false;
+    @property({type: Boolean}) private _dispatched_execution_summary: boolean = false;
 
-    @property({type: Boolean})
-    private _dispatched: boolean = false;
-
-    @property({type: Object})
-    private _sectionDoneMap: IdMap<string> = {};
-
-    @property({type: Boolean})
-    private _dispatched_execution_summary: boolean = false;
-
-    @property({type: Boolean})
-    public maximized: boolean;
-
+    //--
     @property({type: Number}) private nModels : number = -1;
     @property({type: Number}) private nDatasets : number = -1;
 
@@ -135,7 +127,6 @@ export class MintThread extends connect(store)(MintThreadPage) {
             <ul class="breadcrumbs">
                 <a id="configure_breadcrumb" style="min-width: 20px;"
                     class="${this._getBreadcrumbClass('configure', sectionDoneMap)}" 
-                    .question_composer=${this.questionComposer}
                     href="${this._getModeURL('configure')}">
                     <wl-icon style="vertical-align: middle;">settings</wl-icon>
                 </a>
@@ -143,7 +134,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
                     class="${this._getBreadcrumbClass('models', sectionDoneMap)}" 
                     href="${this._getModeURL('models')}">
                         Models
-                        ${(this.nModels<0)? 
+                        ${(this.nModels < 0)? 
                             html`<loading-dots style="--width: 20px"></loading-dots>`
                             : html` [${this.nModels}]`}
                 </a>
@@ -154,7 +145,8 @@ export class MintThread extends connect(store)(MintThreadPage) {
                         ${(this.nDatasets<0)? 
                             html`<loading-dots style="--width: 20px"></loading-dots>`
                             : html` [${this.nDatasets > 99 ? "99+" : this.nDatasets}]`}
-                    </a>
+                </a>
+
                 <a id="parameters_breadcrumb" 
                     class="${this._getBreadcrumbClass('parameters', sectionDoneMap)}" 
                     href="${this._getModeURL('parameters')}">Parameters</a>
@@ -169,19 +161,20 @@ export class MintThread extends connect(store)(MintThreadPage) {
                     href="${this._getModeURL('visualize')}">Visualize</a>
             </ul>
             <wl-icon @click="${this.toggleMaximize}" class="actionIcon bigActionIcon">
-                ${!this.maximized ? "fullscreen" : "fullscreen_exit"}
+                ${!this._maximized ? "fullscreen" : "fullscreen_exit"}
             </wl-icon>
         </div>
         `;
     }
 
     public toggleMaximize () : void {
-        let event : CustomEvent = new CustomEvent("on-thread-maximize", {
-            bubbles: true,
-            composed: true,
-            detail: !this.maximized
-        });
-        this.dispatchEvent(event);
+        this.dispatchEvent(
+            new CustomEvent("on-thread-maximize", {
+                bubbles: true,
+                composed: true,
+                detail: !this._maximized
+            })
+        );
     }
 
     private _setSectionStatusMap() {
@@ -472,7 +465,6 @@ export class MintThread extends connect(store)(MintThreadPage) {
             this.questionComposer.onFilteringModelsComplete = this._countModels;
             this.questionComposer.onFilteringDataComplete =  this._countDatasets;
 
-
             //This is specific
             this.regionSelector = this.questionComposer.getRegionQuestion();
             if (newThread.regionid) {
@@ -484,7 +476,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
         }
 
         if (this.questionComposer && this.thread && newSection && this.lastSection != newSection) {
-            console.log(this.lastSection + " changed to " + newSection);
+            //console.log(this.lastSection + " changed to " + newSection);
             this.lastSection = newSection;
 
             let configPage : MintThreadPage = this.shadowRoot.querySelector("mint-configure");

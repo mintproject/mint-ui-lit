@@ -90,12 +90,15 @@ export class IsInBoundingBoxQuestion extends connect(store)(ModelQuestion) {
             selected = this.topRegion;
         else
             selected = this.mapRegions.filter(r => r.id === regionid)[0];
+
         let regionsInBoundingBox : Region[] = [];
 
         Object.values(this.regions).forEach((r:Region) => {
             if (r.geo && r.geo.map((shape:GeoShape) => this.geoshapes[shape.id]).some((shape:GeoShape) => {
                 let bb : BoundingBox = getBoundingBoxFromGeoShape(shape);
-                return !!bb && !isMainRegion(r) && selected.bounding_box && doBoxesIntersect(bb, selected.bounding_box);
+                return !!bb && (
+                    (!isMainRegion(r) && selected.bounding_box && doBoxesIntersect(bb, selected.bounding_box)) 
+                    || (selected.model_catalog_uri && selected.model_catalog_uri === r.id));
             })) {
                 regionsInBoundingBox.push(r);
             }

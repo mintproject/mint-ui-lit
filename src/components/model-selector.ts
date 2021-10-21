@@ -201,7 +201,9 @@ export class ModelSelector extends LitElement {
 
     public getSelectedModels(): ModelConfigurationSetup[] {
         if (this.loadingData) return null;
-        throw new Error("Method not implemented.");
+        return this.options
+                .filter((opt:ModelOption) => opt.isSelected)
+                .map((opt:ModelOption) => opt.value);
     }
 
     public setSelected (selectedIds:Set<string>) : void {
@@ -289,7 +291,6 @@ export class ModelSelector extends LitElement {
         let inputEl : HTMLInputElement = this.shadowRoot!.getElementById("searchBar") as HTMLInputElement;
         if (inputEl)
             this.textFilter = inputEl.value.toLowerCase();
-            console.log(this.textFilter);
             this.currentPage = 1;
     }
 
@@ -368,8 +369,8 @@ export class ModelSelector extends LitElement {
     private renderCategorySeparator (catId: string) : TemplateResult {
         return html`
         <tr>
-            <td colspan="4">
-                <span>MODEL:</span> ${getLabel(this.optionCategories[catId])}
+            <td colspan="4" style="font-weight: bold; font-size: 1.02em; padding-left: 2em;">
+                <span style="color: #aaa;">MODEL:</span> ${getLabel(this.optionCategories[catId])}
             </td>
         </tr>`
     }

@@ -71,11 +71,13 @@ export class ModelQuestion extends LitElement {
             ${templateParts.map((part:string, i: number) => html`
                 ${part}
                 ${this.varNames && this.varNames.length > i ?
-                    html`<b>${
-                        this.varOptions[this.varNames[i]][
-                            this.settedOptions[this.varNames[i]]
-                        ]
-                    }</b>`
+                    html`<b>
+                        ${
+                        this.varOptions[this.varNames[i]] ? 
+                            this.varOptions[this.varNames[i]][this.settedOptions[this.varNames[i]]]
+                            : html`??`
+                        }
+                    </b>`
                     : ""
                 }
             `)}`

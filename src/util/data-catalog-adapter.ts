@@ -1,9 +1,9 @@
 import { MintPreferences } from 'app/reducers';
-import * as mintConfig from 'config/config.json';
 import { getDatasetsFromDCResponse } from 'screens/datasets/actions';
 import { Dataset } from 'screens/datasets/reducers';
-let prefs = mintConfig["default"] as MintPreferences;
-const DATA_CATALOG = prefs.data_catalog_api;
+
+import * as mintConfig from 'config/config.json';
+const prefs = mintConfig["default"] as MintPreferences;
 
 export interface DatasetQuery {
     search_operators?: string;
@@ -20,7 +20,7 @@ export interface DatasetQuery {
 }
 
 export class DataCatalogAdapter {
-    private static server : string = prefs.auth_server;
+    private static server : string = prefs.data_catalog_api;
 
     public static async findDataset (query:DatasetQuery) : Promise<Dataset[]> {
         if (query.start_time) {
@@ -34,7 +34,7 @@ export class DataCatalogAdapter {
 
         query.limit = 100;
 
-        let res : Response = await fetch(DATA_CATALOG + "/datasets/find", {
+        let res : Response = await fetch(DataCatalogAdapter.server + "/datasets/find", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(query)
