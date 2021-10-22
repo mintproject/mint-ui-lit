@@ -29,6 +29,7 @@ import { ModelCatalogParameter } from 'screens/models/configure/resources/parame
 import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
 import { getLatestEventOfType } from "util/event_utils";
 import { uuidv4 } from "util/helpers";
+import { DatasetSelector } from "components/dataset-selector";
 
 store.addReducers({
     datasets
@@ -80,6 +81,8 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
   
     //private _mcInputs : IdMap<ModelCatalogDatasetSpecification> = {};
 
+    @property({type: Object}) private datasetSelector : DatasetSelector;
+
     constructor () {
         super();
         this._dtParameters = new ModelCatalogParameter();
@@ -88,6 +91,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         this._dtParameters.setActionEditOrAdd();
         this._dtParameters.onlyFixedValue = true;
         this._dtParameters.lazy = true;
+        this.datasetSelector = new DatasetSelector();
     }
 
     private _comparisonFeatures: Array<ComparisonFeature> = [
@@ -134,25 +138,25 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
     @property({type: Array}) _questionDatasets: Dataset[];
     public setDatasets (datasets:Dataset[]) {
         this._questionDatasets = datasets;
-    }
-
-    private renderDatasetTable (datasets:Dataset[]) {
-        return datasets.map((ds:Dataset) => {
-            //console.log(ds);
-            return html`<li><p>${ds.name}</p></li>`
-        })
+        this.datasetSelector.setDatasets(datasets);
     }
 
     protected render() {
         if(!this.thread) {
             return html ``;
         }
+
+        let noModelHasBeenSelected : boolean = !this.thread.models || Object.keys(this.thread.models).length == 0;
+        let done = (getThreadDatasetsStatus(this.thread) == TASK_DONE);
+
+        let latest_update_event = getLatestEventOfType(["CREATE", "UPDATE"], this.thread.events);
+        let latest_data_event = getLatestEventOfType(["SELECT_DATA"], this.thread.events);
         
-        // If no models selected
-        if(!this.thread.models || !Object.keys(this.thread.models).length) {
+        // If models have been selected, go over each model
+        if (noModelHasBeenSelected) {
             if (this.questionComposer) {
                 if (this._questionDatasets) {
-                    return html`${this._questionDatasets.length} datasets found: <ul>${this.renderDatasetTable(this._questionDatasets)}</ul>`
+                    return html`${this._questionDatasets.length} datasets found: ${this.datasetSelector}`
                 } else return html`No datasets found`;
             } else return html`
                 <p>
@@ -160,14 +164,11 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                 </p>
                 Please select model(s) first`
         }
-
-        let done = (getThreadDatasetsStatus(this.thread) == TASK_DONE);
-
-        let latest_update_event = getLatestEventOfType(["CREATE", "UPDATE"], this.thread.events);
-        let latest_data_event = getLatestEventOfType(["SELECT_DATA"], this.thread.events);
-        
-        // If models have been selected, go over each model
         return html `
+        <p>
+            This datasets match your filters:
+            ${this.datasetSelector}
+        </p>
         <p>
             This step is for selecting datasets for each of the models that you selected earlier.
         </p>

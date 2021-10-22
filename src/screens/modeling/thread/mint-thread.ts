@@ -35,7 +35,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
     @property({type: Object}) private _sectionDoneMap: IdMap<string> = {};
 
     // State
-    @property({type: Boolean}) private _maximized: boolean;
+    @property({type: Boolean}) private maximized: boolean;
     @property({type: String})  private _currentMode: string = "";
     @property({type: Boolean}) private _dispatched: boolean = false;
     @property({type: Boolean}) private _dispatched_execution_summary: boolean = false;
@@ -161,20 +161,19 @@ export class MintThread extends connect(store)(MintThreadPage) {
                     href="${this._getModeURL('visualize')}">Visualize</a>
             </ul>
             <wl-icon @click="${this.toggleMaximize}" class="actionIcon bigActionIcon">
-                ${!this._maximized ? "fullscreen" : "fullscreen_exit"}
+                ${!this.maximized ? "fullscreen" : "fullscreen_exit"}
             </wl-icon>
         </div>
         `;
     }
 
     public toggleMaximize () : void {
-        this.dispatchEvent(
-            new CustomEvent("on-thread-maximize", {
-                bubbles: true,
-                composed: true,
-                detail: !this._maximized
-            })
-        );
+        let event : CustomEvent = new CustomEvent("on-thread-maximize", {
+            bubbles: true,
+            composed: true,
+            detail: !this.maximized
+        });
+        this.dispatchEvent(event);
     }
 
     private _setSectionStatusMap() {
@@ -476,7 +475,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
         }
 
         if (this.questionComposer && this.thread && newSection && this.lastSection != newSection) {
-            //console.log(this.lastSection + " changed to " + newSection);
+            console.log(this.lastSection + " changed to " + newSection);
             this.lastSection = newSection;
 
             let configPage : MintThreadPage = this.shadowRoot.querySelector("mint-configure");
