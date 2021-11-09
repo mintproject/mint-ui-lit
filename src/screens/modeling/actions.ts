@@ -218,7 +218,7 @@ export const subscribeProblemStatementsList: ActionCreator<SubProblemListThunkRe
                 if (problem["tasks"]) {
                     let varnameset : Set<string> = new Set();
                     problem["tasks"].forEach(t =>  
-                        t["threads"].forEach(th => 
+                        (t["threads"]||[]).forEach(th => th.response_variable && th.response_variable.name &&
                             varnameset.add(th.response_variable.name)
                         )
                     );
