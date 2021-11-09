@@ -4,7 +4,7 @@ import { store } from "app/store";
 import { customElement, LitElement, property, html, css, TemplateResult } from "lit-element";
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { getLabel } from "model-catalog-api/util";
-import { VariableMap } from "screens/variables/reducers";
+import { Variable, VariableMap } from "screens/variables/reducers";
 import { ModelQuestion } from '../model-question';
 
 @customElement("has-indicator-question")
@@ -13,6 +13,9 @@ export class HasIndicatorQuestion extends ModelQuestion {
     private variablePresentations : IdMap<VariablePresentation>;
     private standardVariables : IdMap<StandardVariable>;
     private static indicators : VariableMap;
+
+    @property({type: Boolean}) public loading : boolean = false;
+    private asyncSelectedId : string;
 
     constructor (
             id:string = "hasIndicator",
@@ -24,6 +27,7 @@ export class HasIndicatorQuestion extends ModelQuestion {
         ) {
         super(id, name, template, pattern);
 
+        this.loading = true;
         let dsReq = store.dispatch(ModelCatalogApi.myCatalog.datasetSpecification.getAll());
         let vpReq = store.dispatch(ModelCatalogApi.myCatalog.variablePresentation.getAll());
         let svReq = store.dispatch(ModelCatalogApi.myCatalog.standardVariable.getAll());
@@ -35,10 +39,19 @@ export class HasIndicatorQuestion extends ModelQuestion {
         })
         svReq.then((svs: IdMap<StandardVariable>) => {
             this.standardVariables = svs;
+            if (this.asyncSelectedId) {
+                let cand = Object.values(this.standardVariables).filter((sv:StandardVariable) => getLabel(sv) === this.asyncSelectedId);
+                console.log("xs:", cand);
+                if (cand.length > 0) {
+                    this.settedOptions["?indicator"] = cand[0].id;
+                    this.asyncSelectedId = undefined;
+                }
+            }
         })
 
         Promise.all([dsReq, vpReq, svReq]).then(() => {
             this.filterPossibleOptions(this.possibleSetups);
+            this.loading = false;
         });
     }
 
@@ -95,6 +108,17 @@ export class HasIndicatorQuestion extends ModelQuestion {
         }
     }
 
+    public setSelected (indicatorid:string) : void {
+        if (!this.loading) {
+            let cand = Object.values(this.standardVariables).filter((sv:StandardVariable) => getLabel(sv) === indicatorid);
+            console.log("xs:", cand);
+            if (cand.length > 0) {
+                this.settedOptions["?indicator"] = cand[0].id;
+            }
+        } else 
+            this.asyncSelectedId = indicatorid;
+    }
+
     public createCopy () : HasIndicatorQuestion {
         return new HasIndicatorQuestion(this.id, this.name, this.template, this.pattern);
     }
@@ -102,7 +126,7 @@ export class HasIndicatorQuestion extends ModelQuestion {
     public static setVariablesMap (map: VariableMap) {
         if (HasIndicatorQuestion.indicators != map) {
             HasIndicatorQuestion.indicators = map;
-            console.log("SET!");
+            console.log("SET!", map);
         }
     }
 

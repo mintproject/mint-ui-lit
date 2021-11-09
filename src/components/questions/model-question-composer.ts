@@ -72,6 +72,9 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
         this.questionCatalog[this.indicatorQuestion.id] = this.indicatorQuestion;
         this.questionCatalog[this.regionQuestion.id] = this.regionQuestion;
 
+        if (thread.response_variables && thread.response_variables.length>0) 
+            this.indicatorQuestion.setSelected(thread.response_variables[0]);
+
         this.createModelFilters();
 
         this.modelSelector = new ModelSelector();
@@ -125,6 +128,10 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
                 <li style="line-height: 20px; vertical-align: middle;">
                     ${this.regionQuestion.renderTextRepresentation()}
                 </li>
+                ${this.thread.response_variables && this.thread.response_variables.length > 0 ? html`
+                <li>
+                    ${this.indicatorQuestion.renderTextRepresentation()}
+                </li>` :""}
                 <!-- Show active question filters -->
                 ${this.selectedQuestions.length > 0 ?
                     this.selectedQuestions.map((q:ModelQuestion) => html`
@@ -173,6 +180,10 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
         if (!allModels) return [];
 
         let filteredModels = this.regionQuestion.filterModels(allModels);
+
+        if (this.thread.response_variables && this.thread.response_variables.length > 0 && !this.indicatorQuestion.loading) {
+            filteredModels = this.indicatorQuestion.filterModels(filteredModels);
+        }
 
         // For each selected model question, apply the filter:
         this.selectedQuestions.forEach((question:ModelQuestion) => {
@@ -254,7 +265,6 @@ export class ModelQuestionComposer extends connect(store)(LitElement) {
     };
 
     private onModelSelectorLoaded : (e:Event) => void = (e:Event) => {
-        console.log("Model selector loaded!")
         this.applyAllModelFilters();
     }
 }

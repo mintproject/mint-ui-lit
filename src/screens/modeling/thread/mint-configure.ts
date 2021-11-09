@@ -286,6 +286,7 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
     private onEditEnable () : void {
         this.editMode = true;
         this.regionSelector.isEditable = true;
+        this.indicatorSelector.isEditable = true;
     }
 
     private onCancelClicked () : void {

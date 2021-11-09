@@ -161,8 +161,8 @@ export class DatasetSelector extends connect(store)(LitElement) {
     private applyTextFilter (options:DatasetOption[]) : DatasetOption[] {
         if (this.textFilter)
             return options.filter((opt:DatasetOption) => {
-                return opt.value.name.includes(this.textFilter) ||
-                (opt.value.description && opt.value.description.includes(this.textFilter));
+                return opt.value.name.toLowerCase().includes(this.textFilter) ||
+                (opt.value.description && opt.value.description.toLowerCase().includes(this.textFilter));
             })
         return options;
     }

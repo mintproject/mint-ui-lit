@@ -103,7 +103,7 @@ export class ModelQuestion extends LitElement {
                                 Object.keys(this.varOptions[this.varNames[i]]).map((key:string) => {
                                     let curopt = this.varOptions[this.varNames[i]][key];
                                     return html`
-                                        <option value="${key}">
+                                        <option value="${key}" ?selected=${this.settedOptions[this.varNames[i]] && this.settedOptions[this.varNames[i]] == key}>
                                             ${curopt}
                                             ${this.optionCount[key] ? " [" + this.optionCount[key] + "]": ""}
                                         </option>`

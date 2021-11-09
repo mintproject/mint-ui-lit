@@ -20,6 +20,11 @@ interface ModelOption {
     categoryid?: string;
 }
 
+interface ModelOptionCategory {
+    value: Model;
+    isVisible: boolean;
+}
+
 @customElement("model-selector")
 //export class ModelSelector extends connect(store)(LitElement) {
 export class ModelSelector extends LitElement {
@@ -34,7 +39,7 @@ export class ModelSelector extends LitElement {
     // Possible options:
     @property({type: Array})  private options : ModelOption[];
     @property({type: Object}) private idToOption : IdMap<ModelOption>;
-    @property({type: Object}) private optionCategories : IdMap<Model>;
+    @property({type: Object}) private optionCategories : IdMap<ModelOptionCategory>;
     @property({type: Object}) private urls : IdMap<string> = {};
 
     // If setted before loading:
@@ -167,7 +172,7 @@ export class ModelSelector extends LitElement {
     }
 
     private getModelUrl (modelid:string) : string {
-        return this.urls[modelid];
+        return "ethiopia/models/explore/" + this.urls[modelid];
     }
 
     private clearPossibleOptions () : void {
@@ -177,7 +182,13 @@ export class ModelSelector extends LitElement {
     }
 
     private addOptionCategory (model:Model) : void {
-        this.optionCategories[model.id] = model;
+        if (!this.optionCategories[model.id]) {
+            let newOpt : ModelOptionCategory = {
+                value: model,
+                isVisible: true
+            }
+            this.optionCategories[model.id] =newOpt;
+        }
     }
 
     private addOption (value:ModelConfiguration|ModelConfigurationSetup, isSelected: boolean, isVisible: boolean, model?:Model) : void {
@@ -235,7 +246,8 @@ export class ModelSelector extends LitElement {
                 return opt.isVisible && !opt.isSelected;
             });
             visibleOptions = this.applyTextFilter(visibleOptions);
-            this.maxPage = Math.ceil(visibleOptions.length / PER_PAGE);
+            let hiddenByCategory : number = visibleOptions.filter((opt:ModelOption) => opt.categoryid && !this.optionCategories[opt.categoryid].isVisible).length;
+            this.maxPage = Math.ceil((visibleOptions.length - hiddenByCategory) / PER_PAGE);
         }
 
         return html`
@@ -322,7 +334,10 @@ export class ModelSelector extends LitElement {
 
     private renderMatchingModels (posibleOptions: ModelOption[]) : TemplateResult {
         let mx : number = (this.currentPage * PER_PAGE);
-        let visibleOptions : ModelOption[] = posibleOptions.slice(
+        //FIXME: do no add when category is not visible!!!!
+        let visibleOptions : ModelOption[] = posibleOptions
+                .filter((opt:ModelOption) => !opt.categoryid || this.optionCategories[opt.categoryid].isVisible)
+                .slice(
             (this.currentPage - 1) * PER_PAGE,
             mx > posibleOptions.length ? posibleOptions.length : mx
         );
@@ -349,28 +364,43 @@ export class ModelSelector extends LitElement {
                 if (opt.categoryid && !selectedModels.has(opt.categoryid)) {
                     selectedModels.add(opt.categoryid);
                     return html`
-                        ${this.renderCategorySeparator(opt.categoryid)}
+                        ${this.renderCategorySeparator(opt.categoryid, false)}
                         ${this.renderRow(opt)}`;
                 }
                 return this.renderRow(opt);
             })}
             ${visibleOptions.map((opt:ModelOption) => {
-                if (opt.categoryid && !visibleModels.has(opt.categoryid)) {
-                    visibleModels.add(opt.categoryid);
-                    return html`
-                        ${this.renderCategorySeparator(opt.categoryid)}
-                        ${this.renderRow(opt)}`;
+                if (opt.categoryid) { //} && ) {
+                    let optCat : ModelOptionCategory = this.optionCategories[opt.categoryid];
+                    if (!visibleModels.has(opt.categoryid)) {
+                        visibleModels.add(opt.categoryid);
+                        return html`
+                            ${this.renderCategorySeparator(opt.categoryid)}
+                            ${optCat.isVisible ? this.renderRow(opt) : ""}`;
+                    } else {
+                        return html`${optCat.isVisible ? this.renderRow(opt) : ""}`;
+                    }
                 }
                 return this.renderRow(opt);
             })}
         `;
     }
 
-    private renderCategorySeparator (catId: string) : TemplateResult {
+    private renderCategorySeparator (catId:string, showVisibilityToggler:boolean=true) : TemplateResult {
         return html`
         <tr>
-            <td colspan="4" style="font-weight: bold; font-size: 1.02em; padding-left: 2em;">
-                <span style="color: #aaa;">MODEL:</span> ${getLabel(this.optionCategories[catId])}
+            <td colspan="4">
+                <div style="display:flex; justify-content:space-between; padding:0px 20px;">
+                    <div style="font-size: 1.02em;">
+                        <span style="color: #aaa;">MODEL:</span>
+                        <span style="font-weight: bold;">${getLabel(this.optionCategories[catId].value)}</span> 
+                    </div>
+                    ${showVisibilityToggler ? html`
+                    <a style=""
+                        @click=${() => {this.toggleCategoryView(catId)}}>
+                        ${this.optionCategories[catId].isVisible ? "(Hide models)" : "(Show models)"}
+                    </a>` : ""}
+                </div>
             </td>
         </tr>`
     }
@@ -399,6 +429,11 @@ export class ModelSelector extends LitElement {
                     : ""}
             </td>
         </tr>`;
+    }
+
+    private toggleCategoryView (catId:string) : void {
+        this.optionCategories[catId].isVisible = !this.optionCategories[catId].isVisible;
+        this.requestUpdate();
     }
 
     private toggleSelection (ev:Event) {
