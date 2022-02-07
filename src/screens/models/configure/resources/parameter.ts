@@ -102,6 +102,14 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         this._inputIntervention.setAttribute('id', 'input-intervention');
     }
 
+    protected _addToSaveQueue (r:Parameter) {
+        console.log("Add to save queue: ", r);
+        if (r && r.recommendedIncrement && r.recommendedIncrement.length > 0) {
+            r.recommendedIncrement = [ parseFloat(String(r.recommendedIncrement[0])) ];
+        }
+        return super._addToSaveQueue(r);
+    }
+
     protected _createResource () {
         this._inputUnit.setResources(null);
         super._createResource();
@@ -185,7 +193,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
         if (additionalType == "https://w3id.org/wings/export/MINT#DataCatalogId") {
             return html`
-                <data-catalog-id-checker id=${value}><data-catalog-id-checker>
+                <data-catalog-id-checker id=${value}></data-catalog-id-checker>
             `;
         }
 
@@ -541,7 +549,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let inputMin : Textfield = this.shadowRoot.getElementById('part-float-min') as Textfield;
         let inputMax : Textfield = this.shadowRoot.getElementById('part-float-max') as Textfield;
         let def : string = inputDef ? inputDef.value : '';
-        let inc : number = inputInc ? parseInt(inputInc.value) : NaN;
+        let inc : number = inputInc ? parseFloat(inputInc.value) : NaN;
         let min : string = inputMin ? inputMin.value : '';
         let max : string = inputMax ? inputMax.value : '';
         if (def) {
@@ -549,9 +557,9 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 hasDataType: ["float"],
                 hasDefaultValue: [def]
             };
-            if (inc) jsonRes['recommendedIncrement'] = [inc];
-            if (min) jsonRes['hasMinimumAcceptedValue'] = [min];
-            if (max) jsonRes['hasMaximumAcceptedValue'] = [max];
+            jsonRes['recommendedIncrement'] = inc ? [inc] : [];
+            jsonRes['hasMinimumAcceptedValue'] = min ? [min] : [];
+            jsonRes['hasMaximumAcceptedValue'] = max? [max] : [];
             if (this._validateDataTypedValue(def, jsonRes))
                 return jsonRes;
         } else {
