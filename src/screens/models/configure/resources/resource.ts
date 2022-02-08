@@ -850,7 +850,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._notification.error('The name "'+ getLabel(resource) + '" is already on use.');
     }
 
-    private _saveResource (r:T) {
+    protected _saveResource (r:T) {
         this._waiting = true;
         return new Promise((resolve, reject) => {
             let inner : Promise<T> = this._createLazyInnerResources(r);
@@ -947,7 +947,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._postSaveUpdate(this._addToSaveQueue(resource));
     }
 
-    private _addToSaveQueue (r:T) {
+    protected _addToSaveQueue (r:T) {
         if (r.id && r.id.includes(PREFIX_URI)) { // if the resource has an ID and its part of the model catalog, is an edition.
             this._resourcesToEdit[r.id] = r;
         } else { // The resource has no Id or is not part of the model-catalog.
@@ -1248,9 +1248,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     /* Same as before but removes the id to set is as a copy. To use when lazy */
     public setResourcesAsCopy (r:T[]) {
+        if (r == null) return;
         // FIXME: This does not work it loads everything always... should change the API redux.
         if (!this.lazy) {
-            console.error("Cannot copy resources.");
+            console.error("Cannot copy resource", r);
             return;
         }
         this._singleMode = false;

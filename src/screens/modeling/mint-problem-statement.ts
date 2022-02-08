@@ -43,7 +43,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _selectedTask!: Task | null;
 
-    @property({type: Object})
+    @property({type: String})
     private _selectedThreadId!: String | null;
 
     @property({type: Boolean})
@@ -238,7 +238,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                     <wl-icon>arrow_back_ios</wl-icon>
                 </wl-button>
                 <div class="cltmain navtop">
-                    <wl-title level="3" nowrap="true">${this._problem_statement!.name}</wl-title>
+                    <wl-title level="3" ?nowrap=${true}>${this._problem_statement!.name}</wl-title>
                 </div>
             </div>
 
@@ -416,7 +416,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                             `}
                         </div>
 
-                        <mint-thread ?active="${this._selectedTask}"
+                        <mint-thread ?active=${!!this._selectedTask}
                             .problem_statement=${this._problem_statement}></mint-thread>
                     </div>
                     ` : ''

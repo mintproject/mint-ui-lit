@@ -741,7 +741,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
                 (<any>inputLabel).onBlur();
                 this._notification.error("You must enter a name");
             }
-            if (categories == null || categories.length > 0) {
+            if (categories == null || categories.length == 0) {
                 this._notification.error("You must enter a category");
             }
             if (!desc) {
