@@ -947,7 +947,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._postSaveUpdate(this._addToSaveQueue(resource));
     }
 
-    private _addToSaveQueue (r:T) {
+    protected _addToSaveQueue (r:T) {
         if (r.id && r.id.includes(PREFIX_URI)) { // if the resource has an ID and its part of the model catalog, is an edition.
             this._resourcesToEdit[r.id] = r;
         } else { // The resource has no Id or is not part of the model-catalog.
