@@ -102,14 +102,6 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         this._inputIntervention.setAttribute('id', 'input-intervention');
     }
 
-    protected _addToSaveQueue (r:Parameter) {
-        console.log("Add to save queue: ", r);
-        if (r && r.recommendedIncrement && r.recommendedIncrement.length > 0) {
-            r.recommendedIncrement = [ parseFloat(String(r.recommendedIncrement[0])) ];
-        }
-        return super._addToSaveQueue(r);
-    }
-
     protected _createResource () {
         this._inputUnit.setResources(null);
         super._createResource();

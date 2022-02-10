@@ -490,28 +490,29 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         if (this._status === Status.CREATE || this._status === Status.EDIT) {
             return html`
                 <div style="float:right; margin-top: 1em;">
-                    <wl-button @click="${this._onCancelButtonClicked}" style="margin-right: 1em;" flat inverted>
+                    <wl-button @click="${this._onCancelButtonClicked}" style="margin-right: 1em;" flat inverted ?disabled=${this._waiting}>
                         <wl-icon>cancel</wl-icon>&ensp;Discard changes
                     </wl-button>
-                    <wl-button @click="${this._onSaveButtonClicked}">
+                    <wl-button @click="${this._onSaveButtonClicked}" ?disabled=${this._waiting}>
                         <wl-icon>save</wl-icon>&ensp;Save
+                        ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
                     </wl-button>
                 </div>` 
         } else {
             return html`
                 <div style="display: flex; justify-content: space-between; padding: 1em 0;">
                     <span>
-                        <wl-button style="--primary-hue: 0; --primary-saturation: 75%" ?disabled="${!this._deletionEnabled}"
+                        <wl-button style="--primary-hue: 0; --primary-saturation: 75%" ?disabled="${!this._deletionEnabled || this._waiting}"
                                    @click="${() => this._deleteResource(this._resources[0])}">
                             <wl-icon>delete</wl-icon>&ensp;Delete
                         </wl-button>
                         <wl-button  style="--primary-hue: 124; --primary-saturation: 45%; margin-left: 0.5em;"
-                                    ?disabled="${!this._duplicationEnabled}"
+                                    ?disabled="${!this._duplicationEnabled || this._waiting}"
                                     @click="${this._onDuplicateButtonClicked}">
                             <wl-icon>edit</wl-icon>&ensp;Duplicate
                         </wl-button>
                     </span>
-                    <wl-button @click="${() => this._editResource(this._resources[0])}">
+                    <wl-button @click="${() => this._editResource(this._resources[0])}" ?disabled=${this._waiting}>
                         <wl-icon>edit</wl-icon>&ensp;Edit
                     </wl-button>
                 </div>`
@@ -947,7 +948,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._postSaveUpdate(this._addToSaveQueue(resource));
     }
 
-    protected _addToSaveQueue (r:T) {
+    private _addToSaveQueue (r:T) {
         if (r.id && r.id.includes(PREFIX_URI)) { // if the resource has an ID and its part of the model catalog, is an edition.
             this._resourcesToEdit[r.id] = r;
         } else { // The resource has no Id or is not part of the model-catalog.
