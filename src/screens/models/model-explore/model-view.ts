@@ -7,7 +7,7 @@ import { IdMap } from 'app/reducers'
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Organization, Region, FundingInformation, 
          Image, Grid, TimeInterval, Process, Visualization, SourceCode, SoftwareImage, Parameter, DatasetSpecification,
-         Intervention, VariablePresentation } from '@mintproject/modelcatalog_client';
+         Intervention, VariablePresentation, Unit } from '@mintproject/modelcatalog_client';
 
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { ModelCatalogState } from 'model-catalog-api/reducers';
@@ -53,6 +53,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object}) private _configs : IdMap<ModelConfiguration> = {} as IdMap<ModelConfiguration>;
     @property({type: Object}) private _setups : IdMap<ModelConfigurationSetup> = {} as IdMap<ModelConfigurationSetup>;
     @property({type: Object}) private _regions : IdMap<Region> = {} as IdMap<Region>;
+    @property({type: Object}) private _units : IdMap<Unit> = {} as IdMap<Unit>;
 
     // Direct data for this model, selected config and setup, loaded from store
     @property({type: Object}) private _model! : Model;
@@ -666,6 +667,25 @@ export class ModelView extends connect(store)(PageViewElement) {
 
         let modelType : string[] = this._model.type ? getModelTypeNames(this._model.type) : [];
 
+        let creationDateStr : string;
+        if (this._model.dateCreated) {
+            creationDateStr = this._model.dateCreated[0].toString().replace(/T.*$/,'');
+            let date = this._model.dateCreated[0];
+            let parsedDate : Object;
+            try {
+                parsedDate = JSON.parse(date);
+            } catch {
+                try {
+                    parsedDate = JSON.parse(date.replaceAll("'",'"'))
+                } catch {
+                    console.log("Could not parse", this._model.dateCreated[0]);
+                }
+            }
+            if (parsedDate != null && parsedDate["@value"]) {
+                creationDateStr = parsedDate["@value"];
+            }
+        }
+
         return html`
             ${this._renderCLIDialog()}
             <div class="col-title">
@@ -705,7 +725,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                             )
                     ): 'No logo'}
                     ${this._model.dateCreated ?
-                      html`<div><b>Creation date:</b> ${this._model.dateCreated[0].toString().replace(/T.*$/,'')}</div>`
+                      html`<div><b>Creation date:</b> ${creationDateStr}</div>`
                       :''}
                     ${this._model.hasModelCategory ?
                       html`<div><b>Category:</b> ${this._model.hasModelCategory.map(getLabel).join(', ')}</div>`
@@ -1474,7 +1494,6 @@ export class ModelView extends connect(store)(PageViewElement) {
             <wl-title level="2" style="font-size: 16px;">${title}:</wl-title>
             ${dsArr.map((ds:DatasetSpecification) => html`
             <wl-expansion id="${getLabel(ds)}" name="${title}" @click="${() => this._expandDS(ds)}"
-                    .disabled=${this._loading[ds.id]}
                     style="overflow-y: hidden;">
                 <span slot="title" style="flex-grow: unset;">
                     ${this._loading[ds.id] ? 
@@ -1524,7 +1543,10 @@ export class ModelView extends connect(store)(PageViewElement) {
                                     ` : '-'}
                                     </td>
                                     <td style="min-width: 80px;">
-                                        ${vp.usesUnit && vp.usesUnit.length > 0 ? getLabel(vp.usesUnit[0]) : '-'}
+                                        ${vp.usesUnit && vp.usesUnit.length > 0 ? 
+                                            (this._units[vp.usesUnit[0].id] ? getLabel(this._units[vp.usesUnit[0].id]) : 
+                                                html`<loading-dots style="--height: 10px; margin-left:10px"></loading-dots>`)
+                                            : '-'}
                                     </td>
                                 </tr>
                             `)}
@@ -1729,10 +1751,12 @@ export class ModelView extends connect(store)(PageViewElement) {
         let rCfg = store.dispatch(ModelCatalogApi.myCatalog.modelConfiguration.getAll());
         let rSet = store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getAll());
         let rReg = store.dispatch(ModelCatalogApi.myCatalog.region.getAll());
+        let rUnits = store.dispatch(ModelCatalogApi.myCatalog.unit.getAll());
         rVer.then(() => this._shouldUpdateConfigs = true);
         rCfg.then(() => this._shouldUpdateConfigs = true);
         rSet.then(() => this._shouldUpdateSetups = true);
         rReg.then(() => this._loadingRegions = false);
+        rUnits.then((units:IdMap<Unit>) => this._units = units);
 
         Promise.all([rVer, rCfg, rSet, rReg]).then(() => {
             this._loadingGlobals = false;
