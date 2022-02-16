@@ -72,6 +72,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
             `
         }        
 
+        let totalOut : number = 0, showedOut : number = 0;
        // Group running executions
        let grouped_executions = {};
        Object.keys(this._executions || {}).map((modelid) => {
@@ -103,9 +104,13 @@ export class MintResults extends connect(store)(MintThreadPage) {
                     grouped_executions[model.id].inputs.push(inf);
             })
             model.output_files.map((outf) => {
-                if(this._showAllResults || matchVariables(this.thread.response_variables, outf.variables, false))
+                if (this._showAllResults || matchVariables(this.thread.response_variables, outf.variables, false)) {
                     grouped_executions[model.id].outputs.push(outf);
+                    showedOut += 1;
+                }
             })
+
+            totalOut += model.output_files.length;
 
             let executions: Execution [] = this._executions[modelid].executions;
             if(executions) {
@@ -229,6 +234,12 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                 <wl-icon>cloud_download</wl-icon>
                             </wl-button>`: ""
                         }
+                        ${totalOut > 0 && totalOut != showedOut || this._showAllResults ? html`
+                            <a style="cursor:pointer" @click="${()=>{this._showAllResults = !this._showAllResults}}">
+                                [${this._showAllResults ? "Hide extra outputs" : "Show all outputs"}]
+                            </a>
+                        ` : ""}
+
                         <span style="float:right">
                             ${!grouped_ensemble || !grouped_ensemble.loading ?
                             html`
@@ -268,13 +279,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                         ${!readmode ? 
                                             html `<th></th>`: ""} <!-- Checkbox -->
                                         ${grouped_ensemble.outputs.length > 0 ? 
-                                            html `<th colspan="${grouped_ensemble.outputs.length}" id="out">
-                                            Outputs
-                                            &nbsp;
-                                            <a style="cursor:pointer" @click="${()=>{this._showAllResults = !this._showAllResults}}">
-                                            [${this._showAllResults ? "Hide extra outputs" : "Show all outputs"}]
-                                            </a>
-                                            </th>` : ""} <!-- Outputs -->
+                                            html `<th colspan="${grouped_ensemble.outputs.length}" id="out">Outputs</th>` : ""} <!-- Outputs -->
                                         ${grouped_ensemble.inputs.length > 0 ? 
                                             html `<th colspan="${grouped_ensemble.inputs.length}" id="in">Inputs</th>` : ""} <!-- Inputs -->
                                         ${grouped_ensemble.params.length > 0 ? 
