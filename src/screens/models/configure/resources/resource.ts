@@ -510,6 +510,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                                     ?disabled="${!this._duplicationEnabled || this._waiting}"
                                     @click="${this._onDuplicateButtonClicked}">
                             <wl-icon>edit</wl-icon>&ensp;Duplicate
+                            ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
                         </wl-button>
                     </span>
                     <wl-button @click="${() => this._editResource(this._resources[0])}" ?disabled=${this._waiting}>
@@ -526,12 +527,15 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     private _onDuplicateButtonClicked () {
         let p : Promise<T> = this.duplicate();
+        this._waiting = true;
         p.then((r:T) => {
             this._notification.save(capitalizeFirstLetter(this.name) +" duplicated.");
             this._eventSave(r);
+            this._waiting = false;
         });
         p.catch((err) => {
             this._notification.error("Error trying to duplicate resource");
+            this._waiting = false;
         });
     }
 
