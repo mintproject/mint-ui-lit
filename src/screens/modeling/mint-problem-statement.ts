@@ -240,6 +240,10 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                 <div class="cltmain navtop">
                     <wl-title level="3" ?nowrap=${true}>${this._problem_statement!.name}</wl-title>
                 </div>
+                <div style="display:flex; align-items: center; border: 1px solid; border-radius: 6px; padding: 3px 6px; background: papayawhip;">
+                    <wl-icon>warning</wl-icon>
+                    The models shown here are still under development and should not be taken out of context
+                </div>
             </div>
 
             <!-- Two Columns Section -->
