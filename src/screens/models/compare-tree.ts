@@ -1,10 +1,8 @@
 import { property, html, customElement, css } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
 
-import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { ExplorerStyles } from './model-explore/explorer-styles';
 import { ComparisonEntry } from './model-explore/ui-reducers';
 import { IdMap } from "app/reducers";
 
@@ -22,62 +20,25 @@ import { goToPage } from 'app/actions';
 @customElement('compare-tree')
 export class CompareTree extends connect(store)(PageViewElement) {
     @property({type: Array})  private _compare : ComparisonEntry[] = [];
-    @property({type: Object}) private _categories : IdMap<ModelCategory>;
+    @property({type: Object}) private _categories : IdMap<ModelCategory> = {};
+    @property({type: Object}) private _models : IdMap<Model> = {};
+    @property({type: Object}) private _versions : IdMap<SoftwareVersion> = {};
+    @property({type: Object}) private _configs : IdMap<ModelConfiguration> = {};
+    @property({type: Object}) private _setups : IdMap<ModelConfigurationSetup> = {};
+    @property({type: Object}) private _regions : IdMap<Region> = {};
+
+    @property({type: Boolean}) private _loadingModels : boolean = true;
+    @property({type: Boolean}) private _loadingVersions : boolean = true;
+    @property({type: Boolean}) private _loadingConfigs : boolean = true;
+    @property({type: Boolean}) private _loadingSetups : boolean = true;
     active: boolean = true;
 
+    private _modelTree : TreeRoot;
+    private _nodes : IdMap<TreeNode> = {};
 
-    static get styles() {
-        return [ExplorerStyles,
-            SharedStyles,
-            css `
-            .custom-button {
-                line-height: 20px;
-                cursor: pointer;
-                margin-right: 5px;
-                border: 1px solid green;
-                padding: 1px 3px;
-                border-radius: 4px;
-            }
-
-            .custom-button:hover {
-                background-color: rgb(224, 224, 224);
-            }
-
-            .right_full {
-                width: 100%;
-            }
-
-            span.tag {
-                border: 1px solid;
-                border-radius: 3px;
-                padding: 0px 3px;
-                font-weight: bold;
-            }
-            
-            span.tag.deprecated {
-                border-color: chocolate;
-                background: chocolate;
-                color: white;
-            }
-            
-            span.tag.latest {
-                border-color: forestgreen;
-                background: forestgreen;
-                color: white;
-            }
-
-            .horizontal-table {
-                table-layout:fixed;
-                width: fit-content;
-                overflow-x: auto;
-            }
-            `,
-        ];
-    }
-    
     protected render () {
         this._calculateTree();
-        if (this._loadingAllModels) return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
+        if (this._loadingModels) return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
         else return html`${this._modelTree}`;
     }
 
@@ -108,18 +69,16 @@ export class CompareTree extends connect(store)(PageViewElement) {
         if (state.explorerUI) {
             this._compare = state.explorerUI.compare;
         }
+        if (state.modelCatalog) {
+            this._models = state.modelCatalog.model;
+            this._versions = state.modelCatalog.softwareversion;
+            this._configs = state.modelCatalog.modelconfiguration;
+            this._setups = state.modelCatalog.modelconfigurationsetup;
+            this._regions = state.modelCatalog.region;
+            this._categories = state.modelCatalog.modelcategory;
+        }
     }
 
-    private _allModels : IdMap<Model> = {};
-    private _allVersions : IdMap<SoftwareVersion> = {};
-    private _allConfigs : IdMap<ModelConfiguration> = {};
-    private _allSetups : IdMap<ModelConfigurationSetup> = {};
-    private _allRegions : IdMap<Region> = {};
-
-    @property({type: Boolean}) private _loadingAllModels : boolean = true;
-    @property({type: Boolean}) private _loadingAllVersions : boolean = true;
-    @property({type: Boolean}) private _loadingAllConfigs : boolean = true;
-    @property({type: Boolean}) private _loadingAllSetups : boolean = true;
 
     protected firstUpdated () {
         this._modelTree = new TreeRoot();
@@ -127,42 +86,39 @@ export class CompareTree extends connect(store)(PageViewElement) {
             this._categories = categories;
         });
         store.dispatch(ModelCatalogApi.myCatalog.model.getAll()).then((models:IdMap<Model>) => {
-            this._loadingAllModels = false;
-            this._allModels = models;
+            this._loadingModels = false;
+            this._models = models;
         });
         store.dispatch(ModelCatalogApi.myCatalog.softwareVersion.getAll()).then((versions:IdMap<SoftwareVersion>) => {
-            this._loadingAllVersions = false;
-            this._allVersions = versions;
+            this._loadingVersions = false;
+            this._versions = versions;
             Object.keys(versions).forEach((vid:string) => !!this._nodes[vid] && this._nodes[vid].refresh());
         });
         store.dispatch(ModelCatalogApi.myCatalog.modelConfiguration.getAll()).then((cfgs:IdMap<ModelConfiguration>) => {
-            this._loadingAllConfigs = false;
-            this._allConfigs = cfgs;
+            this._loadingConfigs = false;
+            this._configs = cfgs;
             Object.keys(cfgs).forEach((cid:string) => !!this._nodes[cid] && this._nodes[cid].refresh());
         });
         let setupReq = store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getAll())
         setupReq.then((setups:IdMap<ModelConfigurationSetup>) => {
-            this._allSetups = setups;
+            this._setups = setups;
             Object.keys(setups).forEach((sid:string) => !!this._nodes[sid] && this._nodes[sid].refresh());
         });
         let regionReq = store.dispatch(ModelCatalogApi.myCatalog.region.getAll());
         regionReq.then((regions:IdMap<Region>) => {
-            this._allRegions = regions;
+            this._regions = regions;
         });
         Promise.all([setupReq, regionReq]).then(() => {
-            this._loadingAllSetups = false;
+            this._loadingSetups = false;
         })
     }
-
-    private _modelTree : TreeRoot;
-    private _nodes : IdMap<TreeNode> = {};
 
     private _calculateTree () {
         const visibleSetup = (setup: ModelConfigurationSetup) =>
             !!setup && (!setup.hasRegion || (setup.hasRegion||[]).some((region:Region) =>
-                    isSubregion(this._region.model_catalog_uri, this._allRegions[region.id])));
+                    isSubregion(this._region.model_catalog_uri, this._regions[region.id])));
 
-        Object.values(this._allModels).forEach((m:Model) => {
+        Object.values(this._models).forEach((m:Model) => {
             // Model nodes.
             let category : string = m.hasModelCategory && m.hasModelCategory.length > 0 ?
                     getLabel(this._categories && this._categories[m.hasModelCategory[0].id] ?
@@ -174,6 +130,7 @@ export class CompareTree extends connect(store)(PageViewElement) {
                 newNode.setName(category);
                 newNode.selectIcon = false;
                 newNode.select();
+                newNode.contract();
                 newNode.onClick = newNode.toggle;
                 this._nodes[category] = newNode;
             }
@@ -192,11 +149,11 @@ export class CompareTree extends connect(store)(PageViewElement) {
             if (!nodeCat.hasNode(nodeModel)) nodeCat.addChild(nodeModel);
             if (!this._modelTree.hasNode(nodeCat)) this._modelTree.addChild(nodeCat);
 
-            if (this._loadingAllVersions) {
+            if (this._loadingVersions) {
                 //TODO: show a loading thing
             } else {
                 (m.hasVersion||[])
-                        .map((v:SoftwareVersion) => this._allVersions[v.id])
+                        .map((v:SoftwareVersion) => this._versions[v.id])
                         .sort(sortVersions)
                         .forEach((v:SoftwareVersion) => {
                     if (!this._nodes[v.id]) {
@@ -220,11 +177,11 @@ export class CompareTree extends connect(store)(PageViewElement) {
                     let nodeVersion : TreeNode = this._nodes[v.id];
                     if (!nodeModel.hasNode(nodeVersion)) nodeModel.addChild(nodeVersion);
 
-                    if (this._loadingAllConfigs) {
+                    if (this._loadingConfigs) {
                         //TODO: loading...
                     } else {
                         (v.hasConfiguration || [])
-                                .map((c:ModelConfiguration) => this._allConfigs[c.id])
+                                .map((c:ModelConfiguration) => this._configs[c.id])
                                 .sort(sortConfigurations)
                                 .forEach((c:ModelConfiguration) => {
                             if (!this._nodes[c.id]) {
@@ -239,11 +196,11 @@ export class CompareTree extends connect(store)(PageViewElement) {
                             let nodeConfig : TreeNode = this._nodes[c.id];
                             if (!nodeVersion.hasNode(nodeConfig)) nodeVersion.addChild(nodeConfig);
 
-                            if (this._loadingAllSetups) {
+                            if (this._loadingSetups) {
                                 //TODO: loading...
                             } else {
                                 (c.hasSetup || [])
-                                        .map((s:ModelConfigurationSetup) => this._allSetups[s.id])
+                                        .map((s:ModelConfigurationSetup) => this._setups[s.id])
                                         .filter(visibleSetup)
                                         .sort(sortSetups)
                                         .forEach((s:ModelConfigurationSetup) => {
@@ -270,6 +227,7 @@ export class CompareTree extends connect(store)(PageViewElement) {
         Object.values(this._nodes).forEach((n:TreeNode) => n.unselect());
         this._compare.forEach((c:ComparisonEntry) => {
             if (this._nodes[c.uri]) this._nodes[c.uri].select();
+            //FIXME: when selected, the parent should expand...
         });
     }
 }

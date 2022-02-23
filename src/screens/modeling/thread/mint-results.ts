@@ -234,7 +234,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                 <wl-icon>cloud_download</wl-icon>
                             </wl-button>`: ""
                         }
-                        ${totalOut > 0 && totalOut != showedOut || this._showAllResults ? html`
+                        ${!grouped_ensemble.loading && (totalOut > 0 && totalOut != showedOut || this._showAllResults) ? html`
                             <a style="cursor:pointer" @click="${()=>{this._showAllResults = !this._showAllResults}}">
                                 [${this._showAllResults ? "Hide extra outputs" : "Show all outputs"}]
                             </a>
@@ -361,6 +361,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                         : 
                         ""
                     }
+                    </div>
                 </li>`;
             })}
             </ul>

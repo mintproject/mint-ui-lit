@@ -34,6 +34,7 @@ export class TreeNode extends LitElement {
                 grid-area: title;
                 color: var(--text-color, initial);
                 min-height: 21px;
+                line-height: 21px;
             }
 
             .title.selected {
