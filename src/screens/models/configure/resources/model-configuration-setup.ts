@@ -738,15 +738,17 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(ModelCat
             if (!label) {
                 (<any>inputLabel).onBlur();
                 this._notification.error("You must enter a name");
-            }
-            if (categories == null || categories.length > 0) {
+                inputLabel.scrollIntoView({block: "start", behavior: "smooth"});
+            } else if (categories == null || categories.length == 0) {
                 this._notification.error("You must enter a category");
-            }
-            if (!desc) {
+                inputLabel.scrollIntoView({block: "start", behavior: "smooth"});
+            } else if (!desc) {
                 this._notification.error("You must enter a full description");
-            }
-            if (!paramAssign) {
+                inputDesc.scrollIntoView({block: "start", behavior: "smooth"});
+            } else if (!paramAssign) {
                 (<any>inputParameterAssignament).onBlur();
+                this._notification.error("You must select a parameter assignation method");
+                inputParameterAssignament.scrollIntoView({block: "start", behavior: "smooth"});
             }
         }
     }

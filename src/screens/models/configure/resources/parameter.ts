@@ -541,7 +541,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let inputMin : Textfield = this.shadowRoot.getElementById('part-float-min') as Textfield;
         let inputMax : Textfield = this.shadowRoot.getElementById('part-float-max') as Textfield;
         let def : string = inputDef ? inputDef.value : '';
-        let inc : number = inputInc ? parseInt(inputInc.value) : NaN;
+        let inc : number = inputInc ? parseFloat(inputInc.value) : NaN;
         let min : string = inputMin ? inputMin.value : '';
         let max : string = inputMax ? inputMax.value : '';
         if (def) {
@@ -549,9 +549,9 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 hasDataType: ["float"],
                 hasDefaultValue: [def]
             };
-            if (inc) jsonRes['recommendedIncrement'] = [inc];
-            if (min) jsonRes['hasMinimumAcceptedValue'] = [min];
-            if (max) jsonRes['hasMaximumAcceptedValue'] = [max];
+            jsonRes['recommendedIncrement'] = inc ? [inc] : [];
+            jsonRes['hasMinimumAcceptedValue'] = min ? [min] : [];
+            jsonRes['hasMaximumAcceptedValue'] = max? [max] : [];
             if (this._validateDataTypedValue(def, jsonRes))
                 return jsonRes;
         } else {

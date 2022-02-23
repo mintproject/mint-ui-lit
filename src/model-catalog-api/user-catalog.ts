@@ -26,6 +26,7 @@ import { CustomSoftwareVersionApi } from './custom-apis/software-version';
 import { CustomModelConfigurationApi } from './custom-apis/model-configuration';
 import { CustomModelConfigurationSetupApi } from './custom-apis/model-configuration-setup';
 import { CustomRegionApi } from './custom-apis/region';
+import { CustomParameterApi } from './custom-apis/parameter';
 
 export class UserCatalog {
     private configuration : Configuration;
@@ -61,7 +62,7 @@ export class UserCatalog {
     private _modelConfigurationSetupApi : CustomModelConfigurationSetupApi;
     private _numericalIndexApi : DefaultReduxApi<NumericalIndex,NumericalIndexApi>;
     private _organizationApi : DefaultReduxApi<Organization,OrganizationApi>;
-    private _parameterApi : DefaultReduxApi<Parameter,ParameterApi>;
+    private _parameterApi : CustomParameterApi;
     private _personApi : DefaultReduxApi<Person,PersonApi>;
     private _pointBasedGridApi : DefaultReduxApi<PointBasedGrid,PointBasedGridApi>;
     private _processApi : DefaultReduxApi<Process,ProcessApi>;
@@ -218,11 +219,11 @@ export class UserCatalog {
         return this._organizationApi;
     };
 
-    public get parameter () : DefaultReduxApi<Parameter,ParameterApi> {
+    public get parameter () : CustomParameterApi {
         if (!this._parameterApi)
-            this._parameterApi = new DefaultReduxApi<Parameter,ParameterApi> (
+            this._parameterApi = new  CustomParameterApi(
                 ParameterApi, this.username, this.configuration
-            )
+            );
         return this._parameterApi;
     };
 

@@ -23,8 +23,7 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
     static get styles() {
         return [ExplorerStyles, SharedStyles, this.getBasicStyles(), css`
             .small-tooltip:hover::after {
-                width: 200px;
-                left: 30%;
+                width: min(max-content 200px);
             }
             #input-variable, #input-unit {
                 --list-height: 200px;
@@ -33,14 +32,14 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
             .inline-desc {
                 display: none;
             }
-        .two-inputs > wl-textfield, 
-        .two-inputs > wl-select,
-        .two-inputs > span {
-            display: inline-block;
-            width: 50%;
-        }
+            .two-inputs > wl-textfield, 
+            .two-inputs > wl-select,
+            .two-inputs > span {
+                display: inline-block;
+                width: 50%;
+            }
             .clickable-area > span > .inline-desc {
-                display: unset;
+                display: inline-block;
                 font-style: oblique;
                 font-family: sans-serif;
                 font-weight: 600;
@@ -178,11 +177,15 @@ export interface VariablePresentation {
             let label : string = getLabel(r).replaceAll('_',' ');
             let units : string = r.usesUnit && r.usesUnit.length > 0 && this._allUnits != null ?
                     r.usesUnit.map((u:Unit) => u.id && this._allUnits[u.id] ? getLabel(this._allUnits[u.id]) : '').join(', ') : '';
+            if (r.usesUnit && r.usesUnit.length > 0 && !units) {
+                units = r.usesUnit[0].id.replace(/.+\//, '');
+                if (units.length > 8) units = "";
+            }
             return html`
                 <span class="${desc ? 'tooltip small-tooltip': ''}" tip="${desc}" 
-                      style="${units ? 'display: flex; justify-content: space-between;' : ''}">
+                      style="display: flex; justify-content: space-between;">
                     <span>${label}</span>
-                    ${units ? html`<span>&nbsp;(${units})</span>` : ''}
+                    <span>${units ? html`&nbsp;(${units})` : ''}</span>
                 </span>
                 ${desc ? html`<span class="inline-desc">${desc}</span>` : ''}
             `;

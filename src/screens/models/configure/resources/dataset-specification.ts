@@ -199,7 +199,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             <wl-textarea id="ds-desc" label="Description" required rows="3"
                 value=${edResource && edResource.description ? edResource.description[0] : ''}>
             </wl-textarea>
-            <wl-textfield id="ds-format" label="Format" required
+            <wl-textfield id="ds-format" label="Format"
                 value="${edResource && edResource.hasFormat ? edResource.hasFormat[0] : ''}" >
             </wl-textfield>
             <div style="min-height:50px; padding: 10px 0px;">
@@ -252,12 +252,10 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
         let inputLabel : Textfield = this.shadowRoot.getElementById('ds-label') as Textfield;
         let inputDesc : Textfield = this.shadowRoot.getElementById('ds-desc') as Textfield;
         let inputFormat : Textfield = this.shadowRoot.getElementById('ds-format') as Textfield;
-        let inputDim : Textfield = this.shadowRoot.getElementById('ds-dim') as Textfield;
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : '';
         let desc : string = inputDesc ? inputDesc.value : '';
         let format : string = inputFormat ? inputFormat.value : '';
-        let dim : string = inputDim ? inputDim.value : '';
         let presentation : VariablePresentation[] = this._inputVariablePresentation.getResources();
 
         //POSITION
@@ -265,16 +263,16 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
         let position = edResource && edResource.position && edResource.position.length === 1 ?
             edResource.position[0] : this._resources.length + 1;
 
-        if (label && desc && format) {
+        if (label && desc) {
             let jsonRes = {
                 type: ["DatasetSpecification"],
                 label: [label],
                 description: [desc],
-                hasFormat: [format],
                 position: [position],
                 hasPresentation: presentation,
                 hasDimensionality: [0],
             };
+            if (format) jsonRes["hasFormat"] = [format];
             if (this.isSetup) {
                 jsonRes["hasFixedResource"] = this._fileType == "resource" ?
                         this._inputSampleResource.getResources() : this._inputSampleCollection.getResources();

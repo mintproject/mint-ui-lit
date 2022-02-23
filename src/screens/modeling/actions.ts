@@ -4,7 +4,6 @@ import { ProblemStatementList, ProblemStatementInfo,
     Execution, ThreadInfo, ThreadList, TaskList, ModelEnsembleMap, DataMap, ExecutionSummary, ThreadEvent } from './reducers';
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from '../../app/store';
-//import { db, fieldValue, auth } from '../../config/firebase';
 import { Dataset, DataResource, Dataslice } from '../datasets/reducers';
 import { Model } from '../models/reducers';
 import { IdMap, UserPreferences } from '../../app/reducers';
@@ -218,10 +217,9 @@ export const subscribeProblemStatementsList: ActionCreator<SubProblemListThunkRe
                 if (problem["tasks"]) {
                     let varnameset : Set<string> = new Set();
                     problem["tasks"].forEach(t =>  
-                        t["threads"].forEach(th => {
-                            if (th.response_variable && th.response_variable.name)
-                                varnameset.add(th.response_variable.name)
-                        })
+                        (t["threads"]||[]).forEach(th => th.response_variable && th.response_variable.name &&
+                            varnameset.add(th.response_variable.name)
+                        )
                     );
                     problem["preview"] = Array.from(varnameset);
                     delete problem["tasks"]

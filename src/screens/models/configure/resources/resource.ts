@@ -490,28 +490,30 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         if (this._status === Status.CREATE || this._status === Status.EDIT) {
             return html`
                 <div style="float:right; margin-top: 1em;">
-                    <wl-button @click="${this._onCancelButtonClicked}" style="margin-right: 1em;" flat inverted>
+                    <wl-button @click="${this._onCancelButtonClicked}" style="margin-right: 1em;" flat inverted ?disabled=${this._waiting}>
                         <wl-icon>cancel</wl-icon>&ensp;Discard changes
                     </wl-button>
-                    <wl-button @click="${this._onSaveButtonClicked}">
+                    <wl-button @click="${this._onSaveButtonClicked}" ?disabled=${this._waiting}>
                         <wl-icon>save</wl-icon>&ensp;Save
+                        ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
                     </wl-button>
                 </div>` 
         } else {
             return html`
                 <div style="display: flex; justify-content: space-between; padding: 1em 0;">
                     <span>
-                        <wl-button style="--primary-hue: 0; --primary-saturation: 75%" ?disabled="${!this._deletionEnabled}"
+                        <wl-button style="--primary-hue: 0; --primary-saturation: 75%" ?disabled="${!this._deletionEnabled || this._waiting}"
                                    @click="${() => this._deleteResource(this._resources[0])}">
                             <wl-icon>delete</wl-icon>&ensp;Delete
                         </wl-button>
                         <wl-button  style="--primary-hue: 124; --primary-saturation: 45%; margin-left: 0.5em;"
-                                    ?disabled="${!this._duplicationEnabled}"
+                                    ?disabled="${!this._duplicationEnabled || this._waiting}"
                                     @click="${this._onDuplicateButtonClicked}">
                             <wl-icon>edit</wl-icon>&ensp;Duplicate
+                            ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
                         </wl-button>
                     </span>
-                    <wl-button @click="${() => this._editResource(this._resources[0])}">
+                    <wl-button @click="${() => this._editResource(this._resources[0])}" ?disabled=${this._waiting}>
                         <wl-icon>edit</wl-icon>&ensp;Edit
                     </wl-button>
                 </div>`
@@ -525,12 +527,15 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     private _onDuplicateButtonClicked () {
         let p : Promise<T> = this.duplicate();
+        this._waiting = true;
         p.then((r:T) => {
             this._notification.save(capitalizeFirstLetter(this.name) +" duplicated.");
             this._eventSave(r);
+            this._waiting = false;
         });
         p.catch((err) => {
             this._notification.error("Error trying to duplicate resource");
+            this._waiting = false;
         });
     }
 
@@ -850,7 +855,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._notification.error('The name "'+ getLabel(resource) + '" is already on use.');
     }
 
-    private _saveResource (r:T) {
+    protected _saveResource (r:T) {
         this._waiting = true;
         return new Promise((resolve, reject) => {
             let inner : Promise<T> = this._createLazyInnerResources(r);
@@ -1248,9 +1253,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     /* Same as before but removes the id to set is as a copy. To use when lazy */
     public setResourcesAsCopy (r:T[]) {
+        if (r == null) return;
         // FIXME: This does not work it loads everything always... should change the API redux.
         if (!this.lazy) {
-            console.error("Cannot copy resources.");
+            console.error("Cannot copy resource", r);
             return;
         }
         this._singleMode = false;
