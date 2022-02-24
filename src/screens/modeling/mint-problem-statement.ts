@@ -2,7 +2,7 @@ import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../app/store";
 import { PageViewElement } from "../../components/page-view-element";
-import { ProblemStatement, Task, ProblemStatementInfo, ThreadInfo } from "./reducers";
+import { ProblemStatement, Task, ThreadInfo } from "./reducers";
 import { SharedStyles } from "../../styles/shared-styles";
 import { deleteThread, deleteTask, subscribeProblemStatement } from "./actions";
 
@@ -16,7 +16,6 @@ import './thread/mint-thread';
 import '../../components/task-editor';
 import '../../components/thread-editor';
 
-//mport { selectTask, selectThread } from "../actions/ui";
 import { getUISelectedTask} from "../../util/state_functions";
 import { goToPage } from "../../app/actions";
 import { renderNotifications } from "../../util/ui_renders";
@@ -29,7 +28,6 @@ import { getLatestEvent } from "util/event_utils";
 import { getUserPermission } from "util/permission_utils";
 import { VariableMap } from "@apollo/client/core/LocalState";
 import { selectTask, selectThread } from "app/ui-actions";
-
 
 @customElement('mint-problem-statement')
 export class MintProblemStatement extends connect(store)(PageViewElement) {
@@ -58,10 +56,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
     private _variableMap: VariableMap = {};
 
     static get styles() {
-        return [
-          SharedStyles,
-          css`
-
+        return [SharedStyles, css`
             wl-progress-bar {
                 width: 300px;
             }
@@ -129,6 +124,16 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
 
             .small-screen {
                 display: none;
+            }
+
+            .new-thread {
+                text-align: center;
+                font-weight: normal;
+                padding: 10px;
+            }
+
+            .new-thread:hover {
+                font-weight: bold;
             }
 
             @media (max-width: 1024px) {
@@ -271,7 +276,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                         ${taskEditor?.addingTask ? 
                             html`
                                 <li class="active">
-                                    <div class="cltrow taskrow">
+                                    <div class="cltrow">
                                         <div class="cltmain">
                                             <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>
                                         </div>
@@ -279,109 +284,94 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                 </li>
                             ` : ``
                         }
-                        ${taskids.map((taskid) => {
-                            const task = this._problem_statement!.tasks[taskid];
+                        ${taskids.map((taskid:string) => this._problem_statement!.tasks[taskid])
+                                .filter((task:Task) => !!task)
+                                .map((task:Task) => {
                             let task_permission = getUserPermission(task.permissions, task.events);
-                            if (task) {
-                                let last_event = getLatestEvent(task.events);
-                                return html`
-                                <li class="active ${this._getTaskClass(task.id!)}">
-                                    <div class="cltrow taskrow" id="task_${task.id}"
-                                            @click="${this._onSelectTask}"
-                                            data-taskid="${task.id}">
-                                        <div class="cltmain">
-                                            ${task.name}
-                                            <div class='description'>
-                                                ${this._getTaskRegionTimeText(task)}
-                                            </div>
-                                            ${last_event ? 
-                                            html`
-                                            <div class='caption'>
-                                                ${last_event?.userid} on ${toDateTimeString(last_event?.timestamp)}
-                                            </div>` : ""}                                            
-                                        </div>
-                                        ${task_permission.write ? html`
-                                            <wl-icon @click="${this._editTaskDialog}" 
-                                                data-taskid="${task.id}"
-                                                class="actionIcon editIcon">edit</wl-icon>`: 
-                                            html`<wl-icon class="smallIcon">lock</wl-icon>`} 
-                                        ${task_permission.owner ? html`
-                                            <wl-icon @click="${this._onDeleteTask}" 
-                                                data-taskid="${task.id}"
-                                                class="actionIcon deleteIcon">delete</wl-icon>`: ""}
+                            let last_event = getLatestEvent(task.events);
+                            return html`
+                            <li class="active ${this._getTaskClass(task.id!)}">
+                                <div class="cltrow taskrow" id="task_${task.id}"
+                                        @click="${this._onSelectTask}"
+                                        data-taskid="${task.id}">
+                                    <div style="">
+                                        <wl-icon style="padding: 0px 5px; font-size: 2em;">
+                                            ${this._selectedTask && this._selectedTask.id === task.id ? 'folder_open' : 'folder'}
+                                        </wl-icon>
                                     </div>
-                                    ${this._selectedTask && this._selectedTask.id == taskid ? 
+                                    <div class="cltmain">
+                                        ${task.name}
+                                        <div class='description' style="margin-left: 5px">
+                                            ${this._getTaskRegionTimeText(task)}
+                                        </div>
+                                        ${last_event ? 
                                         html`
-
-                            <ul>
-                            ${threadEditor?.addingThread ? 
-                                html`
+                                        <div class='caption' style="margin-left: 5px">
+                                            ${last_event?.userid} on ${toDateTimeString(last_event?.timestamp)}
+                                        </div>` : ""}                                            
+                                    </div>
+                                    ${task_permission.write ? html`
+                                        <wl-icon @click="${this._editTaskDialog}" 
+                                            data-taskid="${task.id}"
+                                            class="actionIcon editIcon">edit</wl-icon>`: 
+                                        html`<wl-icon class="smallIcon">lock</wl-icon>`} 
+                                    ${task_permission.owner ? html`
+                                        <wl-icon @click="${this._onDeleteTask}" 
+                                            data-taskid="${task.id}"
+                                            class="actionIcon deleteIcon">delete</wl-icon>`: ""}
+                                </div>
+                                ${this._selectedTask && this._selectedTask.id == task.id ?  html`
+                                <ul>
+                                ${threadEditor?.addingThread ? html`
                                     <li class="active">
-                                        <div class="cltrow taskrow">
+                                        <div class="cltrow">
                                             <div class="cltmain">
                                                 <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>
                                             </div>
                                         </div>
-                                    </li>
-                                ` : ``
-                            }
-                            ${threads.map(pid => this._selectedTask.threads[pid]).map((thread: ThreadInfo, i: number) => {
-                                if(!thread) {
-                                    return "";
-                                }
-                                let pname = thread.name ? thread.name : this._selectedTask.name;
-                                let last_event = getLatestEvent(thread.events);
-                                let thread_permission = getUserPermission(thread.permissions, thread.events);
-                                return html`
-                                    <li class="active ${this._getThreadClass(thread.id!)}">
-                                        <div class="cltrow taskrow" id="thread_${thread.id}"
-                                                @click="${this._onSelectThread}"
-                                                data-threadid="${thread.id}">
-                                            <div class="cltmain" style="${this._selectedThreadId != thread.id ? "font-weight: normal;" : ""}">
-                                                ${pname && pname != this._selectedTask.name? pname : "Default thread"}
-                                                <br/>
-                                                ${last_event ? 
-                                                html`
-                                                <div class='thread_caption'>
-                                                    ${last_event?.userid} on ${toDateTimeString(last_event?.timestamp)}
-                                                </div>` : ""}
+                                    </li> ` : ""}
+                                
+                                ${threads.map(pid => this._selectedTask.threads[pid]).map((thread: ThreadInfo, i: number) => {
+                                    if (!thread) return "";
+                                    let pname = thread.name ? thread.name : this._selectedTask.name;
+                                    let last_event = getLatestEvent(thread.events);
+                                    let thread_permission = getUserPermission(thread.permissions, thread.events);
+                                    return html`
+                                        <li class="active ${this._getThreadClass(thread.id!)}">
+                                            <div class="cltrow" id="thread_${thread.id}"
+                                                    @click="${this._onSelectThread}"
+                                                    data-threadid="${thread.id}">
+                                                <div class="cltmain" style="${this._selectedThreadId != thread.id ? "font-weight: normal;" : ""}">
+                                                    ${pname && pname != this._selectedTask.name? pname : "Default thread"}
+                                                    <br/>
+                                                    ${last_event ? 
+                                                    html`
+                                                    <div class='thread_caption'>
+                                                        ${last_event?.userid} on ${toDateTimeString(last_event?.timestamp)}
+                                                    </div>` : ""}
+                                                </div>
+
+                                                ${thread_permission.write ? html`
+                                                    <wl-icon @click="${this._editThreadDialog}" 
+                                                        data-threadid="${thread.id}"
+                                                        class="actionIcon editIcon">edit</wl-icon>`: 
+                                                    html`<wl-icon class="smallIcon">lock</wl-icon>`} 
+                                                ${thread_permission.owner ? html`
+                                                    <wl-icon @click="${this._onDeleteThread}" 
+                                                        data-threadid="${thread.id}"
+                                                        class="actionIcon deleteIcon">delete</wl-icon>`: ""}
                                             </div>
+                                        </li>`;
+                                })}
 
-                                            ${thread_permission.write ? html`
-                                                <wl-icon @click="${this._editThreadDialog}" 
-                                                    data-threadid="${thread.id}"
-                                                    class="actionIcon editIcon">edit</wl-icon>`: 
-                                                html`<wl-icon class="smallIcon">lock</wl-icon>`} 
-                                            ${thread_permission.owner ? html`
-                                                <wl-icon @click="${this._onDeleteThread}" 
-                                                    data-threadid="${thread.id}"
-                                                    class="actionIcon deleteIcon">delete</wl-icon>`: ""}
-                                        </div>
-                                    </li>
-                                `;
-                            })}
 
-                            ${selected_task_permissions.write ? html`
-                                <li class="active">
-                                    <div class="" @click="${this._editThreadDialog}" 
-                                         style="text-align: center; font-weight: normal;">
+                                </ul>` : ""}
+
+                                ${this._selectedTask && this._selectedTask.id == task.id && selected_task_permissions.write ? html`
+                                    <div class="new-thread" @click="${this._editThreadDialog}">
                                         Create new thread
-                                    </div>
-                                </li>`
-                                : ""}
-
-                            </ul>
-
-                                        `
-                                        : ""
-                                    }
-
-                                </li>
-                                `
-                            }
-                            else {
-                                return html``
-                            }
+                                    </div>`:""}
+                            </li>`
                         })}
                         </ul>
                     </div>
