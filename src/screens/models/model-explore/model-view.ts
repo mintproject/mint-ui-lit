@@ -18,7 +18,7 @@ import { GalleryEntry } from 'components/image-gallery';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
-import marked from 'marked';
+import { marked } from 'marked';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
 import { urlify } from 'util/ui_renders';
@@ -1706,7 +1706,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             if (ex) {
                 let example = this.shadowRoot.getElementById('mk-example');
                 if (example) {
-                    example.innerHTML = marked(ex);
+                    example.innerHTML = marked.parse(ex);
                 }
             }
         } else if (this._tab == 'variables') {
