@@ -1121,17 +1121,13 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             // Check resources with position
             let done : Set<string> = new Set();
             let ordered : T[] = this._resources
-                    .map((r:T) => {
-                        let lr : T = this._loadedResources[r.id]
-                        done.add(lr.id);
-                        return lr;
-                    })
+                    .map((r:T) => this._loadedResources[r.id])
                     .filter((r:T) => r ? (this._getResourcePosition(r) > 0) : false)
                     .sort((r1:T, r2:T) => this._getResourcePosition(r1) - this._getResourcePosition(r2));
-
+            ordered.forEach((r:T) => done.add(r.id));
             let unordered = this._resources.filter((r:T) => !done.has(r.id))
             this._orderedResources = [ ...ordered, ...unordered ];
-            //console.log('New order:', this._orderedResources.map(r => r.label[0]));
+            //console.log('New order:', this._orderedResources.map(console.log));
             this.requestUpdate();
         }
     }
