@@ -1131,10 +1131,10 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@mintproject/modelcatalog_client@^8.0.0":
-  version "8.0.0"
-  resolved "https://registry.yarnpkg.com/@mintproject/modelcatalog_client/-/modelcatalog_client-8.0.0.tgz#165468a90e345be7b7fc13376e0bebadb1b6b034"
-  integrity sha512-CHXCgVKLSKgIPbkmOoMlr78Lz2QqU7SlIFH46KsqbohFV4zgJPQUuu++bYSrtDPB7TUaREc3yBgEHSY52HyTvg==
+"@mintproject/modelcatalog_client@^8.0.1":
+  version "8.0.1"
+  resolved "https://registry.yarnpkg.com/@mintproject/modelcatalog_client/-/modelcatalog_client-8.0.1.tgz#90391b71d87234494d8123a6e77c840ddc5262d3"
+  integrity sha512-sCxTe1VUlcJ8assVw8SW2g7y35B+vwj2ip3cUylP2Lk+qCMSF+S47lfHtDzFzx/XMTuhkDaXRT8FuvUeaFdNjQ==
 
 "@mrmlnc/readdir-enhanced@^2.2.1":
   version "2.2.1"
