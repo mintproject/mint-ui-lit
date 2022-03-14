@@ -28,6 +28,12 @@ import { getCreateEvent } from "util/graphql_adapter";
 import 'components/loading-dots';
 import { ModelQuestionComposer } from "components/questions/model-question-composer";
 import { HasIndicatorQuestion } from "components/questions/custom_questions/has-indicator";
+import { ModelSelector } from "components/model-selector";
+import { DatasetSelector } from "components/dataset-selector";
+
+import { ThreadExpansionConfigure } from "./thread-expansion-configure";
+import { ThreadExpansionModels } from "./thread-expansion-models";
+import { ThreadExpansionDatasets } from "./thread-expansion-datasets";
 
 store.addReducers({
     variables
@@ -42,6 +48,14 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
     
     static get styles() {
         return [ SharedStyles, css`
+            .expansion-title {
+                display: flex;
+                align-items: center;
+            }
+            .expansion-title > wl-icon {
+                margin-right: 10px;
+            }
+
             .thread-detail-table {
                 width: 100%;
             }
@@ -57,114 +71,48 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
         `]
     }
 
-    public setQuestionComposer (composer:ModelQuestionComposer) : void {
-        super.setQuestionComposer(composer);
-        this.regionSelector = composer.getRegionQuestion();
-        this.indicatorSelector = composer.getIndicatorQuestion();
+    private threadConfig : ThreadExpansionConfigure;
+    private threadModelSelector : ThreadExpansionModels;
+    private threadDatasetSelector : ThreadExpansionDatasets;
+
+    constructor () {
+        super();
+        this.threadConfig = new ThreadExpansionConfigure();
+        this.threadModelSelector = new ThreadExpansionModels();
+        this.threadDatasetSelector = new ThreadExpansionDatasets();
+        
+        this.addEventListener('thread-configuration-updated', (e:Event) => {
+            //let constraints : ThreadConstraints = e['detail'] as ThreadConstraints;
+            //this.threadModelSelector.setRegionFilter(constraints.region);
+            this.threadModelSelector.requestUpdate();
+        })
     }
-    
+
     protected render () : TemplateResult {
-        if (this.lastActive != this.active) {
-            // This happens when we go back without chaning anything
-            this.lastActive = this.active;
-            this.regionSelector.setSelected(this.thread.regionid);
-            this.regionSelector.isEditable = this.editMode;
-            this.questionComposer.applyAllDataFilters();
-            setTimeout(() => { 
-                this.regionSelector.updateMap()
-                this.requestUpdate();
-            }, 200);
-            return html`<wl-progress-spinner class="loading"></wl-progress-spinner>`;
-        }
-        return html `
-            <div class="clt">
-                <wl-title level="3">
-                    Configure thread
-                    ${this.permission.write && !this.editMode ? html`
-                        <wl-icon @click="${this.onEditEnable}" 
-                            id="editModelsIcon" class="actionIcon editIcon">edit</wl-icon>`: ""
-                    }
-                </wl-title>
-                <p>
-                    A Thread constitutes analysis of a sub-objective using a single model. A sub-objective may have multiple modeling threads.
-                    ${this.permission.write && !this.editMode ? 
-                        html`<br/>Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes.`
-                        : ""
-                    }
-                </p>
+        return html`
+            <wl-title level="3"> Configure thread executions </wl-title>
+            <p>
+                A Thread constitutes analysis of a sub-objective. This page allows you to set a general configuration for this thread,
+                choose one or more models and datasets to generate a set of executions to be run.
+                ${this.permission && this.permission.write && !this.editMode ? 
+                    html`Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes.` : "" }
+            </p>
 
-                ${!this.thread ?
-                    html``
-                    : (this.editMode ? this.renderEditForm(this.thread) :  this.renderView(this.thread))
-                }
+            ${this.threadConfig}
+            ${this.threadModelSelector}
+            ${this.threadDatasetSelector}
 
-                <div class="footer">
-                    ${this.editMode ? 
-                        html `<wl-button @click="${this.onCancelClicked}" flat inverted>CANCEL</wl-button>`
-                        : ""
-                    }
-                    <wl-button type="button" class="submit" @click="${this.onContinueClicked}" ?disabled=${this.loading}>
-                        ${this.editMode ? "Save" : "Continue"} 
-                        ${this.loading ? html`<loading-dots style="--width: 20px"></loading-dots>` : ""}
-                    </wl-button>
-                </div>
+            <div class="footer">
+                <wl-button type="button" class="submit" @click="${this.continue}" ?disabled=${this._waiting}>
+                    Select &amp; Continue
+                    ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`: ''}
+                </wl-button>
             </div>
-            ${renderNotifications()}`
+        `;
     }
 
-    renderView (thread: Thread): TemplateResult {
-        let threadEvent = getLatestEventOfType(["CREATE", "UPDATE"], thread.events);
-        console.log( "THREAD:", thread);
-        return html`
-            <table class="thread-detail-table">
-                <tbody>
-                    <tr>
-                        <td> Thread name: </td>
-                        <td> ${thread.name ? thread.name : ""} </td>
-                    </tr>
-                    ${threadEvent.notes ? 
-                        html`<tr>
-                            <td> Notes: </td>
-                            <td> ${threadEvent.notes} </td>
-                        </tr>`
-                        : ''}
-                    <tr>
-                        <td> Time Period: </td>
-                        <td>
-                            <div class="formRow">
-                                <div class="input_half">
-                                    <input id="thread_from" type="date" value="${toDateString(thread.dates.start_date)}" disabled>
-                                </div>
-                                to
-                                <div class="input_half">
-                                    <input id="thread_to" type="date" value="${toDateString(thread.dates.end_date)}" disabled>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td> <label>Region:</label> </td>
-                        <td>
-                            ${this.regionSelector}
-                        </td>
-                    </tr>
-                    ${this.thread.response_variables && this.thread.response_variables.length > 0 ? html`
-                    <tr>
-                        <td> <label>Indicator:</label> </td>
-                        <td>
-                            ${this.thread.response_variables}
-                        </td>
-                    </tr>`: ""
-                    }
-                    <tr>
-                        <td></td>
-                        <td>
-                            <permissions-editor id="thread_permissions"></permissions-editor>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        `
+    private continue () : void {
+
     }
 
     renderEditForm (thread: Thread): TemplateResult {

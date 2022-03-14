@@ -190,7 +190,6 @@ export class MintModels extends connect(store)(MintThreadPage) {
         let latest_model_event = getLatestEventOfType(["SELECT_MODELS"], this.thread.events);
 
         return html`
-        ${this.questionComposer}
 
         <div class="footer">
             <wl-button type="button" flat inverted outlined @click="${this._compareModels}">Compare Selected Models</wl-button>
@@ -575,12 +574,12 @@ export class MintModels extends connect(store)(MintThreadPage) {
     _getSelectedModels() {
         let models:ModelMap = {};
 
-        let selectedSetups : ModelConfigurationSetup[] = this.questionComposer.getModels();
+        /*let selectedSetups : ModelConfigurationSetup[] = this.questionComposer.getModels();
         selectedSetups.forEach((s:ModelConfigurationSetup) => {
             models[s.id] = setupToOldModel(s, this._allSoftwareImages);
-        });
+        });*/
 
-        /*this.shadowRoot!.querySelectorAll("input.checkbox").forEach((cbox) => {
+        this.shadowRoot!.querySelectorAll("input.checkbox").forEach((cbox) => {
             let cboxinput = (cbox as HTMLInputElement);
             let modelid = cboxinput.dataset["modelid"];
             if(cboxinput.checked) {
@@ -591,7 +590,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
                     }
                 });
             }
-        });*/
+        });
 
         return models; 
     }

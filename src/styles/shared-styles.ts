@@ -683,6 +683,50 @@ export const SharedStyles = css`
   .breadcrumbs a:first-child:before {
     border: none;
   }
+
+  /* New Breadcrumbs css */
+  .breadcrumbs_header {
+    list-style: none;
+    display: inline-block;
+    width: 100%;
+    padding:0px;
+    margin:0px;
+    margin-left: 0px;
+  }
+  .breadcrumbs_header .icon {
+    font-size: 14px;
+  }
+  .breadcrumbs_header a {
+    float: left;
+    cursor: pointer;
+    min-width: 70px;
+    color: #232323;
+    display: block;
+    background: #f0f0f0;
+    text-decoration: none;
+    position: relative;
+    height: 26px;
+    line-height: 26px;
+    font-size: 13px;
+    font-weight: bold;
+    padding: 0 15px;
+    text-align: center;
+    margin: 0px 2px;
+    border-radius: 5px;
+  }
+  .breadcrumbs_header a:hover {
+    background-color: #e0e0e0;
+  }
+  .breadcrumbs_header a:first-child {
+    padding-left: 8px;
+    -moz-border-radius: 2px 0 0 2px;
+    -webkit-border-radius: 4px;
+    border-radius: 2px 0 0 2px;
+  }
+  .breadcrumbs_header a.active {
+    background-color: rgb(98, 155, 48);
+    color: white;
+  }
   
   /* Input type = File styles */
   [type="file"] {

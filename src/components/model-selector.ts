@@ -1,14 +1,16 @@
-import { Model, ModelCategory, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Region } from "@mintproject/modelcatalog_client";
+import { Model, ModelCategory, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Region, GeoShape, DatasetSpecification, VariablePresentation, StandardVariable } from "@mintproject/modelcatalog_client";
 import { RootState, store } from "app/store";
 import { connect } from "pwa-helpers/connect-mixin";
 import { customElement, LitElement, property, html, css, CSSResult, TemplateResult } from "lit-element";
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+import { BoundingBox, Region as LocalRegion, RegionCategory} from "screens/regions/reducers";
 
 import "weightless/button";
 import "weightless/icon";
 import { IdMap } from "app/reducers";
-import { getId, getLabel } from "model-catalog-api/util";
+import { getId, getLabel, isMainRegion } from "model-catalog-api/util";
 import { SharedStyles } from "styles/shared-styles";
+import { doBoxesIntersect, getBoundingBoxFromGeoShape } from "screens/regions/actions";
 
 
 const PER_PAGE = 10;
@@ -25,6 +27,8 @@ interface ModelOptionCategory {
     isVisible: boolean;
 }
 
+export type OptionFilter = (currentOptions: ModelOption[]) => ModelOption[];
+
 @customElement("model-selector")
 //export class ModelSelector extends connect(store)(LitElement) {
 export class ModelSelector extends LitElement {
@@ -35,6 +39,11 @@ export class ModelSelector extends LitElement {
     @property({type: Object}) private setups : IdMap<ModelConfigurationSetup>;
     @property({type: Object}) private categories : IdMap<ModelCategory>;
     @property({type: Object}) private regions : IdMap<Region>;
+
+    @property({type: Object}) private geoshapes : IdMap<GeoShape>;
+    @property({type: Object}) private datasetSpecifications : IdMap<DatasetSpecification>;
+    @property({type: Object}) private variablePresentations : IdMap<VariablePresentation>;
+    @property({type: Object}) private standardVariables : IdMap<StandardVariable>;
 
     // Possible options:
     @property({type: Array})  private options : ModelOption[];
@@ -48,8 +57,10 @@ export class ModelSelector extends LitElement {
 
     // State
     @property({type: Boolean}) private loadingData : boolean = false;
-    //@property({type: Boolean}) private loading : boolean = false;
+    @property({type: Boolean}) private editMode : boolean = false;
     @property({type: String}) private textFilter : string = "";
+    @property({type: String}) private selectedIndicatorId : string = "";
+    @property({type: Object}) private regionFilter : LocalRegion;
 
     // Pagination
     @property({type: Number}) private currentPage: number = 1;
@@ -70,6 +81,9 @@ export class ModelSelector extends LitElement {
         this.loadDataFromModelCatalog();
     }
 
+    public onModelCountUpdate:(length: number) => void;
+    
+
     private loadDataFromModelCatalog () : void {
         // Load data from the model-catalog
         this.loadingData = true;
@@ -80,6 +94,11 @@ export class ModelSelector extends LitElement {
         let categoryReq = store.dispatch(ModelCatalogApi.myCatalog.modelCategory.getAll());
         let regionReq   = store.dispatch(ModelCatalogApi.myCatalog.region.getAll());
 
+        let geoShapeReq = store.dispatch(ModelCatalogApi.myCatalog.geoShape.getAll());
+        let dsReq       = store.dispatch(ModelCatalogApi.myCatalog.datasetSpecification.getAll());
+        let svReq       = store.dispatch(ModelCatalogApi.myCatalog.standardVariable.getAll());
+        let vpReq       = store.dispatch(ModelCatalogApi.myCatalog.variablePresentation.getAll());
+
         modelReq.then((models:IdMap<Model>) => { this.models = models });
         versionReq.then((versions:IdMap<SoftwareVersion>) => { this.versions = versions });
         configReq.then((configs:IdMap<ModelConfiguration>) => { this.configurations = configs });
@@ -87,7 +106,13 @@ export class ModelSelector extends LitElement {
         categoryReq.then((categories:IdMap<ModelCategory>) => { this.categories = categories });
         regionReq.then((regions:IdMap<Region>) => { this.regions = regions });
 
-        Promise.all([modelReq, configReq, versionReq, setupReq, categoryReq, regionReq]).then(() => {
+        geoShapeReq.then((shapes:IdMap<GeoShape>) => { this.geoshapes = shapes });
+        dsReq.then((dss:IdMap<DatasetSpecification>) => { this.datasetSpecifications = dss });
+        svReq.then((svs:IdMap<StandardVariable>) => { this.standardVariables = svs });
+        vpReq.then((vps:IdMap<VariablePresentation>) => { this.variablePresentations = vps });
+
+        //Promise.all([modelReq, configReq, versionReq, setupReq, categoryReq, regionReq]).then(() => {
+        Promise.all([modelReq, configReq, versionReq, setupReq, categoryReq, regionReq, geoShapeReq, dsReq, svReq, vpReq]).then(() => {
             this.createOptionList();
             this.loadingData = false;
             this.dispatchEvent(
@@ -239,6 +264,28 @@ export class ModelSelector extends LitElement {
         }
     }
 
+    private _previouslySelected : Set<string>;
+    public setEditable () : void {
+        this.editMode = true;
+        this._previouslySelected = new Set((this.options||[])
+                .filter((opt:ModelOption) => opt.isSelected)
+                .map((opt:ModelOption) => opt.value.id)
+        );
+    }
+
+    public cancel () : void {
+        this.editMode = false;
+        if (this._previouslySelected) {
+            this.setSelected(this._previouslySelected);
+            this._previouslySelected = null;
+        }
+    }
+
+    public save () : void {
+        this.editMode = false;
+        this._previouslySelected = null;
+    }
+
     public render () : TemplateResult {
         let visibleOptions : ModelOption[] = [];
         if (!this.loadingData) {
@@ -246,14 +293,17 @@ export class ModelSelector extends LitElement {
                 return opt.isVisible && !opt.isSelected;
             });
             visibleOptions = this.applyTextFilter(visibleOptions);
+            visibleOptions = this.applyRegionFilter(visibleOptions);
+            visibleOptions = this.applyIndicatorFilter(visibleOptions);
             let hiddenByCategory : number = visibleOptions.filter((opt:ModelOption) => opt.categoryid && !this.optionCategories[opt.categoryid].isVisible).length;
-            this.maxPage = Math.ceil((visibleOptions.length - hiddenByCategory) / PER_PAGE);
+            let mx = Math.ceil((visibleOptions.length - hiddenByCategory) / PER_PAGE);
+            this.maxPage = mx === 0 && this.options.filter((opt:ModelOption) => opt.isSelected).length > 0 ? 1 : mx;
         }
 
         return html`
             <div style="border: 1px solid #EEE; margin: 10px 0px;">
                 <!-- Input text to search -->
-                ${this.renderPaginator()}
+                ${this.editMode ? this.renderPaginator() : ""}
 
                 <!-- Table with filtered models -->
                 <table class="pure-table pure-table-striped">
@@ -334,7 +384,8 @@ export class ModelSelector extends LitElement {
 
     private renderMatchingModels (posibleOptions: ModelOption[]) : TemplateResult {
         let mx : number = (this.currentPage * PER_PAGE);
-        //FIXME: do no add when category is not visible!!!!
+        //FIXME: maintain the header of the categories even if hidden.
+        //IDEA: add a set to check if is already on the array, only add the first of non visible categories.
         let visibleOptions : ModelOption[] = posibleOptions
                 .filter((opt:ModelOption) => !opt.categoryid || this.optionCategories[opt.categoryid].isVisible)
                 .slice(
@@ -346,6 +397,7 @@ export class ModelSelector extends LitElement {
             return opt.isSelected;
         });
 
+        this.onModelCountUpdate(visibleOptions.length + selectedOptions.length);
         if (visibleOptions.length === 0 && selectedOptions.length === 0)
             return html`
                 <tr>
@@ -359,6 +411,7 @@ export class ModelSelector extends LitElement {
         let selectedModels : Set<String> = new Set();
         let visibleModels : Set<String> = new Set();
 
+        //If is the first model of some category, print the category
         return html`
             ${selectedOptions.map((opt:ModelOption) => {
                 if (opt.categoryid && !selectedModels.has(opt.categoryid)) {
@@ -369,7 +422,7 @@ export class ModelSelector extends LitElement {
                 }
                 return this.renderRow(opt);
             })}
-            ${visibleOptions.map((opt:ModelOption) => {
+            ${this.editMode ? visibleOptions.map((opt:ModelOption) => {
                 if (opt.categoryid) { //} && ) {
                     let optCat : ModelOptionCategory = this.optionCategories[opt.categoryid];
                     if (!visibleModels.has(opt.categoryid)) {
@@ -382,7 +435,9 @@ export class ModelSelector extends LitElement {
                     }
                 }
                 return this.renderRow(opt);
-            })}
+            }) : (selectedOptions.length > 0 ? "" : html`<tr>
+                <td colspan=4 style="text-align: center;">No model selected</td>
+            </tr>`)}
         `;
     }
 
@@ -410,7 +465,8 @@ export class ModelSelector extends LitElement {
         return html`
         <tr>
             <td>
-                <input class="checkbox" type="checkbox" data-modelid="${model.id}"
+                <input class="checkbox" type="checkbox" data-modelid="${model.id}" 
+                        .disabled=${!this.editMode}
                         @change=${ this.toggleSelection }
                         .checked=${option.isSelected}></input>
             </td>
@@ -449,5 +505,56 @@ export class ModelSelector extends LitElement {
             option.isSelected = !option.isSelected;
             this.requestUpdate();
         }
+    }
+
+    public setRegion (region:LocalRegion) : void {
+        this.regionFilter = region;
+    }
+
+    private applyRegionFilter (options:ModelOption[]) : ModelOption[] {
+        if (!this.regionFilter || !this.geoshapes) return options;
+        
+        let regionsInBoundingBox : Region[] = [];
+        Object.values(this.regions).forEach((r:Region) => {
+            if (r.geo && r.geo.map((shape:GeoShape) => this.geoshapes[shape.id]).some((shape:GeoShape) => {
+                let bb : BoundingBox = getBoundingBoxFromGeoShape(shape);
+                return !!bb && (
+                    (!isMainRegion(r) && this.regionFilter.bounding_box && doBoxesIntersect(bb, this.regionFilter.bounding_box)) 
+                    || (this.regionFilter.model_catalog_uri && this.regionFilter.model_catalog_uri === r.id));
+            })) {
+                regionsInBoundingBox.push(r);
+            }
+        });
+
+        return options.filter((opt:ModelOption) => !!opt.value.hasRegion && opt.value.hasRegion
+                .map((r:Region) => this.regions[r.id])
+                .some((r:Region) => regionsInBoundingBox.some((r2:Region) => r2.id === r.id))
+        )
+    }
+
+    public setIndicator (indicatorid: string) : void {
+        this.selectedIndicatorId = indicatorid;
+    }
+
+    private applyIndicatorFilter (options:ModelOption[]) : ModelOption[] {
+        if (!this.selectedIndicatorId || !this.datasetSpecifications || !this.variablePresentations || !this.standardVariables)
+            return options;
+
+        //FIXME: this does not work for "useful for calculating index"
+        return options.filter((opt:ModelOption) => 
+            !!opt.value.hasOutput && 
+            opt.value.hasOutput
+                .map((output:DatasetSpecification) => this.datasetSpecifications[output.id])
+                .some((output:DatasetSpecification) => 
+                    (output.hasPresentation||[])
+                        .map((vp:VariablePresentation) => this.variablePresentations[vp.id])
+                        .some((vp:VariablePresentation) => 
+                            (vp.hasStandardVariable||[])
+                                .map((sv:StandardVariable) => this.standardVariables[sv.id])
+                                .some((sv:StandardVariable) => sv.label[0] === this.selectedIndicatorId)
+                        )
+                )
+        )
+
     }
 }

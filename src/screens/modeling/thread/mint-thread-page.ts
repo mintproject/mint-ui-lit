@@ -27,13 +27,6 @@ export class MintThreadPage extends PageViewElement {
     @property({type: Boolean})
     protected _waiting: boolean = false;    
 
-    @property({type: Object})
-    protected questionComposer: ModelQuestionComposer;
-
-    public setQuestionComposer (composer:ModelQuestionComposer) : void {
-        this.questionComposer = composer;
-    }
-    
     selectAndContinue(section) {
         if(section == "models") {
             this.thread.refresh = true;

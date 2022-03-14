@@ -154,11 +154,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         
         // If models have been selected, go over each model
         if (noModelHasBeenSelected) {
-            if (this.questionComposer) {
-                if (this._questionDatasets) {
-                    return html`${this._questionDatasets.length} datasets found: ${this.datasetSelector}`
-                } else return html`No datasets found`;
-            } else return html`
+            return html`
                 <p>
                     This step is for selecting datasets for each of the models that you selected earlier.
                 </p>

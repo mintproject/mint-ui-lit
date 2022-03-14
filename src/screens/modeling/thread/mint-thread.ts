@@ -40,15 +40,8 @@ export class MintThread extends connect(store)(MintThreadPage) {
     @property({type: Boolean}) private _dispatched: boolean = false;
     @property({type: Boolean}) private _dispatched_execution_summary: boolean = false;
 
-    //--
-    @property({type: Number}) private nModels : number = -1;
-    @property({type: Number}) private nDatasets : number = -1;
-
-    private regionSelector : IsInBoundingBoxQuestion;
-    
     static get styles() {
-        return [ SharedStyles,
-          css`
+        return [ SharedStyles, css`
           .breadcrumbs a.active, .breadcrumbs a.done.active {
             background-color: #0f7acf;
             color: white;
@@ -100,24 +93,22 @@ export class MintThread extends connect(store)(MintThreadPage) {
           .breadcrumbs a.pending:after {
             border-left-color: cadetblue;
           }
-
           .card2 {
             padding: 5px 10px;
             border: 1px solid #F0F0F0;
             left: 0px;
             right: 0px;
-            height: calc(100% - 50px);
+            height: calc(100% - 40px);
             overflow: auto;
             background: #FFFFFF;
           }
-
           .thread-header {
               display: flex;
               align-items: center;
           }
 
           @media (max-width: 1024px) {
-        }`
+          }`
         ];
     }
     
@@ -129,24 +120,8 @@ export class MintThread extends connect(store)(MintThreadPage) {
                     class="${this._getBreadcrumbClass('configure', sectionDoneMap)}" 
                     href="${this._getModeURL('configure')}">
                     <wl-icon style="vertical-align: middle;">settings</wl-icon>
+                    &nbsp;Configure
                 </a>
-                <a id="models_breadcrumb" 
-                    class="${this._getBreadcrumbClass('models', sectionDoneMap)}" 
-                    href="${this._getModeURL('models')}">
-                        Models
-                        ${(this.nModels < 0)? 
-                            html`<loading-dots style="--width: 20px"></loading-dots>`
-                            : html` [${this.nModels}]`}
-                </a>
-                <a id="datasets_breadcrumb" 
-                    class="${this._getBreadcrumbClass('datasets', sectionDoneMap)}" 
-                    href="${this._getModeURL('datasets')}">
-                        Datasets
-                        ${(this.nDatasets<0)? 
-                            html`<loading-dots style="--width: 20px"></loading-dots>`
-                            : html` [${this.nDatasets > 99 ? "99+" : this.nDatasets}]`}
-                </a>
-
                 <a id="parameters_breadcrumb" 
                     class="${this._getBreadcrumbClass('parameters', sectionDoneMap)}" 
                     href="${this._getModeURL('parameters')}">Parameters</a>
@@ -179,8 +154,6 @@ export class MintThread extends connect(store)(MintThreadPage) {
     private _setSectionStatusMap() {
         let map = {};
         map["configure"] = getThreadVariablesStatus(this.thread);
-        map["models"] = getThreadModelsStatus(this.thread);
-        map["datasets"] = getThreadDatasetsStatus(this.thread);
         map["parameters"] = getThreadParametersStatus(this.thread);
         map["runs"] = getThreadRunsStatus(this.thread);
         map["results"] = getThreadResultsStatus(this.thread);
@@ -190,8 +163,6 @@ export class MintThread extends connect(store)(MintThreadPage) {
     private _getNextMode() {
         let modes = [
             "configure",
-            "models",
-            "datasets",
             "parameters",
             "runs",
             "results",
@@ -225,12 +196,6 @@ export class MintThread extends connect(store)(MintThreadPage) {
 
         if (this._currentMode != section && section == "configure") {
             cls += " done";
-        }
-
-        if ((this._currentMode != section) && ((section == "models" && this.nModels >= 0 ) || (section == "datasets" && this.nDatasets >= 0))) {
-            if ((section == "models" && this.nModels == 0) || (section == "datasets" && this.nDatasets == 0))
-                cls += " warning";
-            else cls += " pending";
         }
         return cls;
     }
@@ -285,15 +250,6 @@ export class MintThread extends connect(store)(MintThreadPage) {
                     .problem_statement="${this.problem_statement}"
                     ?active="${this._currentMode == 'configure'}">
                 </mint-configure>
-                <mint-models class="page" 
-                    .problem_statement="${this.problem_statement}"
-                    ?active="${this._currentMode == 'models'}">
-                </mint-models>
-                <mint-datasets class="page" 
-                    .problem_statement="${this.problem_statement}"
-                    .task="${this.task}"
-                    ?active="${this._currentMode == 'datasets'}">
-                </mint-datasets>
                 <mint-parameters class="page" 
                     .problem_statement="${this.problem_statement}"
                     ?active="${this._currentMode == 'parameters'}">
@@ -435,85 +391,6 @@ export class MintThread extends connect(store)(MintThreadPage) {
             }
             state.modeling.thread = undefined;
             this.thread = null;
-        }
-
-        this.threadSectionChanged(state.ui.selected_thread_section, this.thread);
-    }
-
-    private _countModels = (setups:ModelConfigurationSetup[]) => {
-        this.nModels = setups.length;
-    }
-
-    private _countDatasets = (dss:Dataset[]) => {
-        if (dss == null) {
-            this.nDatasets = -1;
-        } else {
-            this.nDatasets = dss.length;
-        }
-    }
-
-
-
-    private lastSection : string;
-    private lastThread : Thread;
-    threadSectionChanged(newSection:string, newThread: Thread) {
-        if (newThread && this.lastThread != newThread) {
-            // Thread has changed, create a new Question composer and bind it to initial parameters.
-            console.log("Creating new question composer...")
-            this.setQuestionComposer(new ModelQuestionComposer(newThread));
-            this.questionComposer.onFilteringModelsComplete = this._countModels;
-            this.questionComposer.onFilteringDataComplete =  this._countDatasets;
-
-            //This is specific
-            this.regionSelector = this.questionComposer.getRegionQuestion();
-            if (newThread.regionid) {
-                this.regionSelector.setSelected(newThread.regionid);
-                this.questionComposer.applyAllDataFilters();
-            }
-            this.lastThread = newThread;
-            this.lastSection = undefined; // To reload page specifics
-        }
-
-        if (this.questionComposer && this.thread && newSection && this.lastSection != newSection) {
-            console.log(this.lastSection + " changed to " + newSection);
-            this.lastSection = newSection;
-
-            let configPage : MintThreadPage = this.shadowRoot.querySelector("mint-configure");
-            let modelsPage : MintThreadPage = this.shadowRoot.querySelector("mint-models");
-            let datasetsPage : MintDatasets = this.shadowRoot.querySelector("mint-datasets");
-
-            let regionQuestion = this.regionSelector;
-            switch (newSection) {
-                case "configure":
-                    if (configPage != null) {
-                        regionQuestion.disableTextRepresentation();
-                        configPage.setQuestionComposer(this.questionComposer);
-                    } else 
-                        this.lastSection = undefined; //Do no accept change if we cannot bind 
-                    break;
-                case "models":
-                    if (modelsPage != null) {
-                        regionQuestion.setSelected(this.thread.regionid);
-                        regionQuestion.isEditable = false;
-                        regionQuestion.enableTextRepresentation();
-                        this.questionComposer.applyAllDataFilters();
-                        modelsPage.setQuestionComposer(this.questionComposer);
-                    } else
-                        this.lastSection = undefined; //Do no accept change if we cannot bind 
-                    break;
-                case "datasets":
-                    if (datasetsPage != null) {
-                        this.questionComposer.onFilteringDataComplete = (dss:Dataset[]) => {
-                            this._countDatasets(dss);
-                            datasetsPage.setDatasets(dss);
-                        }
-                        datasetsPage.setQuestionComposer(this.questionComposer);
-                    } else
-                        this.lastSection = undefined; //Do no accept change if we cannot bind 
-                    break;
-                default:
-                    break;
-            }
         }
     }
 

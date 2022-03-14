@@ -251,7 +251,10 @@ export class DatasetSelector extends connect(store)(LitElement) {
                 ${dataset.variables ? dataset.variables.join(", ") : ""}
             </td>
             <td>
-                ${dataset.time_period ? toDateString(dataset.time_period.start_date)  + " to " + toDateString(dataset.time_period.end_date) : ""}
+                ${dataset.time_period ? 
+                    html`${dataset.time_period.start_date ? "from " + toDateString(dataset.time_period.start_date) : ""}
+                    ${dataset.time_period.end_date ? " to " + toDateString(dataset.time_period.end_date) : ""}`
+                    : ""}
             </td>
             <td>
                 ${dataset.source ? html`
