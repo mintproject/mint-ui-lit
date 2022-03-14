@@ -68,6 +68,9 @@ const fixedToValue = (fx) => {
 }
 
 const dsSpecToIO = (ds: DatasetSpecification) => {
+    if (! ds.type) {
+        ds.type = [];
+    }
     let types = ds.type.filter((t:string) => t != 'DatasetSpecification');
     let io = {
         id: ds.id,
