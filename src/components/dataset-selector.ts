@@ -11,6 +11,7 @@ import { getId, getLabel } from "model-catalog-api/util";
 import { SharedStyles } from "styles/shared-styles";
 import { Dataset } from "screens/datasets/reducers";
 import { toDateString } from "util/date-utils";
+import { ExplorerStyles } from "screens/models/model-explore/explorer-styles";
 
 
 const PER_PAGE = 10;
@@ -38,17 +39,32 @@ export class DatasetSelector extends connect(store)(LitElement) {
     @property({type: Number}) private maxPage: number = 1;
 
     static get styles () : CSSResult [] {
-        return [ SharedStyles, css`
+        return [SharedStyles, ExplorerStyles, css`
             #searchBar {
                 width: 100%;
                 padding: 5px 5px 5px 5px;
                 border: 0px solid black;
+                background-color: transparent;
+            }
+            .fixed-table {
+                width: 100%;
+                table-layout: fixed;
+                overflow-wrap: break-word;
+            }
+            .pure-table-odd td, .pure-table-striped tr:nth-child(2n-1) td {
+                background-color: rgb(236, 236, 236);
             }
         `]
     }
 
+    // Use to revert to loading status 
+    public unload () : void {
+        this.loadingData = true;
+        this.options = [];
+        this.idToOption = {};
+    }
+
     public setDatasets(datasets: Dataset[]) : void {
-        console.log("SET DATASETS:", datasets)
         this.options = [];
         this.idToOption = {};
         datasets.forEach((ds:Dataset) => {
@@ -97,22 +113,22 @@ export class DatasetSelector extends connect(store)(LitElement) {
                 ${this.renderPaginator()}
 
                 <!-- Table with filtered models -->
-                <table class="pure-table pure-table-striped">
+                <table class="pure-table pure-table-striped fixed-table">
                     <thead>
                         <tr>
-                            <th></th>
+                            <th style="width:8px"></th>
                             <th><b>Dataset</b></th>
-                            <th>Category</th>
-                            <th>Variables</th>
-                            <th style="width: 90px;">Time interval</th>
-                            <th>Source</th>
+                            <!--th>Category</th-->
+                            <th style="width:132px"></th>
+                            <th style="width:130px">Source</th>
+                            <th style="width:60px">Resources</th>
                         </tr>
                     </thead>
                     <tbody>
                     ${this.loadingData ?
                         html`
                             <tr>
-                                <td colspan="6">
+                                <td colspan="5">
                                     <wl-progress-bar style="width: 100%;"></wl-progress-bar>
                                 </td>
                             </tr>
@@ -189,7 +205,7 @@ export class DatasetSelector extends connect(store)(LitElement) {
         if (visibleOptions.length === 0 && selectedOptions.length === 0)
             return html`
                 <tr>
-                    <td colspan="6" style="text-align:center; color: rgb(153, 153, 153);">
+                    <td colspan="5" style="text-align:center; color: rgb(153, 153, 153);">
                         - No datasets found -
                     </td>
                 </tr>
@@ -224,7 +240,7 @@ export class DatasetSelector extends connect(store)(LitElement) {
     private renderCategorySeparator (catId: string) : TemplateResult {
         return html`
         <tr>
-            <td colspan="4" style="font-weight: bold; font-size: 1.02em; padding-left: 2em;">
+            <td colspan="5" style="font-weight: bold; font-size: 1.02em; padding-left: 2em;">
                 <span style="color: #aaa;">CATEGORY:</span> 
             </td>
         </tr>`
@@ -243,17 +259,17 @@ export class DatasetSelector extends connect(store)(LitElement) {
                 <a target="_blank" href="#">${dataset.name}</a>
                 ${dataset.description ? html`<div>${dataset.description}</div>` : ''}
             </td> 
-            <td> 
-                ${dataset.region? html`<b>${dataset.region}</b>` : ""}
-                ${dataset.categories ? dataset.categories.join(",") : ""}
-            </td>
+            <!--td>
+                {dataset.variables ? dataset.variables.map((varname:string) =>
+                     html<span class="resource variable-presentation">{varname}</span>) : ""}
+            </td-->
             <td>
-                ${dataset.variables ? dataset.variables.join(", ") : ""}
-            </td>
-            <td>
+                ${dataset.datatype ? html`<div><code>${dataset.datatype}</code></div>` : ""}
+                ${dataset.region ? html`<div><b>${dataset.region}</b></div>` : ""}
+                ${dataset.categories ? html`<div>${dataset.categories.join(", ")}</div>` : ""}
                 ${dataset.time_period ? 
-                    html`${dataset.time_period.start_date ? "from " + toDateString(dataset.time_period.start_date) : ""}
-                    ${dataset.time_period.end_date ? " to " + toDateString(dataset.time_period.end_date) : ""}`
+                    html`<div>${dataset.time_period.start_date ? "from " + toDateString(dataset.time_period.start_date) : ""}
+                    ${dataset.time_period.end_date ? " to " + toDateString(dataset.time_period.end_date) : ""}</div>`
                     : ""}
             </td>
             <td>
@@ -261,6 +277,9 @@ export class DatasetSelector extends connect(store)(LitElement) {
                     <a href="${dataset.source.url}" target="_blank">${dataset.source.name}</a>
                     ${dataset.source.type ? html`<br/> ${dataset.source.type}` : ""}
                 ` : ""}
+            </td>
+            <td> 
+                ${dataset.resource_count}
             </td>
         </tr>`;
     }

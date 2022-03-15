@@ -14,8 +14,11 @@ import { ThreadExpansion } from "./thread-expansion";
 import { ModelIOBindings, Thread } from "../reducers";
 import { Model as LocalModel, ModelIO } from "screens/models/reducers";
 import { DatasetSelector } from "components/dataset-selector";
-import { showDialog } from "util/ui_functions";
+import { hideDialog, showDialog } from "util/ui_functions";
 import { Dataset } from "screens/datasets/reducers";
+import { DataCatalogAdapter, DatasetQuery } from "util/data-catalog-adapter";
+import { RegionMap } from "screens/regions/reducers";
+import { queryDatasetsByVariables } from "screens/datasets/actions";
 
 type StatusType = "warning" | "done" | "error";
 
@@ -25,6 +28,8 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     protected _description : string = "Search datasets to use on your executions.";
     @property({type:Object}) datasetSelector : DatasetSelector;
     @property({type:Object}) selectedInput : ModelIO;
+    @property({type:Object}) localRegions : RegionMap;
+    private threadDatasets : Dataset[];
 
     static get styles() {
         return [SharedStyles, this.generalStyles, css`
@@ -184,22 +189,42 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
 
     private renderDatasetSelectionDialog () : TemplateResult {
         return html`
-         <wl-dialog id="datasetSelectionDialog" fixed backdrop blockscrolling size="medium">
+         <wl-dialog id="datasetSelectionDialog" fixed backdrop blockscrolling size="large" persistent>
             <h3 slot="header">Selecting dataset for ${this.selectedInput ? this.selectedInput.name : "?"}</h3>
-            <div slot="content" style="">
+            <div slot="content" style="overflow-y:scroll;padding-right:8px;">
                 ${this.datasetSelector}
+            </div>
+            <div slot="footer" style="padding-top:0px;">
+                <wl-button flat inverted style="margin-right:5px;" @click=${this.onDatasetDialogCancel}>Cancel</wl-button>
+                <wl-button class="submit" @click=${this.onDatasetDialogSave}>Save</wl-button>
             </div>
         </wl-dialog>
         `;
     }
 
+    private onDatasetDialogSave () : void {
+        let datasets : Dataset[] = this.datasetSelector.getSelectedDatasets();
+        //FIXME: add datasets to thread ?
+        this.onDatasetDialogCancel();
+    }
+
+    private onDatasetDialogCancel () : void {
+        hideDialog("datasetSelectionDialog", this.shadowRoot!);
+        this.selectedInput = null;
+    }
+
     private editInput (model:LocalModel, input:ModelIO) {
         this.selectedInput = input;
         let allBindings : ModelIOBindings = this.thread.model_ensembles![model.id].bindings || {};
-        let datasetIds : string[] = allBindings[input.id] ? allBindings[input.id] : [];
+        let bindings : string[] = allBindings[input.id] ? allBindings[input.id] : [];
+
+        let datasetIds = (bindings || []).map((bid) => this.thread.data[bid]?.dataset?.id);
+        this.getInputDatasets(input);
 
         if (datasetIds.length > 0) {
-            this.datasetSelector.setDatasets(datasetIds.map((id:string) => {
+            console.log(datasetIds, bindings);
+            this.datasetSelector.setSelected(new Set<string>(datasetIds));
+            /*this.datasetSelector.setDatasets(datasetIds.map((id:string) => {
                 let dataslice = this.thread.data![id];
                 let newDataset : Dataset = {
                     region: null,
@@ -215,9 +240,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                     id: dataslice.id
                 }
                 return newDataset;
-            }))
-        } else {
-            this.datasetSelector.setDatasets([])
+            }))*/
         }
         showDialog("datasetSelectionDialog", this.shadowRoot!);
     }
@@ -241,10 +264,64 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
         super.onSaveClicked();
     }
 
+    private save () : void {
+        
+    }
+
     protected onThreadChange(thread: Thread): void {
+        if (this.localRegions) this.getThreadDatasets();
     }
 
     stateChanged(state: RootState) {
         super.stateChanged(state);
+        if (state.regions.regions && this.localRegions != state.regions.regions) {
+            this.localRegions = state.regions.regions;
+            if (this.thread) this.getThreadDatasets();
+        }
+    }
+
+    public getThreadDatasets () : void {
+        if (!this.thread || !this.localRegions) return;
+        let datasetQuery : DatasetQuery = {};
+
+        let localRegion = this.localRegions[this.thread.regionid];
+        if (localRegion)
+            datasetQuery.spatial_coverage__intersects = localRegion.geometries[0];
+
+        if (this.thread.dates) {
+            if (this.thread.dates.start_date) datasetQuery.start_time = this.thread.dates.start_date;
+            if (this.thread.dates.end_date) datasetQuery.end_time = this.thread.dates.end_date;
+        }
+        
+        if (this.thread.response_variables && this.thread.response_variables.length > 0)
+            datasetQuery.standard_variable_names__in = this.thread.response_variables;
+
+        this.loading = true;
+        let req : Promise<Dataset[]> = DataCatalogAdapter.findDataset(datasetQuery);
+        req.then((datasets:Dataset[]) => {
+            this.threadDatasets = datasets;
+            this.loading = false;
+        })
+        req.catch((e) => {
+            console.warn(e);
+            this.loading = false;
+        })
+    }
+
+    private getInputDatasets (input:ModelIO) {
+        let dates = this.thread.dates;
+        let region = this.localRegions[this.thread.regionid];
+
+        this.datasetSelector.unload();
+        this.loading = true;
+        let req : Promise<Dataset[]> = DataCatalogAdapter.findDatasetByVariableName(input.variables, region, dates)
+        req.then((datasets:Dataset[]) => {
+            this.datasetSelector.setDatasets(datasets);
+            this.loading = false;
+        })
+        req.catch((e) => {
+            console.warn(e);
+            this.loading = false;
+        })
     }
 }

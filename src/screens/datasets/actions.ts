@@ -137,7 +137,7 @@ const getResourcesFromDCResponse = (obj: any) => {
     });
 }
 
-const getDatasetResourceListFromDCResponse = (obj: any) => {
+export const getDatasetResourceListFromDCResponse = (obj: any) => {
     let resources = [];
     obj.resources.map((row: any) => {
         let rmeta = row["resource_metadata"];
