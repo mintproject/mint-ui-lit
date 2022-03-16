@@ -15,10 +15,12 @@ import { ModelIOBindings, Thread } from "../reducers";
 import { Model as LocalModel, ModelIO } from "screens/models/reducers";
 import { DatasetSelector } from "components/dataset-selector";
 import { hideDialog, showDialog } from "util/ui_functions";
-import { Dataset } from "screens/datasets/reducers";
+import { Dataset, Dataslice } from "screens/datasets/reducers";
 import { DataCatalogAdapter, DatasetQuery } from "util/data-catalog-adapter";
 import { RegionMap } from "screens/regions/reducers";
 import { queryDatasetsByVariables } from "screens/datasets/actions";
+import { uuidv4 } from "util/helpers";
+import { IdMap } from "app/reducers";
 
 type StatusType = "warning" | "done" | "error";
 
@@ -64,7 +66,10 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                 position: absolute;
                 z-index: 99;
             }
-
+            .datasetlist { 
+                margin: 0;
+                padding-left: 20px;
+            }
             .clickable {
                 cursor: pointer;
             }
@@ -132,14 +137,18 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     }
 
     private renderDatasetRow (model:LocalModel, input:ModelIO) : TemplateResult {
-        let allBindings : ModelIOBindings = this.thread.model_ensembles![model.id].bindings || {};
-        let datasetIds : string[] = allBindings[input.id] ? allBindings[input.id] : [];
-        let values = datasetIds.map((bid:string) => this.thread.data[bid]?.dataset?.id);
+        let modelBindings : ModelIOBindings = this.thread.model_ensembles![model.id].bindings || {};
+        let dataBindingIds : string[] = modelBindings[input.id] ? modelBindings[input.id] : [];
+        let datasetIds = dataBindingIds.map((bid:string) => this.thread.data[bid]?.dataset?.id);
+        let dataslices : Dataslice[] = this.modifiedInputs[input.id] ?
+                this.modifiedInputs[input.id]
+                : dataBindingIds.map((bid:string) => this.thread.data![bid]);
+
         return html`
             <tr>
                 <td> 
                     <div style="display:flex; align-items:center;">
-                        ${input.value || values.length > 0 ? html`
+                        ${input.value || datasetIds.length > 0 ? html`
                             <wl-icon style="color: 'green'; margin-right: 5px;">done</wl-icon>
                         ` : html`
                             <wl-icon style="color: 'orange'; margin-right: 5px;">warning</wl-icon>
@@ -152,17 +161,16 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                     ${input.value && input.value.resources ? html`
                         <div> 
                             <b>Pre-selected input:</b> <br/>
-                            <span style="margin-left: 1em;">${input.value.resources.map((r) => html`<a target="_blank" href="${r.url}">${r.name}</a>`)}</span>
+                            <ul class="datasetlist">${input.value.resources.map((r) => html`<li><a target="_blank" href="${r.url}">${r.name}</a></li>`)}</ul>
                         </div>
                         <span tip="This input was pre-selected. Cannot be changed" class="tooltip"><wl-icon>lock</wl-icon></span>
                     ` : html`
-                        <span>
-                            ${datasetIds.length == 0 ? "None selected" : datasetIds.map((binding:string) => {
-                                let dataslice = this.thread.data![binding];
+                        <ul class="datasetlist">
+                            ${dataslices.length == 0 ? "None selected" : dataslices.map((dataslice:Dataslice) => {
                                 if (!dataslice) return;
                                 let num_selected_resources = dataslice.selected_resources ?? 0;
                                 let num_total_resources = dataslice.total_resources ?? 0;
-                                return html`
+                                return html`<li>
                                 <a target="_blank" href="${this._regionid}/datasets/browse/${dataslice.dataset.id}/${this.thread.regionid}">${dataslice.dataset.name}</a>
                                 ${num_total_resources > 1 ?
                                     html`
@@ -173,9 +181,9 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                                         <a style="cursor:pointer">Change</a>` : ""} )
                                     `
                                     : ""}
-                                `;
+                                </li>`;
                             })}
-                        </span>
+                        </ul>
 
                         ${this.editMode ? html`
                             <wl-icon class="clickable" @click=${() => this.editInput(model, input)}>edit</wl-icon>`
@@ -185,6 +193,10 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                 </td>
             </tr>
         `;
+    }
+
+    private renderDataslice (datasliceid:string) : TemplateResult {
+        return html``
     }
 
     private renderDatasetSelectionDialog () : TemplateResult {
@@ -202,10 +214,24 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
         `;
     }
 
+    private modifiedInputs : IdMap<Dataslice[]> = {};
     private onDatasetDialogSave () : void {
         let datasets : Dataset[] = this.datasetSelector.getSelectedDatasets();
-        //FIXME: add datasets to thread ?
+        this.modifiedInputs[this.selectedInput.id] = datasets.map(this.newDatasliceFromDataset.bind(this));
         this.onDatasetDialogCancel();
+    }
+
+    private newDatasliceFromDataset (dataset:Dataset) : Dataslice {
+        return {
+            id: uuidv4(),
+            total_resources: dataset.resources.length,
+            selected_resources: dataset.resources.filter((res) => res.selected).length, //FIXME
+            resources: dataset.resources,
+            time_period: this.thread.dates,
+            name: dataset.name,
+            dataset: dataset,
+            resources_loaded: dataset.resources_loaded
+        } as Dataslice
     }
 
     private onDatasetDialogCancel () : void {
@@ -221,26 +247,11 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
         let datasetIds = (bindings || []).map((bid) => this.thread.data[bid]?.dataset?.id);
         this.getInputDatasets(input);
 
-        if (datasetIds.length > 0) {
-            console.log(datasetIds, bindings);
+        if (this.modifiedInputs[input.id]) {
+            let mDatasets : string[] = this.modifiedInputs[input.id].map((sl:Dataslice) => sl.dataset.id);
+            this.datasetSelector.setSelected(new Set<string>(mDatasets));
+        } else if (datasetIds.length > 0) {
             this.datasetSelector.setSelected(new Set<string>(datasetIds));
-            /*this.datasetSelector.setDatasets(datasetIds.map((id:string) => {
-                let dataslice = this.thread.data![id];
-                let newDataset : Dataset = {
-                    region: null,
-                    datatype: null,
-                    variables: null,
-                    time_period: dataslice.time_period,
-                    description: null,
-                    version: null,
-                    limitations: null,
-                    source: null,
-                    resources: dataslice.resources,
-                    name: dataslice.name,
-                    id: dataslice.id
-                }
-                return newDataset;
-            }))*/
         }
         showDialog("datasetSelectionDialog", this.shadowRoot!);
     }
@@ -257,6 +268,8 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     }
 
     protected onCancelClicked(): void {
+        this.selectedInput = null;
+        this.modifiedInputs = {};
         super.onCancelClicked();
     }
 
@@ -274,6 +287,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
 
     stateChanged(state: RootState) {
         super.stateChanged(state);
+        super.setRegionId(state);
         if (state.regions.regions && this.localRegions != state.regions.regions) {
             this.localRegions = state.regions.regions;
             if (this.thread) this.getThreadDatasets();
@@ -316,7 +330,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
         this.loading = true;
         let req : Promise<Dataset[]> = DataCatalogAdapter.findDatasetByVariableName(input.variables, region, dates)
         req.then((datasets:Dataset[]) => {
-            this.datasetSelector.setDatasets(datasets);
+            this.datasetSelector.setDatasets(datasets, region, dates);
             this.loading = false;
         })
         req.catch((e) => {

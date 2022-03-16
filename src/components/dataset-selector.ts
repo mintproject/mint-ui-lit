@@ -1,17 +1,17 @@
-import { Model, ModelCategory, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Region } from "@mintproject/modelcatalog_client";
 import { RootState, store } from "app/store";
 import { connect } from "pwa-helpers/connect-mixin";
 import { customElement, LitElement, property, html, css, CSSResult, TemplateResult } from "lit-element";
-import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
-
 import "weightless/button";
 import "weightless/icon";
 import { IdMap } from "app/reducers";
-import { getId, getLabel } from "model-catalog-api/util";
 import { SharedStyles } from "styles/shared-styles";
-import { Dataset } from "screens/datasets/reducers";
+import { DataResource, Dataset } from "screens/datasets/reducers";
 import { toDateString } from "util/date-utils";
 import { ExplorerStyles } from "screens/models/model-explore/explorer-styles";
+import { hideDialog, showDialog } from "util/ui_functions";
+import { DataCatalogAdapter } from "util/data-catalog-adapter";
+import { Region } from "screens/regions/reducers";
+import { DateRange } from "screens/modeling/reducers";
 
 
 const PER_PAGE = 10;
@@ -37,6 +37,15 @@ export class DatasetSelector extends connect(store)(LitElement) {
     // Pagination
     @property({type: Number}) private currentPage: number = 1;
     @property({type: Number}) private maxPage: number = 1;
+
+    // Resource selection
+    @property({type: String}) public dialogSize : "auto" | "fullscreen" | "large" | "medium" | "small" = "large";
+    @property({type: Object}) private selectedDataset : Dataset;
+    @property({type:Boolean}) private loadingResources : boolean;
+    private selectedRegion : Region;
+    private selectedDateRange : DateRange;
+    private resources : IdMap<DataResource[]> = {};
+    private nonSelectedResourceIds : IdMap<Set<string>> = {};
 
     static get styles () : CSSResult [] {
         return [SharedStyles, ExplorerStyles, css`
@@ -64,9 +73,11 @@ export class DatasetSelector extends connect(store)(LitElement) {
         this.idToOption = {};
     }
 
-    public setDatasets(datasets: Dataset[]) : void {
+    public setDatasets(datasets: Dataset[], region?:Region, dateRange?:DateRange) : void {
         this.options = [];
         this.idToOption = {};
+        this.selectedRegion = region;
+        this.selectedDateRange = dateRange;
         datasets.forEach((ds:Dataset) => {
             let newOpt : DatasetOption = {
                 value: ds,
@@ -84,6 +95,7 @@ export class DatasetSelector extends connect(store)(LitElement) {
         return this.options
                 .filter((opt:DatasetOption) => opt.isSelected)
                 .map((opt:DatasetOption) => opt.value);
+        // TODO, must add the resources too!
     }
 
     public setSelected (selectedIds:Set<string>) : void {
@@ -138,6 +150,7 @@ export class DatasetSelector extends connect(store)(LitElement) {
                     </tbody>
                 </table>
             </div>
+            ${this.renderResourceSelectionDialog()}
         `;
     }
 
@@ -248,6 +261,9 @@ export class DatasetSelector extends connect(store)(LitElement) {
 
     private renderRow (option:DatasetOption) : TemplateResult {
         let dataset : Dataset = option.value;
+        let nonSelected : number = this.nonSelectedResourceIds[option.value.id] ?
+                this.nonSelectedResourceIds[option.value.id].size
+                : 0;
         return html`
         <tr>
             <td>
@@ -256,7 +272,7 @@ export class DatasetSelector extends connect(store)(LitElement) {
                         .checked=${option.isSelected}></input>
             </td>
             <td>
-                <a target="_blank" href="#">${dataset.name}</a>
+                <a target="_blank" href="${this.selectedRegion.id}/datasets/browse/${dataset.id}/${this.selectedRegion.id}">${dataset.name}</a>
                 ${dataset.description ? html`<div>${dataset.description}</div>` : ''}
             </td> 
             <!--td>
@@ -279,9 +295,109 @@ export class DatasetSelector extends connect(store)(LitElement) {
                 ` : ""}
             </td>
             <td> 
+                ${nonSelected > 0 ? (dataset.resource_count - nonSelected) + " of " : "" }
                 ${dataset.resource_count}
+                ${dataset.resource_count > 0 ?
+                    html`<wl-icon class="clickable" @click=${() => this.showResourceSelectionDialog(dataset)}>source</wl-icon>`
+                    : ""}
             </td>
         </tr>`;
+    }
+
+    private renderResourceSelectionDialog () : TemplateResult {
+        let resources : DataResource[] = this.selectedDataset ? this.resources[this.selectedDataset.id] : [];
+        return html`
+         <wl-dialog id="resourceSelectionDialog" fixed backdrop blockscrolling size=${this.dialogSize} persistent>
+            <h3 slot="header">Selecting resources for ${this.selectedDataset ? this.selectedDataset.name : "?"}</h3>
+            <div slot="content" style="overflow-y:scroll;padding-right:8px;">
+                <table class="pure-table pure-table-striped fixed-table">
+                    <thead>
+                        <tr>
+                            <th style="width:8px"></th>
+                            <th><b>Resource</b></th>
+                            <th style="width:132px">Time Period</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    ${this.loadingResources ?
+                        html`
+                            <tr>
+                                <td colspan="3">
+                                    <wl-progress-bar style="width: 100%;"></wl-progress-bar>
+                                </td>
+                            </tr>
+                        `
+                        : resources.map(this.renderResourceRow.bind(this))
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div slot="footer" style="padding-top:0px;">
+                <wl-button flat inverted style="margin-right:5px;" @click=${this.onResourceSelectionCancel}>Cancel</wl-button>
+                <wl-button class="submit" @click=${this.onResourceSelectionSave}>Save</wl-button>
+            </div>
+        </wl-dialog>
+        `;
+    }
+    
+    private renderResourceRow (resource:DataResource) : TemplateResult {
+        return html`
+        <tr>
+            <td>
+                <input class="checkbox" type="checkbox" data-modelid="${resource.id}"
+                        @change=${() => this.onResourceToggle(resource)}
+                        .checked=${!this.currentNonSelected.has(resource.id) && resource.selected}></input>
+            </td>
+            <td>
+                ${resource.url ? html`<a target="_blank" href="${resource.url}">${resource.name}</a>` : resource.name}
+            </td>
+            <td>
+                ${resource.time_period ? 
+                    html`<div>${resource.time_period.start_date ? "from " + toDateString(resource.time_period.start_date) : ""}
+                    ${resource.time_period.end_date ? " to " + toDateString(resource.time_period.end_date) : ""}</div>`
+                    : ""}
+            </td>
+        </tr>
+        `;
+    }
+
+    private onResourceToggle (resource:DataResource) : void {
+        if (this.currentNonSelected.has(resource.id)) {
+            this.currentNonSelected.delete(resource.id);
+        } else {
+            this.currentNonSelected.add(resource.id);
+        }
+        this.requestUpdate();
+    }
+
+    private onResourceSelectionCancel () : void {
+        hideDialog("resourceSelectionDialog", this.shadowRoot);
+        this.currentNonSelected = null;
+        this.selectedDataset = null;
+    }
+
+    private onResourceSelectionSave () : void {
+        this.nonSelectedResourceIds[this.selectedDataset.id] = this.currentNonSelected;
+        this.onResourceSelectionCancel()
+    }
+
+    private currentNonSelected : Set<string>;
+    private showResourceSelectionDialog (dataset:Dataset) : void {
+        this.selectedDataset = dataset;
+        this.currentNonSelected = this.nonSelectedResourceIds[dataset.id] ? 
+                this.nonSelectedResourceIds[dataset.id] : new Set<string>();
+
+        let req : Promise<DataResource[]> = DataCatalogAdapter.getDatasetResources(dataset.id,this.selectedRegion,this.selectedDateRange);
+        this.loadingResources = true;
+        req.then((resources:DataResource[]) => {
+            this.resources[dataset.id] = resources;
+            this.loadingResources = false;
+        });
+        req.catch((e) => {
+            console.warn(e);
+            this.loadingResources = false;
+        })
+        showDialog("resourceSelectionDialog", this.shadowRoot);
     }
 
     private toggleSelection (ev:Event) {
