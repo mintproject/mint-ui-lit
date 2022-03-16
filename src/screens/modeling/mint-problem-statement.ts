@@ -482,7 +482,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
     _getTaskRegionTimeText(task: Task) {
         let regionid = task.regionid;
         let regionname = (regionid && this._regions && this._regions[regionid]) ? 
-                this._regions[regionid].name : this._region.name;
+                this._regions[regionid].name : this._region?.name;
         let dates = task.dates ? task.dates : this._problem_statement.dates;
         let startdate = toDateString(dates!.start_date);
         let enddate = toDateString(dates!.end_date);
@@ -492,7 +492,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
     _getTaskRegionText(task: Task) {
         let regionid = task.regionid;
         let regionname = (regionid && this._regions && this._regions[regionid]) ? 
-                this._regions[regionid].name : this._region.name;
+                this._regions[regionid].name : this._region?.name;
         return regionname;
     }
 

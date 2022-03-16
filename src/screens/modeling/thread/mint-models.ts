@@ -518,6 +518,8 @@ export class MintModels extends connect(store)(MintThreadPage) {
         // FIXME: Warn user that this will delete existing data/parameter/runs ?
 
         await setThreadModels(models, notes, this.thread);
+        
+        this._waiting = false;
         this.selectAndContinue("models");
     }
 
