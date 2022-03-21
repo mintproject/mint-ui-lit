@@ -247,7 +247,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                 </div>
                 <div style="display:flex; align-items: center; border: 1px solid; border-radius: 6px; padding: 3px 6px; background: papayawhip;">
                     <wl-icon>warning</wl-icon>
-                    The models shown here are still under development and should not be taken out of context
+                    Some of the models shown here have not been properly calibtrated
                 </div>
             </div>
 

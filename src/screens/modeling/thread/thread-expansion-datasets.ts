@@ -21,6 +21,7 @@ import { RegionMap } from "screens/regions/reducers";
 import { queryDatasetsByVariables } from "screens/datasets/actions";
 import { uuidv4 } from "util/helpers";
 import { IdMap } from "app/reducers";
+import { DatasetResourceSelector } from "components/dataset-resource-selector";
 
 type StatusType = "warning" | "done" | "error";
 
@@ -86,6 +87,11 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
             }
             .clickable {
                 cursor: pointer;
+            }
+            .flex-between {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
             }
         `];
     }
@@ -230,13 +236,15 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                     </div>
                 </td>
                 <td>
-                    <div style="display:flex; align-items:center; justify-content: space-between;">
+                    <div class="flex-between">
                         <ul class="datasetlist">
                             ${dataslices.length == 0 ? "None selected" : dataslices.map((dataslice:Dataslice) => {
                                 if (!dataslice) return;
                                 let num_selected_resources = dataslice.selected_resources ?? 0;
                                 let num_total_resources = dataslice.total_resources ?? 0;
                                 return html`<li>
+                                    <div class="flex-between">
+                                        <span>
                                 <a target="_blank" href="${this._regionid}/datasets/browse/${dataslice.dataset.id}/${this.thread.regionid}">${dataslice.dataset.name}</a>
                                 ${num_total_resources > 1 ?
                                     html`
@@ -247,6 +255,14 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                                         <a style="cursor:pointer">Change</a>` : ""} )
                                     `
                                     : ""}
+                                        </span>
+                                        <span style="margin-left:10px;">
+                                            ${this.resourceSelectors[dataslice.dataset.id] ? 
+                                                this.resourceSelectors[dataslice.dataset.id]
+                                                : ""
+                                            }
+                                        </span>
+                                    </div>
                                 </li>`;
                             })}
                         </ul>
@@ -254,65 +270,6 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                         ${this.editMode ? html`
                             <wl-icon class="clickable" @click=${() => this.editInput(model, input)}>edit</wl-icon>`
                         : html`<wl-icon>person</wl-icon>`}
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
-
-    private renderDatasetRow (model:LocalModel, input:ModelIO) : TemplateResult {
-        let modelBindings : ModelIOBindings = this.thread.model_ensembles![model.id].bindings || {};
-        let dataBindingIds : string[] = modelBindings[input.id] ? modelBindings[input.id] : [];
-        let datasetIds = dataBindingIds.map((bid:string) => this.thread.data[bid]?.dataset?.id);
-        let dataslices : Dataslice[] = this.modifiedInputs[input.id] ?
-                this.modifiedInputs[input.id]
-                : dataBindingIds.map((bid:string) => this.thread.data![bid]);
-
-        return html`
-            <tr>
-                <td> 
-                    <div style="display:flex; align-items:center;">
-                        ${input.value || datasetIds.length > 0 ? html`
-                            <wl-icon style="color: 'green'; margin-right: 5px;">done</wl-icon>
-                        ` : html`
-                            <wl-icon style="color: 'orange'; margin-right: 5px;">warning</wl-icon>
-                        `}
-                        ${input.name} 
-                    </div>
-                </td>
-                <td>
-                    <div style="display:flex; align-items:center; justify-content: space-between;">
-                    ${input.value && input.value.resources ? html`
-                        <div> 
-                            <b>Pre-selected input:</b> <br/>
-                            <ul class="datasetlist">${input.value.resources.map((r) => html`<li><a target="_blank" href="${r.url}">${r.name}</a></li>`)}</ul>
-                        </div>
-                        <span tip="This input was pre-selected. Cannot be changed" class="tooltip"><wl-icon>lock</wl-icon></span>
-                    ` : html`
-                        <ul class="datasetlist">
-                            ${dataslices.length == 0 ? "None selected" : dataslices.map((dataslice:Dataslice) => {
-                                if (!dataslice) return;
-                                let num_selected_resources = dataslice.selected_resources ?? 0;
-                                let num_total_resources = dataslice.total_resources ?? 0;
-                                return html`<li>
-                                <a target="_blank" href="${this._regionid}/datasets/browse/${dataslice.dataset.id}/${this.thread.regionid}">${dataslice.dataset.name}</a>
-                                ${num_total_resources > 1 ?
-                                    html`
-                                        <br />
-                                        ( ${num_selected_resources} / ${num_total_resources} files 
-                                        ${this.editMode && this.permission.write ? html `
-                                        - 
-                                        <a style="cursor:pointer">Change</a>` : ""} )
-                                    `
-                                    : ""}
-                                </li>`;
-                            })}
-                        </ul>
-
-                        ${this.editMode ? html`
-                            <wl-icon class="clickable" @click=${() => this.editInput(model, input)}>edit</wl-icon>`
-                        : html`<wl-icon>person</wl-icon>`}
-                    `}
                     </div>
                 </td>
             </tr>
@@ -335,13 +292,18 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     }
 
     private modifiedInputs : IdMap<Dataslice[]> = {};
+    private resourceSelectors : IdMap<DatasetResourceSelector> = {};
     private onDatasetDialogSave () : void {
         let datasets : Dataset[] = this.datasetSelector.getSelectedDatasets();
         this.modifiedInputs[this.selectedInput.id] = datasets.map(this.newDatasliceFromDataset.bind(this));
+        datasets.forEach((d:Dataset) => {
+            this.resourceSelectors[d.id] = new DatasetResourceSelector(d);
+        })
         this.onDatasetDialogCancel();
     }
 
     private newDatasliceFromDataset (dataset:Dataset) : Dataslice {
+        //TODO: This should be async. do the query to get resources here!
         return {
             id: uuidv4(),
             total_resources: dataset.resources.length,
@@ -404,8 +366,8 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     protected onThreadChange(thread: Thread): void {
         if (this.localRegions)
             this.getThreadDatasets();
-        if (this.thread.models)
-            Object.values(this.thread.models).forEach((m:LocalModel) => this.modelVisible[m.id] = true)
+        if (thread && thread.models)
+            Object.values(thread.models).forEach((m:LocalModel) => this.modelVisible[m.id] = true)
     }
 
     stateChanged(state: RootState) {

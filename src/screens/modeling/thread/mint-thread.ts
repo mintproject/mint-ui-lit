@@ -1,7 +1,7 @@
 import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
-import { store, RootState } from "../../../app/store";
-import { SharedStyles } from "../../../styles/shared-styles";
+import { store, RootState } from "app/store";
+import { SharedStyles } from "styles/shared-styles";
 
 import "./mint-configure";
 import "./mint-models";
@@ -16,18 +16,13 @@ import "weightless/progress-spinner";
 import { getThreadVariablesStatus, TASK_NOT_STARTED, getThreadModelsStatus, 
     getThreadDatasetsStatus, getThreadRunsStatus, getThreadResultsStatus, 
     TASK_DONE, TASK_PARTLY_DONE, 
-    getUISelectedTask, getThreadParametersStatus } from "../../../util/state_functions";
+    getUISelectedTask, getThreadParametersStatus, getThreadConfigureStatus } from "util/state_functions";
 import { ExecutionSummary, Task, Thread } from "../reducers";
-import { BASE_HREF } from "../../../app/actions";
+import { BASE_HREF } from "app/actions";
 import { MintThreadPage } from "./mint-thread-page";
 import { subscribeThread, subscribeThreadExecutionSummary } from "../actions";
 import { getLatestEvent } from "util/event_utils";
 import { IdMap } from "app/reducers";
-import { ModelQuestionComposer } from "components/questions/model-question-composer";
-import { IsInBoundingBoxQuestion } from "components/questions/custom_questions/is-in-bounding-box";
-import { ModelConfigurationSetup } from "@mintproject/modelcatalog_client";
-import { Dataset } from "screens/datasets/reducers";
-import { MintDatasets } from "./mint-datasets";
 
 @customElement('mint-thread')
 export class MintThread extends connect(store)(MintThreadPage) {
@@ -153,7 +148,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
 
     private _setSectionStatusMap() {
         let map = {};
-        map["configure"] = getThreadVariablesStatus(this.thread);
+        map["configure"] = getThreadConfigureStatus(this.thread);
         map["parameters"] = getThreadParametersStatus(this.thread);
         map["runs"] = getThreadRunsStatus(this.thread);
         map["results"] = getThreadResultsStatus(this.thread);
@@ -194,9 +189,6 @@ export class MintThread extends connect(store)(MintThreadPage) {
                 break;
         }
 
-        if (this._currentMode != section && section == "configure") {
-            cls += " done";
-        }
         return cls;
     }
 

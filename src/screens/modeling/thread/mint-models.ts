@@ -33,9 +33,6 @@ import { Model as MCModel, Region as MCRegion, SoftwareVersion, SoftwareImage, M
 import 'components/loading-dots';
 import { getLatestEventOfType } from "util/event_utils";
 import variables, { VariableMap } from "screens/variables/reducers";
-import { ModelQuestionComposer } from "components/questions/model-question-composer";
-import { HasIndicatorQuestion } from "components/questions/custom_questions/has-indicator";
-import { IsInBoundingBoxQuestion } from "components/questions/custom_questions/is-in-bounding-box";
 
 store.addReducers({
     models
@@ -745,7 +742,6 @@ export class MintModels extends connect(store)(MintThreadPage) {
 
         if(state.variables && state.variables.variables) {
             this._variableMap = state.variables.variables;
-            HasIndicatorQuestion.setVariablesMap(this._variableMap);
         }
     }
 }

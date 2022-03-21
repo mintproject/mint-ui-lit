@@ -6,7 +6,6 @@ import { Thread, ProblemStatementInfo, MintPermission } from "../reducers";
 import { User, UserPreferences } from "app/reducers";
 import { getUserPermission } from "util/permission_utils";
 import { selectThreadSection } from "app/ui-actions";
-import { ModelQuestionComposer } from "components/questions/model-question-composer";
 
 export class MintThreadPage extends PageViewElement {
     @property({type: Object})
