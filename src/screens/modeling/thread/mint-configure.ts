@@ -73,6 +73,7 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
             //let constraints : ThreadConstraints = e['detail'] as ThreadConstraints;
             //this.threadModelSelector.setRegionFilter(constraints.region);
             this.threadModelSelector.requestUpdate();
+            this.threadDatasetSelector.requestUpdate();
         })
     }
 

@@ -6,33 +6,26 @@ import { SharedStyles } from "styles/shared-styles";
 import "weightless/title";
 import "weightless/icon";
 import "weightless/button";
-import { Point, RegionMap } from "screens/regions/reducers";
+import { Point } from "screens/regions/reducers";
 import { DataResource, Dataset } from "screens/datasets/reducers";
 import { hideDialog, showDialog } from "util/ui_functions";
 import { mapStyles } from "styles/map-style";
-import { BoundingBox, Region as LocalRegion, RegionCategory} from "screens/regions/reducers";
+import { BoundingBox, Region as LocalRegion } from "screens/regions/reducers";
 
 import * as mintConfig from 'config/config.json';
 import { MintPreferences } from "app/reducers";
 import { GoogleMapCustom } from "./google-map-custom";
 import "./google-map-custom";
-import { DataCatalogAdapter } from "util/data-catalog-adapter";
-import { DateRange } from "screens/modeling/reducers";
-import { Dialog } from "weightless";
 let prefs = mintConfig["default"] as MintPreferences;
 const GOOGLE_API_KEY = prefs.google_maps_key;
-
-type StatusType = "warning" | "done" | "error";
 
 @customElement('dataset-resource-selector')
 export class DatasetResourceSelector extends connect(store)(LitElement) {
     @property({type: Boolean}) protected editMode: boolean = false;
-    @property({type: Boolean}) protected loading: boolean = true;
     @property({type: Boolean}) protected mapReady: boolean = false;
     @property({type: String}) public dialogSize : "auto" | "fullscreen" | "large" | "medium" | "small" = "medium";
     @property({type: Object}) protected selectedDataset : Dataset;
     @property({type: Object}) protected selectedRegion : LocalRegion;
-    @property({type: Object}) protected selectedDateRange : DateRange;
     @property({type: Array}) protected resources : DataResource[];
 
     static get styles() {
@@ -46,18 +39,16 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
         }`];
     }
 
-    constructor (dataset:Dataset) {
+    constructor (dataset:Dataset, resources:DataResource[], region:LocalRegion) {
         super();
         this.selectedDataset = dataset;
-        this.stateChanged(store.getState() as RootState);
+        this.resources = resources;
+        this.selectedRegion = region;
     }
 
     public render () : TemplateResult {
         return html`
-        ${this.loading ? 
-            html`<wl-progress-spinner class="small"></wl-progress-spinner>` : 
-            html`<wl-icon style="cursor:pointer;" @click=${this.open}>travel_explore</wl-icon>`
-        }
+        <wl-icon style="cursor:pointer;" @click=${this.open}>travel_explore</wl-icon>
         <wl-dialog id="resourceMapDialog" fixed backdrop blockscrolling size=${this.dialogSize}>
             <h3 slot="header">
                 Selecting resources ${this.selectedDataset ? "for " + this.selectedDataset.name : ""}
@@ -79,58 +70,34 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
         </wl-dialog>`;
     }
 
-    public addRegionsToMap() {
-        let map = this.shadowRoot.querySelector<GoogleMapCustom>("#map");
-        let visibleRegions : LocalRegion[] = [this.selectedRegion];
-
-        if (map && visibleRegions) {
-            try {
-                //map.setRegions(visibleRegions, this.selectedRegion.id);
-                map.addRegion(this.selectedRegion);
-                this.mapReady = this.setDatasetLocations();
-            } catch {
-                map.addEventListener("google-map-ready", (e) => {
-                    //map.setRegions(visibleRegions, this.selectedRegion.id);
-                    map.addRegion(this.selectedRegion);
-                    this.mapReady = this.setDatasetLocations();
-                })
-            }
-        }
-    }
-
-    private setDatasetLocations() : boolean {
+    public updateMap () : void {
         let map = this.shadowRoot.querySelector<GoogleMapCustom>("#map");
         let covers = this.resources.map((res:DataResource) => res.spatial_coverage);
-        console.log(this.resources, covers);
-        if(covers.length > 0) {
-            let covertype = covers[0].type;
-            if(covertype.toLowerCase() == "point") {
-                let covervalues = covers.map((cover) => {
-                    return {
+        if (covers.length > 0 && !!map) {
+            map.clear();
+            map.addRegionBorder(this.selectedRegion);
+            map.alignMapToRegions([this.selectedRegion])
+
+            covers.forEach((cover) => {
+                let covertype : string = cover.type.toLowerCase();
+                if (covertype === "point") {
+                    map.addPoint({
                         x: parseFloat(cover.value.x),
                         y: parseFloat(cover.value.y)
-                    } as Point;
-                });
-                map.setPoints(covervalues as Point[]);
-                return true;
-            }
-            else if(covertype.toLowerCase() == "boundingbox") {
-                let covervalues = covers.map((cover) => {
-                    return {
+                    } as Point);
+                } else if (covertype === "boundingbox") {
+                    map.addBoundingBox({
                         xmin: parseFloat(cover.value.xmin),
                         xmax: parseFloat(cover.value.xmax),
                         ymin: parseFloat(cover.value.ymin),
                         ymax: parseFloat(cover.value.ymax)
-                    } as BoundingBox;
-                });
-                map.setBoundingBoxes(covervalues as BoundingBox[]);
-                return true;
-            } else if (covertype.toLowerCase() == "polygon") {
-                map.setPolygon(covers[0].coordinates[0]);
-                return true;
-            }
+                    } as BoundingBox);
+                } else if (covertype === "polygon") {
+                    map.addPolygon(cover.coordinates[0]);
+                }
+            });
+            this.mapReady = true;
         }
-        return false;
     }
 
     private handleMapClick (ev: any) : void {
@@ -152,43 +119,10 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
     }
 
     protected onSaveClicked () : void {
-        // Example
-        this.loading = true;
-        setTimeout(() => {this.loading = false; this.editMode = false;}, 1000);
     }
 
     public open () : void {
         showDialog("resourceMapDialog", this.shadowRoot);
-        this.addRegionsToMap();
-    }
-
-    protected onOpen () : void {}
-    protected onClose () : void {}
-
-    private getAllResources () : void {
-        this.loading = true;
-        console.log(this.selectedDataset, this.selectedRegion);
-        let req : Promise<DataResource[]> = DataCatalogAdapter.getDatasetResources(this.selectedDataset.id, this.selectedRegion, this.selectedDateRange);
-        req.catch((e) => {
-            console.warn(e);
-            this.loading = false;
-        });
-        req.then((resources:DataResource[]) => {
-            this.resources = resources; //FIXME: filter by main region!
-            this.loading = false;
-            this.addRegionsToMap();
-        });
-    }
-
-    stateChanged(state: RootState) {
-        if (state.modeling.thread) {
-            if (state.modeling.thread.dates)
-                this.selectedDateRange = state.modeling.thread.dates;
-            if (state.modeling.thread.regionid && state.regions.regions &&
-                    this.selectedRegion != state.regions.regions[state.modeling.thread.regionid]) {
-                this.selectedRegion = state.regions.regions[state.modeling.thread.regionid];
-                this.getAllResources();
-            }
-        }
+        this.updateMap();
     }
 }

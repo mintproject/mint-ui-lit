@@ -1,5 +1,4 @@
 import { IdMap } from 'app/reducers'
-import { Action } from "redux";
 import { MCActionAdd, MCActionDelete, MODEL_CATALOG_ADD, MODEL_CATALOG_DELETE, ActionThunk } from './actions';
 import { apiNameToCaptionName, ModelCatalogTypes } from './reducers';
 

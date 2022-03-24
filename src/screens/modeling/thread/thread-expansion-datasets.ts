@@ -11,17 +11,18 @@ import "weightless/button";
 import "components/data-catalog-id-checker";
 
 import { ThreadExpansion } from "./thread-expansion";
-import { ModelIOBindings, Thread } from "../reducers";
+import { DataMap, ModelEnsembleMap, ModelIOBindings, Thread } from "../reducers";
 import { Model as LocalModel, ModelIO } from "screens/models/reducers";
 import { DatasetSelector } from "components/dataset-selector";
 import { hideDialog, showDialog } from "util/ui_functions";
-import { Dataset, Dataslice } from "screens/datasets/reducers";
+import { DataResource, Dataset, Dataslice } from "screens/datasets/reducers";
 import { DataCatalogAdapter, DatasetQuery } from "util/data-catalog-adapter";
 import { RegionMap } from "screens/regions/reducers";
 import { queryDatasetsByVariables } from "screens/datasets/actions";
 import { uuidv4 } from "util/helpers";
 import { IdMap } from "app/reducers";
 import { DatasetResourceSelector } from "components/dataset-resource-selector";
+import { setThreadData } from "../actions";
 
 type StatusType = "warning" | "done" | "error";
 
@@ -34,6 +35,10 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     @property({type:Object}) localRegions : RegionMap;
     @property({type:Object}) modelVisible : IdMap<boolean> = {};
     private threadDatasets : Dataset[];
+    private loading2 : boolean = false;
+    private modifiedInputs : IdMap<Dataslice[]> = {};
+    private resourceSelectors : IdMap<DatasetResourceSelector> = {};
+    private resourceCache : IdMap<Promise<DataResource[]>> = {};
 
     static get styles() {
         return [SharedStyles, this.generalStyles, css`
@@ -249,10 +254,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                                 ${num_total_resources > 1 ?
                                     html`
                                         <br />
-                                        ( ${num_selected_resources} / ${num_total_resources} files 
-                                        ${this.editMode && this.permission.write ? html `
-                                        - 
-                                        <a style="cursor:pointer">Change</a>` : ""} )
+                                        ( ${num_selected_resources} / ${num_total_resources} files )
                                     `
                                     : ""}
                                         </span>
@@ -291,28 +293,48 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
         `;
     }
 
-    private modifiedInputs : IdMap<Dataslice[]> = {};
-    private resourceSelectors : IdMap<DatasetResourceSelector> = {};
     private onDatasetDialogSave () : void {
         let datasets : Dataset[] = this.datasetSelector.getSelectedDatasets();
-        this.modifiedInputs[this.selectedInput.id] = datasets.map(this.newDatasliceFromDataset.bind(this));
-        datasets.forEach((d:Dataset) => {
-            this.resourceSelectors[d.id] = new DatasetResourceSelector(d);
-        })
+        let inputid : string = this.selectedInput.id;
+        this.addDatasetsToInput(inputid,datasets);
         this.onDatasetDialogCancel();
     }
 
-    private newDatasliceFromDataset (dataset:Dataset) : Dataslice {
-        //TODO: This should be async. do the query to get resources here!
+    private addDatasetsToInput (inputid:string, datasets:Dataset[]) : void {
+        let dates = this.thread.dates;
+        let region = this.localRegions[this.thread.regionid];
+        let resourceRequests : Promise<DataResource[]>[] = [];
+        this.loading = true;
+        this.loading2 = true;
+        datasets.forEach((dataset:Dataset) => {
+            let cacheid : string = dataset.id + this.thread.regionid + dates.start_date.getTime() + "-" + dates.end_date.getTime();
+            this.modifiedInputs[inputid] = [];
+            if (!this.resourceCache[cacheid])
+                this.resourceCache[cacheid] = DataCatalogAdapter.getDatasetResources(dataset.id,region,dates);
+            let req : Promise<DataResource[]> = this.resourceCache[cacheid];
+            req.then((resources:DataResource[]) => {
+                this.modifiedInputs[inputid].push(this.newDatasliceFromDataset(dataset, resources))
+                this.resourceSelectors[dataset.id] = new DatasetResourceSelector(dataset, resources, region);
+            });
+            resourceRequests.push(req);
+        });
+        Promise.all(resourceRequests).then(() => {
+            this.loading = false;
+            this.loading2 = false;
+            this.requestUpdate();
+        });
+    }
+
+    private newDatasliceFromDataset (dataset:Dataset, resources:DataResource[]) : Dataslice {
         return {
             id: uuidv4(),
-            total_resources: dataset.resources.length,
-            selected_resources: dataset.resources.filter((res) => res.selected).length, //FIXME
-            resources: dataset.resources,
+            total_resources: resources.length,
+            selected_resources: resources.filter((res:DataResource) => res.selected).length,
+            resources: resources,
             time_period: this.thread.dates,
             name: dataset.name,
             dataset: dataset,
-            resources_loaded: dataset.resources_loaded
+            resources_loaded: true
         } as Dataslice
     }
 
@@ -356,18 +378,62 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     }
 
     protected onSaveClicked(): void {
-        super.onSaveClicked();
+        //super.onSaveClicked();
+        this.loading = true;
+        let req = this.save();
+        req.then((x) => {
+            this.loading = false;
+            this.editMode = false;
+            console.log("new", x);
+        });
     }
 
-    private save () : void {
-        
+    private save () : Promise<any> {
+        let data: DataMap = {};
+        let model_ensembles: ModelEnsembleMap = this.thread.model_ensembles || {};
+
+        Object.keys(this.thread.models!).map((modelid) => {
+            let model = this.thread.models![modelid];
+            model.input_files.filter((input) => !input.value).map((input:ModelIO) => {
+                // Check if we already have bindings for this
+                //let current_data_ensemble: string[] = (this.thread.model_ensembles![modelid] || {})[input.id];
+                let newdata : Dataslice[] = this.modifiedInputs[input.id];
+                if (!model_ensembles[modelid])
+                    model_ensembles[modelid] = { id: uuidv4(), bindings: {} };                
+                if (newdata && newdata.length > 0) {
+                    model_ensembles[modelid].bindings[input.id] = [];
+                    newdata.map((slice:Dataslice) => {
+                        model_ensembles[modelid].bindings[input.id].push(slice.id!);
+                        data[slice.id] = slice;
+                    });
+                } else {
+                    //----
+                    console.log(" - x x x - ");
+                }
+            });
+        });
+
+        let notes = "";//(this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
+        console.log(data, model_ensembles);
+        return setThreadData(data, model_ensembles, notes, this.thread);
     }
 
     protected onThreadChange(thread: Thread): void {
         if (this.localRegions)
             this.getThreadDatasets();
-        if (thread && thread.models)
-            Object.values(thread.models).forEach((m:LocalModel) => this.modelVisible[m.id] = true)
+        if (thread && thread.models) {
+            Object.values(thread.models).forEach((m:LocalModel) => {
+                this.modelVisible[m.id] = true;
+                (m.input_files||[]).filter(i => !i.value).forEach((input:ModelIO) => {
+                    // Updating resource on thread change
+                    if (this.modifiedInputs && this.modifiedInputs[input.id]) {
+                        let datasets : Dataset[] = this.modifiedInputs[input.id].map((slice:Dataslice) => slice.dataset);
+                        this.addDatasetsToInput(input.id, datasets);
+                    }
+                });
+            });
+            console.log(">", thread);
+        }
     }
 
     stateChanged(state: RootState) {
@@ -399,7 +465,9 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
         let req : Promise<Dataset[]> = DataCatalogAdapter.findDataset(datasetQuery);
         req.then((datasets:Dataset[]) => {
             this.threadDatasets = datasets;
-            this.loading = false;
+
+            if (!this.loading2)
+                this.loading = false;
         })
         req.catch((e) => {
             console.warn(e);
@@ -414,7 +482,19 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
         this.datasetSelector.unload();
         this.loading = true;
         let req : Promise<Dataset[]> = DataCatalogAdapter.findDatasetByVariableName(input.variables, region, dates);
+
+        let allBindings : ModelIOBindings = {};
+        Object.values(this.thread.model_ensembles).map(x => allBindings = { ...allBindings, ...x.bindings});
+        let inputBindings : string[] = allBindings[input.id] ? allBindings[input.id] : [];
+        let datasetIds = inputBindings.map((bid:string) => this.thread.data[bid]?.dataset?.id);
+
         req.then((datasets:Dataset[]) => {
+            // Check if some dataset was selected:
+            let selectedDatasets : Dataset[] = datasets.filter((ds:Dataset) => datasetIds.some((id:string) => id === ds.id));
+            selectedDatasets.forEach((ds:Dataset) => {
+                this.addDatasetsToInput(input.id,selectedDatasets);
+            });
+
             // Sort results depending of type.
             if (input.type) {
                 let inputtype = input.type.replace(/.*#/, '');

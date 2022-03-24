@@ -1,4 +1,4 @@
-import { Configuration, ConfigurationParameters, DefaultApi } from '@mintproject/modelcatalog_client';
+import { Configuration, ConfigurationParameters } from '@mintproject/modelcatalog_client';
 import { UserCatalog } from './user-catalog';
 import * as mintConfig from 'config/config.json';
 import { MintPreferences } from 'app/reducers';
