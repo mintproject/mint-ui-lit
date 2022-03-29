@@ -48,7 +48,7 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
 
     public render () : TemplateResult {
         return html`
-        <wl-icon style="cursor:pointer;" @click=${this.open}>travel_explore</wl-icon>
+        <wl-icon style="cursor:pointer; ${this.resources.length === 0 ? 'color:red;':''}" @click=${this.open}>travel_explore</wl-icon>
         <wl-dialog id="resourceMapDialog" fixed backdrop blockscrolling size=${this.dialogSize}>
             <h3 slot="header">
                 Selecting resources ${this.selectedDataset ? "for " + this.selectedDataset.name : ""}
@@ -61,11 +61,11 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
             </google-map-custom>
             <div slot="footer" style="padding-top:0px;">
                 <wl-button flat inverted style="margin-right:5px;" @click=${this.onCancelClicked}>Cancel</wl-button>
-                ${this.editMode ? html`
-                <wl-button class="submit" @click=${this.onSaveClicked}>Save</wl-button>
-                ` : html`
-                <wl-button class="submit" @click=${this.onEditClicked}>Edit</wl-button>
-                `}
+                <!--{this.editMode ? html
+                <wl-button class="submit" @click={this.onSaveClicked}>Save</wl-button>
+                 : html
+                <wl-button class="submit" @click={this.onEditClicked}>Edit</wl-button>
+                }-->
             </div>
         </wl-dialog>`;
     }

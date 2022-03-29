@@ -75,7 +75,7 @@ export class DataCatalogAdapter {
         return datasets;
     }
 
-    public static async getDatasetResources (datasetid:string, region:Region, dates?:DateRange) : Promise<DataResource[]> {
+    public static async queryDatasetResources (datasetid:string, region:Region, dates?:DateRange) : Promise<DataResource[]> {
         let filters : any = {};
         if (region.geometries)
             filters.spatial_coverage__intersects = region.geometries[0];

@@ -17,7 +17,7 @@ type StatusType = "warning" | "done" | "error";
 @customElement('thread-expansion')
 export class ThreadExpansion extends connect(store)(MintThreadPage) {
     @property({type: Boolean}) protected editMode: boolean = false;
-    @property({type: Boolean}) protected loading: boolean = false;
+    @property({type: Boolean}) public loading: boolean = false;
     @property({type: Boolean}) public open: boolean = false;
     protected _name : string = "Configure";
     protected _description : string = "General configuration for this thread. \

@@ -11,18 +11,17 @@ import "weightless/button";
 import "components/data-catalog-id-checker";
 
 import { ThreadExpansion } from "./thread-expansion";
-import { DataMap, ModelEnsembleMap, ModelIOBindings, Thread } from "../reducers";
+import { DataMap, DateRange, ModelEnsembleMap, ModelIOBindings, Thread } from "../reducers";
 import { Model as LocalModel, ModelIO } from "screens/models/reducers";
 import { DatasetSelector } from "components/dataset-selector";
 import { hideDialog, showDialog } from "util/ui_functions";
 import { DataResource, Dataset, Dataslice } from "screens/datasets/reducers";
 import { DataCatalogAdapter, DatasetQuery } from "util/data-catalog-adapter";
-import { RegionMap } from "screens/regions/reducers";
-import { queryDatasetsByVariables } from "screens/datasets/actions";
+import { Region as LocalRegion, RegionMap } from "screens/regions/reducers";
 import { uuidv4 } from "util/helpers";
 import { IdMap } from "app/reducers";
 import { DatasetResourceSelector } from "components/dataset-resource-selector";
-import { setThreadData } from "../actions";
+import { setThreadData, selectThreadDataResources, getThreadDataResources } from "../actions";
 
 type StatusType = "warning" | "done" | "error";
 
@@ -34,11 +33,8 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     @property({type:Object}) selectedInput : ModelIO;
     @property({type:Object}) localRegions : RegionMap;
     @property({type:Object}) modelVisible : IdMap<boolean> = {};
-    private threadDatasets : Dataset[];
-    private loading2 : boolean = false;
     private modifiedInputs : IdMap<Dataslice[]> = {};
     private resourceSelectors : IdMap<DatasetResourceSelector> = {};
-    private resourceCache : IdMap<Promise<DataResource[]>> = {};
 
     static get styles() {
         return [SharedStyles, this.generalStyles, css`
@@ -130,9 +126,8 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
 
     protected renderView (): TemplateResult {
         let thread: Thread = this.thread;
-        if (!thread.models || Object.keys(thread.models).length === 0) {
-            return html`You must select at least a model first.`
-        }
+        if (!thread.models || Object.keys(thread.models).length === 0)
+            return html`You must select at least a model first.`;
         return html`
             <div style="border: 1px solid #EEE; margin: 10px 0px;">
                 ${Object.values(thread.models).map(this.renderModelDatasets.bind(this))}
@@ -217,22 +212,17 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                         <span tip="This input was pre-selected. Cannot be changed" class="tooltip"><wl-icon>lock</wl-icon></span>
                     </div>
                 </td>
-            </tr>
-        `;
+            </tr>`;
     }
 
     private renderRequiredDatasetRow (model:LocalModel, input:ModelIO) : TemplateResult {
-        let modelBindings : ModelIOBindings = this.thread.model_ensembles![model.id].bindings || {};
-        let dataBindingIds : string[] = modelBindings[input.id] ? modelBindings[input.id] : [];
-        let dataslices : Dataslice[] = this.modifiedInputs[input.id] ?
-                this.modifiedInputs[input.id]
-                : dataBindingIds.map((bid:string) => this.thread.data![bid]);
+        let dataslices : Dataslice[] = this.modifiedInputs[input.id];
 
         return html`
             <tr>
                 <td> 
                     <div style="display:flex; align-items:center;">
-                        ${dataslices.length > 0 ? html`
+                        ${dataslices && dataslices.length > 0 ? html`
                             <wl-icon style="color: 'green'; margin-right: 5px;">done</wl-icon>
                         ` : html`
                             <wl-icon style="color: 'orange'; margin-right: 5px;">warning</wl-icon>
@@ -243,7 +233,8 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                 <td>
                     <div class="flex-between">
                         <ul class="datasetlist">
-                            ${dataslices.length == 0 ? "None selected" : dataslices.map((dataslice:Dataslice) => {
+                            ${!dataslices ? html`<loading-dots style="--width: 25px;"></loading-dots>` :
+                                dataslices.length == 0 ? "None selected" : dataslices.map((dataslice:Dataslice) => {
                                 if (!dataslice) return;
                                 let num_selected_resources = dataslice.selected_resources ?? 0;
                                 let num_total_resources = dataslice.total_resources ?? 0;
@@ -261,7 +252,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                                         <span style="margin-left:10px;">
                                             ${this.resourceSelectors[dataslice.dataset.id] ? 
                                                 this.resourceSelectors[dataslice.dataset.id]
-                                                : ""
+                                                : html`<loading-dots style="--width: 25px;"></loading-dots>`
                                             }
                                         </span>
                                     </div>
@@ -294,48 +285,26 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     }
 
     private onDatasetDialogSave () : void {
-        let datasets : Dataset[] = this.datasetSelector.getSelectedDatasets();
-        let inputid : string = this.selectedInput.id;
-        this.addDatasetsToInput(inputid,datasets);
-        this.onDatasetDialogCancel();
-    }
-
-    private addDatasetsToInput (inputid:string, datasets:Dataset[]) : void {
         let dates = this.thread.dates;
         let region = this.localRegions[this.thread.regionid];
-        let resourceRequests : Promise<DataResource[]>[] = [];
-        this.loading = true;
-        this.loading2 = true;
-        datasets.forEach((dataset:Dataset) => {
-            let cacheid : string = dataset.id + this.thread.regionid + dates.start_date.getTime() + "-" + dates.end_date.getTime();
-            this.modifiedInputs[inputid] = [];
-            if (!this.resourceCache[cacheid])
-                this.resourceCache[cacheid] = DataCatalogAdapter.getDatasetResources(dataset.id,region,dates);
-            let req : Promise<DataResource[]> = this.resourceCache[cacheid];
-            req.then((resources:DataResource[]) => {
-                this.modifiedInputs[inputid].push(this.newDatasliceFromDataset(dataset, resources))
-                this.resourceSelectors[dataset.id] = new DatasetResourceSelector(dataset, resources, region);
+        let datasets : Dataset[] = this.datasetSelector.getSelectedDatasets();
+        let inputid : string = this.selectedInput.id;
+
+        let loadingDataslices : Dataslice[] = [];
+        this.modifiedInputs[inputid] = undefined;
+        let reqs : Promise<Dataslice>[] = datasets.map((d:Dataset) => {
+            let req = this.loadResourcesForDataset(d,region,dates);
+            req.then((slice:Dataslice) => {
+                loadingDataslices.push(slice);
+                this.resourceSelectors[slice.dataset.id] = new DatasetResourceSelector(slice.dataset, slice.resources, region);
             });
-            resourceRequests.push(req);
+            return req;
         });
-        Promise.all(resourceRequests).then(() => {
-            this.loading = false;
-            this.loading2 = false;
+        Promise.all(reqs).then(() => {
+            this.modifiedInputs[inputid] = loadingDataslices;
             this.requestUpdate();
         });
-    }
-
-    private newDatasliceFromDataset (dataset:Dataset, resources:DataResource[]) : Dataslice {
-        return {
-            id: uuidv4(),
-            total_resources: resources.length,
-            selected_resources: resources.filter((res:DataResource) => res.selected).length,
-            resources: resources,
-            time_period: this.thread.dates,
-            name: dataset.name,
-            dataset: dataset,
-            resources_loaded: true
-        } as Dataslice
+        this.onDatasetDialogCancel();
     }
 
     private onDatasetDialogCancel () : void {
@@ -344,12 +313,31 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     }
 
     private editInput (model:LocalModel, input:ModelIO) {
+        let dates = this.thread.dates;
+        let region = this.localRegions[this.thread.regionid];
         this.selectedInput = input;
+        this.datasetSelector.unload();
+
+        let req : Promise<Dataset[]> = this.queryDatasets(input, region, dates);
+        req.then((datasets:Dataset[]) => {
+            // Sort results depending of type.
+            if (input.type) {
+                let inputtype = input.type.replace(/.*#/, '');
+                datasets = datasets.sort((d1:Dataset,d2:Dataset) => {
+                    return d1.datatype === d2.datatype ? 0
+                        : ( d1.datatype === inputtype ? -1 
+                            : (d2.datatype === inputtype ? 1 
+                                : (!!d1.datatype && !d2.datatype ? -1
+                                    : (!!d2.datatype && !d1.datatype ? 1 : 0)
+                            )));
+                });
+            }
+            this.datasetSelector.setDatasets(datasets, region, dates);
+        });
+
         let allBindings : ModelIOBindings = this.thread.model_ensembles![model.id].bindings || {};
         let bindings : string[] = allBindings[input.id] ? allBindings[input.id] : [];
-
         let datasetIds = (bindings || []).map((bid) => this.thread.data[bid]?.dataset?.id);
-        this.getInputDatasets(input);
 
         if (this.modifiedInputs[input.id]) {
             let mDatasets : string[] = this.modifiedInputs[input.id].map((sl:Dataslice) => sl.dataset.id);
@@ -374,6 +362,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     protected onCancelClicked(): void {
         this.selectedInput = null;
         this.modifiedInputs = {};
+        this.onThreadChange(this.thread);
         super.onCancelClicked();
     }
 
@@ -419,100 +408,144 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     }
 
     protected onThreadChange(thread: Thread): void {
-        if (this.localRegions)
-            this.getThreadDatasets();
-        if (thread && thread.models) {
+        if (this.localRegions && thread && thread.models) {
             Object.values(thread.models).forEach((m:LocalModel) => {
                 this.modelVisible[m.id] = true;
+                let bindings : ModelIOBindings = this.thread.model_ensembles![m.id].bindings || {};
                 (m.input_files||[]).filter(i => !i.value).forEach((input:ModelIO) => {
-                    // Updating resource on thread change
-                    if (this.modifiedInputs && this.modifiedInputs[input.id]) {
-                        let datasets : Dataset[] = this.modifiedInputs[input.id].map((slice:Dataslice) => slice.dataset);
-                        this.addDatasetsToInput(input.id, datasets);
-                    }
+                    this.loadInput(input, bindings);
                 });
             });
-            console.log(">", thread);
         }
     }
 
+
+    private loadInput (input:ModelIO, bindings: ModelIOBindings) : void {
+        let dates = this.thread.dates;
+        let region = this.localRegions[this.thread.regionid];
+        if (!this.modifiedInputs[input.id]) {
+            let dataslices : Dataslice[] = (bindings[input.id]||[])
+                    .map((bid:string) => this.thread.data![bid])
+                    .filter(x => !!x);
+            if (dataslices.length > 0) {
+                //console.log("selected slices:", dataslices, region);
+                //Load all resources for each dataset selected
+                let resourceRequests : Promise<Dataslice>[] = [];
+                let loadingDataslices : Dataslice[] = []
+                dataslices.forEach((slice:Dataslice) => {
+                    let req = this.loadResourcesForDataset(slice.dataset,region,dates,slice.id);
+                    req.then((resp:Dataslice) => {
+                        loadingDataslices.push(resp);
+                        this.resourceSelectors[slice.dataset.id] = new DatasetResourceSelector(slice.dataset, resp.resources, region);
+                    });
+                    resourceRequests.push(req);
+                });
+                
+                Promise.all(resourceRequests).then((resources:Dataslice[])=>{
+                    this.modifiedInputs[input.id] = loadingDataslices;
+                    this.requestUpdate();
+                });
+            } else {
+                // Theres no dataset, just create an empty array and pre-query possible datasets.
+                this.modifiedInputs[input.id] = [];
+                let req : Promise<Dataset[]> = this.queryDatasets(input, region, dates);
+            }
+        } else {
+            // Load already made edits.
+            let datasets : Dataset[] = this.modifiedInputs[input.id].map((slice:Dataslice) => slice.dataset);
+            let resourceRequests : Promise<Dataslice>[] = [];
+            let loadingDataslices : Dataslice[] = []
+            datasets.forEach((dataset:Dataset) => {
+                //Query resources for this dataset
+                let req : Promise<Dataslice> = this.loadResourcesForDataset(dataset,region,dates);
+                req.then((slice:Dataslice) => {
+                    loadingDataslices.push(slice);
+                    this.resourceSelectors[dataset.id] = new DatasetResourceSelector(dataset, slice.resources, region);
+                });
+                resourceRequests.push(req);
+            });
+
+            Promise.all(resourceRequests).then((resources:Dataslice[]) => {
+                console.log("Y", resources);
+                this.modifiedInputs[input.id] = loadingDataslices;
+                this.requestUpdate();
+            });
+        }
+    }
+
+    private lastRegionId : string;
     stateChanged(state: RootState) {
         super.stateChanged(state);
         super.setRegionId(state);
         if (state.regions.regions && this.localRegions != state.regions.regions) {
             this.localRegions = state.regions.regions;
-            if (this.thread) this.getThreadDatasets();
+            if (this.thread && this.thread.regionid && this.lastRegionId != this.thread.regionid && this.localRegions[this.thread.regionid]) {
+                this.onThreadChange(this.thread);
+                this.lastRegionId = this.thread.regionid;
+            }
         }
     }
 
-    public getThreadDatasets () : void {
-        if (!this.thread || !this.localRegions) return;
-        let datasetQuery : DatasetQuery = {};
-
-        let localRegion = this.localRegions[this.thread.regionid];
-        if (localRegion)
-            datasetQuery.spatial_coverage__intersects = localRegion.geometries[0];
-
-        if (this.thread.dates) {
-            if (this.thread.dates.start_date) datasetQuery.start_time = this.thread.dates.start_date;
-            if (this.thread.dates.end_date) datasetQuery.end_time = this.thread.dates.end_date;
-        }
-        
-        if (this.thread.response_variables && this.thread.response_variables.length > 0)
-            datasetQuery.standard_variable_names__in = this.thread.response_variables;
-
-        this.loading = true;
-        let req : Promise<Dataset[]> = DataCatalogAdapter.findDataset(datasetQuery);
-        req.then((datasets:Dataset[]) => {
-            this.threadDatasets = datasets;
-
-            if (!this.loading2)
-                this.loading = false;
-        })
-        req.catch((e) => {
-            console.warn(e);
-            this.loading = false;
-        })
-    }
-
-    private getInputDatasets (input:ModelIO) {
-        let dates = this.thread.dates;
-        let region = this.localRegions[this.thread.regionid];
-
-        this.datasetSelector.unload();
-        this.loading = true;
-        let req : Promise<Dataset[]> = DataCatalogAdapter.findDatasetByVariableName(input.variables, region, dates);
-
-        let allBindings : ModelIOBindings = {};
-        Object.values(this.thread.model_ensembles).map(x => allBindings = { ...allBindings, ...x.bindings});
-        let inputBindings : string[] = allBindings[input.id] ? allBindings[input.id] : [];
-        let datasetIds = inputBindings.map((bid:string) => this.thread.data[bid]?.dataset?.id);
-
-        req.then((datasets:Dataset[]) => {
-            // Check if some dataset was selected:
-            let selectedDatasets : Dataset[] = datasets.filter((ds:Dataset) => datasetIds.some((id:string) => id === ds.id));
-            selectedDatasets.forEach((ds:Dataset) => {
-                this.addDatasetsToInput(input.id,selectedDatasets);
-            });
-
-            // Sort results depending of type.
-            if (input.type) {
-                let inputtype = input.type.replace(/.*#/, '');
-                datasets = datasets.sort((d1:Dataset,d2:Dataset) => {
-                    return d1.datatype === d2.datatype ? 0
-                        : ( d1.datatype === inputtype ? -1 
-                            : (d2.datatype === inputtype ? 1 
-                                : (!!d1.datatype && !d2.datatype ? -1
-                                    : (!!d2.datatype && !d1.datatype ? 1 : 0)
-                            )));
+    private loadResourcesForDataset (dataset:Dataset, region:LocalRegion, dates:DateRange, sliceid?:string) : Promise<Dataslice> {
+        return new Promise<Dataslice>((resolve, reject)=> {
+            //A dataset can have one or more resources selected. First we query for resources
+            let req : Promise<DataResource[]> = this.queryResources(dataset, region, dates);
+            req.catch(reject);
+            if (sliceid) { //If a slice id was provided, load selected resources from graphql
+                let req2 : Promise<Dataslice> = getThreadDataResources(sliceid);
+                req2.catch(reject);
+                Promise.all([req, req2]).then((arr:any) => {
+                    let savedResourcesMap : IdMap<DataResource> = {}; // Name -> resource
+                    let queriedResources : DataResource[] = arr[0];
+                    let savedDataslice : Dataslice = arr[1];
+                    savedDataslice.resources.forEach((r:DataResource) => savedResourcesMap[r.name] = r);
+                    let resources : DataResource[] = queriedResources.map((r:DataResource) => {
+                        r.selected = savedResourcesMap[r.name] ? savedResourcesMap[r.name].selected : false;
+                        return r;
+                    });
+                    resolve({
+                        id: sliceid,
+                        total_resources: resources.length,
+                        selected_resources: resources.filter((res:DataResource) => res.selected).length,
+                        resources: resources,
+                        time_period: dates,
+                        name: dataset.name,
+                        dataset: dataset,
+                        resources_loaded: true
+                    } as Dataslice)
+                })
+            } else {
+                req.then((resources:DataResource[]) => {
+                    // Create a dataslice with all the resources.
+                    resolve({
+                        id: uuidv4(),
+                        total_resources: resources.length,
+                        selected_resources: resources.filter((res:DataResource) => res.selected).length,
+                        resources: resources,
+                        time_period: dates,
+                        name: dataset.name,
+                        dataset: dataset,
+                        resources_loaded: true
+                    } as Dataslice)
                 });
             }
-            this.datasetSelector.setDatasets(datasets, region, dates);
-            this.loading = false;
-        })
-        req.catch((e) => {
-            console.warn(e);
-            this.loading = false;
-        })
+        });
+    }
+
+    /* request to data-catalog */
+    private resourceCache : IdMap<Promise<DataResource[]>> = {};
+    private queryResources (dataset:Dataset, region:LocalRegion, dates:DateRange) : Promise<DataResource[]> {
+        let cacheid : string = dataset.id + region.id + dates.start_date.getTime() + "-" + dates.end_date.getTime();
+        if (!this.resourceCache[cacheid])
+            this.resourceCache[cacheid] = DataCatalogAdapter.queryDatasetResources(dataset.id,region,dates);
+        return this.resourceCache[cacheid];
+    }
+
+    private datasetCache : IdMap<Promise<Dataset[]>> = {};
+    private queryDatasets (input:ModelIO, region:LocalRegion, dates:DateRange) : Promise<Dataset[]> {
+        let cacheid : string = input.id + region.id + dates.start_date.getTime() + "-" + dates.end_date.getTime();
+        if (!this.datasetCache[cacheid])
+            this.datasetCache[cacheid] = DataCatalogAdapter.findDatasetByVariableName(input.variables, region, dates);
+        return this.datasetCache[cacheid];
     }
 }
