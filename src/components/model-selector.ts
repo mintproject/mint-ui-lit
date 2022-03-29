@@ -516,12 +516,13 @@ export class ModelSelector extends LitElement {
         
         let regionsInBoundingBox : Region[] = [];
         Object.values(this.regions).forEach((r:Region) => {
-            if (r.geo && r.geo.map((shape:GeoShape) => this.geoshapes[shape.id]).some((shape:GeoShape) => {
+            if ((r.geo && r.geo.map((shape:GeoShape) => this.geoshapes[shape.id]).some((shape:GeoShape) => {
                 let bb : BoundingBox = getBoundingBoxFromGeoShape(shape);
                 return !!bb && (
                     (!isMainRegion(r) && this.regionFilter.bounding_box && doBoxesIntersect(bb, this.regionFilter.bounding_box)) 
-                    || (this.regionFilter.model_catalog_uri && this.regionFilter.model_catalog_uri === r.id));
-            })) {
+                    || (this.regionFilter.model_catalog_uri && this.regionFilter.model_catalog_uri === r.id));}))
+                || (this.regionFilter.model_catalog_uri && r.partOf && r.partOf.some((r2:Region) => r2.id === this.regionFilter.model_catalog_uri) )
+            ) {
                 regionsInBoundingBox.push(r);
             }
         });
