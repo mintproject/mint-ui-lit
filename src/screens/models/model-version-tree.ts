@@ -9,7 +9,7 @@ import { goToPage } from '../../app/actions';
 
 import { IdMap } from 'app/reducers';
 import { SoftwareVersion, Model, ModelCategory } from '@mintproject/modelcatalog_client';
-import { getLabel, sortVersions, getURL} from 'model-catalog/util';
+import { getLabel, sortVersions, getURL} from 'model-catalog-api/util';
 
 import "weightless/progress-spinner";
 import 'components/loading-dots'

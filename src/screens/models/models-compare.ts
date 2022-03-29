@@ -10,13 +10,11 @@ import { ComparisonEntry } from './model-explore/ui-reducers';
 import { IdMap } from "app/reducers";
 import { ComparisonFeature } from "../modeling/reducers";
 
-import { uriToId, getLabel, getModelTypeNames } from 'model-catalog/util';
+import { uriToId, getLabel, getModelTypeNames } from 'model-catalog-api/util';
 
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
-
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
-
 import { ModelCatalogPerson } from './configure/resources/person';
 import { ModelCatalogRegion } from './configure/resources/region';
 import { ModelCatalogGrid } from './configure/resources/grid';

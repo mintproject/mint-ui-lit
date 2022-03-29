@@ -83,7 +83,7 @@ b.clickable, span.clickable {
 }
 
 th > span.tooltip {
-    margin: 0 0 0 4px;"
+    margin: 0 0 0 4px;
     font-size: 14px;
 }
 

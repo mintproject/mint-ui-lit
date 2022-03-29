@@ -1,9 +1,9 @@
 import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
-import { store, RootState } from "../../../app/store";
-import { SharedStyles } from "../../../styles/shared-styles";
+import { store, RootState } from "app/store";
+import { SharedStyles } from "styles/shared-styles";
 
-import "./mint-variables";
+import "./mint-configure";
 import "./mint-models";
 import "./mint-datasets";
 import "./mint-parameters";
@@ -16,37 +16,27 @@ import "weightless/progress-spinner";
 import { getThreadVariablesStatus, TASK_NOT_STARTED, getThreadModelsStatus, 
     getThreadDatasetsStatus, getThreadRunsStatus, getThreadResultsStatus, 
     TASK_DONE, TASK_PARTLY_DONE, 
-    getUISelectedTask, getThreadParametersStatus } from "../../../util/state_functions";
-import { Execution, ExecutionSummary, Task, Thread } from "../reducers";
-import { BASE_HREF } from "../../../app/actions";
+    getUISelectedTask, getThreadParametersStatus, getThreadConfigureStatus } from "util/state_functions";
+import { ExecutionSummary, Task, Thread } from "../reducers";
+import { BASE_HREF } from "app/actions";
 import { MintThreadPage } from "./mint-thread-page";
-import { hideNotification } from "util/ui_functions";
 import { subscribeThread, subscribeThreadExecutionSummary } from "../actions";
 import { getLatestEvent } from "util/event_utils";
 import { IdMap } from "app/reducers";
 
 @customElement('mint-thread')
 export class MintThread extends connect(store)(MintThreadPage) {
-    @property({type: Object })
-    private task: Task | null = null;
+    @property({type: Object}) private task: Task | null = null;
+    @property({type: Object}) private _sectionDoneMap: IdMap<string> = {};
 
-    @property({ type: String })
-    private _currentMode: string = "";
-
-    @property({type: Boolean})
-    private _dispatched: boolean = false;
-
-    @property({type: Object})
-    private _sectionDoneMap: IdMap<string> = {};
-
-    @property({type: Boolean})
-    private _dispatched_execution_summary: boolean = false;
+    // State
+    @property({type: Boolean}) private maximized: boolean;
+    @property({type: String})  private _currentMode: string = "";
+    @property({type: Boolean}) private _dispatched: boolean = false;
+    @property({type: Boolean}) private _dispatched_execution_summary: boolean = false;
 
     static get styles() {
-        return [
-          SharedStyles,
-          css`
-
+        return [ SharedStyles, css`
           .breadcrumbs a.active, .breadcrumbs a.done.active {
             background-color: #0f7acf;
             color: white;
@@ -71,59 +61,94 @@ export class MintThread extends connect(store)(MintThreadPage) {
             border-left-color: #06436c;
           }
 
+          .thread-good {
+              background-color: lightgreen !important;
+          }
+
+          .breadcrumbs a.warning {
+            background-color: red;
+            color: white;
+          }
+          .breadcrumbs a.warning:before {
+            border-color: red;
+            border-left-color: transparent;
+          }
+          .breadcrumbs a.warning:after {
+            border-left-color: red;
+          }
+
+          .breadcrumbs a.pending {
+            background-color: cadetblue;
+            color: white;
+          }
+          .breadcrumbs a.pending:before {
+            border-color: cadetblue;
+            border-left-color: transparent;
+          }
+          .breadcrumbs a.pending:after {
+            border-left-color: cadetblue;
+          }
           .card2 {
-            margin: 0px;
-            padding: 10px;
-            margin-top: 5px;
-            margin-bottom: 10px;
+            padding: 5px 10px;
             border: 1px solid #F0F0F0;
             left: 0px;
             right: 0px;
-            height: calc(100% - 100px);
+            height: calc(100% - 40px);
             overflow: auto;
             background: #FFFFFF;
           }
+          .thread-header {
+              display: flex;
+              align-items: center;
+          }
 
           @media (max-width: 1024px) {
-            .breadcrumbs {
-                display: flex;
-                justify-content: center;
-            }
-        }
-        `
+          }`
         ];
     }
-
+    
     private _renderProgressBar(sectionDoneMap: IdMap<string>) {
         return html`
+        <div class="thread-header">
             <ul class="breadcrumbs">
-                <a id="models_breadcrumb" 
-                    class="${this._getBreadcrumbClass('models', sectionDoneMap)}" 
-                    href="${this._getModeURL('models')}">Models</li>
-                <a id="datasets_breadcrumb" 
-                    class="${this._getBreadcrumbClass('datasets', sectionDoneMap)}" 
-                    href="${this._getModeURL('datasets')}">Datasets</li>
+                <a id="configure_breadcrumb" style="min-width: 20px;"
+                    class="${this._getBreadcrumbClass('configure', sectionDoneMap)}" 
+                    href="${this._getModeURL('configure')}">
+                    <wl-icon style="vertical-align: middle;">settings</wl-icon>
+                    &nbsp;Configure
+                </a>
                 <a id="parameters_breadcrumb" 
                     class="${this._getBreadcrumbClass('parameters', sectionDoneMap)}" 
-                    href="${this._getModeURL('parameters')}">Parameters</li>
+                    href="${this._getModeURL('parameters')}">Parameters</a>
                 <a id="runs_breadcrumb" 
                     class="${this._getBreadcrumbClass('runs', sectionDoneMap)}" 
-                    href="${this._getModeURL('runs')}">Runs</li>
+                    href="${this._getModeURL('runs')}">Runs</a>
                 <a id="results_breadcrumb" 
                     class="${this._getBreadcrumbClass('results', sectionDoneMap)}" 
-                    href="${this._getModeURL('results')}">Results</li>
+                    href="${this._getModeURL('results')}">Results</a>
                 <a id="visualize_breadcrumb" 
                     class="${this._getBreadcrumbClass('visualize', sectionDoneMap)}" 
-                    href="${this._getModeURL('visualize')}">Visualize</li>
+                    href="${this._getModeURL('visualize')}">Visualize</a>
             </ul>
+            <wl-icon @click="${this.toggleMaximize}" class="actionIcon bigActionIcon">
+                ${!this.maximized ? "fullscreen" : "fullscreen_exit"}
+            </wl-icon>
+        </div>
         `;
+    }
+
+    public toggleMaximize () : void {
+        let event : CustomEvent = new CustomEvent("on-thread-maximize", {
+            bubbles: true,
+            composed: true,
+            detail: !this.maximized
+        });
+        this.dispatchEvent(event);
     }
 
     private _setSectionStatusMap() {
         let map = {};
-        map["variables"] = getThreadVariablesStatus(this.thread);
-        map["models"] = getThreadModelsStatus(this.thread);
-        map["datasets"] = getThreadDatasetsStatus(this.thread);
+        map["configure"] = getThreadConfigureStatus(this.thread);
         map["parameters"] = getThreadParametersStatus(this.thread);
         map["runs"] = getThreadRunsStatus(this.thread);
         map["results"] = getThreadResultsStatus(this.thread);
@@ -132,9 +157,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
 
     private _getNextMode() {
         let modes = [
-            "variables",
-            "models",
-            "datasets",
+            "configure",
             "parameters",
             "runs",
             "results",
@@ -165,6 +188,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
             case TASK_NOT_STARTED:
                 break;
         }
+
         return cls;
     }
 
@@ -214,19 +238,10 @@ export class MintThread extends connect(store)(MintThreadPage) {
             ${this._renderProgressBar(this._sectionDoneMap)}
 
             <div class="card2">
-                <mint-variables class="page" 
+                <mint-configure class="page" 
                     .problem_statement="${this.problem_statement}"
-                    ?active="${this._currentMode == 'variables'}">
-                </mint-variables>
-                <mint-models class="page" 
-                    .problem_statement="${this.problem_statement}"
-                    ?active="${this._currentMode == 'models'}">
-                </mint-models>
-                <mint-datasets class="page" 
-                    .problem_statement="${this.problem_statement}"
-                    .task="${this.task}"
-                    ?active="${this._currentMode == 'datasets'}">
-                </mint-datasets>
+                    ?active="${this._currentMode == 'configure'}">
+                </mint-configure>
                 <mint-parameters class="page" 
                     .problem_statement="${this.problem_statement}"
                     ?active="${this._currentMode == 'parameters'}">
@@ -397,4 +412,3 @@ export class MintThread extends connect(store)(MintThreadPage) {
         return false;
     }
 }
-

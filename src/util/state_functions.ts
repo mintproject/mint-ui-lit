@@ -22,6 +22,14 @@ export const TASK_NOT_STARTED = "TASK_NOT_STARTED"
 export const TASK_DONE = "TASK_DONE";
 export const TASK_PARTLY_DONE = "TASK_PARTLY_DONE";
 
+export const getThreadConfigureStatus = (thread:Thread) => {
+    if (getThreadModelsStatus(thread) === TASK_DONE && getThreadDatasetsStatus(thread) === TASK_DONE)
+        return TASK_DONE;
+    if (!thread.regionid || (thread.response_variables && thread.response_variables.length === 0))
+        return TASK_NOT_STARTED;
+    return TASK_PARTLY_DONE;
+}
+
 export const getThreadVariablesStatus = (thread:Thread) => {
     if (thread.response_variables && thread.response_variables.length > 0) {
         return TASK_DONE;

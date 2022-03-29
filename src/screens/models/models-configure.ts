@@ -245,7 +245,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
 
                     <div style="padding: 0px 10px;">
                         ${this._loading ? 
-                            html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner>` 
+                            html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` 
                             : ( ((this._selectedConfig && !this._creating && !this._selectedSetup) ||
                             (!this._selectedConfig && this._selectedVersion && this._creating) ) ?
                                 this._iConfig :

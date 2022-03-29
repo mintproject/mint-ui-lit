@@ -1,17 +1,11 @@
 import { ModelCatalogResource } from './resource';
-import { SampleResource, Unit, SampleResourceFromJSON } from '@mintproject/modelcatalog_client';
-import { html, customElement, css } from 'lit-element';
+import { SampleResource, SampleResourceFromJSON } from '@mintproject/modelcatalog_client';
+import { html, customElement } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
-import { IdMap } from "app/reducers";
-
-import { SharedStyles } from 'styles/shared-styles';
-import { ExplorerStyles } from '../../model-explore/explorer-styles'
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 
 import { Textfield } from 'weightless/textfield';
-import { Textarea } from 'weightless/textarea';
-import { Select } from 'weightless/select';
 
 import { BaseAPI } from '@mintproject/modelcatalog_client';
 import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
@@ -36,7 +30,7 @@ export class ModelCatalogSampleResource extends connect(store)(ModelCatalogResou
 }*/
 
     protected _renderResource (r:SampleResource) {
-        return r.value ? html`<a target="_blank" href="${r.value}">${getLabel(r)}</a>` : html`${getLabel(r)}`;
+        return r.value ? html`<a target="_blank" href="${r.value[0]}">${getLabel(r)}</a>` : html`${getLabel(r)}`;
     }
 
     protected _renderForm () {

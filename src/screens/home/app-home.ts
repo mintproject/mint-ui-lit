@@ -15,6 +15,7 @@ import "../../components/google-map-custom";
 import { GoogleMapCustom } from 'components/google-map-custom';
 import { goToRegionPage } from 'app/actions';
 import { MintPreferences, User } from 'app/reducers';
+import { mapStyles } from 'styles/map-style';
 
 import * as mintConfig from 'config/config.json';
 let prefs = mintConfig["default"] as MintPreferences;
@@ -33,8 +34,6 @@ export class AppHome extends connect(store)(PageViewElement) {
 
     @property({type: Boolean})
     private _mapReady: boolean = false;
-
-    private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
     
     static get styles() {
       return [
@@ -137,9 +136,9 @@ export class AppHome extends connect(store)(PageViewElement) {
         ${!this._mapReady ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
         <google-map-custom class="middle2main" api-key="${GOOGLE_API_KEY}" 
             .style="visibility: ${this._mapReady ? 'visible': 'hidden'}"
-            disable-default-ui="true" draggable="true"
+            ?disable-default-ui=${true} draggable="true"
             @click=${(e: CustomEvent) => this.regionSelected(e.detail.id)}
-            mapTypeId="terrain" styles="${this._mapStyles}">
+            mapTypeId="terrain" .styles=${mapStyles}>
         </google-map-custom>
 
         ${this._renderIntroductionDialog()}
@@ -147,7 +146,7 @@ export class AppHome extends connect(store)(PageViewElement) {
     }
 
     protected regionSelected(regionid: string) {
-      if(regionid) {
+      if (regionid) {
         //store.dispatch(selectTopRegion(regionid));
         goToRegionPage(regionid, "home");
       }
@@ -224,7 +223,9 @@ export class AppHome extends connect(store)(PageViewElement) {
 
     // This is called every time something is updated in the store.
     stateChanged(state: RootState) {
-        if (state.app && state.app.user) {
+        super.setRegionId(state);
+
+        if (state.app && state.app.user && state.app.user.region) {
             let user : User = state.app.user;
             if (user.region != this._mainRegion) {
                 if (!user.region) {
@@ -236,13 +237,12 @@ export class AppHome extends connect(store)(PageViewElement) {
             }
         }
 
-        if(state.regions && state.regions.regions) {
-            if(this._regionids != state.regions.top_region_ids) {
-              this._regionids = state.regions.top_region_ids;
-              this._regions = this._regionids.map((regionid) => state.regions.regions[regionid]);
-              this._addRegions();
+        if (state.regions && state.regions.regions) {
+            if (this._regionids != state.regions.top_region_ids) {
+                this._regionids = state.regions.top_region_ids;
+                this._regions = this._regionids.map((regionid) => state.regions.regions[regionid]);
+                this._addRegions();
             }
         }
-        super.setRegionId(state);
     }
 }

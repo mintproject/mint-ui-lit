@@ -1,14 +1,13 @@
 import { ModelCatalogResource } from './resource';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 import { Process, ProcessFromJSON } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
-import { Select } from 'weightless/select';
 
 import { BaseAPI } from '@mintproject/modelcatalog_client';
 import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';

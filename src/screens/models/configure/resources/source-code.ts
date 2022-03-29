@@ -1,17 +1,11 @@
 import { ModelCatalogResource } from './resource';
-import { html, customElement, css } from 'lit-element';
+import { html, customElement } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 import { SourceCode, SourceCodeFromJSON } from '@mintproject/modelcatalog_client';
-import { IdMap } from "app/reducers";
-
-import { SharedStyles } from 'styles/shared-styles';
-import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
 import { Textfield } from 'weightless/textfield';
-import { Textarea } from 'weightless/textarea';
-import { Select } from 'weightless/select';
 
 import { BaseAPI } from '@mintproject/modelcatalog_client';
 import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
@@ -41,7 +35,7 @@ export class ModelCatalogSourceCode extends connect(store)(ModelCatalogResource)
                         <span>
                             <a target="_blank" href="${url}">
                                 Code
-                                <wl-icon style="font-size:14px; margin-left:3px">open_in_new<wl-icon>
+                                <wl-icon style="font-size:14px; margin-left:3px">open_in_new</wl-icon>
                             </a>
                         </span>`: ''}
                 </div>
@@ -59,7 +53,7 @@ export class ModelCatalogSourceCode extends connect(store)(ModelCatalogResource)
             <wl-textfield id="i-language" label="Programming Language"
                 value=${edResource && edResource.programmingLanguage ? edResource.programmingLanguage[0] : ''}>
             </wl-textfield>
-            <wl-textfield id="i-code" label="Code Repository URL" type="URL"
+            <wl-textfield id="i-code" label="Code Repository URL" type="url"
                 value=${edResource && edResource.codeRepository ? edResource.codeRepository[0] : ''}>
             </wl-textfield>
             <wl-textfield id="i-license" label="License"

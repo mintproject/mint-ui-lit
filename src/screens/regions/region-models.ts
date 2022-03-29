@@ -10,13 +10,13 @@ import { SharedStyles } from 'styles/shared-styles';
 import { goToPage } from 'app/actions';
 import { UserPreferences, IdMap } from 'app/reducers';
 import { BoundingBox, Region as GQLRegion } from './reducers';
-import { getBoundingBoxFromGeoShape, setPreview } from './actions';
+import { bboxInRegion, doBoxesIntersect, getBoundingBoxFromGeoShape, setPreview } from './actions';
 import { selectSubRegion } from 'app/ui-actions';
 
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
-import { isSubregion, isMainRegion, getLabel } from 'model-catalog/util';
-import { GeoShape, Model, SoftwareVersion, ModelConfiguration, Region, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
+import { isSubregion, isMainRegion, getLabel } from 'model-catalog-api/util';
+import { GeoShape, Region, Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
 import { Dataset } from "screens/datasets/reducers";
 
 import { queryDatasetResourcesAndSave, queryDatasetResourcesRaw } from 'screens/datasets/actions';
@@ -115,44 +115,6 @@ export class RegionModels extends connect(store)(PageViewElement)  {
                '/' + config.id.split('/').pop() + '/' + setupURI.split('/').pop();
     }
 
-    private _doBoxesIntersect(box1: BoundingBox, box2: BoundingBox) {
-        return(box1.xmin <= box2.xmax && box1.xmax >= box2.xmin &&
-            box1.ymin <= box2.ymax && box1.ymax >= box2.ymin);
-    }
-
-    private _pointInPolygon (point, polygon) {
-        let x = point[0];
-        let y = point[1];
-        let inside = false;
-
-        for (let i = 0, j = polygon.length -1; i < polygon.length; j = i++) {
-            let xi = polygon[i][0];
-            let yi = polygon[i][1];
-            let xj = polygon[j][0];
-            let yj = polygon[j][1];
-            
-            let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-            if (intersect) inside = !inside;
-        }
-        return inside;
-    }
-
-    private _bboxInRegion (bbox: BoundingBox, region) {
-        let points = [
-            [bbox.xmin, bbox.ymin],
-            [bbox.xmin, bbox.ymax],
-            [bbox.xmax, bbox.ymin],
-            [bbox.xmax, bbox.ymax]
-        ];
-        
-        for(let index in region.geometries) {
-            let geometry: any = region.geometries[index];
-            let poly = geometry.coordinates[0][0];
-            if(points.some((point) => this._pointInPolygon(point, poly)))
-                return true;
-        }
-        return false;
-    }
 
     private _getMatchingModels() {
         /* Get setups */
@@ -173,10 +135,10 @@ export class RegionModels extends connect(store)(PageViewElement)  {
                     let geoshape : GeoShape= this._geoShapes[geo.id];
                     let bbox : BoundingBox = getBoundingBoxFromGeoShape(geoshape);
                     if (geoshape && bbox) {
-                        if (bbox && bbox.xmin && this._doBoxesIntersect(bbox, selbox) && isSubregion(parentRegion, region)) {
+                        if (bbox && bbox.xmin && doBoxesIntersect(bbox, selbox) && isSubregion(parentRegion, region)) {
                             // A point inside the bbox does not mean that the point is inside the polygon
                             let area : number = (bbox.xmax - bbox.xmin) * (bbox.ymax - bbox.ymin);
-                            if (area >= selArea || this._bboxInRegion(bbox, this._selectedRegion) ) {
+                            if (area >= selArea || bboxInRegion(bbox, this._selectedRegion) ) {
                                 regions.add(region.id);
                             }
                         }

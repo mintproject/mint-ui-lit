@@ -5,34 +5,21 @@ import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from 'app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { goToPage } from 'app/actions';
-import { CustomNotification } from 'components/notification';
 
 import './configure/resources/person';
 import './configure/resources/grid';
 import './configure/resources/numerical-index';
 
-import { ModelCatalogPerson } from './configure/resources/person';
-import { ModelCatalogGrid } from './configure/resources/grid';
-import { ModelCatalogFundingInformation } from './configure/resources/funding-information';
-import { ModelCatalogVisualization } from './configure/resources/visualization';
-import { ModelCatalogNumericalIndex } from './configure/resources/numerical-index';
 import { ModelCatalogModel } from './configure/resources/model';
 
-import { renderNotifications } from "util/ui_renders";
-import { showNotification } from 'util/ui_functions';
-
-import { Model, Person, ModelFromJSON, SoftwareVersion, SoftwareVersionFromJSON } from '@mintproject/modelcatalog_client';
-import { getId, getLabel, getURL } from 'model-catalog/util';
+import { Model } from '@mintproject/modelcatalog_client';
+import { getURL } from 'model-catalog-api/util';
 
 import 'components/loading-dots'
 import "weightless/title";
 import "weightless/icon";
 import "weightless/select";
 import "weightless/textfield";
-
-import { Textfield } from 'weightless/textfield';
-import { Textarea } from 'weightless/textarea';
-import { Select } from 'weightless/select';
 
 @customElement('models-register')
 export class ModelsRegister extends connect(store)(PageViewElement) {

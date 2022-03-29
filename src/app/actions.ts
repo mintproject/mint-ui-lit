@@ -169,7 +169,6 @@ export const goToPage = (page:string) => {
 }
 
 export const goToRegionPage = (regionid: string, page:string) => {
-  let state: any = store.getState();
   let url = BASE_HREF + (regionid ? regionid + "/" : "") + (page ? page : "");
   window.history.pushState({}, page, url);
   store.dispatch(navigate(decodeURIComponent(location.pathname)));    

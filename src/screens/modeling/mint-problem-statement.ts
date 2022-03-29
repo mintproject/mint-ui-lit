@@ -2,7 +2,7 @@ import { customElement, html, property, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../app/store";
 import { PageViewElement } from "../../components/page-view-element";
-import { ProblemStatement, Task, ProblemStatementInfo, ThreadInfo } from "./reducers";
+import { ProblemStatement, Task, ThreadInfo } from "./reducers";
 import { SharedStyles } from "../../styles/shared-styles";
 import { deleteThread, deleteTask, subscribeProblemStatement } from "./actions";
 
@@ -16,7 +16,6 @@ import './thread/mint-thread';
 import '../../components/task-editor';
 import '../../components/thread-editor';
 
-//mport { selectTask, selectThread } from "../actions/ui";
 import { getUISelectedTask} from "../../util/state_functions";
 import { goToPage } from "../../app/actions";
 import { renderNotifications } from "../../util/ui_renders";
@@ -29,7 +28,6 @@ import { getLatestEvent } from "util/event_utils";
 import { getUserPermission } from "util/permission_utils";
 import { VariableMap } from "@apollo/client/core/LocalState";
 import { selectTask, selectThread } from "app/ui-actions";
-
 
 @customElement('mint-problem-statement')
 export class MintProblemStatement extends connect(store)(PageViewElement) {
@@ -58,10 +56,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
     private _variableMap: VariableMap = {};
 
     static get styles() {
-        return [
-          SharedStyles,
-          css`
-
+        return [SharedStyles, css`
             wl-progress-bar {
                 width: 300px;
             }
@@ -72,12 +67,12 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                 right: 0px;
                 padding: 10px;
                 padding-top: 5px;
-                height: calc(100% - 73px);
+                height: calc(100% - 15px);
                 background: #FFFFFF;
             }
 
             .right_full .card2 {
-                height: 100%;
+                height: calc(100% - 15px);
             }
 
             .twocolumns {
@@ -131,6 +126,16 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                 display: none;
             }
 
+            .new-thread {
+                text-align: center;
+                font-weight: normal;
+                padding: 10px;
+            }
+
+            .new-thread:hover {
+                font-weight: bold;
+            }
+
             @media (max-width: 1024px) {
                 .twocolumns {
                     top: 100px;
@@ -179,11 +184,16 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         ];
     }
 
+    protected firstUpdated () {
+        this.addEventListener('on-thread-maximize', (e:Event) => {
+            this._hideTasks = e['detail'];
+        })
+    }
+
     protected render() {
         if(this._dispatched)
             return html`<wl-progress-spinner class="loading"></wl-progress-spinner>`;
 
-        //console.log("rendering");
         if(!this._problem_statement) {
             return html``;
         }
@@ -204,25 +214,13 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                 getLatestEvent(allThreads[b].events)?.timestamp ? -1 : 1));
 
             totalThreads = orderedKeys.length;
-            if (totalThreads > 3 && !this._threadListExpanded) {
-                let index = orderedKeys.indexOf(this._selectedThreadId as string);
-                if (index == 0) {
-                    threads.push(orderedKeys[index]);
-                    threads.push(orderedKeys[index+1]);
-                    threads.push(orderedKeys[index+2]);
-                } else if (index + 1 == totalThreads) {
-                    threads.push(orderedKeys[index-2]);
-                    threads.push(orderedKeys[index-1]);
-                    threads.push(orderedKeys[index]);
-                } else {
-                    threads.push(orderedKeys[index-1]);
-                    threads.push(orderedKeys[index]);
-                    threads.push(orderedKeys[index+1]);
-                }
-            } else {
-                threads = orderedKeys;
-            }
+            threads = orderedKeys;
         }
+
+        let selectedThread = this._selectedTask && this._selectedTask.threads[this._selectedThreadId.toString()] ?
+            this._selectedTask.threads[this._selectedThreadId.toString()]
+            : null;
+
         let problem_permissions = getUserPermission(this._problem_statement.permissions, 
             this._problem_statement.events);
         let selected_task_permissions = getUserPermission(this._selectedTask?.permissions ?? [], 
@@ -234,28 +232,34 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         return html`
             <!-- Top ProblemStatement Heading -->
             <div class="cltrow problem_statementrow">
-                <wl-button flat inverted @click="${()=> goToPage('modeling')}">
+                <wl-button flat inverted @click="${()=> true || !selectedThread ? goToPage('modeling') : ()=> this._deselectTasks()}">
                     <wl-icon>arrow_back_ios</wl-icon>
                 </wl-button>
                 <div class="cltmain navtop">
-                    <wl-title level="3" ?nowrap=${true}>${this._problem_statement!.name}</wl-title>
+                    <wl-title level="3" ?nowrap=${true}>
+                        ${this._problem_statement!.name}
+                        ${this._selectedTask && this._selectedTask.name ? " - " + this._selectedTask.name : ""} 
+                        ${selectedThread ?
+                            ": " +
+                            (!selectedThread.name || selectedThread.name == this._selectedTask.name ? "Default thread" : selectedThread.name)
+                            : ""}
+                    </wl-title>
                 </div>
                 <div style="display:flex; align-items: center; border: 1px solid; border-radius: 6px; padding: 3px 6px; background: papayawhip;">
                     <wl-icon>warning</wl-icon>
-                    The models shown here are still under development and should not be taken out of context
+                    Some of the models shown here have not been properly calibtrated
                 </div>
             </div>
 
             <!-- Two Columns Section -->
             <div class="twocolumns">
-
                 <!-- Left Column : List of Tasks -->
                 <div class="${this._hideTasks ? 'left_closed' : 'left'} ${this._selectedTask ? 'left_sm_closed' : ''}">
                     <div class="clt">
                         <div class="cltrow_padded problem_statementrow">
                             <div class="cltmain">
                                 <wl-title level="4" style="margin: 0px">
-                                    TASKS
+                                    Tasks and Threads
                                 </wl-title>
                             </div>
                             ${problem_permissions.write ? html`
@@ -264,7 +268,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                 : html`<wl-icon class="smallIcon">lock</wl-icon>`}
                         </div>
                         <div style="font-size:12.5px; color: #888; padding:5px; padding-left: 10px; padding-top:0px;">
-                            Several modeling tasks can be created for a given problem statement. 
+                            Several modeling tasks can be created for a given problem statement. Each task can have multiple threads.
                             <a style="cursor:pointer" 
                                 @click="${() => showDialog('tasksHelpDialog', this.shadowRoot)}">Read more</a>
                         </div>
@@ -272,7 +276,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                         ${taskEditor?.addingTask ? 
                             html`
                                 <li class="active">
-                                    <div class="cltrow taskrow">
+                                    <div class="cltrow">
                                         <div class="cltmain">
                                             <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>
                                         </div>
@@ -280,44 +284,94 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                 </li>
                             ` : ``
                         }
-                        ${taskids.map((taskid) => {
-                            const task = this._problem_statement!.tasks[taskid];
+                        ${taskids.map((taskid:string) => this._problem_statement!.tasks[taskid])
+                                .filter((task:Task) => !!task)
+                                .map((task:Task) => {
                             let task_permission = getUserPermission(task.permissions, task.events);
-                            if(task) {
-                                let last_event = getLatestEvent(task.events);
-                                return html`
-                                <li class="active ${this._getTaskClass(task.id!)}">
-                                    <div class="cltrow taskrow" id="task_${task.id}"
-                                            @click="${this._onSelectTask}"
-                                            data-taskid="${task.id}">
-                                        <div class="cltmain">
-                                            ${this._getTaskVariablesText(task)}
-                                            <div class='description'>
-                                                ${this._getTaskRegionTimeText(task)}
-                                            </div>
-                                            ${task.name ? html`<div class='description'>${task.name}</div>` :  ""}
-                                            ${last_event ? 
-                                            html`
-                                            <div class='caption'>
-                                                ${last_event?.userid} on ${toDateTimeString(last_event?.timestamp)}
-                                            </div>` : ""}                                            
-                                        </div>
-                                        ${task_permission.write ? html`
-                                            <wl-icon @click="${this._editTaskDialog}" 
-                                                data-taskid="${task.id}"
-                                                class="actionIcon editIcon">edit</wl-icon>`: 
-                                            html`<wl-icon class="smallIcon">lock</wl-icon>`} 
-                                        ${task_permission.owner ? html`
-                                            <wl-icon @click="${this._onDeleteTask}" 
-                                                data-taskid="${task.id}"
-                                                class="actionIcon deleteIcon">delete</wl-icon>`: ""}
+                            let last_event = getLatestEvent(task.events);
+                            return html`
+                            <li class="active ${this._getTaskClass(task.id!)}">
+                                <div class="cltrow taskrow" id="task_${task.id}"
+                                        @click="${this._onSelectTask}"
+                                        data-taskid="${task.id}">
+                                    <div style="">
+                                        <wl-icon style="padding: 0px 5px; font-size: 2em;">
+                                            ${this._selectedTask && this._selectedTask.id === task.id ? 'folder_open' : 'folder'}
+                                        </wl-icon>
                                     </div>
-                                </li>
-                                `
-                            }
-                            else {
-                                return html``
-                            }
+                                    <div class="cltmain">
+                                        ${task.name}
+                                        <div class='description' style="margin-left: 5px">
+                                            ${this._getTaskRegionTimeText(task)}
+                                        </div>
+                                        ${last_event ? 
+                                        html`
+                                        <div class='caption' style="margin-left: 5px">
+                                            ${last_event?.userid} on ${toDateTimeString(last_event?.timestamp)}
+                                        </div>` : ""}                                            
+                                    </div>
+                                    ${task_permission.write ? html`
+                                        <wl-icon @click="${this._editTaskDialog}" 
+                                            data-taskid="${task.id}"
+                                            class="actionIcon editIcon">edit</wl-icon>`: 
+                                        html`<wl-icon class="smallIcon">lock</wl-icon>`} 
+                                    ${task_permission.owner ? html`
+                                        <wl-icon @click="${this._onDeleteTask}" 
+                                            data-taskid="${task.id}"
+                                            class="actionIcon deleteIcon">delete</wl-icon>`: ""}
+                                </div>
+                                ${this._selectedTask && this._selectedTask.id == task.id ?  html`
+                                <ul>
+                                ${threadEditor?.addingThread ? html`
+                                    <li class="active">
+                                        <div class="cltrow">
+                                            <div class="cltmain">
+                                                <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>
+                                            </div>
+                                        </div>
+                                    </li> ` : ""}
+                                
+                                ${threads.map(pid => this._selectedTask.threads[pid]).map((thread: ThreadInfo, i: number) => {
+                                    if (!thread) return "";
+                                    let pname = thread.name ? thread.name : this._selectedTask.name;
+                                    let last_event = getLatestEvent(thread.events);
+                                    let thread_permission = getUserPermission(thread.permissions, thread.events);
+                                    return html`
+                                        <li class="active ${this._getThreadClass(thread.id!)}">
+                                            <div class="cltrow" id="thread_${thread.id}"
+                                                    @click="${this._onSelectThread}"
+                                                    data-threadid="${thread.id}">
+                                                <div class="cltmain" style="${this._selectedThreadId != thread.id ? "font-weight: normal;" : ""}">
+                                                    ${pname && pname != this._selectedTask.name? pname : "Default thread"}
+                                                    <br/>
+                                                    ${last_event ? 
+                                                    html`
+                                                    <div class='thread_caption'>
+                                                        ${last_event?.userid} on ${toDateTimeString(last_event?.timestamp)}
+                                                    </div>` : ""}
+                                                </div>
+
+                                                ${thread_permission.write ? html`
+                                                    <wl-icon @click="${this._editThreadDialog}" 
+                                                        data-threadid="${thread.id}"
+                                                        class="actionIcon editIcon">edit</wl-icon>`: 
+                                                    html`<wl-icon class="smallIcon">lock</wl-icon>`} 
+                                                ${thread_permission.owner ? html`
+                                                    <wl-icon @click="${this._onDeleteThread}" 
+                                                        data-threadid="${thread.id}"
+                                                        class="actionIcon deleteIcon">delete</wl-icon>`: ""}
+                                            </div>
+                                        </li>`;
+                                })}
+
+
+                                </ul>` : ""}
+
+                                ${this._selectedTask && this._selectedTask.id == task.id && selected_task_permissions.write ? html`
+                                    <div class="new-thread" @click="${this._editThreadDialog}">
+                                        Create new thread
+                                    </div>`:""}
+                            </li>`
                         })}
                         </ul>
                     </div>
@@ -328,103 +382,11 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                     <div class="card2">
                     ${this._selectedTask ?
                         html`
-                        <div class="clt">
-                            <div class="cltrow problem_statementrow">
-                                <div class="cltmain" style="display: flex; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;padding-left:5px;">
-                                <!-- Top ProblemStatement Heading -->
-                                    <wl-button flat inverted @click="${()=> this._deselectTasks()}" class="small-screen">
-                                        <wl-icon>arrow_back_ios</wl-icon>
-                                    </wl-button>
-                                    <wl-title level="4">
-                                        Modeling threads
-                                        &nbsp;&nbsp;
-                                        <wl-icon @click="${() => this._hideTasks = !this._hideTasks}"
-                                            class="actionIcon bigActionIcon" style="vertical-align:bottom">
-                                            ${!this._hideTasks ? "fullscreen" : "fullscreen_exit"}</wl-icon>
-                                    </wl-title>
-                                </div>
-                                ${selected_task_permissions.write ? html`
-                                    <wl-icon @click="${this._editThreadDialog}" 
-                                        class="actionIcon addIcon">note_add</wl-icon>`: ""}
-                            </div>
-                            ${this._hideTasks ? '' : html`
-                            <div style="font-size:12.5px; color: #888; padding: 5px; padding-top: 0px">
-                                For a given task, you can investigate different initial conditions or different models.  
-                                Each of them can be explored by creating a new modeling thread for that task.
-                                <a style="cursor:pointer" 
-                                    @click="${() => showDialog('threadsHelpDialog', this.shadowRoot)}">Read more</a>
-                            </div>
-                            <ul>
-                            ${threadEditor?.addingThread ? 
-                                html`
-                                    <li class="active">
-                                        <div class="cltrow taskrow">
-                                            <div class="cltmain">
-                                                <loading-dots style="--width: 20px; margin-left:10px"></loading-dots>
-                                            </div>
-                                        </div>
-                                    </li>
-                                ` : ``
-                            }
-                            ${threads.map(pid => this._selectedTask.threads[pid]).map((thread: ThreadInfo, i: number) => {
-                                if(!thread) {
-                                    return "";
-                                }
-                                let pname = thread.name ? thread.name : this._selectedTask.name;
-                                let last_event = getLatestEvent(thread.events);
-                                let thread_permission = getUserPermission(thread.permissions, thread.events);
-                                return html`
-                                    <li class="active ${this._getThreadClass(thread.id!)}">
-                                        <div class="cltrow taskrow" id="thread_${thread.id}"
-                                                @click="${this._onSelectThread}"
-                                                data-threadid="${thread.id}">
-                                            <div class="cltmain">
-                                                ${pname ? pname : 
-                                                    html`<div style="color:#888">Default thread</div>`
-                                                }
-                                            </div>
-                                            ${i != (threads.length-1) || totalThreads < 4 || this._threadListExpanded ? html`
-                                            ${last_event ? 
-                                            html`
-                                            <div class='thread_caption'>
-                                                ${last_event?.userid} on ${toDateTimeString(last_event?.timestamp)}
-                                            </div>` : ""}
-                                            ${thread_permission.write ? html`
-                                                <wl-icon @click="${this._editThreadDialog}" 
-                                                    data-threadid="${thread.id}"
-                                                    class="actionIcon editIcon">edit</wl-icon>`: 
-                                                html`<wl-icon class="smallIcon">lock</wl-icon>`} 
-                                            ${thread_permission.owner ? html`
-                                                <wl-icon @click="${this._onDeleteThread}" 
-                                                    data-threadid="${thread.id}"
-                                                    class="actionIcon deleteIcon">delete</wl-icon>`: ""}
-                                            `
-                                            : html`
-                                            <a @click="${(e) => {e.stopPropagation(); this._threadListExpanded = true}}">
-                                                <b>(Show more)</b>
-                                            </a>
-                                            `}
-                                        </div>
-                                    </li>
-                                `;
-                            })}
-                            ${this._threadListExpanded ? html`
-                                <li class="active">
-                                    <div class="" @click="${() => {this._threadListExpanded = false}}"
-                                         style="text-align: right;">
-                                        <b>(Show less)</b>
-                                    </div>
-                                </li>
-                            ` : ''}
-                            </ul>
-                            `}
-                        </div>
-
-                        <mint-thread ?active=${!!this._selectedTask}
-                            .problem_statement=${this._problem_statement}></mint-thread>
+                        <mint-thread ?active="${!!this._selectedTask}"
+                            .problem_statement=${this._problem_statement}
+                            ?maximized=${this._hideTasks}></mint-thread>
+                    ` : ''}
                     </div>
-                    ` : ''
-                    }
                 </div>
             </div>
         </div>
@@ -527,7 +489,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                     You can move from one step to the next, and you can always go back and change any of the steps.  
                     At the bottom of the step, there is a notepad where you can document your decisions, 
                     and your notes will be added to the final report so others can undertand your modeling decisions.
-                </p>       
+                </p>
             </div>
             <div slot="footer">
                 <wl-button @click="${() => hideDialog('threadsHelpDialog', this.shadowRoot)}" inverted flat>Close</wl-button>
@@ -535,11 +497,42 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         </wl-dialog>
 
         <wl-dialog class="larger" id="tasksHelpDialog" fixed backdrop blockscrolling>
-            <h3 slot="header">Tasks</h3>
+            <h3 slot="header">Tasks and Threads</h3>
             <div slot="content">
+                <h4>Tasks</h4>
                 <p>
-                    Several modeling tasks can be created for a given problem statement. Each modeling task is associated with an indicator relevant to the decision that want to inform or support, or a different time period, or a different driving variable. There are two types of indicators: indices and modeling variables. For example, the problem statement of food security in South Sudan described above, one modeling task can be framed as “Flooding effect on crop production during the growing season”, and a separate modeling task could be “Potential crop production without flooding”. Note that the time frame of the tasks does not necessarily reflect that of the problem statement. In the first example, flooding is relevant to both the planting time and growing season of an agriculture model which would place the start of the simulation earlier than the problem’s time frame. 
-                </p>        
+                    Several modeling tasks can be created for a given problem statement.
+                    Each modeling task is associated with an indicator relevant to the decision that 
+                    want to inform or support, or a different time period, or a different driving variable.
+                    There are two types of indicators: indices and modeling variables. For example,
+                    the problem statement of food security in South Sudan described above, one modeling 
+                    task can be framed as “Flooding effect on crop production during the growing season”,
+                    and a separate modeling task could be “Potential crop production without flooding”.
+                    Note that the time frame of the tasks does not necessarily reflect that of the problem statement.
+                    In the first example, flooding is relevant to both the planting time and growing season of
+                    an agriculture model which would place the start of the simulation earlier than the problem’s time frame. 
+                </p> 
+                <h4>Threads</h4>   
+                <p>
+                    For a given task, you can investigate different initial conditions or different models.  
+                    Each of them can be explored by creating a new modeling thread for that task.  
+                    For example, a task can have a thread that sets a parameter to a low value and 
+                    another thread that sets a parameter to a high value.  Or a thread could use 
+                    model M1 and another thread that uses model M2.
+                </p>
+                <p>
+                    You can also use threads to investigate possible interventions.  For example, 
+                    changing planting windows to an earlier time might increase crop production, 
+                    which can be analyzed using an agriculture model. Another possible intervention to 
+                    increase crop yield is the use of fertilizer subsidies, which can be studied 
+                    by using an economic model.
+                </p>   
+                <p>
+                    Create a new thread, then click on the first of the steps shown.  
+                    You can move from one step to the next, and you can always go back and change any of the steps.  
+                    At the bottom of the step, there is a notepad where you can document your decisions, 
+                    and your notes will be added to the final report so others can undertand your modeling decisions.
+                </p>
             </div>
             <div slot="footer">
                 <wl-button @click="${() => hideDialog('tasksHelpDialog', this.shadowRoot)}" inverted flat>Close</wl-button>

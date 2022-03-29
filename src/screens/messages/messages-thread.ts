@@ -7,7 +7,7 @@ import { connect } from "pwa-helpers/connect-mixin";
 import { listThreads, listPosts, addPost } from './actions';
 
 import '../../components/loading-dots'
-import marked from 'marked';
+import { marked } from 'marked';
 import EasyMDE from 'easymde';
 
 @customElement('messages-thread')
@@ -114,11 +114,11 @@ export class MessagesThread extends connect(store)(PageViewElement) {
 
   updated () {
     let main = this.shadowRoot.getElementById('main-post');
-    if (main) main.innerHTML = marked(this._thread.text);
+    if (main) main.innerHTML = marked.parse(this._thread.text);
     (this._posts || []).forEach(p => {
         let postDiv = this.shadowRoot.getElementById(p.id);
         if (postDiv) {
-            postDiv.innerHTML = marked(p.text);
+            postDiv.innerHTML = marked.parse(p.text);
         }
     });
   }

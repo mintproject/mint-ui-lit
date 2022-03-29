@@ -8,7 +8,7 @@ import { store, RootState } from 'app/store';
 import { goToPage } from 'app/actions';
 import { IdMap } from 'app/reducers';
 
-import { isEmpty, uriToId, getLabel } from 'model-catalog/util';
+import { isEmpty, uriToId, getLabel } from 'model-catalog-api/util';
 import { Model, NumericalIndex } from '@mintproject/modelcatalog_client';
 import { CustomNotification } from 'components/notification';
 
@@ -55,7 +55,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _index: IdMap<NumericalIndex>;
 
-    @property({type: Object}) private _comparisonList : string[] = [];
+    @property({type: Array}) private _comparisonList : string[] = [];
 
     static get styles() {
         return [SharedStyles, ExplorerStyles,

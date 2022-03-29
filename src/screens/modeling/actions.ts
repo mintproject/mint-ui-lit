@@ -4,7 +4,6 @@ import { ProblemStatementList, ProblemStatementInfo,
     Execution, ThreadInfo, ThreadList, TaskList, ModelEnsembleMap, DataMap, ExecutionSummary, ThreadEvent } from './reducers';
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from '../../app/store';
-//import { db, fieldValue, auth } from '../../config/firebase';
 import { Dataset, DataResource, Dataslice } from '../datasets/reducers';
 import { Model } from '../models/reducers';
 import { IdMap, UserPreferences } from '../../app/reducers';

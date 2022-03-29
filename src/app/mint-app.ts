@@ -344,7 +344,7 @@ export class MintApp extends connect(store)(LitElement) {
           </wl-popover>
         </div>
         <div slot="title">
-          <ul id="main-breadcrumbs" class="breadcrumbs">
+          <ul id="main-breadcrumbs" class="breadcrumbs_header">
             ${this._getMenuLinks()}
           </ul>
         </div>

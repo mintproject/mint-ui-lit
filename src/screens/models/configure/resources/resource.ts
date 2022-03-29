@@ -23,7 +23,7 @@ import { Select } from 'weightless/select';
 
 /************/
 import { LitElement } from 'lit-element';
-import { getId, getLabel, capitalizeFirstLetter } from 'model-catalog/util';
+import { getId, getLabel, capitalizeFirstLetter } from 'model-catalog-api/util';
 interface BaseResources {
     id?: string;
     label?: string[];

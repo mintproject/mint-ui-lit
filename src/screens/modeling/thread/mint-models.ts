@@ -6,14 +6,13 @@ import ReactGA from 'react-ga';
 import { ModelMap, ModelEnsembleMap, ComparisonFeature } from "../reducers";
 import models, { VariableModels, Model, getPathFromModel } from "../../models/reducers";
 import { queryModelsByVariables, setupToOldModel } from "../../models/actions";
-import { getId } from 'model-catalog/util';
 
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import { SharedStyles } from "../../../styles/shared-styles";
 import { cacheModelsFromCatalog, getThreadExecutionSummary, setThreadModels } from "../actions";
 import { getUISelectedSubgoalRegion } from "../../../util/state_functions";
-import { isSubregion, getLabel } from "model-catalog/util";
+import { getId, isSubregion, getLabel } from "model-catalog-api/util";
 
 import "weightless/tooltip";
 import "weightless/popover-card";
@@ -24,7 +23,13 @@ import { MintThreadPage } from "./mint-thread-page";
 import { Region } from "screens/regions/reducers";
 import { IdMap } from "app/reducers";
 import { Model as MCModel, Region as MCRegion, SoftwareVersion, SoftwareImage, ModelConfiguration,
-         ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
+         ModelConfigurationSetup, 
+         ModelCategory,
+         DatasetSpecification,
+         VariablePresentation,
+         Parameter,
+         Intervention,
+         StandardVariable} from '@mintproject/modelcatalog_client';
 import 'components/loading-dots';
 import { getLatestEventOfType } from "util/event_utils";
 import variables, { VariableMap } from "screens/variables/reducers";
@@ -32,6 +37,16 @@ import variables, { VariableMap } from "screens/variables/reducers";
 store.addReducers({
     models
 });
+
+interface ModelInfo {
+    id: string,
+    name: string, 
+    description?: string,
+    url: string,
+    category : string, 
+    region: string,
+    selected: boolean,
+};
 
 @customElement('mint-models')
 export class MintModels extends connect(store)(MintThreadPage) {
@@ -54,15 +69,25 @@ export class MintModels extends connect(store)(MintThreadPage) {
     @property({type: Object})
     private _loadedModels : IdMap<Model> = {};
 
+    @property({type:String})
+    private _textFilter: string = "";
+
+    @property({type: Boolean})
+    private _loading : boolean = false;
+
     @property({type: Boolean})
     private _baseLoaded : boolean = false;
+
     private _allModels : IdMap<MCModel> = {};
     private _allVersions : IdMap<SoftwareVersion> = {};
     private _allConfigs : IdMap<ModelConfiguration> = {};
+    private _allSetups : IdMap<ModelConfigurationSetup> = {};
     private _allSoftwareImages : IdMap<SoftwareImage>;
-
-    @property({type: Object})
     private _allRegions : IdMap<MCRegion> = {};
+    private _allCategories : IdMap<ModelCategory> = {};
+
+    @property({type: Number})
+    private _nresults : number = 0;
 
     private _dispatched: Boolean = false;
     private _pendingQuery: Boolean = false;
@@ -140,11 +165,7 @@ export class MintModels extends connect(store)(MintThreadPage) {
     ]
 
     static get styles() {
-        return [
-          SharedStyles,
-          css`
-          `
-        ]
+        return [SharedStyles, css``]
     }
 
     private _createModelCatalogUri(region: Region) {
@@ -152,16 +173,124 @@ export class MintModels extends connect(store)(MintThreadPage) {
         return (prefix + region.name).replace(/\s/g,'_');
     }
 
-    protected render() {
+    private onSearchBarChange (ev) {
+        let intext : HTMLInputElement = this.shadowRoot!.getElementById("searchBar") as HTMLInputElement;
+        if (intext) {
+            this._textFilter = intext.value;
+        }
+    }
+
+    protected render () {
+        let modelids = Object.keys((this.thread.models || {})) || [];
+        let done = (this.thread.models && modelids.length > 0);
+        let latest_update_event = getLatestEventOfType(["CREATE", "UPDATE"], this.thread.events);
+        let latest_model_event = getLatestEventOfType(["SELECT_MODELS"], this.thread.events);
+
+        return html`
+
+        <div class="footer">
+            <wl-button type="button" flat inverted outlined @click="${this._compareModels}">Compare Selected Models</wl-button>
+            <div style="flex-grow: 1">&nbsp;</div>
+            ${this._editMode ? html `<wl-button @click="${()=>{this._editMode=false}}" flat inverted>CANCEL</wl-button>`: html``}
+            <wl-button type="button" class="submit" @click="${this._selectThreadModels}" ?disabled=${this._waiting}>
+                Select &amp; Continue
+                ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left:10px"></loading-dots>`: ''}
+            </wl-button>
+        </div>
+
+        <fieldset class="notes">
+            <legend>Notes</legend>
+            <textarea id="notes">${latest_model_event?.notes ? latest_model_event.notes : ""}</textarea>
+        </fieldset>
+
+        ${renderNotifications()}
+        ${this._renderDialogs()}
+        `;
+    }
+
+    private computedURLs : IdMap<string> = {};
+    private getSetupURL (setup: ModelConfigurationSetup) {
+        if (!this.computedURLs[setup.id]) {
+            let url : string = this._regionid + '/models/explore/';
+            let config : ModelConfiguration = Object.values(this._allConfigs)
+                    .filter((cfg:ModelConfiguration) => cfg.hasSetup && cfg.hasSetup.some((s:ModelConfigurationSetup) => s.id === setup.id)).pop();
+            if (config) {
+                let version : SoftwareVersion = Object.values(this._allVersions)
+                        .filter((ver:SoftwareVersion) => ver.hasConfiguration && ver.hasConfiguration.some((c:ModelConfiguration) => c.id === config.id)).pop();
+                if (version) {
+                    let model : MCModel = Object.values(this._allModels).filter((m:MCModel) => 
+                            m.hasVersion && m.hasVersion.some((v:SoftwareVersion) => v.id === version.id)).pop();
+                    if (model) {
+                        this.computedURLs[setup.id] = url + getId(model) + '/' + getId(version) + "/" + getId(config) + "/" + getId(setup);
+                    }
+                }
+            }
+        }
+        return this.computedURLs[setup.id];
+    }
+
+    private renderMatchingModels () {
+        //Filter for main region;
+        let matchingModels : ModelInfo[] = [];
+
+        // all setups should be the setups after being filtered
+        let setups : ModelConfigurationSetup[] = Object.values(this._allSetups)
+                .filter((s:ModelConfigurationSetup) => 
+                        !s.hasRegion || s.hasRegion.some((r:MCRegion) => isSubregion(this._region.model_catalog_uri, this._allRegions[r.id] )));
+        if (this._textFilter) {
+            let t = this._textFilter.toLowerCase();
+            setups = setups.filter((s:ModelConfigurationSetup) => 
+                    getLabel(s).toLowerCase().includes(t) || (s.description && s.description[0].toLowerCase().includes(t)) ||
+                    (s.hasRegion && s.hasRegion.some(r => getLabel(this._allRegions[r.id]).toLowerCase().includes(t)))
+            );
+        }
+
+        matchingModels = setups.map((setup:ModelConfigurationSetup) => {
+            return {
+                id: setup.id,
+                name: getLabel(setup),
+                description: setup.description ? setup.description : "",
+                url: this.getSetupURL(setup),
+                category : setup.hasModelCategory ? 
+                        setup.hasModelCategory.map(c => getLabel(this._allCategories[c.id])).join(", ") : "",
+                region: setup.hasRegion ? setup.hasRegion.map(r => getLabel(this._allRegions[r.id])).join(", ") : "",
+                selected: false //FIXME
+            } as ModelInfo;
+        });
+        return matchingModels.length == 0 ?
+            html`
+                <tr>
+                    <td colspan="4" style="text-align:center; color: rgb(153, 153, 153);">
+                        - No models found -
+                    </td>
+                </tr>
+            ` : matchingModels.map(this.renderModelRow);
+    }
+
+    private renderModelRow (model: ModelInfo) {
+        return html`
+        <tr>
+            <td><input class="checkbox" type="checkbox" data-modelid="${model.id}"
+                ?checked="${model.selected}"></input></td>
+            <td>
+                <a target="_blank" href="${model.url}">${model.name}</a>
+                ${model.description ? html`<div>${model.description}</div>` : ''}
+            </td> 
+            <td>${model.category}</td>
+            <td> ${model.region} </td>
+        </tr>`;
+    }
+
+    protected oldrender() {
         if(!this.thread) {
             return html ``;
         }
                 
         let modelids = Object.keys((this.thread.models || {})) || [];
         let done = (this.thread.models && modelids.length > 0);
-        if(!this._responseVariables)
-            return;
-            
+
+        //if(!this._responseVariables) Not necesary now
+        //    return;
         let availableModels : Model[] = this._queriedModels[this._responseVariables.join(",")] || [];
 
         // Filter out all models without component location
@@ -436,12 +565,17 @@ export class MintModels extends connect(store)(MintThreadPage) {
             }
         }
 
-
         return this._regionid + '/models/explore/';
     }
 
     _getSelectedModels() {
         let models:ModelMap = {};
+
+        /*let selectedSetups : ModelConfigurationSetup[] = this.questionComposer.getModels();
+        selectedSetups.forEach((s:ModelConfigurationSetup) => {
+            models[s.id] = setupToOldModel(s, this._allSoftwareImages);
+        });*/
+
         this.shadowRoot!.querySelectorAll("input.checkbox").forEach((cbox) => {
             let cboxinput = (cbox as HTMLInputElement);
             let modelid = cboxinput.dataset["modelid"];
@@ -453,7 +587,8 @@ export class MintModels extends connect(store)(MintThreadPage) {
                     }
                 });
             }
-        });       
+        });
+
         return models; 
     }
 
@@ -544,7 +679,6 @@ export class MintModels extends connect(store)(MintThreadPage) {
 
     protected firstUpdated () {
         store.dispatch(ModelCatalogApi.myCatalog.region.getAll()).then((regions:IdMap<MCRegion>) => {
-            //FIXME: this until the api return the region label.
             this._allRegions = regions;
         });
 
@@ -562,7 +696,14 @@ export class MintModels extends connect(store)(MintThreadPage) {
             if(this._pendingQuery)
                 this._queryModelCatalog();
         });
-        Promise.all([pm,pv,pc,si]).then(() => {
+        let st = store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getAll()).then((setups:IdMap<ModelConfigurationSetup>) => {
+            this._allSetups = setups;
+        });
+        let cat = store.dispatch(ModelCatalogApi.myCatalog.modelCategory.getAll()).then((cats:IdMap<ModelCategory>) => {
+            this._allCategories = cats;
+        });
+
+        Promise.all([pm,pv,pc,si, st, cat]).then(() => {
             this._baseLoaded = true;
         });
     }
@@ -570,9 +711,20 @@ export class MintModels extends connect(store)(MintThreadPage) {
     stateChanged(state: RootState) {
         super.setUser(state);
         super.setRegionId(state);
-        //let thread_id = this.thread ? this.thread.id : null;
+
+        let thread_id = this.thread ? this.thread.id : null;
         super.setThread(state);
-        
+
+        /*
+        if (this.thread && thread_id != this.thread.id) {
+            let modelids = Object.keys((this.thread.models || {})) || [];
+            this.questionComposer.setModelsIds(modelids);
+        }
+
+        if (this.thread && this.thread.regionid)
+            this.questionComposer.setMainRegion(this.thread.regionid);
+        */
+
         this._subregion = getUISelectedSubgoalRegion(state);
 
         if(this.thread && 

@@ -5,13 +5,11 @@ import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from 'app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { IdMap } from 'app/reducers';
-import { goToPage } from 'app/actions';
 
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
-import { DataTransformation, DataTransformationFromJSON } from '@mintproject/modelcatalog_client';
-import { getId, getLabel } from 'model-catalog/util';
+import { DataTransformation } from '@mintproject/modelcatalog_client';
+import { getId, getLabel } from 'model-catalog-api/util';
 import { PREFIX_URI } from 'config/default-graph';
-import { renderExternalLink } from 'util/ui_renders';
 
 import "components/loading-dots";
 import "weightless/title";

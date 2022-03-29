@@ -1,13 +1,9 @@
 import { ModelCatalogResource } from './resource';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 import { StandardVariable, StandardVariableFromJSON } from '@mintproject/modelcatalog_client';
-import { IdMap } from "app/reducers";
-
-import { SharedStyles } from 'styles/shared-styles';
-import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';

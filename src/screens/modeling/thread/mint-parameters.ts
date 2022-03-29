@@ -14,13 +14,12 @@ import { selectThreadSection } from "../../../app/ui-actions";
 import { MintThreadPage } from "./mint-thread-page";
 import { IdMap } from "../../../app/reducers";
 import { getPathFromModel } from "../../models/reducers";
-import { getLabel } from "model-catalog/util";
+import { getLabel } from "model-catalog-api/util";
 import { DataTransformation, Parameter } from '@mintproject/modelcatalog_client';
 
 import "weightless/progress-bar";
 import { getLatestEventOfType } from "util/event_utils";
 import { getTotalConfigs } from "../../../util/graphql_adapter";
-import { uuidv4 } from "screens/models/configure/util";
 
 const MAX_PARAMETER_COMBINATIONS = 100000;
 
@@ -300,6 +299,7 @@ export class MintParameters extends connect(store)(MintThreadPage) {
                     }
                 `
             }
+            </div>
             ${renderNotifications()}
         `;
     }

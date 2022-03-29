@@ -13,12 +13,12 @@ import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { ModelCatalogState } from 'model-catalog-api/reducers';
 
 import { setupInRegion, capitalizeFirstLetter, getId, getLabel, getURL, uriToId, sortByPosition, isExecutable,
-         getModelTypeNames } from 'model-catalog/util';
+         getModelTypeNames } from 'model-catalog-api/util';
 import { GalleryEntry } from 'components/image-gallery';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from './explorer-styles'
-import marked from 'marked';
+import { marked } from 'marked';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
 import { urlify } from 'util/ui_renders';
@@ -1226,7 +1226,8 @@ export class ModelView extends connect(store)(PageViewElement) {
                             this._setup.calibrationTargetVariable.map((v:VariablePresentation, i:number) => (i === 0) ?
                                 html`<code>${getLabel(v)}</code>`
                                 : html`, <code>${getLabel(v)}</code>`)
-                        } </wl-text>` :''}
+                            }
+                            </wl-text>` :''}
                 </div>
             </fieldset>
         `
@@ -1705,7 +1706,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             if (ex) {
                 let example = this.shadowRoot.getElementById('mk-example');
                 if (example) {
-                    example.innerHTML = marked(ex);
+                    example.innerHTML = marked.parse(ex);
                 }
             }
         } else if (this._tab == 'variables') {

@@ -21,14 +21,15 @@ import "weightless/snackbar";
 import 'components/loading-dots';
 import { Region } from "screens/regions/reducers";
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
-import { getLabel } from "model-catalog/util";
+import { getLabel } from "model-catalog-api/util";
 import { DatasetSpecification, DataTransformation } from '@mintproject/modelcatalog_client';
 
 //import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
 import { ModelCatalogParameter } from 'screens/models/configure/resources/parameter';
 import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
 import { getLatestEventOfType } from "util/event_utils";
-import { uuidv4 } from "screens/models/configure/util";
+import { uuidv4 } from "util/helpers";
+import { DatasetSelector } from "components/dataset-selector";
 
 store.addReducers({
     datasets
@@ -80,6 +81,8 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
   
     //private _mcInputs : IdMap<ModelCatalogDatasetSpecification> = {};
 
+    @property({type: Object}) private datasetSelector : DatasetSelector;
+
     constructor () {
         super();
         this._dtParameters = new ModelCatalogParameter();
@@ -88,6 +91,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         this._dtParameters.setActionEditOrAdd();
         this._dtParameters.onlyFixedValue = true;
         this._dtParameters.lazy = true;
+        this.datasetSelector = new DatasetSelector();
     }
 
     private _comparisonFeatures: Array<ComparisonFeature> = [
@@ -131,28 +135,36 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         ]
     }
 
+    @property({type: Array}) _questionDatasets: Dataset[];
+    public setDatasets (datasets:Dataset[]) {
+        this._questionDatasets = datasets;
+        this.datasetSelector.setDatasets(datasets);
+    }
+
     protected render() {
         if(!this.thread) {
             return html ``;
         }
-        
-        // If no models selected
-        if(!this.thread.models || !Object.keys(this.thread.models).length) {
-            return html `
-            <p>
-                This step is for selecting datasets for each of the models that you selected earlier.
-            </p>
-            Please select model(s) first
-            `
-        }
 
+        let noModelHasBeenSelected : boolean = !this.thread.models || Object.keys(this.thread.models).length == 0;
         let done = (getThreadDatasetsStatus(this.thread) == TASK_DONE);
 
         let latest_update_event = getLatestEventOfType(["CREATE", "UPDATE"], this.thread.events);
         let latest_data_event = getLatestEventOfType(["SELECT_DATA"], this.thread.events);
         
         // If models have been selected, go over each model
+        if (noModelHasBeenSelected) {
+            return html`
+                <p>
+                    This step is for selecting datasets for each of the models that you selected earlier.
+                </p>
+                Please select model(s) first`
+        }
         return html `
+        <p>
+            This datasets match your filters:
+            ${this.datasetSelector}
+        </p>
         <p>
             This step is for selecting datasets for each of the models that you selected earlier.
         </p>
@@ -385,7 +397,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                                     <td>
                                                         <input class="${this._valid(modelid)}_${this._valid(input.id!)}_dt_checkbox" 
                                                             type="checkbox" data-transformationid="${dt.id}"
-                                                            ?checked=""></input>
+                                                            ?checked="${false}"></input>
                                                     </td>
                                                     <td><b>${getLabel(dt)}</b></td>
                                                     <td>${dt.description ? dt.description[0] : ''}</td>

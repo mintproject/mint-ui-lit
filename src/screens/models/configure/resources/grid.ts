@@ -2,8 +2,8 @@ import { ModelCatalogResource } from './resource';
 import { Grid, GridFromJSON } from '@mintproject/modelcatalog_client';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
@@ -91,7 +91,7 @@ export class ModelCatalogGrid extends connect(store)(ModelCatalogResource)<Grid>
             <div class="two-inputs">
                 <wl-select id="grid-dim" label="Dimension"
                     value=${edResource && edResource.hasDimension ? edResource.hasDimension[0] : ''}>
-                    <option value selected>None</option>
+                    <option value="" selected>None</option>
                     <option value="0D">0D</option>
                     <option value="1D">1D</option>
                     <option value="2D">2D</option>
@@ -99,7 +99,7 @@ export class ModelCatalogGrid extends connect(store)(ModelCatalogResource)<Grid>
                 </wl-select>
                 <wl-select id="grid-shape" label="Shape"
                     value=${edResource && edResource.hasShape ? edResource.hasShape[0] : ''}>
-                    <option value selected>None</option>
+                    <option value="" selected>None</option>
                     <option value="Point">Point</option>
                     <option value="Triangular">Triangular</option>
                     <option value="Block structure">Block structure</option>

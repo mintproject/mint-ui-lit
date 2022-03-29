@@ -262,7 +262,7 @@ export class GoogleMap extends LitElement {
    * If set, custom styles can be applied to the map.
    * For style documentation see https://developers.google.com/maps/documentation/javascript/reference#MapTypeStyle
    */
-  @property({type: Object})
+  @property({type: Array})
   styles?: google.maps.MapTypeStyle[];
 
   /**
@@ -442,7 +442,6 @@ export class GoogleMap extends LitElement {
   }
 
   private _updateCenter() {
-    console.log('_updateCenter');
     if (this.map !== undefined && this.latitude !== undefined && this.longitude !== undefined) {
       const newCenter = new google.maps.LatLng(this.latitude, this.longitude);
       let oldCenter = this.map.getCenter();

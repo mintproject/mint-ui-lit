@@ -1,10 +1,9 @@
 import { ModelCatalogResource } from './resource';
-import { TimeInterval, Unit, TimeIntervalFromJSON } from '@mintproject/modelcatalog_client';
+import { TimeInterval, TimeIntervalFromJSON } from '@mintproject/modelcatalog_client';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
-import { IdMap } from "app/reducers";
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
@@ -12,7 +11,6 @@ import { ModelCatalogUnit } from './unit'
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
-import { Select } from 'weightless/select';
 
 import { BaseAPI } from '@mintproject/modelcatalog_client';
 import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';

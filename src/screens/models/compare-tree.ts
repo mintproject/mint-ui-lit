@@ -6,7 +6,7 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { ComparisonEntry } from './model-explore/ui-reducers';
 import { IdMap } from "app/reducers";
 
-import { getLabel, isSubregion, sortVersions, sortConfigurations, sortSetups } from 'model-catalog/util';
+import { getLabel, isSubregion, sortVersions, sortConfigurations, sortSetups } from 'model-catalog-api/util';
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Region, ModelCategory } from '@mintproject/modelcatalog_client';
 
