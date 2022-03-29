@@ -526,10 +526,11 @@ export class ModelSelector extends LitElement {
             }
         });
 
-        return options.filter((opt:ModelOption) => !!opt.value.hasRegion && opt.value.hasRegion
+        return options.filter((opt:ModelOption) => !opt.value.hasRegion || (
+                !!opt.value.hasRegion && opt.value.hasRegion
                 .map((r:Region) => this.regions[r.id])
                 .some((r:Region) => regionsInBoundingBox.some((r2:Region) => r2.id === r.id))
-        )
+        ));
     }
 
     public setIndicator (indicatorid: string) : void {
