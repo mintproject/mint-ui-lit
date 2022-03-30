@@ -106,7 +106,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
         return "Select datasets for your model runs";
     }
 
-    protected getStatus () : StatusType {
+    public getStatus () : StatusType {
         if (!this.thread || !this.thread.models || Object.keys(this.thread.models).length === 0) return "error";
         let done : boolean = true;
         Object.values(this.thread.models).forEach((m:LocalModel) => {
@@ -408,14 +408,27 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     }
 
     protected onThreadChange(thread: Thread): void {
+        let reqEdit : boolean = false;
         if (this.localRegions && thread && thread.models) {
             Object.values(thread.models).forEach((m:LocalModel) => {
                 this.modelVisible[m.id] = true;
                 let bindings : ModelIOBindings = this.thread.model_ensembles![m.id].bindings || {};
-                (m.input_files||[]).filter(i => !i.value).forEach((input:ModelIO) => {
+                let reqInputs : ModelIO[] = (m.input_files||[]).filter(i => !i.value);
+                reqInputs.forEach((input:ModelIO) => {
                     this.loadInput(input, bindings);
+                    let dataslices : Dataslice[] = (bindings[input.id]||[])
+                            .map((bid:string) => this.thread.data![bid])
+                            .filter(x => !!x);
+                    if (dataslices.length === 0) {
+                        // We need to add a dataset before next steps
+                        reqEdit = true;
+                    }
                 });
             });
+        }
+        if (reqEdit) {
+            this.onEditEnable();
+            this.open = true;
         }
     }
 

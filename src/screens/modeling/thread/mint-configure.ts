@@ -74,7 +74,24 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
             //this.threadModelSelector.setRegionFilter(constraints.region);
             this.threadModelSelector.requestUpdate();
             this.threadDatasetSelector.requestUpdate();
+
+            if (this.threadModelSelector.getStatus() === "warning") {
+                this.threadModelSelector.open = true;
+                this.threadModelSelector.setEditMode(true);
+            } else if (this.threadModelSelector.getStatus() === "done" && this.threadDatasetSelector.getStatus() === "warning") {
+                this.threadDatasetSelector.open = true;
+                this.threadDatasetSelector.setEditMode(true);
+            }
         })
+
+        this.addEventListener('thread-models-updated', (e:Event) => {
+            console.log("asdas",this.threadModelSelector.getStatus(),this.threadDatasetSelector.getStatus());
+            this.threadDatasetSelector.requestUpdate();
+            if (this.threadModelSelector.getStatus() === "done" && this.threadDatasetSelector.getStatus() === "warning") {
+                this.threadDatasetSelector.open = true;
+                this.threadDatasetSelector.setEditMode(true);
+            }
+        });
     }
 
     protected render () : TemplateResult {

@@ -60,7 +60,7 @@ export class ThreadExpansionConfigure extends ThreadExpansion {
         return "Select a region, time interval and other constraints";
     }
 
-    protected getStatus () : StatusType {
+    public getStatus () : StatusType {
         if (!this.thread) return "error";
         if (this.thread.name && this.thread.regionid) return 'done';
         return "warning";

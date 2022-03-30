@@ -436,7 +436,7 @@ export class ModelSelector extends LitElement {
                 }
                 return this.renderRow(opt);
             }) : (selectedOptions.length > 0 ? "" : html`<tr>
-                <td colspan=4 style="text-align: center;">No model selected</td>
+                <td colspan=4 style="text-align: center;">No model selected. Click the edit button to select one.</td>
             </tr>`)}
         `;
     }

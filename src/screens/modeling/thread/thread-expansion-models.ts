@@ -65,7 +65,7 @@ export class ThreadExpansionModels extends ThreadExpansion {
         return "Select one or more models to run";
     }
 
-    protected getStatus () : StatusType {
+    public getStatus () : StatusType {
         if (!this.thread || (!this.thread.regionid && this.thread.driving_variables.length === 0 && this.thread.response_variables.length === 0))
             return "error";
         if (this.nModels === 0) return 'error';
@@ -100,6 +100,12 @@ export class ThreadExpansionModels extends ThreadExpansion {
             this.modelSelector.save();
             this.editMode = false;
             this.loading = false;
+
+            let event : CustomEvent = new CustomEvent('thread-models-updated', {
+                bubbles: true,
+                composed: true,
+            });
+            this.dispatchEvent(event);
         })
         req.catch(() => {
             this.onCancelClicked();
@@ -130,6 +136,9 @@ export class ThreadExpansionModels extends ThreadExpansion {
     protected onThreadChange(thread: Thread): void {
         if (thread && thread.models && Object.keys(thread.models).length > 0) {
             this.modelSelector.setSelected(new Set(Object.keys(thread.models)));
+        } else {
+            this.onEditEnable();
+            this.open = true;
         }
         if (thread && thread.regionid) {
             this.filterRegionId = thread.regionid;

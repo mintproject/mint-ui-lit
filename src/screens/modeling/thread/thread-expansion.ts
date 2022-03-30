@@ -130,7 +130,7 @@ export class ThreadExpansion extends connect(store)(MintThreadPage) {
         super.update(changedProperties);
     }
 
-    protected getStatus () : StatusType {
+    public getStatus () : StatusType {
         return "warning";
     }
 
@@ -140,6 +140,11 @@ export class ThreadExpansion extends connect(store)(MintThreadPage) {
 
     protected onEditEnable () : void {
         this.editMode = true;
+    }
+
+    public setEditMode (b:boolean) : void {
+        if (b) this.onEditEnable();
+        else this.onCancelClicked();
     }
 
     protected onCancelClicked () : void {
