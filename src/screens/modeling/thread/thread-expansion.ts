@@ -20,8 +20,8 @@ export class ThreadExpansion extends connect(store)(MintThreadPage) {
     @property({type: Boolean}) public loading: boolean = false;
     @property({type: Boolean}) public open: boolean = false;
     protected _name : string = "Configure";
-    protected _description : string = "General configuration for this thread. \
-    The parameters you set here will be used to filter the models and datasets available on next steps";
+    protected _description : TemplateResult = html`General configuration for this thread.
+        The parameters you set here will be used to filter the models and datasets available on next steps.`;
 
     static generalStyles = css`
         .expansion-title {

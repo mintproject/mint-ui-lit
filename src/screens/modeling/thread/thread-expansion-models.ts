@@ -23,7 +23,7 @@ type StatusType = "warning" | "done" | "error";
 @customElement('thread-expansion-models')
 export class ThreadExpansionModels extends ThreadExpansion {
     protected _name: string = "Select models";
-    protected _description : string = "Search for a model to run.";
+    protected _description : TemplateResult = html`Search for a model to run.`;
     private modelSelector : ModelSelector;
     @property({type:Object}) private filterRegion : LocalRegion;
     @property({type:String}) private filterRegionId : string;

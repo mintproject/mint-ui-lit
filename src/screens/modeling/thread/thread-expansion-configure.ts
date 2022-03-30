@@ -28,8 +28,8 @@ type StatusType = "warning" | "done" | "error";
 @customElement('thread-expansion-configure')
 export class ThreadExpansionConfigure extends ThreadExpansion {
     protected _name: string = "General configuration";
-    protected _description : string = "General configuration for this thread. \
-    The constraints set here will filter the models and datasets available on next steps";
+    protected _description : TemplateResult = html`General configuration for this thread.
+        The constraints set here will filter the models and datasets available on next step`;
 
     private regionSelector : RegionSelector;
     private indicators : VariableMap;

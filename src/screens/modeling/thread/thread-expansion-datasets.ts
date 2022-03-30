@@ -28,7 +28,8 @@ type StatusType = "warning" | "done" | "error";
 @customElement('thread-expansion-datasets')
 export class ThreadExpansionDatasets extends ThreadExpansion {
     protected _name: string = "Select datasets";
-    protected _description : string = "Search datasets to use on your executions.";
+    protected _description : TemplateResult = html`Search datasets to use on your executions. 
+        Click on <wl-icon style="font-size: 13px; margin: 0px 4px;">edit</wl-icon> to edit the selection.`;
     @property({type:Object}) datasetSelector : DatasetSelector;
     @property({type:Object}) selectedInput : ModelIO;
     @property({type:Object}) localRegions : RegionMap;
@@ -261,7 +262,10 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                         </ul>
 
                         ${this.editMode ? html`
-                            <wl-icon class="clickable" @click=${() => this.editInput(model, input)}>edit</wl-icon>`
+                        <wl-button inverted flat style="border-radius: 0px; padding: 1px 1px 1px 6px;" class="clickable" @click=${() => this.editInput(model, input)}>
+                            Select dataset
+                            <wl-icon style="margin-left:6px;">edit</wl-icon>
+                        </wl-button>`
                         : html`<wl-icon>person</wl-icon>`}
                     </div>
                 </td>
