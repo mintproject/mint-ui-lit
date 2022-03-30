@@ -553,8 +553,11 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     private resourceCache : IdMap<Promise<DataResource[]>> = {};
     private queryResources (dataset:Dataset, region:LocalRegion, dates:DateRange) : Promise<DataResource[]> {
         let cacheid : string = dataset.id + region.id + dates.start_date.getTime() + "-" + dates.end_date.getTime();
-        if (!this.resourceCache[cacheid])
+        if (!this.resourceCache[cacheid]) {
+            this.addToLoadQueue(cacheid);
             this.resourceCache[cacheid] = DataCatalogAdapter.queryDatasetResources(dataset.id,region,dates);
+            this.resourceCache[cacheid].then(() => this.removeFromLoadQueue(cacheid));
+        }
         return this.resourceCache[cacheid];
     }
 
@@ -564,5 +567,20 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
         if (!this.datasetCache[cacheid])
             this.datasetCache[cacheid] = DataCatalogAdapter.findDatasetByVariableName(input.variables, region, dates);
         return this.datasetCache[cacheid];
+    }
+
+    //Do no allow edits while loading resources.
+    private loadingResourceSet : Set<string> = new Set<string>();
+    private addToLoadQueue (id:string) : void {
+        this.loadingResourceSet.add(id);
+        this.loading = true;
+    }
+    private removeFromLoadQueue (id:string) : void {
+        if (this.loadingResourceSet.has(id)) {
+            this.loadingResourceSet.delete(id);
+            if (this.loadingResourceSet.size === 0) {
+                this.loading = false;
+            }
+        }
     }
 }
