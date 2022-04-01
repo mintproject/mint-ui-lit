@@ -95,6 +95,13 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                 justify-content: space-between;
                 align-items: center;
             }
+            .dataset_button {
+                padding: 2px 3px 2px 6px;
+                border-radius: 3px;
+                --button-bg: #f1951b;
+                --button-bg-hover: #ffa52b;
+                --button-bg-active: #f1951b;
+            }
         `];
     }
 
@@ -262,8 +269,8 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                         </ul>
 
                         ${this.editMode ? html`
-                        <wl-button inverted flat style="border-radius: 0px; padding: 1px 1px 1px 6px;" class="clickable" @click=${() => this.editInput(model, input)}>
-                            Select dataset
+                        <wl-button  class="clickable dataset_button" @click=${() => this.editInput(model, input)}>
+                            Select
                             <wl-icon style="margin-left:6px;">edit</wl-icon>
                         </wl-button>`
                         : html`<wl-icon>person</wl-icon>`}
