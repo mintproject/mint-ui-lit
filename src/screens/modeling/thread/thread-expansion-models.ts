@@ -45,6 +45,10 @@ export class ThreadExpansionModels extends ThreadExpansion {
         this.modelSelector = new ModelSelector();
         const updateFunc : (n:number) => void = (n:number) => this.nModels = n;
         this.modelSelector.onModelCountUpdate = updateFunc;
+
+        this.addEventListener('model-selector-request-edit', (e:Event) => {
+            this.onEditEnable();
+        });
     }
 
     protected firstUpdated(): void {

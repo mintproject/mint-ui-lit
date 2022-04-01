@@ -436,9 +436,20 @@ export class ModelSelector extends LitElement {
                 }
                 return this.renderRow(opt);
             }) : (selectedOptions.length > 0 ? "" : html`<tr>
-                <td colspan=4 style="text-align: center;">No model selected. Click the edit button to select one.</td>
+                <td colspan=4 style="text-align: center;">No model selected. Click <a style="cursor:pointer" @click=${this.requestEdit}>here</a> to select one.</td>
             </tr>`)}
         `;
+    }
+
+    private requestEdit (e:Event) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        let event : CustomEvent = new CustomEvent('model-selector-request-edit', {
+            bubbles: true,
+            composed: true,
+        });
+        this.dispatchEvent(event);
     }
 
     private renderCategorySeparator (catId:string, showVisibilityToggler:boolean=true) : TemplateResult {
