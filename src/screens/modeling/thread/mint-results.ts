@@ -1,4 +1,4 @@
-import { customElement, html, css, property } from "lit-element";
+import { customElement, html, css, property, TemplateResult } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../../app/store";
 import ReactGA from 'react-ga';
@@ -7,7 +7,7 @@ import { SharedStyles } from "../../../styles/shared-styles";
 import { matchVariables, getThreadParametersStatus, TASK_DONE } from "../../../util/state_functions";
 import { Execution, ExecutionSummary, ModelExecutions, Thread } from "../reducers";
 import { sendDataForIngestion, subscribeThreadExecutionSummary, listThreadModelExecutionsAction } from "../actions";
-import { showNotification } from "../../../util/ui_functions";
+import { hideDialog, showDialog, showNotification } from "../../../util/ui_functions";
 import { selectThreadSection } from "../../../app/ui-actions";
 import { renderLastUpdateText, renderNotifications } from "../../../util/ui_renders";
 import { MintThreadPage } from "./mint-thread-page";
@@ -16,6 +16,9 @@ import { DataResource } from "screens/datasets/reducers";
 import { downloadFile } from "util/ui_functions";
 import { getPathFromModel } from "../../models/reducers";
 import { getLatestEventOfType } from "util/event_utils";
+import { Textfield } from "weightless";
+import { AirflowAdapter } from "util/airflow-adapter";
+import { CustomNotification } from "components/notification";
 
 @customElement('mint-results')
 export class MintResults extends connect(store)(MintThreadPage) {
@@ -42,6 +45,8 @@ export class MintResults extends connect(store)(MintThreadPage) {
 
     @property({type: String})
     private _thread_id: string;
+
+    protected _notification : CustomNotification;
     
     static get styles() {
         return [
@@ -49,6 +54,11 @@ export class MintResults extends connect(store)(MintThreadPage) {
           css`
           `
         ]
+    }
+
+    constructor () {
+        super();
+        this._notification = new CustomNotification();
     }
 
     private _scrollInto (id:string) {
@@ -136,6 +146,8 @@ export class MintResults extends connect(store)(MintThreadPage) {
        let latest_ingest_event = getLatestEventOfType(["INGEST"], this.thread.events);
 
        return html`
+       ${this._notification}
+       ${this.renderDownloadToEmailDialog()}
        <p>
             This step is for browsing the results of the models that you ran earlier. 
        </p>
@@ -230,7 +242,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                         ${!grouped_ensemble || !grouped_ensemble.loading ?
                         html`<wl-button type="button" flat inverted  style="float:right; --button-padding:7px" 
                             ?disabled="${!grouped_ensemble || Object.keys(grouped_ensemble.executions).length == 0}"
-                            @click="${() => this._download(grouped_executions[model.id])}">
+                            @click="${this.onDownloadButtonClicked}">
                                 <wl-icon>cloud_download</wl-icon>
                             </wl-button>`: ""
                         }
@@ -396,6 +408,54 @@ export class MintResults extends connect(store)(MintThreadPage) {
             `
         }
         `;
+    }
+
+    private renderDownloadToEmailDialog () : TemplateResult {
+        return html`
+        <wl-dialog id="downloadByEmail" fixed backdrop blockscrolling size="auto">
+            <h3 slot="header">
+                Send model results to email
+            </h3>
+            <div slot="content">
+                <p>
+                    Model runs can generate multiple output files.<br/>
+                    To download them all write down your email and we will compress the files and send them to you.
+                </p>
+                <wl-textfield label="email" type="email" id="email_box"></wl-textfield>
+                <p>
+                    <b>Note:</b> This process can take several minutes.
+                </p>
+            </div>
+            <div slot="footer" style="padding-top:0px;">
+                <wl-button flat inverted style="margin-right:5px;" @click=${this.onCancelEmailDialogClicked}>Cancel</wl-button>
+                <wl-button class="submit" @click=${this.onSendEmailDialogClicked}>Send</wl-button>
+            </div>
+        </wl-dialog>`;
+    }
+
+    private onDownloadButtonClicked () {
+        showDialog("downloadByEmail", this.shadowRoot);
+    }
+
+    private onCancelEmailDialogClicked () {
+        hideDialog("downloadByEmail", this.shadowRoot);
+    }
+
+    private onSendEmailDialogClicked () {
+        let emailEl = this.shadowRoot.querySelector<Textfield>("#email_box");
+        let email : string = emailEl ? emailEl.value : "";
+        console.log("Select email:", email, " Select threadid:", this.thread.id);
+        if (email && this.thread.id) {
+            let req = AirflowAdapter.sendResultsToEmail(email,this.thread.id);
+            req.then(() => {
+                this._notification.custom("Processing. The email will be send when the compress process is done.","send");
+                this.onCancelEmailDialogClicked();
+            })
+            req.catch(() => {
+                this._notification.error("Error sending your request. Please try again.")
+                this.onCancelEmailDialogClicked();
+            })
+        }
     }
 
     _download (grouped_ensemble) {
