@@ -418,8 +418,8 @@ export class MintResults extends connect(store)(MintThreadPage) {
             </h3>
             <div slot="content">
                 <p>
-                    Model runs can generate multiple output files.<br/>
-                    To download them all write down your email and we will compress the files and send them to you.
+                    Please provide your contact information and details for the requested download. <br/>
+                    A download link for the requested data will be sent to the email adress entered.
                 </p>
                 <wl-textfield label="email" type="email" id="email_box"></wl-textfield>
                 <p>
