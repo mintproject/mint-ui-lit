@@ -23,6 +23,7 @@ import { selectEmulatorModel } from 'screens/emulators/actions';
 import * as mintConfig from '../config/config.json';
 import ReactGA from 'react-ga';
 import { KeycloakAdapter } from 'util/keycloak-adapter';
+import { AirflowAdapter } from 'util/airflow-adapter';
 
 export const BASE_HREF = document.getElementsByTagName("base")[0].href.replace(/^http(s)?:\/\/.*?\//, "/");
 
@@ -80,6 +81,7 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
             ReactGA.set({ userId: user.email });
             ModelCatalogApi.setUsername("mint@isi.edu");//FIXME use: user.email);
             ModelCatalogApi.setAccessToken(KeycloakAdapter.getAccessToken());
+            AirflowAdapter.setAccessToken(KeycloakAdapter.getAccessToken());
             //Should login with the model-cata? TODO
             dispatch({
               type: FETCH_USER,
