@@ -2,7 +2,7 @@
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{"conf": {"email": "mosorio@inf.utfsm.cl", "thread_id": "xvbhipEWW5FMSRoAkaBd",  "graphql_endpoint": "https://graphql.dev.mint.isi.edu/v1/graphql"}}' \
-  -H "Authorization: Token ${TOKEN}" https://airflow.mint.isi.edu/api/v1/dags/download_thread/dagRuns
+  -H "Authorization: Token ${TOKEN}" https://airflow.mint.isi.edu/api/v1/dags/download_thread_v2/dagRuns
 */
 
 import * as mintConfig from 'config/config.json';
@@ -61,7 +61,7 @@ export class AirflowAdapter {
             }
         }
         return new Promise<void>((resolve, reject) => {
-            let req : Promise<Response> = fetch(AirflowAdapter.server + "dags/download_thread/dagRuns", {
+            let req : Promise<Response> = fetch(AirflowAdapter.server + "dags/download_thread_v2/dagRuns", {
                 method: 'POST',
                 headers: {
                     'Content-Type': "application/json",
