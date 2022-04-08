@@ -81,14 +81,13 @@ jobs:
       - name: Set webhook deployment master-isi
         if: endsWith(github.ref, '/master')
         run: |
-          echo "WEBHOOK_SERVER=webhook.mint.isi.edu" >> $GITHUB_ENV
+          curl -f -H "webhook:${KEY}" https://webhook.mint.isi.edu/hooks/ui
+        env:
+          KEY: ${{ secrets.WEBHOOK }}
       - name: Set webhook deployment
         if: endsWith(github.ref, '/dev')
         run: |
-          echo "WEBHOOK_SERVER=webhook.dev.mint.isi.edu" >> $GITHUB_ENV
-      - name: Update the image
-        run: |  
-          [[ ! -z "${WEBHOOK_SERVER}" ]]  && curl -f -H "webhook:${KEY}" https://${WEBHOOK_SERVER}/hooks/ui
+          curl -f -H "webhook:${KEY}" https://webhook.dev.mint.isi.edu/hooks/ui
         env:
           KEY: ${{ secrets.WEBHOOK }}
 
