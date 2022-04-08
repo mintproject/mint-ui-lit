@@ -445,8 +445,9 @@ export class MintResults extends connect(store)(MintThreadPage) {
         let emailEl = this.shadowRoot.querySelector<Textfield>("#email_box");
         let email : string = emailEl ? emailEl.value : "";
         console.log("Select email:", email, " Select threadid:", this.thread.id);
+        let subtask_url = window.location.href
         if (email && this.thread.id) {
-            let req = AirflowAdapter.sendResultsToEmail(email,this.thread.id);
+            let req = AirflowAdapter.sendResultsToEmail(email,this.thread.id, subtask_url, this.problem_statement.name, this.thread.name);
             req.then(() => {
                 this._notification.custom("Processing. The email will be send when the compress process is done.","send");
                 this.onCancelEmailDialogClicked();
