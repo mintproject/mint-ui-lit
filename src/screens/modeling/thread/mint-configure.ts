@@ -119,8 +119,13 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
 
     private continue () : void {
         //Do checks on the selectors
-
-        store.dispatch(selectThreadSection("parameters"));
+        if (!this.threadDatasetSelector.isSaved) {
+            this.threadDatasetSelector.saveAll().then(() => {
+                store.dispatch(selectThreadSection("parameters"));
+            })
+        } else {
+            store.dispatch(selectThreadSection("parameters"));
+        }
     }
 
     private async onContinueClicked () : Promise<void> {

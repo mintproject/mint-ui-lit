@@ -19,6 +19,7 @@ export class ThreadExpansion extends connect(store)(MintThreadPage) {
     @property({type: Boolean}) protected editMode: boolean = false;
     @property({type: Boolean}) public loading: boolean = false;
     @property({type: Boolean}) public open: boolean = false;
+    @property({type: Boolean}) public isSaved: boolean = false;
     protected _name : string = "Configure";
     protected _description : TemplateResult = html`General configuration for this thread.
         The parameters you set here will be used to filter the models and datasets available on next steps.`;
