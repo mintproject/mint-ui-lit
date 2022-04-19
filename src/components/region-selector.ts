@@ -87,13 +87,15 @@ export class RegionSelector extends LitElement {
         (this.editMode ?  this.renderEditForm() : this.renderView());
     }
 
+    categoryMatcher = (reg:LocalRegion, id:string) => reg.category_id.toLowerCase() === id.toLowerCase();
+
     public renderEditForm () : TemplateResult {
         let nRegions : IdMap<number> = {};
         Object.values(this.categories||{}).forEach((cat:RegionCategory) => {
-            nRegions[cat.id] = 0;
+            nRegions[cat.id] = this.mapRegions.filter((r) => this.categoryMatcher(r,cat.id)).length;
             cat.subcategories.forEach((subcat:RegionCategory) => {
                 nRegions[subcat.id] = this.mapRegions
-                        .filter((region:LocalRegion) => region.category_id == subcat.id)
+                        .filter((region:LocalRegion) =>  this.categoryMatcher(region, subcat.id))
                         .length;
                 nRegions[cat.id] += nRegions[subcat.id];
             });
