@@ -66,7 +66,9 @@ export class ThreadExpansionModels extends ThreadExpansion {
     }
 
     protected getStatusInfo () : string {
-        return "Select one or more models to run";
+        if (this.open)
+            return "Select one or more models to run";
+        return "Open to see selected models";
     }
 
     public getStatus () : StatusType {

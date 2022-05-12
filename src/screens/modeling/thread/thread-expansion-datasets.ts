@@ -112,7 +112,9 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     }
 
     protected getStatusInfo () : string {
-        return "Select datasets for your model runs";
+        if (this.open)
+            return "Select datasets for your models";
+        return "Open to see selected data";
     }
 
     public getStatus () : StatusType {

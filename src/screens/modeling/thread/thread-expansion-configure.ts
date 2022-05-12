@@ -16,7 +16,6 @@ import { RegionSelector } from "components/region-selector";
 import { updateThreadInformation } from "../actions";
 import { getCreateEvent } from "util/graphql_adapter";
 
-import { Region as LocalRegion } from "screens/regions/reducers";
 import { Variable, VariableMap } from "screens/variables/reducers";
 
 type StatusType = "warning" | "done" | "error";
@@ -57,7 +56,9 @@ export class ThreadExpansionConfigure extends ThreadExpansion {
     }
 
     protected getStatusInfo () : string {
-        return "Select a region, time interval and other constraints";
+        if (this.open)
+            return "Edit framing options";
+        return "Open to see general framing options";
     }
 
     public getStatus () : StatusType {
