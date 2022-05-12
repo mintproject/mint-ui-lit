@@ -259,7 +259,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                         <div class="cltrow_padded problem_statementrow">
                             <div class="cltmain">
                                 <wl-title level="4" style="margin: 0px">
-                                    Tasks and Threads
+                                    Tasks and sub-tasks
                                 </wl-title>
                             </div>
                             ${problem_permissions.write ? html`
@@ -268,7 +268,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                 : html`<wl-icon class="smallIcon">lock</wl-icon>`}
                         </div>
                         <div style="font-size:12.5px; color: #888; padding:5px; padding-left: 10px; padding-top:0px;">
-                            Several modeling tasks can be created for a given problem statement. Each task can have multiple threads.
+                            Several modeling tasks can be created for a given problem statement. Each task can have multiple sub-tasks.
                             <a style="cursor:pointer" 
                                 @click="${() => showDialog('tasksHelpDialog', this.shadowRoot)}">Read more</a>
                         </div>
@@ -342,7 +342,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                                     @click="${this._onSelectThread}"
                                                     data-threadid="${thread.id}">
                                                 <div class="cltmain" style="${this._selectedThreadId != thread.id ? "font-weight: normal;" : ""}">
-                                                    ${pname && pname != this._selectedTask.name? pname : "Default thread"}
+                                                    ${pname && pname != this._selectedTask.name? pname : "Default sub-task"}
                                                     <br/>
                                                     ${last_event ? 
                                                     html`
@@ -369,7 +369,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
 
                                 ${this._selectedTask && this._selectedTask.id == task.id && selected_task_permissions.write ? html`
                                     <div class="new-thread" @click="${this._editThreadDialog}">
-                                        Create new thread
+                                        Create new sub-tasks
                                     </div>`:""}
                             </li>`
                         })}
@@ -468,26 +468,26 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
     _renderHelpDialogs() {
         return html`
         <wl-dialog class="larger" id="threadsHelpDialog" fixed backdrop blockscrolling>
-            <h3 slot="header">Modeling Threads</h3>
+            <h3 slot="header">Modeling sub-tasks</h3>
             <div slot="content">
                 <p>
                     For a given task, you can investigate different initial conditions or different models.  
-                    Each of them can be explored by creating a new modeling thread for that task.  
-                    For example, a task can have a thread that sets a parameter to a low value and 
-                    another thread that sets a parameter to a high value.  Or a thread could use 
-                    model M1 and another thread that uses model M2.
+                    Each of them can be explored by creating a new modeling sub-tasks for that task.  
+                    For example, a sub-task can have a parameter set to a low value and 
+                    another sub-task that sets the same parameter to a high value.  Or a sub-task could use 
+                    model M1 and another sub-task that uses model M2.
                 </p>
                 <p>
-                    You can also use threads to investigate possible interventions.  For example, 
+                    You can also use sub-tasks to investigate possible interventions.  For example, 
                     changing planting windows to an earlier time might increase crop production, 
                     which can be analyzed using an agriculture model. Another possible intervention to 
                     increase crop yield is the use of fertilizer subsidies, which can be studied 
                     by using an economic model.
                 </p>   
                 <p>
-                    Create a new thread, then click on the first of the steps shown.  
+                    Create a new sub-task, then click on the first of the steps shown.  
                     You can move from one step to the next, and you can always go back and change any of the steps.  
-                    At the bottom of the step, there is a notepad where you can document your decisions, 
+                    At the bottom of the each step, there is a notepad where you can document your decisions, 
                     and your notes will be added to the final report so others can undertand your modeling decisions.
                 </p>
             </div>
@@ -497,7 +497,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         </wl-dialog>
 
         <wl-dialog class="larger" id="tasksHelpDialog" fixed backdrop blockscrolling>
-            <h3 slot="header">Tasks and Threads</h3>
+            <h3 slot="header">Tasks and sub-tasks</h3>
             <div slot="content">
                 <h4>Tasks</h4>
                 <p>
@@ -512,23 +512,23 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                     In the first example, flooding is relevant to both the planting time and growing season of
                     an agriculture model which would place the start of the simulation earlier than the problem’s time frame. 
                 </p> 
-                <h4>Threads</h4>   
+                <h4>Sub-tasks</h4>   
                 <p>
                     For a given task, you can investigate different initial conditions or different models.  
-                    Each of them can be explored by creating a new modeling thread for that task.  
-                    For example, a task can have a thread that sets a parameter to a low value and 
-                    another thread that sets a parameter to a high value.  Or a thread could use 
-                    model M1 and another thread that uses model M2.
+                    Each of them can be explored by creating a new modeling sub-tasks for that task.  
+                    For example, a task can have a sub-task that sets a parameter to a low value and 
+                    another sub-task that sets a parameter to a high value.
+                    Or a sub-task could use model M1 and another sub-task that uses model M2.
                 </p>
                 <p>
-                    You can also use threads to investigate possible interventions.  For example, 
+                    You can also use sub-tasks to investigate possible interventions.  For example, 
                     changing planting windows to an earlier time might increase crop production, 
                     which can be analyzed using an agriculture model. Another possible intervention to 
                     increase crop yield is the use of fertilizer subsidies, which can be studied 
                     by using an economic model.
                 </p>   
                 <p>
-                    Create a new thread, then click on the first of the steps shown.  
+                    Create a new sub-task, then click on the first of the steps shown.  
                     You can move from one step to the next, and you can always go back and change any of the steps.  
                     At the bottom of the step, there is a notepad where you can document your decisions, 
                     and your notes will be added to the final report so others can undertand your modeling decisions.
@@ -611,7 +611,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         e.preventDefault();
         e.stopPropagation();
 
-        if(!confirm("Do you want to delete this thread ?"))
+        if(!confirm("Do you want to delete this sub-task ?"))
             return;
         
         let threadid = (e.currentTarget as HTMLButtonElement).dataset['threadid'];    

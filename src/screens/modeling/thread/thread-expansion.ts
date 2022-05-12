@@ -21,7 +21,7 @@ export class ThreadExpansion extends connect(store)(MintThreadPage) {
     @property({type: Boolean}) public open: boolean = false;
     @property({type: Boolean}) public isSaved: boolean = false;
     protected _name : string = "Configure";
-    protected _description : TemplateResult = html`General configuration for this thread.
+    protected _description : TemplateResult = html`General configuration for this sub-task.
         The parameters you set here will be used to filter the models and datasets available on next steps.`;
 
     static generalStyles = css`
@@ -136,7 +136,7 @@ export class ThreadExpansion extends connect(store)(MintThreadPage) {
     }
 
     protected getStatusInfo () : string {
-        return "Add thread details";
+        return "Add sub-task details";
     }
 
     protected onEditEnable () : void {

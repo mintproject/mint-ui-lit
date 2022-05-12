@@ -27,8 +27,8 @@ type StatusType = "warning" | "done" | "error";
 
 @customElement('thread-expansion-configure')
 export class ThreadExpansionConfigure extends ThreadExpansion {
-    protected _name: string = "General configuration";
-    protected _description : TemplateResult = html`General configuration for this thread.
+    protected _name: string = "General framing";
+    protected _description : TemplateResult = html`General framing for this sub-task.
         The constraints set here will filter the models and datasets available on next step`;
 
     private regionSelector : RegionSelector;
@@ -73,7 +73,7 @@ export class ThreadExpansionConfigure extends ThreadExpansion {
             <table class="thread-detail-table">
                 <tbody>
                     <tr>
-                        <td> Thread name: </td>
+                        <td> Goal: </td>
                         <td> ${thread.name ? thread.name : ""} </td>
                     </tr>
                     ${threadEvent.notes ? 
@@ -130,7 +130,7 @@ export class ThreadExpansionConfigure extends ThreadExpansion {
             <table class="thread-detail-table">
                 <tbody>
                     <tr>
-                        <td> <label>Thread name:</label> </td>
+                        <td> <label>Goal:</label> </td>
                         <td> <input id="thread_name" value="${thread.name ? thread.name : ""}"></input> </td>
                     </tr>
                     <tr>

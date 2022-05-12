@@ -96,12 +96,13 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
 
     protected render () : TemplateResult {
         return html`
-            <wl-title level="3"> Configure thread executions </wl-title>
+            <wl-title level="3"> Sub-task </wl-title>
             <p>
-                A Thread constitutes analysis of a sub-objective. This page allows you to set a general configuration for this thread,
+                A sub-task constitutes analysis of a sub-objective.
+                This page allows you to set a general configuration for this sub-task,
                 choose one or more models and datasets to generate a set of executions to be run.
                 ${this.permission && this.permission.write && !this.editMode ? 
-                    html`Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon to make changes.` : "" }
+                    html`Please click on the <wl-icon class="actionIcon">edit</wl-icon> icon inside each section to make changes.` : "" }
             </p>
 
             ${this.threadConfig}

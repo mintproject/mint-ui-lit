@@ -115,7 +115,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
                     class="${this._getBreadcrumbClass('configure', sectionDoneMap)}" 
                     href="${this._getModeURL('configure')}">
                     <wl-icon style="vertical-align: middle;">settings</wl-icon>
-                    &nbsp;Configure
+                    &nbsp;Framing
                 </a>
                 <a id="parameters_breadcrumb" 
                     class="${this._getBreadcrumbClass('parameters', sectionDoneMap)}" 
@@ -231,7 +231,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
             return html`<wl-progress-spinner class="loading"></wl-progress-spinner>`;
 
         if (!this.thread) {
-            return html`No thread selected`;
+            return html`No sub-task selected`;
         }
 
         return html`
@@ -272,7 +272,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
 
         // If models have changed, then fetch the thread again
         if(this.thread && this.thread.refresh) {
-            console.log("Models Changed. Fetch Thread again");
+            console.log("Models Changed. Fetch sub-task again");
             this._dispatched_execution_summary = false;
             this._dispatched = false;
         }
