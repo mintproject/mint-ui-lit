@@ -462,23 +462,23 @@ export class MintApp extends connect(store)(LitElement) {
     <wl-dialog id="loginDialog" fixed backdrop blockscrolling>
       <h3 slot="header">
         ${this._creatingAccount ? 
-          'Choose an email and password for your MINT account' :
+          'Choose an username and password for your MINT account' :
           (this._resetingPassword ? 
-            'Enter your email to reset your password'
-            : 'Please enter your email and password for MINT')}
+            'Enter your username to reset your password'
+            : 'Please enter your username and password for MINT')}
       </h3>
       <div slot="content">
         <p></p>
         <form id="loginForm">
           <div class="input_full">
-            <label>Email</label>
-            <input name="username" type="email"></input>
+            <label>Username</label>
+            <input name="username"/>
           </div>
           ${this._resetingPassword ? '' : html`
           <p></p>
           <div class="input_full">
             <label>Password</label>
-            <input name="password" type="password" @keyup="${this._onPWKey}"></input>
+            <input name="password" type="password" @keyup="${this._onPWKey}"/>
           </div>
           `}
         </form>
