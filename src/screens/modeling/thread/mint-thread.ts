@@ -13,8 +13,7 @@ import "./mint-visualize";
 
 import "weightless/progress-spinner";
 
-import { getThreadVariablesStatus, TASK_NOT_STARTED, getThreadModelsStatus, 
-    getThreadDatasetsStatus, getThreadRunsStatus, getThreadResultsStatus, 
+import { TASK_NOT_STARTED, getThreadRunsStatus, getThreadResultsStatus, 
     TASK_DONE, TASK_PARTLY_DONE, 
     getUISelectedTask, getThreadParametersStatus, getThreadConfigureStatus } from "util/state_functions";
 import { ExecutionSummary, Task, Thread } from "../reducers";

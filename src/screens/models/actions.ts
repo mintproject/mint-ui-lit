@@ -97,9 +97,8 @@ const dsSpecToIO = (ds: DatasetSpecification) => {
     return io;
 }
 
-// Transform to graphql representation TODO, FIXME
+// Transform to graphql representation TODO
 export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages: IdMap<SoftwareImage>) :  Model => {
-    //console.log('>> SW in setup:', setup.hasSoftwareImage[0], 'vs', softwareImages[setup.hasSoftwareImage[0].id]);
     let model: Model = {
         id: setup.id,
         localname: setup.id.substr(setup.id.lastIndexOf("/") + 1),
@@ -116,7 +115,8 @@ export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages:
         model_name: "", //FIXME row["modelName"] || "",
         model_version: "", //FIXME row["versionName"] || "",
         model_configuration: "", //FIXME row["configurationName"] || "",
-        software_image: setup.hasSoftwareImage ? softwareImages[setup.hasSoftwareImage[0].id].label[0]: "",
+        software_image: setup.hasSoftwareImage && setup.hasSoftwareImage[0].id && softwareImages[setup.hasSoftwareImage[0].id] ?
+                (softwareImages[setup.hasSoftwareImage[0].id].label||[]).join("") : "",
         model_type: (setup.type || [])
             .filter(m => m != "ConfigurationSetup" && m != "ModelConfigurationSetup").join(', ')
             .replace('Model', ' Model'),

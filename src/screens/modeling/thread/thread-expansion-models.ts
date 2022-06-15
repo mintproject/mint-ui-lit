@@ -9,7 +9,7 @@ import "weightless/icon";
 import "weightless/button";
 
 import { ThreadExpansion } from "./thread-expansion";
-import { ModelMap, Thread } from "../reducers";
+import { Thread } from "../reducers";
 import { ModelSelector } from "components/model-selector";
 import { Region as LocalRegion, RegionMap } from "screens/regions/reducers";
 import { Model, ModelConfiguration, ModelConfigurationSetup, SoftwareImage, SoftwareVersion } from "@mintproject/modelcatalog_client";
