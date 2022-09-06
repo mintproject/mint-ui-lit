@@ -5,7 +5,5 @@ services:
     build: 
       context: .
     image: "mint-project/ui"
-    volumes:
-      - ./default.conf:/etc/nginx/conf.d/default.conf
     ports:
       - 12122:80        

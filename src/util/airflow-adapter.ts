@@ -1,14 +1,4 @@
-/*  
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"conf": {"email": "mosorio@inf.utfsm.cl", "thread_id": "xvbhipEWW5FMSRoAkaBd",  "graphql_endpoint": "https://graphql.dev.mint.isi.edu/v1/graphql"}}' \
-  -H "Authorization: Token ${TOKEN}" https://airflow.mint.isi.edu/api/v1/dags/download_thread_dev_v3/dagRuns
-*/
-
-import * as mintConfig from 'config/config.json';
-import { MintPreferences } from 'app/reducers';
-
-let prefs = mintConfig["default"] as MintPreferences;
+import { MINT_PREFERENCES } from "config";
 
 interface AirflowResultsConfiguration {
     email: string,
@@ -60,7 +50,7 @@ export class AirflowAdapter {
             conf: {
                 email: email,
                 thread_id: threadId,
-                graphql_endpoint: prefs.graphql.endpoint,
+                graphql_endpoint: MINT_PREFERENCES.graphql.endpoint,
                 subtask_url: subtask_url,
                 problem_statement_name: problem_statement_name,
                 subtask_name: subtask_name

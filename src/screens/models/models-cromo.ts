@@ -19,10 +19,7 @@ import { Region } from 'screens/regions/reducers';
 import { IdNameObject, UserPreferences } from 'app/reducers';
 import { ExplorerStyles } from './model-explore/explorer-styles';
 
-import { MintPreferences } from 'app/reducers';
-import * as mintConfig from 'config/config.json';
-let prefs = mintConfig["default"] as MintPreferences;
-const GOOGLE_API_KEY = prefs.google_maps_key;   
+import { MINT_PREFERENCES } from 'config';
 
 interface CromoConfig extends IdNameObject {
     waiting?: boolean
@@ -219,7 +216,7 @@ export class ModelsCromo extends connect(store)(PageViewElement)  {
                 </form>
 
                 ${!this._mapReady ?  html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
-                <google-map-custom class="map" api-key="${GOOGLE_API_KEY}" 
+                <google-map-custom class="map" api-key="${MINT_PREFERENCES.google_maps_key}" 
                     .style="visibility: ${this._mapReady? 'visible': 'hidden'}; display: ${this._mapEmpty? 'unset' : 'block'}"
                     disable-default-ui="true" draggable="true"
                     @click="${this._handleMapClick}"

@@ -20,11 +20,7 @@ import { BoundingBox } from './reducers';
 import "./region-models";
 import "./region-datasets";
 import { geometriesToGeoJson, geoJsonToGeometries } from 'util/geometry_functions';
-
-import { MintPreferences } from 'app/reducers';
-import * as mintConfig from 'config/config.json';
-let prefs = mintConfig["default"] as MintPreferences;
-const GOOGLE_API_KEY = prefs.google_maps_key;   
+import { MINT_PREFERENCES } from 'config';
 
 @customElement('regions-editor')
 export class RegionsEditor extends connect(store)(PageViewElement)  {
@@ -224,7 +220,7 @@ export class RegionsEditor extends connect(store)(PageViewElement)  {
 
         <!-- MAP -->
         ${!this._mapReady ?  html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
-        <google-map-custom class="map" api-key="${GOOGLE_API_KEY}" 
+        <google-map-custom class="map" api-key="${MINT_PREFERENCES.google_maps_key}" 
             .style="visibility: ${this._mapReady? 'visible': 'hidden'}; display: ${this._mapEmpty? 'unset' : 'block'}"
             ?disable-default-ui="${true}" draggable="true"
             @click="${this._handleMapClick}"

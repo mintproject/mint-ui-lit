@@ -12,12 +12,9 @@ import { hideDialog, showDialog } from "util/ui_functions";
 import { mapStyles } from "styles/map-style";
 import { BoundingBox, Region as LocalRegion } from "screens/regions/reducers";
 
-import * as mintConfig from 'config/config.json';
-import { MintPreferences } from "app/reducers";
 import { GoogleMapCustom } from "./google-map-custom";
 import "./google-map-custom";
-let prefs = mintConfig["default"] as MintPreferences;
-const GOOGLE_API_KEY = prefs.google_maps_key;
+import { MINT_PREFERENCES } from "config";
 
 @customElement('dataset-resource-selector')
 export class DatasetResourceSelector extends connect(store)(LitElement) {
@@ -53,7 +50,7 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
             <h3 slot="header">
                 Selecting resources ${this.selectedDataset ? "for " + this.selectedDataset.name : ""}
             </h3>
-            <google-map-custom slot="content" class="map" api-key="${GOOGLE_API_KEY}" id="map"
+            <google-map-custom slot="content" class="map" api-key="${MINT_PREFERENCES.google_maps_key}" id="map"
                 style="height: 400px"
                 ?disable-default-ui="${true}" draggable="true"
                 @click="${this.handleMapClick}"
