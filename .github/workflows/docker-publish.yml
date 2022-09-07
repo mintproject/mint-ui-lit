@@ -14,7 +14,7 @@ env:
   REPOSITORY_MAIN_BRANCH: "master"
   #variables related with the docker imager registry
   DOCKER_IMAGE_REPOSITORY: mintproject
-  DOCKER_IMAGE_NAME: ui
+  DOCKER_IMAGE_NAME: mint-ui-lit
   DOCKER_FILE: ".Dockerfile-actions"
 
 jobs:
@@ -81,7 +81,16 @@ jobs:
         with:
           push: true
           context: .
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ steps.branch-name.outputs.current_branch }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ steps.branch-name.outputs.current_branch }}, ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_TAG }}
+          file: ${{ env.DOCKER_FILE}}
+
+      - name: Running on the default branch.
+        if: steps.branch-name.outputs.is_default == 'true'
+        uses: docker/build-push-action@v3.0.0
+        with:
+          push: true
+          context: .
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
           file: ${{ env.DOCKER_FILE}}
 
   update:
