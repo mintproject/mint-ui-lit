@@ -5,5 +5,7 @@ services:
     build: 
       context: .
     image: "mint-project/ui"
+    volumes:
+      - ./config-dev.js:/usr/share/nginx/html/config.js
     ports:
-      - 12122:80        
+      - 8000:80        
