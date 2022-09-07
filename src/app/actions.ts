@@ -19,8 +19,7 @@ import { selectProblemStatement, selectThread, selectTask, selectThreadSection, 
 import { MintPreferences, User } from './reducers';
 import { dexplorerSelectDataset, dexplorerSelectDatasetArea } from 'screens/datasets/ui-actions';
 import { selectEmulatorModel } from 'screens/emulators/actions';
-
-import * as mintConfig from '../config/config.json';
+import { MINT_PREFERENCES } from 'config';
 import ReactGA from 'react-ga';
 import { KeycloakAdapter } from 'util/keycloak-adapter';
 import { AirflowAdapter } from 'util/airflow-adapter';
@@ -139,17 +138,16 @@ export const signOut: ActionCreator<UserThunkResult> = () => (dispatch) => {
 
 type UserPrefsThunkResult = ThunkAction<void, RootState, undefined, AppActionFetchMintConfig>;
 export const fetchMintConfig: ActionCreator<UserPrefsThunkResult> = () => (dispatch) => {
-  let prefs = mintConfig["default"] as MintPreferences;
-  if(prefs.execution_engine == "wings") {
-    fetch(prefs.wings.server + "/config").then((res) => {
+  if(MINT_PREFERENCES.execution_engine == "wings") {
+    fetch(MINT_PREFERENCES.wings.server + "/config").then((res) => {
       res.json().then((wdata) => {
-        prefs.wings.export_url = wdata["internal_server"]
-        prefs.wings.storage = wdata["storage"];
-        prefs.wings.dotpath = wdata["dotpath"];
-        prefs.wings.onturl = wdata["ontology"];
+        MINT_PREFERENCES.wings.export_url = wdata["internal_server"]
+        MINT_PREFERENCES.wings.storage = wdata["storage"];
+        MINT_PREFERENCES.wings.dotpath = wdata["dotpath"];
+        MINT_PREFERENCES.wings.onturl = wdata["ontology"];
         dispatch({
           type: FETCH_MINT_CONFIG,
-          prefs: prefs
+          prefs: MINT_PREFERENCES 
         });
       })
     })
@@ -157,7 +155,7 @@ export const fetchMintConfig: ActionCreator<UserPrefsThunkResult> = () => (dispa
   else {
     dispatch({
       type: FETCH_MINT_CONFIG,
-      prefs: prefs
+      prefs: MINT_PREFERENCES
     });
   }
 };

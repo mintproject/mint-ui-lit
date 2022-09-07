@@ -1,9 +1,6 @@
 import { Configuration, ConfigurationParameters } from '@mintproject/modelcatalog_client';
 import { UserCatalog } from './user-catalog';
-import * as mintConfig from 'config/config.json';
-import { MintPreferences } from 'app/reducers';
-
-let prefs = mintConfig["default"] as MintPreferences;
+import { MINT_PREFERENCES  } from 'config';
 
 export class ModelCatalogApi {
     private static _accessToken : string;
@@ -28,7 +25,7 @@ export class ModelCatalogApi {
         let token : string = ModelCatalogApi.getAccessToken();
         let cfg : ConfigurationParameters = {};
         if (token) cfg.accessToken = token;
-        if (prefs.model_catalog_api) cfg.basePath = prefs.model_catalog_api;
+        if (MINT_PREFERENCES.model_catalog_api) cfg.basePath = MINT_PREFERENCES.model_catalog_api;
 
         ModelCatalogApi.defaultConfiguration = new Configuration(cfg);
         return ModelCatalogApi.defaultConfiguration;

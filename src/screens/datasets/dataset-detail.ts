@@ -18,10 +18,7 @@ import { queryDatasetResources } from './actions';
 import { GoogleMapCustom } from 'components/google-map-custom';
 import { UserPreferences, MintPreferences  } from 'app/reducers';
 import { showDialog, hideDialog } from 'util/ui_functions';
-
-import * as mintConfig from 'config/config.json';
-let prefs = mintConfig["default"] as MintPreferences;
-const GOOGLE_API_KEY = prefs.google_maps_key;   
+import { MINT_PREFERENCES } from 'config';
 
 @customElement('dataset-detail')
 export class DatasetDetail extends connect(store)(PageViewElement) {
@@ -149,7 +146,7 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                 `
             }
             
-            <google-map-custom class="map" api-key="${GOOGLE_API_KEY}"
+            <google-map-custom class="map" api-key="${MINT_PREFERENCES.google_maps_key}"
                 .style="visibility: ${this._mapReady ? 'visible': 'hidden'}"
                 disable-default-ui="true" draggable="true"
                 styles="${this._mapStyles}"

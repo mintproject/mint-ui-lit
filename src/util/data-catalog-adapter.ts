@@ -5,7 +5,7 @@ import { DataResource, Dataset, DatasetQueryParameters } from 'screens/datasets/
 import * as mintConfig from 'config/config.json';
 import { DateRange } from 'screens/modeling/reducers';
 import { Region } from 'screens/regions/reducers';
-const prefs = mintConfig["default"] as MintPreferences;
+import { MINT_PREFERENCES } from 'config';
 
 export interface DatasetQuery {
     search_operators?: string;
@@ -22,7 +22,7 @@ export interface DatasetQuery {
 }
 
 export class DataCatalogAdapter {
-    private static server : string = prefs.data_catalog_api;
+    private static server : string = MINT_PREFERENCES.data_catalog_api;
 
     private static async fetchJson (path:string, query:any) : Promise<any> {
         let res : Response = await fetch(DataCatalogAdapter.server + path, {

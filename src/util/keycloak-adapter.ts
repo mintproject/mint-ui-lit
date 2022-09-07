@@ -1,7 +1,7 @@
 import * as mintConfig from 'config/config.json';
 import { MintPreferences, User } from 'app/reducers';
+import { MINT_PREFERENCES } from 'config';
 
-let prefs = mintConfig["default"] as MintPreferences;
 
 interface tokenResponse {
     access_token: string,
@@ -27,9 +27,9 @@ interface decodedToken {
 }
 
 export class KeycloakAdapter {
-    private static server : string = prefs.auth_server;
-    private static realm : string = prefs.auth_realm;
-    private static clientId : string = prefs.auth_client_id;
+    private static server : string = MINT_PREFERENCES.auth_server;
+    private static realm : string = MINT_PREFERENCES.auth_realm;
+    private static clientId : string = MINT_PREFERENCES.auth_client_id;
     // Return values
     private static accessToken : string;
     private static refreshToken : string;

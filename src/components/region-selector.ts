@@ -9,18 +9,18 @@ import { RegionMap, RegionsState } from '../screens/regions/reducers';
 
 import "weightless/button";
 import "weightless/icon";
-import { IdMap, MintPreferences } from "app/reducers";
+import { IdMap } from "app/reducers";
 import { getId, getLabel } from "model-catalog-api/util";
 import { SharedStyles } from "styles/shared-styles";
 import { mapStyles } from "styles/map-style";
 
 import { BoundingBox, Region as LocalRegion, RegionCategory} from "screens/regions/reducers";
 
-import * as mintConfig from 'config/config.json';
 import { GoogleMapCustom } from "components/google-map-custom";
 import { showDialog } from "util/ui_functions";
-let prefs = mintConfig["default"] as MintPreferences;
-const GOOGLE_API_KEY = prefs.google_maps_key;
+import { MINT_PREFERENCES } from "config";
+
+const GOOGLE_API_KEY = MINT_PREFERENCES.google_maps_key;
 
 @customElement("region-selector")
 //export class ModelSelector extends connect(store)(LitElement) {

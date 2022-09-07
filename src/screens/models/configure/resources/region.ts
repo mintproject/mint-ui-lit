@@ -19,11 +19,8 @@ import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { IdMap } from 'app/reducers';
 import { GoogleMapCustom } from 'components/google-map-custom';
+import { MINT_PREFERENCES } from 'config';
 
-import { MintPreferences } from 'app/reducers';
-import * as mintConfig from 'config/config.json';
-let prefs = mintConfig["default"] as MintPreferences;
-const GOOGLE_API_KEY = prefs.google_maps_key;   
 
 @customElement('model-catalog-region')
 export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Region> {
@@ -209,7 +206,7 @@ export class ModelCatalogRegion extends connect(store)(ModelCatalogResource)<Reg
             ${!this._mapReady ? html`
                 <span>Please select a region category</span>
             ` : ''}
-            <google-map-custom class="map" api-key="${GOOGLE_API_KEY}" 
+            <google-map-custom class="map" api-key="${MINT_PREFERENCES.google_maps_key}" 
                 .style="height:400px; visibility: ${this._mapReady ? 'visible': 'hidden'}"
                 ?disable-default-ui="${true}" draggable="true"
                 @click="${this._handleMapClick}"

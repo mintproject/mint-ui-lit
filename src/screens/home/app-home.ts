@@ -14,12 +14,9 @@ import "../../thirdparty/google-map/src/google-map";
 import "../../components/google-map-custom";
 import { GoogleMapCustom } from 'components/google-map-custom';
 import { goToRegionPage } from 'app/actions';
-import { MintPreferences, User } from 'app/reducers';
+import { User } from 'app/reducers';
 import { mapStyles } from 'styles/map-style';
-
-import * as mintConfig from 'config/config.json';
-let prefs = mintConfig["default"] as MintPreferences;
-const GOOGLE_API_KEY = prefs.google_maps_key;   
+import { MINT_PREFERENCES } from 'config';
 
 @customElement('app-home')
 export class AppHome extends connect(store)(PageViewElement) {
@@ -91,7 +88,7 @@ export class AppHome extends connect(store)(PageViewElement) {
         </div>
   
         <div class="middle">
-            <wl-title level="3">Welcome to MINT</wl-title>
+            <wl-title level="3">${MINT_PREFERENCES.welcome_message} </wl-title>
             <p>
             MINT assists analysts to easily use sophisticated simulation models and data in order to explore the role of weather and climate in water on food availability in select regions of the world. For example, an analyst can use MINT to investigate the expected crop yields given different rainfall predictions through its effect on flooding and drought. MINT’s simulation models are quantitative and contain extensive subject matter knowledge.  For example, a hydrology model contains physical laws that describe how water moves through a river basin, and uses data about the elevation of the terrain and the soil types to determine how much water is absorbed in the ground and how the water flows over a land surface.  MINT provides assistance along the way to significantly reduce the time needed to develop new integrated models while ensuring their utility and accuracy
             </p>
@@ -134,7 +131,7 @@ export class AppHome extends connect(store)(PageViewElement) {
         </div>
         
         ${!this._mapReady ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
-        <google-map-custom class="middle2main" api-key="${GOOGLE_API_KEY}" 
+        <google-map-custom class="middle2main" api-key="${MINT_PREFERENCES.google_maps_key}" 
             .style="visibility: ${this._mapReady ? 'visible': 'hidden'}"
             ?disable-default-ui=${true} draggable="true"
             @click=${(e: CustomEvent) => this.regionSelected(e.detail.id)}
