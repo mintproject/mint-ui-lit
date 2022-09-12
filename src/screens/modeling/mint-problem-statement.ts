@@ -502,8 +502,10 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                 <h4>Tasks</h4>
                 <p>
                     Several modeling tasks can be created for a given problem statement.
+
                     Each modeling task is associated with an indicator relevant to the decision that 
                     want to inform or support, or a different time period, or a different driving variable.
+
                     There are two types of indicators: indices and modeling variables. For example,
                     the problem statement of food security in South Sudan described above, one modeling 
                     task can be framed as “Flooding effect on crop production during the growing season”,
