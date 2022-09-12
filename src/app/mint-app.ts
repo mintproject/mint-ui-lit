@@ -414,8 +414,9 @@ export class MintApp extends connect(store)(LitElement) {
           <div class="card">
             <!-- Main Pages -->
             <app-home class="page fullpage" ?active="${this._page == 'home'}"></app-home>
+            <models-home class="page fullpage" ?active="${this._page == 'models'}"></models-home>
             <emulators-home class="page fullpage" ?active="${this._page == 'emulators'}"></emulators-home>
-            ${this._page != "home" && this._page != "emulators" ? 
+            ${this._page != "home" && this._page != "emulators" && this._page !== 'models'? 
               html`
                 <div style="display: flex; color: #888; flex-direction: column; width: 100%; height: 100%; align-items: center; justify-content: center;">
                   <div style="font-size: 2em;">Unauthorized</div>

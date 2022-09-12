@@ -6,12 +6,14 @@ export class ModelCatalogApi {
     private static _accessToken : string;
     public static username : string;
     public static defaultConfiguration : Configuration;
+    public static authenticated : boolean = false;
 
     public static setUsername (username:string) : void {
         ModelCatalogApi.username = username;
     }
 
     public static setAccessToken (token:string) {
+        ModelCatalogApi.authenticated = true;
         ModelCatalogApi.saveAccessToken(token);
     }
 
@@ -22,9 +24,11 @@ export class ModelCatalogApi {
 
     public static getApiConfiguration () : Configuration {
         if (ModelCatalogApi.defaultConfiguration) return ModelCatalogApi.defaultConfiguration;
-        let token : string = ModelCatalogApi.getAccessToken();
         let cfg : ConfigurationParameters = {};
-        if (token) cfg.accessToken = token;
+        if (this.authenticated) {
+            let token : string = ModelCatalogApi.getAccessToken();
+            if (token) cfg.accessToken = token;
+        }
         if (MINT_PREFERENCES.model_catalog_api) cfg.basePath = MINT_PREFERENCES.model_catalog_api;
 
         ModelCatalogApi.defaultConfiguration = new Configuration(cfg);

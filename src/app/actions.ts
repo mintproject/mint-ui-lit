@@ -44,6 +44,8 @@ type ThunkResult = ThunkAction<void, RootState, undefined, AppAction>;
 
 export const OFFLINE_DEMO_MODE = false;
 
+const DEFAULT_GRAPH = "mint@isi.edu";
+
 /* TODO: should be a way to update user attributes on keycloak;
 type SetProfileThunkResult = ThunkAction<Promise<void>, RootState, undefined, AppActionFetchUserPreferences>;
 export const setUserProfile: ActionCreator<SetProfileThunkResult> = (user:User, profile:UserProfile) => (dispatch) => {
@@ -71,6 +73,7 @@ type UserThunkResult = ThunkAction<Promise<User>, RootState, undefined, AppActio
 export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
   //console.log("Subscribing to user authentication updates");
   //TODO should add a timeout to refresh();
+  ModelCatalogApi.setUsername(DEFAULT_GRAPH);
   return new Promise<User>((resolve, reject) => {
     KeycloakAdapter.loadFromLocalStorage()
         .then((logged:boolean|void) => {
@@ -78,10 +81,10 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
             let user : User = KeycloakAdapter.getUser();
 
             ReactGA.set({ userId: user.email });
-            ModelCatalogApi.setUsername("mint@isi.edu");//FIXME use: user.email);
+            // FIXME: use user catalogs.
+            //ModelCatalogApi.setUsername(user.email);
             ModelCatalogApi.setAccessToken(KeycloakAdapter.getAccessToken());
             AirflowAdapter.setAccessToken(KeycloakAdapter.getAccessToken());
-            //Should login with the model-cata? TODO
             dispatch({
               type: FETCH_USER,
               user: user
@@ -106,7 +109,8 @@ export const signIn: ActionCreator<UserThunkResult> = (email: string, password: 
       .then(() => {
         let user : User = KeycloakAdapter.getUser();
         ModelCatalogApi.setAccessToken(KeycloakAdapter.getAccessToken());
-        ModelCatalogApi.setUsername("mint@isi.edu");//FIXME use: user.email);
+        // FIXME: use users catalog
+        //ModelCatalogApi.setUsername(user.email);
         dispatch({
           type: FETCH_USER,
           user: user
@@ -129,6 +133,7 @@ export const signOut: ActionCreator<UserThunkResult> = () => (dispatch) => {
       type: FETCH_USER,
       user: null
     });
+    ModelCatalogApi.setUsername(DEFAULT_GRAPH);
     resolve(null);
   });
 

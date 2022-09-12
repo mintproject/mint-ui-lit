@@ -42,7 +42,7 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
     public constructor (ApiType: new (cfg?:Configuration) => API, user:string, config?:Configuration) {
         if (config) {
             this._api = new ApiType(config);
-            if (config.accessToken('')) this._editable = true;
+            if (config.accessToken && config.accessToken('')) this._editable = true;
         } else {
             this._api = new ApiType();
             this._redux = false;

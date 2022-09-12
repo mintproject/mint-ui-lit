@@ -1,7 +1,7 @@
 
 import { property, html, customElement, css } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
-import { IdMap } from 'app/reducers'
+import { IdMap, User } from 'app/reducers'
 
 import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
@@ -36,6 +36,8 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     private _selectedConfig : string = '';
     @property({type: String})
     private _selectedSetup : string = '';
+    @property({type: Object})
+    private user : User|null = null;
 
     static get styles() {
         return [
@@ -155,12 +157,12 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <wl-icon>search</wl-icon>
                     <div>Browse Models</div>
                 </a>
-                <a href="${this._regionid}/models/register">
+                <a href="${this._regionid}/models/register" disabled=${this.user === null} title=${this.user === null ? "You must log in to add models" : undefined}>
                 <!--a disabled-->
                     <wl-icon>library_add</wl-icon>
                     <div>Add Models</div>
                 </a>
-                <a href="${this._regionid}/models/edit">
+                <a href="${this._regionid}/models/edit" disabled=${this.user === null} title=${this.user === null ? "You must log in to edit models" : undefined}>
                     <wl-icon>edit</wl-icon>
                     <div>Edit Models</div>
                 </a>
@@ -168,12 +170,13 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <wl-icon>compare</wl-icon>
                     <div>Compare Models</div>
                 </a>
-                <a href="${this._regionid}/models/configure">
+                <a href="${this._regionid}/models/configure" disabled=${this.user === null} title=${this.user === null ? "You must log in to configure models" : undefined}>
                     <wl-icon>perm_data_settings</wl-icon>
                     <div>Configure Models</div>
                 </a>
                 <!--a href="{this._regionid}/models/calibrate"-->
-                <a href="${this._regionid}/models/cromo">
+                <a href="${this._regionid}/models/cromo" disabled=${this.user === null} title=${this.user === null ? "You must log in to search models using the recommendation system" : undefined}>
+
                     <wl-icon style="margin-top:0px">manage_search</wl-icon>
                     <div style="margin-top: -10px;">Recommend Models</div>
                 </a>
@@ -228,6 +231,8 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     }
 
     stateChanged(state: RootState) {
+
+        this.user = state.app!.user!;
         super.setSubPage(state);
         super.setRegionId(state);
         if (state && state.explorerUI) {
