@@ -3,7 +3,7 @@ import { html, property, customElement, css } from 'lit-element';
 import { PageViewElement } from 'components/page-view-element';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
-import { IdMap } from 'app/reducers'
+import { IdMap, User } from 'app/reducers'
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Organization, Region, FundingInformation, 
          Image, Grid, TimeInterval, Process, Visualization, SourceCode, SoftwareImage, Parameter, DatasetSpecification,
@@ -91,6 +91,8 @@ export class ModelView extends connect(store)(PageViewElement) {
     @property({type: String}) private _tab : tabType = 'overview';
 
     @property({type: Boolean}) private _setupNotFound : boolean = false;
+
+    @property({type: Object}) private user : User|null = null;
 
     private _emulators = {
         'https://w3id.org/okn/i/mint/CYCLES' : '/emulators/cycles',
@@ -597,7 +599,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </wl-select>
                 </span>
                 <span>
-                    <wl-button flat inverted @click="${() => this._goToEdit(this._selectedConfig)}" ?disabled="${!this._selectedConfig}">
+                    <wl-button flat inverted @click="${() => this._goToEdit(this._selectedConfig)}" ?disabled="${!this._selectedConfig || this.user === null}">
                         <wl-icon>edit</wl-icon>
                         <span style="font-size: 11px; font-weight: bold;">
                             Edit<br/>Configuration
@@ -635,7 +637,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </wl-select>
                 </span>
                 <span>
-                    <wl-button flat inverted @click="${() => this._goToEdit(this._selectedConfig, this._selectedSetup)}" ?disabled="${!this._selectedSetup}">
+                    <wl-button flat inverted @click="${() => this._goToEdit(this._selectedConfig, this._selectedSetup)}" ?disabled=${!this._selectedSetup || this.user == null}>
                         <wl-icon>edit</wl-icon>
                         <span style="font-size: 11px; font-weight: bold;">
                             Edit<br/>Setup
@@ -697,6 +699,7 @@ export class ModelView extends connect(store)(PageViewElement) {
                     </a>
                     <span>${getLabel(this._model)}</span>
                     <wl-button style="--button-font-size: 16px; --button-padding: 8px; float: right;" flat inverted 
+                            ?disabled=${this.user == null}
                             @click="${() => this._editModel()}">
                         <wl-icon>edit</wl-icon>
                         <span style="font-size: 11px;">
@@ -1766,6 +1769,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     stateChanged(state: RootState) {
+        this.user = state.app!.user!;
         super.setRegion(state);
         let ui = state.explorerUI;
         let db = state.modelCatalog;
@@ -1851,12 +1855,14 @@ export class ModelView extends connect(store)(PageViewElement) {
                                     .forEach((cfg:ModelConfiguration) => {
                                         (cfg.hasRegion || [])
                                             .map((region:Region) => db.region[region.id])
+                                            .filter((region:Region) => !!region)
                                             .forEach((region:Region) => regions.add(region.id));
                                         (cfg.hasSetup || [])
                                             .map((setup:ModelConfigurationSetup) => this._setups[setup.id])
                                             .forEach((setup:ModelConfigurationSetup) => {
                                                 (setup && setup.hasRegion ? setup.hasRegion : [])
                                                     .map((region:Region) => db.region[region.id])
+                                                    .filter((region:Region) => !!region)
                                                     .forEach((region:Region) => regions.add(region.id));
                                             });
                                     });

@@ -332,7 +332,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
             }
         }
 
-        if (this._nConfigs > 0 && this._nSetups < 0 && !this._regions && this._region &&
+        if (this._nConfigs > 0 && this._nSetups < 0 && !this._regions && 
                 ![db.modelconfiguration, db.region].map(isEmpty).some(b=>b)) {
             // We filter for region, so we need to compute the url, local setups and regions.
             this._regions = new Set();
@@ -366,7 +366,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                                                     (setup.hasRegion || [])
                                                             .map((reg:any) => db.region[reg.id])
                                                             .forEach((reg:Region) => {
-                                                                if (isSubregion(this._region.model_catalog_uri,reg)) {
+                                                                if (!this._region || !this._region.model_catalog_uri || isSubregion(this._region.model_catalog_uri,reg)) {
                                                                     this._nLocalSetups += 1;
                                                                     this._regions.add(reg);
                                                                     if (!lastSetup) {
