@@ -9,12 +9,20 @@ export class ModelCatalogApi {
     public static authenticated : boolean = false;
 
     public static setUsername (username:string) : void {
-        ModelCatalogApi.username = username;
+        if (username != ModelCatalogApi.username) {
+            ModelCatalogApi.username = username;
+            ModelCatalogApi._userCatalog = undefined;
+            ModelCatalogApi.defaultConfiguration = undefined;
+        }
     }
 
     public static setAccessToken (token:string) {
-        ModelCatalogApi.authenticated = true;
-        ModelCatalogApi.saveAccessToken(token);
+        if (ModelCatalogApi._accessToken != token) {
+            ModelCatalogApi.authenticated = true;
+            ModelCatalogApi.saveAccessToken(token);
+            ModelCatalogApi._userCatalog = undefined;
+            ModelCatalogApi.defaultConfiguration = undefined;
+        }
     }
 
     private static saveAccessToken (token:string) {
