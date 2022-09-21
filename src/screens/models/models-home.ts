@@ -87,6 +87,10 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                         margin-left: calc(50% - 180px) !important;
                     }
                 }
+
+                a[disabled] {
+                    pointer-events: none;
+                }
             `,
             SharedStyles
         ];
@@ -157,12 +161,11 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <wl-icon>search</wl-icon>
                     <div>Browse Models</div>
                 </a>
-                <a href="${this._regionid}/models/register" disabled=${this.user === null} title=${this.user === null ? "You must log in to add models" : undefined}>
-                <!--a disabled-->
+                <a href="${this._regionid}/models/register" ?disabled=${this.user === null}>
                     <wl-icon>library_add</wl-icon>
                     <div>Add Models</div>
                 </a>
-                <a href="${this._regionid}/models/edit" disabled=${this.user === null} title=${this.user === null ? "You must log in to edit models" : undefined}>
+                <a href="${this._regionid}/models/edit" ?disabled=${this.user === null}>
                     <wl-icon>edit</wl-icon>
                     <div>Edit Models</div>
                 </a>
@@ -170,13 +173,11 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <wl-icon>compare</wl-icon>
                     <div>Compare Models</div>
                 </a>
-                <a href="${this._regionid}/models/configure" disabled=${this.user === null} title=${this.user === null ? "You must log in to configure models" : undefined}>
+                <a href="${this._regionid}/models/configure" ?disabled=${this.user === null}>
                     <wl-icon>perm_data_settings</wl-icon>
                     <div>Configure Models</div>
                 </a>
-                <!--a href="{this._regionid}/models/calibrate"-->
-                <a href="${this._regionid}/models/cromo" disabled=${this.user === null} title=${this.user === null ? "You must log in to search models using the recommendation system" : undefined}>
-
+                <a href="${this._regionid}/models/cromo" ?disabled=${this.user === null}>
                     <wl-icon style="margin-top:0px">manage_search</wl-icon>
                     <div style="margin-top: -10px;">Recommend Models</div>
                 </a>

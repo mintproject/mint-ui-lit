@@ -114,6 +114,7 @@ export class CompareTree extends connect(store)(PageViewElement) {
     }
 
     private _calculateTree () {
+        if (!this._modelTree) return;
         const visibleSetup = (setup: ModelConfigurationSetup) =>
             !!setup && (!setup.hasRegion || (setup.hasRegion||[]).some((region:Region) =>
                     isSubregion(this._region.model_catalog_uri, this._regions[region.id])));

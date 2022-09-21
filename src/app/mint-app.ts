@@ -227,6 +227,8 @@ export class MintApp extends connect(store)(LitElement) {
         </a>
         ${!this.user || !this._selectedRegion ? 
           (!this.user ? html`
+          <a href='any/models' class=${(this._page == 'models'? 'active': '')}
+            >Explore Models</a>
           <a @click="${this._showLoginWindow}">Log in to see more</a>                
           ` : "") : 
           html`
@@ -258,7 +260,7 @@ export class MintApp extends connect(store)(LitElement) {
         </wl-button>
         ${!this.user || !this._selectedRegion ? 
           (!this.user ? html`
-          <wl-button flat inverted @click="${this._showLoginWindow}">Log in to see more</wl-button>                
+          <wl-button flat inverted @click="${this._showLoginWindow}">Log in to see more</wl-button>
           ` : "") : 
           html`
           <wl-button flat inverted class='${(this._page == 'regions'? 'active': '')}'
