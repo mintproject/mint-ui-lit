@@ -4,8 +4,6 @@ import { connect } from 'pwa-helpers/connect-mixin';
 import { store, RootState } from 'app/store';
 import { getLabel, getModelTypeNames } from 'model-catalog-api/util';
 import { Model, ModelFromJSON, CoupledModel, CoupledModelFromJSON } from '@mintproject/modelcatalog_client';
-import { IdMap } from "app/reducers";
-import { renderExternalLink } from 'util/ui_renders';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
@@ -20,8 +18,6 @@ import { ModelCatalogCategory } from './model-category';
 import { ModelCatalogImage } from './image';
 import { ModelCatalogProcess } from './process';
 import { ModelCatalogVariablePresentation } from './variable-presentation';
-
-import { goToPage } from 'app/actions';
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
@@ -233,7 +229,6 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         let types : string = (r.type)? getModelTypeNames(r.type).join(', ') : '';
         return html`
             <table class="details-table">
-                <colgroup wir.="150px">
                 <tr>
                     <td>Category:</td>
                     <td>
@@ -497,7 +492,6 @@ export class ModelCatalogModel extends connect(store)(ModelCatalogResource)<Mode
         return html`
             <div id="page-top"></div>
             <table class="details-table">
-                <colgroup width="150px">
                 <tr>
                     <td colspan="2" style="padding: 5px 20px;">
                         <wl-textfield id="i-label" label="Model name" 

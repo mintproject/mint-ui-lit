@@ -83,9 +83,8 @@ export class CustomModelApi extends DefaultReduxApi<Model, ModelApi> {
         return this._cached;
     }
 
-    public delete : ActionThunk<Promise<void>, MCActionDelete> = (resource:Model|CoupledModel) => (dispatch) => {
+    public delete : ActionThunk<Promise<void>, MCActionDelete> = (uri:string) => (dispatch) => {
         if (!this.isEditable()) return this._notAllowedError();
-        let uri : string = resource.id;
         let id : string = this._getIdFromUri(uri);
         let req : Promise<void> = this._api.modelsIdDelete({user: this._username, id: id});
         if (this._redux) req.then(() => {
