@@ -4,6 +4,8 @@ import { Region, BoundingBox, Point } from 'screens/regions/reducers';
 import { calculateMapDetails, calculateMapDetailsForPoints } from 'screens/regions/actions';
 import { geometriesToGeoJson } from 'util/geometry_functions';
 
+type FeatureType = "region" | "border" | "point" | "boundingBox";
+
 @customElement('google-map-custom')
 export class GoogleMapCustom extends GoogleMap {
     infoWindow: google.maps.InfoWindow;
@@ -40,7 +42,7 @@ export class GoogleMapCustom extends GoogleMap {
     public setRegions(regions: Region[], selected_regionid: string) {
         this.clear();
         this.alignMapToRegions(regions);
-        regions.map((region) => {
+        regions.map((region:Region) => {
             let nregion = Object.assign({}, region);
             if(selected_regionid == region.id) {
                 nregion["selected"] = true;
@@ -52,80 +54,97 @@ export class GoogleMapCustom extends GoogleMap {
     public addRegion(region: Region) {
         let features = this.map.data.addGeoJson(geometriesToGeoJson(region.geometries));
         // TODO: Add click handlers for the region
-        this.setFeatureProperties(region, features);
+        this.setRegionFeatureProperties(region, features);
     }
 
-    private setFeatureProperties(region: Region, features: google.maps.Data.Feature[]) {
+    private setRegionFeatureProperties(region: Region, features: google.maps.Data.Feature[]) {
         // Only allow 1 feature per layer
         features.map((feature) => {
-          var bounds = new google.maps.LatLngBounds();
-          if(feature.getGeometry()) {
-            feature.getGeometry().forEachLatLng((latlng) => {
-              bounds.extend(latlng);
-            })
-            feature.setProperty("center", bounds.getCenter());
-          }
-          feature.setProperty("region_id", region.id);
-          feature.setProperty("region_name", region.name);
-          feature.setProperty("selected", region["selected"]);
+            var bounds = new google.maps.LatLngBounds();
+            if(feature.getGeometry()) {
+                feature.getGeometry().forEachLatLng((latlng) => {
+                    bounds.extend(latlng);
+                })
+                feature.setProperty("center", bounds.getCenter());
+            }
+            feature.setProperty("region_id", region.id);
+            feature.setProperty("region_name", region.name);
+            feature.setProperty("selected", region["selected"]);
+        })
+    }
+    
+    public addRegionBorder (region:Region) {
+        let features = this.map.data.addGeoJson(geometriesToGeoJson(region.geometries));
+        features.map((feature) => {
+          feature.setProperty("type", "border");
         })
     }
 
     private setEventHandlers() {
-       // Initial style
-       let map = this;
+        // Initial style
+        let map = this;
 
-       this.map.data.setStyle(function(feature) {
-        let selected = feature.getProperty("selected");
-        return {
-          fillColor: selected ? '#d51990' : '#1990d5',
-          strokeColor: selected ? '#d51990' : '#1990d5',
-          strokeWeight: 1,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillColor: '#1990d5',
-            fillOpacity: 0.8,
-            strokeColor: '#1990d5',
-            strokeOpacity: 0.9,
-            strokeWeight: 1,
-            scale: 2.5
-          }
-        }
-      });
-
-      this.map.data.addListener('mouseout', function(event) {
-        if(map.infoWindow) {
-          map.infoWindow.close();
-        }
-      });
-
-      this.map.data.addListener('click', function(event) {
-        // Deselect all features
-        map.map.data.forEach((feature) => {
-          feature.setProperty("selected", false);
+        this.map.data.setStyle(function(feature) {
+            let selected : boolean = feature.getProperty("selected");
+            let featureType : FeatureType = feature.getProperty("type");
+            if (featureType === "border") {
+                return {
+                    fillColor: 'transparent',
+                    strokeColor: '#d51990',
+                    strokeWeight: 3,
+                } 
+            }
+            return {
+                fillColor: selected ? '#d51990' : '#1990d5',
+                strokeColor: selected ? '#d51990' : '#1990d5',
+                strokeWeight: 1,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    fillColor: '#1990d5',
+                    fillOpacity: 0.8,
+                    strokeColor: '#1990d5',
+                    strokeOpacity: 0.9,
+                    strokeWeight: 1,
+                    scale: 2.5
+                }
+            }
         });
 
-        // Select the clicked feature
-        event.feature.setProperty("selected", true);
-
-        // Show Info Window
-        if (!map.infoWindow) 
-            map.infoWindow = new google.maps.InfoWindow({});
-        map.infoWindow.setContent(event.feature.getProperty("region_name")),
-        map.infoWindow.setPosition(event.feature.getProperty("center") || event.latlng);
-        map.infoWindow.open(map.map);
-
-        // Fire a custom click event
-        let myEvent = new CustomEvent("click", { 
-          detail: {
-            id: event.feature.getProperty("region_id"),
-            name: event.feature.getProperty("region_name")
-          },
-          bubbles: true, 
-          composed: true 
+        this.map.data.addListener('mouseout', function(event) {
+            if (map.infoWindow) {
+                map.infoWindow.close();
+            }
         });
-        map.dispatchEvent(myEvent);
-      });
+
+        this.map.data.addListener('click', function(event) {
+            let featureType : FeatureType = event.feature.getProperty("type");
+            if (featureType === "border") return;
+            // Deselect all features
+            map.map.data.forEach((feature) => {
+                feature.setProperty("selected", false);
+            });
+
+            // Select the clicked feature
+            event.feature.setProperty("selected", true);
+
+            // Show Info Window
+            if (!map.infoWindow) 
+                map.infoWindow = new google.maps.InfoWindow({});
+            map.infoWindow.setContent(event.feature.getProperty("region_name")),
+            map.infoWindow.setPosition(event.feature.getProperty("center") || event.latlng);
+            map.infoWindow.open(map.map);
+
+            // Fire a custom click event
+            let myEvent = new CustomEvent("click", { 
+                detail: {
+                    id: event.feature.getProperty("region_id"),
+                    name: event.feature.getProperty("region_name")
+                },
+                bubbles: true, 
+                composed: true 
+            });
+            map.dispatchEvent(myEvent);
+        });
     }
 
     public setBoundingBoxes(bboxes: BoundingBox[]) {
@@ -161,6 +180,13 @@ export class GoogleMapCustom extends GoogleMap {
             if (bbox.ymax < lng) bbox.ymax = lng;
         })
         this.alignMapToBoundingBoxes([bbox]);
+        let polygon = new google.maps.Data.Polygon([
+            polygonArr.map(arr => {return {lat: arr[0], lng: arr[1]}})
+        ]);
+        this.map.data.add({geometry: polygon});
+    }
+
+    public addPolygon (polygonArr: Array<Array<number>>) {
         let polygon = new google.maps.Data.Polygon([
             polygonArr.map(arr => {return {lat: arr[0], lng: arr[1]}})
         ]);

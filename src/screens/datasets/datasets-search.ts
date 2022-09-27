@@ -3,10 +3,9 @@ import { PageViewElement } from '../../components/page-view-element';
 
 import { SharedStyles } from '../../styles/shared-styles';
 import { RootState, store } from '../../app/store';
-import { DatasetDetail, DatasetQueryParameters, Dataset, DatasetsWithStatus } from './reducers';
+import { DatasetQueryParameters, Dataset, DatasetsWithStatus } from './reducers';
 import { connect } from 'pwa-helpers/connect-mixin';
 import { queryGeneralDatasets } from './actions';
-import { toTimeStamp } from 'util/date-utils';
 
 import "weightless/card";
 import "weightless/title";
@@ -16,7 +15,7 @@ import { UserPreferences } from 'app/reducers';
 
 @customElement('datasets-search')
 export class DatasetsSearch extends connect(store)(PageViewElement) {
-    @property({type: Array})
+    @property({type: Object})
     private _datasets: DatasetsWithStatus;
 
     @property({type: Object})

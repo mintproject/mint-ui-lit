@@ -7,9 +7,7 @@ import 'components/google-map-custom';
 import 'weightless/progress-spinner';
 import { RegionQueryPage } from './region-query-page';
 import { SharedStyles } from 'styles/shared-styles';
-import { fromTimeStampToDateString } from 'util/date-utils';
 import { goToPage } from 'app/actions';
-import { db } from 'config/firebase';
 
 @customElement('region-tasks')
 export class RegionTasks extends connect(store)(RegionQueryPage)  {
@@ -63,9 +61,11 @@ export class RegionTasks extends connect(store)(RegionQueryPage)  {
     }
 
     _renderDates (date) {
+        return "";
+        /* FIXME
         let startdate = fromTimeStampToDateString(date!.start_date);
         let enddate = fromTimeStampToDateString(date!.end_date);
-        return startdate + " - " + enddate;
+        return startdate + " - " + enddate;*/
     }
 
     _goToTask (el) {
@@ -78,6 +78,7 @@ export class RegionTasks extends connect(store)(RegionQueryPage)  {
         let scenarios = {};
         let promises = [];
 
+        /* TODO: Update this to work with graphql
         await db.collection("scenarios").where('regionid', '==', this._regionid).get().then((querySnapshot) => {
           querySnapshot.forEach((scenario) => {
             let sid = scenario.get('id');
@@ -110,7 +111,7 @@ export class RegionTasks extends connect(store)(RegionQueryPage)  {
             this._tasks = tasks;
             this._scenarios = scenarios;
             this._tasks_loading = false;
-        });
+        });*/
     }
 
     stateChanged(state: RootState) {

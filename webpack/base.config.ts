@@ -8,9 +8,6 @@ import webpack from 'webpack';
 import CopyPlugin from 'copy-webpack-plugin';
 import ScriptExtHtmlPlugin from 'script-ext-html-webpack-plugin';
 import { InjectManifest as InjectManifestPlugin } from 'workbox-webpack-plugin';
-import * as mintConfig from '../src/config/config.json';
-import { MintPreferences } from "../src/app/reducers";
-let prefs = mintConfig["default"] as MintPreferences;
 
 
 const config: webpack.Configuration = {
@@ -108,14 +105,6 @@ const config: webpack.Configuration = {
       exclude: [/hot-update/, /images\/icons/, /browserconfig\.xml/, /robots\.txt/, /\.LICENSE$/],
     }),
     new webpack.DefinePlugin({
-      'process.env.GOOGLE_MAPS_API_KEY': JSON.stringify(prefs.google_maps_key || 'no-api-key'),
-      'process.env.FIREBASE_API_KEY': JSON.stringify(prefs.apiKey || 'no-api-key'),
-      'process.env.FIREBASE_AUTH_DOMAIN': JSON.stringify(prefs.authDomain || 'no-auth-domain'),
-      'process.env.FIREBASE_DATABASE_URL': JSON.stringify(prefs.databaseURL || 'no-database-url'),
-      'process.env.FIREBASE_PROJECT_ID': JSON.stringify(prefs.projectId || 'no-project-id'),
-      'process.env.FIREBASE_STORAGE_BUCKET': JSON.stringify(prefs.storageBucket || 'no-storage-bucket'),
-      'process.env.FIREBASE_MESSAGING_SENDER_ID': JSON.stringify(prefs.messagingSenderId || 'no-sender-id'),
-      'process.env.FIREBASE_APP_ID': JSON.stringify(prefs.appId || 'no-app-id')
     })
   ],
 };

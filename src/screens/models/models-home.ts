@@ -1,6 +1,7 @@
 
 import { property, html, customElement, css } from 'lit-element';
 import { PageViewElement } from '../../components/page-view-element';
+import { IdMap, User } from 'app/reducers'
 
 import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
@@ -12,15 +13,16 @@ import './models-register';
 import './models-calibrate';
 import './models-configure';
 import './models-edit';
+import './models-cromo';
 import '../../components/nav-title'
 
 store.addReducers({
     models
 });
 
-import modelCatalog from 'model-catalog/reducers'
-import { modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet, processesGet, 
-         regionsGet, imagesGet } from '../../model-catalog/actions';
+import modelCatalog from 'model-catalog-api/reducers';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+import { UserCatalog } from 'model-catalog-api/user-catalog';
 
 store.addReducers({
     modelCatalog
@@ -34,6 +36,8 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     private _selectedConfig : string = '';
     @property({type: String})
     private _selectedSetup : string = '';
+    @property({type: Object})
+    private user : User|null = null;
 
     static get styles() {
         return [
@@ -83,6 +87,10 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                         margin-left: calc(50% - 180px) !important;
                     }
                 }
+
+                a[disabled] {
+                    pointer-events: none;
+                }
             `,
             SharedStyles
         ];
@@ -98,7 +106,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     }
 
     private _getAPILink () {
-        return "https://api.models.mint.isi.edu/latest/ui/";
+        return "https://api.models.wildfire.mint.isi.edu/latest/ui/";
     }
 
     protected render() {
@@ -125,6 +133,9 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             case 'edit':
                 nav.push({label: 'Edit Models', url: 'models/edit'});
                 break;
+            case 'cromo':
+                nav.push({label: 'Recommend Models', url: 'models/cromo'});
+                break;
             default:
                 break;
         }
@@ -150,12 +161,11 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <wl-icon>search</wl-icon>
                     <div>Browse Models</div>
                 </a>
-                <a href="${this._regionid}/models/register">
-                <!--a disabled-->
+                <a href="${this._regionid}/models/register" ?disabled=${this.user === null}>
                     <wl-icon>library_add</wl-icon>
                     <div>Add Models</div>
                 </a>
-                <a href="${this._regionid}/models/edit">
+                <a href="${this._regionid}/models/edit" ?disabled=${this.user === null}>
                     <wl-icon>edit</wl-icon>
                     <div>Edit Models</div>
                 </a>
@@ -163,14 +173,13 @@ export class ModelsHome extends connect(store)(PageViewElement) {
                     <wl-icon>compare</wl-icon>
                     <div>Compare Models</div>
                 </a>
-                <a href="${this._regionid}/models/configure">
+                <a href="${this._regionid}/models/configure" ?disabled=${this.user === null}>
                     <wl-icon>perm_data_settings</wl-icon>
                     <div>Configure Models</div>
                 </a>
-                <!--a href="{this._regionid}/models/calibrate"-->
-                <a disabled>
-                    <wl-icon>settings_input_composite</wl-icon>
-                    <div>Calibrate Models</div>
+                <a href="${this._regionid}/models/cromo" ?disabled=${this.user === null}>
+                    <wl-icon style="margin-top:0px">manage_search</wl-icon>
+                    <div style="margin-top: -10px;">Recommend Models</div>
                 </a>
             </div>
 
@@ -180,20 +189,51 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             <models-calibrate class="page" ?active="${this._subpage == 'calibrate'}"></models-calibrate>
             <models-compare class="page" ?active="${this._subpage == 'compare'}"></models-compare>
             <models-edit class="page" ?active="${this._subpage == 'edit'}"></models-edit>
+            <models-cromo class="page" ?active="${this._subpage == 'cromo'}"></models-cromo>
         `
     }
 
     firstUpdated() {
-        store.dispatch(modelsGet());
-        store.dispatch(versionsGet());
-        store.dispatch(modelConfigurationsGet());
-        store.dispatch(modelConfigurationSetupsGet());
-        store.dispatch(regionsGet());
-        store.dispatch(imagesGet());
-        store.dispatch(processesGet());
+        let api : UserCatalog = ModelCatalogApi.myCatalog;
+
+        store.dispatch(api.model.getAll());
+        store.dispatch(api.softwareVersion.getAll());
+        store.dispatch(api.modelConfiguration.getAll());
+        store.dispatch(api.modelConfigurationSetup.getAll());
+        store.dispatch(api.region.getAll());
+        store.dispatch(api.image.getAll());
+        store.dispatch(api.modelCategory.getAll());
+        store.dispatch(api.variablePresentation.getAll());
+
+        //TEST
+        /*console.log('Getting SWAT from the model-catalog...');
+        store.dispatch(ModelCatalogApi.getCatalog('mint@isi.edu').model.get("SWAT")).then((m:Model) => {
+            console.log('Response from mint@isi.edu:', m);
+            console.log('Copy to user graph...');
+            let swatCopy = { ...m, id: '' }
+            //if (swatCopy.dateCreated) delete swatCopy.dateCreated
+            store.dispatch(ModelCatalogApi.myCatalog.model.post(swatCopy)).then((s:Model) => {
+                console.log('Response of post', s);
+                console.log('Editing...');
+                if (s && s.label && s.label.length > 0) {
+                    s.label = [ s.label[0] + " (copy)" ];
+                    store.dispatch(ModelCatalogApi.myCatalog.model.put(s)).then((w:Model) => {
+                        console.log('Response of put', w);
+                        console.log("Deleting...");
+                        store.dispatch(ModelCatalogApi.myCatalog.model.delete(w.id)).then(() => {
+                            console.log("DONE");
+                        });
+                    });
+                } else {
+                    console.log('error no s');
+                }
+            });
+        });*/
     }
 
     stateChanged(state: RootState) {
+
+        this.user = state.app!.user!;
         super.setSubPage(state);
         super.setRegionId(state);
         if (state && state.explorerUI) {

@@ -19,9 +19,8 @@ import { store, RootState } from './store';
 
 // These are the actions needed by this element.
 import {
-  navigate, fetchUser, signOut, signIn, signUp, goToPage, fetchMintConfig, setUserProfile, resetPassword,
+  navigate, fetchUser, signOut, signIn, signUp, goToPage, fetchMintConfig, resetPassword,
 } from './actions';
-import { UserPreferences, UserProfile } from './reducers';
 import { listTopRegions, listSubRegions, listRegionCategories } from '../screens/regions/actions';
 
 import '../screens/modeling/modeling-home';
@@ -38,15 +37,15 @@ import "weightless/popover";
 import "weightless/radio";
 import { Select } from 'weightless/select';
 import { Radio } from 'weightless/radio';
-
 import { Popover } from "weightless/popover";
+
 import { CustomNotification } from 'components/notification';
 
 import { SharedStyles } from '../styles/shared-styles';
 import { showDialog, hideDialog, formElementsComplete } from '../util/ui_functions';
-import { User } from 'firebase';
 import { Region } from 'screens/regions/reducers';
 import { listVariables } from 'screens/variables/actions';
+import { User } from './reducers';
 
 @customElement('mint-app')
 export class MintApp extends connect(store)(LitElement) {
@@ -228,6 +227,8 @@ export class MintApp extends connect(store)(LitElement) {
         </a>
         ${!this.user || !this._selectedRegion ? 
           (!this.user ? html`
+          <a href='any/models' class=${(this._page == 'models'? 'active': '')}
+            >Explore Models</a>
           <a @click="${this._showLoginWindow}">Log in to see more</a>                
           ` : "") : 
           html`
@@ -259,7 +260,7 @@ export class MintApp extends connect(store)(LitElement) {
         </wl-button>
         ${!this.user || !this._selectedRegion ? 
           (!this.user ? html`
-          <wl-button flat inverted @click="${this._showLoginWindow}">Log in to see more</wl-button>                
+          <wl-button flat inverted @click="${this._showLoginWindow}">Log in to see more</wl-button>
           ` : "") : 
           html`
           <wl-button flat inverted class='${(this._page == 'regions'? 'active': '')}'
@@ -345,7 +346,7 @@ export class MintApp extends connect(store)(LitElement) {
           </wl-popover>
         </div>
         <div slot="title">
-          <ul id="main-breadcrumbs" class="breadcrumbs">
+          <ul id="main-breadcrumbs" class="breadcrumbs_header">
             ${this._getMenuLinks()}
           </ul>
         </div>
@@ -387,7 +388,7 @@ export class MintApp extends connect(store)(LitElement) {
                       Messages <wl-icon style="margin-left: 4px;">message</wl-icon>
                     </wl-button>                
                     <wl-button flat inverted @click="${this._showConfigWindow}"> CONFIGURE </wl-button>
-                    <wl-button flat inverted @click="${signOut}"> LOGOUT </wl-button>
+                    <wl-button flat inverted @click="${this._onLogOutButtonClicked}"> LOGOUT </wl-button>
                 </div>
             </wl-popover>
             `
@@ -415,7 +416,18 @@ export class MintApp extends connect(store)(LitElement) {
           <div class="card">
             <!-- Main Pages -->
             <app-home class="page fullpage" ?active="${this._page == 'home'}"></app-home>
+            <models-home class="page fullpage" ?active="${this._page == 'models'}"></models-home>
             <emulators-home class="page fullpage" ?active="${this._page == 'emulators'}"></emulators-home>
+            ${this._page != "home" && this._page != "emulators" && this._page !== 'models'? 
+              html`
+                <div style="display: flex; color: #888; flex-direction: column; width: 100%; height: 100%; align-items: center; justify-content: center;">
+                  <div style="font-size: 2em;">Unauthorized</div>
+                  <div style="font-size: 1.5em;">
+                    Please <a style="cursor: pointer;" @click="${this._showLoginWindow}">log in</a> or go to the <a href="/">home page</a>
+                  </div>
+                </div>
+              `
+              : ""}
           </div>
         `
       }
@@ -426,9 +438,21 @@ export class MintApp extends connect(store)(LitElement) {
     `;
   }
 
+  _onLogOutButtonClicked () {
+    this._closeUserPopover();
+    store.dispatch(signOut()).then(() => {
+      goToPage("home");
+    });
+  }
+
   _onUserButtonClicked () {
     let pop : Popover = this.shadowRoot.querySelector("#user-popover");
     if (pop) pop.show();//.then(result => console.log(result));
+  }
+
+  _closeUserPopover () {
+    let pop : Popover = this.shadowRoot.querySelector("#user-popover");
+    if (pop) pop.hide();
   }
 
   _onBreadcrumbsMenuButtonClicked () {
@@ -441,32 +465,32 @@ export class MintApp extends connect(store)(LitElement) {
     <wl-dialog id="loginDialog" fixed backdrop blockscrolling>
       <h3 slot="header">
         ${this._creatingAccount ? 
-          'Choose an email and password for your MINT account' :
+          'Choose an username and password for your MINT account' :
           (this._resetingPassword ? 
-            'Enter your email to reset your password'
-            : 'Please enter your email and password for MINT')}
+            'Enter your username to reset your password'
+            : 'Please enter your username and password for MINT')}
       </h3>
       <div slot="content">
         <p></p>
         <form id="loginForm">
           <div class="input_full">
-            <label>Email</label>
-            <input name="username" type="email"></input>
+            <label>Username</label>
+            <input name="username"/>
           </div>
           ${this._resetingPassword ? '' : html`
           <p></p>
           <div class="input_full">
             <label>Password</label>
-            <input name="password" type="password" @keyup="${this._onPWKey}"></input>
+            <input name="password" type="password" @keyup="${this._onPWKey}"/>
           </div>
           `}
         </form>
-        ${this._creatingAccount || this._resetingPassword ? 
+        ${true || this._creatingAccount || this._resetingPassword ? 
             ''
             : html`<p></p><a @click="${() => {this._resetingPassword = true;}}">Reset your password</a>`}
       </div>
       <div slot="footer" style="justify-content: space-between;">
-          ${this._creatingAccount || this._resetingPassword ? 
+          ${true || this._creatingAccount || this._resetingPassword ? 
             html`<span></span>` :
             html`<wl-button @click="${this._createAccountActivate}">Create account</wl-button>`}
           <span>
@@ -527,6 +551,7 @@ export class MintApp extends connect(store)(LitElement) {
   }
 
   _showConfigWindow() {
+    this._closeUserPopover();
     showDialog("configDialog", this.shadowRoot!);
   }
 
@@ -544,11 +569,12 @@ export class MintApp extends connect(store)(LitElement) {
     let inputPrivateGraph : Radio  = this.shadowRoot.getElementById('gpersonal') as Radio;
     let notification : CustomNotification = this.shadowRoot.querySelector<CustomNotification>("#custom-notification")!;
     if (inputRegion && inputPublicGraph && inputPrivateGraph) {
-        let profile : UserProfile = {
-            mainRegion: inputRegion.value,
+        let profile = {
+            region: inputRegion.value,
             graph: inputPrivateGraph.checked ? this.user.email : ''
         }
         console.log('new profile:', profile);
+        /* TODO: needs a function to update!
         store.dispatch(
             setUserProfile(this.user, profile)
         ).then(() => {
@@ -557,7 +583,7 @@ export class MintApp extends connect(store)(LitElement) {
             window.location.reload(false);
         }).catch((error) => {
             if (notification) notification.error("Could not save changes.");
-        });
+        });*/
     }
   }
 
@@ -575,9 +601,9 @@ export class MintApp extends connect(store)(LitElement) {
     if (!this._resetingPassword && formElementsComplete(form, ["username", "password"])) {
         let username = (form.elements["username"] as HTMLInputElement).value;
         let password = (form.elements["password"] as HTMLInputElement).value;
-        if (this._creatingAccount) {
-            signUp(username, password)
-                    .then((resp) => {
+        if (this._creatingAccount) { // FIXME: user creation is not working on keycloak
+            store.dispatch(signUp(username, password))
+                    .then(() => {
                 if (notification) notification.save("Account created!");
                     })
                     .catch((error) => {
@@ -585,15 +611,19 @@ export class MintApp extends connect(store)(LitElement) {
             });
             this._creatingAccount = false;
         } else {
-            signIn(username, password).catch((error) => {
-                if (notification) notification.error("Username or password is incorrect");
+            store.dispatch(signIn(username, password)).catch((error) => {
+                if (notification) {
+                  if (!error) notification.error("Username or password is incorrect");
+                  else if (error.message) notification.error(error.message);
+                  else notification.error("Unexpected error when log in");
+                }
             });
         }
         this._onLoginCancel();
     } else if (this._resetingPassword && formElementsComplete(form, ["username"])) {
         let username = (form.elements["username"] as HTMLInputElement).value;
-        resetPassword(username)
-                .then((resp) => {
+        store.dispatch(resetPassword(username))
+                .then(() => {
             if (notification) notification.save("Email send");
             this._resetingPassword = false;
                 })
@@ -629,10 +659,14 @@ export class MintApp extends connect(store)(LitElement) {
     }
   }
 
-
   stateChanged(state: RootState) {
     this._page = state.app!.page;
     this.user = state.app!.user!;
+
+    if (this.user) {
+      this._mainRegion = this.user.region;
+      this._defGraph = this.user.graph;
+    }
 
     if(!state.app.prefs || !state.app.prefs.mint) {
       if(!this._dispatchedConfigQuery) {
@@ -643,7 +677,7 @@ export class MintApp extends connect(store)(LitElement) {
     }
 
     if(!state.regions || !state.regions.top_region_ids) {
-      if(!this._dispatchedRegionsQuery) {
+      if (!this._dispatchedRegionsQuery) {
         console.log("Dispatching Top Region Query")
         this._dispatchedRegionsQuery = true;
         // Fetch region categories
@@ -673,12 +707,6 @@ export class MintApp extends connect(store)(LitElement) {
         this._dispatchedVariablesQuery = true;
         store.dispatch(listVariables());
       }
-    }
-
-    if (state.app && state.app.prefs && state.app.prefs.profile) {
-        let profile = state.app.prefs.profile;
-        this._mainRegion = profile.mainRegion;
-        this._defGraph = profile.graph;
     }
 
     if (state.regions) this._topRegions = state.regions.top_region_ids;

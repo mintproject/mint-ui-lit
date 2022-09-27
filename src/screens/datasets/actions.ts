@@ -5,7 +5,6 @@ import { Dataset, DatasetDetail, DatasetQueryParameters, DataResource } from "./
 import { OFFLINE_DEMO_MODE } from "../../app/actions";
 import { IdMap, MintPreferences } from "app/reducers";
 import { DateRange } from "screens/modeling/reducers";
-import { fromTimeStampToString, fromTimeStampToString2 } from "util/date-utils";
 import { Region } from "screens/regions/reducers";
 
 export const DATASETS_VARIABLES_QUERY = 'DATASETS_VARIABLES_QUERY';
@@ -45,7 +44,7 @@ export interface DatasetsActionDetail extends Action<'DATASETS_DETAIL'> { datase
 export type DatasetsAction = DatasetsActionVariablesQuery | DatasetsActionGeneralQuery | DatasetsActionRegionQuery |
                              DatasetsActionDatasetResourceQuery | DatasetsActionDatasetAdd;
 
-const getDatasetsFromDCResponse = (obj: any, queryParameters: DatasetQueryParameters) => {
+export const getDatasetsFromDCResponse = (obj: any, queryParameters: DatasetQueryParameters) => {
     let datasets = obj.datasets.map(ds => {
         let dmeta = ds['dataset_metadata'];
         return {
@@ -138,7 +137,7 @@ const getResourcesFromDCResponse = (obj: any) => {
     });
 }
 
-const getDatasetResourceListFromDCResponse = (obj: any) => {
+export const getDatasetResourceListFromDCResponse = (obj: any) => {
     let resources = [];
     obj.resources.map((row: any) => {
         let rmeta = row["resource_metadata"];
@@ -258,7 +257,7 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
         spatial_coverage__intersects: region.geometries[0],
         end_time__gte: dates?.start_date?.toISOString()?.replace(/\.\d{3}Z$/,''),
         start_time__lte: dates?.end_date?.toISOString()?.replace(/\.\d{3}Z$/,''),
-        limit: 100
+        limit: 1000
     }
 
     fetch(prefs.data_catalog_api + "/datasets/find", {
@@ -340,7 +339,7 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
         loading: true
     });
     let dataset: Dataset;
-    let prom1 = new Promise((resolve, reject) => {
+    let prom1 = new Promise<void>((resolve, reject) => {
         let req = fetch(prefs.data_catalog_api + "/datasets/get_dataset_info", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -357,7 +356,7 @@ export const queryDatasetResources: ActionCreator<QueryDatasetResourcesThunkResu
     })
 
     let resources;
-    let prom2 = new Promise((resolve, reject) => {
+    let prom2 = new Promise<void>((resolve, reject) => {
         let req = fetch(prefs.data_catalog_api + "/datasets/dataset_resources", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},

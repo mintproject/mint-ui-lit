@@ -1,9 +1,8 @@
 import { ModelCatalogResource } from './resource';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
-import { variablePresentationGet, variablePresentationsGet, variablePresentationPost, variablePresentationPut, variablePresentationDelete } from 'model-catalog/actions';
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 import { VariablePresentation, VariablePresentationFromJSON, Unit } from '@mintproject/modelcatalog_client';
 import { IdMap } from "app/reducers";
 
@@ -12,17 +11,19 @@ import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
-import { Select } from 'weightless/select';
 import { ModelCatalogStandardVariable } from './standard-variable';
 import { ModelCatalogUnit } from './unit';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 @customElement('model-catalog-variable-presentation')
 export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalogResource)<VariablePresentation> {
     static get styles() {
         return [ExplorerStyles, SharedStyles, this.getBasicStyles(), css`
             .small-tooltip:hover::after {
-                width: 200px;
-                left: 30%;
+                width: min(max-content 200px);
             }
             #input-variable, #input-unit {
                 --list-height: 200px;
@@ -31,8 +32,14 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
             .inline-desc {
                 display: none;
             }
+            .two-inputs > wl-textfield, 
+            .two-inputs > wl-select,
+            .two-inputs > span {
+                display: inline-block;
+                width: 50%;
+            }
             .clickable-area > span > .inline-desc {
-                display: unset;
+                display: inline-block;
                 font-style: oblique;
                 font-family: sans-serif;
                 font-weight: 600;
@@ -45,11 +52,9 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
     protected classes : string = "resource variable-presentation";
     protected name : string = "variable presentation";
     protected pname : string = "variable presentations";
-    protected resourcesGet = variablePresentationsGet;
-    protected resourceGet = variablePresentationGet;
-    protected resourcePost = variablePresentationPost;
-    protected resourcePut = variablePresentationPut;
-    protected resourceDelete = variablePresentationDelete;
+
+    protected resourceApi : DefaultReduxApi<VariablePresentation,BaseAPI> = ModelCatalogApi.myCatalog.variablePresentation;
+
     public uniqueLabel : boolean = true;
 
     private _inputStandardVariable : ModelCatalogStandardVariable;
@@ -105,6 +110,27 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
         super._createResource();
     }
 
+/*
+export interface VariablePresentation {
+    id?: string;
+    type?: Array<string> | null;
+    label?: Array<string> | null;
+    description?: Array<string> | null;
+    hasShortName?: Array<string> | null;
+    hasLongName?: Array<string> | null;
+
+    hasStandardVariable?: Array<StandardVariable> | null;
+    usesUnit?: Array<Unit> | null;
+
+    hasMinimumAcceptedValue?: Array<string> | null;     
+    hasMaximumAcceptedValue?: Array<string> | null;
+    hasConstraint?: Array<string> | null;
+
+    hasDefaultValue?: Array<string> | null;
+    partOfDataset?: Array<DatasetSpecification> | null; //NO
+}
+*/
+
     protected _renderForm () {
         let edResource = this._getEditingResource();
         return html`
@@ -118,17 +144,27 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
             <wl-textarea id="var-desc" label="Description"
                 value=${edResource && edResource.description ? edResource.description[0] : ''}>
             </wl-textarea>
-            <wl-textfield id="var-short-name" label="Short Name" 
-                value=${edResource && edResource.hasShortName ? edResource.hasShortName[0] : ''}>
-            </wl-textfield>
-            <wl-textfield id="var-long-name" label="Long Name" 
-                value=${edResource && edResource.hasLongName ? edResource.hasLongName[0] : ''}>
-            </wl-textfield>
-            <div style="padding: 10px 0px;">
+            <div class="two-inputs">
+                <wl-textfield id="var-short-name" label="Short Name" 
+                    value=${edResource && edResource.hasShortName ? edResource.hasShortName[0] : ''}>
+                </wl-textfield>
+                <wl-textfield id="var-long-name" label="Long Name" 
+                    value=${edResource && edResource.hasLongName ? edResource.hasLongName[0] : ''}>
+                </wl-textfield>
+            </div>
+            <div class="two-inputs">
+                <wl-textfield id="var-min" label="Minimum Accepted Value" 
+                    value=${edResource && edResource.hasMinimumAcceptedValue ? edResource.hasMinimumAcceptedValue[0] : ''}>
+                </wl-textfield>
+                <wl-textfield id="var-max" label="Maximum Accepted Value" 
+                    value=${edResource && edResource.hasMaximumAcceptedValue ? edResource.hasMaximumAcceptedValue[0] : ''}>
+                </wl-textfield>
+            </div>
+            <div style="padding: 5px 0px;">
                 <div style="padding: 5px 0px; font-weight: bold;">Standard Variables:</div>
                 ${this._inputStandardVariable}
             </div>
-            <div style="padding: 10px 0px;">
+            <div style="padding: 5px 0px;">
                 <div style="padding: 5px 0px; font-weight: bold;">Units:</div>
                 ${this._inputUnit}
             </div>
@@ -140,12 +176,16 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
             let desc : string = r.description && r.description.length > 0 ? r.description[0] : '';
             let label : string = getLabel(r).replaceAll('_',' ');
             let units : string = r.usesUnit && r.usesUnit.length > 0 && this._allUnits != null ?
-                    r.usesUnit.map((u:Unit) => getLabel(this._allUnits[u.id])).join(', ') : '';
+                    r.usesUnit.map((u:Unit) => u.id && this._allUnits[u.id] ? getLabel(this._allUnits[u.id]) : '').join(', ') : '';
+            if (r.usesUnit && r.usesUnit.length > 0 && !units) {
+                units = r.usesUnit[0].id.replace(/.+\//, '');
+                if (units.length > 8) units = "";
+            }
             return html`
                 <span class="${desc ? 'tooltip small-tooltip': ''}" tip="${desc}" 
-                      style="${units ? 'display: flex; justify-content: space-between;' : ''}">
+                      style="display: flex; justify-content: space-between;">
                     <span>${label}</span>
-                    ${units ? html`<span>&nbsp;(${units})</span>` : ''}
+                    <span>${units ? html`&nbsp;(${units})` : ''}</span>
                 </span>
                 ${desc ? html`<span class="inline-desc">${desc}</span>` : ''}
             `;
@@ -159,12 +199,16 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
         let inputDesc : Textarea = this.shadowRoot.getElementById('var-desc') as Textarea;
         let inputShort : Textfield = this.shadowRoot.getElementById('var-short-name') as Textfield;
         let inputLong : Textfield = this.shadowRoot.getElementById('var-long-name') as Textfield;
+        let inputMin : Textfield = this.shadowRoot.getElementById('var-min') as Textfield;
+        let inputMax : Textfield = this.shadowRoot.getElementById('var-max') as Textfield;
 
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : '';
         let desc : string = inputDesc ? inputDesc.value : '';
         let shortName : string = inputShort ? inputShort.value : '';
         let longName : string = inputLong ? inputLong.value : '';
+        let min : string = inputMin ? inputMin.value : '';
+        let max : string = inputMax ? inputMax.value : '';
 
         if (label) {
             let jsonRes = {
@@ -173,19 +217,20 @@ export class ModelCatalogVariablePresentation extends connect(store)(ModelCatalo
                 usesUnit: this._inputUnit.getResources(),
                 hasStandardVariable: this._inputStandardVariable.getResources(),
             };
-            if (desc) jsonRes["description"] = [desc];
+            /*if (desc) jsonRes["description"] = [desc];
             if (shortName) jsonRes["hasShortName"] = [shortName];
-            if (longName) jsonRes["hasLongName"] = [longName];
+            if (longName) jsonRes["hasLongName"] = [longName];*/
+
+            jsonRes["description"] = (desc) ? [desc] : [];
+            jsonRes["hasShortName"] = (shortName) ? [shortName] : [];
+            jsonRes["hasLongName"] = (longName) ? [longName] : [];
+            jsonRes["hasMinimumAcceptedValue"] = (min) ? [min] : [];
+            jsonRes["hasMaximumAcceptedValue"] = (max) ? [max] : [];
 
             return VariablePresentationFromJSON(jsonRes);
         } else {
             // Show errors
             if (!label) (<any>inputLabel).onBlur();
         }
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.variablePresentations;
     }
 }

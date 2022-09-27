@@ -1,12 +1,11 @@
 import { ModelCatalogResource } from './resource';
 import { property, html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 import { IdMap } from "app/reducers";
 
-import { datasetSpecificationGet, datasetSpecificationsGet, datasetSpecificationPost, datasetSpecificationPut, datasetSpecificationDelete } from 'model-catalog/actions';
-import { DatasetSpecification, VariablePresentation, DataTransformation, DatasetSpecificationFromJSON } from '@mintproject/modelcatalog_client';
+import { DatasetSpecification, VariablePresentation, DatasetSpecificationFromJSON } from '@mintproject/modelcatalog_client';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
@@ -19,8 +18,10 @@ import './variable-presentation';
 import './data-transformation';
 
 import { Textfield } from 'weightless/textfield';
-import { Textarea } from 'weightless/textarea';
-import { Select } from 'weightless/select';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 @customElement('model-catalog-dataset-specification')
 export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalogResource)<DatasetSpecification> {
@@ -57,13 +58,10 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
     protected classes : string = "resource dataset-specification";
     protected name : string = "dataset specification";
     protected pname : string = "dataset specifications";
-    protected resourcesGet = datasetSpecificationsGet;
-    protected resourceGet = datasetSpecificationGet;
-    protected resourcePost = datasetSpecificationPost;
-    protected resourcePut = datasetSpecificationPut;
-    protected resourceDelete = datasetSpecificationDelete;
     protected positionAttr : string = "position";
     public colspan = 3;
+
+    protected resourceApi : DefaultReduxApi<DatasetSpecification,BaseAPI> = ModelCatalogApi.myCatalog.datasetSpecification;
 
     public isSetup : boolean = false;
     private sampleResources : IdMap<ModelCatalogSampleResource> = {};
@@ -162,7 +160,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             <td>
                 <code>${getLabel(r)}</code> 
                 ${r.hasFormat && r.hasFormat.length === 1 ?  
-                        html`<span class="monospaced" style="color: gray;">(.${r.hasFormat})<span>` : ''}
+                        html`<span class="monospaced" style="color: gray;">(.${r.hasFormat})</span>` : ''}
             </td>
             <td>
                 <b>${r.description ? r.description[0] : ''}</b>
@@ -190,6 +188,10 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
     protected _renderForm () {
         let edResource = this._getEditingResource();
         return html`
+        <div style="font-weight: bold; padding: 5px;">
+            A Dataset Specification is the description of an input/output file.
+            The variables set in this resource will be used to search relevant datasets.
+        </div>
         <form>
             <wl-textfield id="ds-label" label="Name" required
                 value=${edResource ? getLabel(edResource) : ''}>
@@ -197,11 +199,11 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             <wl-textarea id="ds-desc" label="Description" required rows="3"
                 value=${edResource && edResource.description ? edResource.description[0] : ''}>
             </wl-textarea>
-            <wl-textfield id="ds-format" label="Format" required
+            <wl-textfield id="ds-format" label="Format"
                 value="${edResource && edResource.hasFormat ? edResource.hasFormat[0] : ''}" >
             </wl-textfield>
             <div style="min-height:50px; padding: 10px 0px;">
-                <div style="padding: 5px 0px; font-weight: bold;">Variables:</div>
+                <div style="padding-top: 10px; font-weight: bold;">Variables:</div>
                 ${this._inputVariablePresentation}
             </div>
             ${this.isSetup ? html`
@@ -220,6 +222,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
                 ${this._inputDataTransformation}
             </div>
             `}
+            <br/>
         </form>`;
     }
 
@@ -249,12 +252,10 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
         let inputLabel : Textfield = this.shadowRoot.getElementById('ds-label') as Textfield;
         let inputDesc : Textfield = this.shadowRoot.getElementById('ds-desc') as Textfield;
         let inputFormat : Textfield = this.shadowRoot.getElementById('ds-format') as Textfield;
-        let inputDim : Textfield = this.shadowRoot.getElementById('ds-dim') as Textfield;
         // VALIDATE
         let label : string = inputLabel ? inputLabel.value : '';
         let desc : string = inputDesc ? inputDesc.value : '';
         let format : string = inputFormat ? inputFormat.value : '';
-        let dim : string = inputDim ? inputDim.value : '';
         let presentation : VariablePresentation[] = this._inputVariablePresentation.getResources();
 
         //POSITION
@@ -262,16 +263,16 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
         let position = edResource && edResource.position && edResource.position.length === 1 ?
             edResource.position[0] : this._resources.length + 1;
 
-        if (label && desc && format) {
+        if (label && desc) {
             let jsonRes = {
                 type: ["DatasetSpecification"],
                 label: [label],
                 description: [desc],
-                hasFormat: [format],
                 position: [position],
                 hasPresentation: presentation,
                 hasDimensionality: [0],
             };
+            if (format) jsonRes["hasFormat"] = [format];
             if (this.isSetup) {
                 jsonRes["hasFixedResource"] = this._fileType == "resource" ?
                         this._inputSampleResource.getResources() : this._inputSampleCollection.getResources();
@@ -288,10 +289,5 @@ export class ModelCatalogDatasetSpecification extends connect(store)(ModelCatalo
             if (!format) (<any>inputFormat).onBlur();
             if (presentation.length == 0) console.log('You must select at least a presentation!');
         }
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.datasetSpecifications;
     }
 }

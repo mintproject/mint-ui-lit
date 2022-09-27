@@ -1,10 +1,9 @@
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "../../app/store";
 import { ActionCreator, Action } from "redux";
-import { db, auth } from "../../config/firebase";
 import { Region, BoundingBox, Point, RegionMap, RegionCategory } from "./reducers";
-import { OFFLINE_DEMO_MODE } from "../../app/actions";
 import { GraphQL } from "config/graphql";
+import { GeoShape } from "@mintproject/modelcatalog_client";
 
 import listTopRegionsGQL from '../../queries/region/list-top.graphql';
 import listSubRegionsGQL from '../../queries/region/list-subregions.graphql';
@@ -14,6 +13,7 @@ import addRegionsGQL from '../../queries/region/new.graphql';
 
 import { IdMap } from "app/reducers";
 import { regionFromGQL, regionToGQL } from "util/graphql_adapter";
+import { KeycloakAdapter } from "util/keycloak-adapter";
 
 export const REGIONS_LIST_CATEGORIES = 'REGIONS_LIST_CATEGORIES';
 export const REGIONS_LIST_TOP_REGIONS = 'REGIONS_LIST_TOP_REGIONS';
@@ -52,7 +52,7 @@ export const setPreview: ActionCreator<BBoxPreviewThunkResult> = (bbox: Bounding
 // List Region Categories
 type ListCategoriesThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListCategories>;
 export const listRegionCategories: ActionCreator<ListCategoriesThunkResult> = () => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: listRegionCategoriesGQL
     }).then(result => {
@@ -92,7 +92,7 @@ export const listRegionCategories: ActionCreator<ListCategoriesThunkResult> = ()
 // List Regions
 type ListRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListTopRegions>;
 export const listTopRegions: ActionCreator<ListRegionsThunkResult> = () => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: listTopRegionsGQL
     }).then(result => {
@@ -145,10 +145,69 @@ const _calculateBoundingBox = (geometries: any[]) => {
     } as BoundingBox;
 }
 
+export const getBoundingBoxFromGeoShape = (shape:GeoShape) : BoundingBox => {
+    let bb : BoundingBox = null;
+    if (shape && shape.box && shape.box.length > 0) {
+        let coords : string[] = shape.box[0].split(/,| /);
+        if (coords.length === 4) {
+            try {
+                bb = {
+                    xmin: parseFloat(coords[0]),
+                    ymin: parseFloat(coords[1]),
+                    xmax: parseFloat(coords[2]),
+                    ymax: parseFloat(coords[3])
+                };
+            } catch (error) {
+                console.warn("Could not parse bounding box '" + shape.box[0] + "'");
+            }
+        }
+    }
+    return bb; 
+}
+
+export const pointInPolygon = (point, polygon) => {
+    let x = point[0];
+    let y = point[1];
+    let inside = false;
+
+    for (let i = 0, j = polygon.length -1; i < polygon.length; j = i++) {
+        let xi = polygon[i][0];
+        let yi = polygon[i][1];
+        let xj = polygon[j][0];
+        let yj = polygon[j][1];
+        
+        let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
+
+export const bboxInRegion = (bbox: BoundingBox, region: Region) : boolean=> {
+    let points = [
+        [bbox.xmin, bbox.ymin],
+        [bbox.xmin, bbox.ymax],
+        [bbox.xmax, bbox.ymin],
+        [bbox.xmax, bbox.ymax]
+    ];
+    
+    for (let index in region.geometries) {
+        let geometry: any = region.geometries[index];
+        let poly = geometry.coordinates[0][0];
+        if(points.some((point) => pointInPolygon(point, poly)))
+            return true;
+    }
+    return false;
+}
+
+export const doBoxesIntersect = (box1: BoundingBox, box2: BoundingBox) : boolean => {
+    return(box1.xmin <= box2.xmax && box1.xmax >= box2.xmin &&
+        box1.ymin <= box2.ymax && box1.ymax >= box2.ymin);
+}
+
 // Query for Sub Regions
 type SubRegionsThunkResult = ThunkAction<void, RootState, undefined, RegionsActionListSubRegions>;
 export const listSubRegions: ActionCreator<SubRegionsThunkResult> = (regionid: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: listSubRegionsGQL,
         variables: {
@@ -183,7 +242,7 @@ export const filterRegionsOfType = (regionids: string[], regions: RegionMap, typ
 
 // Get details about a particular region/subregion
 export const getRegionDetails = (regionid: string, subregionid: string) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     return new Promise<Region>((resolve, reject) => {
         APOLLO_CLIENT.query({
             query: getRegionDetailsGQL,
@@ -217,7 +276,7 @@ function chunkRegions(array: Region[], size: number) {
 }
 
 export const addRegions = (parent_regionid: string, regions: Region[]) : Promise<any[]> =>  {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     let chunks = chunkRegions(regions, 500);
     return Promise.all(chunks.map((regionlist) => {
         let objects = regionlist.map((region: Region) => {
@@ -236,6 +295,8 @@ export const addRegions = (parent_regionid: string, regions: Region[]) : Promise
 
 export const addSubcategory = (parent_regionid: string, category: string, subcategory_name: string,
         subcategory_desc: string) : Promise<any> => {
+    return Promise.reject();
+    /* TODO: Change to work with graphql
     let regionRef = db.collection('regions').doc(parent_regionid);
     return new Promise ((resolve, reject) => {
         regionRef.get().then((doc) => {
@@ -245,10 +306,12 @@ export const addSubcategory = (parent_regionid: string, category: string, subcat
             let setWithMerge = regionRef.set({subcategories: subcategories}, {merge: true});
             setWithMerge.then(resolve);
         })
-    });
+    }); */
 };
 
 export const removeSubcategory = (parent_regionid: string, category: string, subcategory: string) : Promise<any> => {
+    return Promise.reject();
+    /* TODO: Change to work with graphql
     let regionRef = db.collection('regions').doc(parent_regionid);
 
     return new Promise ((resolve, reject) => {
@@ -275,16 +338,17 @@ export const removeSubcategory = (parent_regionid: string, category: string, sub
                 reject();
             }
         })
-    });
+    });*/
 };
 
 export const renameSubcategory = (parent_regionid: string, old_category: string, new_category: string) => {
+    /* TODO: Change to work with graphql
     let renameQuery = db.collection('regions/' + parent_regionid + '/subregions').where('region_type', '==', old_category);
     renameQuery.get().then((querySnapshot) => {
         querySnapshot.forEach((doc) => {
             db.collection('regions/' + parent_regionid + '/subregions' ).doc(doc.id).update({'region_type': new_category});
         });
-    });
+    });*/
 };
 
 
@@ -322,16 +386,46 @@ export const calculateMapDetails = (regions: Region[], mapWidth: number, mapHeig
       xmin: 99999, xmax: -99999,
       ymin: 99999, ymax: -99999
     }
-    regions.map((region) => {
-      let bbox = region.bounding_box;
-      if(bbox.xmin < extent.xmin)
-          extent.xmin = bbox.xmin;
-      if(bbox.ymin < extent.ymin)
-          extent.ymin = bbox.ymin;            
-      if(bbox.xmax > extent.xmax)
-          extent.xmax = bbox.xmax;
-      if(bbox.ymax > extent.ymax)
-          extent.ymax = bbox.ymax;
+    regions.forEach((region) => {
+        if (region.bounding_box) {
+            let bbox = region.bounding_box;
+            if (bbox.xmin < extent.xmin)
+                extent.xmin = bbox.xmin;
+            if (bbox.ymin < extent.ymin)
+                extent.ymin = bbox.ymin;
+            if (bbox.xmax > extent.xmax)
+                extent.xmax = bbox.xmax;
+            if (bbox.ymax > extent.ymax)
+                extent.ymax = bbox.ymax;
+        } else if (region.geometries && region.geometries.length > 0) {
+            region.geometries.forEach((geometry) => {
+                if ((geometry.type == "Polygon" || geometry.type == "MultiPolygon") &&
+                    geometry.coordinates && geometry.coordinates.length > 0) {
+                    geometry.coordinates.forEach((polygon) => {
+                        if (polygon && polygon.length > 0) {
+                            if (geometry.type == "Polygon") polygon.forEach((coord) => {
+                                if (coord && coord.length == 2) {
+                                    if (coord[0] < extent.xmin) extent.xmin = coord[0];
+                                    if (coord[0] > extent.xmax) extent.xmax = coord[0];
+                                    if (coord[1] < extent.ymin) extent.ymin = coord[1];
+                                    if (coord[1] > extent.ymax) extent.ymax = coord[1];
+                                }
+                            });
+                            else if (geometry.type == "MultiPolygon") {
+                                polygon.forEach((pol2) => pol2.map((coord) => {
+                                if (coord && coord.length == 2) {
+                                    if (coord[0] < extent.xmin) extent.xmin = coord[0];
+                                    if (coord[0] > extent.xmax) extent.xmax = coord[0];
+                                    if (coord[1] < extent.ymin) extent.ymin = coord[1];
+                                    if (coord[1] > extent.ymax) extent.ymax = coord[1];
+                                }
+                            }));
+                            }
+                        }
+                    });
+                }
+            });
+        }
     })
 
     let zoom = _calculateZoom(extent, mapWidth, mapHeight)

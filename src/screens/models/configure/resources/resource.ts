@@ -23,7 +23,7 @@ import { Select } from 'weightless/select';
 
 /************/
 import { LitElement } from 'lit-element';
-import { getId, getLabel, capitalizeFirstLetter } from 'model-catalog/util';
+import { getId, getLabel, capitalizeFirstLetter } from 'model-catalog-api/util';
 interface BaseResources {
     id?: string;
     label?: string[];
@@ -37,6 +37,9 @@ export enum Action {
 export enum Status {
     NONE, CREATE, EDIT, CUSTOM_CREATE,
 }
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
 
 @customElement('model-catalog-resource')
 export class ModelCatalogResource<T extends BaseResources> extends LitElement {
@@ -149,8 +152,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected _selectedResources : IdMap<boolean> = {};
 
     // FLAGS
-    @property({type: String}) protected _action : Action = Action.NONE; //NONE, SELECT, MULTISELECT, EDIT_OR_ADD,
-    @property({type: String}) protected _status : Status = Status.NONE; //NONE, CREATE, EDIT, CUSTOM_CREATE,
+    @property({type: Number}) protected _action : Action = Action.NONE; //NONE, SELECT, MULTISELECT, EDIT_OR_ADD,
+    @property({type: Number}) protected _status : Status = Status.NONE; //NONE, CREATE, EDIT, CUSTOM_CREATE,
 
     @property({type: Boolean}) public inline : boolean = true;
     @property({type: Boolean}) public uniqueLabel : boolean = false;
@@ -158,8 +161,8 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     @property({type: Boolean}) protected _waiting : boolean = false;
     @property({type: Boolean}) protected _singleMode : boolean = false;
 
-    @property({type: Object}) protected _resources : T[] = [] as T[];
-    @property({type: Object}) protected _orderedResources : T[] = [] as T[];
+    @property({type: Array}) protected _resources : T[] = [] as T[];
+    @property({type: Array}) protected _orderedResources : T[] = [] as T[];
 
     @property({type: String}) protected _textFilter : string = "";
     @property({type: Boolean}) protected _creationEnabled : boolean = true;
@@ -183,11 +186,14 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     protected pname : string = "resources";
     public colspan : number = 2;
     protected positionAttr : string = "";
-    protected resourcesGet;
-    protected resourceGet;
-    protected resourcePut;
-    protected resourcePost;
-    protected resourceDelete;
+
+    protected resourceApi : DefaultReduxApi<T,BaseAPI>;
+
+    protected resourcePost = (r:T) => {
+        //This should replaced
+        return this.resourceApi?.post(r);
+    }
+
     protected _filters : ((r:T) => boolean)[] = [
         (r:T) => this._resourceToText(r).toLowerCase().includes( this._textFilter ),
     ];
@@ -396,10 +402,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 </wl-button>` : ''}
             </div>
             <div>
-                <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat ?disabled="">
+                <wl-button @click="${this._closeDialog}" style="margin-right: 5px;" inverted flat>
                     Cancel
                 </wl-button>
-                <wl-button class="submit" ?disabled="" @click="${this._onSelectButtonClicked}">
+                <wl-button class="submit" @click="${this._onSelectButtonClicked}">
                     Select
                 </wl-button>
             </div>
@@ -484,28 +490,30 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         if (this._status === Status.CREATE || this._status === Status.EDIT) {
             return html`
                 <div style="float:right; margin-top: 1em;">
-                    <wl-button @click="${this._onCancelButtonClicked}" style="margin-right: 1em;" flat inverted>
+                    <wl-button @click="${this._onCancelButtonClicked}" style="margin-right: 1em;" flat inverted ?disabled=${this._waiting}>
                         <wl-icon>cancel</wl-icon>&ensp;Discard changes
                     </wl-button>
-                    <wl-button @click="${this._onSaveButtonClicked}">
+                    <wl-button @click="${this._onSaveButtonClicked}" ?disabled=${this._waiting}>
                         <wl-icon>save</wl-icon>&ensp;Save
+                        ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
                     </wl-button>
                 </div>` 
         } else {
             return html`
                 <div style="display: flex; justify-content: space-between; padding: 1em 0;">
                     <span>
-                        <wl-button style="--primary-hue: 0; --primary-saturation: 75%" ?disabled="${!this._deletionEnabled}"
+                        <wl-button style="--primary-hue: 0; --primary-saturation: 75%" ?disabled="${!this._deletionEnabled || this._waiting}"
                                    @click="${() => this._deleteResource(this._resources[0])}">
                             <wl-icon>delete</wl-icon>&ensp;Delete
                         </wl-button>
                         <wl-button  style="--primary-hue: 124; --primary-saturation: 45%; margin-left: 0.5em;"
-                                    ?disabled="${!this._duplicationEnabled}"
+                                    ?disabled="${!this._duplicationEnabled || this._waiting}"
                                     @click="${this._onDuplicateButtonClicked}">
                             <wl-icon>edit</wl-icon>&ensp;Duplicate
+                            ${this._waiting ? html`<loading-dots style="--width: 20px; margin-left: 4px;"></loading-dots>` : ''}
                         </wl-button>
                     </span>
-                    <wl-button @click="${() => this._editResource(this._resources[0])}">
+                    <wl-button @click="${() => this._editResource(this._resources[0])}" ?disabled=${this._waiting}>
                         <wl-icon>edit</wl-icon>&ensp;Edit
                     </wl-button>
                 </div>`
@@ -519,12 +527,15 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     private _onDuplicateButtonClicked () {
         let p : Promise<T> = this.duplicate();
+        this._waiting = true;
         p.then((r:T) => {
             this._notification.save(capitalizeFirstLetter(this.name) +" duplicated.");
             this._eventSave(r);
+            this._waiting = false;
         });
         p.catch((err) => {
             this._notification.error("Error trying to duplicate resource");
+            this._waiting = false;
         });
     }
 
@@ -844,7 +855,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this._notification.error('The name "'+ getLabel(resource) + '" is already on use.');
     }
 
-    private _saveResource (r:T) {
+    protected _saveResource (r:T) {
         this._waiting = true;
         return new Promise((resolve, reject) => {
             let inner : Promise<T> = this._createLazyInnerResources(r);
@@ -852,7 +863,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             inner.then((resource:T) => {
                 let req : Promise<T>;
                 if (resource.id) {
-                    req = store.dispatch(this.resourcePut(resource));
+                    req = store.dispatch(this.resourceApi.put(resource));
                 } else {
                     req = store.dispatch(this.resourcePost(resource));
                 }
@@ -874,7 +885,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         return Promise.resolve(r);
     }
 
-    private _postSaveUpdate (r:T) {
+    protected _postSaveUpdate (r:T) {
         this._clearStatus();
         if (this._action === Action.EDIT_OR_ADD && this._resources.filter((s:T) => s.id===r.id).length === 0) {
             //Check if saved resource is already selected.
@@ -975,7 +986,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             let edition = Object.values(this._resourcesToEdit)
                     .filter((r:T) => this._resources.some((r2:T) => r2.id === r.id))
                     .map((r:T) => {
-                let req = store.dispatch(this.resourcePut(r));
+                let req = store.dispatch(this.resourceApi.put(r));
                 req.then((resource: T) => {
                     this._loadedResources[resource.id] = resource;
                 });
@@ -1052,7 +1063,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 this._resources.splice(index,1);
                 this.requestUpdate();
             } 
-            store.dispatch(this.resourceDelete(r)).then(() => {
+            store.dispatch(this.resourceApi.delete(r.id)).then(() => {
                 this._notification.save(this.name + " deleted")
                 this._eventDelete(r);
             });
@@ -1110,17 +1121,13 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             // Check resources with position
             let done : Set<string> = new Set();
             let ordered : T[] = this._resources
-                    .map((r:T) => {
-                        let lr : T = this._loadedResources[r.id]
-                        done.add(lr.id);
-                        return lr;
-                    })
+                    .map((r:T) => this._loadedResources[r.id])
                     .filter((r:T) => r ? (this._getResourcePosition(r) > 0) : false)
                     .sort((r1:T, r2:T) => this._getResourcePosition(r1) - this._getResourcePosition(r2));
-
+            ordered.forEach((r:T) => done.add(r.id));
             let unordered = this._resources.filter((r:T) => !done.has(r.id))
             this._orderedResources = [ ...ordered, ...unordered ];
-            //console.log('New order:', this._orderedResources.map(r => r.label[0]));
+            //console.log('New order:', this._orderedResources.map(console.log));
             this.requestUpdate();
         }
     }
@@ -1148,7 +1155,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     protected _forceLoad (r:T) {
         this._loading[r.id] = true;
-        let req = store.dispatch(this.resourceGet(r.id));
+        let req = store.dispatch(this.resourceApi.get(r.id));
         this.requestUpdate();
         req.then((r2:T) => {
             this._loading[r.id] = false;
@@ -1173,7 +1180,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                     this._loading[id] = false;
                     return Promise.resolve(this._loadedResources[id]);
                 } else {
-                    let req = store.dispatch(this.resourceGet(id));
+                    let req = store.dispatch(this.resourceApi.get(id));
                     req.then((r:T) => {
                         this._loadedResources[id] = r;
                         this._loading[id] = false;
@@ -1217,7 +1224,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                         return Promise.resolve(this._loadedResources[id]);
                     } else {
                         this._loading[id] = true;
-                        let req = store.dispatch(this.resourceGet(id));
+                        let req = store.dispatch(this.resourceApi.get(id));
                         req.then((r:T) => {
                             this._loading[id] = false;
                             this._loadedResources[id] = r;
@@ -1242,9 +1249,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     /* Same as before but removes the id to set is as a copy. To use when lazy */
     public setResourcesAsCopy (r:T[]) {
+        if (r == null) return;
         // FIXME: This does not work it loads everything always... should change the API redux.
         if (!this.lazy) {
-            console.error("Cannot copy resources.");
+            console.error("Cannot copy resource", r);
             return;
         }
         this._singleMode = false;
@@ -1292,7 +1300,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
     /* Set a single resource */
     public setResource (r:T) {
-        return new Promise((resolve, reject) => {
+        return new Promise<T>((resolve, reject) => {
             if (!this._singleModeInitialized) {
                 this._initializeSingleMode();
                 this._singleModeInitialized = true;
@@ -1309,7 +1317,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                         resolve(dbResources[id]);
                     } else {
                         this._loading[id] = true;
-                        let req = store.dispatch(this.resourceGet(id));
+                        let req = store.dispatch(this.resourceApi.get(id));
                         req.then((r:T) => {
                             this._loading[id] = false;
                             this._loadedResources[id] = r;
@@ -1331,7 +1339,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
                 this._resources = [];
                 this._orderedResources = [];
                 this._unsetSubResources();
-                resolve();
+                resolve(null);
             }
         });
     }
@@ -1342,6 +1350,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
             let inner : Promise<T> = this._duplicateInnerResources(copy);
             inner.catch(reject);
             inner.then((fullResource:T) => {
+                fullResource.id = undefined;
                 let post : Promise<T> = store.dispatch(this.resourcePost(fullResource));
                 post.catch(reject);
                 post.then(resolve);
@@ -1400,13 +1409,17 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         return !this.lazy || (Object.keys(this._resourcesToEdit).length === 0 && Object.keys(this._resourcesToCreate).length === 0);
     }
 
+    // Gets the resources from Redux
     protected _getDBResources () : IdMap<T> {
-        return {} as IdMap<T>;
+        let db = (store.getState() as RootState).modelCatalog;
+        let dbname : string = this.resourceApi.getName();
+        return db[dbname] as IdMap<T>;
     }
 
     protected _loadAllResources () : Promise<IdMap<T>> {
         this._allResourcesLoading = true;
-        let allr : Promise<IdMap<T>> = store.dispatch(this.resourcesGet());
+        //let allr : Promise<IdMap<T>> = store.dispatch(this.resourcesGet()); FIXME
+        let allr : Promise<IdMap<T>> = store.dispatch(this.resourceApi.getAll());
         allr.then((resources:IdMap<T>) => {
             // This are the resources that are in memory but not on the dc
             let nonDCResources = Object.values(this._loadedResources).filter((r:T) => !r.id.includes(PREFIX_URI));

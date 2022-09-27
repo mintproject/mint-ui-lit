@@ -1,12 +1,9 @@
 import { ModelCatalogResource } from './resource';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
-import { modelConfigurationGet, modelConfigurationsGet, modelConfigurationPost, modelConfigurationPut, modelConfigurationDelete } from 'model-catalog/actions';
-import { Grid, TimeInterval, Parameter, DatasetSpecification, SoftwareVersion, ModelConfiguration,
+import { store } from 'app/store';
+import { Parameter, DatasetSpecification, SoftwareVersion, ModelConfiguration,
          ModelConfigurationFromJSON } from '@mintproject/modelcatalog_client';
-import { IdMap } from "app/reducers";
 import { renderExternalLink } from 'util/ui_renders';
 
 import { SharedStyles } from 'styles/shared-styles';
@@ -15,7 +12,7 @@ import { ExplorerStyles } from '../../model-explore/explorer-styles'
 import { ModelCatalogPerson } from './person';
 import { ModelCatalogGrid } from './grid';
 import { ModelCatalogNumericalIndex } from './numerical-index';
-import { ModelCatalogCategory } from './category';
+import { ModelCatalogCategory } from './model-category';
 import { ModelCatalogSoftwareImage } from './software-image';
 import { ModelCatalogTimeInterval } from './time-interval';
 import { ModelCatalogRegion } from './region';
@@ -23,12 +20,15 @@ import { ModelCatalogProcess } from './process';
 import { ModelCatalogParameter } from './parameter';
 import { ModelCatalogDatasetSpecification } from './dataset-specification';
 import { ModelCatalogSourceCode } from './source-code';
-
-import { goToPage } from 'app/actions';
+import { ModelCatalogConstraint } from './constraint';
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 @customElement('model-catalog-model-configuration')
 export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogResource)<ModelConfiguration> {
@@ -90,16 +90,11 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
     protected classes : string = "resource configuration";
     protected name : string = "configuration";
     protected pname : string = "configurations";
-    protected resourcesGet = modelConfigurationsGet;
-    protected resourceGet = modelConfigurationGet;
-    protected resourcePut = modelConfigurationPut;
-    protected resourceDelete = modelConfigurationDelete;
+
+    protected resourceApi : DefaultReduxApi<ModelConfiguration,BaseAPI> = ModelCatalogApi.myCatalog.modelConfiguration;
 
     protected resourcePost = (r:ModelConfiguration) => {
-        if (this._parentVersion) {
-            return modelConfigurationPost(r, this._parentVersion);
-        }
-        return Promise.reject("Configuration does not have parent version!");
+        return this.resourceApi.post(r, this._parentVersion?.id);
     };
 
     public pageMax : number = 10
@@ -119,6 +114,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
     private _inputDSInput : ModelCatalogDatasetSpecification;
     private _inputDSOutput : ModelCatalogDatasetSpecification;
     private _inputSourceCode : ModelCatalogSourceCode;
+    private _inputConstraint : ModelCatalogConstraint;
 
     constructor () {
         super();
@@ -134,6 +130,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         this._inputProcesses = new ModelCatalogProcess();
         this._inputSoftwareImage = new ModelCatalogSoftwareImage();
         this._inputSourceCode = new ModelCatalogSourceCode();
+        this._inputConstraint = new ModelCatalogConstraint();
 
         this._inputParameter = new ModelCatalogParameter();
         this._inputParameter.inline = false;
@@ -161,6 +158,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         this._inputDSInput.setResources( r.hasInput );
         this._inputDSOutput.setResources( r.hasOutput );
         this._inputSourceCode.setResources( r.hasSourceCode );
+        this._inputConstraint.setResources( r.hasConstraint );
     }
 
     protected _unsetSubResources () {
@@ -177,6 +175,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
             this._inputDSInput.setResources(null);
             this._inputDSOutput.setResources(null);
             this._inputSourceCode.setResources(null);
+            this._inputConstraint.setResources(null);
         }
     }
 
@@ -193,6 +192,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         this._inputDSInput.setActionEditOrAdd();
         this._inputDSOutput.setActionEditOrAdd();
         this._inputSourceCode.setActionSelect();
+        this._inputConstraint.setActionMultiselect();
     }
 
     protected _unsetSubActions () {
@@ -208,6 +208,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         if (this._inputDSInput) this._inputDSInput.unsetAction();
         if (this._inputDSOutput) this._inputDSOutput.unsetAction();
         if (this._inputSourceCode) this._inputSourceCode.unsetAction();
+        if (this._inputConstraint) this._inputConstraint.unsetAction();
     }
 
     private _parentInnerResourcesSet : boolean = false;
@@ -250,12 +251,14 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         });
     }
 
-
     protected _renderFullResource (r:ModelConfiguration) {
         // Example, Type, operating system, versions?
         return html`
             <table class="details-table">
-                <colgroup wir.="150px">
+                <colgroup>
+                    <col width="150px">
+                    <col>
+                </colgroup>
                 <tr>
                     <td>Category:</td>
                     <td>
@@ -432,7 +435,10 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
         return html`
             <div id="page-top"></div>
             <table class="details-table">
-                <colgroup width="150px">
+                <colgroup>
+                    <col width="150px">
+                    <col>
+                </colgroup>
                 <tr>
                     <td colspan="2" style="padding: 5px 20px;">
                         <wl-textfield id="i-label" label="Model name" 
@@ -608,6 +614,13 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
                     </td>
                 </tr>
 
+                <tr>
+                    <td>Constraints:</td>
+                    <td>
+                        ${this._inputConstraint}
+                    </td>
+                </tr>
+
             </table>
 
         <wl-title level="3" style="margin-top:1em">
@@ -706,6 +719,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
                 hasInput: this._inputDSInput.getResources(),
                 hasOutput: this._inputDSOutput.getResources(),
                 hasSourceCode: this._inputSourceCode.getResources(),
+                hasConstraint: this._inputConstraint.getResources(),
             };
             if (keywords) jsonRes["keywords"] = [keywords];
             if (shortDesc) jsonRes["shortDescription"] = [shortDesc];
@@ -798,10 +812,5 @@ export class ModelCatalogModelConfiguration extends connect(store)(ModelCatalogR
                 resolve(copy);
             });
         });
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.configurations;
     }
 }

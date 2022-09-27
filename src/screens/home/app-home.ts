@@ -5,25 +5,25 @@ import { PageViewElement } from '../../components/page-view-element';
 import { SharedStyles } from '../../styles/shared-styles';
 import { store, RootState } from '../../app/store';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { listTopRegions, calculateMapDetails } from '../regions/actions';
-import { Region, RegionMap } from '../regions/reducers';
-import { GOOGLE_API_KEY } from '../../config/firebase';
+import { Region } from '../regions/reducers';
 
 import { showDialog, hideDialog } from 'util/ui_functions';
 
 import "../../components/stats-blurb";
 import "../../thirdparty/google-map/src/google-map";
 import "../../components/google-map-custom";
-import { selectTopRegion } from '../../app/ui-actions';
 import { GoogleMapCustom } from 'components/google-map-custom';
-import { goToPage, goToRegionPage } from 'app/actions';
+import { goToRegionPage } from 'app/actions';
+import { User } from 'app/reducers';
+import { mapStyles } from 'styles/map-style';
+import { MINT_PREFERENCES } from 'config';
 
 @customElement('app-home')
 export class AppHome extends connect(store)(PageViewElement) {
     @property({type: Array})
     private _regionids!: string[];
 
-    @property({type: Object})
+    @property({type: Array})
     private _regions!: Region[];
 
     @property({type: String})
@@ -31,8 +31,6 @@ export class AppHome extends connect(store)(PageViewElement) {
 
     @property({type: Boolean})
     private _mapReady: boolean = false;
-
-    private _mapStyles = '[{"stylers":[{"hue":"#00aaff"},{"saturation":-100},{"lightness":12},{"gamma":2.15}]},{"featureType":"landscape","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"geometry","stylers":[{"lightness":57}]},{"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"lightness":24},{"visibility":"on"}]},{"featureType":"road.highway","stylers":[{"weight":1}]},{"featureType":"transit","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"color":"#206fff"},{"saturation":-35},{"lightness":50},{"visibility":"on"},{"weight":1.5}]}]';
     
     static get styles() {
       return [
@@ -90,7 +88,7 @@ export class AppHome extends connect(store)(PageViewElement) {
         </div>
   
         <div class="middle">
-            <wl-title level="3">Welcome to MINT</wl-title>
+            <wl-title level="3">${MINT_PREFERENCES.welcome_message} </wl-title>
             <p>
             MINT assists analysts to easily use sophisticated simulation models and data in order to explore the role of weather and climate in water on food availability in select regions of the world. For example, an analyst can use MINT to investigate the expected crop yields given different rainfall predictions through its effect on flooding and drought. MINT’s simulation models are quantitative and contain extensive subject matter knowledge.  For example, a hydrology model contains physical laws that describe how water moves through a river basin, and uses data about the elevation of the terrain and the soil types to determine how much water is absorbed in the ground and how the water flows over a land surface.  MINT provides assistance along the way to significantly reduce the time needed to develop new integrated models while ensuring their utility and accuracy
             </p>
@@ -133,11 +131,11 @@ export class AppHome extends connect(store)(PageViewElement) {
         </div>
         
         ${!this._mapReady ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : ""}
-        <google-map-custom class="middle2main" api-key="${GOOGLE_API_KEY}" 
+        <google-map-custom class="middle2main" api-key="${MINT_PREFERENCES.google_maps_key}" 
             .style="visibility: ${this._mapReady ? 'visible': 'hidden'}"
-            disable-default-ui="true" draggable="true"
+            ?disable-default-ui=${true} draggable="true"
             @click=${(e: CustomEvent) => this.regionSelected(e.detail.id)}
-            mapTypeId="terrain" styles="${this._mapStyles}">
+            mapTypeId="terrain" .styles=${mapStyles}>
         </google-map-custom>
 
         ${this._renderIntroductionDialog()}
@@ -145,7 +143,7 @@ export class AppHome extends connect(store)(PageViewElement) {
     }
 
     protected regionSelected(regionid: string) {
-      if(regionid) {
+      if (regionid) {
         //store.dispatch(selectTopRegion(regionid));
         goToRegionPage(regionid, "home");
       }
@@ -222,25 +220,26 @@ export class AppHome extends connect(store)(PageViewElement) {
 
     // This is called every time something is updated in the store.
     stateChanged(state: RootState) {
-        if (state.app && state.app.prefs && state.app.prefs.profile) {
-            let profile = state.app.prefs.profile;
-            if (profile.mainRegion != this._mainRegion) {
-                if (!profile.mainRegion) {
+        super.setRegionId(state);
+
+        if (state.app && state.app.user && state.app.user.region) {
+            let user : User = state.app.user;
+            if (user.region != this._mainRegion) {
+                if (!user.region) {
                     this._mainRegion = 'south_sudan';
                 } else {
-                    this._mainRegion = profile.mainRegion;
+                    this._mainRegion = user.region;
                 }
                 if (this._regions) this._addRegions();
             }
         }
 
-        if(state.regions && state.regions.regions) {
-            if(this._regionids != state.regions.top_region_ids) {
-              this._regionids = state.regions.top_region_ids;
-              this._regions = this._regionids.map((regionid) => state.regions.regions[regionid]);
-              this._addRegions();
+        if (state.regions && state.regions.regions) {
+            if (this._regionids != state.regions.top_region_ids) {
+                this._regionids = state.regions.top_region_ids;
+                this._regions = this._regionids.map((regionid) => state.regions.regions[regionid]);
+                this._addRegions();
             }
         }
-        super.setRegionId(state);
     }
 }

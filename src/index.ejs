@@ -8,11 +8,11 @@
     <meta name="description" content="World Modelers Model INTegration (MINT) User Interface">
 
     <base href="<%= htmlWebpackPlugin.options.buildName && !htmlWebpackPlugin.options.static ? `/${htmlWebpackPlugin.options.buildName}/` : '/' %>">
-
+    <script src="./config.js"></script>
     <link href="https://fonts.googleapis.com/css?family=Raleway:700,500,200" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script crossorigin src="https://polyfill.app/api/polyfill?features=web-animations"></script>
-
+    
     <%- include fragments/icons -%>
     <%- include fragments/critical-css -%>
     <%- include fragments/critical-js -%>

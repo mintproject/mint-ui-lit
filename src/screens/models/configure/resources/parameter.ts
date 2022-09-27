@@ -1,20 +1,23 @@
 import { ModelCatalogResource, Action } from './resource';
 import { property, html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 import { IdMap } from "app/reducers";
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
-import { parameterGet, parametersGet, parameterPost, parameterPut, parameterDelete } from 'model-catalog/actions';
-import { Parameter, Unit, ParameterFromJSON } from '@mintproject/modelcatalog_client';
+import { Parameter, ParameterFromJSON } from '@mintproject/modelcatalog_client';
 import { PARAMETER_TYPES } from 'offline_data/parameter_types';
 
 import { ModelCatalogUnit } from './unit'
 import { ModelCatalogVariablePresentation } from './variable-presentation';
 import { ModelCatalogIntervention } from './intervention';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import 'components/data-catalog-id-checker';
 import { Textfield } from 'weightless/textfield';
@@ -62,11 +65,9 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
     protected name : string = "parameter";
     protected pname : string = "parameters";
     protected positionAttr : string = "position";
-    protected resourcesGet = parametersGet;
-    protected resourceGet = parameterGet;
-    protected resourcePost = parameterPost;
-    protected resourcePut = parameterPut;
-    protected resourceDelete = parameterDelete;
+
+    protected resourceApi : DefaultReduxApi<Parameter,BaseAPI> = ModelCatalogApi.myCatalog.parameter;
+
     public colspan = 3;
     public lazy = true;
     public onlyFixedValue = false;
@@ -184,7 +185,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
         if (additionalType == "https://w3id.org/wings/export/MINT#DataCatalogId") {
             return html`
-                <data-catalog-id-checker id=${value}><data-catalog-id-checker>
+                <data-catalog-id-checker id=${value}></data-catalog-id-checker>
             `;
         }
 
@@ -217,6 +218,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 edResource.type.filter((p:string) => p != 'Parameter') : [];
         return html`
         <form>
+            <br/>
             ${this.isSetup ? html`
                 <div @click=${() => this.isAdjustable = !this.isAdjustable} style="padding-top: 10px;">
                     <wl-checkbox ?checked="${this.isAdjustable}"></wl-checkbox>
@@ -252,7 +254,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 `)}
             </wl-select>
 
-            <div style="margin-top: 5px;">
+            <div style="margin-top: 10px;">
                 <b>Variables:</b> ${this._inputVariable}
             </div>
 
@@ -339,6 +341,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
 
             <!-- TODO: relevantForIntervention, adjustsVariable -->
+            <br/>
         </form>`;
     }
 
@@ -538,7 +541,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         let inputMin : Textfield = this.shadowRoot.getElementById('part-float-min') as Textfield;
         let inputMax : Textfield = this.shadowRoot.getElementById('part-float-max') as Textfield;
         let def : string = inputDef ? inputDef.value : '';
-        let inc : number = inputInc ? parseInt(inputInc.value) : NaN;
+        let inc : number = inputInc ? parseFloat(inputInc.value) : NaN;
         let min : string = inputMin ? inputMin.value : '';
         let max : string = inputMax ? inputMax.value : '';
         if (def) {
@@ -546,9 +549,9 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
                 hasDataType: ["float"],
                 hasDefaultValue: [def]
             };
-            if (inc) jsonRes['recommendedIncrement'] = [inc];
-            if (min) jsonRes['hasMinimumAcceptedValue'] = [min];
-            if (max) jsonRes['hasMaximumAcceptedValue'] = [max];
+            jsonRes['recommendedIncrement'] = inc ? [inc] : [];
+            jsonRes['hasMinimumAcceptedValue'] = min ? [min] : [];
+            jsonRes['hasMaximumAcceptedValue'] = max? [max] : [];
             if (this._validateDataTypedValue(def, jsonRes))
                 return jsonRes;
         } else {
@@ -587,10 +590,5 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
         } else {
             (<any>inputDef).onBlur();
         }
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.parameters;
     }
 }

@@ -4,7 +4,6 @@ import { ProblemStatementList, ProblemStatementInfo,
     Execution, ThreadInfo, ThreadList, TaskList, ModelEnsembleMap, DataMap, ExecutionSummary, ThreadEvent } from './reducers';
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from '../../app/store';
-//import { db, fieldValue, auth } from '../../config/firebase';
 import { Dataset, DataResource, Dataslice } from '../datasets/reducers';
 import { Model } from '../models/reducers';
 import { IdMap, UserPreferences } from '../../app/reducers';
@@ -59,7 +58,7 @@ import { isObject } from 'util';
 import { Md5 } from 'ts-md5';
 import { Model as MCModel, SoftwareImage, ModelConfiguration, SoftwareVersion } from '@mintproject/modelcatalog_client';
 import { fetchModelsFromCatalog } from 'screens/models/actions';
-import { auth } from 'config/firebase';
+import { KeycloakAdapter } from 'util/keycloak-adapter';
 
 export const PROBLEM_STATEMENTS_LIST = 'PROBLEM_STATEMENTS_LIST';
 export const PROBLEM_STATEMENTS_LIST_SUBSCRIPTION = 'PROBLEM_STATEMENTS_LIST_SUBSCRIPTION';
@@ -196,7 +195,7 @@ export type ModelingAction =  ProblemStatementsAction | TasksAction | ThreadsAct
 // List ProblemStatements
 type SubProblemListThunkResult = ThunkAction<void, RootState, undefined, ProblemStatementsActionList | ProblemStatementsActionListSubscription>;
 export const subscribeProblemStatementsList: ActionCreator<SubProblemListThunkResult> = (regionid: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     let subscription = APOLLO_CLIENT.subscribe({
         query: subscribeProblemStatementsListGQL,
         variables: {
@@ -218,7 +217,7 @@ export const subscribeProblemStatementsList: ActionCreator<SubProblemListThunkRe
                 if (problem["tasks"]) {
                     let varnameset : Set<string> = new Set();
                     problem["tasks"].forEach(t =>  
-                        t["threads"].forEach(th => 
+                        (t["threads"]||[]).forEach(th => th.response_variable && th.response_variable.name &&
                             varnameset.add(th.response_variable.name)
                         )
                     );
@@ -334,7 +333,7 @@ export const subscribeThreadsList: ActionCreator<ListThreadsThunkResult> = (task
 // Get ProblemStatement details
 type SubProblemDetailsThunkResult = ThunkAction<void, RootState, undefined, ProblemStatementsActionDetails | ProblemStatementsActionSubscription>;
 export const subscribeProblemStatement: ActionCreator<SubProblemDetailsThunkResult> = (problem_statement_id: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     let subscription = APOLLO_CLIENT.subscribe({
         query: subscribeProblemStatementGQL,
         variables: {
@@ -402,7 +401,7 @@ export const subscribeTask: ActionCreator<TaskDetailsThunkResult> = (task_id: st
 // Get Thread details
 type ThreadSubDetailsThunkResult = ThunkAction<void, RootState, undefined, ThreadsActionDetails | ThreadsActionSubscription>;
 export const subscribeThread: ActionCreator<ThreadSubDetailsThunkResult> = (threadid: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     let subscription = APOLLO_CLIENT.subscribe({
         query: subscribeThreadGQL,
         variables: {
@@ -438,7 +437,7 @@ export const subscribeThread: ActionCreator<ThreadSubDetailsThunkResult> = (thre
 type SubThreadExecutionSummaryThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionSummaryActionDetails | ThreadExecutionSummaryActionSubscription>;
 export const subscribeThreadExecutionSummary: ActionCreator<SubThreadExecutionSummaryThunkResult> = 
         (thread_id:string, model_id: string, thread_model_id: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     let subscription = APOLLO_CLIENT.subscribe({
         query: subscribeThreadExecutionSummaryListGQL,
         variables: {
@@ -475,7 +474,7 @@ export const subscribeThreadExecutionSummary: ActionCreator<SubThreadExecutionSu
 type ThreadExecutionSummaryThunkResult = ThunkAction<void, RootState, undefined, ThreadExecutionSummaryActionDetails>;
 export const getThreadExecutionSummary: ActionCreator<ThreadExecutionSummaryThunkResult> = 
         (thread_id:string, model_id: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: getThreadExecutionSummaryListGQL,
         variables: {
@@ -517,7 +516,7 @@ export const listThreadModelExecutionsAction: ActionCreator<ListExecutionsThunkR
         loading: true
     });
 
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: listThreadModelExecutionsListGQL,
         variables: {
@@ -546,7 +545,7 @@ export const listThreadModelExecutionsAction: ActionCreator<ListExecutionsThunkR
 };
 
 export const getAllThreadExecutionIds = async (thread_id: string, modelid: string) : Promise<string[]> => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     return APOLLO_CLIENT.query({
         query: executionIdsForThreadGQL,
         variables: {
@@ -568,7 +567,7 @@ export const getAllThreadExecutionIds = async (thread_id: string, modelid: strin
 
 // Add ProblemStatement
 export const addProblemStatement = (problem_statement:ProblemStatementInfo) : Promise<string> =>  {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     let problemobj = problemStatementToGQL(problem_statement);
     //console.log(problemobj);
     return APOLLO_CLIENT.mutate({
@@ -590,7 +589,7 @@ export const addProblemStatement = (problem_statement:ProblemStatementInfo) : Pr
 
 // Add Task
 export const addTask = (problem_statement: ProblemStatementInfo, task: Task) : Promise<string> =>  {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     let taskobj = taskToGQL(task, problem_statement);
     return APOLLO_CLIENT.mutate({
         mutation: newTaskGQL,
@@ -611,7 +610,7 @@ export const addTask = (problem_statement: ProblemStatementInfo, task: Task) : P
 
 // Add Task
 export const addTaskWithThread = (problem_statement: ProblemStatementInfo, task: Task, thread: ThreadInfo) : Promise<string[]> =>  {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     let taskobj = taskToGQL(task, problem_statement);
     let threadobj = threadInfoToGQL(thread, task.id, task.regionid);
     taskobj["threads"] = {
@@ -639,7 +638,7 @@ export const addTaskWithThread = (problem_statement: ProblemStatementInfo, task:
 
 // Add Thread
 export const addThread = (task:Task, thread: ThreadInfo) : Promise<string> =>  {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     let threadobj = threadInfoToGQL(thread, task.id, task.regionid);
     //console.log(threadobj);
     return APOLLO_CLIENT.mutate({
@@ -662,7 +661,7 @@ export const addThread = (task:Task, thread: ThreadInfo) : Promise<string> =>  {
 
 // Update ProblemStatement
 export const updateProblemStatement = (problem_statement: ProblemStatementInfo) =>  {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     let problemobj = problemStatementUpdateToGQL(problem_statement);
     return APOLLO_CLIENT.mutate({
         mutation: updateProblemStatementGQL,
@@ -674,7 +673,7 @@ export const updateProblemStatement = (problem_statement: ProblemStatementInfo) 
 
 // Update Task
 export const updateTask = (task: Task) =>  {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     let taskobj = taskUpdateToGQL(task);
     return APOLLO_CLIENT.mutate({
         mutation: updateTaskGQL,
@@ -685,7 +684,7 @@ export const updateTask = (task: Task) =>  {
 };
 
 export const updateThreadInformation = (threadinfo: ThreadInfo) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     let threadobj = threadInfoUpdateToGQL(threadinfo);
     return APOLLO_CLIENT.mutate({
         mutation: updateThreadInfoGQL,
@@ -696,7 +695,7 @@ export const updateThreadInformation = (threadinfo: ThreadInfo) => {
 }
 
 export const setThreadModels = (models: Model[], notes: string, thread: Thread) =>  {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     let threadmodelsobj = models.map((model) => {
         return {
             model_id: model.id,
@@ -718,7 +717,7 @@ export const setThreadModels = (models: Model[], notes: string, thread: Thread) 
 
 export const setThreadData = (datasets: DataMap, model_ensembles: ModelEnsembleMap, 
         notes: string, thread: Thread) =>  {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     let bindings = threadDataBindingsToGQL(datasets, model_ensembles, thread);
     let event = getCustomEvent("SELECT_DATA", notes);
     let eventobj = event;
@@ -747,7 +746,7 @@ export const setThreadParameters = (model_ensembles: ModelEnsembleMap,
         summary["thread_model_id"] = model_ensembles[modelid].id;
         summaries.push(summary);
     })
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     return APOLLO_CLIENT.mutate({
         mutation: updateThreadParametersGQL,
         variables: {
@@ -760,7 +759,7 @@ export const setThreadParameters = (model_ensembles: ModelEnsembleMap,
 };
 
 export const getThreadDataResources = (sliceid: string): Promise<Dataslice> => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     return APOLLO_CLIENT.query({
         query: getDatasliceResourcesGQL,
         variables: {
@@ -785,7 +784,7 @@ export const selectThreadDataResources = (sliceid: string, resource_selections: 
             selected: resource_selections[resid]
         };
     })
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     return APOLLO_CLIENT.mutate({
         mutation: setDatasliceResourcesGQL,
         variables: {
@@ -804,7 +803,7 @@ export const selectThreadDataResources = (sliceid: string, resource_selections: 
 
 export const addThreadEvent = (eventobj: ThreadEvent, thread: Thread) =>  {
     eventobj["thread_id"] = thread.id;
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     return APOLLO_CLIENT.mutate({
         mutation: addThreadEventGQL,
         variables: {
@@ -818,10 +817,10 @@ export const addThreadEvent = (eventobj: ThreadEvent, thread: Thread) =>  {
 export const cacheModelsFromCatalog = async (
     models: Model[], 
     allSoftwareImages: IdMap<SoftwareImage>, 
-    allConfigs: ModelConfiguration[],
-    allVersions: SoftwareVersion[],
-    allModels: MCModel[] ) =>  {
-        let APOLLO_CLIENT = GraphQL.instance(auth);
+    allConfigs: IdMap<ModelConfiguration>,
+    allVersions: IdMap<SoftwareVersion>,
+    allModels: IdMap<MCModel>) =>  {
+        let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
         // First check if any of these models are already in GraphQL
         let result = await APOLLO_CLIENT.query({
             query: listExistingModelsGQL,
@@ -861,7 +860,7 @@ export const cacheModelsFromCatalog = async (
 
 // Delete ProblemStatement
 export const deleteProblemStatement = (problem_statement_id: string) =>  {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     return APOLLO_CLIENT.mutate({
         mutation: deleteProblemStatementGQL,
         variables: {
@@ -872,7 +871,7 @@ export const deleteProblemStatement = (problem_statement_id: string) =>  {
 
 // Delete Task
 export const deleteTask = (taskid: string) =>  {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     return APOLLO_CLIENT.mutate({
         mutation: deleteTaskGQL,
         variables: {
@@ -883,7 +882,7 @@ export const deleteTask = (taskid: string) =>  {
 
 // Delete Thread
 export const deleteThread = (threadid: string) =>  {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     return APOLLO_CLIENT.mutate({
         mutation: deleteThreadGQL,
         variables: {
@@ -891,22 +890,6 @@ export const deleteThread = (threadid: string) =>  {
         }
     });
 };
-
-/* Helper Function */
-
-const _deleteCollection = (collRef: firebase.firestore.CollectionReference, subCollectionName: string) => {
-    collRef.get().then((querySnapshot) => {
-        querySnapshot.forEach((doc) => {
-            // Do a recursive delete if doc has a subcollection
-            if(subCollectionName) {
-                let subCollRef = doc.ref.collection(subCollectionName);
-                _deleteCollection(subCollRef, null);
-            }
-            // Delete document inside the collection
-            doc.ref.delete();
-        });
-    });
-}
 
 /* Execution Functions */
 

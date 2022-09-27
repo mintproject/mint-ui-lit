@@ -2,7 +2,6 @@ import { Action, ActionCreator } from "redux";
 import { GraphQL } from "config/graphql";
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "app/store";
-import { Emulator } from "@mintproject/modelcatalog_client";
 
 import modelTypesQuery from "../../queries/emulator/model-types.graphql";
 import modelExecutionsQuery from "../../queries/emulator/model-executions.graphql";
@@ -11,16 +10,13 @@ import threadExecutionsQuery from "../../queries/emulator/thread-executions.grap
 import modelTypeIOQuery from "../../queries/emulator/get-model-type-io.graphql";
 import modelTypeInputValuesQuery from "../../queries/emulator/get-model-input-values.graphql";
 import modelTypeParameterValuesQuery from "../../queries/emulator/get-model-parameter-values.graphql";
-
 import executionInfoFragment from "../../queries/fragments/emulator-execution-info.graphql";
-import modelTypeConfigsQuery from "../../queries/emulator/get-model-type-configs.graphql";
-import modelConfigInputsQuery from "../../queries/emulator/get-model-config-inputs.graphql";
 
-import { auth } from "config/firebase";
 import { EmulatorModelIO, EmulatorSearchConstraint } from "./reducers";
 import { DataResource } from "screens/datasets/reducers";
 import { executionFromGQL, resourceFromGQL } from "util/graphql_adapter";
 import { gql } from "@apollo/client";
+import { KeycloakAdapter } from "util/keycloak-adapter";
 
 export const EMULATORS_LIST = 'EMULATORS_LIST_MODELS';
 export const EMULATORS_SELECT_MODEL = 'EMULATORS_SELECT_MODEL';
@@ -87,7 +83,7 @@ const MODEL_PREFIX = "https://w3id.org/okn/i/mint/";
 
 type ListModelsThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListModels>;
 export const listEmulatorModelTypes: ActionCreator<ListModelsThunkAction> = (regionid) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     console.log
     APOLLO_CLIENT.query({
         query: modelTypesQuery,
@@ -125,7 +121,7 @@ export const listEmulatorModelTypes: ActionCreator<ListModelsThunkAction> = (reg
 type ListEmulatorsThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListEmulatorsForModel>;
 export const searchEmulatorsForModel: ActionCreator<ListEmulatorsThunkAction> = 
         (model: string, regionid: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: modelExecutionsQuery,
         variables: {
@@ -197,7 +193,7 @@ const getExecutionWhereClauseForFilter = (filters: EmulatorSearchConstraint[]) =
 type NumFilteredEmulatorsThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionNumEmulatorsForFilter>;
 export const getNumEmulatorsForFilter: ActionCreator<NumFilteredEmulatorsThunkAction> = 
         (model: string, regionid: string, filters: EmulatorSearchConstraint[]) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     // Create a dynamic query based on the filters
     let query = "query executions_for_parameter_values($regionId:String!, $modelType:String!) { \n" +
             " execution_aggregate ( \n" + 
@@ -241,7 +237,7 @@ type ListFilteredEmulatorsThunkAction = ThunkAction<void, RootState, undefined, 
 export const searchEmulatorsForFilter: ActionCreator<ListFilteredEmulatorsThunkAction> = 
         (model: string, regionid: string, filters: EmulatorSearchConstraint[], 
             start: number, limit: number, order_by: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     // Create a dynamic query based on the filters
     let fragment = executionInfoFragment;
     let queryString = fragment.loc.source.body + "\n" + 
@@ -298,7 +294,7 @@ export const selectEmulatorModel: ActionCreator<EmulatorsActionSelectModel> = (m
 type ListExecutionsJsonThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListThreadExecutionsJson>;
 export const getThreadExecutionsJSON: ActionCreator<ListExecutionsJsonThunkAction> = 
         (threadid: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: threadExecutionsQuery,
         variables: {
@@ -334,7 +330,7 @@ export const getThreadExecutionsJSON: ActionCreator<ListExecutionsJsonThunkActio
 type ListModelIOThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListModelIO>;
 export const listModelTypeIO: ActionCreator<ListModelIOThunkAction> = 
         (model: string, regionid: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: modelTypeIOQuery,
         variables: {
@@ -409,7 +405,7 @@ const convertType = (value: string, type: string) => {
 type ListModelInputParamValuesThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListModelInputParamValues>;
 export const listModelTypeInputParamValues: ActionCreator<ListModelInputParamValuesThunkAction> = 
         (model: string, input: EmulatorModelIO, regionid: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: modelTypeParameterValuesQuery,
         variables: {
@@ -463,7 +459,7 @@ export const listModelTypeInputParamValues: ActionCreator<ListModelInputParamVal
 type ListModelInputDataValuesThunkAction = ThunkAction<void, RootState, undefined, EmulatorsActionListModelInputDataValues>;
 export const listModelTypeInputDataValues: ActionCreator<ListModelInputDataValuesThunkAction> = 
         (model: string, input: EmulatorModelIO, regionid: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: modelTypeInputValuesQuery,
         variables: {

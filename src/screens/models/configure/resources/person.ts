@@ -1,29 +1,24 @@
 import { ModelCatalogResource } from './resource';
-import { html, customElement, css } from 'lit-element';
+import { html, customElement } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
-import { personGet, personsGet, personPost, personPut, personDelete } from 'model-catalog/actions';
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 import { Person, PersonFromJSON } from '@mintproject/modelcatalog_client';
-import { IdMap } from "app/reducers";
-
-import { SharedStyles } from 'styles/shared-styles';
-import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
-import { Select } from 'weightless/select';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 @customElement('model-catalog-person')
 export class ModelCatalogPerson extends connect(store)(ModelCatalogResource)<Person> {
     protected classes : string = "resource author";
     protected name : string = "person";
     protected pname : string = "persons";
-    protected resourcesGet = personsGet;
-    protected resourceGet = personGet;
-    protected resourcePost = personPost;
-    protected resourcePut = personPut;
-    protected resourceDelete = personDelete;
+
+    protected resourceApi : DefaultReduxApi<Person,BaseAPI> = ModelCatalogApi.myCatalog.person;
 
     protected _renderForm () {
         let edResource = this._getEditingResource();
@@ -62,10 +57,5 @@ export class ModelCatalogPerson extends connect(store)(ModelCatalogResource)<Per
             // Show errors
             if (!label) (<any>inputLabel).onBlur();
         }
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.persons;
     }
 }

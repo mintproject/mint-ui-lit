@@ -1,29 +1,24 @@
 import { ModelCatalogResource } from './resource';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
-import { visualizationGet, visualizationsGet, visualizationPost, visualizationPut, visualizationDelete } from 'model-catalog/actions';
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 import { Visualization, VisualizationFromJSON } from '@mintproject/modelcatalog_client';
-import { IdMap } from "app/reducers";
-
-import { SharedStyles } from 'styles/shared-styles';
-import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
-import { Select } from 'weightless/select';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 @customElement('model-catalog-visualization')
 export class ModelCatalogVisualization extends connect(store)(ModelCatalogResource)<Visualization> {
     protected classes : string = "resource visualization";
     protected name : string = "visualization";
     protected pname : string = "visualizations";
-    protected resourcesGet = visualizationsGet;
-    protected resourceGet = visualizationGet;
-    protected resourcePost = visualizationPost;
-    protected resourcePut = visualizationPut;
-    protected resourceDelete = visualizationDelete;
+
+    protected resourceApi : DefaultReduxApi<Visualization,BaseAPI> = ModelCatalogApi.myCatalog.visualization;
 
     public pageMax : number = 10
 
@@ -87,10 +82,5 @@ export class ModelCatalogVisualization extends connect(store)(ModelCatalogResour
             if (!label) (<any>inputLabel).onBlur();
             if (!value) (<any>inputValue).onBlur();
         }
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.visualizations;
     }
 }

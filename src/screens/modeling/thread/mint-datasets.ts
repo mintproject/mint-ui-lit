@@ -20,15 +20,16 @@ import { toDateString } from "util/date-utils";
 import "weightless/snackbar";
 import 'components/loading-dots';
 import { Region } from "screens/regions/reducers";
-import { datasetSpecificationGet, dataTransformationGet } from "model-catalog/actions";
-import { getLabel } from "model-catalog/util";
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+import { getLabel } from "model-catalog-api/util";
 import { DatasetSpecification, DataTransformation } from '@mintproject/modelcatalog_client';
 
 //import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
 import { ModelCatalogParameter } from 'screens/models/configure/resources/parameter';
 import { ModelCatalogDatasetSpecification } from 'screens/models/configure/resources/dataset-specification';
 import { getLatestEventOfType } from "util/event_utils";
-import { uuidv4 } from "screens/models/configure/util";
+import { uuidv4 } from "util/helpers";
+import { DatasetSelector } from "components/dataset-selector";
 
 store.addReducers({
     datasets
@@ -80,6 +81,8 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
   
     //private _mcInputs : IdMap<ModelCatalogDatasetSpecification> = {};
 
+    @property({type: Object}) private datasetSelector : DatasetSelector;
+
     constructor () {
         super();
         this._dtParameters = new ModelCatalogParameter();
@@ -88,6 +91,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         this._dtParameters.setActionEditOrAdd();
         this._dtParameters.onlyFixedValue = true;
         this._dtParameters.lazy = true;
+        this.datasetSelector = new DatasetSelector();
     }
 
     private _comparisonFeatures: Array<ComparisonFeature> = [
@@ -131,28 +135,36 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
         ]
     }
 
+    @property({type: Array}) _questionDatasets: Dataset[];
+    public setDatasets (datasets:Dataset[]) {
+        this._questionDatasets = datasets;
+        this.datasetSelector.setDatasets(datasets);
+    }
+
     protected render() {
         if(!this.thread) {
             return html ``;
         }
-        
-        // If no models selected
-        if(!this.thread.models || !Object.keys(this.thread.models).length) {
-            return html `
-            <p>
-                This step is for selecting datasets for each of the models that you selected earlier.
-            </p>
-            Please select model(s) first
-            `
-        }
 
+        let noModelHasBeenSelected : boolean = !this.thread.models || Object.keys(this.thread.models).length == 0;
         let done = (getThreadDatasetsStatus(this.thread) == TASK_DONE);
 
         let latest_update_event = getLatestEventOfType(["CREATE", "UPDATE"], this.thread.events);
         let latest_data_event = getLatestEventOfType(["SELECT_DATA"], this.thread.events);
         
         // If models have been selected, go over each model
+        if (noModelHasBeenSelected) {
+            return html`
+                <p>
+                    This step is for selecting datasets for each of the models that you selected earlier.
+                </p>
+                Please select model(s) first`
+        }
         return html `
+        <p>
+            This datasets match your filters:
+            ${this.datasetSelector}
+        </p>
         <p>
             This step is for selecting datasets for each of the models that you selected earlier.
         </p>
@@ -283,7 +295,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                 <li>
                                     Select an input dataset for <b>${input.name}</b>. (You can select more than one dataset if you want several runs). 
                                     Datasets matching the driving variable specied (if any) are in <b>bold</b>.
-                                    <p />
+                                    <p></p>
                                     ${loading ? 
                                     html`<wl-progress-bar></wl-progress-bar>`
                                     :
@@ -369,7 +381,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                     ${this._inputDT[input.id] && this._inputDT[input.id].length > 0 ? html`
                                         You can also use the following <b>data transformations</b> to generate 
                                         <b>${input.name}</b>:
-                                        <p/>
+                                        <p></p>
                                         <table class="pure-table pure-table-striped">
                                             <thead>
                                                 <tr>
@@ -385,7 +397,7 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                                                     <td>
                                                         <input class="${this._valid(modelid)}_${this._valid(input.id!)}_dt_checkbox" 
                                                             type="checkbox" data-transformationid="${dt.id}"
-                                                            ?checked=""></input>
+                                                            ?checked="${false}"></input>
                                                     </td>
                                                     <td><b>${getLabel(dt)}</b></td>
                                                     <td>${dt.description ? dt.description[0] : ''}</td>
@@ -900,13 +912,13 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                         (m.input_files || []).forEach((i) => {
                             if (!this._loading[i.id] && !this._dsInputs[i.id]) {
                                 this._loading[i.id] = true;
-                                store.dispatch(datasetSpecificationGet(i.id)).then((ds:DatasetSpecification) => {
+                                store.dispatch(ModelCatalogApi.myCatalog.datasetSpecification.get(i.id)).then((ds:DatasetSpecification) => {
                                     this._dsInputs[ds.id] = ds;
                                     this._loading[ds.id] = false;
                                     (ds.hasDataTransformation || []).forEach((dt) => {
                                         if (!this._loading[dt.id] && !this._dataTransformations[dt.id]) {
                                             this._loading[dt.id] = true;
-                                            store.dispatch(dataTransformationGet(dt.id)).then((DT) => {
+                                            store.dispatch(ModelCatalogApi.myCatalog.dataTransformation.get(dt.id)).then((DT) => {
                                                 this._dataTransformations[DT.id] = DT;
                                                 this._loading[DT.id] = false;
                                                 if (!this._inputDT[i.id]) this._inputDT[i.id] = [];

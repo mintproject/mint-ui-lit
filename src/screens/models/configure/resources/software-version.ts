@@ -1,12 +1,9 @@
 import { ModelCatalogResource } from './resource';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
-import { versionGet, versionsGet, versionPost, versionPut, versionDelete } from 'model-catalog/actions';
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 import { SoftwareVersion, SoftwareVersionFromJSON, Model } from '@mintproject/modelcatalog_client';
-import { IdMap } from "app/reducers";
-import { renderExternalLink } from 'util/ui_renders';
 
 import { SharedStyles } from 'styles/shared-styles';
 import { ExplorerStyles } from '../../model-explore/explorer-styles'
@@ -16,6 +13,10 @@ import { ModelCatalogPerson } from './person';
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
 import { Select } from 'weightless/select';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 const TAG_OPTIONS = ["latest", "deprecated"]
 
@@ -79,16 +80,11 @@ export class ModelCatalogSoftwareVersion extends connect(store)(ModelCatalogReso
     protected classes : string = "resource software-version";
     protected name : string = "software version";
     protected pname : string = "Software Version";
-    protected resourcesGet = versionsGet;
-    protected resourceGet = versionGet;
-    protected resourcePut = versionPut;
-    protected resourceDelete = versionDelete;
+
+    protected resourceApi : DefaultReduxApi<SoftwareVersion,BaseAPI> = ModelCatalogApi.myCatalog.softwareVersion;
 
     protected resourcePost = (r:SoftwareVersion) => {
-        if (this._parentModel) {
-            return versionPost(r, this._parentModel);
-        }
-        return Promise.reject();
+        return this.resourceApi.post(r, this._parentModel?.id);
     };
 
     public pageMax : number = 10
@@ -370,10 +366,5 @@ export class ModelCatalogSoftwareVersion extends connect(store)(ModelCatalogReso
                 this._notification.error("You must enter a version number");
             }
         }
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.versions;
     }
 }

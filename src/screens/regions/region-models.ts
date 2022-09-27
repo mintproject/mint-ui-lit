@@ -9,22 +9,17 @@ import { PageViewElement } from 'components/page-view-element';
 import { SharedStyles } from 'styles/shared-styles';
 import { goToPage } from 'app/actions';
 import { UserPreferences, IdMap } from 'app/reducers';
-import { BoundingBox } from './reducers';
-import { setPreview } from './actions';
+import { BoundingBox, Region as GQLRegion } from './reducers';
+import { bboxInRegion, doBoxesIntersect, getBoundingBoxFromGeoShape, setPreview } from './actions';
 import { selectSubRegion } from 'app/ui-actions';
 
-import { modelsGet, versionsGet, modelConfigurationsGet, modelConfigurationSetupsGet, regionsGet, geoShapesGet,
-         datasetSpecificationGet, sampleResourceGet, sampleCollectionGet, setupGetAll } from 'model-catalog/actions';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
-import { isSubregion, isMainRegion, getLabel } from 'model-catalog/util';
+import { isSubregion, isMainRegion, getLabel } from 'model-catalog-api/util';
 import { GeoShape, Region, Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup } from '@mintproject/modelcatalog_client';
 import { Dataset } from "screens/datasets/reducers";
 
 import { queryDatasetResourcesAndSave, queryDatasetResourcesRaw } from 'screens/datasets/actions';
-
-interface GeoShapeBBox extends GeoShape {
-    bbox?: BoundingBox
-}
 
 @customElement('region-models')
 export class RegionModels extends connect(store)(PageViewElement)  {
@@ -32,7 +27,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
     private prefs : UserPreferences;
 
     @property({type: Object})
-    protected _selectedRegion: any;
+    protected _selectedRegion: GQLRegion;
 
     @property({type: Boolean})
     private _loading : boolean = false;
@@ -41,7 +36,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
     public regionType : string = '';
 
     /* Model catalog data */
-    @property({type: Object}) private _geoShapes : IdMap<GeoShapeBBox> = {};
+    @property({type: Object}) private _geoShapes : IdMap<GeoShape> = {};
     @property({type: Object}) private _regions : IdMap<Region> = {};
     @property({type: Object}) private _models : IdMap<Model> = {};
     @property({type: Object}) private _versions : IdMap<SoftwareVersion> = {};
@@ -72,12 +67,12 @@ export class RegionModels extends connect(store)(PageViewElement)  {
     }
 
     protected firstUpdated() {
-        let pGeo = store.dispatch(geoShapesGet());
-        let pReg = store.dispatch(regionsGet());
-        let pMod = store.dispatch(modelsGet());
-        let pVer = store.dispatch(versionsGet());
-        let pCon = store.dispatch(modelConfigurationsGet());
-        let pSet = store.dispatch(modelConfigurationSetupsGet());
+        let pGeo = store.dispatch(ModelCatalogApi.myCatalog.geoShape.getAll());
+        let pReg = store.dispatch(ModelCatalogApi.myCatalog.region.getAll());
+        let pMod = store.dispatch(ModelCatalogApi.myCatalog.model.getAll());
+        let pVer = store.dispatch(ModelCatalogApi.myCatalog.softwareVersion.getAll());
+        let pCon = store.dispatch(ModelCatalogApi.myCatalog.modelConfiguration.getAll());
+        let pSet = store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getAll());
 
         this._loading = true;
         Promise.all([pGeo, pReg, pMod, pVer, pCon, pSet]).then((v) => {
@@ -120,44 +115,6 @@ export class RegionModels extends connect(store)(PageViewElement)  {
                '/' + config.id.split('/').pop() + '/' + setupURI.split('/').pop();
     }
 
-    private _doBoxesIntersect(box1: BoundingBox, box2: BoundingBox) {
-        return(box1.xmin <= box2.xmax && box1.xmax >= box2.xmin &&
-            box1.ymin <= box2.ymax && box1.ymax >= box2.ymin);
-    }
-
-    private _pointInPolygon (point, polygon) {
-        let x = point[0];
-        let y = point[1];
-        let inside = false;
-
-        for (let i = 0, j = polygon.length -1; i < polygon.length; j = i++) {
-            let xi = polygon[i][0];
-            let yi = polygon[i][1];
-            let xj = polygon[j][0];
-            let yj = polygon[j][1];
-            
-            let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-            if (intersect) inside = !inside;
-        }
-        return inside;
-    }
-
-    private _bboxInRegion (bbox: BoundingBox, region) {
-        let points = [
-            [bbox.xmin, bbox.ymin],
-            [bbox.xmin, bbox.ymax],
-            [bbox.xmax, bbox.ymin],
-            [bbox.xmax, bbox.ymax]
-        ];
-        
-        for(let index in region.geometries) {
-            let geometry: any = region.geometries[index];
-            let poly = geometry.coordinates[0][0];
-            if(points.some((point) => this._pointInPolygon(point, poly)))
-                return true;
-        }
-        return false;
-    }
 
     private _getMatchingModels() {
         /* Get setups */
@@ -175,13 +132,13 @@ export class RegionModels extends connect(store)(PageViewElement)  {
         Object.values(this._regions).forEach((region:Region) => {
             if (!isMainRegion(region))
                 (region.geo || []).forEach((geo:GeoShape) => {
-                    let geoshape = this._geoShapes[geo.id];
-                    if (geoshape && geoshape.bbox) {
-                        let bbox : BoundingBox = geoshape.bbox;
-                        if (bbox && bbox.xmin && this._doBoxesIntersect(bbox, selbox) && isSubregion(parentRegion, region)) {
+                    let geoshape : GeoShape= this._geoShapes[geo.id];
+                    let bbox : BoundingBox = getBoundingBoxFromGeoShape(geoshape);
+                    if (geoshape && bbox) {
+                        if (bbox && bbox.xmin && doBoxesIntersect(bbox, selbox) && isSubregion(parentRegion, region)) {
                             // A point inside the bbox does not mean that the point is inside the polygon
                             let area : number = (bbox.xmax - bbox.xmin) * (bbox.ymax - bbox.ymin);
-                            if (area >= selArea || this._bboxInRegion(bbox, this._selectedRegion) ) {
+                            if (area >= selArea || bboxInRegion(bbox, this._selectedRegion) ) {
                                 regions.add(region.id);
                             }
                         }
@@ -196,7 +153,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
                 setups.add(setup.id);
             }
         });
-        //console.log('setups': setups);
+        //console.log('setups:', setups);
 
         this._matchingSetups = Array.from(setups).map((sid:string) => this._setups[sid]);
 
@@ -221,7 +178,8 @@ export class RegionModels extends connect(store)(PageViewElement)  {
         this._matchingModelDatasets = [];
         this._loadingDatasets = true;
 
-        Promise.all(this._matchingSetups.map((setup:ModelConfigurationSetup) => setupGetAll(setup.id)))
+        Promise.all(this._matchingSetups.map((setup:ModelConfigurationSetup) =>
+                store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getDetails(setup.id))))
         .then((setups:ModelConfigurationSetup[]) => {
             let datasets : Set<string> = new Set();
             setups.forEach((setup:ModelConfigurationSetup) => {
@@ -277,7 +235,7 @@ export class RegionModels extends connect(store)(PageViewElement)  {
         })
 
         store.dispatch(setPreview(
-            Array.from(selGeo).map((gid) => this._geoShapes[gid].bbox)
+            Array.from(selGeo).map((gid) => getBoundingBoxFromGeoShape(this._geoShapes[gid]))
         ));
     }
 
@@ -365,12 +323,12 @@ export class RegionModels extends connect(store)(PageViewElement)  {
 
         if (state && state.modelCatalog) {
             let db = state.modelCatalog;
-            this._geoShapes = db.geoShapes;
-            this._regions = db.regions;
-            this._models = db.models;
-            this._versions = db.versions;
-            this._configs = db.configurations;
-            this._setups = db.setups;
+            this._geoShapes = db.geoshape;
+            this._regions = db.region;
+            this._models = db.model;
+            this._versions = db.softwareversion;
+            this._configs = db.modelconfiguration;
+            this._setups = db.modelconfigurationsetup;
         }
     }
 }

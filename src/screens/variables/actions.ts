@@ -1,13 +1,13 @@
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "../../app/store";
 import { ActionCreator, Action } from "redux";
-import { auth } from "../../config/firebase";
 import { GraphQL } from "config/graphql";
 
 import listVariablesGQL from '../../queries/variable/list.graphql';
 
 import { VariableMap } from "@apollo/client/core/LocalState";
 import { variableFromGQL } from "util/graphql_adapter";
+import { KeycloakAdapter } from "util/keycloak-adapter";
 
 export const VARIABLES_LIST = 'VARIABLES_LIST';
 
@@ -20,7 +20,7 @@ export type VariablesAction =  VariablesActionList;
 // List Variables Categories
 type ListVariablesThunkResult = ThunkAction<void, RootState, undefined, VariablesActionList>;
 export const listVariables: ActionCreator<ListVariablesThunkResult> = () => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(auth);
+    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
     APOLLO_CLIENT.query({
         query: listVariablesGQL
     }).then(result => {

@@ -10,9 +10,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 import { Reducer } from 'redux';
 import { RootAction } from './store';
-import { User } from 'firebase';
-import { UPDATE_PAGE, FETCH_USER, FETCH_USER_PROFILE, FETCH_MINT_CONFIG,
-         FETCH_MODEL_CATALOG_ACCESS_TOKEN, STATUS_MODEL_CATALOG_ACCESS_TOKEN} from './actions';
+import { UPDATE_PAGE, FETCH_USER, FETCH_MINT_CONFIG } from './actions';
 
 export interface IdMap<T> {
   [id: string]: T
@@ -23,6 +21,13 @@ export interface IdNameObject {
   name?: string
 }
 
+export interface User {
+  email: string
+  uid: string
+  region: string
+  graph: string
+}
+
 export interface AppState {
   page: string,
   subpage: string,
@@ -31,14 +36,13 @@ export interface AppState {
 }
 
 export interface UserPreferences {
-  mint: MintPreferences,
-  modelCatalog: ModelCatalogPreferences,
-  profile?: UserProfile
+  mint: MintPreferences
 }
 
 export interface MintPreferences {
+  welcome_message: string
   data_catalog_api: string,
-  //model_catalog_api?: string  // Model Catalog API isn't used from here any more
+  model_catalog_api?: string,
   ensemble_manager_api: string,
   ingestion_api: string,
   visualization_url: string,  
@@ -51,18 +55,25 @@ export interface MintPreferences {
   wings_api?: string,
   //maps
   google_maps_key: string,
+  //auth
+  auth_server: string,
+  auth_realm: string,
+  auth_client_id: string,
+
+  //old
   apiKey: string,
   authDomain: string,
   databaseURL: string,
   projectId: string,
   storageBucket: string,
   messagingSenderId: string,
-  appId: string
+  appId: string,
+  cromo_api?: string
 }
 
 export interface GraphQLPreferences {
   endpoint: string,
-  secret: string
+  enable_ssl: boolean,
 }
 
 export interface WingsPreferences {
@@ -87,22 +98,10 @@ export interface LocalExecutionPreferences {
   codedir: string
 }
 
-type ModelCatalogStatus = 'LOADING' | 'DONE' | 'ERROR';
-export interface ModelCatalogPreferences {
-  username: string,
-  accessToken: string,
-  status: ModelCatalogStatus
-}
-
-export type UserProfile = {
-    mainRegion: string,
-    graph: string,
-}
-
 const INITIAL_STATE: AppState = {
   page: '',
   subpage: '',
-  prefs: {mint: null, modelCatalog: {} as ModelCatalogPreferences}
+  prefs: {mint: null}
 };
 
 const app: Reducer<AppState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -118,30 +117,12 @@ const app: Reducer<AppState, RootAction> = (state = INITIAL_STATE, action) => {
         ...state,
         user: action.user!
       };
-    case FETCH_USER_PROFILE:
-      let newPrefsWithProfile = { ...state.prefs, profile: action.profile };
-      return {
-        ...state,
-        prefs: newPrefsWithProfile
-      };
     case FETCH_MINT_CONFIG:
       let newPrefs = {...state.prefs, mint: action.prefs};
       return {
         ...state,
         prefs: newPrefs
       };
-    case FETCH_MODEL_CATALOG_ACCESS_TOKEN:
-      let newMCPrefs = { ...state.prefs.modelCatalog, accessToken: action.accessToken, status: 'DONE' } as ModelCatalogPreferences;
-      return {
-        ...state,
-        prefs: {...state.prefs, modelCatalog: newMCPrefs}
-      }
-    case STATUS_MODEL_CATALOG_ACCESS_TOKEN:
-      let newMCStatus = { ...state.prefs.modelCatalog, status: action.status } as ModelCatalogPreferences;
-      return {
-        ...state,
-        prefs: {...state.prefs, modelCatalog: newMCStatus}
-      }
     default:
       return state;
   }

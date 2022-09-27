@@ -1,14 +1,14 @@
 import { Task, Thread, ProblemStatementInfo, ProblemStatement, ThreadInfo, MintEvent, ModelEnsembleMap, 
     ModelIOBindings, Execution, ExecutionSummary, DataMap, ThreadModelMap, MintPermission } from "../screens/modeling/reducers"
-import { auth } from "config/firebase";
 import { Model, ModelIO, ModelParameter } from "screens/models/reducers";
 import { Dataset, DataResource, Dataslice } from "screens/datasets/reducers";
 import { Region } from "screens/regions/reducers";
 import { toDateString, fromTimestampIntegerToDateString } from "./date-utils";
-import { uuidv4 } from "screens/models/configure/util";
+import { uuidv4 } from "./helpers";
 
 import * as crypto from 'crypto';
 import { Variable } from "screens/variables/reducers";
+import { KeycloakAdapter } from "./keycloak-adapter";
 
 export const regionToGQL = (region: Region) => {
     let regionobj = {
@@ -162,8 +162,10 @@ export const taskToGQL = (task: Task, problem_statement: ProblemStatementInfo) =
         start_date: toDateString(task.dates.start_date),
         end_date: toDateString(task.dates.end_date),
         region_id: task.regionid,
-        response_variable_id: task.response_variables[0],
-        driving_variable_id: task.driving_variables.length > 0 ? task.driving_variables[0] : null,
+        response_variable_id: task.response_variables && task.response_variables.length > 0 ?
+                task.response_variables[0] : null,
+        driving_variable_id: task.driving_variables && task.driving_variables.length > 0 ?
+                task.driving_variables[0] : null,
         events: {
             data: task.events.map(eventToGQL),
         },
@@ -186,8 +188,10 @@ export const taskUpdateToGQL = (task: Task) => {
         start_date: toDateString(task.dates.start_date),
         end_date: toDateString(task.dates.end_date),
         region_id: task.regionid,
-        response_variable_id: task.response_variables[0],
-        driving_variable_id: task.driving_variables.length > 0 ? task.driving_variables[0] : null,
+        response_variable_id: task.response_variables && task.response_variables.length > 0 ?
+                task.response_variables[0] : null,
+        driving_variable_id: task.driving_variables && task.driving_variables.length > 0 ?
+                task.driving_variables[0] : null,
         events: {
             data: task.events.map(eventToGQL),
         },
@@ -237,8 +241,10 @@ export const threadInfoToGQL = (thread: ThreadInfo, taskid: string, regionid: st
         start_date: toDateString(thread.dates.start_date),
         end_date: toDateString(thread.dates.end_date),
         region_id: regionid,
-        response_variable_id: thread.response_variables[0],
-        driving_variable_id: thread.driving_variables.length > 0 ? thread.driving_variables[0] : null,
+        response_variable_id: thread.response_variables && thread.response_variables.length > 0?
+                thread.response_variables[0] : null,
+        driving_variable_id: thread.driving_variables && thread.driving_variables.length > 0 ?
+                thread.driving_variables[0] : null,
         events: {
             data: thread.events.map(eventToGQL),
         },
@@ -258,10 +264,13 @@ export const threadInfoUpdateToGQL = (thread:  ThreadInfo) => {
         id: thread.id,
         task_id: thread.task_id,
         name: thread.name,
+        region_id: thread.regionid,
         start_date: toDateString(thread.dates.start_date),
         end_date: toDateString(thread.dates.end_date),
-        response_variable_id: thread.response_variables[0],
-        driving_variable_id: thread.driving_variables.length > 0 ? thread.driving_variables[0] : null,
+        response_variable_id: thread.response_variables && thread.response_variables.length > 0 ?
+                thread.response_variables[0] : null,
+        driving_variable_id: thread.driving_variables && thread.driving_variables.length > 0 ?
+                thread.driving_variables[0] : null,
         events: {
             data: thread.events.map(eventToGQL),
         },
@@ -560,7 +569,7 @@ export const getCreateEvent = (notes: string) => {
     return {
         event: "CREATE",
         timestamp: new Date(),
-        userid: auth.currentUser.email,
+        userid: KeycloakAdapter.getUser().email,
         notes: notes
     } as MintEvent;
 }
@@ -569,7 +578,7 @@ export const getUpdateEvent = (notes: string) => {
     return {
         event: "UPDATE",
         timestamp: new Date(),
-        userid: auth.currentUser.email,
+        userid: KeycloakAdapter.getUser().email,
         notes: notes
     } as MintEvent;
 }
@@ -578,7 +587,7 @@ export const getCustomEvent = (event:string, notes: string) => {
     return {
         event: event,
         timestamp: new Date(),
-        userid: auth.currentUser.email,
+        userid: KeycloakAdapter.getUser().email,
         notes: notes
     } as MintEvent;
 }

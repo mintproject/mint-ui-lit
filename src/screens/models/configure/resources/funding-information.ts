@@ -1,29 +1,24 @@
 import { ModelCatalogResource } from './resource';
 import { html, customElement, css } from 'lit-element';
 import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from 'app/store';
-import { getLabel } from 'model-catalog/util';
-import { fundingInformationGet, fundingInformationsGet, fundingInformationPost, fundingInformationPut, fundingInformationDelete } from 'model-catalog/actions';
+import { store } from 'app/store';
+import { getLabel } from 'model-catalog-api/util';
 import { FundingInformation, FundingInformationFromJSON } from '@mintproject/modelcatalog_client';
-import { IdMap } from "app/reducers";
-
-import { SharedStyles } from 'styles/shared-styles';
-import { ExplorerStyles } from '../../model-explore/explorer-styles'
 
 import { Textfield } from 'weightless/textfield';
 import { Textarea } from 'weightless/textarea';
-import { Select } from 'weightless/select';
+
+import { BaseAPI } from '@mintproject/modelcatalog_client';
+import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 @customElement('model-catalog-funding-information')
 export class ModelCatalogFundingInformation extends connect(store)(ModelCatalogResource)<FundingInformation> {
     protected classes : string = "resource funding-information";
     protected name : string = "funding information";
     protected pname : string = "funding information";
-    protected resourcesGet = fundingInformationsGet;
-    protected resourceGet = fundingInformationGet;
-    protected resourcePost = fundingInformationPost;
-    protected resourcePut = fundingInformationPut;
-    protected resourceDelete = fundingInformationDelete;
+
+    protected resourceApi : DefaultReduxApi<FundingInformation,BaseAPI> = ModelCatalogApi.myCatalog.fundingInformation;
 
     protected _renderForm () {
         let edResource = this._getEditingResource();
@@ -74,10 +69,5 @@ export class ModelCatalogFundingInformation extends connect(store)(ModelCatalogR
             // Show errors
             if (!label) (<any>inputLabel).onBlur();
         }
-    }
-
-    protected _getDBResources () {
-        let db = (store.getState() as RootState).modelCatalog;
-        return db.fundingInformations;
     }
 }

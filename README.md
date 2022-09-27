@@ -9,7 +9,7 @@ The portal is connected to an Hasura GraphQL database, an execution engine and t
 To connect the ui with the other servicesm, please copy the configuration sample file `./src/config/config.json.sample`
 
 ```bash
-$ cp ./src/config/config.json.sample ./src/config/config.json
+$ cp config.js ./src/assets
 ```
 
 
@@ -18,13 +18,7 @@ $ cp ./src/config/config.json.sample ./src/config/config.json
 Build the image
 
 ```
-$ docker build . --file .Dockerfile-actions mint_ui
-```
-
-Push the image
-
-```bash
-$ docker push mint_ui <your_username>/mint_ui
+$ docker build  mint_ui .
 ```
 
 ### Without Docker
@@ -40,13 +34,6 @@ yarn start
 ```
 
 
-## Deploy using GitHub actions
 
 
-Remember to encrypt
-
-
-```bash
-gpg --symmetric --cipher-algo AES256 src/config/config-tacc.json; mv src/config/config-tacc.json.gpg . 
-```
 

@@ -5,14 +5,12 @@ import { store, RootState } from '../../../app/store';
 
 import { html, property, customElement, css } from 'lit-element';
 
-import { goToPage } from '../../../app/actions';
 import { ExplorerStyles } from './explorer-styles'
 
-import { getId, isEmpty, isSubregion, getLatestVersion, getLatestConfiguration, getLatestSetup,
-         isExecutable, getLabel, getModelTypeNames } from 'model-catalog/util';
-import { IdMap } from 'app/reducers';
-import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Parameter, SoftwareImage,
-         Person, Process, SampleResource, SampleCollection, Region, Image } from '@mintproject/modelcatalog_client';
+import { getId, isEmpty, isSubregion, getLatestVersion, getLatestConfiguration,
+         isExecutable, getLabel, getModelTypeNames } from 'model-catalog-api/util';
+import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, 
+         Region, Image, ModelCategory } from '@mintproject/modelcatalog_client';
 
 import '../../../components/loading-dots';
 
@@ -28,6 +26,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
     @property({type: Object}) private _model!   : Model;
     @property({type: Object}) private _logo!    : Image;
     @property({type: Boolean}) private _loadingLogo : boolean = false;
+    @property({type: String}) private _modelCategories : string = '...';
 
     private PREFIX : string = '/models/explore/';
 
@@ -222,7 +221,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                     </a>
                   </div>
                   <div class="text-centered two-lines">
-                    Category: ${this._model.hasModelCategory ? html`${this._model.hasModelCategory.map(getLabel).join(', ')}` : html`-`}
+                    Category: ${this._modelCategories}
                     ${modelType && modelType.length > 0? html`
                     <br/>
                     Type: ${modelType.join(', ')}
@@ -279,8 +278,8 @@ export class ModelPreview extends connect(store)(PageViewElement) {
         super.setRegionId(state);
         let db = state.modelCatalog;
         /* Load this model and, if is needed versions, configs and setups */
-        if (db && db.models[this.id] && (db.models[this.id] != this._model || lastParentRegion != this._regionid)) {
-            this._model = db.models[this.id];
+        if (db && db.model[this.id] && (db.model[this.id] != this._model || lastParentRegion != this._regionid)) {
+            this._model = db.model[this.id];
             this._loadingLogo = (this._model.logo && this._model.logo.length > 0);
 
             if (this._model.hasVersion) {
@@ -300,15 +299,27 @@ export class ModelPreview extends connect(store)(PageViewElement) {
             }
         }
 
-        if (this._loadingLogo && !isEmpty(db.images) && db.images[(this._model.logo[0] as Image).id]) {
+        /* Set model categories */
+        if (db && db.modelcategory) {
+            if (!this._model.hasModelCategory || this._model.hasModelCategory.length == 0) {
+                this._modelCategories = "-";
+            } else {
+                this._modelCategories = this._model.hasModelCategory
+                    .filter((c:ModelCategory) => !!db.modelcategory[c.id])
+                    .map((c:ModelCategory) => db.modelcategory[c.id])
+                    .map(getLabel)
+                    .join(', ')
+            }
+        }
+        if (this._loadingLogo && !isEmpty(db.image) && db.image[(this._model.logo[0] as Image).id]) {
             this._loadingLogo = false;
-            this._logo = db.images[(this._model.logo[0] as Image).id];
+            this._logo = db.image[(this._model.logo[0] as Image).id];
         }
 
-        if (this._nVersions > 0 && this._nConfigs < 0 && !isEmpty(db.versions)) {
+        if (this._nVersions > 0 && this._nConfigs < 0 && !isEmpty(db.softwareversion)) {
             let lastVersion : SoftwareVersion | null = null;
             this._nConfigs = this._model.hasVersion
-                    .map((ver:any) => db.versions[ver.id])
+                    .map((ver:any) => db.softwareversion[ver.id])
                     .filter((ver:SoftwareVersion) => !!ver)
                     .reduce((sum:number, ver:SoftwareVersion) => {
                         lastVersion = getLatestVersion(lastVersion, ver);
@@ -321,8 +332,8 @@ export class ModelPreview extends connect(store)(PageViewElement) {
             }
         }
 
-        if (this._nConfigs > 0 && this._nSetups < 0 && !this._regions && this._region &&
-                ![db.configurations, db.regions].map(isEmpty).some(b=>b)) {
+        if (this._nConfigs > 0 && this._nSetups < 0 && !this._regions &&
+                ![db.modelconfiguration, db.modelconfigurationsetup, db.region].map(isEmpty).some(b=>b)) {
             // We filter for region, so we need to compute the url, local setups and regions.
             this._regions = new Set();
             this._nLocalSetups = 0;
@@ -333,7 +344,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
 
             // Count setups and compute url and regions.
             this._nSetups = this._model.hasVersion
-                    .map((ver:any) => db.versions[ver.id])
+                    .map((ver:any) => db.softwareversion[ver.id])
                     .filter((ver:SoftwareVersion) => { 
                         if (!lastSetup)
                             lastVersion = getLatestVersion(lastVersion, ver);
@@ -341,7 +352,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                     })
                     .reduce((sum:number, ver:SoftwareVersion) =>
                             sum + (ver.hasConfiguration || [])
-                                    .map((cfg:any) => db.configurations[cfg.id])
+                                    .map((cfg:any) => db.modelconfiguration[cfg.id])
                                     .filter((cfg:ModelConfiguration) => {
                                         if (!lastSetup && lastVersion === ver)
                                             lastConfig = getLatestConfiguration(lastConfig, cfg);
@@ -349,13 +360,13 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                                     })
                                     .reduce((sum2:number, cfg:ModelConfiguration) =>
                                         sum2 + (cfg.hasSetup || [])
-                                                .map((setup:any) => db.setups[setup.id])
+                                                .map((setup:any) => db.modelconfigurationsetup[setup.id])
                                                 .filter((setup:ModelConfigurationSetup) => isExecutable(setup))
                                                 .reduce((sum3:number, setup:ModelConfigurationSetup) => {
                                                     (setup.hasRegion || [])
-                                                            .map((reg:any) => db.regions[reg.id])
+                                                            .map((reg:any) => db.region[reg.id])
                                                             .forEach((reg:Region) => {
-                                                                if (isSubregion(this._region.model_catalog_uri,reg)) {
+                                                                if (this._region && isSubregion(this._region.model_catalog_uri,reg)) {
                                                                     this._nLocalSetups += 1;
                                                                     this._regions.add(reg);
                                                                     if (!lastSetup) {
@@ -376,6 +387,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                                                 }, 0)
                                     , 0)
             , 0);
+
             this._url = this.PREFIX + getId(this._model) + (lastVersion ?
                 ('/' +  getId(lastVersion) + (lastConfig ?
                     '/' + getId(lastConfig) + (lastSetup ? 

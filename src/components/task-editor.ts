@@ -136,12 +136,8 @@ export class TaskEditor extends connect(store)(LitElement) {
     }
 
     _renderTaskForm() {
-        return html`
-            <p>
-            Specify the region, time period, and variables of interest.
-            </p>
-            <input type="hidden" name="taskid"></input>
-
+            /*
+             Specify the region, time period, and variables of interest.
             <!-- Variables --> 
             ${renderVariables(this._variableMap, this.editMode, this._handleResponseVariableChange, this._handleDrivingVariableChange)}
             <br />
@@ -188,6 +184,14 @@ export class TaskEditor extends connect(store)(LitElement) {
 
             <div style="height:10px;">&nbsp;</div>
 
+
+            <br />
+             */
+
+        return html`
+            <p> Write a description for this task </p>
+            <input type="hidden" name="taskid"></input>
+
             <!-- Time Period -->
             <div class="input_full">
                 <label>Time Period</label>
@@ -203,14 +207,13 @@ export class TaskEditor extends connect(store)(LitElement) {
             </div>
             <br />
 
-            <br />
             <!-- Sub-Objective name -->
             <div class="input_full">
                 <label>Description</label>
                 <input name="task_name"></input>
             </div>
-            <br />
-        `;        
+            <br/>
+        `;
     }
 
     addTaskDialog() {
@@ -230,7 +233,7 @@ export class TaskEditor extends connect(store)(LitElement) {
 
         this.editMode = false;
         let dates = this.problem_statement.dates;
-        (form.elements["task_region"] as HTMLSelectElement).value = ""; //this.problem_statement.regionid!;
+        //(form.elements["task_region"] as HTMLSelectElement).value = ""; //this.problem_statement.regionid!;
         (form.elements["task_from"] as HTMLInputElement).value = toDateString(dates?.start_date);
         (form.elements["task_to"] as HTMLInputElement).value = toDateString(dates?.end_date);
         (form.querySelector("#task_permissions") as PermissionsEditor).setPermissions([]);
@@ -244,30 +247,31 @@ export class TaskEditor extends connect(store)(LitElement) {
         
         this.editMode = false; // FIXME: This should be true
         let dates = task.dates ? task.dates : this.problem_statement.dates;
-        let response_variable = (task.response_variables && task.response_variables.length > 0) ? 
+        /*let response_variable = (task.response_variables && task.response_variables.length > 0) ? 
             task.response_variables[0] : "";
         let driving_variable = (task.driving_variables && task.driving_variables.length > 0) ? 
             task.driving_variables[0] : "";
+        */
 
         (form.elements["taskid"] as HTMLInputElement).value = task.id;
         (form.elements["task_name"] as HTMLInputElement).value = task.name;
 
-        (form.elements["task_region_category"] as HTMLInputElement).value = this._regions[task.regionid].category_id ?? "";
-        this._onRegionCategoryChange();
+        //(form.elements["task_region_category"] as HTMLInputElement).value = this._regions && this._regions[task.regionid] ? this._regions[task.regionid].category_id : "";
+        //this._onRegionCategoryChange();
 
-        (form.elements["task_region"] as HTMLInputElement).value = task.regionid;                
+        //(form.elements["task_region"] as HTMLInputElement).value = task.regionid;                
         (form.elements["task_from"] as HTMLInputElement).value = toDateString(dates.start_date);
         (form.elements["task_to"] as HTMLInputElement).value = toDateString(dates.end_date);
-        (form.elements["response_variable"] as HTMLInputElement).value = response_variable;
-        (form.elements["driving_variable"] as HTMLInputElement).value = driving_variable;
+        /*(form.elements["response_variable"] as HTMLInputElement).value = response_variable;
+        (form.elements["driving_variable"] as HTMLInputElement).value = driving_variable;*/
         (form.querySelector("#task_permissions") as PermissionsEditor).setPermissions(task.permissions);
 
-        this._selectedIntervention = this._variableMap[driving_variable]?.intervention;
+        //this._selectedIntervention = this._variableMap[driving_variable]?.intervention;
     }
 
-    _handleResponseVariableChange() {}
+    //_handleResponseVariableChange() {}
     
-    _handleDrivingVariableChange(e: any) {
+    /*_handleDrivingVariableChange(e: any) {
         let varid = e.target.value;
         this._selectedIntervention = this._variableMap[varid]?.intervention;
     }
@@ -277,7 +281,7 @@ export class TaskEditor extends connect(store)(LitElement) {
         let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#taskForm")!;
         let category_id = (form.elements["task_region_category"] as HTMLSelectElement).value;
         let selector = form.elements["task_region"] as HTMLSelectElement
-        if (category_id != this._selectedCategory?.id && selector) {
+        if (category_id && category_id != this._selectedCategory?.id && selector) {
             this._selectedCategory = this._regionCategories[category_id];
             while (selector.options.length > 0) {
                 selector.remove(selector.options.length - 1);
@@ -294,17 +298,17 @@ export class TaskEditor extends connect(store)(LitElement) {
                 selector.options.add(newOption);
             });
         }
-    }
+    }*/
     
     async _onEditTaskSubmit() {
         let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#taskForm")!;
-        if(formElementsComplete(form, ["response_variable", "task_from", "task_to"])) {
+        if(formElementsComplete(form, ["task_name", "task_from", "task_to"])) {
             let task_name = (form.elements["task_name"] as HTMLInputElement).value;
             let task_from = new Date((form.elements["task_from"] as HTMLInputElement).value);
             let task_to = new Date((form.elements["task_to"] as HTMLInputElement).value);
-            let task_region = (form.elements["task_region"] as HTMLInputElement).value;
-            if(!task_region)
-                task_region = this._regionid;
+            //let task_region = (form.elements["task_region"] as HTMLInputElement).value;
+            //if(!task_region)
+            let task_region = this._regionid;
             let task_permissions = (form.querySelector("#task_permissions") as PermissionsEditor).permissions;
             if(task_from >= task_to) {
                 alert("The start date should be before the end date");
@@ -315,18 +319,19 @@ export class TaskEditor extends connect(store)(LitElement) {
             if(this.task) {
                 // Edit Task 
                 this.task.name = task_name;
-                this.task.regionid = task_region;
+                //this.task.regionid = task_region;
                 this.task.dates = {
                     start_date: task_from,
                     end_date: task_to
                 };
 
-                // Temporary addition FIXME:
+                /* Temporary addition FIXME:
                 let response_variable = (form.elements["response_variable"] as HTMLInputElement).value;
                 let driving_variable = (form.elements["driving_variable"] as HTMLInputElement).value || "";
-                this.task.driving_variables = driving_variable ? [driving_variable] : [],
-                this.task.response_variables = response_variable ? [response_variable] : [],
-                this.task.events.push(getUpdateEvent(task_name) as TaskEvent);
+                this.task.driving_variables = driving_variable ? [driving_variable] : [];
+                this.task.response_variables = response_variable ? [response_variable] : [];*/
+                this.task.response_variables = [];
+                this.task.events.push(getUpdateEvent(task_name) as TaskEvent); 
                 this.task.permissions = task_permissions;
                 // End of Temporary Addition
 
@@ -349,13 +354,17 @@ export class TaskEditor extends connect(store)(LitElement) {
             }
             else {
                 // Add Task
-                let response_variable = (form.elements["response_variable"] as HTMLInputElement).value;
-                let driving_variable = (form.elements["driving_variable"] as HTMLInputElement).value || "";
+
+                //FIXME: adds some random id as response variable, will be edited on the first step.
+                //let response_variable = Object.values(this._variableMap)[0].id;
+
+                //let response_variable = (form.elements["response_variable"] as HTMLInputElement).value;
+                //let driving_variable = (form.elements["driving_variable"] as HTMLInputElement).value || "";
                 this.task = {
                     name: task_name,
                     regionid: task_region,
-                    driving_variables: driving_variable ? [driving_variable] : [],
-                    response_variables: response_variable ? [response_variable] : [],
+                    //driving_variables: driving_variable ? [driving_variable] : [],
+                    //response_variables: [response_variable],
                     dates: {
                         start_date: task_from,
                         end_date: task_to
@@ -367,8 +376,8 @@ export class TaskEditor extends connect(store)(LitElement) {
 
                 // Create a default thread for this task
                 let thread = {
-                    driving_variables: driving_variable ? [driving_variable] : [],
-                    response_variables: response_variable ? [response_variable] : [],
+                    //driving_variables: driving_variable ? [driving_variable] : [],
+                    //response_variables: [response_variable],
                     dates: {
                         start_date: task_from,
                         end_date: task_to
@@ -404,14 +413,14 @@ export class TaskEditor extends connect(store)(LitElement) {
         if(state.regions.categories && !this._regionCategories) {
             this._regionCategories = state.regions.categories;
         }
-        if(state.regions.sub_region_ids && this._regionid && state.regions.sub_region_ids[this._regionid]) {
-            let all_regionids = state.regions.sub_region_ids[this._regionid];
-            this._regions = state.regions.regions;
-            if(all_regionids != this._subRegionIds) {
-                this._subRegionIds = all_regionids;
+
+        if(state.regions.sub_region_ids && this._regionid) {
+            if (state.regions.sub_region_ids && state.regions.sub_region_ids[this._regionid] != this._subRegionIds) {
+                this._subRegionIds = state.regions.sub_region_ids[this._regionid];
                 this._categorizedRegions = getCategorizedRegions(state);
             }
-        }
+        } 
+
         if(state.variables && state.variables.variables) {
             this._variableMap = state.variables.variables;
         }        

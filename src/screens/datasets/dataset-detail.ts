@@ -13,15 +13,12 @@ import "weightless/dialog";
 import "components/google-map-custom";
 
 import { ComparisonFeature } from 'screens/modeling/reducers';
-import { fromTimeStampToDateString } from 'util/date-utils';
-import { GOOGLE_API_KEY } from 'config/firebase';
 import { BoundingBox, Point, Region } from 'screens/regions/reducers';
 import { queryDatasetResources } from './actions';
 import { GoogleMapCustom } from 'components/google-map-custom';
-import { UserPreferences } from 'app/reducers';
-import { getRegionDetails } from 'screens/regions/actions';
+import { UserPreferences, MintPreferences  } from 'app/reducers';
 import { showDialog, hideDialog } from 'util/ui_functions';
-
+import { MINT_PREFERENCES } from 'config';
 
 @customElement('dataset-detail')
 export class DatasetDetail extends connect(store)(PageViewElement) {
@@ -31,7 +28,7 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
     @property({type: Object})
     private _filterby_region: Region;
 
-    @property({type: Array})
+    @property({type: Object})
     private _dataset: DatasetWithStatus;
 
     @property({type: Boolean})
@@ -149,7 +146,7 @@ export class DatasetDetail extends connect(store)(PageViewElement) {
                 `
             }
             
-            <google-map-custom class="map" api-key="${GOOGLE_API_KEY}"
+            <google-map-custom class="map" api-key="${MINT_PREFERENCES.google_maps_key}"
                 .style="visibility: ${this._mapReady ? 'visible': 'hidden'}"
                 disable-default-ui="true" draggable="true"
                 styles="${this._mapStyles}"

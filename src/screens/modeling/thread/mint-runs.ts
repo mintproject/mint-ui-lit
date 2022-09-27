@@ -34,7 +34,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     private currentPage : Map<string, number> = {} as Map<string, number>;
     @property({type: Number})
     private pageSize = 100;
-    @property({type: String})
+    @property({type: Array})
     private orderBy = [{"status": "asc"}]; //, {"start_time": "asc"}];
 
     @property({type: String})
@@ -186,8 +186,8 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                 Send Runs
                                 ${this._waiting? html`<loading-dots style="--width: 20px"></loading-dots>` : ''}
                             </wl-button>`
-                            : html `You don't have permission to send runs on this thread`}
-                    `;
+                            : html `You don't have permission to send runs on this sub-task`}
+                    </li>`;
                 }
 
                 return html`

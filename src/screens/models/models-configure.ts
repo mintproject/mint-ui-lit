@@ -245,7 +245,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
 
                     <div style="padding: 0px 10px;">
                         ${this._loading ? 
-                            html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner>` 
+                            html`<div style="text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>` 
                             : ( ((this._selectedConfig && !this._creating && !this._selectedSetup) ||
                             (!this._selectedConfig && this._selectedVersion && this._creating) ) ?
                                 this._iConfig :
@@ -309,24 +309,24 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             if (state.modelCatalog) {
                 let db = state.modelCatalog;
                 // Set selected resource
-                if (!this._model && db.models && this._selectedModel && db.models[this._selectedModel]) {
-                    this._model = db.models[this._selectedModel];
+                if (!this._model && db.model && this._selectedModel && db.model[this._selectedModel]) {
+                    this._model = db.model[this._selectedModel];
                 }
-                if (!this._version && db.versions && this._selectedVersion && db.versions[this._selectedVersion]) {
-                    this._version = db.versions[this._selectedVersion];
+                if (!this._version && db.softwareversion && this._selectedVersion && db.softwareversion[this._selectedVersion]) {
+                    this._version = db.softwareversion[this._selectedVersion];
                 }
-                if (!this._config && db.configurations && this._selectedConfig && db.configurations[this._selectedConfig]) {
+                if (!this._config && db.modelconfiguration && this._selectedConfig && db.modelconfiguration[this._selectedConfig]) {
                     this._iConfig.disableSingleResourceCreation();
-                    this._config = db.configurations[this._selectedConfig];
+                    this._config = db.modelconfiguration[this._selectedConfig];
                     this._iConfig.setResource(this._config);
                     if (this._version)
                         this._iConfig.enableDuplication(this._version);
                     else
                         console.warn("Version is not loaded!");
                 }
-                if (!this._setup && db.setups && this._selectedSetup && db.setups[this._selectedSetup]) {
+                if (!this._setup && db.modelconfigurationsetup && this._selectedSetup && db.modelconfigurationsetup[this._selectedSetup]) {
                     this._iSetup.disableSingleResourceCreation();
-                    this._setup = db.setups[this._selectedSetup];
+                    this._setup = db.modelconfigurationsetup[this._selectedSetup];
                     this._iSetup.setResource(this._setup);
                     if (this._config)
                         this._iSetup.enableDuplication(this._config);

@@ -2,11 +2,11 @@ import { Action, ActionCreator } from "redux";
 import { ThunkAction } from "redux-thunk";
 import { RootState } from "../../app/store";
 import { Model, ModelParameter } from "./reducers";
-import { Dataset } from "../datasets/reducers";
 
-import { setupsSearchVariable, setupGetAll, sampleCollectionGet, getIdFromUri, getUser, sampleResourceGet } from 'model-catalog/actions';
-import { Model as MCModel, ModelConfigurationSetup, DatasetSpecification, SoftwareImage, ModelConfiguration, SoftwareVersion, SampleCollectionApi, SampleCollection, SampleResource, SampleResourceApi } from '@mintproject/modelcatalog_client';
-import { sortByPosition, getLabel } from 'model-catalog/util';
+import { Model as MCModel, ModelConfigurationSetup, DatasetSpecification, SoftwareImage, ModelConfiguration, SoftwareVersion } from '@mintproject/modelcatalog_client';
+import { sortByPosition, getLabel } from 'model-catalog-api/util';
+
+import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 
 import { IdMap } from "app/reducers";
 
@@ -68,6 +68,9 @@ const fixedToValue = (fx) => {
 }
 
 const dsSpecToIO = (ds: DatasetSpecification) => {
+    if (! ds.type) {
+        ds.type = [];
+    }
     let types = ds.type.filter((t:string) => t != 'DatasetSpecification');
     let io = {
         id: ds.id,
@@ -94,6 +97,7 @@ const dsSpecToIO = (ds: DatasetSpecification) => {
     return io;
 }
 
+// Transform to graphql representation TODO
 export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages: IdMap<SoftwareImage>) :  Model => {
     let model: Model = {
         id: setup.id,
@@ -111,7 +115,8 @@ export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages:
         model_name: "", //FIXME row["modelName"] || "",
         model_version: "", //FIXME row["versionName"] || "",
         model_configuration: "", //FIXME row["configurationName"] || "",
-        software_image: setup.hasSoftwareImage ? softwareImages[setup.hasSoftwareImage[0].id].label[0]: "",
+        software_image: setup.hasSoftwareImage && setup.hasSoftwareImage[0].id && softwareImages[setup.hasSoftwareImage[0].id] ?
+                (softwareImages[setup.hasSoftwareImage[0].id].label||[]).join("") : "",
         model_type: (setup.type || [])
             .filter(m => m != "ConfigurationSetup" && m != "ModelConfigurationSetup").join(', ')
             .replace('Model', ' Model'),
@@ -162,12 +167,11 @@ export const setupToOldModel = (setup: ModelConfigurationSetup,  softwareImages:
     return model;
 }
 
-// Query Model Catalog By Output? Variables
+// Query Model Catalog By Output? Variables TODO FIXME
 type QueryModelsThunkResult = ThunkAction<void, RootState, undefined, ModelsActionVariablesQuery>;
 export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (response_variables: string[],
         driving_variables: string[], softwareImages: IdMap<SoftwareImage>) => (dispatch) => {
     let models = [] as Model[];
-    //console.log('queryModelsByVariables(', response_variables, ',', driving_variables, ')');
 
     dispatch({
         type: MODELS_VARIABLES_QUERY,
@@ -179,19 +183,17 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
     let variables : string[] = response_variables[0].split(/\s*,\s/);
 
     let setups : ModelConfigurationSetup[] = [];
-    //console.log('let variables =', variables);
     Promise.all(
-        variables.map((variable:string) => {
-            /* FIXME
+        variables.map((variable:string) => ModelCatalogApi.myCatalog.modelConfigurationSetup.getSetupsByVariableLabel(variable))
+        /*{ FIXME
             let fromvar : string = getVariableProperty(variable, "created_from");
             if(fromvar) {
                 variable = fromvar;
-            }*/
+            }
             return setupsSearchVariable(variable);
-        })
+        })*/
     ).then((resp) => {
         setups = resp.reduce((arr:ModelConfigurationSetup[], r:ModelConfigurationSetup[]) => arr.concat(r), []);
-        //console.log('preview:', setups);
         dispatch({
             type: MODELS_VARIABLES_QUERY,
             variables: response_variables,
@@ -202,86 +204,41 @@ export const queryModelsByVariables: ActionCreator<QueryModelsThunkResult> = (re
 };
 
 
+//THIS SHOULD BE A QUERY ! FIXME
 export const fetchModelsFromCatalog = async (
             models: IdMap<Model>, 
             allSoftwareImages: IdMap<SoftwareImage>, 
-            allConfigs: ModelConfiguration[],
-            allVersions: SoftwareVersion[],
-            allModels: MCModel[] ) =>  {
+            allConfigs: IdMap<ModelConfiguration>,
+            allVersions: IdMap<SoftwareVersion>,
+            allModels: IdMap<MCModel>) =>  {
 
         // GET all data for the selected models.
         //console.log("getting all info", models);
         return Promise.all(
-            Object.keys(models || {}).map((modelid) => setupGetAll(modelid))
+            Object.keys(models || {}).map((modelid) => ModelCatalogApi.myCatalog.modelConfigurationSetup.getDetailsNoRedux(modelid))
         ).then(async (setups) => {
             let fixedModels = setups.map((setup) => setupToOldModel(setup, allSoftwareImages));
             Object.values(fixedModels).forEach((model) => {
                 if (model.hasRegion)
                     delete model.hasRegion;
-                    Object.values(allConfigs).forEach((cfg:ModelConfiguration) => {
-                        if ((cfg.hasSetup || []).some((setup:ModelConfigurationSetup) => setup.id === model.id))
-                            model.model_configuration = cfg.id;
+                Object.values(allConfigs).forEach((cfg:ModelConfiguration) => {
+                    if ((cfg.hasSetup || []).some((setup:ModelConfigurationSetup) => setup.id === model.id))
+                        model.model_configuration = cfg.id;
+                });
+                if (model.model_configuration) {
+                    Object.values(allVersions).forEach((ver:SoftwareVersion) => {
+                        if ((ver.hasConfiguration || []).some((cfg:ModelConfiguration) => cfg.id === model.model_configuration))
+                            model.model_version = ver.id;
                     });
-                    if (model.model_configuration) {
-                        Object.values(allVersions).forEach((ver:SoftwareVersion) => {
-                            if ((ver.hasConfiguration || []).some((cfg:ModelConfiguration) => cfg.id === model.model_configuration))
-                                model.model_version = ver.id;
-                        });
-                    }
-                    if (model.model_version) {
-                        Object.values(allModels).forEach((mod:MCModel) => {
-                            if ((mod.hasVersion || []).some((ver:SoftwareVersion) => ver.id === model.model_version))
-                                model.model_name = mod.id;
-                        });
-                    }
+                }
+                if (model.model_version) {
+                    Object.values(allModels).forEach((mod:MCModel) => {
+                        if ((mod.hasVersion || []).some((ver:SoftwareVersion) => ver.id === model.model_version))
+                            model.model_name = mod.id;
+                    });
+                }
             });
-            let sampleCollectionApi = new SampleCollectionApi();
-            let sampleResourceApi = new SampleResourceApi();
 
-            // The api does not return collections of inputs. FIXME
-            let fixCollection = Promise.all( Object.values(fixedModels).map((model:Model) =>
-                Promise.all( model.input_files.map((input) => {
-                    if (input.value && input.value.id && input.value.resources && input.value.resources.length === 0) {
-                        console.log('Checking collection...', input.value.id);
-                        return new Promise((resolve, reject) => {
-                            let id : string = getIdFromUri(input.value.id);
-                            let user : string = getUser();
-                            let api : SampleCollectionApi = new SampleCollectionApi();
-                            sampleCollectionApi.samplecollectionsIdGet({username: user, id: id})
-                            .then((sc:SampleCollection) => {
-                                if (sc.hasPart) {
-                                    //console.log('hasPart:', sc.hasPart);
-                                    let pResources = Promise.all(sc.hasPart.map((sr:SampleResource) => {
-                                        let srid : string = getIdFromUri(sr.id);
-                                        return sampleResourceApi.sampleresourcesIdGet({username: user, id: srid})
-                                    }));
-                                    pResources.then((srs:SampleResource[]) => {
-                                        //console.log('all sample resources!');
-                                        input.value.resources = srs.map((sr:SampleResource) => {
-                                            return {
-                                                url: sr.value ? <unknown>sr.value[0] as string : "",
-                                                id: sr.id,
-                                                name: sr.label ? sr.label[0] : "",
-                                                selected: true
-                                            };
-                                        });
-                                        if (srs.length > 0 && srs[0].dataCatalogIdentifier) {
-                                            input.value.id = srs[0].dataCatalogIdentifier[0];
-                                        }
-                                        resolve();
-                                    });
-                                } else {
-                                    resolve();
-                                }
-                            });
-                        });
-
-                    } else {
-                        return Promise.resolve();
-                    }
-                }) )
-            ) );
-            await fixCollection;
             return fixedModels;
         });
 }

@@ -23,7 +23,7 @@ export interface GalleryEntry {
 
 @customElement('image-gallery')
 export class ImageGallery extends LitElement {
-    @property({type:Object})
+    @property({type:Array})
     items: GalleryEntry[] = [];
 
     static get styles() {

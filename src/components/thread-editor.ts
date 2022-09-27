@@ -97,8 +97,8 @@ export class ThreadEditor extends LitElement {
             <div slot="content">
                 <form id="threadForm">
                 <p>
-                    Specify modeling thread details.
-                    A Thread constitutes analysis of a sub-objective using a single model. A sub-objective may have multiple modeling threads.
+                    Specify modeling sub-task details.
+                    <!--A sub-task constitutes analysis of a sub-objective using a single model. A sub-objective may have multiple modeling threads.-->
                 </p>
                 <input type="hidden" name="threadid"></input>
                 
