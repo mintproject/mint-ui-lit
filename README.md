@@ -9,7 +9,7 @@ The portal is connected to an Hasura GraphQL database, an execution engine and t
 To connect the ui with the other servicesm, please copy the configuration sample file `./src/config/config.json.sample`
 
 ```bash
-$ cp ./src/config/config.json.sample ./src/config/config.json
+$ cp config.js ./src/assets
 ```
 
 
@@ -19,12 +19,6 @@ Build the image
 
 ```
 $ docker build  mint_ui .
-```
-
-Push the image
-
-```bash
-$ docker push mint_ui <your_username>/mint_ui
 ```
 
 ### Without Docker
@@ -39,30 +33,7 @@ You can start the development server with:
 yarn start
 ```
 
-## Deploy using GitHub actions
 
-## SERVICES
 
-The portal is connected to an Hasura GraphQL database, an execution engine and the model-catalog.
-
-To change the version of the model-catalog you must change it on `package.json`
-
-To edit the configuration of other services please edit `/src/config/config.json`
-
-## BUILDING
-
-To create the production build use:
-```
-yarn build
-```
-
-```bash
-gpg --symmetric --cipher-algo AES256 src/config/config-tacc.json; mv src/config/config-tacc.json.gpg . 
-```
-
-Or build the wildfire version with:
-```bash
-yarn create-build-wildfire
-```
 
 
