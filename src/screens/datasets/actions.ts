@@ -6,6 +6,7 @@ import { OFFLINE_DEMO_MODE } from "../../app/actions";
 import { IdMap, MintPreferences } from "app/reducers";
 import { DateRange } from "screens/modeling/reducers";
 import { Region } from "screens/regions/reducers";
+import { MINT_PREFERENCES } from "config";
 
 export const DATASETS_VARIABLES_QUERY = 'DATASETS_VARIABLES_QUERY';
 export const DATASETS_GENERAL_QUERY = 'DATASETS_GENERAL_QUERY';
@@ -260,7 +261,7 @@ export const queryDatasetsByVariables: ActionCreator<QueryDatasetsThunkResult> =
         limit: 1000
     }
 
-    fetch(prefs.data_catalog_api + "/datasets/find", {
+    fetch(MINT_PREFERENCES.data_catalog_api + "/datasets/find", {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(dsQueryData)
@@ -310,7 +311,7 @@ export const queryGeneralDatasets: ActionCreator<QueryDatasetsGeneralThunkResult
     });
     let queryBody = _createDatasetQueryData(queryParameters);
 
-    fetch(prefs.data_catalog_api + "/find_datasets", {
+    fetch(MINT_PREFERENCES.data_catalog_api + "/find_datasets", {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         //mode: "no-cors",
@@ -397,7 +398,7 @@ export const queryDatasetResourcesAndSave: ActionCreator<QueryDatasetResourcesAn
         queryBody["spatial_coverage__intersects"] = region.geometries[0];
     }
 
-    fetch(prefs.data_catalog_api + "/datasets/find", {
+    fetch(MINT_PREFERENCES.data_catalog_api + "/datasets/find", {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(queryBody)
@@ -425,7 +426,7 @@ export const queryDatasetsByRegion: ActionCreator<QueryDatasetsByRegionThunkResu
         loading: true
     });
 
-    let req1 = fetch(prefs.data_catalog_api + "/datasets/find", {
+    let req1 = fetch(MINT_PREFERENCES.data_catalog_api + "/datasets/find", {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
@@ -487,7 +488,7 @@ export const queryDatasetResourcesRaw = (dsid: string, region: Region, prefs: Mi
     }
 
     let prom : Promise<Dataset[]> = new Promise((resolve, reject) => {
-        fetch(prefs.data_catalog_api + "/datasets/find", {
+        fetch(MINT_PREFERENCES.data_catalog_api + "/datasets/find", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(queryBody)
