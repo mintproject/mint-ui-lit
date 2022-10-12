@@ -6,7 +6,7 @@ MINT assists analysts to easily use sophisticated simulation models and data in 
 
 The portal is connected to an Hasura GraphQL database, an execution engine and the model-catalog. You can follow the following repository to install them: [MINT installation package](https://mintproject.readthedocs.io/en/latest/admin-guide/installation/)
 
-To connect the ui with the other servicesm, please copy the configuration sample file `./src/config/config.json.sample`
+To connect the ui with the other services, please copy the configuration sample file
 
 ```bash
 $ cp config.js ./src/assets
