@@ -10,7 +10,7 @@ window.REACT_APP_ENSEMBLE_MANAGER_API = "https://ensemble.mint.isi.edu/v1";
 window.REACT_APP_GOOGLE_MAPS_KEY = "AIzaSyBl8J85KibSuhHEw_j0JTlITVTBb8oXiMo";
 
 //Authentications
-window.REACT_APP_AUTH_SERVER = "https://auth.mint.isi.edu/auth/";
+window.REACT_APP_AUTH_SERVER = "https://auth.mint.isi.edu/"
 window.REACT_APP_AUTH_REALM = "production";
 window.REACT_APP_AUTH_CLIENT_ID = "mint-ui";
 
