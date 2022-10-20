@@ -126,3 +126,5 @@ jobs:
           repository: ${{ env.INFRASTRUCTURE_REPOSITORY }}
           path: infrastructure
           token: ${{ secrets.PRIVATE_REPO }}
+          updateFile: true
+          message: "Update mint-ui image "
