@@ -123,3 +123,6 @@ jobs:
           workDir: infrastructure/isi-dev
           propertyPath: 'components.ui.image.tag'
           value: ${{ env.DOCKER_TAG }}
+          repository: ${{ env.INFRASTRUCTURE_REPOSITORY }}
+          path: infrastructure
+          token: ${{ secrets.PRIVATE_REPO }}
