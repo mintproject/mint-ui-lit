@@ -119,8 +119,7 @@ jobs:
       - name: Update Image Version in the related HelmChart values.yaml
         uses: fjogeleit/yaml-update-action@main
         with:
-          valueFile: 'values.yaml'
-          workDir: infrastructure/isi-dev
+          valueFile: infrastructure/isi-dev/values.yaml
           propertyPath: 'components.ui.image.tag'
           value: ${{ env.DOCKER_TAG }}
           repository: ${{ env.INFRASTRUCTURE_REPOSITORY }}
