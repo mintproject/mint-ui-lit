@@ -70,6 +70,7 @@ jobs:
         id: exposeValue
         run: |
           echo "::set-output name=docker_tag::${{ env.DOCKER_TAG }}"
+
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
@@ -92,3 +93,26 @@ jobs:
           context: .
           tags: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
           file: ${{ env.DOCKER_FILE}}
+
+  update:
+    needs: push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create environment variable with the commit id
+        run: |
+          echo "DOCKER_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
+
+      - name: Expose the commit id
+        id: exposeValue
+        run: |
+          echo "::set-output name=docker_tag::${{ env.DOCKER_TAG }}"
+
+      - name: Update Image Version in the related HelmChart values.yaml
+        uses: fjogeleit/yaml-update-action@main
+        with:
+          valueFile: 'isi/values.yaml'
+          propertyPath: 'components.ui.image.tag'
+          value: ${{ env.DOCKER_TAG }}
+          repository: mintproject/mint-instances
+          branch: master
+          message: 'Update Image UI Version to ${{ steps.image.outputs.version }}'
