@@ -20,11 +20,11 @@ export interface DatasetQuery {
     limit?: number;
 }
 
-export class DataCatalogAdapter {
-    private static server : string = MINT_PREFERENCES.data_catalog_api;
+const data_catalog_api_url = MINT_PREFERENCES.data_catalog_api;
 
+export class DataCatalogAdapter {
     private static async fetchJson (path:string, query:any) : Promise<any> {
-        let res : Response = await fetch(DataCatalogAdapter.server + path, {
+        let res : Response = await fetch(data_catalog_api_url + path, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(query)
@@ -46,7 +46,7 @@ export class DataCatalogAdapter {
 
         query.limit = 100;
 
-        let obj = await this.fetchJson(`${MINT_PREFERENCES.data_catalog_api}/datasets/find`, query);
+        let obj = await this.fetchJson(`${data_catalog_api_url}/datasets/find`, query);
         return getDatasetsFromDCResponse(obj, {});
     }
 
@@ -63,8 +63,7 @@ export class DataCatalogAdapter {
             dsQueryData.end_time__gte = dates?.start_date?.toISOString()?.replace(/\.\d{3}Z$/,'');
             dsQueryData.start_time__lte = dates?.end_date?.toISOString()?.replace(/\.\d{3}Z$/,'');
         }
-
-        let res : any = await this.fetchJson(`${MINT_PREFERENCES}/datasets/find`, dsQueryData);
+        let res : any = await this.fetchJson(`${data_catalog_api_url}/datasets/find`, dsQueryData);
         let datasets: Dataset[] = getDatasetsFromDCResponse(res, {variables: driving_variables} as DatasetQueryParameters);
 
         datasets.map((ds) => {

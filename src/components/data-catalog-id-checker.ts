@@ -3,6 +3,9 @@ import { customElement, LitElement, property, html, css } from "lit-element";
 import "weightless/button";
 import "weightless/icon";
 import { MINT_PREFERENCES } from "config";
+
+const data_catalog_api_url = MINT_PREFERENCES.data_catalog_api;
+
 @customElement('data-catalog-id-checker')
 export class DataCatalogIdChecker extends LitElement {
     static get styles() {
@@ -35,7 +38,7 @@ export class DataCatalogIdChecker extends LitElement {
     }
 
     private _load () {
-        let req = fetch(MINT_PREFERENCES.data_catalog_api + "/datasets/get_dataset_info", {
+        let req = fetch(data_catalog_api_url + "/datasets/get_dataset_info", {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({"dataset_id": this.id})

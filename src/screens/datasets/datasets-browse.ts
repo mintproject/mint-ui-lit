@@ -14,6 +14,8 @@ import "./datasets-search";
 import "./dataset-detail";
 
 import { MINT_PREFERENCES } from 'config';
+const data_catalog_api_url = MINT_PREFERENCES.data_catalog_api;
+console.log("data_catalog_api_url", data_catalog_api_url);
 
 @customElement('datasets-browse')
 export class DatasetsBrowse extends connect(store)(PageViewElement) {
@@ -58,7 +60,7 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
                 <dataset-detail class="page" ?active="${this._dsid}"></dataset-detail>
             </div>`;
         else return html`
-            <iframe class="datacatalog" src="${MINT_PREFERENCES.data_catalog_api}"></iframe>`;
+            <iframe class="datacatalog" src="${data_catalog_api_url}"></iframe>`;
     }
 
     stateChanged(state: RootState) {
