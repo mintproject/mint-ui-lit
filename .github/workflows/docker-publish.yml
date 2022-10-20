@@ -12,6 +12,7 @@ env:
   IMAGE_NAME: ui
   #variables related with the repository
   REPOSITORY_MAIN_BRANCH: "master"
+  INFRASTRUCTURE_REPOSITORY: "mintproject/mint-instances"
   #variables related with the docker imager registry
   DOCKER_IMAGE_REPOSITORY: mintproject
   DOCKER_IMAGE_NAME: mint-ui-lit
@@ -106,13 +107,14 @@ jobs:
         id: exposeValue
         run: |
           echo "::set-output name=docker_tag::${{ env.DOCKER_TAG }}"
-      - name: Checkout Target Repository
 
+      - name: Checkout Target Repository
         uses: actions/checkout@v2
         with:
-          repository: mintproject/mint-instances
+          repository: ${{ env.INFRASTRUCTURE_REPOSITORY }}
           path: infrastructure
-          token: ${{ secrets.GITHUB_TOKEN }} 
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ env.REPOSITORY_MAIN_BRANCH }}
 
       - name: Update Image Version in the related HelmChart values.yaml
         uses: fjogeleit/yaml-update-action@main
