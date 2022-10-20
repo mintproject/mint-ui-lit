@@ -119,10 +119,7 @@ jobs:
       - name: Update Image Version in the related HelmChart values.yaml
         uses: fjogeleit/yaml-update-action@main
         with:
-          valueFile: 'isi-dev/values.yaml'
+          valueFile: 'values.yaml'
+          workDir: infrastructure/isi-dev
           propertyPath: 'components.ui.image.tag'
           value: ${{ env.DOCKER_TAG }}
-          repository: mintproject/mint-instances
-          branch: master
-          workDir: infrastructure
-          message: 'Update Image UI Version to ${{ steps.image.outputs.version }}'
