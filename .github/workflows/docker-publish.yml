@@ -113,7 +113,7 @@ jobs:
         with:
           repository: ${{ env.INFRASTRUCTURE_REPOSITORY }}
           path: infrastructure
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PRIVATE_REPO }}
           ref: ${{ env.REPOSITORY_MAIN_BRANCH }}
 
       - name: Update Image Version in the related HelmChart values.yaml
