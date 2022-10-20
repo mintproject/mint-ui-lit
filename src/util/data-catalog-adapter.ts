@@ -2,7 +2,6 @@ import { MintPreferences } from 'app/reducers';
 import { getDatasetResourceListFromDCResponse, getDatasetsFromDCResponse } from 'screens/datasets/actions';
 import { DataResource, Dataset, DatasetQueryParameters } from 'screens/datasets/reducers';
 
-import * as mintConfig from 'config/config.json';
 import { DateRange } from 'screens/modeling/reducers';
 import { Region } from 'screens/regions/reducers';
 import { MINT_PREFERENCES } from 'config';
@@ -47,7 +46,7 @@ export class DataCatalogAdapter {
 
         query.limit = 100;
 
-        let obj = await this.fetchJson("/datasets/find", query);
+        let obj = await this.fetchJson(`${MINT_PREFERENCES.data_catalog_api}/datasets/find`, query);
         return getDatasetsFromDCResponse(obj, {});
     }
 
@@ -65,7 +64,7 @@ export class DataCatalogAdapter {
             dsQueryData.start_time__lte = dates?.end_date?.toISOString()?.replace(/\.\d{3}Z$/,'');
         }
 
-        let res : any = await this.fetchJson("/datasets/find", dsQueryData);
+        let res : any = await this.fetchJson(`${MINT_PREFERENCES}/datasets/find`, dsQueryData);
         let datasets: Dataset[] = getDatasetsFromDCResponse(res, {variables: driving_variables} as DatasetQueryParameters);
 
         datasets.map((ds) => {
