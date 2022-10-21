@@ -116,8 +116,9 @@ jobs:
           token: ${{ secrets.PRIVATE_REPO }}
           ref: ${{ env.REPOSITORY_MAIN_BRANCH }}
 
-      - name: Update Image Version in the related HelmChart values.yaml
+      - name: Update ISI dev instance 
         uses: fjogeleit/yaml-update-action@main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
         with:
           valueFile: infrastructure/isi-dev/values.yaml
           propertyPath: 'components.ui.image.tag'
@@ -125,4 +126,28 @@ jobs:
           repository: ${{ env.INFRASTRUCTURE_REPOSITORY }}
           token: ${{ secrets.PRIVATE_REPO }}
           updateFile: true
-          message: "Update mint-ui image "
+          message: "Update mint-ui dev image "
+
+      - name: Update ISI prod instance 
+        uses: fjogeleit/yaml-update-action@main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        with:
+          valueFile: infrastructure/isi/values.yaml
+          propertyPath: 'components.ui.image.tag'
+          value: ${{ env.DOCKER_TAG }}
+          repository: ${{ env.INFRASTRUCTURE_REPOSITORY }}
+          token: ${{ secrets.PRIVATE_REPO }}
+          updateFile: true
+          message: "Update mint-ui isi image"
+
+      - name: Update Wifire instance 
+        uses: fjogeleit/yaml-update-action@main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        with:
+          valueFile: infrastructure/wifire/values.yaml
+          propertyPath: 'components.ui.image.tag'
+          value: ${{ env.DOCKER_TAG }}
+          repository: ${{ env.INFRASTRUCTURE_REPOSITORY }}
+          token: ${{ secrets.PRIVATE_REPO }}
+          updateFile: true
+          message: "Update mint-ui wifire image "
