@@ -44,7 +44,7 @@ type ThunkResult = ThunkAction<void, RootState, undefined, AppAction>;
 
 export const OFFLINE_DEMO_MODE = false;
 
-const DEFAULT_GRAPH = "mint@isi.edu";
+const DEFAULT_GRAPH = MINT_PREFERENCES.model_catalog_default_user;
 
 /* TODO: should be a way to update user attributes on keycloak;
 type SetProfileThunkResult = ThunkAction<Promise<void>, RootState, undefined, AppActionFetchUserPreferences>;
