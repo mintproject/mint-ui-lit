@@ -1,4 +1,5 @@
 window.REACT_APP_WELCOME_MESSAGE = "Welcome to MINT";
+window.REACT_APP_MODEL_CATALOG_DEFAULT_USER = "mint@isi.edu";
 
 // Mint Services
 window.REACT_APP_DATA_CATALOG_API = "https://data-catalog.mint.isi.edu";

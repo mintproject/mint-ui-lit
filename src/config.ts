@@ -27,9 +27,11 @@ const REACT_APP_WINGS_DATA_URL =    window.REACT_APP_WINGS_DATA_URL || '';
 const REACT_APP_WINGS_USERNAME = window.REACT_APP_WINGS_USERNAME || '';
 const REACT_APP_WINGS_PASSWORD = window.REACT_APP_WINGS_PASSWORD || '';
 const REACT_APP_WELCOME_MESSAGE: string = window.REACT_APP_WELCOME_MESSAGE || '';
+const REACT_APP_MODEL_CATALOG_DEFAULT_USER = window.REACT_APP_MODEL_CATALOG_DEFAULT_USER = "mint@isi.edu";
 
 const MINT_PREFERENCES : MintPreferences = {
-    welcome_message: REACT_APP_WELCOME_MESSAGE, 
+    welcome_message: REACT_APP_WELCOME_MESSAGE,
+    model_catalog_default_user: REACT_APP_MODEL_CATALOG_DEFAULT_USER,
     data_catalog_api: REACT_APP_DATA_CATALOG_API,
     model_catalog_api: REACT_APP_MODEL_CATALOG_API,
     ensemble_manager_api: REACT_APP_ENSEMBLE_MANAGER_API,
