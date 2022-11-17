@@ -1,0 +1,214 @@
+MINT:
+  hostname: dev.mint.isi.edu
+  default_user: mint@isi.edu
+  welcome_message: Welcome to MINT ISI
+  service:
+    type: ClusterIP
+    port: 80
+  auth:
+    client_id: model_catalog
+    url: https://auth.mint.isi.edu/
+    realm: production
+    ui_client_id: mint-ui
+  components:
+    cromo:
+      enabled: true
+      ingress:
+        enabled: true
+        className: public
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        hosts:
+          - host: cromo.dev.mint.isi.edu
+            paths:
+              - path: /
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - cromo.dev.mint.isi.edu
+            secretName: cromo-dev-tls
+    data_catalog:
+      enabled: true
+      ingress:
+        enabled: true
+        className: public
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        hosts:
+          - host: data-catalog.dev.mint.isi.edu
+            paths:
+              - path: /
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - data-catalog.dev.mint.isi.edu
+            secretName: data-catalog-tls
+    data_catalog_db:
+      enabled: true
+      persistence:
+        enabled: true
+        storageClass: data-hostpath
+        accessModes:
+          - ReadWriteOnce
+        size: 10Gi
+        annotations:
+          helm.sh/resource-policy: keep
+    model_catalog_endpoint:
+      enabled: true
+      environment:
+        dataset: modelcatalog
+        graph_base: http://endpoint.mint.isi.edu/modelCatalog-1.8.0/data/
+        prefix: https://w3id.org/okn/i/mint/
+      backup_file: /fuseki-base/seeds/model-catalog.trig
+      persistence:
+        enabled: true
+        storageClass: data-hostpath
+        accessModes:
+          - ReadWriteOnce
+        size: 10Gi
+        annotations:
+          helm.sh/resource-policy: keep
+      ingress:
+        enabled: true
+        className: public
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        hosts:
+          - host: endpoint.dev.mint.isi.edu
+            paths:
+              - path: /
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - endpoint.dev.mint.isi.edu
+            secretName: endpoint-tls
+    hasura:
+      enabled: true
+      environment:
+        enable_console: true
+        enable_dev_mode: false
+        unauthorized_role: anonymous
+      ingress:
+        enabled: true
+        className: public
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        hosts:
+          - host: graphql.dev.mint.isi.edu
+            paths:
+              - path: /
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - graphql.dev.mint.isi.edu
+            secretName: graphql-tls
+    hasura_db:
+      enabled: true
+      image:
+        repository: postgis/postgis
+        tag: 10-2.5-alpine
+        pullPolicy: IfNotPresent
+      persistence:
+        enabled: true
+        storageClass: data-hostpath
+        accessModes:
+          - ReadWriteOnce
+        size: 10Gi
+        annotations:
+          helm.sh/resource-policy: keep
+    model_catalog_explorer:
+      enabled: true
+      ingress:
+        enabled: true
+        className: public
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        hosts:
+          - host: models.dev.mint.isi.edu
+            paths:
+              - path: /
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - models.dev.mint.isi.edu
+            secretName: models-tls
+    model_catalog_api:
+      enabled: true
+      ingress:
+        enabled: true
+        className: public
+        annotations:
+          nginx.ingress.kubernetes.io/enable-cors: 'true'
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        hosts:
+          - host: api.models.dev.mint.isi.edu
+            paths:
+              - path: /
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - api.models.dev.mint.isi.edu
+            secretName: api.models-tls
+    ui:
+      enabled: true
+      image:
+        repository: mintproject/mint-ui-lit
+        tag: bc2306a4980714ef14fa790fc4df93c8a7396d26
+        pullPolicy: IfNotPresent
+      ingress:
+        enabled: true
+        className: public
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        hosts:
+          - host: dev.mint.isi.edu
+            paths:
+              - path: /
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - dev.mint.isi.edu
+            secretName: dev-mint-tls
+    mic_ui:
+      enabled: true
+      image:
+        environment:
+          api_url: https://api.mic.mint.isi.edu
+          airflow_url: https://airflow.mint.isi.edu/api/v1
+      ingress:
+        enabled: true
+        className: public
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        hosts:
+          - host: mic.dev.mint.isi.edu
+            paths:
+              - path: /
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - mic.dev.mint.isi.edu
+            secretName: mic-dev-mint-tls
+  google:
+    maps:
+      key: AIzaSyBl8J85KibSuhHEw_j0JTlITVTBb8oXiMo
+  secrets:
+    database:
+      data_catalog:
+        username: datacatalog
+        password: CHANGEME
+        database: datacatalog
+      model_catalog_endpoint:
+        username: admin
+        password: 8kC6ai9Olk
+      hasura:
+        username: hasura
+        database: hasura
+        password: CHANGEME
+    hasura:
+      jwt_secret: '{"type": "RS256", "key": "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmyQQ56WKKsVCUs8n9swlv5DV7st7UUdvNoDSnwovdU2vinQQ686//vRqlUJ5vpyI7r75qTXCPkXUitDhPvGEMfChnb9tuWdymSyZmMmT+34oaYo/2bGSZjTlLRVfRJjUnFYeWoVLoXVKJolyDWtU6bXbFNnUyysb/6YIpg5sSwxkLs/9yl6HsWdFconxPJO6KmMPSjcOc0fZermNq+cOEvj1OqRhVkxDqBebreI+zcgrJHNSN8d6cxTmfVQl1jIPHvxE5oN7qUdfYmK4D+SOlj8FlkUvwis+3Ix2AQsvNoOD1OzuqUOd/FpXBnEGaeTq9EMwDxplNqltR/qT3/poUwIDAQAB\n-----END CERTIFICATE-----"}'
+      admin_secret: SqPC5a1Sqe
+components:
+  ui:
+    image:
+      tag: f3c8545aa914088cb94fea333dbe90bd22f614a3
