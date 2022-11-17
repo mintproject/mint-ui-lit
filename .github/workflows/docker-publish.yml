@@ -93,33 +93,28 @@ jobs:
           context: .
           tags: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
           file: ${{ env.DOCKER_FILE}}
-
-  update:
-    needs: push
+  security:
+    permissions:
+      contents: read
+      security-events: write
+      packages: write
+    name: "Scan vulnerabilities in the image"
+    needs: [push]
     runs-on: ubuntu-latest
     steps:
-      - name: Create environment variable with the commit id
-        run: |
-          echo "DOCKER_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
-
-      - name: Expose the commit id
-        id: exposeValue
-        run: |
-          echo "::set-output name=docker_tag::${{ env.DOCKER_TAG }}"
-      - name: Checkout Target Repository
-
-        uses: actions/checkout@v2
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
         with:
-          repository: mintproject/mint-instances
-          path: infrastructure
-          token: ${{ secrets.GITHUB_TOKEN }} 
+          image-ref: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.docker_tag }}
+          format: "template"
+          template: "@/contrib/sarif.tpl"
+          output: "trivy-results.sarif"
+          severity: ${{ env.VULNERABILITY_SCAN_LEVEL }}
+          exit-code: "0"
+          ignore-unfixed: "true"
 
-      - name: Update Image Version in the related HelmChart values.yaml
-        uses: fjogeleit/yaml-update-action@main
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v1
+        if: always()
         with:
-          valueFile: 'isi-dev/values.yaml'
-          propertyPath: 'components.ui.image.tag'
-          value: ${{ env.DOCKER_TAG }}
-          repository: mintproject/mint-instances
-          branch: master
-          message: 'Update Image UI Version to ${{ steps.image.outputs.version }}'
+          sarif_file: "trivy-results.sarif"
