@@ -19,32 +19,32 @@ env:
 
 jobs:
   # test:
-    # runs-on: ubuntu-latest
-    # steps:
-    #   - uses: actions/checkout@v2
-    #   - name: Use Node.js
-    #     uses: actions/setup-node@v1
-    #     with:
-    #       node-version: "12.x"
-    #   - name: Cache Node.js modules
-    #     uses: actions/cache@v2
-    #     with:
-    #       path: ~/.npm
-    #       key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
-    #       restore-keys: |
-    #         ${{ runner.OS }}-node-
-    #         ${{ runner.OS }}-
-    #   - name: Install dependencies
-    #     run: npm install
-    #   - name: Build (webpack)
-    #     run: npm run create-build
-    #   - name: Test
-    #     run: npm test
-    #   - uses: actions/upload-artifact@v2
-    #     with:
-    #       name: nextjs-build
-    #       path: ./build/
-    #       retention-days: 1
+  # runs-on: ubuntu-latest
+  # steps:
+  #   - uses: actions/checkout@v2
+  #   - name: Use Node.js
+  #     uses: actions/setup-node@v1
+  #     with:
+  #       node-version: "12.x"
+  #   - name: Cache Node.js modules
+  #     uses: actions/cache@v2
+  #     with:
+  #       path: ~/.npm
+  #       key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
+  #       restore-keys: |
+  #         ${{ runner.OS }}-node-
+  #         ${{ runner.OS }}-
+  #   - name: Install dependencies
+  #     run: npm install
+  #   - name: Build (webpack)
+  #     run: npm run create-build
+  #   - name: Test
+  #     run: npm test
+  #   - uses: actions/upload-artifact@v2
+  #     with:
+  #       name: nextjs-build
+  #       path: ./build/
+  #       retention-days: 1
 
   push:
     # needs: test
@@ -94,7 +94,6 @@ jobs:
       #     tags: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
       #     file: ${{ env.DOCKER_FILE}}
 
-
   update:
     needs: push
     runs-on: ubuntu-latest
@@ -108,33 +107,46 @@ jobs:
         run: |
           echo "::set-output name=docker_tag::${{ env.DOCKER_TAG }}"
 
-      - name: Checkout Target Repository
+      - name: Checkout MINT Instances Repository
         uses: actions/checkout@v3
         with:
           repository: mintproject/mint-instances
           path: infrastructure
-          token: ${{ secrets.MINT_INSTANCES }} 
+          token: ${{ secrets.MINT_INSTANCES }}
           ref: master
 
-      - name: Checkout Target Repository
+      - name: Checkout MINT Chart Repository
         uses: actions/checkout@v3
         with:
           repository: mintproject/mint
           path: helm
-          token: ${{ secrets.MINT_INSTANCES }} 
-          ref: main 
+          token: ${{ secrets.MINT_INSTANCES }}
+          ref: main
+
+      - name: Update MINT ISI dev
+        uses: fjogeleit/yaml-update-action@main
+        with:
+          valueFile: helm/values.yaml
+          propertyPath: "components.ui.image.tag"
+          value: ${{ env.DOCKER_TAG }}
+          message: "Update Image Version to ${{ steps.image.outputs.version }}"
+          repository: mintproject/mint-instances
+          path: infrastructure
+          branch: master 
+          token: ${{ secrets.MINT_INSTANCES }}
+
 
       - name: Update helm charts
         uses: fjogeleit/yaml-update-action@main
         with:
           valueFile: helm/values.yaml
-          propertyPath: 'components.ui.image.tag'
+          propertyPath: "components.ui.image.tag"
           value: ${{ env.DOCKER_TAG }}
-          message: 'Update Image Version to ${{ steps.image.outputs.version }}'
+          message: "Update Image Version to ${{ steps.image.outputs.version }}"
           repository: mintproject/mint
           workDir: helm/
-          token: ${{ secrets.MINT_INSTANCES }} 
           branch: main
+          token: ${{ secrets.MINT_INSTANCES }}
 
   # security:
   #   permissions:
