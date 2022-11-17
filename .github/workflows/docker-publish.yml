@@ -134,6 +134,7 @@ jobs:
           repository: mintproject/mint
           workDir: helm/
           token: ${{ secrets.MINT_INSTANCES }} 
+          branch: main
 
   # security:
   #   permissions:
