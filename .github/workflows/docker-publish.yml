@@ -131,31 +131,8 @@ jobs:
           propertyPath: 'components.ui.image.tag'
           value: ${{ env.DOCKER_TAG }}
           message: 'Update Image Version to ${{ steps.image.outputs.version }}'
+          repository: mintproject/mint
           workDir: helm/
-
-      - name: Push helm development
-        run: |
-          cd helm 
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git push
-
-      - name: Update isi development 
-        uses: fjogeleit/yaml-update-action@main
-        with:
-          valueFile: 'isi-dev/values.yaml'
-          propertyPath: 'components.ui.image.tag'
-          value: ${{ env.DOCKER_TAG }}
-          message: 'Update Image Version to ${{ steps.image.outputs.version }}'
-          workDir: infrastructure/
-
-      - name: Push isi development
-        run: |
-          cd infrastructure
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git push
-        with:
           token: ${{ secrets.MINT_INSTANCES }} 
 
   security:
