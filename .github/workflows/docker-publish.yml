@@ -116,19 +116,14 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }} 
           ref: master
 
-      - name: Update Image Version in the related HelmChart values.yaml
+      - name: Update values.yaml
         uses: fjogeleit/yaml-update-action@main
         with:
           valueFile: 'isi-dev/values.yaml'
           propertyPath: 'components.ui.image.tag'
           value: ${{ env.DOCKER_TAG }}
-          repository: mintproject/mint-instances
-          branch: deployment/${{ steps.image.outputs.version }}
-          targetBranch: development
-          createPR: true
           message: 'Update Image Version to ${{ steps.image.outputs.version }}'
-          token: ${{ secrets.GITHUB_TOKEN }}
-          workDir: infrastructure
+          commit: true
 
   security:
     permissions:
