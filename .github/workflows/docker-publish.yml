@@ -113,7 +113,7 @@ jobs:
         with:
           repository: mintproject/mint-instances
           path: infrastructure
-          token: ${{ secrets.GITHUB_TOKEN }} 
+          token: ${{ secrets.MINT_INSTANCES }} 
           ref: master
 
       - name: Update values.yaml
