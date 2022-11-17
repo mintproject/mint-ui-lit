@@ -123,6 +123,14 @@ jobs:
           propertyPath: 'components.ui.image.tag'
           value: ${{ env.DOCKER_TAG }}
           message: 'Update Image Version to ${{ steps.image.outputs.version }}'
+          workDir: infrastructure/
+
+      - name: Push
+        run: |
+          cd infrastructure
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git push
 
   security:
     permissions:
