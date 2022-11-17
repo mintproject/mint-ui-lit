@@ -19,35 +19,35 @@ env:
 
 jobs:
   # test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Use Node.js
-  #       uses: actions/setup-node@v1
-  #       with:
-  #         node-version: "12.x"
-  #     - name: Cache Node.js modules
-  #       uses: actions/cache@v2
-  #       with:
-  #         path: ~/.npm
-  #         key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
-  #         restore-keys: |
-  #           ${{ runner.OS }}-node-
-  #           ${{ runner.OS }}-
-  #     - name: Install dependencies
-  #       run: npm install
-  #     - name: Build (webpack)
-  #       run: npm run create-build
-  #     - name: Test
-  #       run: npm test
-  #     - uses: actions/upload-artifact@v2
-  #       with:
-  #         name: nextjs-build
-  #         path: ./build/
-  #         retention-days: 1
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: "12.x"
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.OS }}-node-
+            ${{ runner.OS }}-
+      - name: Install dependencies
+        run: npm install
+      - name: Build (webpack)
+        run: npm run create-build
+      - name: Test
+        run: npm test
+      - uses: actions/upload-artifact@v2
+        with:
+          name: nextjs-build
+          path: ./build/
+          retention-days: 1
 
   push:
-    # needs: test
+    needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:
@@ -57,10 +57,10 @@ jobs:
 
       - uses: actions/checkout@v2
 
-      # - uses: actions/download-artifact@v2
-      #   with:
-      #     name: nextjs-build
-      #     path: build/
+      - uses: actions/download-artifact@v2
+        with:
+          name: nextjs-build
+          path: build/
 
       - name: Create environment variable with the commit id
         run: |
@@ -122,7 +122,7 @@ jobs:
           repository: mintproject/mint
           path: helm
           token: ${{ secrets.MINT_INSTANCES }} 
-          ref: master
+          ref: main 
 
       - name: Update helm charts
         uses: fjogeleit/yaml-update-action@main
