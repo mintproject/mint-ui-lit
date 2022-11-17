@@ -47,7 +47,7 @@ jobs:
     #       retention-days: 1
 
   push:
-    needs: test
+    # needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:
@@ -57,10 +57,10 @@ jobs:
 
       - uses: actions/checkout@v2
 
-      - uses: actions/download-artifact@v2
-        with:
-          name: nextjs-build
-          path: build/
+      # - uses: actions/download-artifact@v2
+      #   with:
+      #     name: nextjs-build
+      #     path: build/
 
       - name: Create environment variable with the commit id
         run: |
