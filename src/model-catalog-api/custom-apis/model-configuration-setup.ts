@@ -37,15 +37,7 @@ export class CustomModelConfigurationSetupApi extends DefaultReduxApi<ModelConfi
                     parentModelConfigurationPut.catch(reject);
                     parentModelConfigurationPut.then((config:ModelConfiguration) => {
                         console.log('config updated!', config);
-                        // We need to get the setup now because the post does not return parameters and datasets.
-                        dispatch(this.get(newSetup.id))
-                            .catch(reject)
-                            .then((newSetupUpdated) => {
-                                if (newSetupUpdated)
-                                    resolve(newSetupUpdated)
-                                else
-                                    reject(null)
-                            })
+                        resolve(newSetup);
                     })
                 });
             });
