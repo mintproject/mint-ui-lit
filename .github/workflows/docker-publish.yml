@@ -93,6 +93,42 @@ jobs:
           context: .
           tags: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
           file: ${{ env.DOCKER_FILE}}
+
+
+  update:
+    needs: push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create environment variable with the commit id
+        run: |
+          echo "DOCKER_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
+
+      - name: Expose the commit id
+        id: exposeValue
+        run: |
+          echo "::set-output name=docker_tag::${{ env.DOCKER_TAG }}"
+
+      - name: Checkout Target Repository
+        uses: actions/checkout@v3
+        with:
+          repository: mintproject/mint-instances
+          path: infrastructure
+          token: ${{ secrets.GITHUB_TOKEN }} 
+
+      - name: Update Image Version in the related HelmChart values.yaml
+        uses: fjogeleit/yaml-update-action@main
+        with:
+          valueFile: 'isi-dev/values.yaml'
+          propertyPath: 'components.ui.image.tag'
+          value: ${{ env.DOCKER_TAG }}
+          repository: mintproject/mint-instances
+          branch: deployment/${{ steps.image.outputs.version }}
+          targetBranch: development
+          createPR: true
+          message: 'Update Image Version to ${{ steps.image.outputs.version }}'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          workDir: infrastructure
+
   security:
     permissions:
       contents: read
