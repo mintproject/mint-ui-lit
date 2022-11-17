@@ -131,7 +131,7 @@ jobs:
           value: ${{ env.DOCKER_TAG }}
           message: "Update Image Version to ${{ steps.image.outputs.version }}"
           repository: mintproject/mint-instances
-          path: infrastructure
+          workDir: infrastructure
           branch: master 
           token: ${{ secrets.MINT_INSTANCES }}
 
