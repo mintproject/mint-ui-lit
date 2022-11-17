@@ -123,7 +123,6 @@ jobs:
           propertyPath: 'components.ui.image.tag'
           value: ${{ env.DOCKER_TAG }}
           message: 'Update Image Version to ${{ steps.image.outputs.version }}'
-          commit: true
 
   security:
     permissions:
