@@ -191,7 +191,7 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
 
     // Creates hashmap (id -> resource)
     protected _createIdMap (item:T) : IdMap<T> {
-        let uri : string = PREFIX_URI + item.id
+        let uri : string = item.id.startsWith(PREFIX_URI) ? item.id : PREFIX_URI + item.id;
         let map : IdMap<T> = {} as IdMap<T>;
         map[uri] = item;
         item.id = uri;
