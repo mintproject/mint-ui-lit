@@ -1,4 +1,4 @@
-FROM nginx:1.13.0-alpine
+FROM nginx:1.23.2-alpine
 WORKDIR /usr/share/nginx/html
 COPY ./build/ ./
 RUN sed -i "s/es6\///g" index.html
