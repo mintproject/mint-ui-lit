@@ -47,7 +47,7 @@ jobs:
   #         retention-days: 1
 
   push:
-    needs: test
+    # needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:
