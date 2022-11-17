@@ -122,5 +122,4 @@ jobs:
           value: ${{ env.DOCKER_TAG }}
           repository: mintproject/mint-instances
           branch: master
-          workDir: infrastructure
           message: 'Update Image UI Version to ${{ steps.image.outputs.version }}'
