@@ -114,6 +114,7 @@ jobs:
           repository: mintproject/mint-instances
           path: infrastructure
           token: ${{ secrets.GITHUB_TOKEN }} 
+          ref: master
 
       - name: Update Image Version in the related HelmChart values.yaml
         uses: fjogeleit/yaml-update-action@main
