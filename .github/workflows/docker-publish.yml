@@ -125,7 +125,7 @@ jobs:
 
       - name: Update MINT ISI master 
         uses: fjogeleit/yaml-update-action@main
-        if: github.ref == 'refs/heads/master'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           valueFile: isi/values.yaml
           propertyPath: "MINT.components.ui.image.tag"
@@ -138,7 +138,7 @@ jobs:
 
       - name: Update MINT ISI WIFIRE 
         uses: fjogeleit/yaml-update-action@main
-        if: github.ref == 'refs/heads/master'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           valueFile: wifire/values.yaml
           propertyPath: "MINT.components.ui.image.tag"
@@ -151,7 +151,7 @@ jobs:
 
       - name: Update MINT ISI dev
         uses: fjogeleit/yaml-update-action@main
-        if: github.ref == 'refs/heads/dev'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
         with:
           valueFile: isi-dev/values.yaml
           propertyPath: "MINT.components.ui.image.tag"
@@ -165,7 +165,7 @@ jobs:
 
       - name: Update helm charts
         uses: fjogeleit/yaml-update-action@main
-        if: github.ref == 'refs/heads/master'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           valueFile: helm/values.yaml
           propertyPath: "components.ui.image.tag"
