@@ -25,7 +25,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: "12.x"
+          node-version: "16.x"
       - name: Cache Node.js modules
         uses: actions/cache@v2
         with:
@@ -38,8 +38,6 @@ jobs:
         run: npm install
       - name: Build (webpack)
         run: npm run create-build
-      - name: Test
-        run: npm test
       - uses: actions/upload-artifact@v2
         with:
           name: nextjs-build
@@ -106,21 +104,100 @@ jobs:
         id: exposeValue
         run: |
           echo "::set-output name=docker_tag::${{ env.DOCKER_TAG }}"
-      - name: Checkout Target Repository
 
-        uses: actions/checkout@v2
+      - name: Checkout MINT Instances Repository
+        uses: actions/checkout@v3
         with:
           repository: mintproject/mint-instances
           path: infrastructure
-          token: ${{ secrets.GITHUB_TOKEN }} 
+          token: ${{ secrets.MINT_INSTANCES }}
+          ref: master
 
-      - name: Update Image Version in the related HelmChart values.yaml
-        uses: fjogeleit/yaml-update-action@main
+      - name: Checkout MINT Chart Repository
+        uses: actions/checkout@v3
+        if: github.ref == 'refs/heads/master'
         with:
-          valueFile: 'isi-dev/values.yaml'
-          propertyPath: 'components.ui.image.tag'
+          repository: mintproject/mint
+          path: mint-chart 
+          token: ${{ secrets.MINT_INSTANCES }}
+          ref: main
+
+
+      - name: Update MINT ISI master 
+        uses: fjogeleit/yaml-update-action@main
+        if: github.ref == 'refs/heads/master'
+        with:
+          valueFile: isi/values.yaml
+          propertyPath: "MINT.components.ui.image.tag"
           value: ${{ env.DOCKER_TAG }}
+          message: "Update Image Version to ${{ env.DOCKER_TAG }}"
           repository: mintproject/mint-instances
-          branch: master
           workDir: infrastructure
-          message: 'Update Image UI Version to ${{ steps.image.outputs.version }}'
+          branch: master 
+          token: ${{ secrets.MINT_INSTANCES }}
+
+      - name: Update MINT ISI WIFIRE 
+        uses: fjogeleit/yaml-update-action@main
+        if: github.ref == 'refs/heads/master'
+        with:
+          valueFile: wifire/values.yaml
+          propertyPath: "MINT.components.ui.image.tag"
+          value: ${{ env.DOCKER_TAG }}
+          message: "Update Image Version to ${{ env.DOCKER_TAG }}"
+          repository: mintproject/mint-instances
+          workDir: infrastructure
+          branch: master 
+          token: ${{ secrets.MINT_INSTANCES }}
+
+      - name: Update MINT ISI dev
+        uses: fjogeleit/yaml-update-action@main
+        if: github.ref == 'refs/heads/dev'
+        with:
+          valueFile: isi-dev/values.yaml
+          propertyPath: "MINT.components.ui.image.tag"
+          value: ${{ env.DOCKER_TAG }}
+          message: "Update Image Version to ${{ env.DOCKER_TAG }}"
+          repository: mintproject/mint-instances
+          workDir: infrastructure
+          branch: master 
+          token: ${{ secrets.MINT_INSTANCES }}
+
+
+      - name: Update helm charts
+        uses: fjogeleit/yaml-update-action@main
+        if: github.ref == 'refs/heads/master'
+        with:
+          valueFile: helm/values.yaml
+          propertyPath: "components.ui.image.tag"
+          value: ${{ env.DOCKER_TAG }}
+          message: "Update Image Version to ${{ env.DOCKER_TAG }}"
+          repository: mintproject/mint
+          workDir: mint-chart/
+          branch: main
+          token: ${{ secrets.MINT_INSTANCES }}
+
+  security:
+    permissions:
+      contents: read
+      security-events: write
+      packages: write
+    name: "Scan vulnerabilities in the image"
+    needs: [push]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.docker_tag }}
+          format: "template"
+          template: "@/contrib/sarif.tpl"
+          output: "trivy-results.sarif"
+          severity: ${{ env.VULNERABILITY_SCAN_LEVEL }}
+          exit-code: "0"
+          ignore-unfixed: "true"
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v1
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
