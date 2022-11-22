@@ -133,7 +133,7 @@ export class MintParameters extends connect(store)(MintThreadPage) {
                                             <div class="caption">${input.description}.</div>
                                         </td>
                                         <td>
-                                            ${input.value}
+                                            ${input.default == "__region_geojson" ? "Region Geojson"  : input.value}
                                         </td>
                                     </tr>
                                     `
