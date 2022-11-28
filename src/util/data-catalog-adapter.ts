@@ -23,8 +23,8 @@ export interface DatasetQuery {
 const data_catalog_api_url = MINT_PREFERENCES.data_catalog_api;
 
 export class DataCatalogAdapter {
-    private static async fetchJson (path:string, query:any) : Promise<any> {
-        let res : Response = await fetch(data_catalog_api_url + path, {
+    private static async fetchJson (url:string, query:any) : Promise<any> {
+        let res : Response = await fetch(url, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(query)
@@ -88,7 +88,7 @@ export class DataCatalogAdapter {
             filter: filters,
             limit: 5000
         };
-        let obj : any = await this.fetchJson("/datasets/dataset_resources", resQueryData);
+        let obj : any = await this.fetchJson(`${data_catalog_api_url}/datasets/dataset_resources`, resQueryData);
         return getDatasetResourceListFromDCResponse(obj);
     }
 }
