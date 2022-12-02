@@ -143,14 +143,20 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
         };
         reqParams[this._name] = resource;
         let req : Promise<T> = this._api[this._lname + 'sIdPut'](reqParams);
-        req.then((resp:T) => {
+        // FIXME on the server: get the modified resource as put response.
+        /*req.then((resp:T) => {
             if (this._redux) dispatch({
                 type: MODEL_CATALOG_ADD,
                 kind: this._lname,
                 payload: this._idReducer({}, resp)
             });
         });
-        return req;
+        return req;*/
+        return new Promise<T>((resolve, reject) => {
+            let req : Promise<T> = this._api[this._lname + 'sIdPut'](reqParams);
+            req.catch(reject);
+            req.then((resp:T) => resolve(dispatch(this.get(resp.id))));
+        });
     }
 
     public post : ActionThunk<Promise<T>, MCActionAdd> = (resource:T) => (dispatch) => {
@@ -159,6 +165,7 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
         else {
             let reqParams = { user: this._username };
             reqParams[this._name] = resource;
+            /* This is the faster code
             let req : Promise<T> = this._api[this._lname + 'sPost'](reqParams);
             req.then((resp:T) => {
                 if (this._redux) dispatch({
@@ -167,7 +174,12 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
                     payload: this._createIdMap(resp)
                 });
             });
-            return req;
+            return req;*/
+            return new Promise<T>((resolve, reject) => {
+                let req : Promise<T> = this._api[this._lname + 'sPost'](reqParams);
+                req.catch(reject);
+                req.then((resp:T) => resolve(dispatch(this.get(resp.id))));
+            });
         }
     }
 
@@ -191,7 +203,7 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
 
     // Creates hashmap (id -> resource)
     protected _createIdMap (item:T) : IdMap<T> {
-        let uri : string = PREFIX_URI + item.id
+        let uri : string = item.id.startsWith(PREFIX_URI) ? item.id : PREFIX_URI + item.id;
         let map : IdMap<T> = {} as IdMap<T>;
         map[uri] = item;
         item.id = uri;

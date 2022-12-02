@@ -354,10 +354,6 @@ export class TaskEditor extends connect(store)(LitElement) {
             }
             else {
                 // Add Task
-
-                //FIXME: adds some random id as response variable, will be edited on the first step.
-                //let response_variable = Object.values(this._variableMap)[0].id;
-
                 //let response_variable = (form.elements["response_variable"] as HTMLInputElement).value;
                 //let driving_variable = (form.elements["driving_variable"] as HTMLInputElement).value || "";
                 this.task = {

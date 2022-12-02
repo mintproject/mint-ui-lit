@@ -610,29 +610,13 @@ export const addTask = (problem_statement: ProblemStatementInfo, task: Task) : P
 
 // Add Task
 export const addTaskWithThread = (problem_statement: ProblemStatementInfo, task: Task, thread: ThreadInfo) : Promise<string[]> =>  {
-    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
-    let taskobj = taskToGQL(task, problem_statement);
-    let threadobj = threadInfoToGQL(thread, task.id, task.regionid);
-    taskobj["threads"] = {
-        data: [threadobj]
-    }
-    return APOLLO_CLIENT.mutate({
-        mutation: newTaskGQL,
-        variables: {
-            object: taskobj
-        }
-    }).then((result) => {
-        if(result.errors && result.errors.length > 0) {
-            console.log("ERROR");
-            console.log(result);
-        }
-        else {
-            return [
-                result.data.insert_task.returning[0].id,
-                result.data.insert_task.returning[0].threads[0].id
-            ];
-        }
-        return null;        
+    return new Promise((resolve, reject) => {
+        addTask(problem_statement, task).then((taskId:string) => {
+            task.id = taskId;
+            addThread(task, thread).then((threadId:string) => {
+                resolve([taskId, threadId]);
+            })
+        });
     });
 };
 

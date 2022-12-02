@@ -33,7 +33,7 @@ export class CustomModelConfigurationSetupApi extends DefaultReduxApi<ModelConfi
                         config.hasSetup = [ newSetup ];
                     }
                     let parentModelConfigurationPut : Promise<ModelConfiguration> =
-                            dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.put(config));
+                            dispatch(ModelCatalogApi.myCatalog.modelConfiguration.put(config));
                     parentModelConfigurationPut.catch(reject);
                     parentModelConfigurationPut.then((config:ModelConfiguration) => {
                         console.log('config updated!', config);
