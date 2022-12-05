@@ -457,10 +457,12 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                 });
             });
         }
-        this.isSaved = getThreadDatasetsStatus(thread) === TASK_DONE;
-        if (reqEdit || !this.isSaved) {
-            this.onEditEnable();
-            this.open = true;
+        if(thread) {
+            this.isSaved = getThreadDatasetsStatus(thread) === TASK_DONE;
+            if (reqEdit || !this.isSaved) {
+                this.onEditEnable();
+                this.open = true;
+            }
         }
     }
 
