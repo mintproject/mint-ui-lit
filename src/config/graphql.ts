@@ -1,5 +1,6 @@
 import { ApolloClient, createHttpLink, InMemoryCache, split, NormalizedCacheObject } from '@apollo/client';
-import { WebSocketLink } from '@apollo/client/link/ws';
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
+import { createClient } from 'graphql-ws';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { MintPreferences, User } from 'app/reducers';
 import { SubscriptionClient } from 'subscriptions-transport-ws';
@@ -49,19 +50,18 @@ export class GraphQL {
     let protocol = MINT_PREFERENCES.graphql.enable_ssl? "wss://" : "ws://"
     let uri = protocol + MINT_PREFERENCES.graphql.endpoint
     // Subscription Link
-    const subscriptionClient = new SubscriptionClient(
-      uri,
+    const subscriptionClient = createClient(
       {
-        reconnect: true,
+        url: uri,
+        shouldRetry: () => true,
         lazy: true,
         connectionParams: {
           headers: KeycloakAdapter.getAccessTokenHeader()
         }
       }
     );
-    // @ts-ignore
-    subscriptionClient.maxConnectTimeGenerator.duration = () => subscriptionClient.maxConnectTimeGenerator.max;    
-    return new WebSocketLink(subscriptionClient);
+    // subscriptionClient.maxConnectTimeGenerator.duration = () => subscriptionClient.maxConnectTimeGenerator.max;    
+    return new GraphQLWsLink(subscriptionClient);
   }
 
   static getHTTPSLink() {
