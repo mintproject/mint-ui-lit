@@ -202,7 +202,6 @@ export const subscribeProblemStatementsList: ActionCreator<SubProblemListThunkRe
             regionId: regionid
         }
     }).subscribe(result => {
-        console.log("subscription ok");
         if(result.errors && result.errors.length > 0) {
             console.log("ERROR");
             console.log(result);

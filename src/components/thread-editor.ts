@@ -95,7 +95,7 @@ export class ThreadEditor extends LitElement {
         <wl-dialog id="threadDialog" fixed backdrop blockscrolling>
             <h3 slot="header">Modeling thread</h3>
             <div slot="content">
-                <form id="threadForm">
+                <form id="threadForm" @submit="${this._onEditThreadSubmit}">
                 <p>
                     Specify modeling sub-task details.
                     <!--A sub-task constitutes analysis of a sub-objective using a single model. A sub-objective may have multiple modeling threads.-->
@@ -140,7 +140,8 @@ export class ThreadEditor extends LitElement {
         `;
     }
 
-    async _onEditThreadSubmit() {
+    async _onEditThreadSubmit(e) {
+        e.preventDefault();
         let form:HTMLFormElement = this.shadowRoot!.querySelector<HTMLFormElement>("#threadForm")!;
         //if(formElementsComplete(form, ["thread_name"])) {
             let threadid = (form.elements["threadid"] as HTMLInputElement).value;

@@ -126,6 +126,9 @@ export class MintParameters extends connect(store)(MintThreadPage) {
                                 </thead>
                                 <tbody>
                                 ${fixed_parameters.map((input) => {
+                                    if(input.default == "__region_geojson")
+                                        input.value = "Region GeoJSON";
+
                                     return html`
                                     <tr>
                                         <td style="width:60%">
@@ -133,7 +136,7 @@ export class MintParameters extends connect(store)(MintThreadPage) {
                                             <div class="caption">${input.description}.</div>
                                         </td>
                                         <td>
-                                            ${input.default == "__region_geojson" ? "Region Geojson"  : input.value}
+                                            ${input.value}
                                         </td>
                                     </tr>
                                     `
@@ -160,6 +163,9 @@ export class MintParameters extends connect(store)(MintThreadPage) {
                             </thead>
                             <tbody>
                             ${input_parameters.map((input) => {
+                                if(input.default == "__region_geojson")
+                                    input.value = "Region GeoJSON";
+
                                 let bindings:string[] = ensembles[input.id!];
                                 return html`
                                 <tr>

@@ -217,7 +217,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
             threads = orderedKeys;
         }
 
-        let selectedThread = this._selectedTask && this._selectedTask.threads[this._selectedThreadId.toString()] ?
+        let selectedThread = this._selectedThreadId && this._selectedTask && this._selectedTask.threads[this._selectedThreadId.toString()] ?
             this._selectedTask.threads[this._selectedThreadId.toString()]
             : null;
 
@@ -294,7 +294,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                 <div class="cltrow taskrow" id="task_${task.id}"
                                         @click="${this._onSelectTask}"
                                         data-taskid="${task.id}">
-                                    <div style="">
+                                    <div>
                                         <wl-icon style="padding: 0px 5px; font-size: 2em;">
                                             ${this._selectedTask && this._selectedTask.id === task.id ? 'folder_open' : 'folder'}
                                         </wl-icon>
@@ -341,7 +341,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                                             <div class="cltrow" id="thread_${thread.id}"
                                                     @click="${this._onSelectThread}"
                                                     data-threadid="${thread.id}">
-                                                <div class="cltmain" style="${this._selectedThreadId != thread.id ? "font-weight: normal;" : ""}">
+                                                <div class="cltmain" .style="${this._selectedThreadId != thread.id ? "font-weight: normal;" : ""}">
                                                     ${pname && pname != this._selectedTask.name? pname : "Default sub-task"}
                                                     <br/>
                                                     ${last_event ? 
