@@ -738,6 +738,10 @@ const modelInputOutputToGQL = (io: any) => {
 const modelParameterToGQL = (input: ModelParameter) => {
     if ("default" in input && input["default"] != null)
         input["default"] = input["default"] + "";
+    if ("min" in input && input["min"] != null)
+        input["min"] = input["min"] + "";
+    if ("max" in input && input["max"] != null)
+        input["max"] = input["max"] + "";        
     if ("value" in input && input["value"] != null)
         input["fixed_value"] = input["value"] + "";
     delete input["value"]
