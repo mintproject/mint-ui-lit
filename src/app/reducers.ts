@@ -70,6 +70,8 @@ export interface MintPreferences {
   messagingSenderId: string,
   appId: string,
   cromo_api?: string
+  airflow_api?: string
+  airflow_dag_download_thread_id?: string
 }
 
 export interface GraphQLPreferences {

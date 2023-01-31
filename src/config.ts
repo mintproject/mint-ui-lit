@@ -20,16 +20,23 @@ const REACT_APP_GRAPHQL_ENDPOINT: string = window.REACT_APP_GRAPHQL_ENDPOINT || 
 const REACT_APP_GRAPHQL_ENABLE_SSL: boolean = window.REACT_APP_GRAPHQL_ENABLE_SSL;
 const REACT_APP_VISUALIZATION_URL: string = window.REACT_APP_VISUALIZATION_URL || '';
 const REACT_APP_INGESTION_API: string = window.REACT_APP_INGESTION_API || '';
-const REACT_APP_WINGS_SERVER : string = window.REACT_APP_WINGS_SERVER || '';
+const REACT_APP_WINGS_SERVER: string = window.REACT_APP_WINGS_SERVER || '';
 const REACT_APP_WINGS_DOMAIN = window.REACT_APP_WINGS_DOMAIN || '';
 const REACT_APP_WINGS_DATA_DIR = window.REACT_APP_WINGS_DATA_DIR || '';
-const REACT_APP_WINGS_DATA_URL =    window.REACT_APP_WINGS_DATA_URL || '';
+const REACT_APP_WINGS_DATA_URL = window.REACT_APP_WINGS_DATA_URL || '';
 const REACT_APP_WINGS_USERNAME = window.REACT_APP_WINGS_USERNAME || '';
 const REACT_APP_WINGS_PASSWORD = window.REACT_APP_WINGS_PASSWORD || '';
 const REACT_APP_WELCOME_MESSAGE: string = window.REACT_APP_WELCOME_MESSAGE || '';
-const REACT_APP_MODEL_CATALOG_DEFAULT_USER = window.REACT_APP_MODEL_CATALOG_DEFAULT_USER  || "mint@isi.edu";
+const REACT_APP_MODEL_CATALOG_DEFAULT_USER = window.REACT_APP_MODEL_CATALOG_DEFAULT_USER || "mint@isi.edu";
+/**
+ * window.REACT_APP_AIRFLOW_API = "https://airflow.mint.isi.edu";
+ * window.REACT_APP_AIRFLOW_DAG_DOWNLOAD_THREAD_ID = "download_thread_v3"
+ */
+const REACT_APP_AIRFLOW_API: string = window.REACT_APP_AIRFLOW_API || '';
+const REACT_APP_AIRFLOW_DAG_DOWNLOAD_THREAD_ID = window.REACT_APP_AIRFLOW_DAG_DOWNLOAD_THREAD_ID || '';
 
-const MINT_PREFERENCES : MintPreferences = {
+
+const MINT_PREFERENCES: MintPreferences = {
     welcome_message: REACT_APP_WELCOME_MESSAGE,
     model_catalog_default_user: REACT_APP_MODEL_CATALOG_DEFAULT_USER,
     data_catalog_api: REACT_APP_DATA_CATALOG_API,
@@ -70,9 +77,12 @@ const MINT_PREFERENCES : MintPreferences = {
     storageBucket: "",
     messagingSenderId: "",
     appId: "",
+    airflow_api: REACT_APP_AIRFLOW_API,
+    airflow_dag_download_thread_id: REACT_APP_AIRFLOW_DAG_DOWNLOAD_THREAD_ID,
+
 };
 
 
 export {
-    MINT_PREFERENCES   
+    MINT_PREFERENCES
 }
