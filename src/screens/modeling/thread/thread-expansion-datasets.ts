@@ -443,8 +443,6 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                 this.modelVisible[m.id] = true;
                 let bindings : ModelIOBindings = this.thread.model_ensembles![m.id].bindings || {};
                 let reqInputs : ModelIO[] = (m.input_files||[]).filter(i => !i.value);
-                console.log("bindings: ", bindings);
-                console.log("inputs:   ", reqInputs)
                 reqInputs.forEach((input:ModelIO) => {
                     this.loadInput(input, bindings);
                     let dataslices : Dataslice[] = (bindings[input.id]||[])
@@ -457,10 +455,12 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                 });
             });
         }
-        this.isSaved = getThreadDatasetsStatus(thread) === TASK_DONE;
-        if (reqEdit || !this.isSaved) {
-            this.onEditEnable();
-            this.open = true;
+        if(thread) {
+            this.isSaved = getThreadDatasetsStatus(thread) === TASK_DONE;
+            if (reqEdit || !this.isSaved) {
+                this.onEditEnable();
+                this.open = true;
+            }
         }
     }
 

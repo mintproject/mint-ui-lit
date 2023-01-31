@@ -91,13 +91,8 @@ jobs:
           context: .
           tags: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
           file: ${{ env.DOCKER_FILE}}
-  security:
-    permissions:
-      contents: read
-      security-events: write
-      packages: write
-    name: "Scan vulnerabilities in the image"
-    needs: [push]
+  update:
+    needs: push
     runs-on: ubuntu-latest
     steps:
       - name: Create environment variable with the commit id

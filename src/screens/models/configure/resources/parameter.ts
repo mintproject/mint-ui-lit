@@ -191,7 +191,7 @@ export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<
 
         return html`
             ${value} ${isDefault && this.isSetup ? '(default)' : ''}
-            ${r.usesUnit ? r.usesUnit[0].label : ''}`;
+            ${r.usesUnit && r.usesUnit[0] ? r.usesUnit[0].label : ''}`;
     }
 
     protected _editResource (r:Parameter) {

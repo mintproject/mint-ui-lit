@@ -126,6 +126,10 @@ export class MintParameters extends connect(store)(MintThreadPage) {
                                 </thead>
                                 <tbody>
                                 ${fixed_parameters.map((input) => {
+                                    let display_value = input.value;
+                                    if(input.default == "__region_geojson")
+                                        display_value = "Region GeoJSON";
+
                                     return html`
                                     <tr>
                                         <td style="width:60%">
@@ -133,7 +137,7 @@ export class MintParameters extends connect(store)(MintThreadPage) {
                                             <div class="caption">${input.description}.</div>
                                         </td>
                                         <td>
-                                            ${input.default == "__region_geojson" ? "Region Geojson"  : input.value}
+                                            ${display_value}
                                         </td>
                                     </tr>
                                     `
@@ -161,6 +165,15 @@ export class MintParameters extends connect(store)(MintThreadPage) {
                             <tbody>
                             ${input_parameters.map((input) => {
                                 let bindings:string[] = ensembles[input.id!];
+
+                                let display_value = (bindings||[]).join(", ");
+                                let hidden = false;
+                                if(input.default == "__region_geojson") {
+                                    display_value = "Region GeoJSON";
+                                    hidden = true;
+                                    bindings = [ input.default ];
+                                }
+
                                 return html`
                                 <tr>
                                     <td style="width:60%">
@@ -174,12 +187,14 @@ export class MintParameters extends connect(store)(MintThreadPage) {
                                         </div>
                                     </td>
                                     <td>
-                                        ${(bindings && bindings.length > 0 && !this._editMode) ? 
-                                            bindings.join(", ")
+                                        ${(!this._editMode) ? 
+                                            display_value
                                             :
                                             html`
                                             <div class="input_full">
+                                                ${hidden ? display_value : ""}
                                                 <input type="text" name="${input.id}"
+                                                    ?hidden="${hidden}"
                                                     placeholder="${input.default? input.default : ''}"
                                                     @change="${() => this._validateInput(model, input)}"
                                                     value="${(bindings||[]).join(", ")}"></input>

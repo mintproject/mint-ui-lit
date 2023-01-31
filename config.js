@@ -1,17 +1,19 @@
-window.REACT_APP_WELCOME_MESSAGE = "Welcome to MINT";
-window.REACT_APP_MODEL_CATALOG_DEFAULT_USER = "mint@isi.edu";
-
+window.REACT_APP_WELCOME_MESSAGE = "Welcome to MINT Demo Indiana";
+window.REACT_APP_MODEL_CATALOG_DEFAULT_USER= "mint@isi.edu";
 // Mint Services
-window.REACT_APP_DATA_CATALOG_API = "https://data-catalog.mint.isi.edu";
-window.REACT_APP_CROMO_API = "https://cromo.wildfire.mint.isi.edu/v1.0";
-window.REACT_APP_MODEL_CATALOG_API = "https://api.models.mint.isi.edu/v1.8.0";
-window.REACT_APP_ENSEMBLE_MANAGER_API = "https://ensemble.mint.isi.edu/v1";
+window.REACT_APP_CROMO_URL = "http://localhost:30001";
+window.REACT_APP_DATA_CATALOG_API = "http://localhost:30002";
+window.REACT_APP_MODEL_CATALOG_API = "http://localhost:30004/v1.8.0";
+window.REACT_APP_ENSEMBLE_MANAGER_API = "http://localhost:30008/v1";
+window.REACT_APP_GRAPHQL_ENDPOINT = "localhost:30003/v1/graphql";
+window.REACT_APP_GRAPHQL_ENABLE_SSL = false;
+
 
 // Google API Key
 window.REACT_APP_GOOGLE_MAPS_KEY = "AIzaSyBl8J85KibSuhHEw_j0JTlITVTBb8oXiMo";
 
 //Authentications
-window.REACT_APP_AUTH_SERVER = "https://auth.mint.isi.edu/"
+window.REACT_APP_AUTH_SERVER = "https://auth.mint.isi.edu/";
 window.REACT_APP_AUTH_REALM = "production";
 window.REACT_APP_AUTH_CLIENT_ID = "mint-ui";
 
@@ -34,7 +36,7 @@ window.REACT_APP_WINGS_ONTURL = "https://data.mint.isi.edu/files/wings-export/do
 window.REACT_APP_GRAPHQL_ENDPOINT = "graphql.mint.isi.edu/v1/graphql";
 window.REACT_APP_GRAPHQL_ENABLE_SSL = "True";
 
-//Visualization and Ingestion
+//Visualization and Ingestion - Not used any more - Remove ?
 window.REACT_APP_VISUALIZATION_URL = "https://viz.mint.isi.edu";
 window.REACT_APP_INGESTION_API = "https://node1.ingestion.mint.isi.edu/v1.3.0";
 

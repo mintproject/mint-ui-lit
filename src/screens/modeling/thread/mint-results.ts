@@ -356,13 +356,13 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                                     `;
                                                 }
                                             })}
-                                            ${grouped_ensemble.params.map((param) => html`<td>
-                                                    ${ensemble.bindings[param.id] ? 
-                                                        ensemble.bindings[param.id] : 
-                                                        param_defaults[param.id]
+                                            ${grouped_ensemble.params.map((param) => {
+                                                    let pvalue = ensemble.bindings[param.id] ? ensemble.bindings[param.id] : param_defaults[param.id]
+                                                    if (pvalue.match(/^__region_geojson/)) {
+                                                        pvalue = "Region Geojson";
                                                     }
-                                                </td>` 
-                                            )}
+                                                    return html`<td>${pvalue}</td>` 
+                                            })}
                                         </tr>
                                     `;
                                 })}
