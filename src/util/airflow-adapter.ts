@@ -1,6 +1,7 @@
 import { MINT_PREFERENCES } from "config";
 
 interface AirflowResultsConfiguration {
+    origin: string,
     email: string,
     thread_id: string,
     graphql_endpoint: string,
@@ -16,7 +17,8 @@ interface AirflowConfiguration {
 
 
 export class AirflowAdapter {
-    private static server: string = "https://airflow.mint.isi.edu/api/v1/";
+    private static server: string = MINT_PREFERENCES.airflow_api;
+    private static dagDownloadThreadId: string = MINT_PREFERENCES.airflow_dag_download_thread_id;
     private static _accessToken: string;
 
     public static setAccessToken(token: string) {
@@ -46,18 +48,20 @@ export class AirflowAdapter {
     }
 
     public static sendResultsToEmail(email: string, threadId: string, subtask_url: string, problem_statement_name: string, subtask_name: string): Promise<void> {
+        const origin = MINT_PREFERENCES.graphql.endpoint.replace('/v1/graphql', '');
         let conf: AirflowConfiguration = {
             conf: {
                 email: email,
                 thread_id: threadId,
-                graphql_endpoint: MINT_PREFERENCES.graphql.endpoint,
+                graphql_endpoint: "https://" + MINT_PREFERENCES.graphql.endpoint,
                 subtask_url: subtask_url,
                 problem_statement_name: problem_statement_name,
-                subtask_name: subtask_name
+                subtask_name: subtask_name,
+                origin: origin
             }
         }
         return new Promise<void>((resolve, reject) => {
-            let req: Promise<Response> = fetch(AirflowAdapter.server + "dags/download_thread_dev_v3/dagRuns", {
+            let req: Promise<Response> = fetch(AirflowAdapter.server + "/dags/" + AirflowAdapter.dagDownloadThreadId + "/dagRuns", {
                 method: 'POST',
                 headers: {
                     'Content-Type': "application/json",
