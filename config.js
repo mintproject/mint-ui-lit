@@ -37,3 +37,6 @@ window.REACT_APP_GRAPHQL_ENABLE_SSL = "True";
 //Visualization and Ingestion
 window.REACT_APP_VISUALIZATION_URL = "https://viz.mint.isi.edu";
 window.REACT_APP_INGESTION_API = "https://node1.ingestion.mint.isi.edu/v1.3.0";
+
+window.REACT_APP_AIRFLOW_API = "https://airflow.mint.isi.edu/api/v1";
+window.REACT_APP_AIRFLOW_DAG_DOWNLOAD_THREAD_ID = "download_thread"
