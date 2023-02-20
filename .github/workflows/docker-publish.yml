@@ -91,6 +91,7 @@ jobs:
           context: .
           tags: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
           file: ${{ env.DOCKER_FILE}}
+
   update:
     needs: push
     runs-on: ubuntu-latest
@@ -140,6 +141,20 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           valueFile: wifire/values.yaml
+          propertyPath: "MINT.components.ui.image.tag"
+          value: ${{ env.DOCKER_TAG }}
+          message: "Update UI"
+          repository: mintproject/mint-instances
+          workDir: infrastructure
+          branch: master 
+          token: ${{ secrets.MINT_INSTANCES }}
+
+
+      - name: Update MINT tacc 
+        uses: fjogeleit/yaml-update-action@main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        with:
+          valueFile: tacc/values.yaml
           propertyPath: "MINT.components.ui.image.tag"
           value: ${{ env.DOCKER_TAG }}
           message: "Update UI"
