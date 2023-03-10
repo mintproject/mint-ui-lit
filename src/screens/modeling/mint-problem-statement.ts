@@ -245,9 +245,9 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
                             : ""}
                     </wl-title>
                 </div>
-                <div style="display:flex; align-items: center; border: 1px solid; border-radius: 6px; padding: 3px 6px; background: papayawhip;">
-                    <wl-icon>warning</wl-icon>
-                    Some of the models shown here have not been properly calibrated
+                <div style="display:flex; align-items: center; border: 1px solid; border-radius: 6px; padding: 3px 7px; background-color:aliceblue; color:black;">
+                    <wl-icon style="margin-right: 4px; color: cadetblue;">info</wl-icon>
+                    Models are shown for demonstration purposes and have not been validated
                 </div>
             </div>
 
