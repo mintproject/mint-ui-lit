@@ -172,8 +172,8 @@ export class ModelsTree extends connect(store)(PageViewElement) {
         })
 
         Object.values(this._models).forEach((m:Model) => {
-            if (m.hasModelCategory && m.hasModelCategory.length > 0) {
-                m.hasModelCategory.forEach((cat:ModelCategory) => {
+            if (m.hasModelCategory && m.hasModelCategory.filter(c => !!c.id).length > 0) {
+                m.hasModelCategory.filter(c => !!c.id).forEach((cat:ModelCategory) => {
                     let category : string = getLabel(this._categories[cat.id]);
                     categoryModels[category].push(m);
                     if (this._selectedModel === m.id) this._visible[category] = true;
