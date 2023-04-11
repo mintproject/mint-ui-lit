@@ -64,12 +64,17 @@ export class DataCatalogAdapter {
             dsQueryData.start_time__lte = dates?.end_date?.toISOString()?.replace(/\.\d{3}Z$/,'');
         }
         let res : any = await this.fetchJson(`${data_catalog_api_url}/datasets/find`, dsQueryData);
-        let datasets: Dataset[] = getDatasetsFromDCResponse(res, {variables: driving_variables} as DatasetQueryParameters);
+        let datasets: Dataset[] = [];
+        if (!!res && res.result === "success") {
+            getDatasetsFromDCResponse(res, {variables: driving_variables} as DatasetQueryParameters);
+            datasets.map((ds) => {
+                delete ds["spatial_coverage"];
+                ds.resources_loaded = false; //FIXME?
+            });
+        } else { 
+            console.warn(`${data_catalog_api_url}/datasets/find no result.`, dsQueryData), res;
+        }
 
-        datasets.map((ds) => {
-            delete ds["spatial_coverage"];
-            ds.resources_loaded = false; //FIXME?
-        });
         return datasets;
     }
 
@@ -89,6 +94,6 @@ export class DataCatalogAdapter {
             limit: 5000
         };
         let obj : any = await this.fetchJson(`${data_catalog_api_url}/datasets/dataset_resources`, resQueryData);
-        return getDatasetResourceListFromDCResponse(obj);
+        return obj && obj.resources ? getDatasetResourceListFromDCResponse(obj) : [];
     }
 }

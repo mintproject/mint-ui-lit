@@ -11,6 +11,7 @@ import { IdMap } from "app/reducers";
 import { getId, getLabel, isMainRegion } from "model-catalog-api/util";
 import { SharedStyles } from "styles/shared-styles";
 import { doBoxesIntersect, getBoundingBoxFromGeoShape } from "screens/regions/actions";
+import { ModelIO } from "screens/models/reducers";
 
 
 const PER_PAGE = 10;
@@ -27,11 +28,16 @@ interface ModelOptionCategory {
     isVisible: boolean;
 }
 
+export interface ModelOutputMatch {
+    model: ModelConfiguration | ModelConfigurationSetup,
+    outputMatchs: DatasetSpecification[]
+}
+
 export type OptionFilter = (currentOptions: ModelOption[]) => ModelOption[];
 
-@customElement("model-selector")
+@customElement("dataset-compatible-model")
 //export class ModelSelector extends connect(store)(LitElement) {
-export class ModelSelector extends LitElement {
+export class DatasetCompatibleModel extends LitElement {
     // Data loaded from the model-catalog.
     @property({type: Object}) private models : IdMap<Model>;
     @property({type: Object}) private versions : IdMap<SoftwareVersion>;
@@ -57,7 +63,7 @@ export class ModelSelector extends LitElement {
 
     // State
     @property({type: Boolean}) private loadingData : boolean = false;
-    @property({type: Boolean}) private editMode : boolean = false;
+    @property({type: Boolean}) private editMode : boolean = true;
     @property({type: String}) private textFilter : string = "";
     @property({type: String}) private selectedIndicatorId : string = "";
     @property({type: Object}) private regionFilter : LocalRegion;
@@ -65,6 +71,8 @@ export class ModelSelector extends LitElement {
     // Pagination
     @property({type: Number}) private currentPage: number = 1;
     @property({type: Number}) private maxPage: number = 1;
+
+    @property({type: Object}) private input: ModelIO | null = null;
 
     static get styles () : CSSResult [] {
         return [ SharedStyles, css`
@@ -81,8 +89,9 @@ export class ModelSelector extends LitElement {
         this.loadDataFromModelCatalog();
     }
 
-    public onModelCountUpdate:(length: number) => void;
-    
+    public setInput (input:ModelIO):void {
+        if (input) this.input = input;
+    }
 
     private loadDataFromModelCatalog () : void {
         // Load data from the model-catalog
@@ -197,7 +206,7 @@ export class ModelSelector extends LitElement {
     }
 
     private getModelUrl (modelid:string) : string {
-        return "ethiopia/models/explore/" + this.urls[modelid];
+        return "ethiopia/models/explore/" + this.urls[modelid]; //FIXME
     }
 
     private clearPossibleOptions () : void {
@@ -235,11 +244,14 @@ export class ModelSelector extends LitElement {
         return Object.values(this.configurations).concat(Object.values(this.setups));
     }
 
-    public getSelectedModels(): ModelConfigurationSetup[] {
+    public getSelectedModels(): ModelOutputMatch[] {
         if (this.loadingData) return null;
         return this.options
                 .filter((opt:ModelOption) => opt.isSelected)
-                .map((opt:ModelOption) => opt.value);
+                .map(opt => ({
+                    model: opt.value,
+                    outputMatchs: this.getMatchingOutputs(opt.value)
+                }));
     }
 
     public setSelected (selectedIds:Set<string>) : void {
@@ -251,15 +263,6 @@ export class ModelSelector extends LitElement {
             )
             this.requestUpdate();
         }
-    }
-
-    public addSelected (selectedIds:Set<string>) : void {
-        if (this.loadingData) return;
-        this.options.forEach((opt:ModelOption) => {
-            if (selectedIds.has(opt.value.id))
-                opt.isSelected = true;
-        });
-        this.requestUpdate();
     }
 
     public setVisible (visibleIds:Set<string>) : void {
@@ -297,19 +300,31 @@ export class ModelSelector extends LitElement {
 
     public render () : TemplateResult {
         let visibleOptions : ModelOption[] = [];
-        if (!this.loadingData) {
+        let possibleOptionsCount : number = 0;
+        if (this.loadingData) {
+            return html`<wl-progress-bar style="width: 100%;"></wl-progress-bar>`
+        } else {
             visibleOptions = this.options.filter((opt:ModelOption) => {
                 return opt.isVisible && !opt.isSelected;
             });
-            visibleOptions = this.applyTextFilter(visibleOptions);
             visibleOptions = this.applyRegionFilter(visibleOptions);
-            visibleOptions = this.applyIndicatorFilter(visibleOptions);
+            visibleOptions = this.applyVariableFilter(visibleOptions);
+            possibleOptionsCount = visibleOptions.length + this.options.filter(opt => opt.isSelected).length;
+            visibleOptions = this.applyTextFilter(visibleOptions);
             let hiddenByCategory : number = visibleOptions.filter((opt:ModelOption) => opt.categoryid && !this.optionCategories[opt.categoryid].isVisible).length;
             let mx = Math.ceil((visibleOptions.length - hiddenByCategory) / PER_PAGE);
             this.maxPage = mx === 0 && this.options.filter((opt:ModelOption) => opt.isSelected).length > 0 ? 1 : mx;
         }
 
+        // If theres no possible option, render nothing
+        if (possibleOptionsCount === 0)
+            return null;
+
         return html`
+            <div style="padding: 10px 3px">
+                <h4 style="margin: 5px;"> Some of the following models can generate the variables required for this input: </h4>
+                ${this.input.variables.map(x => html`<code style="padding-right:5px; display:inline-block;">${x}</code>`)}
+            </div>
             <div style="border: 1px solid #EEE; margin: 10px 0px;">
                 <!-- Input text to search -->
                 ${this.editMode ? this.renderPaginator() : ""}
@@ -325,16 +340,7 @@ export class ModelSelector extends LitElement {
                         </tr>
                     </thead>
                     <tbody>
-                    ${this.loadingData ?
-                        html`
-                            <tr>
-                                <td colspan="4">
-                                    <wl-progress-bar style="width: 100%;"></wl-progress-bar>
-                                </td>
-                            </tr>
-                        `
-                        : this.renderMatchingModels(visibleOptions)
-                    }
+                        ${this.renderMatchingModels(visibleOptions)}
                     </tbody>
                 </table>
             </div>
@@ -351,7 +357,7 @@ export class ModelSelector extends LitElement {
             <span style="display: block; white-space: nowrap;">
                 ${this.loadingData ? 
                     html`Page 1 of <loading-dots style="--width: 25px; margin: 5px;"></loading-dots>` :
-                    html`Page ${this.currentPage} of ${this.maxPage}`
+                    html`Page ${this.currentPage < this.maxPage ? this.currentPage : this.maxPage} of ${this.maxPage}`
                 }
             </span>
             <wl-button flat inverted ?disabled=${this.loadingData || this.currentPage >= this.maxPage } @click=${this.onNextPage}>Next</wl-button>
@@ -406,7 +412,6 @@ export class ModelSelector extends LitElement {
             return opt.isSelected;
         });
 
-        this.onModelCountUpdate(visibleOptions.length + selectedOptions.length);
         if (visibleOptions.length === 0 && selectedOptions.length === 0)
             return html`
                 <tr>
@@ -493,6 +498,7 @@ export class ModelSelector extends LitElement {
             <td>
                 <a target="_blank" href="${this.getModelUrl(model.id)}">${getLabel(model)}</a>
                 ${model.description ? html`<div>${model.description[0]}</div>` : ''}
+                ${this.renderMatchingVariables(model)}
             </td> 
             <td> 
                 ${model.hasModelCategory && model.hasModelCategory.length > 0 ? 
@@ -554,29 +560,62 @@ export class ModelSelector extends LitElement {
         ));
     }
 
-    public setIndicator (indicatorid: string) : void {
-        this.selectedIndicatorId = indicatorid;
-    }
-
-    private applyIndicatorFilter (options:ModelOption[]) : ModelOption[] {
-        if (!this.selectedIndicatorId || !this.datasetSpecifications || !this.variablePresentations || !this.standardVariables)
+    private applyVariableFilter (options:ModelOption[]) : ModelOption[] {
+        if (!this.input || !this.datasetSpecifications || !this.variablePresentations || !this.standardVariables)
             return options;
-
+        
         //FIXME: this does not work for "useful for calculating index"
         return options.filter((opt:ModelOption) => 
             !!opt.value.hasOutput && 
             opt.value.hasOutput
                 .map((output:DatasetSpecification) => this.datasetSpecifications[output.id])
-                .some((output:DatasetSpecification) => 
-                    (output.hasPresentation||[])
-                        .map((vp:VariablePresentation) => this.variablePresentations[vp.id])
-                        .some((vp:VariablePresentation) => 
-                            (vp.hasStandardVariable||[])
-                                .map((sv:StandardVariable) => this.standardVariables[sv.id])
-                                .some((sv:StandardVariable) => sv.label[0] === this.selectedIndicatorId)
-                        )
-                )
+                .some((output:DatasetSpecification) => {
+                    let realPresentation = (output.hasPresentation||[])
+                        .map((vp:VariablePresentation) => this.variablePresentations[vp.id]);
+                    let providedVariables : string[] = [];
+                    realPresentation.forEach((vp:VariablePresentation) => {
+                        let realSTDVariables = (vp.hasStandardVariable||[]).map(sv => this.standardVariables[sv.id]);
+                        realSTDVariables.forEach(sv => providedVariables.push(getLabel(sv)));
+                    })
+                    if (this.input.variables.every(x => providedVariables.includes(x))) {
+                        console.log(`The output ${output.label} for the model ${opt.value.label} is valid.`);
+                        console.log(' ', realPresentation.map(p => `${p.label} [${(p.hasStandardVariable||[]).map(x=>this.standardVariables[x.id]).map(t=>`${t.label}`).join(", ")}]`).join('\n  '));
+                        return true;
+                    }
+                    return false;
+                })
         )
 
+    }
+
+    private renderMatchingVariables(model: ModelConfiguration | ModelConfigurationSetup): unknown {
+        let outs = this.getMatchingOutputs(model);
+        if (outs.length === 0) return null;
+        return html`<div> <b>Matching outputs:</b> ${ outs.map(out => html`<code style="display:inline-block; padding-right: 5px;">${getLabel(out)}</code>`) }</div>`;
+    }
+
+    private getMatchingOutputs : (model: ModelConfiguration | ModelConfigurationSetup) => DatasetSpecification[] = (model) => {
+        if (!this.input || !this.datasetSpecifications || !this.variablePresentations || !this.standardVariables)
+            return [];
+
+        //Copied from above 
+        let outs : DatasetSpecification[] = [];
+        model.hasOutput
+            .map((output: DatasetSpecification) => this.datasetSpecifications[output.id])
+            .some((output: DatasetSpecification) => {
+                let realPresentation = (output.hasPresentation || [])
+                    .map((vp: VariablePresentation) => this.variablePresentations[vp.id]);
+                let providedVariables: string[] = [];
+                realPresentation.forEach((vp: VariablePresentation) => {
+                    let realSTDVariables = (vp.hasStandardVariable || []).map(sv => this.standardVariables[sv.id]);
+                    realSTDVariables.forEach(sv => providedVariables.push(getLabel(sv)));
+                })
+                if (this.input.variables.every(x => providedVariables.includes(x))) {
+                    outs.push(output);
+                    return true;
+                }
+                return false;
+            })
+        return outs;
     }
 }
