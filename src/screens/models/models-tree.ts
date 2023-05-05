@@ -159,11 +159,11 @@ export class ModelsTree extends connect(store)(PageViewElement) {
     }
 
     protected render() {
-        if (!this._models || !this._region || !this._regions || !this._categories) 
+        if (!this._models || !this._regions || !this._categories) 
             return html`<div style="width:100%; text-align: center;"><wl-progress-spinner></wl-progress-spinner></div>`;
 
         const visibleSetup = (setup: ModelConfigurationSetup) =>
-                !!setup && (!setup.hasRegion || setup.hasRegion.length == 0 || (setup.hasRegion||[]).some((region:Region) =>
+                !!setup && (!this._region  || !setup.hasRegion || setup.hasRegion.length == 0 || (setup.hasRegion||[]).some((region:Region) =>
                     isSubregion(this._region.model_catalog_uri, this._regions[region.id])));
 
         let categoryModels = {"Uncategorized": []};
