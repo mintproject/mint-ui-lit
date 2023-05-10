@@ -7,7 +7,7 @@ import { IdMap, User } from 'app/reducers'
 
 import { Model, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Person, Organization, Region, FundingInformation, 
          Image, Grid, TimeInterval, Process, Visualization, SourceCode, SoftwareImage, Parameter, DatasetSpecification,
-         Intervention, VariablePresentation, Unit } from '@mintproject/modelcatalog_client';
+         Intervention, VariablePresentation, Unit, StandardVariable } from '@mintproject/modelcatalog_client';
 
 import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
 import { ModelCatalogState } from 'model-catalog-api/reducers';
@@ -76,6 +76,7 @@ export class ModelView extends connect(store)(PageViewElement) {
     @property({type: Object}) private _datasetSpecifications2 : IdMap<DatasetSpecification> = {} as IdMap<DatasetSpecification>;
     @property({type: Object}) private _interventions : IdMap<Intervention> = {} as IdMap<Intervention>;
     @property({type: Object}) private _variablePresentations : IdMap<VariablePresentation> = {} as IdMap<VariablePresentation>;
+    @property({type: Object}) private _sv : IdMap<StandardVariable> = {} as IdMap<StandardVariable>;
 
     // Computed data
     @property({type: Array}) private _modelRegions : string[] | null = null;
@@ -818,7 +819,6 @@ export class ModelView extends connect(store)(PageViewElement) {
     }
 
     private _goToTab (tabid:tabType) {
-        //console.log('GoToTab:', tabid);
         this._tab = tabid;
         if (tabid === 'tech') {
             let db = (store.getState() as RootState).modelCatalog;
@@ -1540,11 +1540,13 @@ export class ModelView extends connect(store)(PageViewElement) {
                                     <td>${vp.hasLongName}</td>
                                     <td>${vp.description}</td>
                                     <td style="word-wrap: break-word;">
-                                    ${vp.hasStandardVariable && vp.hasStandardVariable.length > 0 ? html`
-                                        <a class="monospaced link" target="_blank" href="${vp.hasStandardVariable[0].id}">
-                                            ${getLabel(vp.hasStandardVariable[0])}
-                                        </a>
-                                    ` : '-'}
+                                    ${vp.hasStandardVariable && vp.hasStandardVariable.length > 0 ? 
+                                        vp.hasStandardVariable.map(sv => this._sv[sv.id]).filter(sv => !!sv).map((sv) => 
+                                            html`
+                                            <a class="monospaced link" target="_blank" href="${sv.id}">
+                                                ${getLabel(sv)}
+                                            </a>
+                                    `) : '-'}
                                     </td>
                                     <td style="min-width: 80px;">
                                         ${vp.usesUnit && vp.usesUnit.length > 0 ? 
@@ -1756,13 +1758,14 @@ export class ModelView extends connect(store)(PageViewElement) {
         let rSet = store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getAll());
         let rReg = store.dispatch(ModelCatalogApi.myCatalog.region.getAll());
         let rUnits = store.dispatch(ModelCatalogApi.myCatalog.unit.getAll());
+        let rSV = store.dispatch(ModelCatalogApi.myCatalog.standardVariable.getAll());
         rVer.then(() => this._shouldUpdateConfigs = true);
         rCfg.then(() => this._shouldUpdateConfigs = true);
         rSet.then(() => this._shouldUpdateSetups = true);
         rReg.then(() => this._loadingRegions = false);
         rUnits.then((units:IdMap<Unit>) => this._units = units);
 
-        Promise.all([rVer, rCfg, rSet, rReg]).then(() => {
+        Promise.all([rVer, rCfg, rSet, rReg, rSV]).then(() => {
             this._loadingGlobals = false;
             this.stateChanged(store.getState() as RootState);
         });
@@ -1795,6 +1798,7 @@ export class ModelView extends connect(store)(PageViewElement) {
             this._configs = db.modelconfiguration;
             this._setups = db.modelconfigurationsetup;
             this._regions = db.region;
+            this._sv = db.standardvariable;
 
             if (modelChanged) {
                 this._selectedModel = ui.selectedModel;
