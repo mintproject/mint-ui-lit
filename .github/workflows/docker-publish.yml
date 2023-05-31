@@ -82,6 +82,7 @@ jobs:
           context: .
           tags: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ steps.branch-name.outputs.current_branch }}, ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_TAG }}
           file: ${{ env.DOCKER_FILE}}
+          platforms: linux/amd64,linux/arm64
 
       - name: Running on the default branch.
         if: steps.branch-name.outputs.is_default == 'true'
@@ -91,7 +92,8 @@ jobs:
           context: .
           tags: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
           file: ${{ env.DOCKER_FILE}}
-
+          platforms: linux/amd64,linux/arm64
+          
   update:
     needs: push
     runs-on: ubuntu-latest
