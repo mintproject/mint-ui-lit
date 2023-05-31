@@ -69,6 +69,12 @@ jobs:
         run: |
           echo "::set-output name=docker_tag::${{ env.DOCKER_TAG }}"
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
@@ -93,7 +99,7 @@ jobs:
           tags: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
           file: ${{ env.DOCKER_FILE}}
           platforms: linux/amd64,linux/arm64
-          
+
   update:
     needs: push
     runs-on: ubuntu-latest
@@ -120,12 +126,11 @@ jobs:
         if: github.ref == 'refs/heads/master'
         with:
           repository: mintproject/mint
-          path: mint-chart 
+          path: mint-chart
           token: ${{ secrets.MINT_INSTANCES }}
           ref: main
 
-
-      - name: Update MINT ISI master 
+      - name: Update MINT ISI master
         uses: fjogeleit/yaml-update-action@main
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
@@ -135,10 +140,10 @@ jobs:
           message: "Update Image Version to ${{ env.DOCKER_TAG }}"
           repository: mintproject/mint-instances
           workDir: infrastructure
-          branch: master 
+          branch: master
           token: ${{ secrets.MINT_INSTANCES }}
 
-      - name: Update MINT ISI WIFIRE 
+      - name: Update MINT ISI WIFIRE
         uses: fjogeleit/yaml-update-action@main
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
@@ -148,11 +153,10 @@ jobs:
           message: "Update UI"
           repository: mintproject/mint-instances
           workDir: infrastructure
-          branch: master 
+          branch: master
           token: ${{ secrets.MINT_INSTANCES }}
 
-
-      - name: Update MINT tacc 
+      - name: Update MINT tacc
         uses: fjogeleit/yaml-update-action@main
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
@@ -162,7 +166,7 @@ jobs:
           message: "Update UI"
           repository: mintproject/mint-instances
           workDir: infrastructure
-          branch: master 
+          branch: master
           token: ${{ secrets.MINT_INSTANCES }}
 
       - name: Update MINT ISI dev
@@ -175,9 +179,8 @@ jobs:
           message: "Update UI"
           repository: mintproject/mint-instances
           workDir: infrastructure
-          branch: master 
+          branch: master
           token: ${{ secrets.MINT_INSTANCES }}
-
 
       - name: Update helm charts
         uses: fjogeleit/yaml-update-action@main
@@ -216,5 +219,4 @@ jobs:
         uses: github/codeql-action/upload-sarif@v1
         if: always()
         with:
-
           sarif_file: "trivy-results.sarif"
