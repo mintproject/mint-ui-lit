@@ -1,36 +1,61 @@
-import { Model, ModelCategory, SoftwareVersion, ModelConfiguration, ModelConfigurationSetup, Region, GeoShape, DatasetSpecification, VariablePresentation, StandardVariable } from "@mintproject/modelcatalog_client";
+import {
+  Model,
+  ModelCategory,
+  SoftwareVersion,
+  ModelConfiguration,
+  ModelConfigurationSetup,
+  Region,
+  GeoShape,
+  DatasetSpecification,
+  VariablePresentation,
+  StandardVariable,
+} from "@mintproject/modelcatalog_client";
 import { RootState, store } from "app/store";
 import { connect } from "pwa-helpers/connect-mixin";
-import { customElement, LitElement, property, html, css, CSSResult, TemplateResult } from "lit-element";
-import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
-import { BoundingBox, Region as LocalRegion, RegionCategory} from "screens/regions/reducers";
+import {
+  customElement,
+  LitElement,
+  property,
+  html,
+  css,
+  CSSResult,
+  TemplateResult,
+} from "lit-element";
+import { ModelCatalogApi } from "model-catalog-api/model-catalog-api";
+import {
+  BoundingBox,
+  Region as LocalRegion,
+  RegionCategory,
+} from "screens/regions/reducers";
 
 import "weightless/button";
 import "weightless/icon";
 import { IdMap } from "app/reducers";
 import { getId, getLabel, isMainRegion } from "model-catalog-api/util";
 import { SharedStyles } from "styles/shared-styles";
-import { doBoxesIntersect, getBoundingBoxFromGeoShape } from "screens/regions/actions";
+import {
+  doBoxesIntersect,
+  getBoundingBoxFromGeoShape,
+} from "screens/regions/actions";
 import { ModelIO } from "screens/models/reducers";
-
 
 const PER_PAGE = 10;
 
 interface ModelOption {
-    value: ModelConfiguration | ModelConfigurationSetup;
-    isVisible: boolean;
-    isSelected: boolean;
-    categoryid?: string;
+  value: ModelConfiguration | ModelConfigurationSetup;
+  isVisible: boolean;
+  isSelected: boolean;
+  categoryid?: string;
 }
 
 interface ModelOptionCategory {
-    value: Model;
-    isVisible: boolean;
+  value: Model;
+  isVisible: boolean;
 }
 
 export interface ModelOutputMatch {
-    model: ModelConfiguration | ModelConfigurationSetup,
-    outputMatchs: DatasetSpecification[]
+  model: ModelConfiguration | ModelConfigurationSetup;
+  outputMatchs: DatasetSpecification[];
 }
 
 export type OptionFilter = (currentOptions: ModelOption[]) => ModelOption[];
@@ -38,584 +63,829 @@ export type OptionFilter = (currentOptions: ModelOption[]) => ModelOption[];
 @customElement("dataset-compatible-model")
 //export class ModelSelector extends connect(store)(LitElement) {
 export class DatasetCompatibleModel extends LitElement {
-    // Data loaded from the model-catalog.
-    @property({type: Object}) private models : IdMap<Model>;
-    @property({type: Object}) private versions : IdMap<SoftwareVersion>;
-    @property({type: Object}) private configurations : IdMap<ModelConfiguration>;
-    @property({type: Object}) private setups : IdMap<ModelConfigurationSetup>;
-    @property({type: Object}) private categories : IdMap<ModelCategory>;
-    @property({type: Object}) private regions : IdMap<Region>;
+  // Data loaded from the model-catalog.
+  @property({ type: Object }) private models: IdMap<Model>;
+  @property({ type: Object }) private versions: IdMap<SoftwareVersion>;
+  @property({ type: Object }) private configurations: IdMap<ModelConfiguration>;
+  @property({ type: Object }) private setups: IdMap<ModelConfigurationSetup>;
+  @property({ type: Object }) private categories: IdMap<ModelCategory>;
+  @property({ type: Object }) private regions: IdMap<Region>;
 
-    @property({type: Object}) private geoshapes : IdMap<GeoShape>;
-    @property({type: Object}) private datasetSpecifications : IdMap<DatasetSpecification>;
-    @property({type: Object}) private variablePresentations : IdMap<VariablePresentation>;
-    @property({type: Object}) private standardVariables : IdMap<StandardVariable>;
+  @property({ type: Object }) private geoshapes: IdMap<GeoShape>;
+  @property({ type: Object })
+  private datasetSpecifications: IdMap<DatasetSpecification>;
+  @property({ type: Object })
+  private variablePresentations: IdMap<VariablePresentation>;
+  @property({ type: Object })
+  private standardVariables: IdMap<StandardVariable>;
 
-    // Possible options:
-    @property({type: Array})  private options : ModelOption[];
-    @property({type: Object}) private idToOption : IdMap<ModelOption>;
-    @property({type: Object}) private optionCategories : IdMap<ModelOptionCategory>;
-    @property({type: Object}) private urls : IdMap<string> = {};
+  // Possible options:
+  @property({ type: Array }) private options: ModelOption[];
+  @property({ type: Object }) private idToOption: IdMap<ModelOption>;
+  @property({ type: Object })
+  private optionCategories: IdMap<ModelOptionCategory>;
+  @property({ type: Object }) private urls: IdMap<string> = {};
 
-    // If setted before loading:
-    @property({type: Object}) private asyncSelectedModels : Set<string>;
-    @property({type: Object}) private asyncVisibleModels : Set<string>;
+  // If setted before loading:
+  @property({ type: Object }) private asyncSelectedModels: Set<string>;
+  @property({ type: Object }) private asyncVisibleModels: Set<string>;
 
-    // State
-    @property({type: Boolean}) private loadingData : boolean = false;
-    @property({type: Boolean}) private editMode : boolean = true;
-    @property({type: String}) private textFilter : string = "";
-    @property({type: String}) private selectedIndicatorId : string = "";
-    @property({type: Object}) private regionFilter : LocalRegion;
+  // State
+  @property({ type: Boolean }) private loadingData: boolean = false;
+  @property({ type: Boolean }) private editMode: boolean = true;
+  @property({ type: String }) private textFilter: string = "";
+  @property({ type: String }) private selectedIndicatorId: string = "";
+  @property({ type: Object }) private regionFilter: LocalRegion;
 
-    // Pagination
-    @property({type: Number}) private currentPage: number = 1;
-    @property({type: Number}) private maxPage: number = 1;
+  // Pagination
+  @property({ type: Number }) private currentPage: number = 1;
+  @property({ type: Number }) private maxPage: number = 1;
 
-    @property({type: Object}) private input: ModelIO | null = null;
+  @property({ type: Object }) private input: ModelIO | null = null;
 
-    static get styles () : CSSResult [] {
-        return [ SharedStyles, css`
-            #searchBar {
-                width: 100%;
-                padding: 5px 5px 5px 5px;
-                border: 0px solid black;
-            }
-        `]
-    }
-
-    constructor () {
-        super();
-        this.loadDataFromModelCatalog();
-    }
-
-    public setInput (input:ModelIO):void {
-        if (input) this.input = input;
-    }
-
-    private loadDataFromModelCatalog () : void {
-        // Load data from the model-catalog
-        this.loadingData = true;
-        let modelReq    = store.dispatch(ModelCatalogApi.myCatalog.model.getAll());
-        let versionReq  = store.dispatch(ModelCatalogApi.myCatalog.softwareVersion.getAll());
-        let configReq   = store.dispatch(ModelCatalogApi.myCatalog.modelConfiguration.getAll());
-        let setupReq    = store.dispatch(ModelCatalogApi.myCatalog.modelConfigurationSetup.getAll());
-        let categoryReq = store.dispatch(ModelCatalogApi.myCatalog.modelCategory.getAll());
-        let regionReq   = store.dispatch(ModelCatalogApi.myCatalog.region.getAll());
-
-        let geoShapeReq = store.dispatch(ModelCatalogApi.myCatalog.geoShape.getAll());
-        let dsReq       = store.dispatch(ModelCatalogApi.myCatalog.datasetSpecification.getAll());
-        let svReq       = store.dispatch(ModelCatalogApi.myCatalog.standardVariable.getAll());
-        let vpReq       = store.dispatch(ModelCatalogApi.myCatalog.variablePresentation.getAll());
-
-        modelReq.then((models:IdMap<Model>) => { this.models = models });
-        versionReq.then((versions:IdMap<SoftwareVersion>) => { this.versions = versions });
-        configReq.then((configs:IdMap<ModelConfiguration>) => { this.configurations = configs });
-        setupReq.then((setups:IdMap<ModelConfigurationSetup>) => { this.setups = setups });
-        categoryReq.then((categories:IdMap<ModelCategory>) => { this.categories = categories });
-        regionReq.then((regions:IdMap<Region>) => { this.regions = regions });
-
-        geoShapeReq.then((shapes:IdMap<GeoShape>) => { this.geoshapes = shapes });
-        dsReq.then((dss:IdMap<DatasetSpecification>) => { this.datasetSpecifications = dss });
-        svReq.then((svs:IdMap<StandardVariable>) => { this.standardVariables = svs });
-        vpReq.then((vps:IdMap<VariablePresentation>) => { this.variablePresentations = vps });
-
-        //Promise.all([modelReq, configReq, versionReq, setupReq, categoryReq, regionReq]).then(() => {
-        Promise.all([modelReq, configReq, versionReq, setupReq, categoryReq, regionReq, geoShapeReq, dsReq, svReq, vpReq]).then(() => {
-            this.createOptionList();
-            this.loadingData = false;
-            this.dispatchEvent(
-                new CustomEvent("model-selector-loaded", {
-                    bubbles: true,
-                    composed: true,
-                })
-            );
-        });
-    }
-
-    private createOptionList () : void {
-        //This creates an ordered list and the URLs for models
-        // Sort the models.
-        let models = Object.values(this.models).sort((a:Model, b:Model) => (getLabel(a) < getLabel(b)) ? 1 : -1)
-
-        this.clearPossibleOptions();
-
-        models.forEach((model:Model) => 
-            (model.hasVersion||[])
-                .filter((v:SoftwareVersion) => !!this.versions[v.id])
-                .map((v:SoftwareVersion) => this.versions[v.id])
-                .forEach((v:SoftwareVersion) => 
-                    (v.hasConfiguration||[])
-                        .filter((c:ModelConfiguration) => !!this.configurations[c.id])
-                        .map((c:ModelConfiguration) => this.configurations[c.id])
-                        .forEach((c:ModelConfiguration) => {
-                            // Add the model as category
-                            this.addOptionCategory(model);
-
-                            // Add this configuration
-                            this.addOption(c,
-                                this.asyncSelectedModels ? this.asyncSelectedModels.has(c.id) : false,
-                                this.asyncVisibleModels ? this.asyncVisibleModels.has(c.id) : true,
-                                model
-                            );
-
-                            // Adds link to this configuration
-                            this.urls[c.id] = getId(model) + "/" + getId(v) + "/" + getId(c);
-
-                            // Add this config setups
-                           (c.hasSetup||[])
-                                .filter((s:ModelConfigurationSetup) => !!this.setups[s.id])
-                                .map((s:ModelConfigurationSetup) => this.setups[s.id])
-                                .forEach((s:ModelConfigurationSetup) => {
-                                    // Adds this setup 
-                                    this.urls[s.id] = this.urls[c.id] + "/" + getId(s);
-                                    this.addOption(s,
-                                        this.asyncSelectedModels ? this.asyncSelectedModels.has(s.id) : false,
-                                        this.asyncVisibleModels ? this.asyncVisibleModels.has(s.id) : true,
-                                        model
-                                    );
-                                });
-                        })
-                )
-        )
-
-        //We have added all correctly linked to the tree, add the rest of configurations and setups:
-        let withErrors : (ModelConfiguration|ModelConfigurationSetup)[] = [];
-        Object.keys(this.configurations).forEach((id:string) => {
-            if (!this.idToOption[id]) withErrors.push(this.configurations[id]);
-        });
-        Object.keys(this.setups).forEach((id:string) => {
-            if (!this.idToOption[id]) withErrors.push(this.setups[id]);
-        });
-        if (withErrors.length > 0) {
-            let notFoundModel = {id:"not_found", label:["Model not found"]};
-            this.addOptionCategory(notFoundModel);
-            withErrors.forEach((model) => this.addOption(model,
-                this.asyncSelectedModels ? this.asyncSelectedModels.has(model.id) : false,
-                this.asyncVisibleModels ? this.asyncVisibleModels.has(model.id) : true,
-                notFoundModel
-            ));
+  static get styles(): CSSResult[] {
+    return [
+      SharedStyles,
+      css`
+        #searchBar {
+          width: 100%;
+          padding: 5px 5px 5px 5px;
+          border: 0px solid black;
         }
+      `,
+    ];
+  }
 
-        /*withErrors.forEach((err) => {
+  constructor() {
+    super();
+    this.loadDataFromModelCatalog();
+  }
+
+  public setInput(input: ModelIO): void {
+    if (input) this.input = input;
+  }
+
+  private loadDataFromModelCatalog(): void {
+    // Load data from the model-catalog
+    this.loadingData = true;
+    let modelReq = store.dispatch(ModelCatalogApi.myCatalog.model.getAll());
+    let versionReq = store.dispatch(
+      ModelCatalogApi.myCatalog.softwareVersion.getAll()
+    );
+    let configReq = store.dispatch(
+      ModelCatalogApi.myCatalog.modelConfiguration.getAll()
+    );
+    let setupReq = store.dispatch(
+      ModelCatalogApi.myCatalog.modelConfigurationSetup.getAll()
+    );
+    let categoryReq = store.dispatch(
+      ModelCatalogApi.myCatalog.modelCategory.getAll()
+    );
+    let regionReq = store.dispatch(ModelCatalogApi.myCatalog.region.getAll());
+
+    let geoShapeReq = store.dispatch(
+      ModelCatalogApi.myCatalog.geoShape.getAll()
+    );
+    let dsReq = store.dispatch(
+      ModelCatalogApi.myCatalog.datasetSpecification.getAll()
+    );
+    let svReq = store.dispatch(
+      ModelCatalogApi.myCatalog.standardVariable.getAll()
+    );
+    let vpReq = store.dispatch(
+      ModelCatalogApi.myCatalog.variablePresentation.getAll()
+    );
+
+    modelReq.then((models: IdMap<Model>) => {
+      this.models = models;
+    });
+    versionReq.then((versions: IdMap<SoftwareVersion>) => {
+      this.versions = versions;
+    });
+    configReq.then((configs: IdMap<ModelConfiguration>) => {
+      this.configurations = configs;
+    });
+    setupReq.then((setups: IdMap<ModelConfigurationSetup>) => {
+      this.setups = setups;
+    });
+    categoryReq.then((categories: IdMap<ModelCategory>) => {
+      this.categories = categories;
+    });
+    regionReq.then((regions: IdMap<Region>) => {
+      this.regions = regions;
+    });
+
+    geoShapeReq.then((shapes: IdMap<GeoShape>) => {
+      this.geoshapes = shapes;
+    });
+    dsReq.then((dss: IdMap<DatasetSpecification>) => {
+      this.datasetSpecifications = dss;
+    });
+    svReq.then((svs: IdMap<StandardVariable>) => {
+      this.standardVariables = svs;
+    });
+    vpReq.then((vps: IdMap<VariablePresentation>) => {
+      this.variablePresentations = vps;
+    });
+
+    //Promise.all([modelReq, configReq, versionReq, setupReq, categoryReq, regionReq]).then(() => {
+    Promise.all([
+      modelReq,
+      configReq,
+      versionReq,
+      setupReq,
+      categoryReq,
+      regionReq,
+      geoShapeReq,
+      dsReq,
+      svReq,
+      vpReq,
+    ]).then(() => {
+      this.createOptionList();
+      this.loadingData = false;
+      this.dispatchEvent(
+        new CustomEvent("model-selector-loaded", {
+          bubbles: true,
+          composed: true,
+        })
+      );
+    });
+  }
+
+  private createOptionList(): void {
+    //This creates an ordered list and the URLs for models
+    // Sort the models.
+    let models = Object.values(this.models).sort((a: Model, b: Model) =>
+      getLabel(a) < getLabel(b) ? 1 : -1
+    );
+
+    this.clearPossibleOptions();
+
+    models.forEach((model: Model) =>
+      (model.hasVersion || [])
+        .filter((v: SoftwareVersion) => !!this.versions[v.id])
+        .map((v: SoftwareVersion) => this.versions[v.id])
+        .forEach((v: SoftwareVersion) =>
+          (v.hasConfiguration || [])
+            .filter((c: ModelConfiguration) => !!this.configurations[c.id])
+            .map((c: ModelConfiguration) => this.configurations[c.id])
+            .forEach((c: ModelConfiguration) => {
+              // Add the model as category
+              this.addOptionCategory(model);
+
+              // Add this configuration
+              this.addOption(
+                c,
+                this.asyncSelectedModels
+                  ? this.asyncSelectedModels.has(c.id)
+                  : false,
+                this.asyncVisibleModels
+                  ? this.asyncVisibleModels.has(c.id)
+                  : true,
+                model
+              );
+
+              // Adds link to this configuration
+              this.urls[c.id] = getId(model) + "/" + getId(v) + "/" + getId(c);
+
+              // Add this config setups
+              (c.hasSetup || [])
+                .filter((s: ModelConfigurationSetup) => !!this.setups[s.id])
+                .map((s: ModelConfigurationSetup) => this.setups[s.id])
+                .forEach((s: ModelConfigurationSetup) => {
+                  // Adds this setup
+                  this.urls[s.id] = this.urls[c.id] + "/" + getId(s);
+                  this.addOption(
+                    s,
+                    this.asyncSelectedModels
+                      ? this.asyncSelectedModels.has(s.id)
+                      : false,
+                    this.asyncVisibleModels
+                      ? this.asyncVisibleModels.has(s.id)
+                      : true,
+                    model
+                  );
+                });
+            })
+        )
+    );
+
+    //We have added all correctly linked to the tree, add the rest of configurations and setups:
+    let withErrors: (ModelConfiguration | ModelConfigurationSetup)[] = [];
+    Object.keys(this.configurations).forEach((id: string) => {
+      if (!this.idToOption[id]) withErrors.push(this.configurations[id]);
+    });
+    Object.keys(this.setups).forEach((id: string) => {
+      if (!this.idToOption[id]) withErrors.push(this.setups[id]);
+    });
+    if (withErrors.length > 0) {
+      let notFoundModel = { id: "not_found", label: ["Model not found"] };
+      this.addOptionCategory(notFoundModel);
+      withErrors.forEach((model) =>
+        this.addOption(
+          model,
+          this.asyncSelectedModels
+            ? this.asyncSelectedModels.has(model.id)
+            : false,
+          this.asyncVisibleModels
+            ? this.asyncVisibleModels.has(model.id)
+            : true,
+          notFoundModel
+        )
+      );
+    }
+
+    /*withErrors.forEach((err) => {
             console.log(err.id + " - " + err.label + " - " + err.type);
         })*/
 
-        this.asyncSelectedModels = undefined;
-        this.asyncVisibleModels = undefined;
+    this.asyncSelectedModels = undefined;
+    this.asyncVisibleModels = undefined;
+  }
+
+  private getModelUrl(modelid: string): string {
+    return "ethiopia/models/explore/" + this.urls[modelid]; //FIXME
+  }
+
+  private clearPossibleOptions(): void {
+    this.options = [];
+    this.optionCategories = {};
+    this.idToOption = {};
+  }
+
+  private addOptionCategory(model: Model): void {
+    if (!this.optionCategories[model.id]) {
+      let newOpt: ModelOptionCategory = {
+        value: model,
+        isVisible: true,
+      };
+      this.optionCategories[model.id] = newOpt;
+    }
+  }
+
+  private addOption(
+    value: ModelConfiguration | ModelConfigurationSetup,
+    isSelected: boolean,
+    isVisible: boolean,
+    model?: Model
+  ): void {
+    // Adds a new option, if the ID is already on use does nothing.
+    if (!this.idToOption[value.id]) {
+      let newOption: ModelOption = {
+        value: value,
+        isSelected: isSelected,
+        isVisible: isVisible,
+      };
+      if (model) newOption.categoryid = model.id;
+      this.options.push(newOption);
+      this.idToOption[value.id] = newOption;
+    }
+  }
+
+  public getAll(): (ModelConfigurationSetup | ModelConfiguration)[] {
+    if (this.loadingData) return null;
+    return Object.values(this.configurations).concat(
+      Object.values(this.setups)
+    );
+  }
+
+  public getSelectedModels(): ModelOutputMatch[] {
+    if (this.loadingData) return null;
+    return this.options
+      .filter((opt: ModelOption) => opt.isSelected)
+      .map((opt) => ({
+        model: opt.value,
+        outputMatchs: this.getMatchingOutputs(opt.value),
+      }));
+  }
+
+  public setSelected(selectedIds: Set<string>): void {
+    if (this.loadingData) {
+      this.asyncSelectedModels = selectedIds;
+    } else {
+      this.options.forEach(
+        (opt: ModelOption) => (opt.isSelected = selectedIds.has(opt.value.id))
+      );
+      this.requestUpdate();
+    }
+  }
+
+  public setVisible(visibleIds: Set<string>): void {
+    if (this.loadingData) {
+      this.asyncVisibleModels = visibleIds;
+    } else {
+      this.options.forEach(
+        (opt: ModelOption) => (opt.isVisible = visibleIds.has(opt.value.id))
+      );
+      this.requestUpdate();
+    }
+  }
+
+  private _previouslySelected: Set<string>;
+  public setEditable(): void {
+    this.editMode = true;
+    this._previouslySelected = new Set(
+      (this.options || [])
+        .filter((opt: ModelOption) => opt.isSelected)
+        .map((opt: ModelOption) => opt.value.id)
+    );
+  }
+
+  public cancel(): void {
+    this.editMode = false;
+    if (this._previouslySelected) {
+      this.setSelected(this._previouslySelected);
+      this._previouslySelected = null;
+    }
+  }
+
+  public save(): void {
+    this.editMode = false;
+    this._previouslySelected = null;
+  }
+
+  public render(): TemplateResult {
+    let visibleOptions: ModelOption[] = [];
+    let possibleOptionsCount: number = 0;
+    if (this.loadingData) {
+      return html`<wl-progress-bar style="width: 100%;"></wl-progress-bar>`;
+    } else {
+      visibleOptions = this.options.filter((opt: ModelOption) => {
+        return opt.isVisible && !opt.isSelected;
+      });
+      visibleOptions = this.applyRegionFilter(visibleOptions);
+      visibleOptions = this.applyVariableFilter(visibleOptions);
+      possibleOptionsCount =
+        visibleOptions.length +
+        this.options.filter((opt) => opt.isSelected).length;
+      visibleOptions = this.applyTextFilter(visibleOptions);
+      let hiddenByCategory: number = visibleOptions.filter(
+        (opt: ModelOption) =>
+          opt.categoryid && !this.optionCategories[opt.categoryid].isVisible
+      ).length;
+      let mx = Math.ceil((visibleOptions.length - hiddenByCategory) / PER_PAGE);
+      this.maxPage =
+        mx === 0 &&
+        this.options.filter((opt: ModelOption) => opt.isSelected).length > 0
+          ? 1
+          : mx;
     }
 
-    private getModelUrl (modelid:string) : string {
-        return "ethiopia/models/explore/" + this.urls[modelid]; //FIXME
-    }
+    // If theres no possible option, render nothing
+    if (possibleOptionsCount === 0) return null;
 
-    private clearPossibleOptions () : void {
-        this.options = [];
-        this.optionCategories = {};
-        this.idToOption = {};
-    }
+    return html`
+      <div style="padding: 10px 3px">
+        <h4 style="margin: 5px;">
+          Some of the following models can generate the variables required for
+          this input:
+        </h4>
+        ${this.input.variables.map(
+          (x) =>
+            html`<code style="padding-right:5px; display:inline-block;"
+              >${x}</code
+            >`
+        )}
+      </div>
+      <div style="border: 1px solid #EEE; margin: 10px 0px;">
+        <!-- Input text to search -->
+        ${this.editMode ? this.renderPaginator() : ""}
 
-    private addOptionCategory (model:Model) : void {
-        if (!this.optionCategories[model.id]) {
-            let newOpt : ModelOptionCategory = {
-                value: model,
-                isVisible: true
-            }
-            this.optionCategories[model.id] =newOpt;
-        }
-    }
+        <!-- Table with filtered models -->
+        <table class="pure-table pure-table-striped">
+          <thead>
+            <tr>
+              <th></th>
+              <th><b>Model</b></th>
+              <th>Category</th>
+              <th>Region</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${this.renderMatchingModels(visibleOptions)}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
 
-    private addOption (value:ModelConfiguration|ModelConfigurationSetup, isSelected: boolean, isVisible: boolean, model?:Model) : void {
-        // Adds a new option, if the ID is already on use does nothing.
-        if (!this.idToOption[value.id]) {
-            let newOption : ModelOption = {
-                value: value,
-                isSelected: isSelected,
-                isVisible: isVisible,
-            }
-            if (model) newOption.categoryid = model.id;
-            this.options.push(newOption);
-            this.idToOption[value.id] = newOption;
-        }
-    }
+  private renderPaginator(): TemplateResult {
+    return html`<div
+      style="display: flex; align-items: center; padding: 0px 8px;"
+    >
+      <wl-icon>search</wl-icon>
+      <input
+        id="searchBar"
+        placeholder="Search..."
+        type="text"
+        @input=${this.onSearchInputChange}
+        ?disabled=${this.loadingData}
+      />
+      <wl-icon
+        @click="${this.clearSearchInput}"
+        id="clearIcon"
+        class="actionIcon"
+        >close</wl-icon
+      >
+      <span style="font-size: 20px; font-weight: 200; color: #EEE;">|</span>
+      <wl-button
+        flat
+        inverted
+        ?disabled=${this.loadingData || this.currentPage === 1}
+        @click=${this.onPrevPage}
+        >Back</wl-button
+      >
+      <span style="display: block; white-space: nowrap;">
+        ${this.loadingData
+          ? html`Page 1 of
+              <loading-dots style="--width: 25px; margin: 5px;"></loading-dots>`
+          : html`Page
+            ${this.currentPage < this.maxPage ? this.currentPage : this.maxPage}
+            of ${this.maxPage}`}
+      </span>
+      <wl-button
+        flat
+        inverted
+        ?disabled=${this.loadingData || this.currentPage >= this.maxPage}
+        @click=${this.onNextPage}
+        >Next</wl-button
+      >
+    </div>`;
+  }
 
-    public getAll () : (ModelConfigurationSetup | ModelConfiguration)[] {
-        if (this.loadingData) return null;
-        return Object.values(this.configurations).concat(Object.values(this.setups));
-    }
+  private onSearchInputChange(): void {
+    let inputEl: HTMLInputElement = this.shadowRoot!.getElementById(
+      "searchBar"
+    ) as HTMLInputElement;
+    if (inputEl) this.textFilter = inputEl.value.toLowerCase();
+    this.currentPage = 1;
+  }
 
-    public getSelectedModels(): ModelOutputMatch[] {
-        if (this.loadingData) return null;
-        return this.options
-                .filter((opt:ModelOption) => opt.isSelected)
-                .map(opt => ({
-                    model: opt.value,
-                    outputMatchs: this.getMatchingOutputs(opt.value)
-                }));
+  private clearSearchInput(): void {
+    let inputEl: HTMLInputElement = this.shadowRoot!.getElementById(
+      "searchBar"
+    ) as HTMLInputElement;
+    if (inputEl) {
+      inputEl.value = "";
+      if (!this.textFilter) this.currentPage = 1;
+      this.textFilter = "";
     }
+  }
 
-    public setSelected (selectedIds:Set<string>) : void {
-        if (this.loadingData) {
-            this.asyncSelectedModels = selectedIds;
-        } else {
-            this.options.forEach((opt:ModelOption) => 
-                opt.isSelected = selectedIds.has(opt.value.id)
-            )
-            this.requestUpdate();
-        }
-    }
-
-    public setVisible (visibleIds:Set<string>) : void {
-        if (this.loadingData) {
-            this.asyncVisibleModels = visibleIds;
-        } else {
-            this.options.forEach((opt:ModelOption) => 
-                opt.isVisible = visibleIds.has(opt.value.id)
-            )
-            this.requestUpdate();
-        }
-    }
-
-    private _previouslySelected : Set<string>;
-    public setEditable () : void {
-        this.editMode = true;
-        this._previouslySelected = new Set((this.options||[])
-                .filter((opt:ModelOption) => opt.isSelected)
-                .map((opt:ModelOption) => opt.value.id)
+  private applyTextFilter(options: ModelOption[]): ModelOption[] {
+    if (this.textFilter)
+      return options.filter((opt: ModelOption) => {
+        return (
+          getLabel(opt.value).toLowerCase().includes(this.textFilter) ||
+          (opt.value.description &&
+            opt.value.description[0].includes(this.textFilter))
         );
-    }
+      });
+    return options;
+  }
 
-    public cancel () : void {
-        this.editMode = false;
-        if (this._previouslySelected) {
-            this.setSelected(this._previouslySelected);
-            this._previouslySelected = null;
-        }
-    }
+  public onPrevPage(): void {
+    this.currentPage -= 1;
+  }
 
-    public save () : void {
-        this.editMode = false;
-        this._previouslySelected = null;
-    }
+  public onNextPage(): void {
+    this.currentPage += 1;
+  }
 
-    public render () : TemplateResult {
-        let visibleOptions : ModelOption[] = [];
-        let possibleOptionsCount : number = 0;
-        if (this.loadingData) {
-            return html`<wl-progress-bar style="width: 100%;"></wl-progress-bar>`
-        } else {
-            visibleOptions = this.options.filter((opt:ModelOption) => {
-                return opt.isVisible && !opt.isSelected;
-            });
-            visibleOptions = this.applyRegionFilter(visibleOptions);
-            visibleOptions = this.applyVariableFilter(visibleOptions);
-            possibleOptionsCount = visibleOptions.length + this.options.filter(opt => opt.isSelected).length;
-            visibleOptions = this.applyTextFilter(visibleOptions);
-            let hiddenByCategory : number = visibleOptions.filter((opt:ModelOption) => opt.categoryid && !this.optionCategories[opt.categoryid].isVisible).length;
-            let mx = Math.ceil((visibleOptions.length - hiddenByCategory) / PER_PAGE);
-            this.maxPage = mx === 0 && this.options.filter((opt:ModelOption) => opt.isSelected).length > 0 ? 1 : mx;
-        }
+  private renderMatchingModels(posibleOptions: ModelOption[]): TemplateResult {
+    let mx: number = this.currentPage * PER_PAGE;
+    //FIXME: maintain the header of the categories even if hidden.
+    //IDEA: add a set to check if is already on the array, only add the first of non visible categories.
+    let visibleOptions: ModelOption[] = posibleOptions
+      .filter(
+        (opt: ModelOption) =>
+          !opt.categoryid || this.optionCategories[opt.categoryid].isVisible
+      )
+      .slice(
+        (this.currentPage - 1) * PER_PAGE,
+        mx > posibleOptions.length ? posibleOptions.length : mx
+      );
 
-        // If theres no possible option, render nothing
-        if (possibleOptionsCount === 0)
-            return null;
+    let selectedOptions: ModelOption[] = this.options.filter(
+      (opt: ModelOption) => {
+        return opt.isSelected;
+      }
+    );
 
-        return html`
-            <div style="padding: 10px 3px">
-                <h4 style="margin: 5px;"> Some of the following models can generate the variables required for this input: </h4>
-                ${this.input.variables.map(x => html`<code style="padding-right:5px; display:inline-block;">${x}</code>`)}
-            </div>
-            <div style="border: 1px solid #EEE; margin: 10px 0px;">
-                <!-- Input text to search -->
-                ${this.editMode ? this.renderPaginator() : ""}
-
-                <!-- Table with filtered models -->
-                <table class="pure-table pure-table-striped">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th><b>Model</b></th>
-                            <th>Category</th>
-                            <th>Region</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${this.renderMatchingModels(visibleOptions)}
-                    </tbody>
-                </table>
-            </div>
-        `;
-    }
-
-    private renderPaginator () : TemplateResult {
-        return html`<div style="display: flex; align-items: center; padding: 0px 8px;">
-            <wl-icon>search</wl-icon>
-            <input id="searchBar" placeholder="Search..." type="text" @input=${this.onSearchInputChange} ?disabled=${this.loadingData} />
-            <wl-icon @click="${this.clearSearchInput}" id="clearIcon" class="actionIcon">close</wl-icon>
-            <span style="font-size: 20px; font-weight: 200; color: #EEE;">|</span>
-            <wl-button flat inverted ?disabled=${this.loadingData || this.currentPage === 1} @click=${this.onPrevPage}>Back</wl-button>
-            <span style="display: block; white-space: nowrap;">
-                ${this.loadingData ? 
-                    html`Page 1 of <loading-dots style="--width: 25px; margin: 5px;"></loading-dots>` :
-                    html`Page ${this.currentPage < this.maxPage ? this.currentPage : this.maxPage} of ${this.maxPage}`
-                }
-            </span>
-            <wl-button flat inverted ?disabled=${this.loadingData || this.currentPage >= this.maxPage } @click=${this.onNextPage}>Next</wl-button>
-        </div>`;
-    }
-
-    private onSearchInputChange () : void {
-        let inputEl : HTMLInputElement = this.shadowRoot!.getElementById("searchBar") as HTMLInputElement;
-        if (inputEl)
-            this.textFilter = inputEl.value.toLowerCase();
-            this.currentPage = 1;
-    }
-
-    private clearSearchInput () : void {
-        let inputEl : HTMLInputElement = this.shadowRoot!.getElementById("searchBar") as HTMLInputElement;
-        if (inputEl) {
-            inputEl.value = "";
-            if (!this.textFilter) this.currentPage = 1;
-            this.textFilter = "";
-        }
-    }
-
-    private applyTextFilter (options:ModelOption[]) : ModelOption[] {
-        if (this.textFilter)
-            return options.filter((opt:ModelOption) => {
-                return getLabel(opt.value).toLowerCase().includes(this.textFilter) ||
-                (opt.value.description && opt.value.description[0].includes(this.textFilter));
-            })
-        return options;
-    }
-
-    public onPrevPage () : void {
-        this.currentPage -= 1;
-    }
-
-    public onNextPage () : void {
-        this.currentPage += 1;
-    }
-
-    private renderMatchingModels (posibleOptions: ModelOption[]) : TemplateResult {
-        let mx : number = (this.currentPage * PER_PAGE);
-        //FIXME: maintain the header of the categories even if hidden.
-        //IDEA: add a set to check if is already on the array, only add the first of non visible categories.
-        let visibleOptions : ModelOption[] = posibleOptions
-                .filter((opt:ModelOption) => !opt.categoryid || this.optionCategories[opt.categoryid].isVisible)
-                .slice(
-            (this.currentPage - 1) * PER_PAGE,
-            mx > posibleOptions.length ? posibleOptions.length : mx
-        );
-        
-        let selectedOptions : ModelOption[] = this.options.filter((opt:ModelOption) => {
-            return opt.isSelected;
-        });
-
-        if (visibleOptions.length === 0 && selectedOptions.length === 0)
-            return html`
-                <tr>
-                    <td colspan="4" style="text-align:center; color: rgb(153, 153, 153);">
-                        - No models found -
-                    </td>
-                </tr>
-            `;
-        
-        // Print all selected models and PER_PAGE possible models
-        let selectedModels : Set<String> = new Set();
-        let visibleModels : Set<String> = new Set();
-
-        //If is the first model of some category, print the category
-        return html`
-            ${selectedOptions.map((opt:ModelOption) => {
-                if (opt.categoryid && !selectedModels.has(opt.categoryid)) {
-                    selectedModels.add(opt.categoryid);
-                    return html`
-                        ${this.renderCategorySeparator(opt.categoryid, false)}
-                        ${this.renderRow(opt)}`;
-                }
-                return this.renderRow(opt);
-            })}
-            ${this.editMode ? visibleOptions.map((opt:ModelOption) => {
-                if (opt.categoryid) { //} && ) {
-                    let optCat : ModelOptionCategory = this.optionCategories[opt.categoryid];
-                    if (!visibleModels.has(opt.categoryid)) {
-                        visibleModels.add(opt.categoryid);
-                        return html`
-                            ${this.renderCategorySeparator(opt.categoryid)}
-                            ${optCat.isVisible ? this.renderRow(opt) : ""}`;
-                    } else {
-                        return html`${optCat.isVisible ? this.renderRow(opt) : ""}`;
-                    }
-                }
-                return this.renderRow(opt);
-            }) : (selectedOptions.length > 0 ? "" : html`<tr>
-                <td colspan=4 style="text-align: center;">No model selected. Click <a style="cursor:pointer" @click=${this.requestEdit}>here</a> to select one.</td>
-            </tr>`)}
-        `;
-    }
-
-    private requestEdit (e:Event) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        let event : CustomEvent = new CustomEvent('model-selector-request-edit', {
-            bubbles: true,
-            composed: true,
-        });
-        this.dispatchEvent(event);
-    }
-
-    private renderCategorySeparator (catId:string, showVisibilityToggler:boolean=true) : TemplateResult {
-        return html`
+    if (visibleOptions.length === 0 && selectedOptions.length === 0)
+      return html`
         <tr>
-            <td colspan="4">
-                <div style="display:flex; justify-content:space-between; padding:0px 20px;">
-                    <div style="font-size: 1.02em;">
-                        <span style="color: #aaa;">MODEL:</span>
-                        <span style="font-weight: bold;">${getLabel(this.optionCategories[catId].value)}</span> 
-                    </div>
-                    ${showVisibilityToggler ? html`
-                    <a style=""
-                        @click=${() => {this.toggleCategoryView(catId)}}>
-                        ${this.optionCategories[catId].isVisible ? "(Hide models)" : "(Show models)"}
-                    </a>` : ""}
-                </div>
-            </td>
-        </tr>`
-    }
+          <td colspan="4" style="text-align:center; color: rgb(153, 153, 153);">
+            - No models found -
+          </td>
+        </tr>
+      `;
 
-    private renderRow (option:ModelOption) : TemplateResult {
-        let model : ModelConfiguration | ModelConfigurationSetup= option.value;
-        return html`
+    // Print all selected models and PER_PAGE possible models
+    let selectedModels: Set<String> = new Set();
+    let visibleModels: Set<String> = new Set();
+
+    //If is the first model of some category, print the category
+    return html`
+      ${selectedOptions.map((opt: ModelOption) => {
+        if (opt.categoryid && !selectedModels.has(opt.categoryid)) {
+          selectedModels.add(opt.categoryid);
+          return html` ${this.renderCategorySeparator(opt.categoryid, false)}
+          ${this.renderRow(opt)}`;
+        }
+        return this.renderRow(opt);
+      })}
+      ${this.editMode
+        ? visibleOptions.map((opt: ModelOption) => {
+            if (opt.categoryid) {
+              //} && ) {
+              let optCat: ModelOptionCategory =
+                this.optionCategories[opt.categoryid];
+              if (!visibleModels.has(opt.categoryid)) {
+                visibleModels.add(opt.categoryid);
+                return html` ${this.renderCategorySeparator(opt.categoryid)}
+                ${optCat.isVisible ? this.renderRow(opt) : ""}`;
+              } else {
+                return html`${optCat.isVisible ? this.renderRow(opt) : ""}`;
+              }
+            }
+            return this.renderRow(opt);
+          })
+        : selectedOptions.length > 0
+        ? ""
+        : html`<tr>
+            <td colspan="4" style="text-align: center;">
+              No model selected. Click
+              <a style="cursor:pointer" @click=${this.requestEdit}>here</a> to
+              select one.
+            </td>
+          </tr>`}
+    `;
+  }
+
+  private requestEdit(e: Event) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    let event: CustomEvent = new CustomEvent("model-selector-request-edit", {
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+  }
+
+  private renderCategorySeparator(
+    catId: string,
+    showVisibilityToggler: boolean = true
+  ): TemplateResult {
+    return html` <tr>
+      <td colspan="4">
+        <div
+          style="display:flex; justify-content:space-between; padding:0px 20px;"
+        >
+          <div style="font-size: 1.02em;">
+            <span style="color: #aaa;">MODEL:</span>
+            <span style="font-weight: bold;"
+              >${getLabel(this.optionCategories[catId].value)}</span
+            >
+          </div>
+          ${showVisibilityToggler
+            ? html` <a
+                style=""
+                @click=${() => {
+                  this.toggleCategoryView(catId);
+                }}
+              >
+                ${this.optionCategories[catId].isVisible
+                  ? "(Hide models)"
+                  : "(Show models)"}
+              </a>`
+            : ""}
+        </div>
+      </td>
+    </tr>`;
+  }
+
+  private renderRow(option: ModelOption): TemplateResult {
+    let model: ModelConfiguration | ModelConfigurationSetup = option.value;
+    return html`
         <tr>
             <td>
-                <input class="checkbox" type="checkbox" data-modelid="${model.id}" 
+                <input class="checkbox" type="checkbox" data-modelid="${
+                  model.id
+                }" 
                         .disabled=${!this.editMode}
-                        @change=${ this.toggleSelection }
+                        @change=${this.toggleSelection}
                         .checked=${option.isSelected}></input>
             </td>
             <td>
-                <a target="_blank" href="${this.getModelUrl(model.id)}">${getLabel(model)}</a>
-                ${model.description ? html`<div>${model.description[0]}</div>` : ''}
+                <a target="_blank" href="${this.getModelUrl(
+                  model.id
+                )}">${getLabel(model)}</a>
+                ${
+                  model.description
+                    ? html`<div>${model.description[0]}</div>`
+                    : ""
+                }
                 ${this.renderMatchingVariables(model)}
             </td> 
             <td> 
-                ${model.hasModelCategory && model.hasModelCategory.length > 0 ? 
-                    model.hasModelCategory.map((c:ModelCategory) => this.categories[c.id]).map(getLabel).join(", ")
-                    : ""}
+                ${
+                  model.hasModelCategory && model.hasModelCategory.length > 0
+                    ? model.hasModelCategory
+                        .map((c: ModelCategory) => this.categories[c.id])
+                        .map(getLabel)
+                        .join(", ")
+                    : ""
+                }
             </td>
             <td>
-                ${model.hasRegion && model.hasRegion.length > 0 ? 
-                    model.hasRegion.map((r:Region) => this.regions[r.id]).map(getLabel).join(", ")
-                    : ""}
+                ${
+                  model.hasRegion && model.hasRegion.length > 0
+                    ? model.hasRegion
+                        .map((r: Region) => this.regions[r.id])
+                        .map(getLabel)
+                        .join(", ")
+                    : ""
+                }
             </td>
         </tr>`;
+  }
+
+  private toggleCategoryView(catId: string): void {
+    this.optionCategories[catId].isVisible =
+      !this.optionCategories[catId].isVisible;
+    this.requestUpdate();
+  }
+
+  private toggleSelection(ev: Event) {
+    ev.stopPropagation();
+    ev.preventDefault();
+
+    let path: EventTarget[] = ev.composedPath();
+    let chbox: HTMLInputElement = path[0] as HTMLInputElement;
+    let modelid: string = chbox.getAttribute("data-modelid");
+    if (modelid) {
+      let option = this.idToOption[modelid];
+      chbox.checked = option.isSelected;
+      option.isSelected = !option.isSelected;
+      this.requestUpdate();
     }
+  }
 
-    private toggleCategoryView (catId:string) : void {
-        this.optionCategories[catId].isVisible = !this.optionCategories[catId].isVisible;
-        this.requestUpdate();
-    }
+  public setRegion(region: LocalRegion): void {
+    this.regionFilter = region;
+  }
 
-    private toggleSelection (ev:Event) {
-        ev.stopPropagation();
-        ev.preventDefault();
+  private applyRegionFilter(options: ModelOption[]): ModelOption[] {
+    if (!this.regionFilter || !this.geoshapes) return options;
 
-        let path : EventTarget[] = ev.composedPath();
-        let chbox : HTMLInputElement = path[0] as HTMLInputElement;
-        let modelid : string = chbox.getAttribute("data-modelid");
-        if (modelid) {
-            let option = this.idToOption[modelid];
-            chbox.checked = option.isSelected;
-            option.isSelected = !option.isSelected;
-            this.requestUpdate();
-        }
-    }
+    let regionsInBoundingBox: Region[] = [];
+    Object.values(this.regions).forEach((r: Region) => {
+      if (
+        (r.geo &&
+          r.geo
+            .map((shape: GeoShape) => this.geoshapes[shape.id])
+            .some((shape: GeoShape) => {
+              let bb: BoundingBox = getBoundingBoxFromGeoShape(shape);
+              return (
+                !!bb &&
+                ((!isMainRegion(r) &&
+                  this.regionFilter.bounding_box &&
+                  doBoxesIntersect(bb, this.regionFilter.bounding_box)) ||
+                  (this.regionFilter.model_catalog_uri &&
+                    this.regionFilter.model_catalog_uri === r.id))
+              );
+            })) ||
+        (this.regionFilter.model_catalog_uri &&
+          r.partOf &&
+          r.partOf.some(
+            (r2: Region) => r2.id === this.regionFilter.model_catalog_uri
+          ))
+      ) {
+        regionsInBoundingBox.push(r);
+      }
+    });
 
-    public setRegion (region:LocalRegion) : void {
-        this.regionFilter = region;
-    }
+    return options.filter(
+      (opt: ModelOption) =>
+        !opt.value.hasRegion ||
+        (!!opt.value.hasRegion &&
+          opt.value.hasRegion
+            .map((r: Region) => this.regions[r.id])
+            .some((r: Region) =>
+              regionsInBoundingBox.some((r2: Region) => r2.id === r.id)
+            ))
+    );
+  }
 
-    private applyRegionFilter (options:ModelOption[]) : ModelOption[] {
-        if (!this.regionFilter || !this.geoshapes) return options;
-        
-        let regionsInBoundingBox : Region[] = [];
-        Object.values(this.regions).forEach((r:Region) => {
-            if ((r.geo && r.geo.map((shape:GeoShape) => this.geoshapes[shape.id]).some((shape:GeoShape) => {
-                let bb : BoundingBox = getBoundingBoxFromGeoShape(shape);
-                return !!bb && (
-                    (!isMainRegion(r) && this.regionFilter.bounding_box && doBoxesIntersect(bb, this.regionFilter.bounding_box)) 
-                    || (this.regionFilter.model_catalog_uri && this.regionFilter.model_catalog_uri === r.id));}))
-                || (this.regionFilter.model_catalog_uri && r.partOf && r.partOf.some((r2:Region) => r2.id === this.regionFilter.model_catalog_uri) )
+  private applyVariableFilter(options: ModelOption[]): ModelOption[] {
+    if (
+      !this.input ||
+      !this.datasetSpecifications ||
+      !this.variablePresentations ||
+      !this.standardVariables
+    )
+      return options;
+
+    //FIXME: this does not work for "useful for calculating index"
+    return options.filter(
+      (opt: ModelOption) =>
+        !!opt.value.hasOutput &&
+        opt.value.hasOutput
+          .map(
+            (output: DatasetSpecification) =>
+              this.datasetSpecifications[output.id]
+          )
+          .some((output: DatasetSpecification) => {
+            let realPresentation = (output.hasPresentation || []).map(
+              (vp: VariablePresentation) => this.variablePresentations[vp.id]
+            );
+            let providedVariables: string[] = [];
+            realPresentation.forEach((vp: VariablePresentation) => {
+              let realSTDVariables = (vp.hasStandardVariable || []).map(
+                (sv) => this.standardVariables[sv.id]
+              );
+              realSTDVariables.forEach((sv) =>
+                providedVariables.push(getLabel(sv))
+              );
+            });
+            if (
+              this.input.variables.every((x) => providedVariables.includes(x))
             ) {
-                regionsInBoundingBox.push(r);
+              console.log(
+                `The output ${output.label} for the model ${opt.value.label} is valid.`
+              );
+              console.log(
+                " ",
+                realPresentation
+                  .map(
+                    (p) =>
+                      `${p.label} [${(p.hasStandardVariable || [])
+                        .map((x) => this.standardVariables[x.id])
+                        .map((t) => `${t.label}`)
+                        .join(", ")}]`
+                  )
+                  .join("\n  ")
+              );
+              return true;
             }
+            return false;
+          })
+    );
+  }
+
+  private renderMatchingVariables(
+    model: ModelConfiguration | ModelConfigurationSetup
+  ): unknown {
+    let outs = this.getMatchingOutputs(model);
+    if (outs.length === 0) return null;
+    return html`<div>
+      <b>Matching outputs:</b> ${outs.map(
+        (out) =>
+          html`<code style="display:inline-block; padding-right: 5px;"
+            >${getLabel(out)}</code
+          >`
+      )}
+    </div>`;
+  }
+
+  private getMatchingOutputs: (
+    model: ModelConfiguration | ModelConfigurationSetup
+  ) => DatasetSpecification[] = (model) => {
+    if (
+      !this.input ||
+      !this.datasetSpecifications ||
+      !this.variablePresentations ||
+      !this.standardVariables
+    )
+      return [];
+
+    //Copied from above
+    let outs: DatasetSpecification[] = [];
+    model.hasOutput
+      .map(
+        (output: DatasetSpecification) => this.datasetSpecifications[output.id]
+      )
+      .some((output: DatasetSpecification) => {
+        let realPresentation = (output.hasPresentation || []).map(
+          (vp: VariablePresentation) => this.variablePresentations[vp.id]
+        );
+        let providedVariables: string[] = [];
+        realPresentation.forEach((vp: VariablePresentation) => {
+          let realSTDVariables = (vp.hasStandardVariable || []).map(
+            (sv) => this.standardVariables[sv.id]
+          );
+          realSTDVariables.forEach((sv) =>
+            providedVariables.push(getLabel(sv))
+          );
         });
-
-        return options.filter((opt:ModelOption) => !opt.value.hasRegion || (
-                !!opt.value.hasRegion && opt.value.hasRegion
-                .map((r:Region) => this.regions[r.id])
-                .some((r:Region) => regionsInBoundingBox.some((r2:Region) => r2.id === r.id))
-        ));
-    }
-
-    private applyVariableFilter (options:ModelOption[]) : ModelOption[] {
-        if (!this.input || !this.datasetSpecifications || !this.variablePresentations || !this.standardVariables)
-            return options;
-        
-        //FIXME: this does not work for "useful for calculating index"
-        return options.filter((opt:ModelOption) => 
-            !!opt.value.hasOutput && 
-            opt.value.hasOutput
-                .map((output:DatasetSpecification) => this.datasetSpecifications[output.id])
-                .some((output:DatasetSpecification) => {
-                    let realPresentation = (output.hasPresentation||[])
-                        .map((vp:VariablePresentation) => this.variablePresentations[vp.id]);
-                    let providedVariables : string[] = [];
-                    realPresentation.forEach((vp:VariablePresentation) => {
-                        let realSTDVariables = (vp.hasStandardVariable||[]).map(sv => this.standardVariables[sv.id]);
-                        realSTDVariables.forEach(sv => providedVariables.push(getLabel(sv)));
-                    })
-                    if (this.input.variables.every(x => providedVariables.includes(x))) {
-                        console.log(`The output ${output.label} for the model ${opt.value.label} is valid.`);
-                        console.log(' ', realPresentation.map(p => `${p.label} [${(p.hasStandardVariable||[]).map(x=>this.standardVariables[x.id]).map(t=>`${t.label}`).join(", ")}]`).join('\n  '));
-                        return true;
-                    }
-                    return false;
-                })
-        )
-
-    }
-
-    private renderMatchingVariables(model: ModelConfiguration | ModelConfigurationSetup): unknown {
-        let outs = this.getMatchingOutputs(model);
-        if (outs.length === 0) return null;
-        return html`<div> <b>Matching outputs:</b> ${ outs.map(out => html`<code style="display:inline-block; padding-right: 5px;">${getLabel(out)}</code>`) }</div>`;
-    }
-
-    private getMatchingOutputs : (model: ModelConfiguration | ModelConfigurationSetup) => DatasetSpecification[] = (model) => {
-        if (!this.input || !this.datasetSpecifications || !this.variablePresentations || !this.standardVariables)
-            return [];
-
-        //Copied from above 
-        let outs : DatasetSpecification[] = [];
-        model.hasOutput
-            .map((output: DatasetSpecification) => this.datasetSpecifications[output.id])
-            .some((output: DatasetSpecification) => {
-                let realPresentation = (output.hasPresentation || [])
-                    .map((vp: VariablePresentation) => this.variablePresentations[vp.id]);
-                let providedVariables: string[] = [];
-                realPresentation.forEach((vp: VariablePresentation) => {
-                    let realSTDVariables = (vp.hasStandardVariable || []).map(sv => this.standardVariables[sv.id]);
-                    realSTDVariables.forEach(sv => providedVariables.push(getLabel(sv)));
-                })
-                if (this.input.variables.every(x => providedVariables.includes(x))) {
-                    outs.push(output);
-                    return true;
-                }
-                return false;
-            })
-        return outs;
-    }
+        if (this.input.variables.every((x) => providedVariables.includes(x))) {
+          outs.push(output);
+          return true;
+        }
+        return false;
+      });
+    return outs;
+  };
 }

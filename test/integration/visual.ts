@@ -1,15 +1,15 @@
-import fs from 'fs';
-import pixelmatch from 'pixelmatch';
-import { PNG } from 'pngjs';
-import { Page } from 'puppeteer';
+import fs from "fs";
+import pixelmatch from "pixelmatch";
+import { PNG } from "pngjs";
+import { Page } from "puppeteer";
 
 const currentDir = `${process.cwd()}/test/integration/screenshots-current`;
 const baselineDir = `${process.cwd()}/test/integration/screenshots-baseline`;
 
-const appUrl = 'http://127.0.0.1:8080';
+const appUrl = "http://127.0.0.1:8080";
 jest.setTimeout(30000);
 
-describe('👀 page screenshots are correct', () => {
+describe("👀 page screenshots are correct", () => {
   beforeAll(() => {
     // Create the test directory if needed.
     if (!fs.existsSync(currentDir)) {
@@ -21,34 +21,43 @@ describe('👀 page screenshots are correct', () => {
     }
   });
 
-  describe('wide screen', () => {
-    beforeEach(() => page.setViewport({width: 800, height: 600}));
+  describe("wide screen", () => {
+    beforeEach(() => page.setViewport({ width: 800, height: 600 }));
 
-    it('/', () => takeAndCompareScreenshot(page, '', 'wide'));
-    it('/south_sudan/datasets', () => takeAndCompareScreenshot(page, 'view1', 'wide'));
-    it('/south_sudan/regions', () => takeAndCompareScreenshot(page, 'view2', 'wide'));
-    it('/south_sudan/models', () => takeAndCompareScreenshot(page, 'view3', 'wide'));
-    it('/south_sudan/analysis', () => takeAndCompareScreenshot(page, 'view3', 'wide'));
-    it('/404', () => takeAndCompareScreenshot(page, 'batmanNotAView', 'wide'));
+    it("/", () => takeAndCompareScreenshot(page, "", "wide"));
+    it("/south_sudan/datasets", () =>
+      takeAndCompareScreenshot(page, "view1", "wide"));
+    it("/south_sudan/regions", () =>
+      takeAndCompareScreenshot(page, "view2", "wide"));
+    it("/south_sudan/models", () =>
+      takeAndCompareScreenshot(page, "view3", "wide"));
+    it("/south_sudan/analysis", () =>
+      takeAndCompareScreenshot(page, "view3", "wide"));
+    it("/404", () => takeAndCompareScreenshot(page, "batmanNotAView", "wide"));
   });
 
-  describe('narrow screen', () => {
-    beforeEach(() => page.setViewport({width: 375, height: 667}));
+  describe("narrow screen", () => {
+    beforeEach(() => page.setViewport({ width: 375, height: 667 }));
 
-    it('/index.html', () => takeAndCompareScreenshot(page, '', 'narrow'));
-    it('/view1', () => takeAndCompareScreenshot(page, 'view1', 'narrow'));
-    it('/view2', () => takeAndCompareScreenshot(page, 'view2', 'narrow'));
-    it('/view3', () => takeAndCompareScreenshot(page, 'view3', 'narrow'));
-    it('/404', () => takeAndCompareScreenshot(page, 'batmanNotAView', 'narrow'));
+    it("/index.html", () => takeAndCompareScreenshot(page, "", "narrow"));
+    it("/view1", () => takeAndCompareScreenshot(page, "view1", "narrow"));
+    it("/view2", () => takeAndCompareScreenshot(page, "view2", "narrow"));
+    it("/view3", () => takeAndCompareScreenshot(page, "view3", "narrow"));
+    it("/404", () =>
+      takeAndCompareScreenshot(page, "batmanNotAView", "narrow"));
   });
 });
 
-async function takeAndCompareScreenshot(page: Page, route: string, filePrefix: string) {
+async function takeAndCompareScreenshot(
+  page: Page,
+  route: string,
+  filePrefix: string
+) {
   // If you didn't specify a file, use the name of the route.
-  const fileName = filePrefix + '/' + (route ? route : 'index');
+  const fileName = filePrefix + "/" + (route ? route : "index");
 
   await page.goto(`${appUrl}/${route}`);
-  await page.screenshot({path: `${currentDir}/${fileName}.png`});
+  await page.screenshot({ path: `${currentDir}/${fileName}.png` });
   return compareScreenshots(fileName);
 }
 
@@ -62,12 +71,14 @@ function compareScreenshots(view: string) {
     //   .on('end', () => {
     //     console.log('\n\n')
     //   });
-    const img1 = fs.createReadStream(`${currentDir}/${view}.png`)
+    const img1 = fs
+      .createReadStream(`${currentDir}/${view}.png`)
       .pipe(new PNG())
-      .on('parsed', doneReading);
-    const img2 = fs.createReadStream(`${baselineDir}/${view}.png`)
+      .on("parsed", doneReading);
+    const img2 = fs
+      .createReadStream(`${baselineDir}/${view}.png`)
       .pipe(new PNG())
-      .on('parsed', doneReading);
+      .on("parsed", doneReading);
 
     let filesRead = 0;
     function doneReading() {
@@ -81,7 +92,7 @@ function compareScreenshots(view: string) {
       expect(img1.height).toBe(img2.height);
 
       // Do the visual diff.
-      const diff = new PNG({width: img1.width, height: img1.height});
+      const diff = new PNG({ width: img1.width, height: img1.height });
 
       // Skip the bottom/rightmost row of pixels, since it seems to be
       // noise on some machines :/
@@ -93,16 +104,19 @@ function compareScreenshots(view: string) {
         img2.data,
         diff.data,
         width,
-        height, {
+        height,
+        {
           threshold: 0.2,
-        },
+        }
       );
-      const percentDiff = numDiffPixels / (width * height) * 100;
+      const percentDiff = (numDiffPixels / (width * height)) * 100;
 
       const stats = fs.statSync(`${currentDir}/${view}.png`);
       const fileSizeInBytes = stats.size;
       // tslint:disable-next-line:no-console
-      console.log(`📸 ${view}.png => ${fileSizeInBytes} bytes, ${percentDiff}% different`);
+      console.log(
+        `📸 ${view}.png => ${fileSizeInBytes} bytes, ${percentDiff}% different`
+      );
 
       // diff.pack().pipe(fs.createWriteStream(`${currentDir}/${view}-diff.png`));
       expect(numDiffPixels).toBe(0);

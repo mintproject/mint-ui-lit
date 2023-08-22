@@ -1,5 +1,5 @@
-declare module 'terser' {
+declare module "terser" {
   export function minify(code: string): {
-    code: string,
+    code: string;
   };
 }

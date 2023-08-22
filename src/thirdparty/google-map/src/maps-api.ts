@@ -1,4 +1,3 @@
-
 declare global {
   interface Window {
     _resolveGoogleMapsAPI: Function;
@@ -12,13 +11,17 @@ const callbackPromise = new Promise((res, rej) => {
   window._rejectGoogleMapsAPI = rej;
 });
 
-export const loadGoogleMapsAPI = async (apiKey?: string): Promise<typeof google.maps> => {
+export const loadGoogleMapsAPI = async (
+  apiKey?: string
+): Promise<typeof google.maps> => {
   if (!initCalled) {
-    const script = document.createElement('script');
-    script.addEventListener('error', (e) => {
+    const script = document.createElement("script");
+    script.addEventListener("error", (e) => {
       window._rejectGoogleMapsAPI(e);
     });
-    script.src = `https://maps.googleapis.com/maps/api/js?${apiKey ? `key=${apiKey}&` : ''}callback=_resolveGoogleMapsAPI`;
+    script.src = `https://maps.googleapis.com/maps/api/js?${
+      apiKey ? `key=${apiKey}&` : ""
+    }callback=_resolveGoogleMapsAPI`;
     document.head.appendChild(script);
     initCalled = true;
   }

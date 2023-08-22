@@ -3,80 +3,84 @@
 /// <reference types="../typings/script-ext-html-webpack-plugin" />
 /// <reference types="../typings/workbox-webpack-plugin" />
 
-import { resolve } from 'path';
-import webpack from 'webpack';
-import CopyPlugin from 'copy-webpack-plugin';
-import ScriptExtHtmlPlugin from 'script-ext-html-webpack-plugin';
-import { InjectManifest as InjectManifestPlugin } from 'workbox-webpack-plugin';
-
+import { resolve } from "path";
+import webpack from "webpack";
+import CopyPlugin from "copy-webpack-plugin";
+import ScriptExtHtmlPlugin from "script-ext-html-webpack-plugin";
+import { InjectManifest as InjectManifestPlugin } from "workbox-webpack-plugin";
 
 const config: webpack.Configuration = {
   cache: true,
-  context: resolve(__dirname, '..'),
+  context: resolve(__dirname, ".."),
   entry: {
-    app: './src/index',
+    app: "./src/index",
   },
   output: {
-    filename: 'components/[name].js',
-    chunkFilename: 'components/[id].js',
-    path: resolve(__dirname, '../build', process.env.BUILD_NAME || ''),
+    filename: "components/[name].js",
+    chunkFilename: "components/[id].js",
+    path: resolve(__dirname, "../build", process.env.BUILD_NAME || ""),
     pathinfo: false,
-    crossOriginLoading: 'anonymous',
-    globalObject: 'self',
+    crossOriginLoading: "anonymous",
+    globalObject: "self",
   },
   resolve: {
     alias: {
-      '@components': resolve(__dirname, '../src/components/'),
-      '@actions': resolve(__dirname, '../src/actions/'),
-      '@reducers': resolve(__dirname, '../src/reducers/'),
-      '@store$': resolve(__dirname, '../src/store'),
+      "@components": resolve(__dirname, "../src/components/"),
+      "@actions": resolve(__dirname, "../src/actions/"),
+      "@reducers": resolve(__dirname, "../src/reducers/"),
+      "@store$": resolve(__dirname, "../src/store"),
     },
-    extensions: ['.ts', '.js', '.scss', '.css', '.ejs'],
-    modules: ['./src', 'node_modules'],
+    extensions: [".ts", ".js", ".scss", ".css", ".ejs"],
+    modules: ["./src", "node_modules"],
   },
   module: {
     rules: [
       {
         test: /\.[tj]s$/,
-        exclude: /node_modules[\/\\](?!(pwa-helpers|lit-element|@polymer|google-map)[\/\\]).*/,
+        exclude:
+          /node_modules[\/\\](?!(pwa-helpers|lit-element|@polymer|google-map)[\/\\]).*/,
         use: {
-          loader: 'babel-loader',
+          loader: "babel-loader",
           options: {
-            presets: ['@babel/preset-env', '@babel/preset-typescript', '@babel/preset-flow']
-          }
+            presets: [
+              "@babel/preset-env",
+              "@babel/preset-typescript",
+              "@babel/preset-flow",
+            ],
+          },
         },
       },
       {
         test: /\.graphql$/,
         exclude: /node_modules/,
-        loader: 'graphql-tag/loader',
+        loader: "graphql-tag/loader",
       },
       {
         test: /\.s?[ac]ss$/,
         use: [
           {
-            loader: resolve(__dirname, 'loaders/to-lit-css-loader.ts'),
+            loader: resolve(__dirname, "loaders/to-lit-css-loader.ts"),
           },
           {
-            loader: 'css-loader',
+            loader: "css-loader",
             options: {
               importLoaders: 2,
             },
           },
           {
-            loader: 'postcss-loader',
+            loader: "postcss-loader",
             options: {
-              ident: 'postcss',
+              ident: "postcss",
               plugins: () => [
-                require('postcss-preset-env')(),
-                require('autoprefixer')(),
+                require("postcss-preset-env")(),
+                require("autoprefixer")(),
               ],
             },
           },
           {
-            loader: 'sass-loader',
+            loader: "sass-loader",
             options: {
-              includePaths: ['./node_modules'],
+              includePaths: ["./node_modules"],
             },
           },
         ],
@@ -87,25 +91,36 @@ const config: webpack.Configuration = {
     new CopyPlugin([
       // Assets
       {
-        from: resolve(__dirname, '../src/assets'),
-        to: '.',
+        from: resolve(__dirname, "../src/assets"),
+        to: ".",
       },
-      ...process.env.BUILD_NAME === 'es5' ? [
-      {
-        from: resolve(__dirname, '../node_modules/@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js'),
-        to: 'components',
-      }] : [],
+      ...(process.env.BUILD_NAME === "es5"
+        ? [
+            {
+              from: resolve(
+                __dirname,
+                "../node_modules/@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js"
+              ),
+              to: "components",
+            },
+          ]
+        : []),
     ]),
     new ScriptExtHtmlPlugin({
-      defaultAttribute: 'defer',
+      defaultAttribute: "defer",
     }),
     new InjectManifestPlugin({
-      swSrc: resolve(__dirname, '../src/service-worker.js'),
-      swDest: './service-worker.js',
-      exclude: [/hot-update/, /images\/icons/, /browserconfig\.xml/, /robots\.txt/, /\.LICENSE$/],
+      swSrc: resolve(__dirname, "../src/service-worker.js"),
+      swDest: "./service-worker.js",
+      exclude: [
+        /hot-update/,
+        /images\/icons/,
+        /browserconfig\.xml/,
+        /robots\.txt/,
+        /\.LICENSE$/,
+      ],
     }),
-    new webpack.DefinePlugin({
-    })
+    new webpack.DefinePlugin({}),
   ],
 };
 

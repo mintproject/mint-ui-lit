@@ -8,50 +8,47 @@ Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 */
 
-import { html, customElement, css } from 'lit-element';
+import { html, customElement, css } from "lit-element";
 
 // These are the shared styles needed by this element.
-import { SharedStyles } from '../../styles/shared-styles';
-import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from '../../app/store';
+import { SharedStyles } from "../../styles/shared-styles";
+import { connect } from "pwa-helpers/connect-mixin";
+import { store, RootState } from "../../app/store";
 
 // Actions needed by this element
-import modeling from './reducers';
+import modeling from "./reducers";
 
 import "./problem-statements-list";
 import "./mint-problem-statement";
 
-import { PageViewElement } from '../../components/page-view-element';
-
+import { PageViewElement } from "../../components/page-view-element";
 
 store.addReducers({
-  modeling
+  modeling,
 });
 
-@customElement('modeling-home')
+@customElement("modeling-home")
 export class ModelingHome extends connect(store)(PageViewElement) {
-
   static get styles() {
-    return [
-      SharedStyles,
-      css`
-      `
-    ];
+    return [SharedStyles, css``];
   }
 
   protected render() {
     return html`
-
-    <div>  
-      <problem-statements-list class="page fullpage" 
-        ?active="${this._subpage == 'home'}"></problem-statements-list>
-      <mint-problem-statement class="page fullpage" 
-        ?active="${this._subpage == 'problem_statement' || this._subpage == 'scenario'}"
-        ></mint-problem-statement>   
-    </div>
-    `
+      <div>
+        <problem-statements-list
+          class="page fullpage"
+          ?active="${this._subpage == "home"}"
+        ></problem-statements-list>
+        <mint-problem-statement
+          class="page fullpage"
+          ?active="${this._subpage == "problem_statement" ||
+          this._subpage == "scenario"}"
+        ></mint-problem-statement>
+      </div>
+    `;
   }
-  
+
   stateChanged(state: RootState) {
     super.setSubPage(state);
     super.setRegionId(state);

@@ -12,19 +12,18 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {LitElement, html, css} from 'lit-element';
-import {property} from 'lit-element/lib/decorators.js';
+import { LitElement, html, css } from "lit-element";
+import { property } from "lit-element/lib/decorators.js";
 //import { loadGoogleMapsAPI } from '../maps-api';
 
-export {html, svg, css} from 'lit-element';
-export {customElement, property, query} from 'lit-element/lib/decorators.js';
+export { html, svg, css } from "lit-element";
+export { customElement, property, query } from "lit-element/lib/decorators.js";
 
 /**
  * Base class that helps manage references to the containing google.maps.Map
  * instance.
  */
 export abstract class GoogleMapChildElement extends LitElement {
-
   static styles = css`
     :host {
       display: none;
@@ -34,7 +33,7 @@ export abstract class GoogleMapChildElement extends LitElement {
   @property()
   map?: google.maps.Map;
 
-  mapReady?: Promise<google.maps.Map|undefined>;
+  mapReady?: Promise<google.maps.Map | undefined>;
 
   render() {
     return html`<slot></slot>`;
@@ -45,12 +44,14 @@ export abstract class GoogleMapChildElement extends LitElement {
    * event to request the instance from an ancestor element. GoogleMap responds
    * to this event.
    */
-  protected async _getMapInstance(): Promise<google.maps.Map|undefined> {
-    const detail: {mapReady?: Promise<google.maps.Map>} = {};
-    this.dispatchEvent(new CustomEvent('google-map-get-map-instance', {
-      bubbles: true,
-      detail,
-    }));
+  protected async _getMapInstance(): Promise<google.maps.Map | undefined> {
+    const detail: { mapReady?: Promise<google.maps.Map> } = {};
+    this.dispatchEvent(
+      new CustomEvent("google-map-get-map-instance", {
+        bubbles: true,
+        detail,
+      })
+    );
     return detail.mapReady;
   }
 

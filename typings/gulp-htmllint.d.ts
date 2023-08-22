@@ -1,4 +1,4 @@
-declare module 'gulp-htmllint' {
+declare module "gulp-htmllint" {
   export interface GulpHtmllintOptions {
     rules?: any;
     config?: string;
@@ -13,6 +13,6 @@ declare module 'gulp-htmllint' {
 
   export default function GulpHtmllint(
     options?: GulpHtmllintOptions,
-    customReporter?: GulpHtmllintReporter,
+    customReporter?: GulpHtmllintReporter
   ): any;
 }

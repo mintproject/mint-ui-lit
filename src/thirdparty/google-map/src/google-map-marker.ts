@@ -1,62 +1,65 @@
 // <!-- Copyright (c) 2015 Google Inc. All rights reserved. -->
 
-import { GoogleMapChildElement, customElement, property } from './lib/google-map-child-element.js';
+import {
+  GoogleMapChildElement,
+  customElement,
+  property,
+} from "./lib/google-map-child-element.js";
 
 const markerEvents = [
-  'animation_changed',
-  'click',
-  'clickable_changed',
-  'cursor_changed',
-  'dblclick',
-  'drag',
-  'dragend',
-  'draggable_changed',
-  'dragstart',
-  'flat_changed',
-  'icon_changed',
-  'mousedown',
-  'mouseout',
-  'mouseover',
-  'mouseup',
-  'position_changed',
-  'rightclick',
-  'shape_changed',
-  'title_changed',
-  'visible_changed',
-  'zindex_changed',
+  "animation_changed",
+  "click",
+  "clickable_changed",
+  "cursor_changed",
+  "dblclick",
+  "drag",
+  "dragend",
+  "draggable_changed",
+  "dragstart",
+  "flat_changed",
+  "icon_changed",
+  "mousedown",
+  "mouseout",
+  "mouseover",
+  "mouseup",
+  "position_changed",
+  "rightclick",
+  "shape_changed",
+  "title_changed",
+  "visible_changed",
+  "zindex_changed",
 ];
 
 /**
  * The `google-map-marker` element represents a map marker. It is used as a
  * child of `google-map`.
- * 
+ *
  * <b>Example</b>:
- * 
+ *
  *     <google-map latitude="37.77493" longitude="-122.41942">
  *       <google-map-marker latitude="37.779" longitude="-122.3892"
  *           title="Go Giants!"></google-map-marker>
  *     </google-map>
- * 
+ *
  * <b>Example</b> - marker with info window (children create the window content):
- * 
+ *
  *     <google-map-marker latitude="37.77493" longitude="-122.41942">
  *       <img src="image.png">
  *     </google-map-marker>
- * 
+ *
  * <b>Example</b> - a draggable marker:
- * 
+ *
  *     <google-map-marker latitude="37.77493" longitude="-122.41942"
  *          draggable="true"></google-map-marker>
- * 
+ *
  * <b>Example</b> - hide a marker:
- * 
+ *
  *     <google-map-marker latitude="37.77493" longitude="-122.41942"
  *         hidden></google-map-marker>
- * 
+ *
  */
-@customElement('google-map-marker')
+@customElement("google-map-marker")
 export class GoogleMapMarker extends GoogleMapChildElement {
-
   /**
    * Fired when the marker icon was clicked. Requires the clickEvents attribute to be true.
    *
@@ -163,19 +166,19 @@ export class GoogleMapMarker extends GoogleMapChildElement {
   /**
    * When true, marker *click events are automatically registered.
    */
-  @property({type: Boolean})
+  @property({ type: Boolean })
   clickEvents = false;
 
   /**
    * When true, marker drag* events are automatically registered.
    */
-  @property({type: Boolean})
+  @property({ type: Boolean })
   dragEvents = false;
 
   /**
    * When true, marker mouse* events are automatically registered.
    */
-  @property({type: Boolean})
+  @property({ type: Boolean })
   mouseEvents = false;
 
   /**
@@ -184,43 +187,43 @@ export class GoogleMapMarker extends GoogleMapChildElement {
    * @type string|google.maps.Icon|google.maps.Symbol
    */
   @property()
-  icon?: string|google.maps.Icon|google.maps.Symbol;
+  icon?: string | google.maps.Icon | google.maps.Symbol;
 
   /**
    * Z-index for the marker icon.
    */
-  @property({type: Number})
+  @property({ type: Number })
   zIndex: number = 0;
 
   /**
    * The marker's latitude coordinate.
    */
-  @property({type: Number, reflect: true})
+  @property({ type: Number, reflect: true })
   latitude?: number;
 
   /**
    * The marker's longitude coordinate.
    */
-  @property({type: Number, reflect: true})
+  @property({ type: Number, reflect: true })
   longitude?: number;
 
   /**
    * The marker's label.
    */
-  @property({type: String})
+  @property({ type: String })
   label?: string;
 
   /**
    * A animation for the marker. "DROP" or "BOUNCE". See
    * https://developers.google.com/maps/documentation/javascript/examples/marker-animations.
    */
-  @property({type: String})
+  @property({ type: String })
   animation?: google.maps.Animation;
 
   /**
    * Specifies whether the InfoWindow is open or not
    */
-  @property({type: Boolean})
+  @property({ type: Boolean })
   open = false;
 
   private _dragHandler?: google.maps.MapsEventListener;
@@ -235,14 +238,14 @@ export class GoogleMapMarker extends GoogleMapChildElement {
 
   constructor() {
     super();
-    console.log('google-map-marker');
+    console.log("google-map-marker");
   }
 
   update(changedProperties: Map<PropertyKey, any>) {
-    if (changedProperties.has('map')) {
+    if (changedProperties.has("map")) {
       this._mapChanged();
     }
-    if (changedProperties.has('open')) {
+    if (changedProperties.has("open")) {
       this._openChanged();
     }
     super.update(changedProperties);
@@ -269,14 +272,22 @@ export class GoogleMapMarker extends GoogleMapChildElement {
   }
 
   _updatePosition() {
-    if (this.marker && this.latitude !== undefined && this.longitude !== undefined) {
-      this.marker.setPosition(new google.maps.LatLng(this.latitude, this.longitude));
+    if (
+      this.marker &&
+      this.latitude !== undefined &&
+      this.longitude !== undefined
+    ) {
+      this.marker.setPosition(
+        new google.maps.LatLng(this.latitude, this.longitude)
+      );
     }
   }
 
   _animationChanged() {
     if (this.marker) {
-      this.marker.setAnimation(this.animation === undefined ? null : this.animation);
+      this.marker.setAnimation(
+        this.animation === undefined ? null : this.animation
+      );
     }
   }
 
@@ -299,7 +310,7 @@ export class GoogleMapMarker extends GoogleMapChildElement {
   }
 
   _mapChanged() {
-    console.log('_mapChanged');
+    console.log("_mapChanged");
     // Marker will be rebuilt, so disconnect existing one from old map and listeners.
     if (this.marker) {
       this.marker.setMap(null);
@@ -323,18 +334,26 @@ export class GoogleMapMarker extends GoogleMapChildElement {
 
     // TODO(justinfagnani): no, no, no... Use Nodes, not innerHTML.
     const content = this.innerHTML.trim();
-    console.log('_contentChanged', content, this.infoWindow);
+    console.log("_contentChanged", content, this.infoWindow);
     if (content) {
       if (!this.infoWindow) {
         // Create a new infowindow
         this.infoWindow = new google.maps.InfoWindow();
-        this._openInfoHandler = google.maps.event.addListener(this.marker!, 'click', () => {
-          this.open = true;
-        });
+        this._openInfoHandler = google.maps.event.addListener(
+          this.marker!,
+          "click",
+          () => {
+            this.open = true;
+          }
+        );
 
-        this._closeInfoHandler = google.maps.event.addListener(this.infoWindow, 'closeclick', () => {
-          this.open = false;
-        });
+        this._closeInfoHandler = google.maps.event.addListener(
+          this.infoWindow,
+          "closeclick",
+          () => {
+            this.open = false;
+          }
+        );
       }
       this.infoWindow.setContent(content);
     } else {
@@ -351,17 +370,17 @@ export class GoogleMapMarker extends GoogleMapChildElement {
     if (this.infoWindow) {
       if (this.open) {
         this.infoWindow.open(this.map, this.marker);
-        this.dispatchEvent(new CustomEvent('google-map-marker-open'));
+        this.dispatchEvent(new CustomEvent("google-map-marker-open"));
       } else {
         this.infoWindow.close();
-        this.dispatchEvent(new CustomEvent('google-map-marker-close'));
+        this.dispatchEvent(new CustomEvent("google-map-marker-close"));
       }
     }
   }
 
   // TODO(justinfagnani): call from GoogleMapChildElement
   private _mapReady() {
-    console.log('_mapReady');
+    console.log("_mapReady");
     this._listeners = {};
     this.marker = new google.maps.Marker({
       map: this.map,
@@ -375,7 +394,7 @@ export class GoogleMapMarker extends GoogleMapChildElement {
       visible: !this.hidden,
       icon: this.icon,
       label: this.label,
-      zIndex: this.zIndex
+      zIndex: this.zIndex,
     });
     this._contentChanged();
     markerEvents.forEach((e) => this._forwardEvent(e));
@@ -385,13 +404,19 @@ export class GoogleMapMarker extends GoogleMapChildElement {
 
   // TODO(justinfagnani): move to utils / base class
   private _forwardEvent(name: string) {
-    this._listeners[name] = google.maps.event.addListener(this.marker!, name, (event: Event) => {
-      this.dispatchEvent(new CustomEvent(`google-map-marker-${name}`, {
-        detail: {
-          mapsEvent: event,
-        }
-      }));
-    });
+    this._listeners[name] = google.maps.event.addListener(
+      this.marker!,
+      name,
+      (event: Event) => {
+        this.dispatchEvent(
+          new CustomEvent(`google-map-marker-${name}`, {
+            detail: {
+              mapsEvent: event,
+            },
+          })
+        );
+      }
+    );
   }
 
   attributeChangedCallback(name: string, oldValue: string, newValue: string) {
@@ -402,14 +427,14 @@ export class GoogleMapMarker extends GoogleMapChildElement {
 
     // Cannot use *Changed watchers for native properties.
     switch (name) {
-      case 'hidden':
+      case "hidden":
         this.marker.setVisible(!this.hidden);
         break;
-      case 'draggable':
+      case "draggable":
         this.marker.setDraggable(this.draggable);
         this._setupDragHandler();
         break;
-      case 'title':
+      case "title":
         this.marker.setTitle(this.title);
         break;
     }
@@ -422,7 +447,10 @@ export class GoogleMapMarker extends GoogleMapChildElement {
   private _setupDragHandler() {
     if (this.draggable) {
       this._dragHandler = google.maps.event.addListener(
-          this.marker!, 'dragend', this._onDragEnd);
+        this.marker!,
+        "dragend",
+        this._onDragEnd
+      );
     } else {
       google.maps.event.removeListener(this._dragHandler!);
       this._dragHandler = undefined;
@@ -432,9 +460,13 @@ export class GoogleMapMarker extends GoogleMapChildElement {
   /**
    * @this {GoogleMapMarkerElement} This function is called with .bind(this) in setupDragHandler
    *_above.
-    */
-  private _onDragEnd = (e: google.maps.MouseEvent, _details: unknown, _sender: unknown) => {
+   */
+  private _onDragEnd = (
+    e: google.maps.MouseEvent,
+    _details: unknown,
+    _sender: unknown
+  ) => {
     this.latitude = e.latLng.lat();
     this.longitude = e.latLng.lng();
-  }
+  };
 }
