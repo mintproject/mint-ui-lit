@@ -8,18 +8,16 @@ Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 */
 
-import { html, customElement } from 'lit-element';
-import { PageViewElement } from '../components/page-view-element';
+import { html, customElement } from "lit-element";
+import { PageViewElement } from "../components/page-view-element";
 
 // These are the shared styles needed by this element.
-import { SharedStyles } from '../styles/shared-styles';
+import { SharedStyles } from "../styles/shared-styles";
 
-@customElement('mint-view404')
+@customElement("mint-view404")
 export class MintView404 extends PageViewElement {
   static get styles() {
-    return [
-      SharedStyles
-    ];
+    return [SharedStyles];
   }
 
   protected render() {
@@ -31,6 +29,6 @@ export class MintView404 extends PageViewElement {
           <a href="/">home</a> and try again?
         </p>
       </section>
-    `
+    `;
   }
 }

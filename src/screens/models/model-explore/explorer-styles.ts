@@ -1,65 +1,67 @@
-import { css } from 'lit-element';
+import { css } from "lit-element";
 
 export const ExplorerStyles = css`
-pre {
+  pre {
     border-radius: 5px;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
-    border: 1px solid #BCBEC0;
-    background: #F1F3F5;
-    font:12px Monaco,Consolas,"Andale  Mono","DejaVu Sans Mono",monospace
-}
+    border: 1px solid #bcbec0;
+    background: #f1f3f5;
+    font: 12px Monaco, Consolas, "Andale  Mono", "DejaVu Sans Mono", monospace;
+  }
 
-.no-decoration, .no-decoration:hover {
+  .no-decoration,
+  .no-decoration:hover {
     text-decoration: none;
     background-color: unset;
-}
+  }
 
-code {
+  code {
     border-radius: 5px;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
-    border: 1px solid #BCBEC0;
+    border: 1px solid #bcbec0;
     padding: 0px 2px;
-    font:12px Monaco,Consolas,"Andale  Mono","DejaVu Sans Mono",monospace
-}
+    font: 12px Monaco, Consolas, "Andale  Mono", "DejaVu Sans Mono", monospace;
+  }
 
-pre code {
+  pre code {
     border-radius: 0px;
     -moz-border-radius: 0px;
     -webkit-border-radius: 0px;
     border: 0px;
     padding: 2px;
-    font:12px Monaco,Consolas,"Andale  Mono","DejaVu Sans Mono",monospace
-}
+    font: 12px Monaco, Consolas, "Andale  Mono", "DejaVu Sans Mono", monospace;
+  }
 
-.noselect {
-      -webkit-touch-callout: none; /* iOS Safari */
-        -webkit-user-select: none; /* Safari */
-         -khtml-user-select: none; /* Konqueror HTML */
-           -moz-user-select: none; /* Firefox */
-            -ms-user-select: none; /* Internet Explorer/Edge */
-                user-select: none; /* Non-prefixed version, currently
+  .noselect {
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently
                                       supported by Chrome and Opera */
-}
+  }
 
-.clickable {
+  .clickable {
     cursor: pointer;
-}
+  }
 
-b.clickable, span.clickable {
+  b.clickable,
+  span.clickable {
     border-bottom: 1px dotted;
-}
+  }
 
-.tooltip {
+  .tooltip {
     cursor: help;
     display: inline-block;
     position: relative;
-}
+  }
 
-.tooltip:hover:after {
+  .tooltip:hover:after {
     background: #333;
-    background: rgba(0, 0, 0, .8);
+    background: rgba(0, 0, 0, 0.8);
     border-radius: 5px;
     bottom: 26px;
     color: #fff;
@@ -69,9 +71,9 @@ b.clickable, span.clickable {
     position: absolute;
     z-index: 98;
     width: 300px;
-}
+  }
 
-.tooltip:hover:before {
+  .tooltip:hover:before {
     border: solid;
     border-color: #333 transparent;
     border-width: 6px 6px 0 6px;
@@ -80,94 +82,93 @@ b.clickable, span.clickable {
     right: 42%;
     position: absolute;
     z-index: 99;
-}
+  }
 
-th > span.tooltip {
+  th > span.tooltip {
     margin: 0 0 0 4px;
     font-size: 14px;
-}
+  }
 
-th > span.tooltip > wl-icon {
+  th > span.tooltip > wl-icon {
     --icon-size: 14px;
     vertical-align: bottom;
-}
+  }
 
-span.resource {
+  span.resource {
     display: inline-block;
     line-height: 1em;
     margin: 0px 3px 3px 0px;
     border-radius: 4px;
     padding: 1px 4px;
-}
+  }
 
-.monospaced {
+  .monospaced {
     font: 12px Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace;
-}
+  }
 
-.number {
+  .number {
     font-family: helvetica;
-}
+  }
 
-span.author {
+  span.author {
     border: 2px solid cadetblue;
-}
+  }
 
-span.organization {
+  span.organization {
     border: 2px solid lightseagreen;
-}
+  }
 
-span.region {
+  span.region {
     border: 2px solid brown;
-}
+  }
 
-span.process {
+  span.process {
     border: 2px solid purple;
-}
+  }
 
-span.parameter {
+  span.parameter {
     border: 2px solid red;
-}
+  }
 
-span.time-interval {
+  span.time-interval {
     border: 2px solid burlywood;
-}
+  }
 
-span.source-code {
+  span.source-code {
     border: 2px solid gray;
-}
+  }
 
-span.intervention {
+  span.intervention {
     border: 2px solid darkgrey;
-}
+  }
 
-span.grid {
+  span.grid {
     border: 2px solid teal;
-}
+  }
 
-span.software-image {
-    border: 2px solid darkgray;;
+  span.software-image {
+    border: 2px solid darkgray;
     font: 12px Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace;
-}
+  }
 
-span.variable-presentation {
-    border: 2px solid darkgray;;
+  span.variable-presentation {
+    border: 2px solid darkgray;
     font: 12px Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace;
-}
+  }
 
-span.data-transformation {
-    border: 2px solid darkgray;;
-}
+  span.data-transformation {
+    border: 2px solid darkgray;
+  }
 
-span.funding-information {
+  span.funding-information {
     border: 2px solid cornflowerblue;
-}
+  }
 
-span.numerical-index {
+  span.numerical-index {
     border: 2px solid chocolate;
-}
+  }
 
-span.visualization {
+  span.visualization {
     border: 2px solid salmon;
-}
-
-`
+  }
+`;

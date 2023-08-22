@@ -8,10 +8,9 @@ Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 */
 
-import { css } from 'lit-element';
+import { css } from "lit-element";
 
 export const SharedStyles = css`
-
   :host {
     font-family: "Raleway";
     --font-family-serif: "Raleway";
@@ -32,8 +31,8 @@ export const SharedStyles = css`
     --nav-height: 50px;
     --nav-title-margin: 0px;
     --nav-padding: 10px;
-    border-bottom: 1px solid #E6E6E6;
-  }   
+    border-bottom: 1px solid #e6e6e6;
+  }
 
   wl-button {
     --button-padding: 10px;
@@ -67,7 +66,7 @@ export const SharedStyles = css`
   wl-list-item {
     --list-item-border-radius: 0;
     --list-item-before-margin: 8px;
-    border-bottom: 1px solid #F0F0F0;
+    border-bottom: 1px solid #f0f0f0;
     font-size: 12px;
     color: #0f7acf;
   }
@@ -85,7 +84,7 @@ export const SharedStyles = css`
   }
 
   wl-list-item.heading {
-    background: #F0F0F0;
+    background: #f0f0f0;
     font-weight: bold;
   }
 
@@ -98,13 +97,13 @@ export const SharedStyles = css`
     margin-left: calc(50% - 20px);
     margin-top: 50px;
   }
-  
+
   wl-progress-bar {
     --progress-bar-height: 10px;
-    --progress-bar-bg: #EEE;
+    --progress-bar-bg: #eee;
     --progress-bar-color: #629b30;
     width: 120px;
-  }  
+  }
   wl-progress-bar.FAILURE {
     --progress-bar-color: red;
   }
@@ -126,7 +125,7 @@ export const SharedStyles = css`
   }
   .avatar {
     border: 4px solid #0f7acf;
-    border-radius: 52px;    
+    border-radius: 52px;
     width: 100px;
     height: 100px;
     object-fit: cover;
@@ -158,12 +157,13 @@ export const SharedStyles = css`
   }
 
   .actionIcon.bigActionIcon {
-    font-size:20px;
-    width:20px;
+    font-size: 20px;
+    width: 20px;
     color: #304a91;
   }
 
-  .actionIcon:hover, .actionIcon.bigActionIcon:hover {
+  .actionIcon:hover,
+  .actionIcon.bigActionIcon:hover {
     background-color: #0f7acf;
     color: white;
   }
@@ -190,13 +190,12 @@ export const SharedStyles = css`
     font-size: 12px;
   }
 
-
   a {
     color: #0f7acf;
     text-decoration: none;
   }
   a:hover {
-    background-color: #F0F0F0;
+    background-color: #f0f0f0;
     text-decoration: underline;
   }
 
@@ -209,80 +208,82 @@ export const SharedStyles = css`
     display: none;
   }
   .icongrid {
-      display: grid;
-      grid-template-columns: 160px 160px;
-      grid-template-rows: 160px 160px;
-      margin-left: calc(50% - 160px);
-      margin-top: 80px;
+    display: grid;
+    grid-template-columns: 160px 160px;
+    grid-template-rows: 160px 160px;
+    margin-left: calc(50% - 160px);
+    margin-top: 80px;
   }
   .icongrid a {
-      text-align: center;
-      vertical-align: middle;
-      border: 5px solid #0f7acf;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: bold;
-      margin: 5px;
+    text-align: center;
+    vertical-align: middle;
+    border: 5px solid #0f7acf;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    margin: 5px;
   }
   .icongrid wl-icon {
-      --icon-size: 100px;
-      margin-top: 10px;
+    --icon-size: 100px;
+    margin-top: 10px;
   }
   .icongrid a.tight wl-icon {
     margin-top: 4px;
   }
   .icongrid a.tight div {
     margin-top: -10px;
-  }  
-  .icongrid > a[disabled]{
+  }
+  .icongrid > a[disabled] {
     color: gray;
     border-color: gray;
     cursor: not-allowed;
   }
   .svgicon {
-      width: 100px;
-      height: 100px;
-      display: inline-block;
-      margin-top: 10px;
-      text-align: center;
+    width: 100px;
+    height: 100px;
+    display: inline-block;
+    margin-top: 10px;
+    text-align: center;
   }
   .svgicon svg {
-      fill: #0f7acf;
+    fill: #0f7acf;
   }
   /* End of Big Icons view */
 
   /* Tree view */
-  .clt, .clt ul, .clt li {
-      /*color: #0f7acf;*/
-      position: relative;
+  .clt,
+  .clt ul,
+  .clt li {
+    /*color: #0f7acf;*/
+    position: relative;
   }
   .clt ul li {
-      padding: 4px; 
-      padding-right: 0px;   
-      font-size: 13px;
-      font-weight: normal;
+    padding: 4px;
+    padding-right: 0px;
+    font-size: 13px;
+    font-weight: normal;
   }
   .clt ul li.active {
-      color: #0f7acf;
-      cursor: pointer;
-      font-weight: normal;
+    color: #0f7acf;
+    cursor: pointer;
+    font-weight: normal;
   }
   .clt ul li.active:hover,
   .clt ul li.highlighted {
-      background-color: #F0F0F0;
+    background-color: #f0f0f0;
   }
   .clt ul li.active:hover .cltmain {
     /*text-decoration: underline;*/
   }
   .clt ul li.highlighted .cltmain {
-      font-weight: bold;
+    font-weight: bold;
   }
   .navtop {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    padding-left:5px;
-    padding-top:5px;
+    padding-left: 5px;
+    padding-top: 5px;
   }
   .cltmain .description {
     margin-left: 15px;
@@ -312,12 +313,13 @@ export const SharedStyles = css`
     margin-left: 5px;
   }
   .clt ul {
-      list-style: none;
-      padding-left: 24px;
-      margin-top: 0px;
+    list-style: none;
+    padding-left: 24px;
+    margin-top: 0px;
   }
-  .cltrow, .cltrow_padded {
-    display:flex; 
+  .cltrow,
+  .cltrow_padded {
+    display: flex;
     align-items: center;
     padding-right: 8px;
   }
@@ -327,25 +329,26 @@ export const SharedStyles = css`
   .cltmain {
     flex-grow: 1;
   }
-  .clt li::before, .clt li::after {
-      content: "";
-      position: absolute;
-      left: -12px;
+  .clt li::before,
+  .clt li::after {
+    content: "";
+    position: absolute;
+    left: -12px;
   }
   .clt li::before {
-      border-top: 1px solid #E0E0E0;
-      top: 14px;
-      width: 8px;
-      height: 0;
+    border-top: 1px solid #e0e0e0;
+    top: 14px;
+    width: 8px;
+    height: 0;
   }
   .clt li::after {
-      border-left: 1px solid #E0E0E0;
-      height: 100%;
-      width: 0px;
-      top: 7px;
+    border-left: 1px solid #e0e0e0;
+    height: 100%;
+    width: 0px;
+    top: 7px;
   }
   .clt ul > li:last-child::after {
-      height: 8px;
+    height: 8px;
   }
   /* End of Tree View */
 
@@ -379,7 +382,7 @@ export const SharedStyles = css`
 
   /* Dialog and Dialog form elements */
   wl-dialog {
-    --dialog-bg: #F6F6F6;
+    --dialog-bg: #f6f6f6;
     --dialog-color: #444;
     --dialog-header-padding: 15px 20px 0px 20px;
     --dialog-content-padding: 0px 20px 5px 20px;
@@ -390,24 +393,24 @@ export const SharedStyles = css`
     --dialog-width: 520px;
   }
   wl-dialog.comparison {
-    --dialog-bg: #FFFFFF;
+    --dialog-bg: #ffffff;
     --dialog-color: #444;
     --dialog-header-padding: 15px 20px 0px 20px;
     --dialog-content-padding: 0px 20px 5px 20px;
     --dialog-footer-padding: 20px;
     --dialog-width: 1000px;
   }
-  
+
   wl-dialog.larger {
     --dialog-width: 520px;
   }
 
-  fieldset.notes, 
+  fieldset.notes,
   wl-dialog fieldset {
     margin: 0px;
     margin-top: 10px;
     padding: 10px;
-    border: 1px solid #D9D9D9;
+    border: 1px solid #d9d9d9;
     border-radius: 5px;
   }
   fieldset.notes legend,
@@ -420,9 +423,9 @@ export const SharedStyles = css`
   fieldset.notes textarea {
     width: calc(100% - 5px);
     height: 150px;
-    border: 1px solid #E9E9E9;
+    border: 1px solid #e9e9e9;
     /*font-family: cursive;*/
-    font-size:13px;
+    font-size: 13px;
     color: #666;
   }
   fieldset.notes div.notepage {
@@ -443,8 +446,8 @@ export const SharedStyles = css`
 
   .formRow {
     width: 440px;
-    display:flex; 
-    align-items:center; 
+    display: flex;
+    align-items: center;
     justify-content: space-between;
   }
 
@@ -453,14 +456,15 @@ export const SharedStyles = css`
     font-size: 85%;
   }
 
-  .input_full input, .input_full textarea {
+  .input_full input,
+  .input_full textarea {
     width: 100%;
     border: 0px;
     height: 30px;
     color: #444;
     font-size: 13px;
     background-color: transparent;
-    border-bottom: 1px solid #D9D9D9;
+    border-bottom: 1px solid #d9d9d9;
     padding-bottom: 2px;
     font-weight: bold;
   }
@@ -470,8 +474,8 @@ export const SharedStyles = css`
   .input_half input {
     width: 188px;
     display: block;
-    background-color: #E9E9E9;
-    border: 1px solid #D0D0D0;
+    background-color: #e9e9e9;
+    border: 1px solid #d0d0d0;
     padding: 5px;
     border-radius: 5px;
     color: #393939;
@@ -483,19 +487,21 @@ export const SharedStyles = css`
     border-color: #909090;
   }
 
-  .input_full select, .input_half select {
+  .input_full select,
+  .input_half select {
     display: block;
     width: 200px;
-    border: 1px solid #D0D0D0;
+    border: 1px solid #d0d0d0;
     padding: 5px;
     border-radius: 5px;
     color: #393939;
     height: 30px;
-    -moz-appearance: none; 
-    -webkit-appearance: none; 
+    -moz-appearance: none;
+    -webkit-appearance: none;
     appearance: none;
-    background: url(data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0Ljk1IDEwIj48ZGVmcz48c3R5bGU+LmNscy0ye2ZpbGw6IzQ0NDt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPmFycm93czwvdGl0bGU+PHBvbHlnb24gY2xhc3M9ImNscy0yIiBwb2ludHM9IjEuNDEgNC42NyAyLjQ4IDMuMTggMy41NCA0LjY3IDEuNDEgNC42NyIvPjxwb2x5Z29uIGNsYXNzPSJjbHMtMiIgcG9pbnRzPSIzLjU0IDUuMzMgMi40OCA2LjgyIDEuNDEgNS4zMyAzLjU0IDUuMzMiLz48L3N2Zz4=) no-repeat 95% 50%; 
-    background-color: #E9E9E9;
+    background: url(data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0Ljk1IDEwIj48ZGVmcz48c3R5bGU+LmNscy0ye2ZpbGw6IzQ0NDt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPmFycm93czwvdGl0bGU+PHBvbHlnb24gY2xhc3M9ImNscy0yIiBwb2ludHM9IjEuNDEgNC42NyAyLjQ4IDMuMTggMy41NCA0LjY3IDEuNDEgNC42NyIvPjxwb2x5Z29uIGNsYXNzPSJjbHMtMiIgcG9pbnRzPSIzLjU0IDUuMzMgMi40OCA2LjgyIDEuNDEgNS4zMyAzLjU0IDUuMzMiLz48L3N2Zz4=)
+      no-repeat 95% 50%;
+    background-color: #e9e9e9;
   }
   .input_half select:focus {
     outline: none;
@@ -516,10 +522,12 @@ export const SharedStyles = css`
     font-size: 14px;
   }
 
-  .error input, .error select {
+  .error input,
+  .error select {
     border-color: red;
   }
-  .error input:focus, .error select:focus {
+  .error input:focus,
+  .error select:focus {
     border-color: maroon;
   }
 
@@ -533,59 +541,63 @@ export const SharedStyles = css`
 
   .pure-table {
     empty-cells: show;
-    border: 1px solid #f0f0f0
+    border: 1px solid #f0f0f0;
   }
 
   .pure-table caption {
     color: #000;
-    font: italic 85%/1 arial,sans-serif;
+    font: italic 85%/1 arial, sans-serif;
     padding: 1em 0;
-    text-align: center
+    text-align: center;
   }
 
-  .pure-table td,.pure-table th {
+  .pure-table td,
+  .pure-table th {
     border-left: 1px solid #f0f0f0;
     border-width: 0 0 0 1px;
     font-size: 13px;
     margin: 0;
     overflow: visible;
-    padding: .5em 1em
+    padding: 0.5em 1em;
   }
 
-  .pure-table td:first-child,.pure-table th:first-child {
-    border-left-width: 0
+  .pure-table td:first-child,
+  .pure-table th:first-child {
+    border-left-width: 0;
   }
 
   .pure-table thead {
     background-color: #f0f0f0;
     color: #232323;
     text-align: left;
-    vertical-align: bottom
+    vertical-align: bottom;
   }
 
   .pure-table td {
-    background-color: transparent
+    background-color: transparent;
   }
 
-  .pure-table-odd td,.pure-table-striped tr:nth-child(2n-1) td {
+  .pure-table-odd td,
+  .pure-table-striped tr:nth-child(2n-1) td {
     background-color: #f6f6f6;
   }
 
   .pure-table-bordered td {
-    border-bottom: 1px solid #f0f0f0
+    border-bottom: 1px solid #f0f0f0;
   }
 
-  .pure-table-bordered tbody>tr:last-child>td {
-    border-bottom-width: 0
+  .pure-table-bordered tbody > tr:last-child > td {
+    border-bottom-width: 0;
   }
 
-  .pure-table-horizontal td,.pure-table-horizontal th {
+  .pure-table-horizontal td,
+  .pure-table-horizontal th {
     border-width: 0 0 1px;
-    border-bottom: 1px solid #cbcbcb
+    border-bottom: 1px solid #cbcbcb;
   }
 
-  .pure-table-horizontal tbody>tr:last-child>td {
-    border-bottom-width: 0
+  .pure-table-horizontal tbody > tr:last-child > td {
+    border-bottom-width: 0;
   }
 
   /* Pure Table modifications */
@@ -615,14 +627,13 @@ export const SharedStyles = css`
 
   /* End of Pure Table */
 
-
   /* New Breadcrumbs css */
   .breadcrumbs {
     list-style: none;
     display: inline-block;
     width: 100%;
-    padding:0px;
-    margin:0px;
+    padding: 0px;
+    margin: 0px;
     margin-left: 0px;
   }
   .breadcrumbs .icon {
@@ -645,7 +656,8 @@ export const SharedStyles = css`
     text-align: center;
     margin: 2px 19px 1px 0px;
   }
-  .breadcrumbs a:before, .breadcrumbs a:after {
+  .breadcrumbs a:before,
+  .breadcrumbs a:after {
     content: "";
     position: absolute;
     top: 0;
@@ -689,8 +701,8 @@ export const SharedStyles = css`
     list-style: none;
     display: inline-block;
     width: 100%;
-    padding:0px;
-    margin:0px;
+    padding: 0px;
+    margin: 0px;
     margin-left: 0px;
   }
   .breadcrumbs_header .icon {
@@ -727,7 +739,7 @@ export const SharedStyles = css`
     background-color: rgb(98, 155, 48);
     color: white;
   }
-  
+
   /* Input type = File styles */
   [type="file"] {
     border: 0;
@@ -739,7 +751,7 @@ export const SharedStyles = css`
     white-space: nowrap;
     width: 1px;
   }
-   
+
   [type="file"] + label {
     background-color: #f1951b;
     border-radius: 4px;
@@ -750,13 +762,13 @@ export const SharedStyles = css`
     display: inline-block;
     padding: 10px;
   }
-    
+
   [type="file"]:focus + label,
   [type="file"] + label:hover {
-      background-color: #ffa52b;
-      box-shadow: 0 0.3125rem 0.625rem -0.125rem #aaa;
+    background-color: #ffa52b;
+    box-shadow: 0 0.3125rem 0.625rem -0.125rem #aaa;
   }
-    
+
   [type="file"]:focus + label {
     outline: 0px; // dotted #000;
   }
@@ -773,7 +785,7 @@ export const SharedStyles = css`
       padding-top: 0px;
     }
     .card2 {
-        padding: 0px;
+      padding: 0px;
     }
     .icongrid {
       display: grid;
@@ -783,21 +795,21 @@ export const SharedStyles = css`
       margin-top: 60px;
     }
     .icongrid a {
-        border: 2px solid #0f7acf;
-        border-radius: 5px;
-        font-size: 12px;
-        margin: 2px;
+      border: 2px solid #0f7acf;
+      border-radius: 5px;
+      font-size: 12px;
+      margin: 2px;
     }
     .icongrid wl-icon {
-        --icon-size: 40px;
-        margin-top: 30px;
+      --icon-size: 40px;
+      margin-top: 30px;
     }
     .icongrid a.tight wl-icon {
       margin-top: 24px;
     }
     .icongrid a.tight div {
       margin-top: 0px;
-    }      
+    }
     .svgicon {
       margin-top: 30px;
       width: 40px;
@@ -817,7 +829,8 @@ export const SharedStyles = css`
       padding: 0 6px 0 3px;
       margin-right: 14px;
     }
-    .breadcrumbs a:before, .breadcrumbs a:after {
+    .breadcrumbs a:before,
+    .breadcrumbs a:after {
       border-width: 13px 6px;
     }
     .breadcrumbs a:before {
@@ -833,7 +846,8 @@ export const SharedStyles = css`
       padding: 0 4px 0 2px;
       margin-right: 10px;
     }
-    .breadcrumbs a:before, .breadcrumbs a:after {
+    .breadcrumbs a:before,
+    .breadcrumbs a:after {
       border-width: 13px 4px;
     }
     .breadcrumbs a:before {
@@ -841,9 +855,8 @@ export const SharedStyles = css`
     }
   }
 
-  /* End of Chevron Breadcrumbs */  
+  /* End of Chevron Breadcrumbs */
   .font-numbers {
     font-family: system-ui;
   }
-
 `;

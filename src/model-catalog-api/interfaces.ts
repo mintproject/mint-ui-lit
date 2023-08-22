@@ -1,3 +1,3 @@
 export interface IdObject {
-    id?: string;
+  id?: string;
 }

@@ -1,9 +1,9 @@
-import fs from 'fs';
-import path from 'path';
-import puppeteer from 'puppeteer';
+import fs from "fs";
+import path from "path";
+import puppeteer from "puppeteer";
 const baselineDir = `${process.cwd()}/test/integration/screenshots-baseline`;
 
-describe('🎁 regenerate screenshots', () => {
+describe("🎁 regenerate screenshots", () => {
   beforeAll(() => {
     // Create the test directory if needed.
     if (!fs.existsSync(baselineDir)) {
@@ -18,29 +18,32 @@ describe('🎁 regenerate screenshots', () => {
     }
   });
 
-  it('did it', () => generateBaselineScreenshots(page));
+  it("did it", () => generateBaselineScreenshots(page));
 });
 
 async function generateBaselineScreenshots(page) {
   const breakpoints = [
-      {width: 800, height: 600},
-      {width: 375, height: 667}];
-  const prefixes = ['wide', 'narrow'];
+    { width: 800, height: 600 },
+    { width: 375, height: 667 },
+  ];
+  const prefixes = ["wide", "narrow"];
 
   for (let i = 0; i < prefixes.length; i++) {
     const prefix = prefixes[i];
-    console.log(prefix + '...'); // tslint:disable-line:no-console
+    console.log(prefix + "..."); // tslint:disable-line:no-console
     page.setViewport(breakpoints[i]);
     // Index.
-    await page.goto('http://127.0.0.1:4444/');
-    await page.screenshot({path: `${baselineDir}/${prefix}/index.png`});
+    await page.goto("http://127.0.0.1:4444/");
+    await page.screenshot({ path: `${baselineDir}/${prefix}/index.png` });
     // Views.
     for (let j = 1; j <= 3; j++) {
       await page.goto(`http://127.0.0.1:4444/view${j}`);
-      await page.screenshot({path: `${baselineDir}/${prefix}/view${j}.png`});
+      await page.screenshot({ path: `${baselineDir}/${prefix}/view${j}.png` });
     }
     // 404.
-    await page.goto('http://127.0.0.1:4444/batmanNotAView');
-    await page.screenshot({path: `${baselineDir}/${prefix}/batmanNotAView.png`});
+    await page.goto("http://127.0.0.1:4444/batmanNotAView");
+    await page.screenshot({
+      path: `${baselineDir}/${prefix}/batmanNotAView.png`,
+    });
   }
 }

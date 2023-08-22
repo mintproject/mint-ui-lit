@@ -1,5 +1,5 @@
-declare module 'workbox-webpack-plugin' {
-  import webpack from 'webpack';
+declare module "workbox-webpack-plugin" {
+  import webpack from "webpack";
 
   export interface InjectManifestConfig {
     swSrc: string;
