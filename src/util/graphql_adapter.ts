@@ -844,7 +844,7 @@ const getSpatialCoverageGeometry = (coverage) => {
   if (coverage["coordinates"]) {
     return coverage;
   }
-  
+
   let value = coverage["value"];
   if (coverage["type"] == "Point") {
     return {

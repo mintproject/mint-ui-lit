@@ -130,9 +130,8 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
               x: parseFloat(cover.value.x),
               y: parseFloat(cover.value.y),
             } as Point);
-          }
-          else if(cover.coordinates) {
-            console.log(cover.coordinates)
+          } else if (cover.coordinates) {
+            console.log(cover.coordinates);
             map.addPoint({
               x: parseFloat(cover.coordinates[0]),
               y: parseFloat(cover.coordinates[1]),
@@ -146,8 +145,7 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
               ymin: parseFloat(cover.value.ymin),
               ymax: parseFloat(cover.value.ymax),
             } as BoundingBox);
-          } 
-          else if(cover.coordinates) {
+          } else if (cover.coordinates) {
             map.addBoundingBox({
               xmin: parseFloat(cover.coordinates[0]),
               xmax: parseFloat(cover.coordinates[2]),

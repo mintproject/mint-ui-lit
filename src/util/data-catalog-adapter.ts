@@ -95,7 +95,7 @@ export class DataCatalogAdapter {
       let res: any = await this.fetchJson(
         `${data_catalog_api_url}/datasets/find`,
         dsQueryData
-      ); 
+      );
       if (!!res && res.result === "success") {
         datasets = getDatasetsFromDCResponse(res, {
           variables: driving_variables,
@@ -105,12 +105,18 @@ export class DataCatalogAdapter {
           ds.resources_loaded = false; //FIXME?
         });
       }
-    }
-    else if (data_catalog_type === "CKAN") {
+    } else if (data_catalog_type === "CKAN") {
       // CKAN Data Catalog
       let dsQueryData: any = {
         fq: "tags:" + driving_variables.map((v) => "stdvar." + v).join(","),
-        ext_bbox: region.bounding_box.xmin + "," + region.bounding_box.ymin + "," + region.bounding_box.xmax + "," + region.bounding_box.ymax,
+        ext_bbox:
+          region.bounding_box.xmin +
+          "," +
+          region.bounding_box.ymin +
+          "," +
+          region.bounding_box.xmax +
+          "," +
+          region.bounding_box.ymax,
       };
 
       let res: any = await this.fetchJson(
@@ -165,12 +171,10 @@ export class DataCatalogAdapter {
       return obj && obj.resources
         ? getDatasetResourceListFromDCResponse(obj)
         : [];
-    }
-
-    else if (data_catalog_type === "CKAN") {
+    } else if (data_catalog_type === "CKAN") {
       // CKAN Data Catalog
       let resQueryData = {
-        fq: "id:"+datasetid
+        fq: "id:" + datasetid,
       };
       let obj: any = await this.fetchJson(
         `${data_catalog_api_url}/api/action/package_search`,
@@ -181,7 +185,7 @@ export class DataCatalogAdapter {
     }
 
     let resQueryData = {
-      fq: "id:"+datasetid
+      fq: "id:" + datasetid,
     };
     let obj: any = await this.fetchJson(
       `${data_catalog_api_url}/api/action/package_search`,

@@ -5,7 +5,7 @@ const REACT_APP_DATA_CATALOG_API: string =
 const REACT_APP_DATA_CATALOG_TYPE: string =
   window.REACT_APP_DATA_CATALOG_TYPE || "";
 const REACT_APP_DATA_CATALOG_KEY: string =
-  window.REACT_APP_DATA_CATALOG_KEY|| "";
+  window.REACT_APP_DATA_CATALOG_KEY || "";
 
 const REACT_APP_CROMO_API: string = window.REACT_APP_CROMO_API || "";
 const REACT_APP_MODEL_CATALOG_API: string =
@@ -64,7 +64,7 @@ const MINT_PREFERENCES: MintPreferences = {
   ingestion_api: REACT_APP_INGESTION_API,
   visualization_url: REACT_APP_VISUALIZATION_URL,
   execution_engine: REACT_APP_EXECUTION_ENGINE,
-  
+
   localex: {
     datadir: REACT_APP_LOCALEX_DATADIR,
     dataurl: REACT_APP_LOCALEX_DATAURL,

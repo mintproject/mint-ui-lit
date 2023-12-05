@@ -126,9 +126,9 @@ export const getDatasetsFromCKANResponse = (
       resources: [],
     } as Dataset;
     if ("extras" in ds) {
-      for(let e of ds["extras"]) {
+      for (let e of ds["extras"]) {
         if (e["key"] == "spatial") {
-          newds["spatial_coverage"] = JSON.parse(e["value"])
+          newds["spatial_coverage"] = JSON.parse(e["value"]);
         }
       }
     }
@@ -142,9 +142,9 @@ export const getDatasetsFromCKANResponse = (
         time_period: {
           start_date: null,
           end_date: null,
-        }
+        },
       };
-    })
+    });
     return newds;
   });
   return datasets;
