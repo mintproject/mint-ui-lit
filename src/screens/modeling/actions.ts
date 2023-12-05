@@ -1133,12 +1133,12 @@ export const sendDataForIngestion = (
   return new Promise<void>((resolve, reject) => {
     postJSONResource(
       {
-        url: prefs.mint.ingestion_api + "/modelthreads",
+        url: prefs.mint.ensemble_manager_api + "/registration",
         onLoad: function (e: any) {
           resolve();
         },
         onError: function () {
-          reject("Cannot ingest thread");
+          reject("Cannot register outputs");
         },
       },
       data,

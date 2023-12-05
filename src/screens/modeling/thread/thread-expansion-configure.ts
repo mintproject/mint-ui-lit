@@ -321,7 +321,10 @@ export class ThreadExpansionConfigure extends ThreadExpansion {
     let regionid: string = this.regionSelector.getSelectedId();
     let indicatorid: string = indicatorEl ? indicatorEl.value : "";
 
-    if (!name || !from || !to || !regionid) {
+    if (!name) {
+      name = "Default";
+    }
+    if (!from || !to || !regionid) {
       alert("You must fill all inputs");
       return;
     }

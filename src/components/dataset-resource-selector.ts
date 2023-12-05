@@ -125,17 +125,36 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
       covers.forEach((cover) => {
         let covertype: string = cover.type.toLowerCase();
         if (covertype === "point") {
-          map.addPoint({
-            x: parseFloat(cover.value.x),
-            y: parseFloat(cover.value.y),
-          } as Point);
+          if (cover.value) {
+            map.addPoint({
+              x: parseFloat(cover.value.x),
+              y: parseFloat(cover.value.y),
+            } as Point);
+          }
+          else if(cover.coordinates) {
+            console.log(cover.coordinates)
+            map.addPoint({
+              x: parseFloat(cover.coordinates[0]),
+              y: parseFloat(cover.coordinates[1]),
+            } as Point);
+          }
         } else if (covertype === "boundingbox") {
-          map.addBoundingBox({
-            xmin: parseFloat(cover.value.xmin),
-            xmax: parseFloat(cover.value.xmax),
-            ymin: parseFloat(cover.value.ymin),
-            ymax: parseFloat(cover.value.ymax),
-          } as BoundingBox);
+          if (cover.value) {
+            map.addBoundingBox({
+              xmin: parseFloat(cover.value.xmin),
+              xmax: parseFloat(cover.value.xmax),
+              ymin: parseFloat(cover.value.ymin),
+              ymax: parseFloat(cover.value.ymax),
+            } as BoundingBox);
+          } 
+          else if(cover.coordinates) {
+            map.addBoundingBox({
+              xmin: parseFloat(cover.coordinates[0]),
+              xmax: parseFloat(cover.coordinates[2]),
+              ymin: parseFloat(cover.coordinates[1]),
+              ymax: parseFloat(cover.coordinates[3]),
+            } as BoundingBox);
+          }
         } else if (covertype === "polygon") {
           map.addPolygon(cover.coordinates[0]);
         }

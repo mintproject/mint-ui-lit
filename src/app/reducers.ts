@@ -41,9 +41,15 @@ export interface UserPreferences {
 
 export interface MintPreferences {
   welcome_message: string;
-  model_catalog_default_user: string;
+
   data_catalog_api: string;
+  data_catalog_type: string;
+  data_catalog_key: string;
+  data_catalog_extra: any;
+
+  model_catalog_default_user: string;  
   model_catalog_api?: string;
+  
   ensemble_manager_api: string;
   ingestion_api: string;
   visualization_url: string;

@@ -104,6 +104,52 @@ export const getDatasetsFromDCResponse = (
   return datasets;
 };
 
+export const getDatasetsFromCKANResponse = (
+  obj: any,
+  queryParameters: DatasetQueryParameters
+) => {
+  let datasets = obj.result.results.map((ds) => {
+    //let dmeta = ds["dataset_metadata"];
+    let newds = {
+      id: ds["id"],
+      name: ds["name"] || "",
+      region: "",
+      variables: queryParameters.variables,
+      description: ds["notes"] || "",
+      version: ds["version"] || "",
+      is_cached: false,
+      resource_repr: null,
+      dataset_repr: null,
+      resources_loaded: true,
+      resource_count: ds["resources"].length || 0,
+      spatial_coverage: null,
+      resources: [],
+    } as Dataset;
+    if ("extras" in ds) {
+      for(let e of ds["extras"]) {
+        if (e["key"] == "spatial") {
+          newds["spatial_coverage"] = JSON.parse(e["value"])
+        }
+      }
+    }
+    newds.resources = ds["resources"].map((r) => {
+      return {
+        id: r["id"],
+        name: r["name"],
+        url: r["url"],
+        selected: true,
+        spatial_coverage: newds["spatial_coverage"],
+        time_period: {
+          start_date: null,
+          end_date: null,
+        }
+      };
+    })
+    return newds;
+  });
+  return datasets;
+};
+
 const getDatasetDetailFromDCResponse = (ds: any) => {
   let dmeta = ds["metadata"];
   return {

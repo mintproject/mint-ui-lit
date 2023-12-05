@@ -243,7 +243,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                 : html`Please execute some runs first`}
 
               <!-- FIXME: Temporarily removed -->
-              ${false && finished && !submitted && this.permission.write
+              ${finished && !submitted && this.permission.write
                 ? html` <wl-button
                     class="submit"
                     @click="${() => this._publishAllResults(model.id)}"
@@ -252,7 +252,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                 : submitted && !finished_ingestion
                 ? html`
                     <p>
-                      Please wait while saving and ingesting data... <br />
+                      Please wait while saving and registering data... <br />
                       Downloaded outputs from
                       ${summary.fetched_run_outputs || 0} out of
                       ${summary.total_runs} model runs. Ingested data from
