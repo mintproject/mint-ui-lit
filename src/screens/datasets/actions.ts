@@ -112,7 +112,7 @@ export const getDatasetsFromCKANResponse = (
     //let dmeta = ds["dataset_metadata"];
     let newds = {
       id: ds["id"],
-      name: ds["name"] || "",
+      name: ds["title"] || "",
       region: "",
       variables: queryParameters.variables,
       description: ds["notes"] || "",
@@ -123,6 +123,7 @@ export const getDatasetsFromCKANResponse = (
       resources_loaded: true,
       resource_count: ds["resources"].length || 0,
       spatial_coverage: null,
+      source: {},
       resources: [],
     } as Dataset;
     if ("extras" in ds) {
@@ -440,6 +441,7 @@ export const queryGeneralDatasets: ActionCreator<
     });
   };
 
+  
 // Query Data Catalog for resources of a particular dataset
 type QueryDatasetResourcesThunkResult = ThunkAction<
   void,
@@ -457,50 +459,80 @@ export const queryDatasetResources: ActionCreator<
     loading: true,
   });
   let dataset: Dataset;
-  let prom1 = new Promise<void>((resolve, reject) => {
-    let req = fetch(prefs.data_catalog_api + "/datasets/get_dataset_info", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      //mode: "no-cors",
-      body: JSON.stringify({ dataset_id: dsid }),
+
+  if (prefs.data_catalog_type == "CKAN") {
+    fetchJson(
+      `${data_catalog_api_url}/api/action/package_search`,
+      {
+        q: "id:" + dsid
+      }
+    ).then((res: any) => {
+      if (!!res && res.result && res.result.count > 0) {
+        let datasets = getDatasetsFromCKANResponse(res, {})
+        if (datasets && datasets.length > 0) {
+          dispatch({
+            type: DATASETS_RESOURCE_QUERY,
+            dsid: dsid,
+            dataset: datasets[0],
+            loading: false,
+          });
+        }
+      } else {
+        dispatch({
+          type: DATASETS_RESOURCE_QUERY,
+          dsid: dsid,
+          dataset: null,
+          loading: false,
+        });
+      }
     });
-    req.then((response) => {
-      response.json().then((obj) => {
-        dataset = getDatasetDetailFromDCResponse(obj);
-        resolve();
+  }
+  else {
+    let prom1 = new Promise<void>((resolve, reject) => {
+      let req = fetch(prefs.data_catalog_api + "/datasets/get_dataset_info", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        //mode: "no-cors",
+        body: JSON.stringify({ dataset_id: dsid }),
+      });
+      req.then((response) => {
+        response.json().then((obj) => {
+          dataset = getDatasetDetailFromDCResponse(obj);
+          resolve();
+        });
+      });
+      req.catch(reject);
+    });
+
+    let resources;
+    let prom2 = new Promise<void>((resolve, reject) => {
+      let req = fetch(prefs.data_catalog_api + "/datasets/dataset_resources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        //mode: "no-cors",
+        body: JSON.stringify({
+          dataset_id: dsid,
+        }),
+      });
+      req.then((response) => {
+        response.json().then((obj) => {
+          resources = getResourcesFromDCResponse(obj);
+          resolve();
+        });
+      });
+      req.catch(reject);
+    });
+
+    Promise.all([prom1, prom2]).then((values: any) => {
+      if (dataset) dataset.resources = resources;
+      dispatch({
+        type: DATASETS_RESOURCE_QUERY,
+        dsid: dsid,
+        dataset: dataset,
+        loading: false,
       });
     });
-    req.catch(reject);
-  });
-
-  let resources;
-  let prom2 = new Promise<void>((resolve, reject) => {
-    let req = fetch(prefs.data_catalog_api + "/datasets/dataset_resources", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      //mode: "no-cors",
-      body: JSON.stringify({
-        dataset_id: dsid,
-      }),
-    });
-    req.then((response) => {
-      response.json().then((obj) => {
-        resources = getResourcesFromDCResponse(obj);
-        resolve();
-      });
-    });
-    req.catch(reject);
-  });
-
-  Promise.all([prom1, prom2]).then((values: any) => {
-    if (dataset) dataset.resources = resources;
-    dispatch({
-      type: DATASETS_RESOURCE_QUERY,
-      dsid: dsid,
-      dataset: dataset,
-      loading: false,
-    });
-  });
+  }
 };
 
 // Query Data Catalog for resources of a particular dataset and save the results
@@ -537,6 +569,17 @@ export const queryDatasetResourcesAndSave: ActionCreator<
     });
   });
 };
+
+const fetchJson = async (url: string, query: any) : Promise<any> => {
+  let res: Response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+  if (res && res.json) {
+    return await res.json();
+  }
+}
 
 // Query Data Catalog by Region
 type QueryDatasetsByRegionThunkResult = ThunkAction<

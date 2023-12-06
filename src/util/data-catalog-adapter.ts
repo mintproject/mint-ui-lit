@@ -183,15 +183,5 @@ export class DataCatalogAdapter {
       let dses = getDatasetsFromCKANResponse(obj, {});
       return dses.length > 0 ? dses[0].resources : [];
     }
-
-    let resQueryData = {
-      fq: "id:" + datasetid,
-    };
-    let obj: any = await this.fetchJson(
-      `${data_catalog_api_url}/api/action/package_search`,
-      resQueryData
-    );
-    let dses = getDatasetsFromCKANResponse(obj, {});
-    return dses.length > 0 ? dses[0].resources : [];
   }
 }
