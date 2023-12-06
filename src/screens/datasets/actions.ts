@@ -441,7 +441,6 @@ export const queryGeneralDatasets: ActionCreator<
     });
   };
 
-  
 // Query Data Catalog for resources of a particular dataset
 type QueryDatasetResourcesThunkResult = ThunkAction<
   void,
@@ -461,14 +460,11 @@ export const queryDatasetResources: ActionCreator<
   let dataset: Dataset;
 
   if (prefs.data_catalog_type == "CKAN") {
-    fetchJson(
-      `${data_catalog_api_url}/api/action/package_search`,
-      {
-        q: "id:" + dsid
-      }
-    ).then((res: any) => {
+    fetchJson(`${data_catalog_api_url}/api/action/package_search`, {
+      q: "id:" + dsid,
+    }).then((res: any) => {
       if (!!res && res.result && res.result.count > 0) {
-        let datasets = getDatasetsFromCKANResponse(res, {})
+        let datasets = getDatasetsFromCKANResponse(res, {});
         if (datasets && datasets.length > 0) {
           dispatch({
             type: DATASETS_RESOURCE_QUERY,
@@ -486,8 +482,7 @@ export const queryDatasetResources: ActionCreator<
         });
       }
     });
-  }
-  else {
+  } else {
     let prom1 = new Promise<void>((resolve, reject) => {
       let req = fetch(prefs.data_catalog_api + "/datasets/get_dataset_info", {
         method: "POST",
@@ -570,7 +565,7 @@ export const queryDatasetResourcesAndSave: ActionCreator<
   });
 };
 
-const fetchJson = async (url: string, query: any) : Promise<any> => {
+const fetchJson = async (url: string, query: any): Promise<any> => {
   let res: Response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -579,7 +574,7 @@ const fetchJson = async (url: string, query: any) : Promise<any> => {
   if (res && res.json) {
     return await res.json();
   }
-}
+};
 
 // Query Data Catalog by Region
 type QueryDatasetsByRegionThunkResult = ThunkAction<

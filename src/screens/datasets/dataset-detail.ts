@@ -285,8 +285,7 @@ ${JSON.stringify(ds.resource_repr || ds.dataset_repr, null, 2)}</pre
               x: parseFloat(cover.value.x),
               y: parseFloat(cover.value.y),
             } as Point;
-          }
-          else if(cover.coordinates) {
+          } else if (cover.coordinates) {
             return {
               x: parseFloat(cover.coordinates[0]),
               y: parseFloat(cover.coordinates[1]),
@@ -304,8 +303,7 @@ ${JSON.stringify(ds.resource_repr || ds.dataset_repr, null, 2)}</pre
               ymin: parseFloat(cover.value.ymin),
               ymax: parseFloat(cover.value.ymax),
             } as BoundingBox;
-          }
-          else if(cover.coordinates) {
+          } else if (cover.coordinates) {
             return {
               xmin: parseFloat(cover.coordinates[0]),
               xmax: parseFloat(cover.coordinates[2]),
