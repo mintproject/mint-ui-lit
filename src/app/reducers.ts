@@ -13,98 +13,98 @@ import { RootAction } from './store';
 import { UPDATE_PAGE, FETCH_USER, FETCH_MINT_CONFIG } from './actions';
 
 export interface IdMap<T> {
-  [id: string]: T
+  [id: string]: T;
 }
 
 export interface IdNameObject {
-  id?: string
-  name?: string
+  id?: string;
+  name?: string;
 }
 
 export interface User {
-  email: string
-  uid: string
-  region: string
-  graph: string
+  email: string;
+  uid: string;
+  region: string;
+  graph: string;
 }
 
 export interface AppState {
-  page: string,
-  subpage: string,
-  user?: User,
-  prefs?: UserPreferences
+  page: string;
+  subpage: string;
+  user?: User;
+  prefs?: UserPreferences;
 }
 
 export interface UserPreferences {
-  mint: MintPreferences
+  mint: MintPreferences;
 }
 
 export interface MintPreferences {
-  welcome_message: string
-  model_catalog_default_user: string
-  data_catalog_api: string,
-  model_catalog_api?: string,
-  ensemble_manager_api: string,
-  ingestion_api: string,
-  visualization_url: string,  
-  execution_engine?: "wings" | "localex",  
+  welcome_message: string;
+  model_catalog_default_user: string;
+  data_catalog_api: string;
+  model_catalog_api?: string;
+  ensemble_manager_api: string;
+  ingestion_api: string;
+  visualization_url: string;
+  execution_engine?: 'wings' | 'localex';
   // Local Execution
-  localex?: LocalExecutionPreferences,
-  // Wings Execution  
-  wings?: WingsPreferences,  
-  graphql?: GraphQLPreferences,
-  wings_api?: string,
+  localex?: LocalExecutionPreferences;
+  // Wings Execution
+  wings?: WingsPreferences;
+  graphql?: GraphQLPreferences;
+  wings_api?: string;
   //maps
-  google_maps_key: string,
+  google_maps_key: string;
   //auth
-  auth_server: string,
-  auth_realm: string,
-  auth_client_id: string,
+  auth_server: string;
+  auth_realm: string;
+  auth_client_id: string;
 
   //old
-  apiKey: string,
-  authDomain: string,
-  databaseURL: string,
-  projectId: string,
-  storageBucket: string,
-  messagingSenderId: string,
-  appId: string,
-  cromo_api?: string
-  airflow_api?: string
-  airflow_dag_download_thread_id?: string
+  apiKey: string;
+  authDomain: string;
+  databaseURL: string;
+  projectId: string;
+  storageBucket: string;
+  messagingSenderId: string;
+  appId: string;
+  cromo_api?: string;
+  airflow_api?: string;
+  airflow_dag_download_thread_id?: string;
 }
 
 export interface GraphQLPreferences {
-  endpoint: string,
-  enable_ssl: boolean,
+  endpoint: string;
+  enable_ssl: boolean;
 }
 
 export interface WingsPreferences {
-  server: string,
-  domain: string,
-  username: string,
-  password: string,
-  datadir: string,
-  dataurl: string
+  server: string;
+  domain: string;
+  username: string;
+  password: string;
+  datadir: string;
+  dataurl: string;
   // The following is retrieved from wings itself
-  export_url?: string,
-  storage?: string,
-  dotpath?: string,
-  onturl?: string,
+  export_url?: string;
+  storage?: string;
+  dotpath?: string;
+  onturl?: string;
 }
 
 export interface LocalExecutionPreferences {
-  datadir: string,
-  dataurl: string,
-  logdir: string,
-  logurl: string,
-  codedir: string
+  datadir: string;
+  dataurl: string;
+  logdir: string;
+  logurl: string;
+  codedir: string;
 }
 
 const INITIAL_STATE: AppState = {
   page: '',
   subpage: '',
-  prefs: {mint: null}
+  prefs: { mint: null },
 };
 
 const app: Reducer<AppState, RootAction> = (state = INITIAL_STATE, action) => {
@@ -113,18 +113,18 @@ const app: Reducer<AppState, RootAction> = (state = INITIAL_STATE, action) => {
       return {
         ...state,
         page: action.page!,
-        subpage: action.subpage!
+        subpage: action.subpage!,
       };
     case FETCH_USER:
       return {
         ...state,
-        user: action.user!
+        user: action.user!,
       };
     case FETCH_MINT_CONFIG:
-      let newPrefs = {...state.prefs, mint: action.prefs};
+      let newPrefs = { ...state.prefs, mint: action.prefs };
       return {
         ...state,
-        prefs: newPrefs
+        prefs: newPrefs,
       };
     default:
       return state;
