@@ -218,7 +218,7 @@ export interface Execution {
   runid?: string;
   start_time: Date;
   end_time?: Date;
-  execution_engine?: 'wings' | 'localex';
+  execution_engine?: string;
   status: 'FAILURE' | 'SUCCESS' | 'RUNNING' | 'WAITING';
   run_progress?: number; // 0 to 100 (percentage done)
   results: any[]; // Chosen results after completed run
