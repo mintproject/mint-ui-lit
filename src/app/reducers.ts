@@ -43,9 +43,12 @@ export interface MintPreferences {
   welcome_message: string;
 
   data_catalog_api: string;
-  data_catalog_type: string;
-  data_catalog_key: string;
-  data_catalog_extra: any;
+  data_catalog_type?: string;
+  data_catalog_key?: string;
+  data_catalog_extra?: any;
+
+  data_server_type?: string,
+  data_server_extra?: any
 
   model_catalog_default_user: string;
   model_catalog_api?: string;

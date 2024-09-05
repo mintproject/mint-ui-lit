@@ -866,6 +866,8 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
               return r;
             }
           );
+          dataset.resource_count = resources.length
+          
           resolve({
             id: sliceid,
             total_resources: resources.length,
