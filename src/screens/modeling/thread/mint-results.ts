@@ -4,49 +4,49 @@ import {
   css,
   property,
   TemplateResult,
-} from 'lit-element';
-import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from '../../../app/store';
-import ReactGA from 'react-ga';
+} from "lit-element";
+import { connect } from "pwa-helpers/connect-mixin";
+import { store, RootState } from "../../../app/store";
+import ReactGA from "react-ga";
 
-import { SharedStyles } from '../../../styles/shared-styles';
+import { SharedStyles } from "../../../styles/shared-styles";
 import {
   matchVariables,
   getThreadParametersStatus,
   TASK_DONE,
-} from '../../../util/state_functions';
+} from "../../../util/state_functions";
 import {
   Execution,
   ExecutionSummary,
   ModelExecutions,
   Thread,
-} from '../reducers';
+} from "../reducers";
 import {
   sendDataForIngestion,
   subscribeThreadExecutionSummary,
   listThreadModelExecutionsAction,
-} from '../actions';
+} from "../actions";
 import {
   hideDialog,
   showDialog,
   showNotification,
-} from '../../../util/ui_functions';
-import { selectThreadSection } from '../../../app/ui-actions';
+} from "../../../util/ui_functions";
+import { selectThreadSection } from "../../../app/ui-actions";
 import {
   renderLastUpdateText,
   renderNotifications,
-} from '../../../util/ui_renders';
-import { MintThreadPage } from './mint-thread-page';
-import { Model } from 'screens/models/reducers';
-import { DataResource } from 'screens/datasets/reducers';
-import { downloadFile } from 'util/ui_functions';
-import { getPathFromModel } from '../../models/reducers';
-import { getLatestEventOfType } from 'util/event_utils';
-import { Textfield } from 'weightless';
-import { AirflowAdapter } from 'util/airflow-adapter';
-import { CustomNotification } from 'components/notification';
+} from "../../../util/ui_renders";
+import { MintThreadPage } from "./mint-thread-page";
+import { Model } from "screens/models/reducers";
+import { DataResource } from "screens/datasets/reducers";
+import { downloadFile } from "util/ui_functions";
+import { getPathFromModel } from "../../models/reducers";
+import { getLatestEventOfType } from "util/event_utils";
+import { Textfield } from "weightless";
+import { AirflowAdapter } from "util/airflow-adapter";
+import { CustomNotification } from "components/notification";
 
-@customElement('mint-results')
+@customElement("mint-results")
 export class MintResults extends connect(store)(MintThreadPage) {
   @property({ type: Object })
   private _executions: ModelExecutions;
@@ -64,7 +64,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
   @property({ type: Number })
   private pageSize = 100;
   @property({ type: String })
-  private orderBy = 'start_time';
+  private orderBy = "start_time";
   @property({ type: Boolean })
   private orderByDesc = false;
 
@@ -84,7 +84,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
 
   private _scrollInto(id: string) {
     let el = this.shadowRoot!.getElementById(id);
-    if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    if (el) el.scrollIntoView({ block: "start", behavior: "smooth" });
   }
 
   protected render() {
@@ -160,11 +160,11 @@ export class MintResults extends connect(store)(MintThreadPage) {
 
     let readmode = !this._editMode;
     let latest_update_event = getLatestEventOfType(
-      ['CREATE', 'UPDATE'],
+      ["CREATE", "UPDATE"],
       this.thread.events
     );
     let latest_ingest_event = getLatestEventOfType(
-      ['INGEST'],
+      ["INGEST"],
       this.thread.events
     );
 
@@ -205,7 +205,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                 */
 
             if (!submitted_runs) {
-              return 'Please execute some runs first';
+              return "Please execute some runs first";
             }
 
             return html` <li>
@@ -224,21 +224,21 @@ export class MintResults extends connect(store)(MintThreadPage) {
                     </p>
                     <p>
                       The parameter settings you selected required
-                      ${summary.total_runs} runs. ${!finished ? 'So far, ' : ''}
+                      ${summary.total_runs} runs. ${!finished ? "So far, " : ""}
                       ${summary.submitted_runs} model runs
-                      ${!finished ? 'have been' : 'were'} submitted, out of
+                      ${!finished ? "have been" : "were"} submitted, out of
                       which ${summary.successful_runs} succeeded and produced
                       results, while
-                      <span .style="color:${summary.failed_runs ? 'red' : ''}"
+                      <span .style="color:${summary.failed_runs ? "red" : ""}"
                         >${summary.failed_runs} failed</span
                       >.
                       ${running > 0
                         ? html`${running} are currently running`
-                        : ''}
-                      ${running > 0 && pending > 0 ? ', and ' : ''}
+                        : ""}
+                      ${running > 0 && pending > 0 ? ", and " : ""}
                       ${pending > 0
                         ? html`${pending} are waiting to be run`
-                        : ''}
+                        : ""}
                     </p>`
                 : html`Please execute some runs first`}
 
@@ -260,11 +260,11 @@ export class MintResults extends connect(store)(MintThreadPage) {
                       model runs
                     </p>
                   `
-                : ''}
+                : ""}
               <!-- FIXME: Temporarily removed -->
               ${false && finished && finished_ingestion
-                ? 'Results have been saved'
-                : ''}
+                ? "Results have been saved"
+                : ""}
               <br /><br />
 
               <div style="width:100%; border:1px solid #EEE;border-bottom:0px;">
@@ -295,7 +295,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                             >Next</wl-button
                           >`}
                     `
-                  : ''}
+                  : ""}
                 ${!grouped_ensemble || !grouped_ensemble.loading
                   ? html`<wl-button
                       type="button"
@@ -308,7 +308,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                     >
                       <wl-icon>cloud_download</wl-icon>
                     </wl-button>`
-                  : ''}
+                  : ""}
                 ${!grouped_ensemble.loading &&
                 ((totalOut > 0 && totalOut != showedOut) ||
                   this._showAllResults)
@@ -320,11 +320,11 @@ export class MintResults extends connect(store)(MintThreadPage) {
                         }}"
                       >
                         [${this._showAllResults
-                          ? 'Hide extra outputs'
-                          : 'Show all outputs'}]
+                          ? "Hide extra outputs"
+                          : "Show all outputs"}]
                       </a>
                     `
-                  : ''}
+                  : ""}
 
                 <span style="float:right">
                   ${!grouped_ensemble || !grouped_ensemble.loading
@@ -335,7 +335,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                               flat
                               inverted
                               style="padding: 6px; border-radius: 4px;"
-                              @click="${() => this._scrollInto('out')}"
+                              @click="${() => this._scrollInto("out")}"
                               >Outputs</wl-button
                             >`
                           : html``}
@@ -345,7 +345,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                               flat
                               inverted
                               style="padding: 6px; border-radius: 4px;"
-                              @click="${() => this._scrollInto('in')}"
+                              @click="${() => this._scrollInto("in")}"
                               >Inputs</wl-button
                             >`
                           : html``}
@@ -355,7 +355,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                               flat
                               inverted
                               style="padding: 6px; border-radius: 4px;"
-                              @click="${() => this._scrollInto('param')}"
+                              @click="${() => this._scrollInto("param")}"
                               >Parameters</wl-button
                             >`
                           : html``}
@@ -369,7 +369,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                             this._fetchRuns(this.thread.id, model.id)}"
                           >Reload</wl-button
                         >`
-                    : ''}
+                    : ""}
                 </span>
               </div>
               <div
@@ -387,29 +387,29 @@ export class MintResults extends connect(store)(MintThreadPage) {
                           <!-- Heading -->
                           ${!readmode
                             ? html`<colgroup span="1"></colgroup>`
-                            : ''}
+                            : ""}
                           <!-- Checkbox -->
                           ${grouped_ensemble.outputs.length > 0
                             ? html`<colgroup
                                 span="${grouped_ensemble.outputs.length}"
                               ></colgroup>`
-                            : ''}
+                            : ""}
                           <!-- Outputs -->
                           ${grouped_ensemble.inputs.length > 0
                             ? html`<colgroup
                                 span="${grouped_ensemble.inputs.length}"
                               ></colgroup>`
-                            : ''}
+                            : ""}
                           <!-- Inputs -->
                           ${grouped_ensemble.params.length > 0
                             ? html`<colgroup
                                 span="${grouped_ensemble.params.length}"
                               ></colgroup>`
-                            : ''}
+                            : ""}
                           <!-- Parameters -->
                           <thead>
                             <tr>
-                              ${!readmode ? html`<th></th>` : ''}
+                              ${!readmode ? html`<th></th>` : ""}
                               <!-- Checkbox -->
                               ${grouped_ensemble.outputs.length > 0
                                 ? html`<th
@@ -418,7 +418,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                   >
                                     Outputs
                                   </th>`
-                                : ''}
+                                : ""}
                               <!-- Outputs -->
                               ${grouped_ensemble.inputs.length > 0
                                 ? html`<th
@@ -427,7 +427,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                   >
                                     Inputs
                                   </th>`
-                                : ''}
+                                : ""}
                               <!-- Inputs -->
                               ${grouped_ensemble.params.length > 0
                                 ? html`<th
@@ -436,28 +436,28 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                   >
                                     Parameters
                                   </th>`
-                                : ''}
+                                : ""}
                               <!-- Parameters -->
                             </tr>
                             <tr>
-                              ${!readmode ? html`<th></th>` : ''}
+                              ${!readmode ? html`<th></th>` : ""}
                               <!-- Checkbox -->
                               ${grouped_ensemble.outputs.map(
                                 (outf) =>
                                   html`<th scope="col">
-                                    ${outf.name.replace(/(-|_)/g, ' ')}
+                                    ${outf.name.replace(/(-|_)/g, " ")}
                                   </th>`
                               )}
                               ${grouped_ensemble.inputs.map(
                                 (inf) =>
                                   html`<th scope="col">
-                                    ${inf.name.replace(/(-|_)/g, ' ')}
+                                    ${inf.name.replace(/(-|_)/g, " ")}
                                   </th>`
                               )}
                               ${grouped_ensemble.params.map(
                                 (param) =>
                                   html`<th scope="col">
-                                    ${param.name.replace(/(-|_)/g, ' ')}
+                                    ${param.name.replace(/(-|_)/g, " ")}
                                   </th>`
                               )}
                             </tr>
@@ -476,7 +476,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                     - No results available -
                                   </td>
                                 </tr>`
-                              : ''}
+                              : ""}
                             ${Object.keys(grouped_ensemble.executions).map(
                               (index) => {
                                 let ensemble: Execution =
@@ -514,7 +514,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                           let prefs = this.prefs.mint;
                                           furl =
                                             ensemble.execution_engine ==
-                                            'localex'
+                                            "localex"
                                               ? location.replace(
                                                   prefs.localex.datadir,
                                                   prefs.localex.dataurl
@@ -527,7 +527,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                         if (!fname)
                                           fname = result.location.replace(
                                             /.+\//,
-                                            ''
+                                            ""
                                           );
                                         return html`<td>
                                           <a target="_blank" href="${furl}"
@@ -556,7 +556,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                         ? ensemble.bindings[param.id]
                                         : param_defaults[param.id];
                                       if (pvalue.match(/^__region_geojson/)) {
-                                        pvalue = 'Region Geojson';
+                                        pvalue = "Region Geojson";
                                       }
                                       return html`<td>${pvalue}</td>`;
                                     })}
@@ -567,7 +567,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                           </tbody>
                         </table>
                       `
-                  : ''}
+                  : ""}
               </div>
             </li>`;
           })}
@@ -576,7 +576,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
           <wl-button
             type="button"
             class="submit"
-            @click="${() => store.dispatch(selectThreadSection('visualize'))}"
+            @click="${() => store.dispatch(selectThreadSection("visualize"))}"
             >Continue</wl-button
           >
         </div>
@@ -588,7 +588,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
             <fieldset class="notes">
               <legend>Notes</legend>
               <textarea id="notes">
-${latest_ingest_event?.notes ? latest_ingest_event.notes : ''}</textarea
+${latest_ingest_event?.notes ? latest_ingest_event.notes : ""}</textarea
               >
             </fieldset>
           `
@@ -647,17 +647,17 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ''}</textarea
   }
 
   private onDownloadButtonClicked() {
-    showDialog('downloadByEmail', this.shadowRoot);
+    showDialog("downloadByEmail", this.shadowRoot);
   }
 
   private onCancelEmailDialogClicked() {
-    hideDialog('downloadByEmail', this.shadowRoot);
+    hideDialog("downloadByEmail", this.shadowRoot);
   }
 
   private onSendEmailDialogClicked() {
-    let emailEl = this.shadowRoot.querySelector<Textfield>('#email_box');
-    let email: string = emailEl ? emailEl.value : '';
-    console.log('Select email:', email, ' Select threadid:', this.thread.id);
+    let emailEl = this.shadowRoot.querySelector<Textfield>("#email_box");
+    let email: string = emailEl ? emailEl.value : "";
+    console.log("Select email:", email, " Select threadid:", this.thread.id);
     let subtask_url = window.location.href;
     if (email && this.thread.id) {
       let req = AirflowAdapter.sendResultsToEmail(
@@ -669,14 +669,14 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ''}</textarea
       );
       req.then(() => {
         this._notification.custom(
-          'Processing. The email will be send when the compress process is done.',
-          'send'
+          "Processing. The email will be send when the compress process is done.",
+          "send"
         );
         this.onCancelEmailDialogClicked();
       });
       req.catch(() => {
         this._notification.error(
-          'Error sending your request. Please try again.'
+          "Error sending your request. Please try again."
         );
         this.onCancelEmailDialogClicked();
       });
@@ -688,31 +688,31 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ''}</textarea
     let csv: string =
       (grouped_ensemble.outputs && grouped_ensemble.outputs.length > 0
         ? grouped_ensemble.outputs
-            .map((outf) => outf.name.replace(/(-|_)/g, ' '))
-            .join(',') + ','
-        : '') +
+            .map((outf) => outf.name.replace(/(-|_)/g, " "))
+            .join(",") + ","
+        : "") +
       (grouped_ensemble.inputs && grouped_ensemble.inputs.length > 0
         ? grouped_ensemble.inputs
-            .map((inf) => inf.name.replace(/(-|_)/g, ' '))
-            .join(',') + ','
-        : '') +
+            .map((inf) => inf.name.replace(/(-|_)/g, " "))
+            .join(",") + ","
+        : "") +
       (grouped_ensemble.params && grouped_ensemble.params.length > 0
         ? grouped_ensemble.params
-            .map((param) => param.name.replace(/(-|_)/g, ' '))
-            .join(',') + ','
-        : '');
+            .map((param) => param.name.replace(/(-|_)/g, " "))
+            .join(",") + ","
+        : "");
     Object.values(grouped_ensemble.executions).forEach((ensemble: any) => {
-      csv += '\n';
+      csv += "\n";
       let param_defaults = {};
       this.thread.models![ensemble.modelid].input_parameters.map(
         (param) => (param_defaults[param.id] = param.default)
       );
       grouped_ensemble.outputs.forEach((output: any) => {
         if (Object.keys(ensemble.results).length == 0) {
-          csv += ',';
+          csv += ",";
         } else {
           Object.values(ensemble.results).forEach((result: any) => {
-            let oname = result.id.replace(/.+#/, '');
+            let oname = result.id.replace(/.+#/, "");
             if (output.name == oname) {
               let furl = result.url;
               let fname = result.name;
@@ -720,7 +720,7 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ''}</textarea
                 let location = result.location;
                 let prefs = this.prefs.mint;
                 furl =
-                  ensemble.execution_engine == 'localex'
+                  ensemble.execution_engine == "localex"
                     ? location.replace(
                         prefs.localex.datadir,
                         prefs.localex.dataurl
@@ -730,26 +730,26 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ''}</textarea
                         prefs.wings.dataurl
                       );
               }
-              if (!fname) fname = result.location.replace(/.+\//, '');
-              csv += furl + ',';
+              if (!fname) fname = result.location.replace(/.+\//, "");
+              csv += furl + ",";
             }
           });
         }
       });
       grouped_ensemble.inputs.forEach((input: any) => {
         let res = ensemble.bindings[input.id] as DataResource;
-        if (res) csv += res.url + ',';
-        else csv += ',';
+        if (res) csv += res.url + ",";
+        else csv += ",";
       });
       grouped_ensemble.params.forEach((param: any) => {
         csv +=
           (ensemble.bindings[param.id]
             ? ensemble.bindings[param.id]
-            : param_defaults[param.id]) + ',';
+            : param_defaults[param.id]) + ",";
       });
     });
 
-    downloadFile(csv, 'results.csv', 'text/csv;encoding:utf-8');
+    downloadFile(csv, "results.csv", "text/csv;encoding:utf-8");
   }
 
   _orderBy(threadid: string, modelid: string, orderBy: string) {
@@ -767,7 +767,7 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ''}</textarea
     let start = (this.currentPage[modelid] - 1) * this.pageSize;
     let limit = this.pageSize;
     let orderBy = {};
-    orderBy[this.orderBy] = this.orderByDesc ? 'desc' : 'asc';
+    orderBy[this.orderBy] = this.orderByDesc ? "desc" : "asc";
     store.dispatch(
       listThreadModelExecutionsAction(
         threadid,
@@ -782,30 +782,30 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ''}</textarea
 
   _getModelURL(model: Model) {
     if (!model) {
-      return '';
+      return "";
     }
     let url =
-      this._regionid + '/models/explore' + getPathFromModel(model) + '/';
+      this._regionid + "/models/explore" + getPathFromModel(model) + "/";
     return url;
   }
 
   _getResultDatasetURL(result: any) {
-    return this._getDatasetURL(result.location.replace(/.+\//, ''));
+    return this._getDatasetURL(result.location.replace(/.+\//, ""));
   }
 
   _getDatasetURL(resname: string) {
     let config = this.prefs.mint;
-    let suffix = '/users/' + config.wings.username + '/' + config.wings.domain;
+    let suffix = "/users/" + config.wings.username + "/" + config.wings.domain;
     var purl = config.wings.server + suffix;
-    var expurl = config.wings.export_url + '/export' + suffix;
-    let dsid = expurl + '/data/library.owl#' + resname;
-    return purl + '/data/fetch?data_id=' + escape(dsid);
+    var expurl = config.wings.export_url + "/export" + suffix;
+    let dsid = expurl + "/data/library.owl#" + resname;
+    return purl + "/data/fetch?data_id=" + escape(dsid);
   }
 
   _publishAllResults(modelid) {
     ReactGA.event({
-      category: 'Thread',
-      action: 'Save results',
+      category: "Thread",
+      action: "Save results",
     });
     let model = this.thread.models[modelid];
     /*
@@ -813,7 +813,7 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ''}</textarea
         -> Register outputs to the data catalog
         -> Publish run to provenance catalog
         */
-    showNotification('saveNotification', this.shadowRoot);
+    showNotification("saveNotification", this.shadowRoot);
 
     sendDataForIngestion(this.thread.id, this.prefs);
 
@@ -824,7 +824,7 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ''}</textarea
     let promises: any[] = [];
     Object.keys(this.thread.models).map((modelid) => {
       if (!this.currentPage[modelid]) this.currentPage[modelid] = 1;
-      console.log('Fetch runs for model ' + modelid);
+      console.log("Fetch runs for model " + modelid);
       promises.push(this._fetchRuns(this.thread.id, modelid));
     });
     await Promise.all(promises);

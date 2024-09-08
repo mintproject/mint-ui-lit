@@ -1,5 +1,5 @@
-declare module 'terser-webpack-plugin' {
-  import webpack from 'webpack';
+declare module "terser-webpack-plugin" {
+  import webpack from "webpack";
 
   export interface TerserPluginConfiguration {
     cache: boolean;

@@ -1,42 +1,66 @@
-import { IdMap } from 'app/reducers'
-import { MCActionAdd, MCActionDelete, MODEL_CATALOG_ADD, MODEL_CATALOG_DELETE, ActionThunk } from '../actions';
-import { ModelCatalogTypes } from '../reducers';
-import { Configuration, BaseAPI } from '@mintproject/modelcatalog_client';
-import { DefaultReduxApi } from '../default-redux-api';
-import { ModelConfiguration, ModelConfigurationApi, SoftwareVersion } from '@mintproject/modelcatalog_client';
-import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+import { IdMap } from "app/reducers";
+import {
+  MCActionAdd,
+  MCActionDelete,
+  MODEL_CATALOG_ADD,
+  MODEL_CATALOG_DELETE,
+  ActionThunk,
+} from "../actions";
+import { ModelCatalogTypes } from "../reducers";
+import { Configuration, BaseAPI } from "@mintproject/modelcatalog_client";
+import { DefaultReduxApi } from "../default-redux-api";
+import {
+  ModelConfiguration,
+  ModelConfigurationApi,
+  SoftwareVersion,
+} from "@mintproject/modelcatalog_client";
+import { ModelCatalogApi } from "model-catalog-api/model-catalog-api";
 
-export class CustomModelConfigurationApi extends DefaultReduxApi<ModelConfiguration, ModelConfigurationApi> {
-    public constructor (ApiType: new (cfg?:Configuration) => ModelConfigurationApi, user:string, config?:Configuration) {
-        super(ModelConfigurationApi, user, config);
-    }
+export class CustomModelConfigurationApi extends DefaultReduxApi<
+  ModelConfiguration,
+  ModelConfigurationApi
+> {
+  public constructor(
+    ApiType: new (cfg?: Configuration) => ModelConfigurationApi,
+    user: string,
+    config?: Configuration
+  ) {
+    super(ModelConfigurationApi, user, config);
+  }
 
-    private simplePost : ActionThunk<Promise<ModelConfiguration>, MCActionAdd> = this.post;
+  private simplePost: ActionThunk<Promise<ModelConfiguration>, MCActionAdd> =
+    this.post;
 
-    public post : ActionThunk<Promise<ModelConfiguration>, MCActionAdd> = (resource:ModelConfiguration, versionid:string) => (dispatch) => {
-        return new Promise((resolve,reject) => {
-            if (!versionid) throw("Error creating configuration. Invalid parent version ID.");
-            let configPost : Promise<ModelConfiguration> = dispatch(this.simplePost(resource));
-            configPost.catch(reject);
-            configPost.then((newConfig:ModelConfiguration) => {
-                let parentSoftwareVersionGet : Promise<SoftwareVersion> =
-                        dispatch(ModelCatalogApi.myCatalog.softwareVersion.get(versionid));
-                parentSoftwareVersionGet.catch(reject);
-                parentSoftwareVersionGet.then((version:SoftwareVersion) => {
-                    if (version.hasConfiguration) {
-                        version.hasConfiguration.push(newConfig);
-                    } else {
-                        version.hasConfiguration = [ newConfig ];
-                    }
-                    let parentSoftwareVersionPut : Promise<SoftwareVersion> =
-                            dispatch(ModelCatalogApi.myCatalog.softwareVersion.put(version));
-                    parentSoftwareVersionPut.catch(reject);
-                    parentSoftwareVersionPut.then((version:SoftwareVersion) => {
-                        console.log('version updated!', version);
-                        resolve(newConfig);
-                    })
-                });
+  public post: ActionThunk<Promise<ModelConfiguration>, MCActionAdd> =
+    (resource: ModelConfiguration, versionid: string) => (dispatch) => {
+      return new Promise((resolve, reject) => {
+        if (!versionid)
+          throw "Error creating configuration. Invalid parent version ID.";
+        let configPost: Promise<ModelConfiguration> = dispatch(
+          this.simplePost(resource)
+        );
+        configPost.catch(reject);
+        configPost.then((newConfig: ModelConfiguration) => {
+          let parentSoftwareVersionGet: Promise<SoftwareVersion> = dispatch(
+            ModelCatalogApi.myCatalog.softwareVersion.get(versionid)
+          );
+          parentSoftwareVersionGet.catch(reject);
+          parentSoftwareVersionGet.then((version: SoftwareVersion) => {
+            if (version.hasConfiguration) {
+              version.hasConfiguration.push(newConfig);
+            } else {
+              version.hasConfiguration = [newConfig];
+            }
+            let parentSoftwareVersionPut: Promise<SoftwareVersion> = dispatch(
+              ModelCatalogApi.myCatalog.softwareVersion.put(version)
+            );
+            parentSoftwareVersionPut.catch(reject);
+            parentSoftwareVersionPut.then((version: SoftwareVersion) => {
+              console.log("version updated!", version);
+              resolve(newConfig);
             });
+          });
         });
-    }
+      });
+    };
 }

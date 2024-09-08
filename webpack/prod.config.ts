@@ -3,27 +3,27 @@
 /// <reference types="../typings/terser" />
 /// <reference types="../typings/terser-webpack-plugin" />
 
-import { resolve } from 'path';
-import { minify } from 'terser';
-import TerserPlugin from 'terser-webpack-plugin';
-import OptimizeCssAssetsPlugin from 'optimize-css-assets-webpack-plugin';
-import HtmlPlugin from 'html-webpack-plugin';
-import CleanPlugin from 'clean-webpack-plugin';
-import { smartStrategy as smartMerge } from 'webpack-merge';
-import baseConfig from './base.config';
-import webpack from 'webpack';
+import { resolve } from "path";
+import { minify } from "terser";
+import TerserPlugin from "terser-webpack-plugin";
+import OptimizeCssAssetsPlugin from "optimize-css-assets-webpack-plugin";
+import HtmlPlugin from "html-webpack-plugin";
+import CleanPlugin from "clean-webpack-plugin";
+import { smartStrategy as smartMerge } from "webpack-merge";
+import baseConfig from "./base.config";
+import webpack from "webpack";
 
 const config: webpack.Configuration = smartMerge({
-  plugins: 'prepend',
+  plugins: "prepend",
 })(baseConfig, {
-  mode: 'production',
+  mode: "production",
   optimization: {
     splitChunks: {
       name: false,
       cacheGroups: {
         vendor: {
           test: /node_modules/,
-          chunks: 'all',
+          chunks: "all",
         },
       },
     },
@@ -37,7 +37,9 @@ const config: webpack.Configuration = smartMerge({
     ],
   },
   plugins: [
-    new CleanPlugin([`build/${process.env.BUILD_NAME || ''}`], { root: resolve(__dirname, '..') }),
+    new CleanPlugin([`build/${process.env.BUILD_NAME || ""}`], {
+      root: resolve(__dirname, ".."),
+    }),
     new HtmlPlugin({
       minify: {
         collapseWhitespace: true,
@@ -52,8 +54,8 @@ const config: webpack.Configuration = smartMerge({
         minifyJS: (code) => minify(code).code,
       },
       hash: true,
-      inject: 'head',
-      template: '!!@piuccio/ejs-compiled-loader!./src/index.ejs',
+      inject: "head",
+      template: "!!@piuccio/ejs-compiled-loader!./src/index.ejs",
       buildName: process.env.BUILD_NAME,
       static: process.env.STATIC,
     }),

@@ -1,37 +1,37 @@
-import { customElement, html, css, property } from 'lit-element';
-import { connect } from 'pwa-helpers/connect-mixin';
-import { store, RootState } from '../../../app/store';
-import ReactGA from 'react-ga';
+import { customElement, html, css, property } from "lit-element";
+import { connect } from "pwa-helpers/connect-mixin";
+import { store, RootState } from "../../../app/store";
+import ReactGA from "react-ga";
 
-import { SharedStyles } from '../../../styles/shared-styles';
+import { SharedStyles } from "../../../styles/shared-styles";
 
-import 'weightless/progress-bar';
-import { selectThreadSection } from '../../../app/ui-actions';
-import { MintThreadPage } from './mint-thread-page';
+import "weightless/progress-bar";
+import { selectThreadSection } from "../../../app/ui-actions";
+import { MintThreadPage } from "./mint-thread-page";
 import {
   showNotification,
   hideDialog,
   showDialog,
   hideNotification,
-} from 'util/ui_functions';
-import { renderNotifications } from 'util/ui_renders';
-import { Model } from 'screens/models/reducers';
-import { Execution, ExecutionSummary, ModelExecutions } from '../reducers';
+} from "util/ui_functions";
+import { renderNotifications } from "util/ui_renders";
+import { Model } from "screens/models/reducers";
+import { Execution, ExecutionSummary, ModelExecutions } from "../reducers";
 import {
   listThreadModelExecutionsAction,
   subscribeThreadExecutionSummary,
-} from '../actions';
-import { DataResource } from 'screens/datasets/reducers';
-import { postJSONResource, getResource } from 'util/mint-requests';
+} from "../actions";
+import { DataResource } from "screens/datasets/reducers";
+import { postJSONResource, getResource } from "util/mint-requests";
 import {
   getThreadRunsStatus,
   TASK_DONE,
   getThreadParametersStatus,
-} from 'util/state_functions';
-import { getPathFromModel } from '../../models/reducers';
-import { toDateTimeString } from 'util/date-utils';
+} from "util/state_functions";
+import { getPathFromModel } from "../../models/reducers";
+import { toDateTimeString } from "util/date-utils";
 
-@customElement('mint-runs')
+@customElement("mint-runs")
 export class MintRuns extends connect(store)(MintThreadPage) {
   @property({ type: Object })
   private _executions: ModelExecutions;
@@ -46,7 +46,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
   @property({ type: Number })
   private pageSize = 100;
   @property({ type: Array })
-  private orderBy = [{ status: 'asc' }]; //, {"start_time": "asc"}];
+  private orderBy = [{ status: "asc" }]; //, {"start_time": "asc"}];
 
   @property({ type: String })
   private _log: string;
@@ -57,7 +57,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
 
   private _scrollInto(id: string) {
     let el = this.shadowRoot!.getElementById(id);
-    if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    if (el) el.scrollIntoView({ block: "start", behavior: "smooth" });
   }
 
   protected render() {
@@ -122,9 +122,9 @@ export class MintRuns extends connect(store)(MintThreadPage) {
             let model = this.thread.models![modelid];
             if (!model) {
               console.warn(
-                'modelid:',
+                "modelid:",
                 modelid,
-                'is not on this thread!',
+                "is not on this thread!",
                 this.thread
               );
               //TODO: For some reason the modelid is of other model...
@@ -191,7 +191,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                 }
                 */
             if (!model) {
-              return '';
+              return "";
             }
             //console.log(summary, model);
 
@@ -222,7 +222,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                         ? html`<loading-dots
                             style="--width: 20px"
                           ></loading-dots>`
-                        : ''}
+                        : ""}
                     </wl-button>`
                   : html`You don't have permission to send runs on this sub-task`}
               </li>`;
@@ -246,14 +246,14 @@ export class MintRuns extends connect(store)(MintThreadPage) {
               <p>
                 The parameter settings you selected require
                 ${summary.total_runs} runs (${nInputs} input resources &#215;
-                ${nParameters} parameters). ${!finished ? 'So far, ' : ''}
-                ${submitted_runs} model runs ${!finished ? 'have been' : 'were'}
+                ${nParameters} parameters). ${!finished ? "So far, " : ""}
+                ${submitted_runs} model runs ${!finished ? "have been" : "were"}
                 submitted, out of which ${successful_runs} succeeded, while
-                <span .style="color:${failed_runs ? 'red' : ''}"
+                <span .style="color:${failed_runs ? "red" : ""}"
                   >${failed_runs} failed</span
-                >. ${running > 0 ? html`${running} are currently running` : ''}
-                ${running > 0 && pending > 0 ? ', and ' : ''}
-                ${pending > 0 ? html`${pending} are waiting to be run` : ''}
+                >. ${running > 0 ? html`${running} are currently running` : ""}
+                ${running > 0 && pending > 0 ? ", and " : ""}
+                ${pending > 0 ? html`${pending} are waiting to be run` : ""}
               </p>
 
               <div
@@ -286,7 +286,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                             >Next</wl-button
                           >`}
                     `
-                  : ''}
+                  : ""}
                 <span style="float:right">
                   <span>Scroll to:</span>
                   <wl-button
@@ -294,7 +294,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                     flat
                     inverted
                     style="padding: 6px; border-radius: 4px;"
-                    @click="${() => this._scrollInto('run')}"
+                    @click="${() => this._scrollInto("run")}"
                   >
                     Run</wl-button
                   >
@@ -307,7 +307,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                 flat
                                 inverted
                                 style="padding: 6px; border-radius: 4px;"
-                                @click="${() => this._scrollInto('in')}"
+                                @click="${() => this._scrollInto("in")}"
                               >
                                 Inputs</wl-button
                               >
@@ -320,7 +320,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                 flat
                                 inverted
                                 style="padding: 6px; border-radius: 4px;"
-                                @click="${() => this._scrollInto('param')}"
+                                @click="${() => this._scrollInto("param")}"
                               >
                                 Parameters</wl-button
                               >
@@ -359,13 +359,13 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                           ? html`<colgroup
                               span="${grouped_ensemble.inputs.length}"
                             ></colgroup>`
-                          : ''}
+                          : ""}
                         <!-- Inputs -->
                         ${grouped_ensemble.params.length > 0
                           ? html`<colgroup
                               span="${grouped_ensemble.params.length}"
                             ></colgroup>`
-                          : ''}
+                          : ""}
                         <!-- Parameters -->
                         <thead>
                           <tr>
@@ -378,7 +378,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                 >
                                   Inputs
                                 </th>`
-                              : ''}
+                              : ""}
                             <!-- Inputs -->
                             ${grouped_ensemble.params.length > 0
                               ? html`<th
@@ -387,7 +387,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                 >
                                   Parameters
                                 </th>`
-                              : ''}
+                              : ""}
                             <!-- Parameters -->
                           </tr>
                           <tr>
@@ -399,17 +399,17 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                               grouped_ensemble.params.length ==
                             0
                               ? html`<th></th>`
-                              : ''}
+                              : ""}
                             ${grouped_ensemble.inputs.map(
                               (inf) =>
                                 html`<th scope="col">
-                                  ${inf.name.replace(/(-|_)/g, ' ')}
+                                  ${inf.name.replace(/(-|_)/g, " ")}
                                 </th>`
                             )}
                             ${grouped_ensemble.params.map(
                               (param) =>
                                 html`<th scope="col">
-                                  ${param.name.replace(/(-|_)/g, ' ')}
+                                  ${param.name.replace(/(-|_)/g, " ")}
                                 </th>`
                             )}
                           </tr>
@@ -435,7 +435,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                         <wl-progress-bar
                                           mode="determinate"
                                           class="${ensemble.status}"
-                                          value="${ensemble.status == 'FAILURE'
+                                          value="${ensemble.status == "FAILURE"
                                             ? 100
                                             : ensemble.run_progress || 0}"
                                         ></wl-progress-bar>
@@ -461,7 +461,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                         grouped_ensemble.params.length ==
                                       0
                                         ? html`<td>No inputs or parameters</td>`
-                                        : ''}
+                                        : ""}
                                       ${grouped_ensemble.inputs.map((input) => {
                                         let res = ensemble.bindings[
                                           input.id
@@ -483,7 +483,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                           ? ensemble.bindings[param.id]
                                           : param_defaults[param.id];
                                         if (pvalue.match(/^__region_geojson/)) {
-                                          pvalue = 'Region Geojson';
+                                          pvalue = "Region Geojson";
                                         }
                                         return html`<td>${pvalue}</td>`;
                                       })}
@@ -513,7 +513,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                               `}
                         </tbody>
                       </table>`
-                  : ''}
+                  : ""}
               </div>
             </li>`;
           })}
@@ -525,12 +525,12 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                   type="button"
                   class="submit"
                   @click="${() =>
-                    store.dispatch(selectThreadSection('results'))}"
+                    store.dispatch(selectThreadSection("results"))}"
                   >Continue</wl-button
                 >
               </div>
             `
-          : ''}
+          : ""}
       </div>
 
       ${renderNotifications()} ${this._renderLogDialog()}
@@ -539,15 +539,15 @@ export class MintRuns extends connect(store)(MintThreadPage) {
 
   _submitRuns(modelid: string) {
     ReactGA.event({
-      category: 'Thread',
-      action: 'Send run',
+      category: "Thread",
+      action: "Send run",
     });
     let mint = this.prefs.mint;
     let data = {
       thread_id: this.thread.id,
       model_id: modelid,
     };
-    showNotification('runNotification', this.shadowRoot);
+    showNotification("runNotification", this.shadowRoot);
     let me = this;
     this._waiting = true;
     postJSONResource(
@@ -557,19 +557,19 @@ export class MintRuns extends connect(store)(MintThreadPage) {
           this.getEnsembleManagerExecutionPath(mint.execution_engine),
         onLoad: function (e: any) {
           me._waiting = false;
-          hideNotification('runNotification', me.shadowRoot);
+          hideNotification("runNotification", me.shadowRoot);
         },
         onError: function () {
           me._waiting = false;
-          hideNotification('runNotification', me.shadowRoot);
-          alert('Could not connect to the Execution Manager!');
+          hideNotification("runNotification", me.shadowRoot);
+          alert("Could not connect to the Execution Manager!");
         },
       },
       data,
       false
     );
 
-    this.selectAndContinue('runs');
+    this.selectAndContinue("runs");
   }
 
   _nextPage(threadid: string, modelid: string, offset: number) {
@@ -580,22 +580,22 @@ export class MintRuns extends connect(store)(MintThreadPage) {
   _viewRunLog(ensembleid: string) {
     this._log = null;
     let me = this;
-    showDialog('logDialog', this.shadowRoot!);
+    showDialog("logDialog", this.shadowRoot!);
     // Call out to the ensemble manager to get the log
     getResource(
       {
         url:
           this.prefs.mint.ensemble_manager_api +
-          '/logs?ensemble_id=' +
+          "/logs?ensemble_id=" +
           ensembleid,
         onLoad: function (e: any) {
           let log = e.target.responseText;
-          log = log.replace(/\\n/g, '\n');
-          log = log.replace(/\\r/g, '');
-          log = log.replace(/\\t/g, '\t');
-          log = log.replace(/\\u001b.+?m/g, '');
-          log = log.replace(/^"/, '');
-          log = log.replace(/"$/, '');
+          log = log.replace(/\\n/g, "\n");
+          log = log.replace(/\\r/g, "");
+          log = log.replace(/\\t/g, "\t");
+          log = log.replace(/\\u001b.+?m/g, "");
+          log = log.replace(/^"/, "");
+          log = log.replace(/"$/, "");
           me._log = log;
           //console.log(me._log);
         },
@@ -606,7 +606,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
   }
 
   _closeRunLogDialog(runid: string) {
-    hideDialog('logDialog', this.shadowRoot!);
+    hideDialog("logDialog", this.shadowRoot!);
   }
 
   _renderLogDialog() {
@@ -656,28 +656,28 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     let promises: any[] = [];
     Object.keys(this.thread.models).map((modelid) => {
       if (!this.currentPage[modelid]) this.currentPage[modelid] = 1;
-      console.log('Fetch runs for model ' + modelid);
+      console.log("Fetch runs for model " + modelid);
       promises.push(this._fetchRuns(this.thread.id, modelid));
     });
     await Promise.all(promises);
   }
 
   _isExecutionRunFinished(ensemble: Execution) {
-    return ensemble.status == 'SUCCESS' || ensemble.status == 'FAILURE';
+    return ensemble.status == "SUCCESS" || ensemble.status == "FAILURE";
   }
 
   getEnsembleManagerExecutionPath(executionEngine: string) {
-    if (executionEngine === 'localex') return '/executionsLocal';
-    else if (executionEngine === 'wings') return '/executions';
+    if (executionEngine === "localex") return "/executionsLocal";
+    else if (executionEngine === "wings") return "/executions";
     return `/executionEngines/${executionEngine}`;
   }
 
   _getModelURL(model: Model) {
     if (!model) {
-      return '';
+      return "";
     }
     let url =
-      this._regionid + '/models/explore' + getPathFromModel(model) + '/';
+      this._regionid + "/models/explore" + getPathFromModel(model) + "/";
     return url;
   }
 

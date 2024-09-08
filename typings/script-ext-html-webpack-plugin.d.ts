@@ -1,5 +1,5 @@
-declare module 'script-ext-html-webpack-plugin' {
-  import webpack from 'webpack';
+declare module "script-ext-html-webpack-plugin" {
+  import webpack from "webpack";
 
   export interface ScriptExtHtmlWebpackPluginConfig {
     defaultAttribute?: string;

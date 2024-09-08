@@ -1,5 +1,5 @@
-declare module 'gulp-stylelint' {
-  export type GulpStylelintFormatter = 'string' | 'verbose' | 'json';
+declare module "gulp-stylelint" {
+  export type GulpStylelintFormatter = "string" | "verbose" | "json";
 
   export interface GulpStylelintReporter {
     formatter: GulpStylelintFormatter;

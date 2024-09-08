@@ -8,9 +8,9 @@ Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 */
 
-import { Reducer } from 'redux';
-import { RootAction } from './store';
-import { UPDATE_PAGE, FETCH_USER, FETCH_MINT_CONFIG } from './actions';
+import { Reducer } from "redux";
+import { RootAction } from "./store";
+import { UPDATE_PAGE, FETCH_USER, FETCH_MINT_CONFIG } from "./actions";
 
 export interface IdMap<T> {
   [id: string]: T;
@@ -102,8 +102,8 @@ export interface LocalExecutionPreferences {
 }
 
 const INITIAL_STATE: AppState = {
-  page: '',
-  subpage: '',
+  page: "",
+  subpage: "",
   prefs: { mint: null },
 };
 

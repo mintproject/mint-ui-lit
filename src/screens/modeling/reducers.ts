@@ -1,5 +1,5 @@
-import { Reducer } from 'redux';
-import { RootAction } from '../../app/store';
+import { Reducer } from "redux";
+import { RootAction } from "../../app/store";
 import {
   PROBLEM_STATEMENTS_LIST,
   PROBLEM_STATEMENT_DETAILS,
@@ -14,12 +14,12 @@ import {
   TASKS_LIST_SUBSCRIPTION,
   THREAD_EXECUTION_SUMMARY_SUBSCRIPTION,
   THREAD_EXECUTION_SUMMARY,
-} from './actions';
-import { Model } from '../models/reducers';
-import { Dataset, DataResource, Dataslice } from '../datasets/reducers';
-import { IdMap, IdNameObject } from '../../app/reducers';
-import { REGIONS_LIST_TOP_REGIONS } from '../regions/actions';
-import { DataTransformation } from '@mintproject/modelcatalog_client';
+} from "./actions";
+import { Model } from "../models/reducers";
+import { Dataset, DataResource, Dataslice } from "../datasets/reducers";
+import { IdMap, IdNameObject } from "../../app/reducers";
+import { REGIONS_LIST_TOP_REGIONS } from "../regions/actions";
+import { DataTransformation } from "@mintproject/modelcatalog_client";
 
 export interface ModelingState {
   problem_statements?: ProblemStatementList;
@@ -67,23 +67,23 @@ export interface MintEvent {
 }
 
 export interface ProblemStatementEvent extends MintEvent {
-  event: 'CREATE' | 'UPDATE' | 'ADD_TASK' | 'DELETE_TASK';
+  event: "CREATE" | "UPDATE" | "ADD_TASK" | "DELETE_TASK";
 }
 
 export interface TaskEvent extends MintEvent {
-  event: 'CREATE' | 'UPDATE' | 'ADD_THREAD' | 'DELETE_THREAD';
+  event: "CREATE" | "UPDATE" | "ADD_THREAD" | "DELETE_THREAD";
 }
 
 export interface ThreadEvent extends MintEvent {
   event:
-    | 'CREATE'
-    | 'UPDATE'
-    | 'SELECT_DATA'
-    | 'SELECT_MODELS'
-    | 'SELECT_PARAMETERS'
-    | 'EXECUTE'
-    | 'INGEST'
-    | 'VISUALIZE';
+    | "CREATE"
+    | "UPDATE"
+    | "SELECT_DATA"
+    | "SELECT_MODELS"
+    | "SELECT_PARAMETERS"
+    | "EXECUTE"
+    | "INGEST"
+    | "VISUALIZE";
 }
 
 export interface ProblemStatementList {
@@ -219,7 +219,7 @@ export interface Execution {
   start_time: Date;
   end_time?: Date;
   execution_engine?: string;
-  status: 'FAILURE' | 'SUCCESS' | 'RUNNING' | 'WAITING';
+  status: "FAILURE" | "SUCCESS" | "RUNNING" | "WAITING";
   run_progress?: number; // 0 to 100 (percentage done)
   results: any[]; // Chosen results after completed run
   selected: boolean;

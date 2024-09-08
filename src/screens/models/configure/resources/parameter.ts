@@ -1,594 +1,808 @@
-import { ModelCatalogResource, Action } from './resource';
-import { property, html, customElement, css } from 'lit-element';
-import { connect } from 'pwa-helpers/connect-mixin';
-import { store } from 'app/store';
-import { getLabel } from 'model-catalog-api/util';
+import { ModelCatalogResource, Action } from "./resource";
+import { property, html, customElement, css } from "lit-element";
+import { connect } from "pwa-helpers/connect-mixin";
+import { store } from "app/store";
+import { getLabel } from "model-catalog-api/util";
 import { IdMap } from "app/reducers";
 
-import { SharedStyles } from 'styles/shared-styles';
-import { ExplorerStyles } from '../../model-explore/explorer-styles'
+import { SharedStyles } from "styles/shared-styles";
+import { ExplorerStyles } from "../../model-explore/explorer-styles";
 
-import { Parameter, ParameterFromJSON } from '@mintproject/modelcatalog_client';
-import { PARAMETER_TYPES } from 'offline_data/parameter_types';
+import { Parameter, ParameterFromJSON } from "@mintproject/modelcatalog_client";
+import { PARAMETER_TYPES } from "offline_data/parameter_types";
 
-import { ModelCatalogUnit } from './unit'
-import { ModelCatalogVariablePresentation } from './variable-presentation';
-import { ModelCatalogIntervention } from './intervention';
+import { ModelCatalogUnit } from "./unit";
+import { ModelCatalogVariablePresentation } from "./variable-presentation";
+import { ModelCatalogIntervention } from "./intervention";
 
-import { BaseAPI } from '@mintproject/modelcatalog_client';
-import { DefaultReduxApi } from 'model-catalog-api/default-redux-api';
-import { ModelCatalogApi } from 'model-catalog-api/model-catalog-api';
+import { BaseAPI } from "@mintproject/modelcatalog_client";
+import { DefaultReduxApi } from "model-catalog-api/default-redux-api";
+import { ModelCatalogApi } from "model-catalog-api/model-catalog-api";
 
-import 'components/data-catalog-id-checker';
-import { Textfield } from 'weightless/textfield';
-import { Textarea } from 'weightless/textarea';
-import { Select } from 'weightless/select';
-import 'weightless/checkbox';
+import "components/data-catalog-id-checker";
+import { Textfield } from "weightless/textfield";
+import { Textarea } from "weightless/textarea";
+import { Select } from "weightless/select";
+import "weightless/checkbox";
 
-const renderParameterType = (param:Parameter) => {
-    let ptype = param.type
-            .filter(p => p != "Parameter" && p != "https://w3id.org/okn/o/sd#Parameter")
-            .map(uri => uri.split('#').pop())
-    return html`
-        ${ptype} ${param.hasDataType ? html`(<span class="monospaced">${param.hasDataType}</span>)` : ''}
-        ${(param.hasMinimumAcceptedValue || param.hasMaximumAcceptedValue) ?
-            html`<br/><span style="font-size: 11px;">
-                Range is 
-                ${param.hasMinimumAcceptedValue ? html`from ${param.hasMinimumAcceptedValue}` : ''}
-                ${param.hasMaximumAcceptedValue ? html`to ${param.hasMaximumAcceptedValue}` : ''}
-            </span>` : '' }
-    `
-}
+const renderParameterType = (param: Parameter) => {
+  let ptype = param.type
+    .filter(
+      (p) => p != "Parameter" && p != "https://w3id.org/okn/o/sd#Parameter"
+    )
+    .map((uri) => uri.split("#").pop());
+  return html`
+    ${ptype}
+    ${param.hasDataType
+      ? html`(<span class="monospaced">${param.hasDataType}</span>)`
+      : ""}
+    ${param.hasMinimumAcceptedValue || param.hasMaximumAcceptedValue
+      ? html`<br /><span style="font-size: 11px;">
+            Range is
+            ${param.hasMinimumAcceptedValue
+              ? html`from ${param.hasMinimumAcceptedValue}`
+              : ""}
+            ${param.hasMaximumAcceptedValue
+              ? html`to ${param.hasMaximumAcceptedValue}`
+              : ""}
+          </span>`
+      : ""}
+  `;
+};
 
-@customElement('model-catalog-parameter')
-export class ModelCatalogParameter extends connect(store)(ModelCatalogResource)<Parameter> {
-    static get styles() {
-        return [ExplorerStyles, SharedStyles, this.getBasicStyles(), css`
+@customElement("model-catalog-parameter")
+export class ModelCatalogParameter extends connect(store)(
+  ModelCatalogResource
+)<Parameter> {
+  static get styles() {
+    return [
+      ExplorerStyles,
+      SharedStyles,
+      this.getBasicStyles(),
+      css`
         .min-max-input {
-            display: grid;
-            grid-template-columns: 25% 50% 25%;
+          display: grid;
+          grid-template-columns: 25% 50% 25%;
         }
-        .two-inputs > wl-textfield, 
+        .two-inputs > wl-textfield,
         .two-inputs > wl-select,
         .two-inputs > span {
-            display: inline-block;
-            width: 50%;
+          display: inline-block;
+          width: 50%;
         }
-        #input-unit, #input-variable, #input-intervention {
-            --list-height: 200px;
-            --dialog-height: 100%;
+        #input-unit,
+        #input-variable,
+        #input-intervention {
+          --list-height: 200px;
+          --dialog-height: 100%;
         }
-        `];
-    }
+      `,
+    ];
+  }
 
-    protected classes : string = "resource parameter";
-    protected name : string = "parameter";
-    protected pname : string = "parameters";
-    protected positionAttr : string = "position";
+  protected classes: string = "resource parameter";
+  protected name: string = "parameter";
+  protected pname: string = "parameters";
+  protected positionAttr: string = "position";
 
-    protected resourceApi : DefaultReduxApi<Parameter,BaseAPI> = ModelCatalogApi.myCatalog.parameter;
+  protected resourceApi: DefaultReduxApi<Parameter, BaseAPI> =
+    ModelCatalogApi.myCatalog.parameter;
 
-    public colspan = 3;
-    public lazy = true;
-    public onlyFixedValue = false;
-    
-    @property({type: Boolean}) private isAdjustable = false;
-    @property({type: Boolean}) private showDefaults = false;
-    @property({type: String}) private _formPart : string = "";
+  public colspan = 3;
+  public lazy = true;
+  public onlyFixedValue = false;
 
-    private _inputUnit : ModelCatalogUnit;
-    private _vpDisplayer : IdMap<ModelCatalogVariablePresentation> = {};
-    private _inputVariable : ModelCatalogVariablePresentation;
-    private _inputIntervention : ModelCatalogIntervention;
+  @property({ type: Boolean }) private isAdjustable = false;
+  @property({ type: Boolean }) private showDefaults = false;
+  @property({ type: String }) private _formPart: string = "";
 
-    public isSetup : boolean = false;
-    public setAsSetup () {
-        this.isSetup = true;
-        this.colspan = 4;
-    }
+  private _inputUnit: ModelCatalogUnit;
+  private _vpDisplayer: IdMap<ModelCatalogVariablePresentation> = {};
+  private _inputVariable: ModelCatalogVariablePresentation;
+  private _inputIntervention: ModelCatalogIntervention;
 
-    constructor () {
-        super();
-        this._inputUnit = new ModelCatalogUnit();
-        this._inputUnit.setActionSelect();
-        this._inputUnit.setAttribute('id', 'input-unit');
-        
-        this._inputVariable = new ModelCatalogVariablePresentation();
-        this._inputVariable.setActionMultiselect();
-        this._inputVariable.setAttribute('id', 'input-variable');
+  public isSetup: boolean = false;
+  public setAsSetup() {
+    this.isSetup = true;
+    this.colspan = 4;
+  }
 
-        this._inputIntervention = new ModelCatalogIntervention();
-        this._inputIntervention.setActionSelect();
-        this._inputIntervention.setAttribute('id', 'input-intervention');
-    }
+  constructor() {
+    super();
+    this._inputUnit = new ModelCatalogUnit();
+    this._inputUnit.setActionSelect();
+    this._inputUnit.setAttribute("id", "input-unit");
 
-    protected _createResource () {
-        this._inputUnit.setResources(null);
-        super._createResource();
-    }
+    this._inputVariable = new ModelCatalogVariablePresentation();
+    this._inputVariable.setActionMultiselect();
+    this._inputVariable.setAttribute("id", "input-variable");
 
-    protected _renderTableHeader () {
-        return html`
-            <th><b>Name</b></th>
-            <th><b>Type</b></th>
-            <th style="white-space: nowrap;">${this.isSetup ? 
-                html`
-                    <b>Value in this setup</b>
-                    <span class="tooltip" style="white-space:normal;"
-                     tip="If a value is set up in this field, you will not be able to change it in run time. For example, a price adjustment is set up to be 10%, it won't be editable when running the the model">
-                        <wl-icon>help</wl-icon>
-                    </span>
-                `
-                : html`<b>Default Value</b>`}
-            </th>
-            ${this.isSetup ? html`
+    this._inputIntervention = new ModelCatalogIntervention();
+    this._inputIntervention.setActionSelect();
+    this._inputIntervention.setAttribute("id", "input-intervention");
+  }
+
+  protected _createResource() {
+    this._inputUnit.setResources(null);
+    super._createResource();
+  }
+
+  protected _renderTableHeader() {
+    return html`
+      <th><b>Name</b></th>
+      <th><b>Type</b></th>
+      <th style="white-space: nowrap;">
+        ${this.isSetup
+          ? html`
+              <b>Value in this setup</b>
+              <span
+                class="tooltip"
+                style="white-space:normal;"
+                tip="If a value is set up in this field, you will not be able to change it in run time. For example, a price adjustment is set up to be 10%, it won't be editable when running the the model"
+              >
+                <wl-icon>help</wl-icon>
+              </span>
+            `
+          : html`<b>Default Value</b>`}
+      </th>
+      ${this.isSetup
+        ? html`
             <th style="white-space: nowrap;">
-                <b>Adjustable</b>
-                <span class="tooltip" style="white-space:normal;"
-                 tip="An adjustable parameter is a knob that a user will be able to fill with a value when executing the model">
-                    <wl-icon>help</wl-icon>
-                </span>
+              <b>Adjustable</b>
+              <span
+                class="tooltip"
+                style="white-space:normal;"
+                tip="An adjustable parameter is a knob that a user will be able to fill with a value when executing the model"
+              >
+                <wl-icon>help</wl-icon>
+              </span>
             </th>
-            ` : html``}
-        `;
-    }
+          `
+        : html``}
+    `;
+  }
 
-    private _prepareVariablePresentation (r:Parameter) {
-        if (r.hasPresentation && r.hasPresentation.length > 0) {
-            if (!this._vpDisplayer[r.id])
-                this._vpDisplayer[r.id] = new ModelCatalogVariablePresentation();
-            this._vpDisplayer[r.id].setResources(r.hasPresentation);
-        }
+  private _prepareVariablePresentation(r: Parameter) {
+    if (r.hasPresentation && r.hasPresentation.length > 0) {
+      if (!this._vpDisplayer[r.id])
+        this._vpDisplayer[r.id] = new ModelCatalogVariablePresentation();
+      this._vpDisplayer[r.id].setResources(r.hasPresentation);
     }
+  }
 
-    protected _renderRow (r:Parameter) {
-        this._prepareVariablePresentation(r);
-        let label : string = getLabel(r);
-        let dcata : boolean = r.hasDefaultValue && 
-                (label == "gldas_dataset_id" || label == "shapefile_dataset_id" || label == "data_set_id");
-        return html`
-            <td>
-                <code>${label}</code><br/>
-                <b>${r.description ? r.description[0].split(',').join(', ') : ''}</b>
-                ${r.hasPresentation && r.hasPresentation.length > 0 ? html`
-                    <div style="padding-top: 10px">
-                        <b>Variables:</b> ${this._vpDisplayer[r.id]}
-                    </div>
-                ` : '' }
-            </td>
-            <td>${renderParameterType(r)}</td>
-            <td>
-                ${this._renderTypedValue(r)}
-            </td>
-            ${this.isSetup ? html`
+  protected _renderRow(r: Parameter) {
+    this._prepareVariablePresentation(r);
+    let label: string = getLabel(r);
+    let dcata: boolean =
+      r.hasDefaultValue &&
+      (label == "gldas_dataset_id" ||
+        label == "shapefile_dataset_id" ||
+        label == "data_set_id");
+    return html`
+      <td>
+        <code>${label}</code><br />
+        <b>${r.description ? r.description[0].split(",").join(", ") : ""}</b>
+        ${r.hasPresentation && r.hasPresentation.length > 0
+          ? html`
+              <div style="padding-top: 10px">
+                <b>Variables:</b> ${this._vpDisplayer[r.id]}
+              </div>
+            `
+          : ""}
+      </td>
+      <td>${renderParameterType(r)}</td>
+      <td>${this._renderTypedValue(r)}</td>
+      ${this.isSetup
+        ? html`
             <td style="text-align: center;">
-                <wl-icon>${r.hasFixedValue && r.hasFixedValue.length > 0 ?  'check_box_outline_blank' : 'check_box'}</wl-icon>
+              <wl-icon
+                >${r.hasFixedValue && r.hasFixedValue.length > 0
+                  ? "check_box_outline_blank"
+                  : "check_box"}</wl-icon
+              >
             </td>
-            ` : html``}
-        `;
+          `
+        : html``}
+    `;
+  }
+
+  protected _renderTypedValue(r: Parameter) {
+    let additionalType: string =
+      r.type && r.type.length > 1
+        ? r.type.filter((p: string) => p != "Parameter")[0]
+        : "";
+
+    let isDefault = false;
+    let value = "";
+    if (!r.hasFixedValue || r.hasFixedValue.length == 0) {
+      isDefault = true;
+      if (r.hasDefaultValue && r.hasDefaultValue.length > 0) {
+        value = (<unknown>r.hasDefaultValue[0]) as string;
+      }
+    } else {
+      value = (<unknown>r.hasFixedValue[0]) as string;
     }
 
-    protected _renderTypedValue (r:Parameter) {
-        let additionalType : string = r.type && r.type.length > 1 ?
-                r.type.filter((p:string) => p != 'Parameter')[0] : '';
-
-        let isDefault = false;
-        let value = '';
-        if (!r.hasFixedValue || r.hasFixedValue.length == 0) {
-            isDefault = true;
-            if (r.hasDefaultValue && r.hasDefaultValue.length > 0) {
-                value = <unknown>r.hasDefaultValue[0] as string;
-            }
-        } else {
-            value = <unknown>r.hasFixedValue[0] as string;
-        }
-
-        if (additionalType == "https://w3id.org/wings/export/MINT#DataCatalogId") {
-            return html`
-                <data-catalog-id-checker id=${value}></data-catalog-id-checker>
-            `;
-        }
-
-        return html`
-            ${value} ${isDefault && this.isSetup ? '(default)' : ''}
-            ${r.usesUnit && r.usesUnit[0] ? r.usesUnit[0].label : ''}`;
+    if (additionalType == "https://w3id.org/wings/export/MINT#DataCatalogId") {
+      return html`
+        <data-catalog-id-checker id=${value}></data-catalog-id-checker>
+      `;
     }
 
-    protected _editResource (r:Parameter) {
-        super._editResource(r);
-        this._inputUnit.setResources(r.usesUnit);
-        this._inputVariable.setResources(r.hasPresentation);
-        this._inputIntervention.setResources(r.relevantForIntervention);
+    return html` ${value} ${isDefault && this.isSetup ? "(default)" : ""}
+    ${r.usesUnit && r.usesUnit[0] ? r.usesUnit[0].label : ""}`;
+  }
 
-        let lr : Parameter = this._loadedResources[r.id];
-        if (lr) {
-            if (lr.hasDataType && lr.hasDataType.length > 0) {
-                let dt = lr.hasDataType[0];
-                if (dt === 'integer') dt = 'int';
-                this._formPart = dt;
-            }
-            this.isAdjustable = !lr.hasFixedValue;
-        }
+  protected _editResource(r: Parameter) {
+    super._editResource(r);
+    this._inputUnit.setResources(r.usesUnit);
+    this._inputVariable.setResources(r.hasPresentation);
+    this._inputIntervention.setResources(r.relevantForIntervention);
+
+    let lr: Parameter = this._loadedResources[r.id];
+    if (lr) {
+      if (lr.hasDataType && lr.hasDataType.length > 0) {
+        let dt = lr.hasDataType[0];
+        if (dt === "integer") dt = "int";
+        this._formPart = dt;
+      }
+      this.isAdjustable = !lr.hasFixedValue;
     }
+  }
 
-    protected _renderForm () {
-        let edResource = this._getEditingResource();
-        if (edResource && this.onlyFixedValue) return this._renderFixedForm(edResource);
-        let additionalTypes = edResource && edResource.type && edResource.type.length > 1 ?
-                edResource.type.filter((p:string) => p != 'Parameter') : [];
-        return html`
-        <form>
-            <br/>
-            ${this.isSetup ? html`
-                <div @click=${() => this.isAdjustable = !this.isAdjustable} style="padding-top: 10px;">
-                    <wl-checkbox ?checked="${this.isAdjustable}"></wl-checkbox>
-                    <label style="padding-left: 10px;">Is Adjustable</label>
-                </div>
-                ${this.isAdjustable ? html`` : html`
-                <wl-textfield id="fixed-value"  required
-                              label="Value in this setup"
-                              value="${edResource ? (edResource.hasFixedValue && edResource.hasFixedValue.length > 0 ?
-                                edResource.hasFixedValue[0] 
-                                : (edResource.hasDefaultValue ? edResource.hasDefaultValue[0] : '')) : ''}">
-                </wl-textfield>
+  protected _renderForm() {
+    let edResource = this._getEditingResource();
+    if (edResource && this.onlyFixedValue)
+      return this._renderFixedForm(edResource);
+    let additionalTypes =
+      edResource && edResource.type && edResource.type.length > 1
+        ? edResource.type.filter((p: string) => p != "Parameter")
+        : [];
+    return html` <form>
+      <br />
+      ${this.isSetup
+        ? html`
+            <div
+              @click=${() => (this.isAdjustable = !this.isAdjustable)}
+              style="padding-top: 10px;"
+            >
+              <wl-checkbox ?checked="${this.isAdjustable}"></wl-checkbox>
+              <label style="padding-left: 10px;">Is Adjustable</label>
+            </div>
+            ${this.isAdjustable
+              ? html``
+              : html`
+                  <wl-textfield
+                    id="fixed-value"
+                    required
+                    label="Value in this setup"
+                    value="${edResource
+                      ? edResource.hasFixedValue &&
+                        edResource.hasFixedValue.length > 0
+                        ? edResource.hasFixedValue[0]
+                        : edResource.hasDefaultValue
+                        ? edResource.hasDefaultValue[0]
+                        : ""
+                      : ""}"
+                  >
+                  </wl-textfield>
                 `}
-                <div @click=${() => this.showDefaults = !this.showDefaults} style="padding-top: 10px;">
-                    <wl-checkbox ?checked="${this.showDefaults}"></wl-checkbox>
-                    <label style="padding-left: 10px;">Show defaults</label>
-                </div>
-            ` : html`
-                <wl-textfield id="parameter-label" label="Name" required
-                    value=${edResource ? getLabel(edResource) : ''}>
-                </wl-textfield>
-                <wl-textarea id="parameter-desc" label="Description" required
-                    value=${edResource && edResource.description ? edResource.description[0] : ''}>
-                </wl-textarea>
-            `}
-
-            ${(!this.isSetup || this.showDefaults) ? html`
-            <wl-select id="parameter-type" label="Parameter type" 
-                value=${(additionalTypes.length > 0)? additionalTypes[0] : ''}>
-                <option value="">None</option>
-                ${Object.keys(PARAMETER_TYPES).map((id:string) => html`
-                    <option value="${id}">${PARAMETER_TYPES[id]}</option>
-                `)}
+            <div
+              @click=${() => (this.showDefaults = !this.showDefaults)}
+              style="padding-top: 10px;"
+            >
+              <wl-checkbox ?checked="${this.showDefaults}"></wl-checkbox>
+              <label style="padding-left: 10px;">Show defaults</label>
+            </div>
+          `
+        : html`
+            <wl-textfield
+              id="parameter-label"
+              label="Name"
+              required
+              value=${edResource ? getLabel(edResource) : ""}
+            >
+            </wl-textfield>
+            <wl-textarea
+              id="parameter-desc"
+              label="Description"
+              required
+              value=${edResource && edResource.description
+                ? edResource.description[0]
+                : ""}
+            >
+            </wl-textarea>
+          `}
+      ${!this.isSetup || this.showDefaults
+        ? html`
+            <wl-select
+              id="parameter-type"
+              label="Parameter type"
+              value=${additionalTypes.length > 0 ? additionalTypes[0] : ""}
+            >
+              <option value="">None</option>
+              ${Object.keys(PARAMETER_TYPES).map(
+                (id: string) => html`
+                  <option value="${id}">${PARAMETER_TYPES[id]}</option>
+                `
+              )}
             </wl-select>
 
             <div style="margin-top: 10px;">
-                <b>Variables:</b> ${this._inputVariable}
+              <b>Variables:</b> ${this._inputVariable}
             </div>
 
             <div style="margin-top: 5px;">
-                <b>Relevant for Intervention:</b> ${this._inputIntervention}
+              <b>Relevant for Intervention:</b> ${this._inputIntervention}
             </div>
 
             <div class="two-inputs">
-                <wl-select id="parameter-datatype" label="Data type" required @change="${this._onDataTypeChanged}"
-                    value="${this._formPart}">
-                    <option value="string" selected>String</option>
-                    <option value="int">Integer</option>
-                    <option value="float">Float</option>
-                    <option value="boolean">Boolean</option>
-                </wl-select>
+              <wl-select
+                id="parameter-datatype"
+                label="Data type"
+                required
+                @change="${this._onDataTypeChanged}"
+                value="${this._formPart}"
+              >
+                <option value="string" selected>String</option>
+                <option value="int">Integer</option>
+                <option value="float">Float</option>
+                <option value="boolean">Boolean</option>
+              </wl-select>
 
+              <span>
+                <span style="font-size: 0.75rem;color: rgb(86, 90, 93);"
+                  >Unit:</span
+                >
+                ${this._inputUnit}
+              </span>
+            </div>
+
+            <div
+              class="min-max-input"
+              style="display: ${this._formPart === "int" ? "grid" : "none"}"
+            >
+              <wl-textfield
+                type="number"
+                step="1"
+                id="part-int-min"
+                label="Minimum"
+                value="${edResource && edResource.hasMinimumAcceptedValue
+                  ? edResource.hasMinimumAcceptedValue[0]
+                  : ""}"
+              >
+              </wl-textfield>
+              <wl-textfield
+                type="number"
+                id="part-int-default"
+                label="Default value"
+                required
+                value="${edResource && edResource.hasDefaultValue
+                  ? edResource.hasDefaultValue[0]
+                  : ""}"
+              >
+              </wl-textfield>
+              <wl-textfield
+                type="number"
+                id="part-int-max"
+                label="Maximum"
+                value="${edResource && edResource.hasMaximumAcceptedValue
+                  ? edResource.hasMaximumAcceptedValue[0]
+                  : ""}"
+              >
+              </wl-textfield>
+            </div>
+
+            <div
+              style="display: ${this._formPart === "float" ? "unset" : "none"}"
+            >
+              <div class="two-inputs">
+                <!-- FIXME: step is not working -->
+                <wl-textfield
+                  id="part-float-default"
+                  type="text"
+                  label="Default value"
+                  required
+                  value="${edResource && edResource.hasDefaultValue
+                    ? edResource.hasDefaultValue[0]
+                    : ""}"
+                  step="${edResource && edResource.recommendedIncrement
+                    ? edResource.recommendedIncrement[0]
+                    : "0.01"}"
+                >
+                </wl-textfield>
                 <span>
-                    <span style="font-size: 0.75rem;color: rgb(86, 90, 93);">Unit:</span>
-                    ${this._inputUnit}
-                </span>
-
-            </div>
-
-            <div class="min-max-input" style="display: ${this._formPart === 'int' ? 'grid' : 'none'}">
-                <wl-textfield type="number" step="1" id="part-int-min" label="Minimum"
-                    value="${edResource && edResource.hasMinimumAcceptedValue ? edResource.hasMinimumAcceptedValue[0] : '' }">
-                </wl-textfield>
-                <wl-textfield type="number" id="part-int-default" label="Default value" required
-                    value="${edResource && edResource.hasDefaultValue ? edResource.hasDefaultValue[0] : '' }">
-                </wl-textfield>
-                <wl-textfield type="number" id="part-int-max" label="Maximum"
-                    value="${edResource && edResource.hasMaximumAcceptedValue ? edResource.hasMaximumAcceptedValue[0] : ''}">
-                </wl-textfield>
-            </div>
-
-            <div style="display: ${this._formPart === 'float' ? 'unset' : 'none'}">
-                <div class="two-inputs">
-                    <!-- FIXME: step is not working -->
-                    <wl-textfield id="part-float-default" type="text"  label="Default value" required
-                        value="${edResource && edResource.hasDefaultValue ? edResource.hasDefaultValue[0] : ''}"
-                        step="${edResource && edResource.recommendedIncrement ? edResource.recommendedIncrement[0] : '0.01'}">
+                  <span
+                    style="display: flex; align-items: center; justify-content: space-between;"
+                  >
+                    <wl-textfield
+                      style="width: 100%;"
+                      id="part-float-increment"
+                      type="number"
+                      step="0.01"
+                      label="Increment (optional)"
+                      value="${edResource && edResource.recommendedIncrement
+                        ? edResource.recommendedIncrement[0]
+                        : ""}"
+                    >
                     </wl-textfield>
-                    <span>
-                        <span style="display: flex; align-items: center; justify-content: space-between;">
-                            <wl-textfield style="width: 100%;"
-                                id="part-float-increment" type="number" step="0.01" label="Increment (optional)"
-                                value="${edResource && edResource.recommendedIncrement ? edResource.recommendedIncrement[0] : ''}">
-                            </wl-textfield>
-                            <span slot="after" class="tooltip small-tooltip" tip="Increment defines what is the recommended delta to increase this parameter when executing multiple simulations. For example, when assessing precipitation variations, you can run a simulation incrementing the percentage of rain by 4%">
-                                <wl-icon>help</wl-icon>
-                            </span>
-                        </span>
+                    <span
+                      slot="after"
+                      class="tooltip small-tooltip"
+                      tip="Increment defines what is the recommended delta to increase this parameter when executing multiple simulations. For example, when assessing precipitation variations, you can run a simulation incrementing the percentage of rain by 4%"
+                    >
+                      <wl-icon>help</wl-icon>
                     </span>
-                </div>
-                <div class="two-inputs">
-                    <wl-textfield type="number" id="part-float-min" label="Minimum (optional)"
-                        step="${edResource && edResource.recommendedIncrement ? edResource.recommendedIncrement[0] : '0.01'}"
-                        value="${edResource && edResource.hasMinimumAcceptedValue ? edResource.hasMinimumAcceptedValue[0] : '' }">
-                    </wl-textfield>
-                    <wl-textfield type="number" id="part-float-max" label="Maximum (optional)"
-                        step="${edResource && edResource.recommendedIncrement ? edResource.recommendedIncrement[0] : '0.01'}"
-                        value="${edResource && edResource.hasMaximumAcceptedValue ? edResource.hasMaximumAcceptedValue[0] : ''}">
-                    </wl-textfield>
-                </div>
-            </div>
-
-            <div style="display: ${this._formPart === 'string' || this._formPart === '' ? 'unset' : 'none'}">
-                <wl-textfield id="part-string-default" type="text"  label="Default value" required
-                    value="${edResource && edResource.hasDefaultValue ? edResource.hasDefaultValue[0] : ''}">
+                  </span>
+                </span>
+              </div>
+              <div class="two-inputs">
+                <wl-textfield
+                  type="number"
+                  id="part-float-min"
+                  label="Minimum (optional)"
+                  step="${edResource && edResource.recommendedIncrement
+                    ? edResource.recommendedIncrement[0]
+                    : "0.01"}"
+                  value="${edResource && edResource.hasMinimumAcceptedValue
+                    ? edResource.hasMinimumAcceptedValue[0]
+                    : ""}"
+                >
                 </wl-textfield>
-                <wl-textfield id="part-string-accepted-values" type="text"  label="Accepted values (comma separated)"
-                    value="${edResource && edResource.hasAcceptedValues ? edResource.hasAcceptedValues[0] : ''}">
+                <wl-textfield
+                  type="number"
+                  id="part-float-max"
+                  label="Maximum (optional)"
+                  step="${edResource && edResource.recommendedIncrement
+                    ? edResource.recommendedIncrement[0]
+                    : "0.01"}"
+                  value="${edResource && edResource.hasMaximumAcceptedValue
+                    ? edResource.hasMaximumAcceptedValue[0]
+                    : ""}"
+                >
                 </wl-textfield>
+              </div>
             </div>
 
-            <div style="display: ${this._formPart === 'boolean' ? 'unset' : 'none'}">
-                <wl-select id="part-boolean-default" label="Default value" required
-                    value="${edResource && edResource.hasDefaultValue ? edResource.hasDefaultValue[0] : 'False'}">
-                    <option value="FALSE">False</option>
-                    <option value="TRUE">True</option>
-                </wl-select>
+            <div
+              style="display: ${this._formPart === "string" ||
+              this._formPart === ""
+                ? "unset"
+                : "none"}"
+            >
+              <wl-textfield
+                id="part-string-default"
+                type="text"
+                label="Default value"
+                required
+                value="${edResource && edResource.hasDefaultValue
+                  ? edResource.hasDefaultValue[0]
+                  : ""}"
+              >
+              </wl-textfield>
+              <wl-textfield
+                id="part-string-accepted-values"
+                type="text"
+                label="Accepted values (comma separated)"
+                value="${edResource && edResource.hasAcceptedValues
+                  ? edResource.hasAcceptedValues[0]
+                  : ""}"
+              >
+              </wl-textfield>
             </div>
-            ` : html``}
 
+            <div
+              style="display: ${this._formPart === "boolean"
+                ? "unset"
+                : "none"}"
+            >
+              <wl-select
+                id="part-boolean-default"
+                label="Default value"
+                required
+                value="${edResource && edResource.hasDefaultValue
+                  ? edResource.hasDefaultValue[0]
+                  : "False"}"
+              >
+                <option value="FALSE">False</option>
+                <option value="TRUE">True</option>
+              </wl-select>
+            </div>
+          `
+        : html``}
 
-            <!-- TODO: relevantForIntervention, adjustsVariable -->
-            <br/>
-        </form>`;
+      <!-- TODO: relevantForIntervention, adjustsVariable -->
+      <br />
+    </form>`;
+  }
+
+  private _renderFixedForm(r: Parameter) {
+    return html` <form>
+      <wl-textfield
+        id="parameter-fixed"
+        label="value"
+        required
+        value="${r && r.hasDefaultValue ? r.hasDefaultValue[0] : ""}"
+      >
+      </wl-textfield>
+    </form>`;
+  }
+
+  private _onDataTypeChanged(e) {
+    let inputDataType: Select = this.shadowRoot.getElementById(
+      "parameter-datatype"
+    ) as Select;
+    let datatype: string = inputDataType ? inputDataType.value : "";
+    if (datatype) {
+      this._formPart = datatype;
     }
+  }
 
-    private _renderFixedForm(r:Parameter) {
-        return html`
-        <form>
-            <wl-textfield id="parameter-fixed" label="value" required
-                value="${r && r.hasDefaultValue ? r.hasDefaultValue[0] : ''}">
-            </wl-textfield>
-        </form>`;
+  protected _getFixedValue() {
+    let inputFixed: Textfield = this.shadowRoot.getElementById(
+      "parameter-fixed"
+    ) as Textfield;
+    let fixed: string = inputFixed ? inputFixed.value : "";
+    let edResource = this._getEditingResource();
+    if (fixed && edResource) {
+      return ParameterFromJSON({
+        ...edResource,
+        hasFixedValue: [fixed],
+      });
     }
+  }
 
-    private _onDataTypeChanged (e) {
-        let inputDataType : Select = this.shadowRoot.getElementById('parameter-datatype') as Select;
-        let datatype : string = inputDataType ? inputDataType.value : '';
-        if (datatype) {
-            this._formPart = datatype;
+  protected _getResourceFromForm() {
+    if (this.onlyFixedValue) return this._getFixedValue(); //This is used on modeling.
+    let edResource = this._getEditingResource();
+    let position =
+      edResource && edResource.position && edResource.position.length === 1
+        ? edResource.position[0]
+        : this._resources.length + 1;
+
+    // GET ELEMENTS
+    let inputLabel: Textfield = this.shadowRoot.getElementById(
+      "parameter-label"
+    ) as Textfield;
+    let inputDesc: Textarea = this.shadowRoot.getElementById(
+      "parameter-desc"
+    ) as Textarea;
+    let inputDatatype: Textfield = this.shadowRoot.getElementById(
+      "parameter-datatype"
+    ) as Textfield;
+    let inputType: Select = this.shadowRoot.getElementById(
+      "parameter-type"
+    ) as Select;
+    let inputFixed: Textfield = this.shadowRoot.getElementById(
+      "fixed-value"
+    ) as Textfield;
+
+    // VALIDATE
+    let label: string = inputLabel ? inputLabel.value : "";
+    let desc: string = inputDesc ? inputDesc.value : "";
+    let datatype: string = inputDatatype ? inputDatatype.value : "";
+    let aType: string = inputType ? inputType.value : "";
+    let fixed: string = inputFixed ? inputFixed.value : "";
+
+    if (!this.isSetup && label && desc && datatype) {
+      let jsonRes = {
+        type: ["Parameter"],
+        description: [desc],
+        label: [label],
+        hasDataType: [datatype],
+        position: [position],
+        hasPresentation: this._inputVariable.getResources(),
+        relevantForIntervention: this._inputIntervention.getResources(),
+        usesUnit: this._inputUnit.getResources(),
+      };
+
+      if (aType) jsonRes["type"].push(aType);
+
+      let jsonRes2 = this._getDefaultsPart(datatype);
+
+      if (jsonRes2) return ParameterFromJSON({ ...jsonRes, ...jsonRes2 });
+    } else if (this.isSetup) {
+      if (this.isAdjustable && !this.showDefaults) {
+        // Remove old fixed values to use the default one
+        return ParameterFromJSON({ hasFixedValue: [] });
+      }
+      if (!this.isAdjustable && !fixed) {
+        (<any>inputFixed).onBlur();
+        return;
+      }
+      if (!this.showDefaults) {
+        if (this._validateDataTypedValue(fixed))
+          return ParameterFromJSON({ hasFixedValue: [fixed] });
+        else console.warn("Error validating data-type.");
+      } else {
+        let jsonRes = {
+          hasDataType: [datatype],
+          type: ["Parameter"],
+          hasPresentation: this._inputVariable.getResources(),
+          relevantForIntervention: this._inputIntervention.getResources(),
+          usesUnit: this._inputUnit.getResources(),
+        };
+        if (aType) jsonRes["type"].push(aType);
+        let jsonRes2 = this._getDefaultsPart(datatype);
+        if (jsonRes2) return ParameterFromJSON({ ...jsonRes, ...jsonRes2 });
+      }
+    } else {
+      // Show errors
+      if (!this.isSetup) {
+        if (!label) (<any>inputLabel).onBlur();
+        if (!desc) (<any>inputDesc).onBlur();
+        if (!datatype) (<any>inputDatatype).onBlur();
+      }
+    }
+  }
+
+  private _validateDataTypedValue(value: string, ed?: Parameter): boolean {
+    let edR: Parameter = ed ? ed : this._getEditingResource();
+    let datatype: string =
+      edR.hasDataType && edR.hasDataType.length === 1 ? edR.hasDataType[0] : "";
+    switch (datatype) {
+      case "int":
+      case "float":
+        let val: number =
+          datatype == "int" ? parseInt(value) : parseFloat(value);
+        let min: number =
+          edR.hasMinimumAcceptedValue &&
+          edR.hasMinimumAcceptedValue.length === 1
+            ? parseFloat(edR.hasMinimumAcceptedValue[0])
+            : undefined;
+        let max: number =
+          edR.hasMaximumAcceptedValue &&
+          edR.hasMaximumAcceptedValue.length === 1
+            ? parseFloat(edR.hasMaximumAcceptedValue[0])
+            : undefined;
+        if (min != undefined && min > val) {
+          this._notification.error(
+            "Parameter value must be greater than " + min
+          );
+          return false;
         }
-    }
-
-    protected _getFixedValue () {
-        let inputFixed : Textfield = this.shadowRoot.getElementById('parameter-fixed') as Textfield;
-        let fixed : string = inputFixed ? inputFixed.value : '';
-        let edResource = this._getEditingResource();
-        if (fixed && edResource) {
-            return ParameterFromJSON({
-                ...edResource,
-                hasFixedValue: [fixed]
-            });
+        if (max != undefined && max < val) {
+          this._notification.error("Parameter value must be less than " + max);
+          return false;
         }
-    }
-
-    protected _getResourceFromForm () {
-        if (this.onlyFixedValue) return this._getFixedValue(); //This is used on modeling.
-        let edResource = this._getEditingResource();
-        let position = edResource && edResource.position && edResource.position.length === 1 ?
-            edResource.position[0] : this._resources.length + 1;
-
-        // GET ELEMENTS
-        let inputLabel : Textfield = this.shadowRoot.getElementById('parameter-label') as Textfield;
-        let inputDesc : Textarea = this.shadowRoot.getElementById('parameter-desc') as Textarea;
-        let inputDatatype : Textfield = this.shadowRoot.getElementById("parameter-datatype") as Textfield;
-        let inputType : Select = this.shadowRoot.getElementById("parameter-type") as Select;
-        let inputFixed : Textfield = this.shadowRoot.getElementById('fixed-value') as Textfield;
-
-        // VALIDATE
-        let label : string = inputLabel ? inputLabel.value : '';
-        let desc : string = inputDesc ? inputDesc.value : '';
-        let datatype : string = inputDatatype ? inputDatatype.value : '';
-        let aType : string = inputType ? inputType.value : '';
-        let fixed : string = inputFixed ? inputFixed.value : '';
-
-        if (!this.isSetup && label && desc && datatype) {
-
-            let jsonRes = {
-                type: ["Parameter"],
-                description: [desc],
-                label: [label],
-                hasDataType: [datatype],
-                position: [position],
-                hasPresentation: this._inputVariable.getResources(),
-                relevantForIntervention: this._inputIntervention.getResources(),
-                usesUnit: this._inputUnit.getResources(),
-            };
-
-            if (aType) jsonRes["type"].push(aType);
-
-            let jsonRes2 = this._getDefaultsPart(datatype);
-
-            if (jsonRes2)
-                return ParameterFromJSON({...jsonRes, ...jsonRes2});
-        } else if (this.isSetup) {
-            if (this.isAdjustable && !this.showDefaults) {
-                // Remove old fixed values to use the default one
-                return ParameterFromJSON({hasFixedValue: []})
-            }
-            if (!this.isAdjustable && !fixed) {
-                (<any>inputFixed).onBlur();
-                return;
-            }
-            if (!this.showDefaults) { 
-                if (this._validateDataTypedValue(fixed))
-                    return ParameterFromJSON({ hasFixedValue: [fixed] });
-                else 
-                    console.warn("Error validating data-type.");
-            } else {
-                let jsonRes = {
-                    hasDataType: [datatype],
-                    type: ["Parameter"],
-                    hasPresentation: this._inputVariable.getResources(),
-                    relevantForIntervention: this._inputIntervention.getResources(),
-                    usesUnit: this._inputUnit.getResources(),
-                };
-                if (aType) jsonRes["type"].push(aType);
-                let jsonRes2 = this._getDefaultsPart(datatype);
-                if (jsonRes2)
-                    return ParameterFromJSON({...jsonRes, ...jsonRes2});
-            }
-        } else {
-            // Show errors
-            if (!this.isSetup) {
-                if (!label) (<any>inputLabel).onBlur();
-                if (!desc) (<any>inputDesc).onBlur();
-                if (!datatype) (<any>inputDatatype).onBlur();
-            }
+        break;
+      case "string":
+        if (edR.hasAcceptedValues && edR.hasAcceptedValues.length === 1) {
+          let av: string[] = edR.hasAcceptedValues[0].split(/ *, */);
+          if (!av.includes(value)) {
+            this._notification.error(
+              "Parameter value must be an accepted value"
+            );
+            return false;
+          }
         }
-    }
-
-    private _validateDataTypedValue (value:string, ed? : Parameter ) : boolean {
-        let edR : Parameter = ed ? ed : this._getEditingResource();
-        let datatype : string = edR.hasDataType && edR.hasDataType.length === 1 ? edR.hasDataType[0] : '';
-        switch (datatype) {
-            case "int":
-            case "float":
-                let val : number = datatype == "int" ? parseInt(value) : parseFloat(value);;
-                let min : number = edR.hasMinimumAcceptedValue && edR.hasMinimumAcceptedValue.length === 1 ? 
-                        parseFloat(edR.hasMinimumAcceptedValue[0]) : undefined;
-                let max : number = edR.hasMaximumAcceptedValue && edR.hasMaximumAcceptedValue.length === 1 ?
-                        parseFloat(edR.hasMaximumAcceptedValue[0]) : undefined;
-                if (min != undefined && min > val) {
-                    this._notification.error("Parameter value must be greater than " + min);
-                    return false;
-                }
-                if (max != undefined && max < val) {
-                    this._notification.error("Parameter value must be less than " + max);
-                    return false;
-                }
-                break;
-            case "string":
-                if (edR.hasAcceptedValues && edR.hasAcceptedValues.length === 1) {
-                    let av : string[] = edR.hasAcceptedValues[0].split(/ *, */);
-                    if (!av.includes(value)) {
-                        this._notification.error("Parameter value must be an accepted value");
-                        return false;
-                    }
-                }
-                break;
-            case "boolean":
-                let bol : string = value.toLowerCase();
-                if (!(bol == 'true' || bol == 'false')) {
-                    this._notification.error("Parameter value must be True or False");
-                    return false;
-                }
-                break;
-            default:
-                console.warn('unrecognized datatype');
-                break;
+        break;
+      case "boolean":
+        let bol: string = value.toLowerCase();
+        if (!(bol == "true" || bol == "false")) {
+          this._notification.error("Parameter value must be True or False");
+          return false;
         }
-        return true;
+        break;
+      default:
+        console.warn("unrecognized datatype");
+        break;
     }
+    return true;
+  }
 
-    private _getDefaultsPart (datatype:string) {
-        switch (datatype) {
-            case "int":
-                return this._getPartIntFromForm();
-                break;
-            case "float":
-                return this._getPartFloatFromForm();
-                break;
-            case "string":
-                return this._getPartStringFromForm();
-                break;
-            case "boolean":
-                 return this._getPartBooleanFromForm();
-                break;
-            default:
-                console.warn('unrecognized datatype');
-                return;
-        }
+  private _getDefaultsPart(datatype: string) {
+    switch (datatype) {
+      case "int":
+        return this._getPartIntFromForm();
+        break;
+      case "float":
+        return this._getPartFloatFromForm();
+        break;
+      case "string":
+        return this._getPartStringFromForm();
+        break;
+      case "boolean":
+        return this._getPartBooleanFromForm();
+        break;
+      default:
+        console.warn("unrecognized datatype");
+        return;
     }
+  }
 
-    private _getPartIntFromForm () {
-        let inputMin : Textfield = this.shadowRoot.getElementById('part-int-min') as Textfield;
-        let inputMax : Textfield = this.shadowRoot.getElementById('part-int-max') as Textfield;
-        let inputDef : Textfield = this.shadowRoot.getElementById('part-int-default') as Textfield;
-        let min: string = inputMin ? inputMin.value : '';
-        let max: string = inputMax ? inputMax.value : '';
-        let def: string = inputDef ? inputDef.value : '';
-        if (def) {
-            let jsonRes = {
-                hasDataType: ["int"],
-                hasDefaultValue: [def]
-            };
-            if (min) jsonRes['hasMinimumAcceptedValue'] = [min];
-            if (max) jsonRes['hasMaximumAcceptedValue'] = [max];
+  private _getPartIntFromForm() {
+    let inputMin: Textfield = this.shadowRoot.getElementById(
+      "part-int-min"
+    ) as Textfield;
+    let inputMax: Textfield = this.shadowRoot.getElementById(
+      "part-int-max"
+    ) as Textfield;
+    let inputDef: Textfield = this.shadowRoot.getElementById(
+      "part-int-default"
+    ) as Textfield;
+    let min: string = inputMin ? inputMin.value : "";
+    let max: string = inputMax ? inputMax.value : "";
+    let def: string = inputDef ? inputDef.value : "";
+    if (def) {
+      let jsonRes = {
+        hasDataType: ["int"],
+        hasDefaultValue: [def],
+      };
+      if (min) jsonRes["hasMinimumAcceptedValue"] = [min];
+      if (max) jsonRes["hasMaximumAcceptedValue"] = [max];
 
-            if (this._validateDataTypedValue(def, jsonRes))
-                return jsonRes;
-        } else {
-            (<any>inputDef).onBlur();
-        }
+      if (this._validateDataTypedValue(def, jsonRes)) return jsonRes;
+    } else {
+      (<any>inputDef).onBlur();
     }
+  }
 
-    private _getPartFloatFromForm () {
-        let inputDef : Textfield = this.shadowRoot.getElementById('part-float-default') as Textfield;
-        let inputInc : Textfield = this.shadowRoot.getElementById('part-float-increment') as Textfield;
-        let inputMin : Textfield = this.shadowRoot.getElementById('part-float-min') as Textfield;
-        let inputMax : Textfield = this.shadowRoot.getElementById('part-float-max') as Textfield;
-        let def : string = inputDef ? inputDef.value : '';
-        let inc : number = inputInc ? parseFloat(inputInc.value) : NaN;
-        let min : string = inputMin ? inputMin.value : '';
-        let max : string = inputMax ? inputMax.value : '';
-        if (def) {
-            let jsonRes = {
-                hasDataType: ["float"],
-                hasDefaultValue: [def]
-            };
-            jsonRes['recommendedIncrement'] = inc ? [inc] : [];
-            jsonRes['hasMinimumAcceptedValue'] = min ? [min] : [];
-            jsonRes['hasMaximumAcceptedValue'] = max? [max] : [];
-            if (this._validateDataTypedValue(def, jsonRes))
-                return jsonRes;
-        } else {
-            (<any>inputDef).onBlur();
-        }
+  private _getPartFloatFromForm() {
+    let inputDef: Textfield = this.shadowRoot.getElementById(
+      "part-float-default"
+    ) as Textfield;
+    let inputInc: Textfield = this.shadowRoot.getElementById(
+      "part-float-increment"
+    ) as Textfield;
+    let inputMin: Textfield = this.shadowRoot.getElementById(
+      "part-float-min"
+    ) as Textfield;
+    let inputMax: Textfield = this.shadowRoot.getElementById(
+      "part-float-max"
+    ) as Textfield;
+    let def: string = inputDef ? inputDef.value : "";
+    let inc: number = inputInc ? parseFloat(inputInc.value) : NaN;
+    let min: string = inputMin ? inputMin.value : "";
+    let max: string = inputMax ? inputMax.value : "";
+    if (def) {
+      let jsonRes = {
+        hasDataType: ["float"],
+        hasDefaultValue: [def],
+      };
+      jsonRes["recommendedIncrement"] = inc ? [inc] : [];
+      jsonRes["hasMinimumAcceptedValue"] = min ? [min] : [];
+      jsonRes["hasMaximumAcceptedValue"] = max ? [max] : [];
+      if (this._validateDataTypedValue(def, jsonRes)) return jsonRes;
+    } else {
+      (<any>inputDef).onBlur();
     }
+  }
 
-    private _getPartStringFromForm () {
-        let inputDef : Textfield = this.shadowRoot.getElementById('part-string-default') as Textfield;
-        let inputAcc : Textfield = this.shadowRoot.getElementById('part-string-accepted-values') as Textfield;
-        let def : string = inputDef ? inputDef.value : '';
-        let acc : string = inputAcc ? inputAcc.value : '';
-        if (def) {
-            let jsonRes = {
-                hasDataType: ["string"],
-                hasDefaultValue: [def]
-            };
-            if (acc) jsonRes['hasAcceptedValues'] = [acc];
-            if (this._validateDataTypedValue(def, jsonRes))
-                return jsonRes;
-        } else {
-            (<any>inputDef).onBlur();
-        }
+  private _getPartStringFromForm() {
+    let inputDef: Textfield = this.shadowRoot.getElementById(
+      "part-string-default"
+    ) as Textfield;
+    let inputAcc: Textfield = this.shadowRoot.getElementById(
+      "part-string-accepted-values"
+    ) as Textfield;
+    let def: string = inputDef ? inputDef.value : "";
+    let acc: string = inputAcc ? inputAcc.value : "";
+    if (def) {
+      let jsonRes = {
+        hasDataType: ["string"],
+        hasDefaultValue: [def],
+      };
+      if (acc) jsonRes["hasAcceptedValues"] = [acc];
+      if (this._validateDataTypedValue(def, jsonRes)) return jsonRes;
+    } else {
+      (<any>inputDef).onBlur();
     }
+  }
 
-    private _getPartBooleanFromForm () {
-        let inputDef : Select = this.shadowRoot.getElementById('part-boolean-default') as Select;
-        let def : string = inputDef ? inputDef.value : '';
-        if (def) {
-            let jsonRes = {
-                hasDataType: ["boolean"],
-                hasDefaultValue: [def]
-            };
-            if (this._validateDataTypedValue(def, jsonRes))
-                return jsonRes;
-        } else {
-            (<any>inputDef).onBlur();
-        }
+  private _getPartBooleanFromForm() {
+    let inputDef: Select = this.shadowRoot.getElementById(
+      "part-boolean-default"
+    ) as Select;
+    let def: string = inputDef ? inputDef.value : "";
+    if (def) {
+      let jsonRes = {
+        hasDataType: ["boolean"],
+        hasDefaultValue: [def],
+      };
+      if (this._validateDataTypedValue(def, jsonRes)) return jsonRes;
+    } else {
+      (<any>inputDef).onBlur();
     }
+  }
 }

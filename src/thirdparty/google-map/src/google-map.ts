@@ -12,55 +12,55 @@
  * http://polymer.github.io/PATENTS.txt
  */
 
-import {LitElement, html, PropertyValues, css} from 'lit-element';
-import {customElement, property, query} from 'lit-element/lib/decorators.js';
-import {loadGoogleMapsAPI} from './maps-api.js';
-import { GoogleMapMarker } from './google-map-marker.js';
-import { Deferred } from './lib/deferred.js';
+import { LitElement, html, PropertyValues, css } from "lit-element";
+import { customElement, property, query } from "lit-element/lib/decorators.js";
+import { loadGoogleMapsAPI } from "./maps-api.js";
+import { GoogleMapMarker } from "./google-map-marker.js";
+import { Deferred } from "./lib/deferred.js";
 
 const mapEvents = [
-  'bounds_changed',
-  'center_changed',
-  'click',
-  'dblclick',
-  'drag',
-  'dragend',
-  'dragstart',
-  'heading_changed',
-  'idle',
-  'maptypeid_changed',
-  'mousemove',
-  'mouseout',
-  'mouseover',
-  'projection_changed',
-  'rightclick',
-  'tilesloaded',
-  'tilt_changed',
-  'zoom_changed'
+  "bounds_changed",
+  "center_changed",
+  "click",
+  "dblclick",
+  "drag",
+  "dragend",
+  "dragstart",
+  "heading_changed",
+  "idle",
+  "maptypeid_changed",
+  "mousemove",
+  "mouseout",
+  "mouseover",
+  "projection_changed",
+  "rightclick",
+  "tilesloaded",
+  "tilt_changed",
+  "zoom_changed",
 ];
 
 /**
  * The `google-map` element renders a Google Map.
- * 
+ *
  * <b>Example</b>:
- * 
+ *
  *     <style>
  *       google-map {
  *         height: 600px;
  *       }
  *     </style>
  *     <google-map latitude="37.77493" longitude="-122.41942" api-key="1234"></google-map>
- * 
+ *
  * <b>Example</b> - add markers to the map and ensure they're in view:
- * 
+ *
  *     <google-map latitude="37.77493" longitude="-122.41942" fit-to-markers>
  *       <google-map-marker latitude="37.779" longitude="-122.3892"
  *           draggable="true" title="Go Giants!"></google-map-marker>
  *       <google-map-marker latitude="37.777" longitude="-122.38911"></google-map-marker>
  *     </google-map>
- * 
+ *
  * <b>Example</b>:
- * 
+ *
  *     <google-map disable-default-ui zoom="15"></google-map>
  *     <script>
  *       var map = document.querySelector('google-map');
@@ -70,37 +70,36 @@ const mapEvents = [
  *         alert('Map loaded!');
  *       });
  *     </script>
- * 
+ *
  * <b>Example</b> - with Google directions, using data-binding inside another
  * Polymer element
- * 
+ *
  *     <google-map map="{{map}}"></google-map>
  *     <google-map-directions map="[[map]]"
  *         start-address="San Francisco" end-address="Mountain View">
  *     </google-map-directions>
- * 
+ *
  * Disable dragging by adding `draggable="false"` on the `google-map` element.
- * 
+ *
  * <b>Example</b> - loading the Maps API from another origin (China)
- * 
+ *
  *     <google-map maps-url="http://maps.google.cn/maps/api/js?callback=%%callback%%">
- * 
+ *
  * ###  Tips
- * 
+ *
  * If you're seeing the message "You have included the Google Maps API multiple
  * times on this page. This may cause unexpected errors." it probably means
  * you're loading other maps elements on the page (`<google-maps-directions>`).
  * Each maps element must include the same set of configuration options
  * (`apiKey`, `clientId`, `language`, `version`, etc.) so the Maps API is loaded
  * from the same URL.
- * 
+ *
  * @demo demo/index.html
  * @demo demo/polys.html
  * @demo demo/kml.html
  */
-@customElement('google-map')
+@customElement("google-map")
 export class GoogleMap extends LitElement {
-
   /**
    * Fired when the Maps API has fully loaded.
    *
@@ -180,14 +179,14 @@ export class GoogleMap extends LitElement {
   /**
    * A Maps API key. To obtain an API key, see https://developers.google.com/maps/documentation/javascript/tutorial#api_key.
    */
-  @property({attribute: 'api-key'})
+  @property({ attribute: "api-key" })
   apiKey?: string;
 
   /**
    * Version of the Google Maps API to use.
    */
-  @property({attribute: 'api-version'})
-  apiVersion = '3.33';
+  @property({ attribute: "api-version" })
+  apiVersion = "3.33";
 
   /**
    * Overrides the origin the Maps API is loaded from. Defaults to `https://maps.googleapis.com`.
@@ -199,25 +198,25 @@ export class GoogleMap extends LitElement {
    * A Maps API for Business Client ID. To obtain a Maps API for Business Client ID, see https://developers.google.com/maps/documentation/business/.
    * If set, a Client ID will take precedence over an API Key.
    */
-  @property({attribute: 'client-id'})
+  @property({ attribute: "client-id" })
   clientId?: string;
 
   /**
    * A latitude to center the map on.
    */
-  @property({type: Number})
+  @property({ type: Number })
   latitude: number = 37.77493;
 
   /**
    * A longitude to center the map on.
    */
-  @property({type: Number})
+  @property({ type: Number })
   longitude: number = -122.41942;
 
   /**
    * A zoom level to set the map to.
    */
-  @property({type: Number})
+  @property({ type: Number })
   zoom: number = 10;
 
   /**
@@ -225,56 +224,61 @@ export class GoogleMap extends LitElement {
    */
   map?: google.maps.Map;
 
-  @property({type: Number})
+  @property({ type: Number })
   tilt?: number;
 
   /**
    * Map type to display. One of 'roadmap', 'satellite', 'hybrid', 'terrain'.
    */
-  @property({type: String, reflect: true})
-  mapTypeId: google.maps.MapTypeId|'roadmap' | 'satellite' | 'hybrid' | 'terrain' = 'roadmap';
+  @property({ type: String, reflect: true })
+  mapTypeId:
+    | google.maps.MapTypeId
+    | "roadmap"
+    | "satellite"
+    | "hybrid"
+    | "terrain" = "roadmap";
 
   /**
    * If set, removes the map's default UI controls.
    */
-  @property({type: Boolean, attribute: 'disable-default-ui'})
+  @property({ type: Boolean, attribute: "disable-default-ui" })
   disableDefaultUI?: boolean;
 
-  @property({type: Boolean, attribute: 'map-type-control'})
+  @property({ type: Boolean, attribute: "map-type-control" })
   mapTypeControl?: boolean;
 
-  @property({type: Boolean, attribute: 'street-view-control'})
+  @property({ type: Boolean, attribute: "street-view-control" })
   streetViewControl?: boolean;
 
   /**
    * If set, the zoom level is set such that all markers (google-map-marker children) are brought into view.
    */
-  @property({type: Boolean, attribute: 'fit-to-markers'})
+  @property({ type: Boolean, attribute: "fit-to-markers" })
   fitToMarkers = false;
 
   /**
    * If true, prevent the user from zooming the map interactively.
    */
-  @property({type: Boolean, attribute: 'disable-zoom'})
+  @property({ type: Boolean, attribute: "disable-zoom" })
   disableZoom = false;
 
   /**
    * If set, custom styles can be applied to the map.
    * For style documentation see https://developers.google.com/maps/documentation/javascript/reference#MapTypeStyle
    */
-  @property({type: Array})
+  @property({ type: Array })
   styles?: google.maps.MapTypeStyle[];
 
   /**
    * A maximum zoom level which will be displayed on the map.
    */
-  @property({type: Number, attribute: 'max-zoom'})
+  @property({ type: Number, attribute: "max-zoom" })
   maxZoom?: number;
 
   /**
    * A minimum zoom level which will be displayed on the map.
    */
-  @property({type: Number, attribute: 'min-zoom'})
+  @property({ type: Number, attribute: "min-zoom" })
   minZoom?: number;
 
   /**
@@ -307,7 +311,7 @@ export class GoogleMap extends LitElement {
    * value (e.g. `3`) or set `.options` in JS rather than using
    * the attribute.
    */
-  @property({type: Object})
+  @property({ type: Object })
   options: any;
 
   /**
@@ -323,10 +327,10 @@ export class GoogleMap extends LitElement {
   /**
    * If set, all other info windows on markers are closed when opening a new one.
    */
-  @property({type: Boolean, attribute: 'single-info-window'})
+  @property({ type: Boolean, attribute: "single-info-window" })
   singleInfoWindow = false;
 
-  @query('#map')
+  @query("#map")
   private _mapDiv!: HTMLDivElement;
 
   //@query('slot')
@@ -355,11 +359,11 @@ export class GoogleMap extends LitElement {
     return html`
       <div id="map"></div>
       <slot @google-map-marker-open=${this._onMarkerOpen}></slot>
-  `;
+    `;
   }
 
   protected update(changedProperties: PropertyValues) {
-    if (changedProperties.has('apiKey')) {
+    if (changedProperties.has("apiKey")) {
       this._initGMap();
     }
     // Re-set options every update.
@@ -373,8 +377,8 @@ export class GoogleMap extends LitElement {
   constructor() {
     super();
     // Respond to child elements requesting a Map instance
-    this.addEventListener('google-map-get-map-instance', (e: Event) => {
-      console.log('google-map google-map-get-map-instance');
+    this.addEventListener("google-map-get-map-instance", (e: Event) => {
+      console.log("google-map google-map-get-map-instance");
       const detail = (e as CustomEvent).detail;
       detail.mapReady = this._mapReadyDeferred.promise;
     });
@@ -394,7 +398,7 @@ export class GoogleMap extends LitElement {
     this.map = new google.maps.Map(this._mapDiv, this._getMapOptions());
     this._updateCenter();
     mapEvents.forEach((event) => this._forwardEvent(event));
-    this.dispatchEvent(new CustomEvent('google-map-ready'));
+    this.dispatchEvent(new CustomEvent("google-map-ready"));
     this._mapReadyDeferred.resolve(this.map);
   }
 
@@ -417,7 +421,7 @@ export class GoogleMap extends LitElement {
   }
 
   private _onMarkerOpen(e: Event) {
-    console.log('_onMarkerOpen', e);
+    console.log("_onMarkerOpen", e);
   }
 
   /**
@@ -431,18 +435,23 @@ export class GoogleMap extends LitElement {
       // saves and restores latitude/longitude because resize can move the center
       const oldLatitude = this.latitude;
       const oldLongitude = this.longitude;
-      google.maps.event.trigger(this.map, 'resize');
-      this.latitude = oldLatitude;  // restore because resize can move our center
+      google.maps.event.trigger(this.map, "resize");
+      this.latitude = oldLatitude; // restore because resize can move our center
       this.longitude = oldLongitude;
 
-      if (this.fitToMarkers) { // we might not have a center if we are doing fit-to-markers
+      if (this.fitToMarkers) {
+        // we might not have a center if we are doing fit-to-markers
         this._fitToMarkersChanged();
       }
     }
   }
 
   private _updateCenter() {
-    if (this.map !== undefined && this.latitude !== undefined && this.longitude !== undefined) {
+    if (
+      this.map !== undefined &&
+      this.latitude !== undefined &&
+      this.longitude !== undefined
+    ) {
       const newCenter = new google.maps.LatLng(this.latitude, this.longitude);
       let oldCenter = this.map.getCenter();
 
@@ -467,8 +476,7 @@ export class GoogleMap extends LitElement {
     if (this.map && this.fitToMarkers && this.markers.length > 0) {
       const latLngBounds = new google.maps.LatLngBounds();
       for (const m of this.markers) {
-        latLngBounds.extend(
-            new google.maps.LatLng(m.latitude!, m.longitude!));
+        latLngBounds.extend(new google.maps.LatLng(m.latitude!, m.longitude!));
       }
 
       // For one marker, don't alter zoom, just center it.
@@ -485,11 +493,13 @@ export class GoogleMap extends LitElement {
    */
   private _forwardEvent(name: string) {
     google.maps.event.addListener(this.map!, name, (event: Event) => {
-      this.dispatchEvent(new CustomEvent(`google-map-${name}`, {
-        detail: {
-          mapsEvent: event,
-        }
-      }));
+      this.dispatchEvent(
+        new CustomEvent(`google-map-${name}`, {
+          detail: {
+            mapsEvent: event,
+          },
+        })
+      );
     });
   }
 
