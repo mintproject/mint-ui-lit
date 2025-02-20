@@ -57,9 +57,15 @@ export interface MintPreferences {
   //maps
   google_maps_key: string;
   //auth
-  auth_server: string;
-  auth_realm: string;
-  auth_client_id: string;
+  auth : {
+    server: string;
+    clientId: string;
+    realm?: string;
+    discovery?: string;
+    auth?: string;
+    token?: string;
+    provider?: string;
+  }
 
   //old
   apiKey: string;

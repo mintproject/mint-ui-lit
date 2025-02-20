@@ -1,4 +1,3 @@
-import * as mintConfig from "config/config.json";
 import { MintPreferences, User } from "app/reducers";
 import { MINT_PREFERENCES } from "config";
 
@@ -26,9 +25,9 @@ interface decodedToken {
 }
 
 export class KeycloakAdapter {
-  private static server: string = MINT_PREFERENCES.auth_server;
-  private static realm: string = MINT_PREFERENCES.auth_realm;
-  private static clientId: string = MINT_PREFERENCES.auth_client_id;
+  private static server: string = MINT_PREFERENCES.auth.server;
+  private static realm: string = MINT_PREFERENCES.auth.realm;
+  private static clientId: string = MINT_PREFERENCES.auth.clientId;
   // Return values
   private static accessToken: string;
   private static refreshToken: string;
@@ -49,6 +48,24 @@ export class KeycloakAdapter {
       KeycloakAdapter.realm +
       "/protocol/openid-connect/token"
     );
+  }
+
+  public static saveOauth2Token (tkn:string, expires_in:number, refresh?:string): void {
+    KeycloakAdapter.accessToken = tkn;
+    KeycloakAdapter.refreshToken = refresh || '';
+    KeycloakAdapter.expiresIn = expires_in
+    KeycloakAdapter.setLocalStorage();
+
+    //Decode token
+    let decoded: decodedToken = JSON.parse(
+      atob(KeycloakAdapter.accessToken.split(".")[1])
+    );
+    console.log(decoded)
+    KeycloakAdapter.username = decoded["tapis/username"];
+    KeycloakAdapter.userid = decoded["sub"];
+    KeycloakAdapter.email = decoded["sub"];
+    KeycloakAdapter.region = undefined;
+    KeycloakAdapter.graph =  undefined;
   }
 
   private static saveTokenResponse(tkn: tokenResponse): void {
@@ -169,14 +186,26 @@ export class KeycloakAdapter {
     return new Promise<boolean>((resolve, reject) => {
       let accessToken: string = localStorage.getItem("access-token");
       let refreshToken: string = localStorage.getItem("refresh-token");
-      if (accessToken && refreshToken) {
-        // Check if the refresh token is still valid:
-        let ref: Promise<boolean> = KeycloakAdapter.refresh(refreshToken);
-        ref.catch(() => resolve(false));
-        ref.then((b: boolean) => resolve(b));
-      } else {
-        resolve(false);
+      if (refreshToken) {
+        // Check if refresh is valid or logout.
       }
+      if (accessToken) {
+        let decoded = JSON.parse(
+          atob(accessToken.split(".")[1])
+        );
+        KeycloakAdapter.username = decoded["preferred_username"] || decoded["tapis/username"];
+        KeycloakAdapter.userid   = decoded["sub"];
+        KeycloakAdapter.email    = decoded["email"] || decoded["sub"];
+        if (decoded["profile"]) {
+          KeycloakAdapter.region = decoded["profile"]["region"] || undefined;
+          KeycloakAdapter.graph  = decoded["profile"]["graph"]  || undefined;
+        } else {
+          KeycloakAdapter.region = undefined;
+          KeycloakAdapter.graph  = undefined;
+        }
+        resolve(true);
+      }
+      resolve(false);
     });
   }
 

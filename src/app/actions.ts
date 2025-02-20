@@ -41,6 +41,7 @@ import { MINT_PREFERENCES } from "config";
 import ReactGA from "react-ga";
 import { KeycloakAdapter } from "util/keycloak-adapter";
 import { AirflowAdapter } from "util/airflow-adapter";
+import { MyOAuthClient } from "util/oauth2";
 
 export const BASE_HREF = document
   .getElementsByTagName("base")[0]
@@ -141,19 +142,25 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
 export const signIn: ActionCreator<UserThunkResult> =
   (email: string, password: string) => (dispatch) => {
     return new Promise<User>((resolve, reject) => {
-      KeycloakAdapter.signIn(email, password)
-        .then(() => {
-          let user: User = KeycloakAdapter.getUser();
-          ModelCatalogApi.setAccessToken(KeycloakAdapter.getAccessToken());
-          // FIXME: use users catalog
-          //ModelCatalogApi.setUsername(user.email);
-          dispatch({
-            type: FETCH_USER,
-            user: user,
-          });
-          resolve(user);
-        })
-        .catch(reject);
+      //MyOAuthClient.client.password( {username: email, password})
+      //  .then ((obj) => {
+      //    console.log(obj);
+      //  })
+      //  .catch(reject);
+
+      //KeycloakAdapter.signIn(email, password)
+      //  .then(() => {
+      //    let user: User = KeycloakAdapter.getUser();
+      //    ModelCatalogApi.setAccessToken(KeycloakAdapter.getAccessToken());
+      //    // FIXME: use users catalog
+      //    //ModelCatalogApi.setUsername(user.email);
+      //    dispatch({
+      //      type: FETCH_USER,
+      //      user: user,
+      //    });
+      //    resolve(user);
+      //  })
+      //  .catch(reject);
     });
   };
 
@@ -250,6 +257,9 @@ export const navigate: ActionCreator<ThunkResult> =
 const loadPage: ActionCreator<ThunkResult> =
   (page: string, subpage: string, params: Array<String>) => (dispatch) => {
     switch (page) {
+      case "callback":
+        MyOAuthClient.getTokenFromRedirect();
+        break;
       case "home":
         import("../screens/home/app-home").then((_module) => {});
         break;

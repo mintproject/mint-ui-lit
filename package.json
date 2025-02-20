@@ -25,6 +25,7 @@
     "@apollo/client": "^3.7.1",
     "@babel/polyfill": "^7.10.4",
     "@babel/runtime-corejs2": "^7.11.2",
+    "@badgateway/oauth2-client": "^2.4.2",
     "@mintproject/modelcatalog_client": "^8.0.1",
     "@polymer/app-layout": "^3.0.2",
     "@polymer/polymer": "^3.1.0",
@@ -35,6 +36,7 @@
     "crypto-js": "^4.0.0",
     "easymde": "^2.16.1",
     "graphql": "^15.3.0",
+    "graphql-ws": "^5.11.2",
     "lit-element": "^2.2.1",
     "marked": "^4.0.10",
     "moment": "^2.24.0",
@@ -46,7 +48,6 @@
     "redux": "^4.0.0",
     "redux-thunk": "^2.3.0",
     "reselect": "^4.0.0",
-    "graphql-ws": "^5.11.2",
     "ts-md5": "^1.2.6",
     "tslib": "^1.9.3",
     "weightless": "^0.0.37"

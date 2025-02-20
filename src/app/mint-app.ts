@@ -7,7 +7,6 @@ The complete set of contributors may be found at http://polymer.github.io/CONTRI
 Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 */
-
 import {
   LitElement,
   html,
@@ -68,6 +67,7 @@ import {
 import { Region } from "screens/regions/reducers";
 import { listVariables } from "screens/variables/actions";
 import { User } from "./reducers";
+import { MyOAuthClient } from "util/oauth2";
 
 @customElement("mint-app")
 export class MintApp extends connect(store)(LitElement) {
@@ -641,6 +641,17 @@ export class MintApp extends connect(store)(LitElement) {
   _renderLoginDialog() {
     return html`
       <wl-dialog id="loginDialog" fixed backdrop blockscrolling>
+        <h3 slot="header"> Loading... </h3>
+        <div slot="content" style="height: 150px; display: flex; align-items:center; justify-content: center">
+          <loading-dots style="--width: 50px; margin: 5px;"></loading-dots>
+        </div>
+      </wl-dialog>
+    `;
+  }
+
+  /*_renderLoginDialog() {
+    return html`
+      <wl-dialog id="loginDialog" fixed backdrop blockscrolling>
         <h3 slot="header">
           ${this._creatingAccount
             ? "Choose an username and password for your MINT account"
@@ -700,7 +711,7 @@ export class MintApp extends connect(store)(LitElement) {
         </div>
       </wl-dialog>
     `;
-  }
+  }*/
 
   _renderConfigureUserDialog() {
     return html`
@@ -765,6 +776,7 @@ export class MintApp extends connect(store)(LitElement) {
   }
 
   _showLoginWindow() {
+    MyOAuthClient.authorize();
     showDialog("loginDialog", this.shadowRoot!);
   }
 
