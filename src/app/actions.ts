@@ -39,7 +39,7 @@ import {
 import { selectEmulatorModel } from "screens/emulators/actions";
 import { MINT_PREFERENCES } from "config";
 import ReactGA from "react-ga";
-import { KeycloakAdapter } from "util/keycloak-adapter";
+import { OAuth2Adapter } from "util/keycloak-adapter";
 import { AirflowAdapter } from "util/airflow-adapter";
 
 export const BASE_HREF = document
@@ -108,14 +108,14 @@ type UserThunkResult = ThunkAction<
 export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
   ModelCatalogApi.setUsername(DEFAULT_GRAPH);
   return new Promise<User>((resolve, reject) => {
-    if (KeycloakAdapter.loadFromLocalStorage()) {
-      let user : User = KeycloakAdapter.getUser();
+    if (OAuth2Adapter.loadFromLocalStorage()) {
+      let user : User = OAuth2Adapter.getUser();
       ReactGA.set({ userId: user.email });
       if (user.email && MINT_PREFERENCES.use_individual_catalogue) {
         ModelCatalogApi.setUsername(user.email);
       }
-      ModelCatalogApi.setAccessToken(KeycloakAdapter.getAccessToken());
-      AirflowAdapter.setAccessToken(KeycloakAdapter.getAccessToken());
+      ModelCatalogApi.setAccessToken(OAuth2Adapter.getAccessToken());
+      AirflowAdapter.setAccessToken(OAuth2Adapter.getAccessToken());
       dispatch({ type: FETCH_USER, user: user });
       resolve(user);
     } else {
@@ -184,7 +184,7 @@ export const signIn: ActionCreator<UserThunkResult> =
 
 export const signOut: ActionCreator<UserThunkResult> = () => (dispatch) => {
   return new Promise<User>((resolve, reject) => {
-    KeycloakAdapter.logOut();
+    OAuth2Adapter.logOut();
     dispatch({
       type: FETCH_USER,
       user: null,
@@ -272,7 +272,7 @@ const loadPage: ActionCreator<ThunkResult> =
       case "callback":
         //MyOAuthClient.getTokenFromRedirect();
         //OAuth.handleCallback();
-        KeycloakAdapter.handleCallback();
+        OAuth2Adapter.handleCallback();
         break;
       case "home":
         import("../screens/home/app-home").then((_module) => {});

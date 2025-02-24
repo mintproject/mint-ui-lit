@@ -47,7 +47,7 @@ interface decodedToken {
   preferred_username: string;
 }
 
-export class KeycloakAdapter {
+export class OAuth2Adapter {
   private static server: string = MINT_PREFERENCES.auth.server;
   private static clientId: string = MINT_PREFERENCES.auth.clientId;
   private static tokenEndpoint: string = MINT_PREFERENCES.auth.token;
@@ -69,15 +69,15 @@ export class KeycloakAdapter {
 
 
   public static getTokenURL(): string {
-    return KeycloakAdapter.server + KeycloakAdapter.tokenEndpoint;
+    return OAuth2Adapter.server + OAuth2Adapter.tokenEndpoint;
   }
 
   public static getAuthURL(): string {
-    return KeycloakAdapter.server + KeycloakAdapter.authEndpoint;
+    return OAuth2Adapter.server + OAuth2Adapter.authEndpoint;
   }
 
   public static getLogoutURL(): string {
-    return KeycloakAdapter.server + KeycloakAdapter.logoutEndpoint;
+    return OAuth2Adapter.server + OAuth2Adapter.logoutEndpoint;
   }
 
   public static authorize(type?: 'token' | 'code'): void {
@@ -88,11 +88,11 @@ export class KeycloakAdapter {
       type = 'code';
     }
     const query = new URLSearchParams({
-      client_id: KeycloakAdapter.clientId,
+      client_id: OAuth2Adapter.clientId,
       response_type: type,
-      redirect_uri: KeycloakAdapter.callbackUrl,
+      redirect_uri: OAuth2Adapter.callbackUrl,
     });
-    document.location = KeycloakAdapter.getAuthURL() + '?' + query.toString();
+    document.location = OAuth2Adapter.getAuthURL() + '?' + query.toString();
   }
 
   public static handleCallback(): void {
@@ -108,28 +108,28 @@ export class KeycloakAdapter {
      * 'Code' generates a code to use on next requests */
     if (token) {
       console.log("Token detected.");
-      KeycloakAdapter.saveTokenResponse(token, expires);
+      OAuth2Adapter.saveTokenResponse(token, expires);
       window.location.href = '/';
     } else if (code) {
       console.log("Code detected");
-      KeycloakAdapter.fromCode(code);
+      OAuth2Adapter.fromCode(code);
     }
   }
 
   public static fromCode(code: string): void {
     const body = {
       "grant_type": "authorization_code",
-      "redirect_uri": KeycloakAdapter.callbackUrl,
+      "redirect_uri": OAuth2Adapter.callbackUrl,
       "code": code,
     }
     let headers = { "Content-Type": "application/x-www-form-urlencoded" }
     if (MINT_PREFERENCES.auth.provider === 'tapis') {
       headers['Authorization'] = "Basic " + MINT_PREFERENCES.auth.hash;
     } else {
-      body["client_id"] = KeycloakAdapter.clientId;
+      body["client_id"] = OAuth2Adapter.clientId;
     }
 
-    fetch(KeycloakAdapter.getTokenURL(), {
+    fetch(OAuth2Adapter.getTokenURL(), {
       method: "POST",
       headers,
       body: new URLSearchParams(body).toString()
@@ -137,11 +137,11 @@ export class KeycloakAdapter {
       if (resp.ok) {
         resp.json().then((data) => {
           if (MINT_PREFERENCES.auth.provider === 'tapis') {
-            KeycloakAdapter.saveTapisCodeResponse(data);
+            OAuth2Adapter.saveTapisCodeResponse(data);
           } else if (MINT_PREFERENCES.auth.provider === 'keycloak') {
-            KeycloakAdapter.saveKeycloakCodeResponse(data);
+            OAuth2Adapter.saveKeycloakCodeResponse(data);
           } else {
-            KeycloakAdapter.saveCodeResponse(data);
+            OAuth2Adapter.saveCodeResponse(data);
           }
         });
       } else {
@@ -210,24 +210,24 @@ export class KeycloakAdapter {
     // Reason to log out:
     if (!accessToken || !accessExpires || (!refreshExpires && accessExpires < now) || (refreshExpires < now)) {
       if (accessToken || accessExpires || refreshToken || refreshExpires) {
-        KeycloakAdapter.clearLocalStorage();
+        OAuth2Adapter.clearLocalStorage();
       }
       return false;
     } else {
-      KeycloakAdapter.accessToken = accessToken;
-      KeycloakAdapter.decodeToken(accessToken);
-      KeycloakAdapter.accessExpiresAt = accessExpires;
+      OAuth2Adapter.accessToken = accessToken;
+      OAuth2Adapter.decodeToken(accessToken);
+      OAuth2Adapter.accessExpiresAt = accessExpires;
       if (refreshToken && refreshExpiresAt) {
-        KeycloakAdapter.refreshToken = refreshToken;
-        KeycloakAdapter.refreshExpiresAt = refreshExpires;
+        OAuth2Adapter.refreshToken = refreshToken;
+        OAuth2Adapter.refreshExpiresAt = refreshExpires;
       }
       // Token is working, refresh 1 minutes before expiration.
       let untilExpiration = (accessExpires.getTime() - now.getTime()) - 60000;
       if (untilExpiration < 0) untilExpiration = 0;
 
       //console.log("Until refresh: " + untilExpiration/1000);
-      if (KeycloakAdapter.refreshPromise) clearTimeout(KeycloakAdapter.refreshPromise);
-      KeycloakAdapter.refreshPromise = setTimeout(() => { KeycloakAdapter.refresh() }, untilExpiration);
+      if (OAuth2Adapter.refreshPromise) clearTimeout(OAuth2Adapter.refreshPromise);
+      OAuth2Adapter.refreshPromise = setTimeout(() => { OAuth2Adapter.refresh() }, untilExpiration);
       return true;
     }
   }
@@ -239,29 +239,29 @@ export class KeycloakAdapter {
     );
     //console.log("decoded token:\n", decoded);
 
-    KeycloakAdapter.username = decoded["preferred_username"] || decoded["tapis/username"] || decoded["name"];
-    KeycloakAdapter.userid = decoded["sub"];
-    KeycloakAdapter.email = decoded["email"] || decoded["sub"];
+    OAuth2Adapter.username = decoded["preferred_username"] || decoded["tapis/username"] || decoded["name"];
+    OAuth2Adapter.userid = decoded["sub"];
+    OAuth2Adapter.email = decoded["email"] || decoded["sub"];
     if (decoded["profile"]) {
-      KeycloakAdapter.region = decoded["profile"]["region"] || undefined;
-      KeycloakAdapter.graph = decoded["profile"]["graph"] || undefined;
+      OAuth2Adapter.region = decoded["profile"]["region"] || undefined;
+      OAuth2Adapter.graph = decoded["profile"]["graph"] || undefined;
     } else {
-      KeycloakAdapter.region = undefined;
-      KeycloakAdapter.graph = undefined;
+      OAuth2Adapter.region = undefined;
+      OAuth2Adapter.graph = undefined;
     }
   }
 
   public static saveTokenResponse (tkn:string, expires_in:string): void {
-    KeycloakAdapter.setLocalStorage({
+    OAuth2Adapter.setLocalStorage({
       access_token: {access_token: tkn, expires_in: Number(expires_in)},
       refresh_token: {refresh_token: undefined}
     });
-    KeycloakAdapter.loadFromLocalStorage();
+    OAuth2Adapter.loadFromLocalStorage();
   }
 
   private static saveCodeResponse (tokenObj:TokenResponse) {
-    KeycloakAdapter.setLocalStorage(tokenObj)
-    KeycloakAdapter.loadFromLocalStorage();
+    OAuth2Adapter.setLocalStorage(tokenObj)
+    OAuth2Adapter.loadFromLocalStorage();
     if (window.location.href.includes("callback")) {
       window.location.href = '/';
     }
@@ -270,7 +270,7 @@ export class KeycloakAdapter {
 
   private static saveTapisCodeResponse (tokenObj:TapisTokenResponse) {
     if (tokenObj.result)
-      return KeycloakAdapter.saveCodeResponse(tokenObj.result);
+      return OAuth2Adapter.saveCodeResponse(tokenObj.result);
   }
 
   private static saveKeycloakCodeResponse (tokenObj:KeycloakTokenResponse) {
@@ -284,67 +284,67 @@ export class KeycloakAdapter {
         expires_in: tokenObj.refresh_expires_in
       }
     }
-    return KeycloakAdapter.saveCodeResponse(tkn);
+    return OAuth2Adapter.saveCodeResponse(tkn);
   }
 
   public static getAccessToken() {
-    if (KeycloakAdapter.accessToken) return KeycloakAdapter.accessToken;
+    if (OAuth2Adapter.accessToken) return OAuth2Adapter.accessToken;
     return undefined;
   }
 
   public static getAccessTokenHeader() {
-    if (KeycloakAdapter.accessToken)
-      return { Authorization: "Bearer " + KeycloakAdapter.accessToken };
+    if (OAuth2Adapter.accessToken)
+      return { Authorization: "Bearer " + OAuth2Adapter.accessToken };
     return undefined;
   }
 
   public static getUser(): User {
     return {
-      email: KeycloakAdapter.username,
-      uid: KeycloakAdapter.userid,
-      region: KeycloakAdapter.region,
-      graph: KeycloakAdapter.graph,
+      email: OAuth2Adapter.username,
+      uid: OAuth2Adapter.userid,
+      region: OAuth2Adapter.region,
+      graph: OAuth2Adapter.graph,
     } as User;
   }
 
   public static logOut () : void {
     if (MINT_PREFERENCES.auth.provider === 'keycloak') {
       const query = new URLSearchParams({
-        client_id: KeycloakAdapter.clientId,
-        post_redirect_uri: KeycloakAdapter.callbackUrl
+        client_id: OAuth2Adapter.clientId,
+        post_redirect_uri: OAuth2Adapter.callbackUrl
       });
-      document.location = KeycloakAdapter.getLogoutURL() + '?' + query.toString();
+      document.location = OAuth2Adapter.getLogoutURL() + '?' + query.toString();
     } else {
-      const body = { "token": KeycloakAdapter.refreshToken || KeycloakAdapter.accessToken };
+      const body = { "token": OAuth2Adapter.refreshToken || OAuth2Adapter.accessToken };
       let headers = { "Content-Type": "application/json" };
       if (MINT_PREFERENCES.auth.provider === 'tapis' && MINT_PREFERENCES.auth.hash) {
         headers['Authorization'] = "Basic " + MINT_PREFERENCES.auth.hash;
       }
-      fetch(KeycloakAdapter.getLogoutURL(), {
+      fetch(OAuth2Adapter.getLogoutURL(), {
         method: "POST",
         headers,
         body: JSON.stringify(body)
       }).then((resp) => {
         if (!resp.ok) console.warn("Logout process complete with errors.")
       }).finally(() => {
-        KeycloakAdapter.clearLocalStorage();
+        OAuth2Adapter.clearLocalStorage();
         //window.location.href = '/';
       })
     }
   }
 
   public static refresh(): Promise<boolean> {
-    KeycloakAdapter.refreshPromise = undefined;
-    if (!KeycloakAdapter.refreshToken) {
-      KeycloakAdapter.clearLocalStorage();
+    OAuth2Adapter.refreshPromise = undefined;
+    if (!OAuth2Adapter.refreshToken) {
+      OAuth2Adapter.clearLocalStorage();
       console.warn("Refresh token not found");
       return;
     }
 
     let data = {
-      client_id: KeycloakAdapter.clientId,
+      client_id: OAuth2Adapter.clientId,
       grant_type: "refresh_token",
-      refresh_token: KeycloakAdapter.refreshToken,
+      refresh_token: OAuth2Adapter.refreshToken,
     };
 
     let headers = { "Content-Type": "application/x-www-form-urlencoded", "Authorization": "Basic " + MINT_PREFERENCES.auth.hash }
@@ -353,7 +353,7 @@ export class KeycloakAdapter {
     }
 
     return new Promise<boolean>((resolve, reject) => {
-      let req: Promise<Response> = fetch(KeycloakAdapter.getTokenURL(), {
+      let req: Promise<Response> = fetch(OAuth2Adapter.getTokenURL(), {
         method: "POST",
         headers: headers,
         body: new URLSearchParams(data),
@@ -363,11 +363,11 @@ export class KeycloakAdapter {
         if (response.status === 200) {
           response.json().then((tkn) => {
             if (MINT_PREFERENCES.auth.provider === 'tapis') {
-              KeycloakAdapter.saveTapisCodeResponse(tkn);
+              OAuth2Adapter.saveTapisCodeResponse(tkn);
             } else if (MINT_PREFERENCES.auth.provider === 'keycloak') {
-              KeycloakAdapter.saveKeycloakCodeResponse(tkn);
+              OAuth2Adapter.saveKeycloakCodeResponse(tkn);
             } else {
-              KeycloakAdapter.saveCodeResponse(tkn);
+              OAuth2Adapter.saveCodeResponse(tkn);
             }
             resolve(true);
           });

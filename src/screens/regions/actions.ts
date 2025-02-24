@@ -19,7 +19,7 @@ import addRegionsGQL from "../../queries/region/new.graphql";
 
 import { IdMap } from "app/reducers";
 import { regionFromGQL, regionToGQL } from "util/graphql_adapter";
-import { KeycloakAdapter } from "util/keycloak-adapter";
+import { OAuth2Adapter } from "util/keycloak-adapter";
 
 export const REGIONS_LIST_CATEGORIES = "REGIONS_LIST_CATEGORIES";
 export const REGIONS_LIST_TOP_REGIONS = "REGIONS_LIST_TOP_REGIONS";
@@ -76,7 +76,7 @@ type ListCategoriesThunkResult = ThunkAction<
 >;
 export const listRegionCategories: ActionCreator<ListCategoriesThunkResult> =
   () => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
+    let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
     APOLLO_CLIENT.query({
       query: listRegionCategoriesGQL,
     }).then((result) => {
@@ -122,7 +122,7 @@ type ListRegionsThunkResult = ThunkAction<
 >;
 export const listTopRegions: ActionCreator<ListRegionsThunkResult> =
   () => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
+    let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
     APOLLO_CLIENT.query({
       query: listTopRegionsGQL,
     }).then((result) => {
@@ -248,7 +248,7 @@ type SubRegionsThunkResult = ThunkAction<
 >;
 export const listSubRegions: ActionCreator<SubRegionsThunkResult> =
   (regionid: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
+    let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
     APOLLO_CLIENT.query({
       query: listSubRegionsGQL,
       variables: {
@@ -286,7 +286,7 @@ export const filterRegionsOfType = (
 
 // Get details about a particular region/subregion
 export const getRegionDetails = (regionid: string, subregionid: string) => {
-  let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
+  let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
   return new Promise<Region>((resolve, reject) => {
     APOLLO_CLIENT.query({
       query: getRegionDetailsGQL,
@@ -321,7 +321,7 @@ export const addRegions = (
   parent_regionid: string,
   regions: Region[]
 ): Promise<any[]> => {
-  let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
+  let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
   let chunks = chunkRegions(regions, 500);
   return Promise.all(
     chunks.map((regionlist) => {

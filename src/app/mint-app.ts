@@ -66,7 +66,7 @@ import {
 import { Region } from "screens/regions/reducers";
 import { listVariables } from "screens/variables/actions";
 import { User } from "./reducers";
-import { KeycloakAdapter } from "util/keycloak-adapter";
+import { OAuth2Adapter } from "util/keycloak-adapter";
 
 @customElement("mint-app")
 export class MintApp extends connect(store)(LitElement) {
@@ -709,7 +709,7 @@ export class MintApp extends connect(store)(LitElement) {
   _showLoginWindow() {
     //OAuth.authorize('code')
     //MyOAuthClient.authorize();
-    KeycloakAdapter.authorize();
+    OAuth2Adapter.authorize();
     showDialog("loginDialog", this.shadowRoot!);
   }
 
