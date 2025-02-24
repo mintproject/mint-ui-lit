@@ -37,6 +37,8 @@ declare global {
     REACT_APP_AUTH_AUTH_URL: string;
     REACT_APP_AUTH_DISCOVERY_URL: string;
     REACT_APP_AUTH_PROVIDER: string;
+    REACT_APP_AUTH_LOGOUT: string;
+    REACT_APP_AUTH_HASH: string;
   }
 }
 
@@ -133,7 +135,9 @@ const MINT_PREFERENCES: MintPreferences = {
     auth: window.REACT_APP_AUTH_AUTH_URL || undefined,
     discovery: window.REACT_APP_AUTH_DISCOVERY_URL || undefined,
     token: window.REACT_APP_AUTH_TOKEN_URL || undefined,
-    provider: window.REACT_APP_AUTH_PROVIDER || undefined,
+    logout: window.REACT_APP_AUTH_LOGOUT || undefined,
+    provider: window.REACT_APP_AUTH_PROVIDER as MintPreferences['auth']['provider'] || undefined,
+    hash: window.REACT_APP_AUTH_HASH || undefined,
   }
 };
 

@@ -20,6 +20,8 @@ window.REACT_APP_AUTH_CLIENT_ID = "mint-ui-dev";
 window.REACT_APP_AUTH_TOKEN_URL = '/v3/oauth2/tokens';
 window.REACT_APP_AUTH_AUTH_URL = '/v3/oauth2/authorize';
 window.REACT_APP_AUTH_DISCOVERY_URL = '/v3/oauth2/.well-known/oauth-authorization-server';
+window.REACT_APP_AUTH_LOGOUT = '/v3/oauth2/tokens/revoke';
+//window.REACT_APP_AUTH_HASH = '';
 
 // Keycloak
 //window.REACT_APP_AUTH_PROVIDER = "keycloak";
@@ -28,6 +30,7 @@ window.REACT_APP_AUTH_DISCOVERY_URL = '/v3/oauth2/.well-known/oauth-authorizatio
 //window.REACT_APP_AUTH_TOKEN_URL = '/realms/production/protocol/openid-connect/token';
 //window.REACT_APP_AUTH_AUTH_URL = '/realms/production/protocol/openid-connect/auth';
 //window.REACT_APP_AUTH_DISCOVERY_URL = '/realms/production/.well-known/openid-configuration';
+//window.REACT_APP_AUTH_LOGOUT = '/realms/master/protocol/openid-connect/logout';
 
 //Execution - Local
 window.REACT_APP_EXECUTION_ENGINE = "localex";

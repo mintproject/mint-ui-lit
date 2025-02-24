@@ -41,7 +41,6 @@ import { MINT_PREFERENCES } from "config";
 import ReactGA from "react-ga";
 import { KeycloakAdapter } from "util/keycloak-adapter";
 import { AirflowAdapter } from "util/airflow-adapter";
-import { MyOAuthClient } from "util/oauth2";
 
 export const BASE_HREF = document
   .getElementsByTagName("base")[0]
@@ -107,7 +106,26 @@ type UserThunkResult = ThunkAction<
   AppActionFetchUser
 >;
 export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
-  //console.log("Subscribing to user authentication updates");
+  ModelCatalogApi.setUsername(DEFAULT_GRAPH);
+  return new Promise<User>((resolve, reject) => {
+    if (KeycloakAdapter.loadFromLocalStorage()) {
+      let user : User = KeycloakAdapter.getUser();
+      ReactGA.set({ userId: user.email });
+      if (user.email && MINT_PREFERENCES.use_individual_catalogue) {
+        ModelCatalogApi.setUsername(user.email);
+      }
+      ModelCatalogApi.setAccessToken(KeycloakAdapter.getAccessToken());
+      AirflowAdapter.setAccessToken(KeycloakAdapter.getAccessToken());
+      dispatch({ type: FETCH_USER, user: user });
+      resolve(user);
+    } else {
+      console.log("Could not load session from local storage");
+      dispatch({ type: FETCH_USER, user: null });
+      resolve(null);
+    }
+  });
+
+  /*console.log("Subscribing to user authentication updates");
   //TODO should add a timeout to refresh();
   ModelCatalogApi.setUsername(DEFAULT_GRAPH);
   return new Promise<User>((resolve, reject) => {
@@ -136,7 +154,7 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
         }
       })
       .catch(reject);
-  });
+  });*/
 };
 
 export const signIn: ActionCreator<UserThunkResult> =
@@ -164,15 +182,9 @@ export const signIn: ActionCreator<UserThunkResult> =
     });
   };
 
-export const signUp: ActionCreator<UserThunkResult> =
-  (email: string, password: string) => (dispatch) => {
-    //FIXME: this cannot be done on keycloak.
-    return Promise.reject();
-  };
-
 export const signOut: ActionCreator<UserThunkResult> = () => (dispatch) => {
   return new Promise<User>((resolve, reject) => {
-    KeycloakAdapter.signOut();
+    KeycloakAdapter.logOut();
     dispatch({
       type: FETCH_USER,
       user: null,
@@ -181,7 +193,7 @@ export const signOut: ActionCreator<UserThunkResult> = () => (dispatch) => {
     resolve(null);
   });
 
-  //FIXME: Maybe this is necesary to reload the model-catalog graph
+  //FIXME: Maybe this is necessary to reload the model-catalog graph
   //window.location.reload(false);
 };
 
@@ -258,7 +270,9 @@ const loadPage: ActionCreator<ThunkResult> =
   (page: string, subpage: string, params: Array<String>) => (dispatch) => {
     switch (page) {
       case "callback":
-        MyOAuthClient.getTokenFromRedirect();
+        //MyOAuthClient.getTokenFromRedirect();
+        //OAuth.handleCallback();
+        KeycloakAdapter.handleCallback();
         break;
       case "home":
         import("../screens/home/app-home").then((_module) => {});

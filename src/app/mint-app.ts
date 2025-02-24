@@ -29,7 +29,6 @@ import {
   fetchUser,
   signOut,
   signIn,
-  signUp,
   goToPage,
   fetchMintConfig,
   resetPassword,
@@ -67,7 +66,7 @@ import {
 import { Region } from "screens/regions/reducers";
 import { listVariables } from "screens/variables/actions";
 import { User } from "./reducers";
-import { MyOAuthClient } from "util/oauth2";
+import { KeycloakAdapter } from "util/keycloak-adapter";
 
 @customElement("mint-app")
 export class MintApp extends connect(store)(LitElement) {
@@ -595,15 +594,17 @@ export class MintApp extends connect(store)(LitElement) {
                       <div
                         style="display: flex; color: #888; flex-direction: column; width: 100%; height: 100%; align-items: center; justify-content: center;"
                       >
-                        <div style="font-size: 2em;">Unauthorized</div>
+                        <div style="font-size: 2em;">${this._page === "callback" ? "Please wait": "Unauthorized"}</div>
                         <div style="font-size: 1.5em;">
-                          Please
-                          <a
-                            style="cursor: pointer;"
-                            @click="${this._showLoginWindow}"
-                            >log in</a
-                          >
-                          or go to the <a href="/">home page</a>
+                          ${this._page === 'callback' ? "" : html`
+                            Please
+                            <a
+                              style="cursor: pointer;"
+                              @click="${this._showLoginWindow}"
+                              >log in</a
+                            >
+                            or go to the <a href="/">home page</a>
+                          `}
                         </div>
                       </div>
                     `
@@ -648,70 +649,6 @@ export class MintApp extends connect(store)(LitElement) {
       </wl-dialog>
     `;
   }
-
-  /*_renderLoginDialog() {
-    return html`
-      <wl-dialog id="loginDialog" fixed backdrop blockscrolling>
-        <h3 slot="header">
-          ${this._creatingAccount
-            ? "Choose an username and password for your MINT account"
-            : this._resetingPassword
-            ? "Enter your username to reset your password"
-            : "Please enter your username and password for MINT"}
-        </h3>
-        <div slot="content">
-          <p></p>
-          <form id="loginForm">
-            <div class="input_full">
-              <label>Username</label>
-              <input name="username" />
-            </div>
-            ${this._resetingPassword
-              ? ""
-              : html`
-                  <p></p>
-                  <div class="input_full">
-                    <label>Password</label>
-                    <input
-                      name="password"
-                      type="password"
-                      @keyup="${this._onPWKey}"
-                    />
-                  </div>
-                `}
-          </form>
-          ${true || this._creatingAccount || this._resetingPassword
-            ? ""
-            : html`<p></p>
-                <a
-                  @click="${() => {
-                    this._resetingPassword = true;
-                  }}"
-                  >Reset your password</a
-                >`}
-        </div>
-        <div slot="footer" style="justify-content: space-between;">
-          ${true || this._creatingAccount || this._resetingPassword
-            ? html`<span></span>`
-            : html`<wl-button @click="${this._createAccountActivate}"
-                >Create account</wl-button
-              >`}
-          <span>
-            <wl-button @click="${this._onLoginCancel}" inverted flat
-              >Cancel</wl-button
-            >
-            <wl-button
-              @click="${this._onLogin}"
-              class="submit"
-              id="dialog-submit-button"
-            >
-              ${this._resetingPassword ? "Reset password" : "Submit"}
-            </wl-button>
-          </span>
-        </div>
-      </wl-dialog>
-    `;
-  }*/
 
   _renderConfigureUserDialog() {
     return html`
@@ -769,14 +706,10 @@ export class MintApp extends connect(store)(LitElement) {
     `;
   }
 
-  _onPWKey(e: KeyboardEvent) {
-    if (e.code === "Enter") {
-      this._onLogin();
-    }
-  }
-
   _showLoginWindow() {
-    MyOAuthClient.authorize();
+    //OAuth.authorize('code')
+    //MyOAuthClient.authorize();
+    KeycloakAdapter.authorize();
     showDialog("loginDialog", this.shadowRoot!);
   }
 
@@ -832,58 +765,6 @@ export class MintApp extends connect(store)(LitElement) {
     }
     this._creatingAccount = false;
     this._resetingPassword = false;
-  }
-
-  _onLogin() {
-    let form: HTMLFormElement =
-      this.shadowRoot!.querySelector<HTMLFormElement>("#loginForm")!;
-    let notification: CustomNotification =
-      this.shadowRoot.querySelector<CustomNotification>(
-        "#custom-notification"
-      )!;
-    if (
-      !this._resetingPassword &&
-      formElementsComplete(form, ["username", "password"])
-    ) {
-      let username = (form.elements["username"] as HTMLInputElement).value;
-      let password = (form.elements["password"] as HTMLInputElement).value;
-      if (this._creatingAccount) {
-        // FIXME: user creation is not working on keycloak
-        store
-          .dispatch(signUp(username, password))
-          .then(() => {
-            if (notification) notification.save("Account created!");
-          })
-          .catch((error) => {
-            if (notification) notification.error(error.message);
-          });
-        this._creatingAccount = false;
-      } else {
-        store.dispatch(signIn(username, password)).catch((error) => {
-          if (notification) {
-            if (!error) notification.error("Username or password is incorrect");
-            else if (error.message) notification.error(error.message);
-            else notification.error("Unexpected error when log in");
-          }
-        });
-      }
-      this._onLoginCancel();
-    } else if (
-      this._resetingPassword &&
-      formElementsComplete(form, ["username"])
-    ) {
-      let username = (form.elements["username"] as HTMLInputElement).value;
-      store
-        .dispatch(resetPassword(username))
-        .then(() => {
-          if (notification) notification.save("Email send");
-          this._resetingPassword = false;
-        })
-        .catch((error) => {
-          if (notification) notification.error(error.message);
-          this._resetingPassword = false;
-        });
-    }
   }
 
   _toggleDrawer() {

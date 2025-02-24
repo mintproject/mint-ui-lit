@@ -64,8 +64,11 @@ export interface MintPreferences {
     discovery?: string;
     auth?: string;
     token?: string;
-    provider?: string;
+    logout?: string;
+    provider?: 'keycloak' | 'tapis';
+    hash?:string;
   }
+  use_individual_catalogue?: boolean;
 
   //old
   apiKey: string;
