@@ -1,6 +1,7 @@
 import { MintPreferences } from "app/reducers";
 import {
   getDatasetResourceListFromDCResponse,
+  getDatasetsFromCKANResponse,
   getDatasetsFromDCResponse,
 } from "screens/datasets/actions";
 import {
@@ -28,6 +29,9 @@ export interface DatasetQuery {
 }
 
 const data_catalog_api_url = MINT_PREFERENCES.data_catalog_api;
+const data_catalog_type = MINT_PREFERENCES.data_catalog_type || "default";
+const data_catalog_key = MINT_PREFERENCES.data_catalog_key || "";
+//const data_catalog_extra = MINT_PREFERENCES.data_catalog_extra || {};
 
 export class DataCatalogAdapter {
   private static async fetchJson(url: string, query: any): Promise<any> {
@@ -71,32 +75,66 @@ export class DataCatalogAdapter {
   ): Promise<Dataset[]> {
     if (!region.geometries) return;
 
-    let dsQueryData: any = {
-      standard_variable_names__in: driving_variables,
-      spatial_coverage__intersects: region.geometries[0],
-      limit: 1000,
-    };
+    let datasets: Dataset[] = [];
 
-    if (dates) {
-      dsQueryData.end_time__gte = dates?.start_date
-        ?.toISOString()
-        ?.replace(/\.\d{3}Z$/, "");
-      dsQueryData.start_time__lte = dates?.end_date
-        ?.toISOString()
-        ?.replace(/\.\d{3}Z$/, "");
+    if (data_catalog_type === "default") {
+      // Default Data Catalog
+      let dsQueryData: any = {
+        standard_variable_names__in: driving_variables,
+        spatial_coverage__intersects: region.geometries[0],
+        limit: 1000,
+      };
+      if (dates) {
+        dsQueryData.end_time__gte = dates?.start_date
+          ?.toISOString()
+          ?.replace(/\.\d{3}Z$/, "");
+        dsQueryData.start_time__lte = dates?.end_date
+          ?.toISOString()
+          ?.replace(/\.\d{3}Z$/, "");
+      }
+      let res: any = await this.fetchJson(
+        `${data_catalog_api_url}/datasets/find`,
+        dsQueryData
+      );
+      if (!!res && res.result === "success") {
+        datasets = getDatasetsFromDCResponse(res, {
+          variables: driving_variables,
+        } as DatasetQueryParameters);
+        datasets.map((ds) => {
+          delete ds["spatial_coverage"];
+          ds.resources_loaded = false; //FIXME?
+        });
+      }
+    } else if (data_catalog_type === "CKAN") {
+      // CKAN Data Catalog
+      let dsQueryData: any = {
+        fq: "tags:" + driving_variables.map((v) => "stdvar." + v).join(","),
+        ext_bbox:
+          region.bounding_box.xmin +
+          "," +
+          region.bounding_box.ymin +
+          "," +
+          region.bounding_box.xmax +
+          "," +
+          region.bounding_box.ymax,
+      };
+
+      let res: any = await this.fetchJson(
+        `${data_catalog_api_url}/api/action/package_search`,
+        dsQueryData
+      );
+      if (!!res && res.result && res.result.count > 0) {
+        datasets = getDatasetsFromCKANResponse(res, {
+          variables: driving_variables,
+        } as DatasetQueryParameters);
+      } else {
+        console.warn(
+          `${data_catalog_api_url}/datasets/find no result.`,
+          dsQueryData
+        ),
+          res;
+      }
     }
-    let res: any = await this.fetchJson(
-      `${data_catalog_api_url}/datasets/find`,
-      dsQueryData
-    );
-    let datasets: Dataset[] = getDatasetsFromDCResponse(res, {
-      variables: driving_variables,
-    } as DatasetQueryParameters);
-
-    datasets.map((ds) => {
-      delete ds["spatial_coverage"];
-      ds.resources_loaded = false; //FIXME?
-    });
     return datasets;
   }
 
@@ -105,28 +143,45 @@ export class DataCatalogAdapter {
     region: Region,
     dates?: DateRange
   ): Promise<DataResource[]> {
-    let filters: any = {};
-    if (region.geometries)
-      filters.spatial_coverage__intersects = region.geometries[0];
-    else return null;
-    if (dates) {
-      filters.end_time__gte = dates?.start_date
-        ?.toISOString()
-        ?.replace(/\.\d{3}Z$/, "");
-      filters.start_time__lte = dates?.end_date
-        ?.toISOString()
-        ?.replace(/\.\d{3}Z$/, "");
-    }
+    if (data_catalog_type === "default") {
+      // Default Data Catalog
+      let filters: any = {};
+      if (region.geometries)
+        filters.spatial_coverage__intersects = region.geometries[0];
+      else return null;
+      if (dates) {
+        filters.end_time__gte = dates?.start_date
+          ?.toISOString()
+          ?.replace(/\.\d{3}Z$/, "");
+        filters.start_time__lte = dates?.end_date
+          ?.toISOString()
+          ?.replace(/\.\d{3}Z$/, "");
+      }
 
-    let resQueryData = {
-      dataset_id: datasetid,
-      filter: filters,
-      limit: 5000,
-    };
-    let obj: any = await this.fetchJson(
-      `${data_catalog_api_url}/datasets/dataset_resources`,
-      resQueryData
-    );
-    return getDatasetResourceListFromDCResponse(obj);
+      let resQueryData = {
+        dataset_id: datasetid,
+        filter: filters,
+        limit: 5000,
+      };
+
+      let obj: any = await this.fetchJson(
+        `${data_catalog_api_url}/datasets/dataset_resources`,
+        resQueryData
+      );
+      return obj && obj.resources
+        ? getDatasetResourceListFromDCResponse(obj)
+        : [];
+    } else if (data_catalog_type === "CKAN") {
+      // CKAN Data Catalog
+      let resQueryData = {
+        fq: "id:" + datasetid,
+      };
+      let obj: any = await this.fetchJson(
+        `${data_catalog_api_url}/api/action/package_search`,
+        resQueryData
+      );
+      let dses = getDatasetsFromCKANResponse(obj, {});
+      return dses.length > 0 ? dses[0].resources : [];
+    }
   }
 }

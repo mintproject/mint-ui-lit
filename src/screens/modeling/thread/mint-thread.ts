@@ -153,6 +153,7 @@ export class MintThread extends connect(store)(MintThreadPage) {
           >
           <a
             id="visualize_breadcrumb"
+            style="display:none"
             class="${this._getBreadcrumbClass("visualize", sectionDoneMap)}"
             href="${this._getModeURL("visualize")}"
             >Visualize</a
@@ -187,14 +188,14 @@ export class MintThread extends connect(store)(MintThreadPage) {
   }
 
   private _getNextMode() {
-    let modes = ["configure", "parameters", "runs", "results", "visualize"];
+    let modes = ["configure", "parameters", "runs", "results"]; //, "visualize"];
     for (let i = 0; i < modes.length; i++) {
       let status = this._sectionDoneMap[modes[i]];
       if (status != TASK_DONE) {
         return modes[i];
       }
     }
-    return "visualize";
+    return "results"; //"visualize";
   }
 
   private _getBreadcrumbClass(section: string, sectionDoneMap: IdMap<string>) {

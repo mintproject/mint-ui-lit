@@ -279,21 +279,38 @@ ${JSON.stringify(ds.resource_repr || ds.dataset_repr, null, 2)}</pre
       let covertype = covers[0].type;
       if (covertype.toLowerCase() == "point") {
         let covervalues = covers.map((cover) => {
-          return {
-            x: parseFloat(cover.value.x),
-            y: parseFloat(cover.value.y),
-          } as Point;
+          console.log(cover);
+          if (cover.value) {
+            return {
+              x: parseFloat(cover.value.x),
+              y: parseFloat(cover.value.y),
+            } as Point;
+          } else if (cover.coordinates) {
+            return {
+              x: parseFloat(cover.coordinates[0]),
+              y: parseFloat(cover.coordinates[1]),
+            } as Point;
+          }
         });
         map.setPoints(covervalues as Point[]);
         return true;
       } else if (covertype.toLowerCase() == "boundingbox") {
         let covervalues = covers.map((cover) => {
-          return {
-            xmin: parseFloat(cover.value.xmin),
-            xmax: parseFloat(cover.value.xmax),
-            ymin: parseFloat(cover.value.ymin),
-            ymax: parseFloat(cover.value.ymax),
-          } as BoundingBox;
+          if (cover.value) {
+            return {
+              xmin: parseFloat(cover.value.xmin),
+              xmax: parseFloat(cover.value.xmax),
+              ymin: parseFloat(cover.value.ymin),
+              ymax: parseFloat(cover.value.ymax),
+            } as BoundingBox;
+          } else if (cover.coordinates) {
+            return {
+              xmin: parseFloat(cover.coordinates[0]),
+              xmax: parseFloat(cover.coordinates[2]),
+              ymin: parseFloat(cover.coordinates[1]),
+              ymax: parseFloat(cover.coordinates[3]),
+            } as BoundingBox;
+          }
         });
         map.setBoundingBoxes(covervalues as BoundingBox[]);
         return true;

@@ -3,10 +3,12 @@ import { MintPreferences } from "app/reducers";
 declare global {
   interface Window { 
     REACT_APP_DATA_CATALOG_API: string;
+    REACT_APP_DATA_CATALOG_TYPE: string;
+    REACT_APP_DATA_CATALOG_KEY: string;
     REACT_APP_CROMO_API: string;
     REACT_APP_MODEL_CATALOG_API: string;
     REACT_APP_ENSEMBLE_MANAGER_API: string;
-    REACT_APP_EXECUTION_ENGINE: string;
+    REACT_APP_EXECUTION_ENGINE: 'localex' | 'wings';
     REACT_APP_GOOGLE_MAPS_KEY: string;
     REACT_APP_LOCALEX: string;
     REACT_APP_LOCALEX_CODEDIR: string;
@@ -45,12 +47,16 @@ declare global {
 
 const REACT_APP_DATA_CATALOG_API: string =
   window.REACT_APP_DATA_CATALOG_API || "";
+const REACT_APP_DATA_CATALOG_TYPE: string =
+  window.REACT_APP_DATA_CATALOG_TYPE || "";
+const REACT_APP_DATA_CATALOG_KEY: string =
+  window.REACT_APP_DATA_CATALOG_KEY || "";
 const REACT_APP_CROMO_API: string = window.REACT_APP_CROMO_API || "";
 const REACT_APP_MODEL_CATALOG_API: string =
   window.REACT_APP_MODEL_CATALOG_API || "";
 const REACT_APP_ENSEMBLE_MANAGER_API: string =
   window.REACT_APP_ENSEMBLE_MANAGER_API || "";
-const REACT_APP_EXECUTION_ENGINE: string =
+const REACT_APP_EXECUTION_ENGINE: 'localex' | 'wings' =
   window.REACT_APP_EXECUTION_ENGINE || "localex";
 const REACT_APP_GOOGLE_MAPS_KEY: string =
   window.REACT_APP_GOOGLE_MAPS_KEY || "";
@@ -92,8 +98,10 @@ const REACT_APP_AIRFLOW_DAG_DOWNLOAD_THREAD_ID =
 const MINT_PREFERENCES: MintPreferences = {
   welcome_message: REACT_APP_WELCOME_MESSAGE,
   model_catalog_default_user: REACT_APP_MODEL_CATALOG_DEFAULT_USER,
-  data_catalog_api: REACT_APP_DATA_CATALOG_API,
   model_catalog_api: REACT_APP_MODEL_CATALOG_API,
+  data_catalog_api: REACT_APP_DATA_CATALOG_API,
+  data_catalog_type: REACT_APP_DATA_CATALOG_TYPE,
+  data_catalog_key: REACT_APP_DATA_CATALOG_KEY,
   ensemble_manager_api: REACT_APP_ENSEMBLE_MANAGER_API,
   ingestion_api: REACT_APP_INGESTION_API,
   visualization_url: REACT_APP_VISUALIZATION_URL,

@@ -8,10 +8,9 @@ import {
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { createClient } from "graphql-ws";
 import { getMainDefinition } from "@apollo/client/utilities";
-import { MintPreferences, User } from "app/reducers";
-import { SubscriptionClient } from "subscriptions-transport-ws";
-import { OAuth2Adapter } from "util/oauth2-adapter";
+import { User } from "app/reducers";
 import { MINT_PREFERENCES } from "config";
+import { OAuth2Adapter } from "util/oauth2-adapter";
 
 /* Typescript declarations so window.__APOLLO_CLIENT__ doesn't give an error */
 export {};

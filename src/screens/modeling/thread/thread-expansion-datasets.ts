@@ -39,6 +39,13 @@ import {
   getThreadDataResources,
 } from "../actions";
 import { getThreadDatasetsStatus, TASK_DONE } from "util/state_functions";
+import {
+  DatasetCompatibleModel,
+  ModelOutputMatch,
+} from "components/dataset-compatible-model";
+import { ModelConfigurationSetup } from "@mintproject/modelcatalog_client";
+import { getLabel } from "model-catalog-api/util";
+import { PREFIX_URI } from "config/default-graph";
 
 type StatusType = "warning" | "done" | "error";
 
@@ -50,11 +57,13 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     <wl-icon style="font-size: 13px; margin: 0px 4px;">edit</wl-icon> to edit
     the selection.`;
   @property({ type: Object }) datasetSelector: DatasetSelector;
+  @property({ type: Object }) datasetModelSelector: DatasetCompatibleModel;
   @property({ type: Object }) selectedInput: ModelIO;
   @property({ type: Object }) localRegions: RegionMap;
   @property({ type: Object }) modelVisible: IdMap<boolean> = {};
   private modifiedInputs: IdMap<Dataslice[]> = {};
   private resourceSelectors: IdMap<DatasetResourceSelector> = {};
+  private modelIds: string[] = [];
 
   static get styles() {
     return [
@@ -131,6 +140,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
   constructor() {
     super();
     this.datasetSelector = new DatasetSelector();
+    this.datasetModelSelector = new DatasetCompatibleModel();
   }
 
   protected getStatusInfo(): string {
@@ -170,7 +180,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     if (!thread.models || Object.keys(thread.models).length === 0)
       return html`You must select at least a model first.`;
     return html`
-      <div style="border: 1px solid #EEE; margin: 10px 0px;">
+      <div>
         ${Object.values(thread.models).map(this.renderModelDatasets.bind(this))}
       </div>
     `;
@@ -207,14 +217,15 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
             ).length > 0
         ));
 
-    return html` <div class="model_title">
+    return html` <div style="border: 1px solid #EEE; margin: 10px 0px;">
+      <div class="model_title">
         <div class="model_status">
           ${modelDone
             ? html` <wl-icon style="color: 'green'">done</wl-icon> `
             : html` <wl-icon style="color: 'orange'">warning</wl-icon> `}
           <span style="color: #aaa;">MODEL:</span>
           <a href="#">${model.name}</a
-          ><!-- FIXME -->
+          ><!-- FIXME: url -->
         </div>
         <wl-icon
           class="clickable"
@@ -266,7 +277,8 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                   : ""}
               `}
         </tbody>
-      </table>`;
+      </table>
+    </div>`;
   }
 
   private renderFixedDatasetRow(
@@ -306,7 +318,6 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     input: ModelIO
   ): TemplateResult {
     let dataslices: Dataslice[] = this.modifiedInputs[input.id];
-
     return html`
       <tr>
         <td>
@@ -355,7 +366,12 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                             : ""}
                         </span>
                         <span style="margin-left:10px;">
-                          ${this.resourceSelectors[dataslice.dataset.id]
+                          ${dataslice.dataset.id.startsWith(PREFIX_URI)
+                            ? html`<wl-icon
+                                style="color: 'darkgrey'; margin-right: 5px;"
+                                >schedule</wl-icon
+                              >`
+                            : this.resourceSelectors[dataslice.dataset.id]
                             ? this.resourceSelectors[dataslice.dataset.id]
                             : html`<loading-dots
                                 style="--width: 25px;"
@@ -397,6 +413,9 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
         </h3>
         <div slot="content" style="overflow-y:scroll;padding-right:8px;">
           ${this.datasetSelector}
+          ${(this.selectedInput?.variables || []).length > 0
+            ? this.datasetModelSelector
+            : null}
         </div>
         <div slot="footer" style="padding-top:0px;">
           <wl-button
@@ -415,14 +434,33 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
   }
 
   private onDatasetDialogSave(): void {
-    this.isSaved = false;
     let dates = this.thread.dates;
     let region = this.localRegions[this.thread.regionid];
     let datasets: Dataset[] = this.datasetSelector.getSelectedDatasets();
+    let models: ModelOutputMatch[] =
+      this.datasetModelSelector.getSelectedModels();
     let inputid: string = this.selectedInput.id;
-
-    let loadingDataslices: Dataslice[] = [];
+    this.isSaved = false;
     this.modifiedInputs[inputid] = undefined;
+
+    // Add selected models as dataslices.
+    console.log("models:", models);
+    if (models.length > 0) {
+      if (this.modifiedInputs[inputid]) {
+        let newDataslices = models.map(this.modelOutputToDataslice);
+        this.modifiedInputs[inputid] = [
+          ...this.modifiedInputs[inputid],
+          ...newDataslices,
+        ];
+      } else {
+        this.modifiedInputs[inputid] = models.map(this.modelOutputToDataslice);
+      }
+      console.log(this.modifiedInputs);
+      this.requestUpdate();
+    }
+
+    // Load dataset details.
+    let loadingDataslices: Dataslice[] = [];
     let reqs: Promise<Dataslice>[] = datasets.map((d: Dataset) => {
       let req = this.loadResourcesForDataset(d, region, dates);
       req.then((slice: Dataslice) => {
@@ -436,11 +474,82 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       return req;
     });
     Promise.all(reqs).then(() => {
-      this.modifiedInputs[inputid] = loadingDataslices;
+      if (this.modifiedInputs[inputid]) {
+        this.modifiedInputs[inputid] = [
+          ...this.modifiedInputs[inputid],
+          ...loadingDataslices,
+        ];
+      } else {
+        this.modifiedInputs[inputid] = loadingDataslices;
+      }
       this.requestUpdate();
     });
+
     this.onDatasetDialogCancel();
   }
+
+  private modelOutputToDataslice: (modelOutput: ModelOutputMatch) => Dataslice =
+    (r) => {
+      return {
+        id: r.model.id, //Not sure if should be this or the datasetspec id.
+        name: getLabel(r.model),
+        dataset: {
+          id: r.model.id,
+          name: getLabel(r.model),
+          region: this.thread.regionid,
+          variables: [], //FIXME: get from variable.
+          datatype: "", //FIXME
+          time_period: this.thread.dates
+            ? this.thread.dates
+            : {
+                start_date: new Date(),
+                end_date: new Date(),
+              },
+          description: "",
+          version: "",
+          limitations: "",
+          source: {
+            // TODO: this should come from the model.
+            name: "",
+            url: "",
+            type: "",
+          },
+          //categories?: string[],
+          //is_cached?: boolean,
+          //resource_repr?: any,
+          //dataset_repr?: any,
+          resources: r.model.hasOutput.map((out) => ({
+            url: out.id,
+            name: getLabel(out),
+            selected: r.outputMatchs.some((m) => m.id === out.id),
+          })),
+          //resources_loaded?: boolean,
+          resource_count: r.model.hasOutput.length,
+          //spatial_coverage?: any,
+        },
+        total_resources: r.model.hasOutput.length,
+        selected_resources: r.outputMatchs.length,
+        resources: r.outputMatchs.map((out) => ({
+          url: out.id,
+          name: getLabel(out),
+          selected: true,
+          time_period: this.thread.dates
+            ? this.thread.dates
+            : {
+                start_date: new Date(),
+                end_date: new Date(),
+              },
+        })),
+        //resources_loaded?: true,
+        time_period: this.thread.dates
+          ? this.thread.dates
+          : {
+              start_date: new Date(),
+              end_date: new Date(),
+            },
+        //spatial_coverage?: any
+      };
+    };
 
   private onDatasetDialogCancel(): void {
     hideDialog("datasetSelectionDialog", this.shadowRoot!);
@@ -452,6 +561,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     let region = this.localRegions[this.thread.regionid];
     this.selectedInput = input;
     this.datasetSelector.unload();
+    this.datasetModelSelector.setInput(input);
 
     let req: Promise<Dataset[]> = this.queryDatasets(input, region, dates);
     req.then((datasets: Dataset[]) => {
@@ -516,7 +626,18 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       this.loading = false;
       this.editMode = false;
       this.isSaved = true;
-      console.log("new", x);
+      if (this.modelIds.length > 0) {
+        let event: CustomEvent = new CustomEvent(
+          "thread-add-model-as-dataslice",
+          {
+            bubbles: true,
+            composed: true,
+            detail: [...this.modelIds],
+          }
+        );
+        this.dispatchEvent(event);
+        this.modelIds = [];
+      }
     });
   }
 
@@ -527,6 +648,18 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       this.loading = false;
       this.editMode = false;
       this.isSaved = true;
+      if (this.modelIds.length > 0) {
+        let event: CustomEvent = new CustomEvent(
+          "thread-add-model-as-dataslice",
+          {
+            bubbles: true,
+            composed: true,
+            detail: [...this.modelIds],
+          }
+        );
+        this.dispatchEvent(event);
+        this.modelIds = [];
+      }
     });
     return req;
   }
@@ -534,6 +667,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
   private save(): Promise<any> {
     let data: DataMap = {};
     let model_ensembles: ModelEnsembleMap = this.thread.model_ensembles || {};
+    let allOk = true;
 
     Object.keys(this.thread.models!).map((modelid) => {
       let model = this.thread.models![modelid];
@@ -545,21 +679,36 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
           let newdata: Dataslice[] = this.modifiedInputs[input.id];
           if (!model_ensembles[modelid])
             model_ensembles[modelid] = { id: uuidv4(), bindings: {} };
+          console.log(
+            input.name,
+            "new data:",
+            newdata,
+            model_ensembles[modelid]
+          );
           if (newdata && newdata.length > 0) {
             model_ensembles[modelid].bindings[input.id] = [];
             newdata.map((slice: Dataslice) => {
-              model_ensembles[modelid].bindings[input.id].push(slice.id!);
-              data[slice.id] = slice;
+              let dataid = slice.id;
+              if (dataid.startsWith(PREFIX_URI)) {
+                // Is a model, change the ids and add to the list.
+                this.modelIds.push(dataid);
+                dataid = uuidv4();
+                slice.id = dataid;
+              }
+              model_ensembles[modelid].bindings[input.id].push(dataid);
+              data[dataid] = slice;
             });
           } else {
             //----
-            console.log(" - x x x - ");
+            allOk = false;
+            console.log(" - Nothing added - ");
           }
         });
     });
 
     let notes = ""; //(this.shadowRoot!.getElementById("notes") as HTMLTextAreaElement).value;
-    console.log(data, model_ensembles);
+    console.log(model_ensembles);
+    console.log(data);
     return setThreadData(data, model_ensembles, notes, this.thread);
   }
 
@@ -660,7 +809,6 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       });
 
       Promise.all(resourceRequests).then((resources: Dataslice[]) => {
-        console.log("Y", resources);
         this.modifiedInputs[input.id] = loadingDataslices;
         this.requestUpdate();
       });
@@ -718,6 +866,8 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
               return r;
             }
           );
+          dataset.resource_count = resources.length;
+
           resolve({
             id: sliceid,
             total_resources: resources.length,
@@ -771,7 +921,9 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
         region,
         dates
       );
-      this.resourceCache[cacheid].then(() => this.removeFromLoadQueue(cacheid));
+      this.resourceCache[cacheid].finally(() =>
+        this.removeFromLoadQueue(cacheid)
+      );
     }
     return this.resourceCache[cacheid];
   }

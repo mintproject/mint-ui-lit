@@ -554,7 +554,8 @@ export class MintRuns extends connect(store)(MintThreadPage) {
       {
         url:
           mint.ensemble_manager_api +
-          this.getEnsembleManagerExecutionPath(mint.execution_engine),
+          "/executions" +
+          (mint.execution_engine == "localex" ? "Local" : ""),
         onLoad: function (e: any) {
           me._waiting = false;
           hideNotification("runNotification", me.shadowRoot);
@@ -664,12 +665,6 @@ export class MintRuns extends connect(store)(MintThreadPage) {
 
   _isExecutionRunFinished(ensemble: Execution) {
     return ensemble.status == "SUCCESS" || ensemble.status == "FAILURE";
-  }
-
-  getEnsembleManagerExecutionPath(executionEngine: string) {
-    if (executionEngine === "localex") return "/executionsLocal";
-    else if (executionEngine === "wings") return "/executions";
-    return `/executionEngines/${executionEngine}`;
   }
 
   _getModelURL(model: Model) {

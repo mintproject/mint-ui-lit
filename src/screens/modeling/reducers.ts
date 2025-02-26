@@ -218,7 +218,7 @@ export interface Execution {
   runid?: string;
   start_time: Date;
   end_time?: Date;
-  execution_engine?: string;
+  execution_engine?: "wings" | "localex";
   status: "FAILURE" | "SUCCESS" | "RUNNING" | "WAITING";
   run_progress?: number; // 0 to 100 (percentage done)
   results: any[]; // Chosen results after completed run
@@ -266,7 +266,7 @@ const modeling: Reducer<ModelingState, RootAction> = (
         problem_statement: problem_statement,
       };
     /*
-        case TASKS_LIST_SUBSCRIPTION:
+        case TASKS_LIST_SUBSCRIPTION: 
             let tasks_list_sub = {
                 ...state.tasks,
                 unsubscribe: action.unsubscribe

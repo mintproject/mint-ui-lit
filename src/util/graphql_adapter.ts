@@ -841,6 +841,9 @@ const getModelParameterBindings = (model, model_ensemble: ThreadModelMap) => {
 
 const getSpatialCoverageGeometry = (coverage) => {
   if (!coverage) return null;
+  if (coverage["coordinates"]) {
+    return coverage;
+  }
   let value = coverage["value"];
   if (coverage["type"] == "Point") {
     return {

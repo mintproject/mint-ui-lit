@@ -75,24 +75,6 @@ export const OFFLINE_DEMO_MODE = false;
 
 const DEFAULT_GRAPH = MINT_PREFERENCES.model_catalog_default_user;
 
-/* TODO: should be a way to update user attributes on keycloak;
-type SetProfileThunkResult = ThunkAction<Promise<void>, RootState, undefined, AppActionFetchUserPreferences>;
-export const setUserProfile: ActionCreator<SetProfileThunkResult> = (user:User, profile:UserProfile) => (dispatch) => {
-    let userProfiles = db.collection('users');
-    let id = user.email;
-    if (!id || !userProfiles || !profile) {
-        return Promise.reject('Must include user id and a valid profile.');
-    }
-    let req = userProfiles.doc(id).set(profile);
-    req.then(() => { 
-        dispatch({
-            type: FETCH_USER_PROFILE,
-            profile: profile
-        });
-    });
-    return req;
-}*/
-
 export const resetPassword: ActionCreator<UserThunkResult> =
   (email: string) => (dispatch) => {
     //FIXME: this cannot be done on keycloak.
@@ -124,37 +106,6 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
       resolve(null);
     }
   });
-
-  /*console.log("Subscribing to user authentication updates");
-  //TODO should add a timeout to refresh();
-  ModelCatalogApi.setUsername(DEFAULT_GRAPH);
-  return new Promise<User>((resolve, reject) => {
-    KeycloakAdapter.loadFromLocalStorage()
-      .then((logged: boolean | void) => {
-        if (logged) {
-          let user: User = KeycloakAdapter.getUser();
-
-          ReactGA.set({ userId: user.email });
-          // FIXME: use user catalogs.
-          //ModelCatalogApi.setUsername(user.email);
-          ModelCatalogApi.setAccessToken(KeycloakAdapter.getAccessToken());
-          AirflowAdapter.setAccessToken(KeycloakAdapter.getAccessToken());
-          dispatch({
-            type: FETCH_USER,
-            user: user,
-          });
-          resolve(user);
-        } else {
-          console.log("Could not load session from local storage");
-          dispatch({
-            type: FETCH_USER,
-            user: null,
-          });
-          resolve(null);
-        }
-      })
-      .catch(reject);
-  });*/
 };
 
 export const signIn: ActionCreator<UserThunkResult> =

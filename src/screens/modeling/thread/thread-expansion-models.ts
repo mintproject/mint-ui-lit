@@ -80,6 +80,13 @@ export class ThreadExpansionModels extends ThreadExpansion {
     Promise.all([req1, req2, req3, req4]).then(() => (this.loading = false));
   }
 
+  public addModels = (ids: string[]) => {
+    this.open = true;
+    this.modelSelector.addSelected(new Set(ids));
+    //this.requestUpdate();
+    this.save();
+  };
+
   protected getStatusInfo(): string {
     if (this.open) return "Select one or more models to run";
     return "Open to see selected models";
