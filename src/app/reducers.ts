@@ -41,22 +41,15 @@ export interface UserPreferences {
 
 export interface MintPreferences {
   welcome_message: string;
-
-  data_catalog_api: string;
-  data_catalog_type?: string;
-  data_catalog_key?: string;
-  data_catalog_extra?: any;
-
-  data_server_type?: string;
-  data_server_extra?: any;
-
   model_catalog_default_user: string;
+  data_catalog_api: string;
+  data_catalog_type: string;
+  data_catalog_key: string;
   model_catalog_api?: string;
-
   ensemble_manager_api: string;
   ingestion_api: string;
   visualization_url: string;
-  execution_engine?: "wings" | "localex";
+  execution_engine?: string;
   // Local Execution
   localex?: LocalExecutionPreferences;
   // Wings Execution
@@ -66,9 +59,19 @@ export interface MintPreferences {
   //maps
   google_maps_key: string;
   //auth
-  auth_server: string;
-  auth_realm: string;
-  auth_client_id: string;
+  auth: {
+    server: string;
+    clientId: string;
+    realm?: string;
+    discovery?: string;
+    auth?: string;
+    token?: string;
+    logout?: string;
+    provider?: "keycloak" | "tapis";
+    grant?: "password" | "implicit" | "code";
+    hash?: string;
+  };
+  use_individual_catalogue?: boolean;
 
   //old
   apiKey: string;

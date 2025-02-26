@@ -8,10 +8,9 @@ import {
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { createClient } from "graphql-ws";
 import { getMainDefinition } from "@apollo/client/utilities";
-import { MintPreferences, User } from "app/reducers";
-import { SubscriptionClient } from "subscriptions-transport-ws";
-import { KeycloakAdapter } from "util/keycloak-adapter";
+import { User } from "app/reducers";
 import { MINT_PREFERENCES } from "config";
+import { OAuth2Adapter } from "util/oauth2-adapter";
 
 /* Typescript declarations so window.__APOLLO_CLIENT__ doesn't give an error */
 export {};
@@ -61,7 +60,7 @@ export class GraphQL {
       shouldRetry: () => true,
       lazy: true,
       connectionParams: {
-        headers: KeycloakAdapter.getAccessTokenHeader(),
+        headers: OAuth2Adapter.getAccessTokenHeader(),
       },
     });
     // subscriptionClient.maxConnectTimeGenerator.duration = () => subscriptionClient.maxConnectTimeGenerator.max;
@@ -74,7 +73,7 @@ export class GraphQL {
     let uri = protocol + MINT_PREFERENCES.graphql.endpoint;
     return createHttpLink({
       uri: uri,
-      headers: KeycloakAdapter.getAccessTokenHeader(),
+      headers: OAuth2Adapter.getAccessTokenHeader(),
     });
   }
 }

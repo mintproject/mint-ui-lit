@@ -810,7 +810,7 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ""}</textarea
     let model = this.thread.models[modelid];
     /*
         -> Ingest thread to visualization database
-        -> Register outputs to the data catalog        
+        -> Register outputs to the data catalog
         -> Publish run to provenance catalog
         */
     showNotification("saveNotification", this.shadowRoot);

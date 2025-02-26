@@ -7,7 +7,7 @@ import listVariablesGQL from "../../queries/variable/list.graphql";
 
 import { VariableMap } from "@apollo/client/core/LocalState";
 import { variableFromGQL } from "util/graphql_adapter";
-import { KeycloakAdapter } from "util/keycloak-adapter";
+import { OAuth2Adapter } from "util/oauth2-adapter";
 
 export const VARIABLES_LIST = "VARIABLES_LIST";
 
@@ -26,7 +26,7 @@ type ListVariablesThunkResult = ThunkAction<
 >;
 export const listVariables: ActionCreator<ListVariablesThunkResult> =
   () => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
+    let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
     APOLLO_CLIENT.query({
       query: listVariablesGQL,
     }).then((result) => {

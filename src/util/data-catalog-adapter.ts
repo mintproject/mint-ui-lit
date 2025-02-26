@@ -31,7 +31,7 @@ export interface DatasetQuery {
 const data_catalog_api_url = MINT_PREFERENCES.data_catalog_api;
 const data_catalog_type = MINT_PREFERENCES.data_catalog_type || "default";
 const data_catalog_key = MINT_PREFERENCES.data_catalog_key || "";
-const data_catalog_extra = MINT_PREFERENCES.data_catalog_extra || {};
+//const data_catalog_extra = MINT_PREFERENCES.data_catalog_extra || {};
 
 export class DataCatalogAdapter {
   private static async fetchJson(url: string, query: any): Promise<any> {

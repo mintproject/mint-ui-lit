@@ -279,17 +279,17 @@ const modeling: Reducer<ModelingState, RootAction> = (
             let tasks = {
                 ...action.list,
                 unsubscribe: state.tasks!.unsubscribe
-            } as TaskList    
+            } as TaskList
             return {
                 ...state,
                 tasks: tasks
             }
-        case TASK_DETAILS:          
+        case TASK_DETAILS:
             return {
                 ...state,
                 task: action.details
             }
-        case THREADS_LIST_SUBSCRIPTION: 
+        case THREADS_LIST_SUBSCRIPTION:
             let threads_list_sub = {
                 ...state.threads,
                 unsubscribe: action.unsubscribe
@@ -302,7 +302,7 @@ const modeling: Reducer<ModelingState, RootAction> = (
             let threads = {
                 ...action.list,
                 unsubscribe: state.threads!.unsubscribe
-            } as ThreadList    
+            } as ThreadList
             return {
                 ...state,
                 threads: threads
