@@ -10,7 +10,7 @@ import { createClient } from "graphql-ws";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { MintPreferences, User } from "app/reducers";
 import { SubscriptionClient } from "subscriptions-transport-ws";
-import { OAuth2Adapter } from "util/keycloak-adapter";
+import { OAuth2Adapter } from "util/oauth2-adapter";
 import { MINT_PREFERENCES } from "config";
 
 /* Typescript declarations so window.__APOLLO_CLIENT__ doesn't give an error */

@@ -21,7 +21,7 @@ import { uuidv4 } from "./helpers";
 
 import * as crypto from "crypto";
 import { Variable } from "screens/variables/reducers";
-import { OAuth2Adapter } from "./keycloak-adapter";
+import { OAuth2Adapter } from "./oauth2-adapter";
 
 export const regionToGQL = (region: Region) => {
   let regionobj = {

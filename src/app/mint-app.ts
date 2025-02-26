@@ -66,7 +66,7 @@ import {
 import { Region } from "screens/regions/reducers";
 import { listVariables } from "screens/variables/actions";
 import { User } from "./reducers";
-import { OAuth2Adapter } from "util/keycloak-adapter";
+import { OAuth2Adapter } from "util/oauth2-adapter";
 import { MINT_PREFERENCES } from "config";
 
 @customElement("mint-app")

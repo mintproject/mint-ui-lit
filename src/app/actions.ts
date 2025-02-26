@@ -39,7 +39,7 @@ import {
 import { selectEmulatorModel } from "screens/emulators/actions";
 import { MINT_PREFERENCES } from "config";
 import ReactGA from "react-ga";
-import { OAuth2Adapter } from "util/keycloak-adapter";
+import { OAuth2Adapter } from "util/oauth2-adapter";
 import { AirflowAdapter } from "util/airflow-adapter";
 
 export const BASE_HREF = document

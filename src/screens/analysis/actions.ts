@@ -14,7 +14,7 @@ import { problemStatementFromGQL, threadFromGQL } from "util/graphql_adapter";
 import fetchProblemStatementsListGQL from "../../queries/problem-statement/list.graphql";
 import fetchProblemStatementGQL from "../../queries/problem-statement/get.graphql";
 import fetchThreadGQL from "../../queries/thread/get.graphql";
-import { OAuth2Adapter } from "util/keycloak-adapter";
+import { OAuth2Adapter } from "util/oauth2-adapter";
 
 export const ANALYSIS_LIST = "ANALYSIS_LIST";
 

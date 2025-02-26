@@ -7,7 +7,7 @@ import listVariablesGQL from "../../queries/variable/list.graphql";
 
 import { VariableMap } from "@apollo/client/core/LocalState";
 import { variableFromGQL } from "util/graphql_adapter";
-import { OAuth2Adapter } from "util/keycloak-adapter";
+import { OAuth2Adapter } from "util/oauth2-adapter";
 
 export const VARIABLES_LIST = "VARIABLES_LIST";
 

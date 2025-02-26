@@ -19,7 +19,7 @@ import addRegionsGQL from "../../queries/region/new.graphql";
 
 import { IdMap } from "app/reducers";
 import { regionFromGQL, regionToGQL } from "util/graphql_adapter";
-import { OAuth2Adapter } from "util/keycloak-adapter";
+import { OAuth2Adapter } from "util/oauth2-adapter";
 
 export const REGIONS_LIST_CATEGORIES = "REGIONS_LIST_CATEGORIES";
 export const REGIONS_LIST_TOP_REGIONS = "REGIONS_LIST_TOP_REGIONS";

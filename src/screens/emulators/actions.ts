@@ -16,7 +16,7 @@ import { EmulatorModelIO, EmulatorSearchConstraint } from "./reducers";
 import { DataResource } from "screens/datasets/reducers";
 import { executionFromGQL, resourceFromGQL } from "util/graphql_adapter";
 import { gql } from "@apollo/client";
-import { OAuth2Adapter } from "util/keycloak-adapter";
+import { OAuth2Adapter } from "util/oauth2-adapter";
 
 export const EMULATORS_LIST = "EMULATORS_LIST_MODELS";
 export const EMULATORS_SELECT_MODEL = "EMULATORS_SELECT_MODEL";

@@ -84,7 +84,7 @@ import {
   SoftwareVersion,
 } from "@mintproject/modelcatalog_client";
 import { fetchModelsFromCatalog } from "screens/models/actions";
-import { OAuth2Adapter } from "util/keycloak-adapter";
+import { OAuth2Adapter } from "util/oauth2-adapter";
 
 export const PROBLEM_STATEMENTS_LIST = "PROBLEM_STATEMENTS_LIST";
 export const PROBLEM_STATEMENTS_LIST_SUBSCRIPTION =
