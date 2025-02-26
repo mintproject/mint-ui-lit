@@ -22,7 +22,7 @@ interface TokenResponse {
   access_token: {
     access_token: string;
   } & Partial<TokenBasic>,
-  refresh_token: {
+  refresh_token?: {
     refresh_token: string;
   } & Partial<TokenBasic>
 }
@@ -157,7 +157,7 @@ export class OAuth2Adapter {
     } else {
       localStorage.removeItem("access-token");
     }
-    if (obj.refresh_token.refresh_token) {
+    if (obj.refresh_token && obj.refresh_token.refresh_token) {
       localStorage.setItem("refresh-token", obj.refresh_token.refresh_token);
     } else {
       localStorage.removeItem("refresh-token");
@@ -175,9 +175,9 @@ export class OAuth2Adapter {
     } else {
       localStorage.removeItem("access-expires-at");
     }
-    if (obj.refresh_token.expires_at) {
+    if (obj.refresh_token && obj.refresh_token.expires_at) {
       localStorage.setItem("refresh-expires-at", obj.refresh_token.expires_at);
-    } else if (obj.refresh_token.expires_in) {
+    } else if (obj.refresh_token && obj.refresh_token.expires_in) {
       try {
         let now = new Date();
         now.setSeconds( now.getSeconds() + obj.refresh_token.expires_in);
@@ -253,8 +253,7 @@ export class OAuth2Adapter {
 
   public static saveTokenResponse (tkn:string, expires_in:string): void {
     OAuth2Adapter.setLocalStorage({
-      access_token: {access_token: tkn, expires_in: Number(expires_in)},
-      refresh_token: {refresh_token: undefined}
+      access_token: {access_token: tkn, expires_in: Number(expires_in)}
     });
     OAuth2Adapter.loadFromLocalStorage();
   }
@@ -313,6 +312,8 @@ export class OAuth2Adapter {
         client_id: OAuth2Adapter.clientId,
         post_redirect_uri: OAuth2Adapter.callbackUrl
       });
+      // FIXME: this does not redirect, cleaning the local storage before redirection as a quick fix
+      OAuth2Adapter.clearLocalStorage();
       document.location = OAuth2Adapter.getLogoutURL() + '?' + query.toString();
     } else {
       const body = { "token": OAuth2Adapter.refreshToken || OAuth2Adapter.accessToken };
@@ -373,6 +374,44 @@ export class OAuth2Adapter {
           });
         } else {
           resolve(false);
+        }
+      });
+    });
+  }
+
+  public static signIn(username: string, password: string) {
+    // Implicit grant
+    let uri: string = OAuth2Adapter.getTokenURL();
+    let data = {
+      client_id: OAuth2Adapter.clientId,
+      grant_type: "password",
+      username: username,
+      password: password,
+    };
+
+    return new Promise<void>((resolve, reject) => {
+      let req: Promise<Response> = fetch(uri, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(data),
+      });
+      req.catch(reject);
+      req.then((response: Response) => {
+        if (response.status === 200) {
+          let jsn = response.json();
+          jsn.catch(reject);
+          jsn.then((tkn) => {
+            if (MINT_PREFERENCES.auth.provider === 'tapis') {
+              OAuth2Adapter.saveTapisCodeResponse(tkn);
+            } else if (MINT_PREFERENCES.auth.provider === 'keycloak') {
+              OAuth2Adapter.saveKeycloakCodeResponse(tkn);
+            } else {
+              OAuth2Adapter.saveCodeResponse(tkn);
+            }
+            resolve();
+          });
+        } else {
+          reject();
         }
       });
     });

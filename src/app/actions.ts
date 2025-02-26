@@ -160,25 +160,20 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
 export const signIn: ActionCreator<UserThunkResult> =
   (email: string, password: string) => (dispatch) => {
     return new Promise<User>((resolve, reject) => {
-      //MyOAuthClient.client.password( {username: email, password})
-      //  .then ((obj) => {
-      //    console.log(obj);
-      //  })
-      //  .catch(reject);
-
-      //KeycloakAdapter.signIn(email, password)
-      //  .then(() => {
-      //    let user: User = KeycloakAdapter.getUser();
-      //    ModelCatalogApi.setAccessToken(KeycloakAdapter.getAccessToken());
-      //    // FIXME: use users catalog
-      //    //ModelCatalogApi.setUsername(user.email);
-      //    dispatch({
-      //      type: FETCH_USER,
-      //      user: user,
-      //    });
-      //    resolve(user);
-      //  })
-      //  .catch(reject);
+      OAuth2Adapter.signIn(email, password)
+        .then(() => {
+          let user: User = OAuth2Adapter.getUser();
+          ModelCatalogApi.setAccessToken(OAuth2Adapter.getAccessToken());
+          if (user.email && MINT_PREFERENCES.use_individual_catalogue) {
+            ModelCatalogApi.setUsername(user.email);
+          }
+          dispatch({
+            type: FETCH_USER,
+            user: user,
+          });
+          resolve(user);
+        })
+        .catch(reject);
     });
   };
 

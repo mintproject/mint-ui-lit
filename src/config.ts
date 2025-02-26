@@ -39,6 +39,7 @@ declare global {
     REACT_APP_AUTH_PROVIDER: string;
     REACT_APP_AUTH_LOGOUT: string;
     REACT_APP_AUTH_HASH: string;
+    REACT_APP_AUTH_GRANT: string;
   }
 }
 
@@ -129,6 +130,7 @@ const MINT_PREFERENCES: MintPreferences = {
   airflow_api: REACT_APP_AIRFLOW_API,
   airflow_dag_download_thread_id: REACT_APP_AIRFLOW_DAG_DOWNLOAD_THREAD_ID,
   auth :{
+    grant: window.REACT_APP_AUTH_GRANT || undefined,
     server: REACT_APP_AUTH_SERVER,
     clientId: REACT_APP_AUTH_CLIENT_ID,
     realm: REACT_APP_AUTH_REALM || undefined,

@@ -67,6 +67,7 @@ import { Region } from "screens/regions/reducers";
 import { listVariables } from "screens/variables/actions";
 import { User } from "./reducers";
 import { OAuth2Adapter } from "util/keycloak-adapter";
+import { MINT_PREFERENCES } from "config";
 
 @customElement("mint-app")
 export class MintApp extends connect(store)(LitElement) {
@@ -613,7 +614,9 @@ export class MintApp extends connect(store)(LitElement) {
             `}
       </div>
 
-      ${this._renderLoginDialog()} ${this._renderConfigureUserDialog()}
+      ${this._renderLoginDialog()}
+      ${this._renderConfigureUserDialog()}
+      ${this._renderWaitDialog()}
     `;
   }
 
@@ -639,15 +642,139 @@ export class MintApp extends connect(store)(LitElement) {
     if (pop) pop.show(); //.then(result => console.log(result));
   }
 
-  _renderLoginDialog() {
+  _renderWaitDialog() {
     return html`
-      <wl-dialog id="loginDialog" fixed backdrop blockscrolling>
+      <wl-dialog id="waitDialog" fixed backdrop blockscrolling>
         <h3 slot="header"> Loading... </h3>
         <div slot="content" style="height: 150px; display: flex; align-items:center; justify-content: center">
           <loading-dots style="--width: 50px; margin: 5px;"></loading-dots>
         </div>
       </wl-dialog>
     `;
+  }
+
+  _renderLoginDialog() {
+    return html`
+      <wl-dialog id="loginDialog" fixed backdrop blockscrolling>
+        <h3 slot="header">
+          ${this._creatingAccount
+            ? "Choose an username and password for your MINT account"
+            : this._resetingPassword
+            ? "Enter your username to reset your password"
+            : "Please enter your username and password for MINT"}
+        </h3>
+        <div slot="content">
+          <p></p>
+          <form id="loginForm">
+            <div class="input_full">
+              <label for="username">Username</label>
+              <input name="username" type="text" id="username" required/>
+            </div>
+            ${this._resetingPassword
+              ? ""
+              : html`
+                  <p></p>
+                  <div class="input_full">
+                    <label for="pass">Password</label>
+                    <input
+                      id="pass"
+                      name="password"
+                      type="password"
+                      required
+                      @keyup="${this._onPWKey}"
+                    />
+                  </div>
+                `}
+          </form>
+          ${true || this._creatingAccount || this._resetingPassword
+            ? ""
+            : html`<p></p>
+                <a
+                  @click="${() => {
+                    this._resetingPassword = true;
+                  }}"
+                  >Reset your password</a
+                >`}
+        </div>
+        <div slot="footer" style="justify-content: space-between;">
+          ${true || this._creatingAccount || this._resetingPassword
+            ? html`<span></span>`
+            : html`<wl-button @click="${this._createAccountActivate}"
+                >Create account</wl-button
+              >`}
+          <span>
+            <wl-button @click="${this._onLoginCancel}" inverted flat
+              >Cancel</wl-button
+            >
+            <wl-button
+              @click="${this._onLogin}"
+              class="submit"
+              id="dialog-submit-button"
+            >
+              ${this._resetingPassword ? "Reset password" : "Submit"}
+            </wl-button>
+          </span>
+        </div>
+      </wl-dialog>
+    `;
+  }
+
+  _onPWKey(e: KeyboardEvent) {
+    if (e.code === "Enter") {
+      this._onLogin();
+    }
+  }
+
+  _onLogin() {
+    let form: HTMLFormElement =
+      this.shadowRoot!.querySelector<HTMLFormElement>("#loginForm")!;
+    let notification: CustomNotification =
+      this.shadowRoot.querySelector<CustomNotification>(
+        "#custom-notification"
+      )!;
+    if (
+      !this._resetingPassword &&
+      formElementsComplete(form, ["username", "password"])
+    ) {
+      let username = (form.elements["username"] as HTMLInputElement).value;
+      let password = (form.elements["password"] as HTMLInputElement).value;
+      if (this._creatingAccount) {
+        // FIXME: user creation is not working on keycloak
+        store
+          .dispatch(signUp(username, password))
+          .then(() => {
+            if (notification) notification.save("Account created!");
+          })
+          .catch((error) => {
+            if (notification) notification.error(error.message);
+          });
+        this._creatingAccount = false;
+      } else {
+        store.dispatch(signIn(username, password)).catch((error) => {
+          if (notification) {
+            if (!error) notification.error("Username or password is incorrect");
+            else if (error.message) notification.error(error.message);
+            else notification.error("Unexpected error when log in");
+          }
+        });
+      }
+      this._onLoginCancel();
+    } else if (
+      this._resetingPassword &&
+      formElementsComplete(form, ["username"])
+    ) {
+      let username = (form.elements["username"] as HTMLInputElement).value;
+      store
+        .dispatch(resetPassword(username))
+        .then(() => {
+          if (notification) notification.save("Email send");
+          this._resetingPassword = false;
+        })
+        .catch((error) => {
+          if (notification) notification.error(error.message);
+          this._resetingPassword = false;
+        });
+    }
   }
 
   _renderConfigureUserDialog() {
@@ -709,8 +836,12 @@ export class MintApp extends connect(store)(LitElement) {
   _showLoginWindow() {
     //OAuth.authorize('code')
     //MyOAuthClient.authorize();
-    OAuth2Adapter.authorize();
-    showDialog("loginDialog", this.shadowRoot!);
+    if (MINT_PREFERENCES.auth.grant !== 'implicit') {
+      OAuth2Adapter.authorize();
+      showDialog("waitDialog", this.shadowRoot!);
+    } else {
+      showDialog("loginDialog", this.shadowRoot!);
+    }
   }
 
   _showConfigWindow() {
@@ -852,3 +983,7 @@ export class MintApp extends connect(store)(LitElement) {
     if (state.regions) this._topRegions = state.regions.top_region_ids;
   }
 }
+function signUp(username: string, password: string): any {
+  throw new Error("Function not implemented.");
+}
+
