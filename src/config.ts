@@ -130,7 +130,7 @@ const MINT_PREFERENCES: MintPreferences = {
   airflow_api: REACT_APP_AIRFLOW_API,
   airflow_dag_download_thread_id: REACT_APP_AIRFLOW_DAG_DOWNLOAD_THREAD_ID,
   auth :{
-    grant: window.REACT_APP_AUTH_GRANT || undefined,
+    grant: window.REACT_APP_AUTH_GRANT as MintPreferences['auth']['grant']  || undefined,
     server: REACT_APP_AUTH_SERVER,
     clientId: REACT_APP_AUTH_CLIENT_ID,
     realm: REACT_APP_AUTH_REALM || undefined,

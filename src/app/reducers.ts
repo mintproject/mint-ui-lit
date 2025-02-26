@@ -66,7 +66,7 @@ export interface MintPreferences {
     token?: string;
     logout?: string;
     provider?: 'keycloak' | 'tapis';
-    grant?: string;
+    grant?: 'password' | 'implicit' | 'code';
     hash?:string;
   }
   use_individual_catalogue?: boolean;

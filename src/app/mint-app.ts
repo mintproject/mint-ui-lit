@@ -836,7 +836,7 @@ export class MintApp extends connect(store)(LitElement) {
   _showLoginWindow() {
     //OAuth.authorize('code')
     //MyOAuthClient.authorize();
-    if (MINT_PREFERENCES.auth.grant !== 'implicit') {
+    if (MINT_PREFERENCES.auth.grant !== 'password') {
       OAuth2Adapter.authorize();
       showDialog("waitDialog", this.shadowRoot!);
     } else {
