@@ -2,9 +2,9 @@ import { User } from "app/reducers";
 import { MINT_PREFERENCES } from "config";
 
 interface TokenBasic {
-    expires_at: string;
-    expires_in: number;
-    jti: string;
+  expires_at: string;
+  expires_in: number;
+  jti: string;
 }
 
 interface KeycloakTokenResponse {
@@ -21,10 +21,10 @@ interface KeycloakTokenResponse {
 interface TokenResponse {
   access_token: {
     access_token: string;
-  } & Partial<TokenBasic>,
+  } & Partial<TokenBasic>;
   refresh_token?: {
     refresh_token: string;
-  } & Partial<TokenBasic>
+  } & Partial<TokenBasic>;
 }
 
 interface TapisTokenResponse {
@@ -67,7 +67,6 @@ export class OAuth2Adapter {
   private static refreshExpiresAt: Date | undefined = undefined;
   private static refreshPromise;
 
-
   public static getTokenURL(): string {
     return OAuth2Adapter.server + OAuth2Adapter.tokenEndpoint;
   }
@@ -80,28 +79,32 @@ export class OAuth2Adapter {
     return OAuth2Adapter.server + OAuth2Adapter.logoutEndpoint;
   }
 
-  public static authorize(type?: 'token' | 'code'): void {
+  public static authorize(type?: "token" | "code"): void {
     // If we are using tapis, we need a hash value to use the code grant, otherwise use token
-    if (!type && MINT_PREFERENCES.auth.provider === 'tapis' && !MINT_PREFERENCES.auth.hash) {
-      type = 'token';
+    if (
+      !type &&
+      MINT_PREFERENCES.auth.provider === "tapis" &&
+      !MINT_PREFERENCES.auth.hash
+    ) {
+      type = "token";
     } else {
-      type = 'code';
+      type = "code";
     }
     const query = new URLSearchParams({
       client_id: OAuth2Adapter.clientId,
       response_type: type,
       redirect_uri: OAuth2Adapter.callbackUrl,
     });
-    document.location = OAuth2Adapter.getAuthURL() + '?' + query.toString();
+    document.location = OAuth2Adapter.getAuthURL() + "?" + query.toString();
   }
 
   public static handleCallback(): void {
     const params = new Proxy(new URLSearchParams(window.location.search), {
       get: (searchParams, prop) => searchParams.get(prop.toString()),
     });
-    const token = params['access_token'];
-    const expires = params['expires_in'];
-    const code = params['code'];
+    const token = params["access_token"];
+    const expires = params["expires_in"];
+    const code = params["code"];
     console.log(params);
 
     /* This depends of the authorization type used. 'Token' generates one jwt-token
@@ -109,7 +112,7 @@ export class OAuth2Adapter {
     if (token) {
       console.log("Token detected.");
       OAuth2Adapter.saveTokenResponse(token, expires);
-      window.location.href = '/';
+      window.location.href = "/";
     } else if (code) {
       console.log("Code detected");
       OAuth2Adapter.fromCode(code);
@@ -118,13 +121,13 @@ export class OAuth2Adapter {
 
   public static fromCode(code: string): void {
     const body = {
-      "grant_type": "authorization_code",
-      "redirect_uri": OAuth2Adapter.callbackUrl,
-      "code": code,
-    }
-    let headers = { "Content-Type": "application/x-www-form-urlencoded" }
-    if (MINT_PREFERENCES.auth.provider === 'tapis') {
-      headers['Authorization'] = "Basic " + MINT_PREFERENCES.auth.hash;
+      grant_type: "authorization_code",
+      redirect_uri: OAuth2Adapter.callbackUrl,
+      code: code,
+    };
+    let headers = { "Content-Type": "application/x-www-form-urlencoded" };
+    if (MINT_PREFERENCES.auth.provider === "tapis") {
+      headers["Authorization"] = "Basic " + MINT_PREFERENCES.auth.hash;
     } else {
       body["client_id"] = OAuth2Adapter.clientId;
     }
@@ -132,13 +135,13 @@ export class OAuth2Adapter {
     fetch(OAuth2Adapter.getTokenURL(), {
       method: "POST",
       headers,
-      body: new URLSearchParams(body).toString()
+      body: new URLSearchParams(body).toString(),
     }).then((resp) => {
       if (resp.ok) {
         resp.json().then((data) => {
-          if (MINT_PREFERENCES.auth.provider === 'tapis') {
+          if (MINT_PREFERENCES.auth.provider === "tapis") {
             OAuth2Adapter.saveTapisCodeResponse(data);
-          } else if (MINT_PREFERENCES.auth.provider === 'keycloak') {
+          } else if (MINT_PREFERENCES.auth.provider === "keycloak") {
             OAuth2Adapter.saveKeycloakCodeResponse(data);
           } else {
             OAuth2Adapter.saveCodeResponse(data);
@@ -146,12 +149,12 @@ export class OAuth2Adapter {
         });
       } else {
         alert("Invalid authentication code, please try again");
-        window.location.href = '/';
+        window.location.href = "/";
       }
-    })
+    });
   }
 
-  private static setLocalStorage(obj:Partial<TokenResponse>): void {
+  private static setLocalStorage(obj: Partial<TokenResponse>): void {
     if (obj.access_token.access_token) {
       localStorage.setItem("access-token", obj.access_token.access_token);
     } else {
@@ -167,10 +170,10 @@ export class OAuth2Adapter {
     } else if (obj.access_token.expires_in) {
       try {
         let now = new Date();
-        now.setSeconds( now.getSeconds() + obj.access_token.expires_in);
+        now.setSeconds(now.getSeconds() + obj.access_token.expires_in);
         localStorage.setItem("access-expires-at", now.toISOString());
       } catch (error) {
-        console.warn("Error getting access expires at")
+        console.warn("Error getting access expires at");
       }
     } else {
       localStorage.removeItem("access-expires-at");
@@ -180,10 +183,10 @@ export class OAuth2Adapter {
     } else if (obj.refresh_token && obj.refresh_token.expires_in) {
       try {
         let now = new Date();
-        now.setSeconds( now.getSeconds() + obj.refresh_token.expires_in);
+        now.setSeconds(now.getSeconds() + obj.refresh_token.expires_in);
         localStorage.setItem("refresh-expires-at", now.toISOString());
       } catch (error) {
-        console.warn("Error getting access expires at")
+        console.warn("Error getting access expires at");
       }
     } else {
       localStorage.removeItem("refresh-expires-at");
@@ -199,16 +202,25 @@ export class OAuth2Adapter {
 
   //TODO, maybe check the refresh token on open?
   public static loadFromLocalStorage(): boolean {
-    let now : Date = new Date();
+    let now: Date = new Date();
     let accessToken: string = localStorage.getItem("access-token");
     let refreshToken: string = localStorage.getItem("refresh-token");
     let accessExpiresAt: string = localStorage.getItem("access-expires-at");
     let refreshExpiresAt: string = localStorage.getItem("refresh-expires-at");
-    let accessExpires: Date | undefined = accessExpiresAt ? new Date(accessExpiresAt) : undefined;
-    let refreshExpires: Date | undefined = refreshExpiresAt ? new Date(refreshExpiresAt) : undefined;
-    
+    let accessExpires: Date | undefined = accessExpiresAt
+      ? new Date(accessExpiresAt)
+      : undefined;
+    let refreshExpires: Date | undefined = refreshExpiresAt
+      ? new Date(refreshExpiresAt)
+      : undefined;
+
     // Reason to log out:
-    if (!accessToken || !accessExpires || (!refreshExpires && accessExpires < now) || (refreshExpires < now)) {
+    if (
+      !accessToken ||
+      !accessExpires ||
+      (!refreshExpires && accessExpires < now) ||
+      refreshExpires < now
+    ) {
       if (accessToken || accessExpires || refreshToken || refreshExpires) {
         OAuth2Adapter.clearLocalStorage();
       }
@@ -222,24 +234,28 @@ export class OAuth2Adapter {
         OAuth2Adapter.refreshExpiresAt = refreshExpires;
       }
       // Token is working, refresh 1 minutes before expiration.
-      let untilExpiration = (accessExpires.getTime() - now.getTime()) - 60000;
+      let untilExpiration = accessExpires.getTime() - now.getTime() - 60000;
       if (untilExpiration < 0) untilExpiration = 0;
 
       //console.log("Until refresh: " + untilExpiration/1000);
-      if (OAuth2Adapter.refreshPromise) clearTimeout(OAuth2Adapter.refreshPromise);
-      OAuth2Adapter.refreshPromise = setTimeout(() => { OAuth2Adapter.refresh() }, untilExpiration);
+      if (OAuth2Adapter.refreshPromise)
+        clearTimeout(OAuth2Adapter.refreshPromise);
+      OAuth2Adapter.refreshPromise = setTimeout(() => {
+        OAuth2Adapter.refresh();
+      }, untilExpiration);
       return true;
     }
   }
 
-  private static decodeToken (token:string) : void {
+  private static decodeToken(token: string): void {
     //Decode token
-    let decoded: decodedToken = JSON.parse(
-      atob(token.split(".")[1])
-    );
+    let decoded: decodedToken = JSON.parse(atob(token.split(".")[1]));
     //console.log("decoded token:\n", decoded);
 
-    OAuth2Adapter.username = decoded["preferred_username"] || decoded["tapis/username"] || decoded["name"];
+    OAuth2Adapter.username =
+      decoded["preferred_username"] ||
+      decoded["tapis/username"] ||
+      decoded["name"];
     OAuth2Adapter.userid = decoded["sub"];
     OAuth2Adapter.email = decoded["email"] || decoded["sub"];
     if (decoded["profile"]) {
@@ -251,38 +267,37 @@ export class OAuth2Adapter {
     }
   }
 
-  public static saveTokenResponse (tkn:string, expires_in:string): void {
+  public static saveTokenResponse(tkn: string, expires_in: string): void {
     OAuth2Adapter.setLocalStorage({
-      access_token: {access_token: tkn, expires_in: Number(expires_in)}
+      access_token: { access_token: tkn, expires_in: Number(expires_in) },
     });
     OAuth2Adapter.loadFromLocalStorage();
   }
 
-  private static saveCodeResponse (tokenObj:TokenResponse) {
-    OAuth2Adapter.setLocalStorage(tokenObj)
+  private static saveCodeResponse(tokenObj: TokenResponse) {
+    OAuth2Adapter.setLocalStorage(tokenObj);
     OAuth2Adapter.loadFromLocalStorage();
     if (window.location.href.includes("callback")) {
-      window.location.href = '/';
+      window.location.href = "/";
     }
     return;
   }
 
-  private static saveTapisCodeResponse (tokenObj:TapisTokenResponse) {
-    if (tokenObj.result)
-      return OAuth2Adapter.saveCodeResponse(tokenObj.result);
+  private static saveTapisCodeResponse(tokenObj: TapisTokenResponse) {
+    if (tokenObj.result) return OAuth2Adapter.saveCodeResponse(tokenObj.result);
   }
 
-  private static saveKeycloakCodeResponse (tokenObj:KeycloakTokenResponse) {
-    let tkn : TokenResponse = {
+  private static saveKeycloakCodeResponse(tokenObj: KeycloakTokenResponse) {
+    let tkn: TokenResponse = {
       access_token: {
         access_token: tokenObj.access_token,
-        expires_in: tokenObj.expires_in
+        expires_in: tokenObj.expires_in,
       },
       refresh_token: {
         refresh_token: tokenObj.refresh_token,
-        expires_in: tokenObj.refresh_expires_in
-      }
-    }
+        expires_in: tokenObj.refresh_expires_in,
+      },
+    };
     return OAuth2Adapter.saveCodeResponse(tkn);
   }
 
@@ -306,31 +321,38 @@ export class OAuth2Adapter {
     } as User;
   }
 
-  public static logOut () : void {
-    if (MINT_PREFERENCES.auth.provider === 'keycloak') {
+  public static logOut(): void {
+    if (MINT_PREFERENCES.auth.provider === "keycloak") {
       const query = new URLSearchParams({
         client_id: OAuth2Adapter.clientId,
-        post_redirect_uri: OAuth2Adapter.callbackUrl
+        post_redirect_uri: OAuth2Adapter.callbackUrl,
       });
       // FIXME: this does not redirect, cleaning the local storage before redirection as a quick fix
       OAuth2Adapter.clearLocalStorage();
-      document.location = OAuth2Adapter.getLogoutURL() + '?' + query.toString();
+      document.location = OAuth2Adapter.getLogoutURL() + "?" + query.toString();
     } else {
-      const body = { "token": OAuth2Adapter.refreshToken || OAuth2Adapter.accessToken };
+      const body = {
+        token: OAuth2Adapter.refreshToken || OAuth2Adapter.accessToken,
+      };
       let headers = { "Content-Type": "application/json" };
-      if (MINT_PREFERENCES.auth.provider === 'tapis' && MINT_PREFERENCES.auth.hash) {
-        headers['Authorization'] = "Basic " + MINT_PREFERENCES.auth.hash;
+      if (
+        MINT_PREFERENCES.auth.provider === "tapis" &&
+        MINT_PREFERENCES.auth.hash
+      ) {
+        headers["Authorization"] = "Basic " + MINT_PREFERENCES.auth.hash;
       }
       fetch(OAuth2Adapter.getLogoutURL(), {
         method: "POST",
         headers,
-        body: JSON.stringify(body)
-      }).then((resp) => {
-        if (!resp.ok) console.warn("Logout process complete with errors.")
-      }).finally(() => {
-        OAuth2Adapter.clearLocalStorage();
-        //window.location.href = '/';
+        body: JSON.stringify(body),
       })
+        .then((resp) => {
+          if (!resp.ok) console.warn("Logout process complete with errors.");
+        })
+        .finally(() => {
+          OAuth2Adapter.clearLocalStorage();
+          //window.location.href = '/';
+        });
     }
   }
 
@@ -348,8 +370,14 @@ export class OAuth2Adapter {
       refresh_token: OAuth2Adapter.refreshToken,
     };
 
-    let headers = { "Content-Type": "application/x-www-form-urlencoded", "Authorization": "Basic " + MINT_PREFERENCES.auth.hash }
-    if (MINT_PREFERENCES.auth.provider === 'tapis' && MINT_PREFERENCES.auth.hash) {
+    let headers = {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: "Basic " + MINT_PREFERENCES.auth.hash,
+    };
+    if (
+      MINT_PREFERENCES.auth.provider === "tapis" &&
+      MINT_PREFERENCES.auth.hash
+    ) {
       headers["Authorization"] = "Basic " + MINT_PREFERENCES.auth.hash;
     }
 
@@ -363,9 +391,9 @@ export class OAuth2Adapter {
       req.then((response: Response) => {
         if (response.status === 200) {
           response.json().then((tkn) => {
-            if (MINT_PREFERENCES.auth.provider === 'tapis') {
+            if (MINT_PREFERENCES.auth.provider === "tapis") {
               OAuth2Adapter.saveTapisCodeResponse(tkn);
-            } else if (MINT_PREFERENCES.auth.provider === 'keycloak') {
+            } else if (MINT_PREFERENCES.auth.provider === "keycloak") {
               OAuth2Adapter.saveKeycloakCodeResponse(tkn);
             } else {
               OAuth2Adapter.saveCodeResponse(tkn);
@@ -401,9 +429,9 @@ export class OAuth2Adapter {
           let jsn = response.json();
           jsn.catch(reject);
           jsn.then((tkn) => {
-            if (MINT_PREFERENCES.auth.provider === 'tapis') {
+            if (MINT_PREFERENCES.auth.provider === "tapis") {
               OAuth2Adapter.saveTapisCodeResponse(tkn);
-            } else if (MINT_PREFERENCES.auth.provider === 'keycloak') {
+            } else if (MINT_PREFERENCES.auth.provider === "keycloak") {
               OAuth2Adapter.saveKeycloakCodeResponse(tkn);
             } else {
               OAuth2Adapter.saveCodeResponse(tkn);

@@ -1,14 +1,14 @@
 import { MintPreferences } from "app/reducers";
 
 declare global {
-  interface Window { 
+  interface Window {
     REACT_APP_DATA_CATALOG_API: string;
     REACT_APP_DATA_CATALOG_TYPE: string;
     REACT_APP_DATA_CATALOG_KEY: string;
     REACT_APP_CROMO_API: string;
     REACT_APP_MODEL_CATALOG_API: string;
     REACT_APP_ENSEMBLE_MANAGER_API: string;
-    REACT_APP_EXECUTION_ENGINE: 'localex' | 'wings';
+    REACT_APP_EXECUTION_ENGINE: "localex" | "wings";
     REACT_APP_GOOGLE_MAPS_KEY: string;
     REACT_APP_LOCALEX: string;
     REACT_APP_LOCALEX_CODEDIR: string;
@@ -56,7 +56,7 @@ const REACT_APP_MODEL_CATALOG_API: string =
   window.REACT_APP_MODEL_CATALOG_API || "";
 const REACT_APP_ENSEMBLE_MANAGER_API: string =
   window.REACT_APP_ENSEMBLE_MANAGER_API || "";
-const REACT_APP_EXECUTION_ENGINE: 'localex' | 'wings' =
+const REACT_APP_EXECUTION_ENGINE: "localex" | "wings" =
   window.REACT_APP_EXECUTION_ENGINE || "localex";
 const REACT_APP_GOOGLE_MAPS_KEY: string =
   window.REACT_APP_GOOGLE_MAPS_KEY || "";
@@ -137,8 +137,10 @@ const MINT_PREFERENCES: MintPreferences = {
   appId: "",
   airflow_api: REACT_APP_AIRFLOW_API,
   airflow_dag_download_thread_id: REACT_APP_AIRFLOW_DAG_DOWNLOAD_THREAD_ID,
-  auth :{
-    grant: window.REACT_APP_AUTH_GRANT as MintPreferences['auth']['grant']  || undefined,
+  auth: {
+    grant:
+      (window.REACT_APP_AUTH_GRANT as MintPreferences["auth"]["grant"]) ||
+      undefined,
     server: REACT_APP_AUTH_SERVER,
     clientId: REACT_APP_AUTH_CLIENT_ID,
     realm: REACT_APP_AUTH_REALM || undefined,
@@ -146,9 +148,11 @@ const MINT_PREFERENCES: MintPreferences = {
     discovery: window.REACT_APP_AUTH_DISCOVERY_URL || undefined,
     token: window.REACT_APP_AUTH_TOKEN_URL || undefined,
     logout: window.REACT_APP_AUTH_LOGOUT || undefined,
-    provider: window.REACT_APP_AUTH_PROVIDER as MintPreferences['auth']['provider'] || undefined,
+    provider:
+      (window.REACT_APP_AUTH_PROVIDER as MintPreferences["auth"]["provider"]) ||
+      undefined,
     hash: window.REACT_APP_AUTH_HASH || undefined,
-  }
+  },
 };
 
 export { MINT_PREFERENCES };

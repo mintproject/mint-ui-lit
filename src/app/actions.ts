@@ -91,7 +91,7 @@ export const fetchUser: ActionCreator<UserThunkResult> = () => (dispatch) => {
   ModelCatalogApi.setUsername(DEFAULT_GRAPH);
   return new Promise<User>((resolve, reject) => {
     if (OAuth2Adapter.loadFromLocalStorage()) {
-      let user : User = OAuth2Adapter.getUser();
+      let user: User = OAuth2Adapter.getUser();
       ReactGA.set({ userId: user.email });
       if (user.email && MINT_PREFERENCES.use_individual_catalogue) {
         ModelCatalogApi.setUsername(user.email);

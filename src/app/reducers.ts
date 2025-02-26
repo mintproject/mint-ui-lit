@@ -59,7 +59,7 @@ export interface MintPreferences {
   //maps
   google_maps_key: string;
   //auth
-  auth : {
+  auth: {
     server: string;
     clientId: string;
     realm?: string;
@@ -67,10 +67,10 @@ export interface MintPreferences {
     auth?: string;
     token?: string;
     logout?: string;
-    provider?: 'keycloak' | 'tapis';
-    grant?: 'password' | 'implicit' | 'code';
-    hash?:string;
-  }
+    provider?: "keycloak" | "tapis";
+    grant?: "password" | "implicit" | "code";
+    hash?: string;
+  };
   use_individual_catalogue?: boolean;
 
   //old

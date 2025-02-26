@@ -595,17 +595,23 @@ export class MintApp extends connect(store)(LitElement) {
                       <div
                         style="display: flex; color: #888; flex-direction: column; width: 100%; height: 100%; align-items: center; justify-content: center;"
                       >
-                        <div style="font-size: 2em;">${this._page === "callback" ? "Please wait": "Unauthorized"}</div>
+                        <div style="font-size: 2em;">
+                          ${this._page === "callback"
+                            ? "Please wait"
+                            : "Unauthorized"}
+                        </div>
                         <div style="font-size: 1.5em;">
-                          ${this._page === 'callback' ? "" : html`
-                            Please
-                            <a
-                              style="cursor: pointer;"
-                              @click="${this._showLoginWindow}"
-                              >log in</a
-                            >
-                            or go to the <a href="/">home page</a>
-                          `}
+                          ${this._page === "callback"
+                            ? ""
+                            : html`
+                                Please
+                                <a
+                                  style="cursor: pointer;"
+                                  @click="${this._showLoginWindow}"
+                                  >log in</a
+                                >
+                                or go to the <a href="/">home page</a>
+                              `}
                         </div>
                       </div>
                     `
@@ -614,8 +620,7 @@ export class MintApp extends connect(store)(LitElement) {
             `}
       </div>
 
-      ${this._renderLoginDialog()}
-      ${this._renderConfigureUserDialog()}
+      ${this._renderLoginDialog()} ${this._renderConfigureUserDialog()}
       ${this._renderWaitDialog()}
     `;
   }
@@ -645,8 +650,11 @@ export class MintApp extends connect(store)(LitElement) {
   _renderWaitDialog() {
     return html`
       <wl-dialog id="waitDialog" fixed backdrop blockscrolling>
-        <h3 slot="header"> Loading... </h3>
-        <div slot="content" style="height: 150px; display: flex; align-items:center; justify-content: center">
+        <h3 slot="header">Loading...</h3>
+        <div
+          slot="content"
+          style="height: 150px; display: flex; align-items:center; justify-content: center"
+        >
           <loading-dots style="--width: 50px; margin: 5px;"></loading-dots>
         </div>
       </wl-dialog>
@@ -668,7 +676,7 @@ export class MintApp extends connect(store)(LitElement) {
           <form id="loginForm">
             <div class="input_full">
               <label for="username">Username</label>
-              <input name="username" type="text" id="username" required/>
+              <input name="username" type="text" id="username" required />
             </div>
             ${this._resetingPassword
               ? ""
@@ -836,7 +844,7 @@ export class MintApp extends connect(store)(LitElement) {
   _showLoginWindow() {
     //OAuth.authorize('code')
     //MyOAuthClient.authorize();
-    if (MINT_PREFERENCES.auth.grant !== 'password') {
+    if (MINT_PREFERENCES.auth.grant !== "password") {
       OAuth2Adapter.authorize();
       showDialog("waitDialog", this.shadowRoot!);
     } else {
@@ -986,4 +994,3 @@ export class MintApp extends connect(store)(LitElement) {
 function signUp(username: string, password: string): any {
   throw new Error("Function not implemented.");
 }
-
