@@ -569,9 +569,8 @@ export class MintRuns extends connect(store)(MintThreadPage) {
           hideNotification("runNotification", me.shadowRoot);
           alert("Could not connect to the Execution Manager!");
         },
-        // Add headers with authorization token
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: "Bearer " + token,
         },
       },
       data,
