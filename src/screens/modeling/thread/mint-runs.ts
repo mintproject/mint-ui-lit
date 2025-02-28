@@ -552,7 +552,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     this._waiting = true;
 
     // Get the auth token from localStorage
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
 
     postJSONResource(
       {
@@ -571,8 +571,8 @@ export class MintRuns extends connect(store)(MintThreadPage) {
         },
         // Add headers with authorization token
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       },
       data,
       false
