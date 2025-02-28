@@ -3,7 +3,7 @@ name: ui
 on:
   push:
     branches:
-      - "*"
+      - '*'
     tags:
       - v*
   pull_request:
@@ -11,11 +11,11 @@ on:
 env:
   IMAGE_NAME: ui
   #variables related with the repository
-  REPOSITORY_MAIN_BRANCH: "master"
+  REPOSITORY_MAIN_BRANCH: 'master'
   #variables related with the docker imager registry
   DOCKER_IMAGE_REPOSITORY: mintproject
   DOCKER_IMAGE_NAME: mint-ui-lit
-  DOCKER_FILE: ".Dockerfile-actions"
+  DOCKER_FILE: '.Dockerfile-actions'
 
 jobs:
   test:
@@ -25,7 +25,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: "16.x"
+          node-version: '16.x'
       - name: Cache Node.js modules
         uses: actions/cache@v2
         with:
@@ -38,7 +38,7 @@ jobs:
         run: npm install
       - name: Build (webpack)
         run: npm run create-build
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: nextjs-build
           path: ./build/
@@ -55,7 +55,7 @@ jobs:
 
       - uses: actions/checkout@v2
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: nextjs-build
           path: build/
@@ -105,7 +105,7 @@ jobs:
       contents: read
       security-events: write
       packages: write
-    name: "Scan vulnerabilities in the image"
+    name: 'Scan vulnerabilities in the image'
     needs: [push]
     runs-on: ubuntu-latest
     steps:
@@ -113,15 +113,15 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.docker_tag }}
-          format: "template"
-          template: "@/contrib/sarif.tpl"
-          output: "trivy-results.sarif"
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results.sarif'
           severity: ${{ env.VULNERABILITY_SCAN_LEVEL }}
-          exit-code: "0"
-          ignore-unfixed: "true"
+          exit-code: '0'
+          ignore-unfixed: 'true'
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
         if: always()
         with:
-          sarif_file: "trivy-results.sarif"
+          sarif_file: 'trivy-results.sarif'
