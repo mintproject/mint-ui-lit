@@ -552,7 +552,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     this._waiting = true;
 
     // Get the auth token from localStorage
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("access-token");
 
     postJSONResource(
       {
@@ -568,12 +568,12 @@ export class MintRuns extends connect(store)(MintThreadPage) {
           hideNotification("runNotification", me.shadowRoot);
           alert("Could not connect to the Execution Manager!");
         },
-        headers: {
-          Authorization: "Bearer " + token,
-        },
       },
       data,
-      false
+      false,
+      {
+        Authorization: "Bearer " + token,
+      }
     );
 
     this.selectAndContinue("runs");

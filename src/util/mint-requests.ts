@@ -23,6 +23,7 @@ export function postJSONResource(
   xhr.withCredentials = withCredentials;
   xhr.open("POST", rq.url);
   xhr.setRequestHeader("Content-type", "application/json");
+  console.log("headers", headers);
   if (headers) {
     for (var header in headers) {
       xhr.setRequestHeader(header, headers[header]);
