@@ -550,12 +550,15 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     showNotification("runNotification", this.shadowRoot);
     let me = this;
     this._waiting = true;
+
+    // Get the auth token from localStorage
+    const token = localStorage.getItem("access-token");
+
     postJSONResource(
       {
         url:
           mint.ensemble_manager_api +
-          "/executions" +
-          (mint.execution_engine == "localex" ? "Local" : ""),
+          this.getEnsembleManagerExecutionPath(mint.execution_engine),
         onLoad: function (e: any) {
           me._waiting = false;
           hideNotification("runNotification", me.shadowRoot);
@@ -567,7 +570,10 @@ export class MintRuns extends connect(store)(MintThreadPage) {
         },
       },
       data,
-      false
+      false,
+      {
+        Authorization: "Bearer " + token,
+      }
     );
 
     this.selectAndContinue("runs");
@@ -665,6 +671,12 @@ export class MintRuns extends connect(store)(MintThreadPage) {
 
   _isExecutionRunFinished(ensemble: Execution) {
     return ensemble.status == "SUCCESS" || ensemble.status == "FAILURE";
+  }
+
+  getEnsembleManagerExecutionPath(executionEngine: string) {
+    if (executionEngine === "localex") return "/executionsLocal";
+    else if (executionEngine === "wings") return "/executions";
+    return `/executionEngines/${executionEngine}`;
   }
 
   _getModelURL(model: Model) {

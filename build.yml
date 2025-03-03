@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: '12.x'
       - name: Cache Node.js modules
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.npm
           key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -32,7 +32,7 @@ jobs:
             ${{ runner.OS }}-
       - name: Install dependencies
         run: npm install
-      - name: Build (webpack) 
+      - name: Build (webpack)
         run: npm run build --if-present
       - name: Test
         run: npm test
@@ -55,7 +55,7 @@ jobs:
 
       - name: Build image
         run: docker build . --file .Dockerfile-actions --tag $IMAGE_NAME
-      
+
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:

@@ -15,7 +15,7 @@ export function postJSONResource(
   rq: any,
   data: Object,
   withCredentials: boolean,
-  authHeaders?: string[]
+  headers?: Record<string, string>
 ) {
   var xhr = new XMLHttpRequest();
   xhr.addEventListener("load", rq.onLoad);
@@ -23,9 +23,10 @@ export function postJSONResource(
   xhr.withCredentials = withCredentials;
   xhr.open("POST", rq.url);
   xhr.setRequestHeader("Content-type", "application/json");
-  if (authHeaders) {
-    for (var header in authHeaders) {
-      xhr.setRequestHeader(header, authHeaders[header]);
+  console.log("headers", headers);
+  if (headers) {
+    for (var header in headers) {
+      xhr.setRequestHeader(header, headers[header]);
     }
   }
   sendData(xhr, JSON.stringify(data));
