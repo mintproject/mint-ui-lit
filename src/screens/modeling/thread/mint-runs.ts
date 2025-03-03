@@ -674,8 +674,8 @@ export class MintRuns extends connect(store)(MintThreadPage) {
   }
 
   getEnsembleManagerExecutionPath(executionEngine: string) {
-    if (executionEngine === 'localex') return '/executionsLocal';
-    else if (executionEngine === 'wings') return '/executions';
+    if (executionEngine === "localex") return "/executionsLocal";
+    else if (executionEngine === "wings") return "/executions";
     return `/executionEngines/${executionEngine}`;
   }
 
