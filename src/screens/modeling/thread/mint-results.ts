@@ -196,7 +196,8 @@ export class MintResults extends connect(store)(MintThreadPage) {
               summary.ingested_runs == summary.total_runs;
             let finished = finished_runs == summary.total_runs;
 
-            let published_runs = summary.published_runs == summary.successful_runs;
+            let published_runs =
+              summary.published_runs == summary.successful_runs;
             let submitted_publishing = summary.submitted_for_publishing;
             let running = summary.submitted_runs - finished_runs;
             let pending = summary.total_runs - summary.submitted_runs;
@@ -250,7 +251,8 @@ export class MintResults extends connect(store)(MintThreadPage) {
               ${finished && !published_runs && this.permission.write
                 ? html` <wl-button
                     class="submit"
-                    ?disabled="${this.thread.execution_summary[model.id].submitted_for_publishing || published_runs }"
+                    ?disabled="${this.thread.execution_summary[model.id]
+                      .submitted_for_publishing || published_runs}"
                     @click="${() => this._fetchAllResults(model.id)}"
                     >Fetch all results</wl-button
                   >`
@@ -258,9 +260,8 @@ export class MintResults extends connect(store)(MintThreadPage) {
                 ? html`
                     <p>
                       Please wait while publishing data... <br />
-                      Published outputs from
-                      ${summary.published_runs || 0} out of
-                      ${summary.total_runs} model runs.
+                      Published outputs from ${summary.published_runs || 0} out
+                      of ${summary.total_runs} model runs.
                     </p>
                   `
                 : ""}
@@ -843,7 +844,6 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ""}</textarea
   _fetchAllResults(modelid) {
     const token = localStorage.getItem("access-token");
 
-
     ReactGA.event({
       category: "Thread",
       action: "Save results",
@@ -856,14 +856,13 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ""}</textarea
         */
     showNotification("saveNotification", this.shadowRoot);
     sendDataForPublishing(this.thread.model_ensembles[modelid].id, this.prefs, {
-      "Authorization": `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     });
     this.thread.execution_summary[modelid].submitted_for_publishing = true;
-  setInterval(() => {
-    this._reloadAllRuns();
-  }, 10000);
+    setInterval(() => {
+      this._reloadAllRuns();
+    }, 10000);
   }
-
 
   async _reloadAllRuns() {
     let promises: any[] = [];

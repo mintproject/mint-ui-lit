@@ -1147,7 +1147,6 @@ export const sendDataForIngestion = (
   });
 };
 
-
 export const sendDataForPublishing = (
   threadid: string,
   prefs: UserPreferences,
@@ -1159,8 +1158,11 @@ export const sendDataForPublishing = (
   return new Promise<void>((resolve, reject) => {
     postJSONResource(
       {
-
-        url: prefs.mint.ensemble_manager_api + "/tapis/threads/" + threadid + "/outputs",
+        url:
+          prefs.mint.ensemble_manager_api +
+          "/tapis/threads/" +
+          threadid +
+          "/outputs",
         onLoad: function (e: any) {
           resolve();
         },
