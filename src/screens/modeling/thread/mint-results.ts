@@ -25,6 +25,7 @@ import {
   sendDataForIngestion,
   subscribeThreadExecutionSummary,
   listThreadModelExecutionsAction,
+  sendDataForPublishing,
 } from "../actions";
 import {
   hideDialog,
@@ -194,6 +195,9 @@ export class MintResults extends connect(store)(MintThreadPage) {
             let finished_ingestion =
               summary.ingested_runs == summary.total_runs;
             let finished = finished_runs == summary.total_runs;
+
+            let published_runs = summary.published_runs == summary.successful_runs;
+            let submitted_publishing = summary.submitted_for_publishing;
             let running = summary.submitted_runs - finished_runs;
             let pending = summary.total_runs - summary.submitted_runs;
             if (!this.currentPage[modelid]) this.currentPage[modelid] = 1;
@@ -242,6 +246,24 @@ export class MintResults extends connect(store)(MintThreadPage) {
                     </p>`
                 : html`Please execute some runs first`}
 
+              <!-- FIXME: Temporarily removed -->
+              ${finished && !published_runs && this.permission.write
+                ? html` <wl-button
+                    class="submit"
+                    ?disabled="${this.thread.execution_summary[model.id].submitted_for_publishing || published_runs }"
+                    @click="${() => this._fetchAllResults(model.id)}"
+                    >Fetch all results</wl-button
+                  >`
+                : !submitted_publishing
+                ? html`
+                    <p>
+                      Please wait while publishing data... <br />
+                      Published outputs from
+                      ${summary.published_runs || 0} out of
+                      ${summary.total_runs} model runs.
+                    </p>
+                  `
+                : ""}
               <!-- FIXME: Temporarily removed -->
               ${finished && !submitted && this.permission.write
                 ? html` <wl-button
@@ -492,9 +514,9 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                   <tr>
                                     ${!readmode
                                       ? html`
-                                                <td><input class="checkbox" type="checkbox" 
+                                                <td><input class="checkbox" type="checkbox"
                                                     ?checked="${ensemble.selected}"
-                                                    data-index="${index}"></input></td>   
+                                                    data-index="${index}"></input></td>
                                                 `
                                       : html``}
                                     ${grouped_ensemble.outputs.map(
@@ -814,11 +836,34 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ""}</textarea
         -> Publish run to provenance catalog
         */
     showNotification("saveNotification", this.shadowRoot);
-
     sendDataForIngestion(this.thread.id, this.prefs);
-
     this.thread.execution_summary[modelid].submitted_for_ingestion = true;
   }
+
+  _fetchAllResults(modelid) {
+    const token = localStorage.getItem("access-token");
+
+
+    ReactGA.event({
+      category: "Thread",
+      action: "Save results",
+    });
+    let model = this.thread.models[modelid];
+    /*
+        -> Ingest thread to visualization database
+        -> Register outputs to the data catalog
+        -> Publish run to provenance catalog
+        */
+    showNotification("saveNotification", this.shadowRoot);
+    sendDataForPublishing(this.thread.model_ensembles[modelid].id, this.prefs, {
+      "Authorization": `Bearer ${token}`
+    });
+    this.thread.execution_summary[modelid].submitted_for_publishing = true;
+  setInterval(() => {
+    this._reloadAllRuns();
+  }, 10000);
+  }
+
 
   async _reloadAllRuns() {
     let promises: any[] = [];

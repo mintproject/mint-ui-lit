@@ -421,7 +421,7 @@ export const subscribeTasksList: ActionCreator<ListTasksThunkResult> = (problem_
             let list = {
                 task_ids: task_ids,
                 tasks: tasks
-            } as TaskList;   
+            } as TaskList;
             dispatch({
                 type: TASKS_LIST,
                 list
@@ -462,7 +462,7 @@ export const subscribeThreadsList: ActionCreator<ListThreadsThunkResult> = (task
             let list = {
                 thread_ids: thread_ids,
                 threads: threads
-            } as ThreadList;   
+            } as ThreadList;
             dispatch({
                 type: THREADS_LIST,
                 list
@@ -1147,6 +1147,33 @@ export const sendDataForIngestion = (
   });
 };
 
+
+export const sendDataForPublishing = (
+  threadid: string,
+  prefs: UserPreferences,
+  headers?: Record<string, string>
+) => {
+  let data = {
+    thread_id: threadid,
+  };
+  return new Promise<void>((resolve, reject) => {
+    postJSONResource(
+      {
+
+        url: prefs.mint.ensemble_manager_api + "/tapis/threads/" + threadid + "/outputs",
+        onLoad: function (e: any) {
+          resolve();
+        },
+        onError: function () {
+          reject("Cannot publish outputs");
+        },
+      },
+      data,
+      false,
+      headers
+    );
+  });
+};
 export const threadTotalRunsChanged = (
   oldthread: Thread,
   newthread: Thread
