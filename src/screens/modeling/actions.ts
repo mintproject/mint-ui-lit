@@ -1148,12 +1148,12 @@ export const sendDataForIngestion = (
 };
 
 export const sendDataForPublishing = (
-  threadid: string,
+  modelEnsembleId: string,
   prefs: UserPreferences,
   headers?: Record<string, string>
 ) => {
   let data = {
-    thread_id: threadid,
+    thread_id: modelEnsembleId,
   };
   return new Promise<void>((resolve, reject) => {
     postJSONResource(
@@ -1162,8 +1162,8 @@ export const sendDataForPublishing = (
           prefs.mint.ensemble_manager_api +
           "/" +
           prefs.mint.execution_engine +
-          "/threads/" +
-          threadid +
+          "/modelEnsembles/" +
+          modelEnsembleId +
           "/outputs",
         onLoad: function (e: any) {
           resolve();

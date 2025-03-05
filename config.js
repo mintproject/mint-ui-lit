@@ -5,9 +5,13 @@ window.REACT_APP_GRAPHQL_ENDPOINT = "localhost:30003/v1/graphql";
 window.REACT_APP_GRAPHQL_ENABLE_SSL = false;
 window.REACT_APP_DATA_CATALOG_API = "http://datacatalog.mint.local";
 window.REACT_APP_MODEL_CATALOG_API = "http://api.models.mint.local/v1.8.0";
-window.REACT_APP_ENSEMBLE_MANAGER_API = "http://ensemble-manager.mint.local/v1";
 window.REACT_APP_GRAPHQL_ENDPOINT = "graphql.mint.local/v1/graphql";
 window.REACT_APP_GRAPHQL_ENABLE_SSL = false;
+
+
+// Ensemble Manager API
+window.REACT_APP_ENSEMBLE_MANAGER_API = "http://localhost:3000/v1";
+window.REACT_APP_EXECUTION_ENGINE = "tapis";
 
 // Google API Key
 window.REACT_APP_GOOGLE_MAPS_KEY = "AIzaSyBl8J85KibSuhHEw_j0JTlITVTBb8oXiMo";
@@ -33,7 +37,7 @@ window.REACT_APP_AUTH_LOGOUT = '/v3/oauth2/tokens/revoke';
 
 //Visualization and Ingestion - Not used any more - Remove ?
 window.REACT_APP_VISUALIZATION_URL = "http://dev.viz.mint.isi.edu";
-window.REACT_APP_INGESTION_API = "http://node1.ingestion.mint.isi.edu/v1.3.0";
+window.REACT_APP_INGESTION_API = "";
 window.REACT_APP_AIRFLOW_API = "https://airflow.mint.isi.edu/api/v1";
 window.REACT_APP_AIRFLOW_DAG_DOWNLOAD_THREAD_ID = "download_thread"
 
