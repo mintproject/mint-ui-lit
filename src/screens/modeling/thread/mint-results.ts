@@ -256,7 +256,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
                     @click="${() => this._fetchAllResults(model.id)}"
                     >Fetch all results</wl-button
                   >`
-                : !submitted_publishing
+                : submitted_publishing
                 ? html`
                     <p>
                       Please wait while publishing data... <br />
@@ -858,10 +858,6 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ""}</textarea
     sendDataForPublishing(this.thread.model_ensembles[modelid].id, this.prefs, {
       Authorization: `Bearer ${token}`,
     });
-    this.thread.execution_summary[modelid].submitted_for_publishing = true;
-    setInterval(() => {
-      this._reloadAllRuns();
-    }, 10000);
   }
 
   async _reloadAllRuns() {
