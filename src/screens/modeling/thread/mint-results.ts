@@ -266,7 +266,10 @@ export class MintResults extends connect(store)(MintThreadPage) {
                   `
                 : ""}
               <!-- FIXME: Temporarily removed -->
-              ${this.prefs.mint.ingestion_api && finished && !submitted && this.permission.write
+              ${this.prefs.mint.ingestion_api &&
+              finished &&
+              !submitted &&
+              this.permission.write
                 ? html` <wl-button
                     class="submit"
                     @click="${() => this._ingestAllResults(model.id)}"
