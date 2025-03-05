@@ -266,10 +266,10 @@ export class MintResults extends connect(store)(MintThreadPage) {
                   `
                 : ""}
               <!-- FIXME: Temporarily removed -->
-              ${finished && !submitted && this.permission.write
+              ${this.prefs.mint.ingestion_api && finished && !submitted && this.permission.write
                 ? html` <wl-button
                     class="submit"
-                    @click="${() => this._publishAllResults(model.id)}"
+                    @click="${() => this._ingestAllResults(model.id)}"
                     >Save all results</wl-button
                   >`
                 : submitted && !finished_ingestion
@@ -825,10 +825,10 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ""}</textarea
     return purl + "/data/fetch?data_id=" + escape(dsid);
   }
 
-  _publishAllResults(modelid) {
+  _ingestAllResults(modelid) {
     ReactGA.event({
       category: "Thread",
-      action: "Save results",
+      action: "Ingest results",
     });
     let model = this.thread.models[modelid];
     /*
