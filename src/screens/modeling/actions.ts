@@ -1160,7 +1160,9 @@ export const sendDataForPublishing = (
       {
         url:
           prefs.mint.ensemble_manager_api +
-          "/" + prefs.mint.execution_engine + "/threads/" +
+          "/" +
+          prefs.mint.execution_engine +
+          "/threads/" +
           threadid +
           "/outputs",
         onLoad: function (e: any) {
