@@ -29,6 +29,7 @@ import {
 } from "../actions";
 import {
   hideDialog,
+  hideNotification,
   showDialog,
   showNotification,
 } from "../../../util/ui_functions";
@@ -851,16 +852,15 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ""}</textarea
       category: "Thread",
       action: "Save results",
     });
-    let model = this.thread.models[modelid];
-    /*
-        -> Ingest thread to visualization database
-        -> Register outputs to the data catalog
-        -> Publish run to provenance catalog
-        */
-    showNotification("saveNotification", this.shadowRoot);
     sendDataForPublishing(this.thread.model_ensembles[modelid].id, this.prefs, {
       Authorization: `Bearer ${token}`,
+    }).then(() => {
+      showNotification("saveNotification", this.shadowRoot);
+    }).catch(() => {
+      showNotification("errorPublishingNotification", this.shadowRoot);
     });
+    hideNotification("saveNotification", this.shadowRoot);
+    hideNotification("errorPublishingNotification", this.shadowRoot);
   }
 
   async _reloadAllRuns() {

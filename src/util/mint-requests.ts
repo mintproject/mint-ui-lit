@@ -9,6 +9,11 @@ export function getResource(rq: any, withCredentials: boolean) {
 
 function sendData(xhr: XMLHttpRequest, payload: any) {
   xhr.send(payload);
+  if (xhr.status === 200) {
+    console.log("Data sent successfully.");
+  } else {
+    throw new Error("Failed to send data: " + xhr.statusText);
+  }
 }
 
 export function postJSONResource(
@@ -23,7 +28,6 @@ export function postJSONResource(
   xhr.withCredentials = withCredentials;
   xhr.open("POST", rq.url);
   xhr.setRequestHeader("Content-type", "application/json");
-  console.log("headers", headers);
   if (headers) {
     for (var header in headers) {
       xhr.setRequestHeader(header, headers[header]);
