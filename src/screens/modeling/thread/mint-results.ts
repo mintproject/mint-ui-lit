@@ -854,11 +854,13 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ""}</textarea
     });
     sendDataForPublishing(this.thread.model_ensembles[modelid].id, this.prefs, {
       Authorization: `Bearer ${token}`,
-    }).then(() => {
-      showNotification("saveNotification", this.shadowRoot);
-    }).catch(() => {
-      showNotification("errorPublishingNotification", this.shadowRoot);
-    });
+    })
+      .then(() => {
+        showNotification("saveNotification", this.shadowRoot);
+      })
+      .catch(() => {
+        showNotification("errorPublishingNotification", this.shadowRoot);
+      });
     hideNotification("saveNotification", this.shadowRoot);
     hideNotification("errorPublishingNotification", this.shadowRoot);
   }
