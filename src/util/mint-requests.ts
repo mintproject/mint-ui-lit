@@ -18,7 +18,7 @@ export function postJSONResource(
   headers?: Record<string, string>
 ) {
   var xhr = new XMLHttpRequest();
-  xhr.addEventListener("load", function() {
+  xhr.addEventListener("load", function () {
     if (xhr.status >= 200 && xhr.status < 400) {
       console.log("Data sent successfully.");
       rq.onLoad.call(this);

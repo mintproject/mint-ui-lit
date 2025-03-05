@@ -855,12 +855,17 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ""}</textarea
     showNotification("saveNotification", this.shadowRoot);
     sendDataForPublishing(this.thread.model_ensembles[modelid].id, this.prefs, {
       Authorization: `Bearer ${token}`,
-    }).then(() => {
-      this._notification.custom("The results will be available in a few minutes.", "save");
-    }).catch(() => {
-      showNotification("errorPublishingNotification", this.shadowRoot);
-      this._notification.error("Error publishing results");
-    });
+    })
+      .then(() => {
+        this._notification.custom(
+          "The results will be available in a few minutes.",
+          "save"
+        );
+      })
+      .catch(() => {
+        showNotification("errorPublishingNotification", this.shadowRoot);
+        this._notification.error("Error publishing results");
+      });
     hideNotification("saveNotification", this.shadowRoot);
     hideNotification("errorPublishingNotification", this.shadowRoot);
   }
