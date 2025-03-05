@@ -9,11 +9,6 @@ export function getResource(rq: any, withCredentials: boolean) {
 
 function sendData(xhr: XMLHttpRequest, payload: any) {
   xhr.send(payload);
-  if (xhr.status === 200) {
-    console.log("Data sent successfully.");
-  } else {
-    throw new Error("Failed to send data: " + xhr.statusText);
-  }
 }
 
 export function postJSONResource(
@@ -23,7 +18,15 @@ export function postJSONResource(
   headers?: Record<string, string>
 ) {
   var xhr = new XMLHttpRequest();
-  xhr.addEventListener("load", rq.onLoad);
+  xhr.addEventListener("load", function() {
+    if (xhr.status >= 200 && xhr.status < 400) {
+      console.log("Data sent successfully.");
+      rq.onLoad.call(this);
+    } else {
+      console.error("Failed to send data:", xhr.statusText);
+      rq.onError.call(this);
+    }
+  });
   xhr.addEventListener("error", rq.onError);
   xhr.withCredentials = withCredentials;
   xhr.open("POST", rq.url);
