@@ -107,7 +107,7 @@ export class DataCatalogAdapter {
       }
     } else if (data_catalog_type === "CKAN") {
       // CKAN Data Catalog
-      datasets = []
+      datasets = [];
 
       if (driving_variables.length === 0) {
         let dsQueryData: any = {
@@ -147,9 +147,12 @@ export class DataCatalogAdapter {
           dsQueryData
         );
         if (!!res && res.result && res.result.count > 0) {
-          datasets = [...datasets, ...getDatasetsFromCKANResponse(res, {
-            variables: driving_variables,
-          } as DatasetQueryParameters)];
+          datasets = [
+            ...datasets,
+            ...getDatasetsFromCKANResponse(res, {
+              variables: driving_variables,
+            } as DatasetQueryParameters),
+          ];
         } else {
           console.warn(
             `${data_catalog_api_url}/datasets/find no result.`,
