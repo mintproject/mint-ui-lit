@@ -1,16 +1,18 @@
 window.REACT_APP_WELCOME_MESSAGE = "Welcome to MINT Demo";
 window.REACT_APP_MODEL_CATALOG_DEFAULT_USER= "mint@isi.edu";
-// Mint Services
-window.REACT_APP_GRAPHQL_ENDPOINT = "localhost:30003/v1/graphql";
-window.REACT_APP_GRAPHQL_ENABLE_SSL = false;
-window.REACT_APP_DATA_CATALOG_API = "http://datacatalog.mint.local";
+// Model Catalog
 window.REACT_APP_MODEL_CATALOG_API = "http://api.models.mint.local/v1.8.0";
+// Mint Database
 window.REACT_APP_GRAPHQL_ENDPOINT = "graphql.mint.local/v1/graphql";
 window.REACT_APP_GRAPHQL_ENABLE_SSL = false;
 
+// Data Catalog
+window.REACT_APP_DATA_CATALOG_API = "https://ckan.tacc.utexas.edu";
+window.REACT_APP_DATA_CATALOG_TYPE = "CKAN";
 
 // Ensemble Manager API
 window.REACT_APP_ENSEMBLE_MANAGER_API = "http://localhost:3000/v1";
+//window.REACT_APP_ENSEMBLE_MANAGER_API = "http://ensemble-manager.mint.local/v1";
 window.REACT_APP_EXECUTION_ENGINE = "tapis";
 
 // Google API Key
@@ -40,6 +42,3 @@ window.REACT_APP_VISUALIZATION_URL = "http://dev.viz.mint.isi.edu";
 window.REACT_APP_INGESTION_API = "";
 window.REACT_APP_AIRFLOW_API = "https://airflow.mint.isi.edu/api/v1";
 window.REACT_APP_AIRFLOW_DAG_DOWNLOAD_THREAD_ID = "download_thread"
-
-window.REACT_APP_DATA_CATALOG_TYPE = "CKAN";
-window.REACT_APP_DATA_CATALOG_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJaUGd3Snk1YUxRbW9keTBnd1R0SkNDMG5QeU5vMjg3QnRCd0J4WVVpWHFBIiwiaWF0IjoxNzAxNTMyNzE1fQ.yX8S6H1MD7eZYoDTX6Adybv3V5ezrgz-Y2zNOqjhEXo";

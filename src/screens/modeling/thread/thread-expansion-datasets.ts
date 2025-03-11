@@ -417,6 +417,20 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
             ? this.datasetModelSelector
             : null}
         </div>
+        <div slot="content" style="padding-right:8px;">
+          ${this.selectedInput?.variables && this.selectedInput?.variables.length > 0
+            ? html`
+                  <h4>Variables</h4>
+                  <p>
+                    The dataset has the following variables:
+                  </p>
+                  <ul>
+                   ${this.selectedInput?.variables.map((v) => html`<li>${v}</li>`)}
+                  </ul>
+                </div>
+              `
+            : null}
+        </div>
         <div slot="footer" style="padding-top:0px;">
           <wl-button
             flat

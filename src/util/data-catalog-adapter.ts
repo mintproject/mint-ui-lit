@@ -107,32 +107,56 @@ export class DataCatalogAdapter {
       }
     } else if (data_catalog_type === "CKAN") {
       // CKAN Data Catalog
-      let dsQueryData: any = {
-        fq: "tags:" + driving_variables.map((v) => "stdvar." + v).join(","),
-        ext_bbox:
-          region.bounding_box.xmin +
-          "," +
-          region.bounding_box.ymin +
-          "," +
-          region.bounding_box.xmax +
-          "," +
-          region.bounding_box.ymax,
-      };
+      datasets = []
 
-      let res: any = await this.fetchJson(
-        `${data_catalog_api_url}/api/action/package_search`,
-        dsQueryData
-      );
-      if (!!res && res.result && res.result.count > 0) {
+      if (driving_variables.length === 0) {
+        let dsQueryData: any = {
+          ext_bbox:
+            region.bounding_box.xmin +
+            "," +
+            region.bounding_box.ymin +
+            "," +
+            region.bounding_box.xmax +
+            "," +
+            region.bounding_box.ymax,
+        };
+        let res: any = await this.fetchJson(
+          `${data_catalog_api_url}/api/action/package_search`,
+          dsQueryData
+        );
         datasets = getDatasetsFromCKANResponse(res, {
           variables: driving_variables,
         } as DatasetQueryParameters);
-      } else {
-        console.warn(
-          `${data_catalog_api_url}/datasets/find no result.`,
+      }
+
+      for (const variable of driving_variables) {
+        let dsQueryData: any = {
+          fq: "tags:stdvar." + variable,
+          ext_bbox:
+            region.bounding_box.xmin +
+            "," +
+            region.bounding_box.ymin +
+            "," +
+            region.bounding_box.xmax +
+            "," +
+            region.bounding_box.ymax,
+        };
+
+        let res: any = await this.fetchJson(
+          `${data_catalog_api_url}/api/action/package_search`,
           dsQueryData
-        ),
-          res;
+        );
+        if (!!res && res.result && res.result.count > 0) {
+          datasets = [...datasets, ...getDatasetsFromCKANResponse(res, {
+            variables: driving_variables,
+          } as DatasetQueryParameters)];
+        } else {
+          console.warn(
+            `${data_catalog_api_url}/datasets/find no result.`,
+            dsQueryData
+          ),
+            res;
+        }
       }
     }
     return datasets;
