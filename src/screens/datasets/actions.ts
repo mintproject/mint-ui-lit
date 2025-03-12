@@ -137,7 +137,7 @@ export const getDatasetsFromCKANResponse = (
       return {
         id: r["id"],
         name: r["name"],
-        url: r["url"],
+        url: r["name"],
         selected: true,
         spatial_coverage: newds["spatial_coverage"],
         time_period: {
