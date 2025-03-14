@@ -22,7 +22,7 @@ import { BoundingBox, Region as LocalRegion } from "screens/regions/reducers";
 import { GoogleMapCustom } from "./google-map-custom";
 import "./google-map-custom";
 import { MINT_PREFERENCES } from "config";
-import { batchUpdateResourceSelection, updateResourceSelection } from "screens/modeling/actions";
+import { batchUpdateResourceSelection } from "screens/modeling/actions";
 
 @customElement("dataset-resource-selector")
 export class DatasetResourceSelector extends connect(store)(LitElement) {
