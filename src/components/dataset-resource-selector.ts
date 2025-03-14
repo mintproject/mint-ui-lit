@@ -26,8 +26,8 @@ import { updateResourceSelection } from "screens/modeling/actions";
 
 @customElement("dataset-resource-selector")
 export class DatasetResourceSelector extends connect(store)(LitElement) {
-  @property({ type: Boolean }) protected editMode: boolean = true;
   @property({ type: Boolean }) protected mapReady: boolean = false;
+  @property({ type: Boolean }) protected isLoading: boolean = false;
   @property({ type: String }) public dialogSize:
     | "auto"
     | "fullscreen"
@@ -62,9 +62,9 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
   ) {
     super();
     this.selectedDataset = dataset;
-    this.resources = resources;
     this.selectedRegion = region;
     this.slice_id = sliceid;
+    this.resources = resources;
   }
 
   public renderMap(): TemplateResult {
@@ -86,37 +86,38 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
 
 
   public renderTable(): TemplateResult {
-    return html`<table class="resource-table">
-      <thead>
-        <tr>
-          <th>Select</th>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Selected</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${this.resources.map(
-                  (resource) => html`
-                    <tr>
-                      <td>
-                        <input
-                          type="checkbox"
-                          .checked=${resource.selected}
-                          @change=${(e: Event) =>
-                            this.toggleResourceSelection(e, resource)}
-                          ?disabled=${!this.editMode}
-                        />
-                      </td>
-                      <td>${resource.id}</td>
-                      <td>${resource.spatial_coverage.type}</td>
-                      <td>${resource.selected ? "Yes" : "No"}</td>
-                    </tr>
-                  `
-                )}
-              </tbody>
-            </table>
-            `;
+    return html`
+      <div style="margin-bottom: 10px;">
+        <wl-button @click=${this.selectAll} ?disabled=${this.isLoading}>Select All</wl-button>
+        <wl-button @click=${this.unselectAll} ?disabled=${this.isLoading}>Unselect All</wl-button>
+      </div>
+      <table class="resource-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Name</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${this.resources.length > 0 && this.resources.map(
+            (resource) => html`
+              <tr>
+                <td>
+                  <input
+                    type="checkbox"
+                    .checked=${resource.selected}
+                    @change=${(e: Event) =>
+                      this.toggleResourceSelection(e, resource)}
+                    ?disabled=${this.isLoading}
+                  />
+                </td>
+                <td>${resource.name}</td>
+              </tr>
+            `
+          )}
+        </tbody>
+      </table>
+    `;
   }
 
   public render(): TemplateResult {
@@ -139,7 +140,7 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
           ${this.selectedDataset ? "for " + this.selectedDataset.name : ""}
         </h3>
         <div slot="content">
-          ${this.renderTable()}
+          ${this.isLoading ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : this.renderTable()}
         </div>
         <div slot="footer" style="padding-top:0px;">
           <wl-button
@@ -149,13 +150,11 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
             @click=${this.onCancelClicked}
             >Cancel</wl-button
           >
-          ${this.editMode
-            ? html`<wl-button class="submit" @click=${this.onSaveClicked}
+          ${!this.isLoading
+            && html`<wl-button class="submit" @click=${this.onSaveClicked}
                 >Save</wl-button
               >`
-            : html`<wl-button class="submit" @click=${this.onEditClicked}
-                >Edit</wl-button
-              >`}
+              }
         </div>
       </wl-dialog>`;
   }
@@ -213,24 +212,18 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
     if (ev.detail && ev.detail.id) console.log("-->", ev.detail.id);
   }
 
-  protected onEditEnable(): void {
-    this.editMode = true;
-  }
-
-  protected onEditClicked(): void {
-    this.onEditEnable();
-  }
 
   protected onCancelClicked(): void {
-    this.editMode = false;
     hideDialog("resourceMapDialog", this.shadowRoot);
   }
 
   protected async onSaveClicked(): Promise<void> {
-    console.log("onSaveClicked", this.resources);
+    this.isLoading = true;
     for (let r of this.resources) {
       await updateResourceSelection(this.slice_id, r.id, r.selected);
     }
+    this.isLoading = false;
+    hideDialog("resourceMapDialog", this.shadowRoot);
   }
 
   public open(): void {
@@ -246,5 +239,19 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
     } else {
       resource.selected = false;
     }
+  }
+
+  private selectAll(): void {
+    this.resources.forEach(resource => {
+      resource.selected = true;
+    });
+    this.requestUpdate();
+  }
+
+  private unselectAll(): void {
+    this.resources.forEach(resource => {
+      resource.selected = false;
+    });
+    this.requestUpdate();
   }
 }
