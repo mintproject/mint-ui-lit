@@ -39,7 +39,7 @@ import updateThreadInfoGQL from "../../queries/thread/update-info.graphql";
 import addThreadEventGQL from "../../queries/thread/add-event.graphql";
 import setDatasliceResourcesGQL from "../../queries/thread/set-dataslice-resources.graphql";
 import getDatasliceResourcesGQL from "../../queries/thread/get-dataslice-resources.graphql";
-
+import updateResourceSelectionGQL from "../../queries/thread/update-resources-selected.graphql";
 import deleteProblemStatementGQL from "../../queries/problem-statement/delete.graphql";
 import deleteTaskGQL from "../../queries/task/delete.graphql";
 import deleteThreadGQL from "../../queries/thread/delete.graphql";
@@ -925,6 +925,23 @@ export const setThreadData = (
     },
   });
 };
+
+export const updateResourceSelection = (
+  slice_id: string,
+  resource_id: string,
+  selected: boolean
+) => {
+  let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
+  return APOLLO_CLIENT.mutate({
+    mutation: updateResourceSelectionGQL,
+    variables: {
+      sliceId: slice_id,
+      resourceId: resource_id,
+      selected: selected,
+    },
+  });
+};
+
 
 export const setThreadParameters = (
   model_ensembles: ModelEnsembleMap,

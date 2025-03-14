@@ -22,21 +22,22 @@ import { BoundingBox, Region as LocalRegion } from "screens/regions/reducers";
 import { GoogleMapCustom } from "./google-map-custom";
 import "./google-map-custom";
 import { MINT_PREFERENCES } from "config";
+import { updateResourceSelection } from "screens/modeling/actions";
 
 @customElement("dataset-resource-selector")
 export class DatasetResourceSelector extends connect(store)(LitElement) {
-  @property({ type: Boolean }) protected editMode: boolean = false;
+  @property({ type: Boolean }) protected editMode: boolean = true;
   @property({ type: Boolean }) protected mapReady: boolean = false;
   @property({ type: String }) public dialogSize:
     | "auto"
     | "fullscreen"
     | "large"
     | "medium"
-    | "small" = "medium";
+    | "small" = "large";
   @property({ type: Object }) protected selectedDataset: Dataset;
   @property({ type: Object }) protected selectedRegion: LocalRegion;
   @property({ type: Array }) protected resources: DataResource[];
-
+  @property({ type: String }) protected slice_id: string;
   static get styles() {
     return [
       SharedStyles,
@@ -53,14 +54,69 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
   }
 
   constructor(
+    sliceid: string,
     dataset: Dataset,
     resources: DataResource[],
     region: LocalRegion
+
   ) {
     super();
     this.selectedDataset = dataset;
     this.resources = resources;
     this.selectedRegion = region;
+    this.slice_id = sliceid;
+  }
+
+  public renderMap(): TemplateResult {
+    return html`<google-map-custom
+      slot="content"
+      class="map"
+      api-key="${MINT_PREFERENCES.google_maps_key}"
+      id="map"
+      style="height: 400px"
+          ?disable-default-ui="${true}"
+          draggable="true"
+          @click="${this.handleMapClick}"
+          mapTypeId="terrain"
+          .styles=${mapStyles}
+        >
+        </google-map-custom>
+    `;
+  }
+
+
+  public renderTable(): TemplateResult {
+    return html`<table class="resource-table">
+      <thead>
+        <tr>
+          <th>Select</th>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Selected</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${this.resources.map(
+                  (resource) => html`
+                    <tr>
+                      <td>
+                        <input
+                          type="checkbox"
+                          .checked=${resource.selected}
+                          @change=${(e: Event) =>
+                            this.toggleResourceSelection(e, resource)}
+                          ?disabled=${!this.editMode}
+                        />
+                      </td>
+                      <td>${resource.id}</td>
+                      <td>${resource.spatial_coverage.type}</td>
+                      <td>${resource.selected ? "Yes" : "No"}</td>
+                    </tr>
+                  `
+                )}
+              </tbody>
+            </table>
+            `;
   }
 
   public render(): TemplateResult {
@@ -82,19 +138,9 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
           Selecting resources
           ${this.selectedDataset ? "for " + this.selectedDataset.name : ""}
         </h3>
-        <google-map-custom
-          slot="content"
-          class="map"
-          api-key="${MINT_PREFERENCES.google_maps_key}"
-          id="map"
-          style="height: 400px"
-          ?disable-default-ui="${true}"
-          draggable="true"
-          @click="${this.handleMapClick}"
-          mapTypeId="terrain"
-          .styles=${mapStyles}
-        >
-        </google-map-custom>
+        <div slot="content">
+          ${this.renderTable()}
+        </div>
         <div slot="footer" style="padding-top:0px;">
           <wl-button
             flat
@@ -103,11 +149,13 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
             @click=${this.onCancelClicked}
             >Cancel</wl-button
           >
-          <!--{this.editMode ? html
-                <wl-button class="submit" @click={this.onSaveClicked}>Save</wl-button>
-                 : html
-                <wl-button class="submit" @click={this.onEditClicked}>Edit</wl-button>
-                }-->
+          ${this.editMode
+            ? html`<wl-button class="submit" @click=${this.onSaveClicked}
+                >Save</wl-button
+              >`
+            : html`<wl-button class="submit" @click=${this.onEditClicked}
+                >Edit</wl-button
+              >`}
         </div>
       </wl-dialog>`;
   }
@@ -178,10 +226,25 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
     hideDialog("resourceMapDialog", this.shadowRoot);
   }
 
-  protected onSaveClicked(): void {}
+  protected async onSaveClicked(): Promise<void> {
+    console.log("onSaveClicked", this.resources);
+    for (let r of this.resources) {
+      await updateResourceSelection(this.slice_id, r.id, r.selected);
+    }
+  }
 
   public open(): void {
     showDialog("resourceMapDialog", this.shadowRoot);
     this.updateMap();
+  }
+
+  private toggleResourceSelection(e: Event, resource: DataResource) {
+    console.log("toggleResourceSelection", e, resource);
+    const checked = (e.target as HTMLInputElement).checked;
+    if (checked) {
+      resource.selected = true;
+    } else {
+      resource.selected = false;
+    }
   }
 }
