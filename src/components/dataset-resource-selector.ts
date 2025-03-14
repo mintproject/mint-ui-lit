@@ -22,7 +22,7 @@ import { BoundingBox, Region as LocalRegion } from "screens/regions/reducers";
 import { GoogleMapCustom } from "./google-map-custom";
 import "./google-map-custom";
 import { MINT_PREFERENCES } from "config";
-import { updateResourceSelection } from "screens/modeling/actions";
+import { batchUpdateResourceSelection, updateResourceSelection } from "screens/modeling/actions";
 
 @customElement("dataset-resource-selector")
 export class DatasetResourceSelector extends connect(store)(LitElement) {
@@ -150,11 +150,7 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
             @click=${this.onCancelClicked}
             >Cancel</wl-button
           >
-          ${!this.isLoading
-            && html`<wl-button class="submit" @click=${this.onSaveClicked}
-                >Save</wl-button
-              >`
-              }
+          <wl-button class="submit" ?disabled=${this.isLoading} @click=${this.onSaveClicked}>Save</wl-button>
         </div>
       </wl-dialog>`;
   }
@@ -219,9 +215,11 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
 
   protected async onSaveClicked(): Promise<void> {
     this.isLoading = true;
-    for (let r of this.resources) {
-      await updateResourceSelection(this.slice_id, r.id, r.selected);
-    }
+    await batchUpdateResourceSelection(this.resources.map(r => ({
+      slice_id: this.slice_id,
+      resource_id: r.id,
+      selected: r.selected
+    })));
     this.isLoading = false;
     hideDialog("resourceMapDialog", this.shadowRoot);
   }
