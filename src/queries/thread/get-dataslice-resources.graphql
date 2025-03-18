@@ -1,5 +1,6 @@
 query get_dataslice_resources($id:uuid!) {
     dataslice_by_pk(id:$id) {
+        id
         dataset {
             id
             name
@@ -7,6 +8,7 @@ query get_dataslice_resources($id:uuid!) {
         resources {
             selected
             resource {
+                dcid
                 id
                 name
                 url

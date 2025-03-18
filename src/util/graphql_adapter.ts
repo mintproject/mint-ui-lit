@@ -621,6 +621,7 @@ export const resourceFromGQL = (resourceobj: any): DataResource => {
       start_date: new Date(resourceobj.start_date),
       end_date: new Date(resourceobj.end_date),
     },
+    dcid: resourceobj.dcid,
   } as DataResource;
   return resource;
 };

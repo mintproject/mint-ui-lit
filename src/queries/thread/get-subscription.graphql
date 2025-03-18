@@ -12,6 +12,14 @@ subscription sub_thread($id: String!) {
                     id
                     name
                 }
+                resources {
+                    selected
+                    resource {
+                        id
+                        name
+                        dcid
+                    }
+                }
                 start_date
                 end_date
                 selected_resources: resources_aggregate(where:{selected:{_eq:true}}) {

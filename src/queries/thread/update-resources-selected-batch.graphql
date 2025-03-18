@@ -1,0 +1,14 @@
+mutation batch_update_data_slice_resource_selection(
+  $updates: [dataslice_resource_updates!]!
+) {
+  update_dataslice_resource_many(
+    updates: $updates
+  ) {
+    affected_rows
+    returning {
+      dataslice_id
+      resource_id
+      selected
+    }
+  }
+}

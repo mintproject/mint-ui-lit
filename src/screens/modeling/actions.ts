@@ -39,7 +39,8 @@ import updateThreadInfoGQL from "../../queries/thread/update-info.graphql";
 import addThreadEventGQL from "../../queries/thread/add-event.graphql";
 import setDatasliceResourcesGQL from "../../queries/thread/set-dataslice-resources.graphql";
 import getDatasliceResourcesGQL from "../../queries/thread/get-dataslice-resources.graphql";
-
+import updateResourceSelectionGQL from "../../queries/thread/update-resources-selected.graphql";
+import updateResourceSelectionGQLBatch from "../../queries/thread/update-resources-selected-batch.graphql";
 import deleteProblemStatementGQL from "../../queries/problem-statement/delete.graphql";
 import deleteTaskGQL from "../../queries/task/delete.graphql";
 import deleteThreadGQL from "../../queries/thread/delete.graphql";
@@ -925,6 +926,57 @@ export const setThreadData = (
     },
   });
 };
+
+export const updateResourceSelection = (
+  slice_id: string,
+  resource_id: string,
+  selected: boolean
+) => {
+  let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
+  return APOLLO_CLIENT.mutate({
+    mutation: updateResourceSelectionGQL,
+    variables: {
+      sliceId: slice_id,
+      resourceId: resource_id,
+      selected: selected,
+    },
+  });
+};
+
+// Define types for the update operation
+export type ResourceSelectionUpdate = {
+  slice_id: string;
+  resource_id: string;
+  selected: boolean;
+};
+
+/**
+ * Updates selection status for multiple dataslice resources at once
+ * @param updates Array of updates containing slice_id, resource_id, and selected status
+ * @returns Promise with the mutation result
+ */
+export const batchUpdateResourceSelection = (updates: ResourceSelectionUpdate[]) => {
+  let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
+
+  // Transform the updates into the format expected by the GraphQL mutation
+  const formattedUpdates = updates.map(update => ({
+    where: {
+      dataslice_id: { _eq: update.slice_id },
+      resource_id: { _eq: update.resource_id }
+    },
+    _set: { selected: update.selected }
+  }));
+
+  console.log("formattedUpdates", formattedUpdates);
+
+  return APOLLO_CLIENT.mutate({
+    mutation: updateResourceSelectionGQLBatch,
+    variables: {
+      updates: formattedUpdates
+    },
+  });
+};
+
 
 export const setThreadParameters = (
   model_ensembles: ModelEnsembleMap,

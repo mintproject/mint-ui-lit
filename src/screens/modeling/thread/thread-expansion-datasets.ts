@@ -483,6 +483,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       req.then((slice: Dataslice) => {
         loadingDataslices.push(slice);
         this.resourceSelectors[slice.dataset.id] = new DatasetResourceSelector(
+          slice.id,
           slice.dataset,
           slice.resources,
           region
@@ -783,6 +784,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
             loadingDataslices.push(resp);
             this.resourceSelectors[slice.dataset.id] =
               new DatasetResourceSelector(
+                slice.id,
                 slice.dataset,
                 resp.resources,
                 region
@@ -817,6 +819,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
         req.then((slice: Dataslice) => {
           loadingDataslices.push(slice);
           this.resourceSelectors[dataset.id] = new DatasetResourceSelector(
+            slice.id,
             dataset,
             slice.resources,
             region
@@ -869,17 +872,18 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
         let req2: Promise<Dataslice> = getThreadDataResources(sliceid);
         req2.catch(reject);
         Promise.all([req, req2]).then((arr: any) => {
-          let savedResourcesMap: IdMap<DataResource> = {}; // Name -> resource
+          let savedResourcesMap: IdMap<DataResource> = {}; // dcid -> resource
           let queriedResources: DataResource[] = arr[0];
           let savedDataslice: Dataslice = arr[1];
           savedDataslice.resources.forEach(
-            (r: DataResource) => (savedResourcesMap[r.name] = r)
+            (r: DataResource) => (savedResourcesMap[r.dcid] = r)
           );
           let resources: DataResource[] = queriedResources.map(
             (r: DataResource) => {
-              r.selected = savedResourcesMap[r.name]
-                ? savedResourcesMap[r.name].selected
+              r.selected = savedResourcesMap[r.id]
+                ? savedResourcesMap[r.id].selected
                 : false;
+              r.id = savedResourcesMap[r.id] && savedResourcesMap[r.id] ?savedResourcesMap[r.id].id : '';
               return r;
             }
           );
