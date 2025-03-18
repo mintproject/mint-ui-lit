@@ -21,7 +21,7 @@ import { uuidv4 } from "./helpers";
 
 import * as crypto from "crypto";
 import { Variable } from "screens/variables/reducers";
-import { KeycloakAdapter } from "./keycloak-adapter";
+import { OAuth2Adapter } from "./oauth2-adapter";
 
 export const regionToGQL = (region: Region) => {
   let regionobj = {
@@ -621,6 +621,7 @@ export const resourceFromGQL = (resourceobj: any): DataResource => {
       start_date: new Date(resourceobj.start_date),
       end_date: new Date(resourceobj.end_date),
     },
+    dcid: resourceobj.dcid,
   } as DataResource;
   return resource;
 };
@@ -629,7 +630,7 @@ export const getCreateEvent = (notes: string) => {
   return {
     event: "CREATE",
     timestamp: new Date(),
-    userid: KeycloakAdapter.getUser().email,
+    userid: OAuth2Adapter.getUser().email,
     notes: notes,
   } as MintEvent;
 };
@@ -638,7 +639,7 @@ export const getUpdateEvent = (notes: string) => {
   return {
     event: "UPDATE",
     timestamp: new Date(),
-    userid: KeycloakAdapter.getUser().email,
+    userid: OAuth2Adapter.getUser().email,
     notes: notes,
   } as MintEvent;
 };
@@ -647,7 +648,7 @@ export const getCustomEvent = (event: string, notes: string) => {
   return {
     event: event,
     timestamp: new Date(),
-    userid: KeycloakAdapter.getUser().email,
+    userid: OAuth2Adapter.getUser().email,
     notes: notes,
   } as MintEvent;
 };
@@ -841,6 +842,9 @@ const getModelParameterBindings = (model, model_ensemble: ThreadModelMap) => {
 
 const getSpatialCoverageGeometry = (coverage) => {
   if (!coverage) return null;
+  if (coverage["coordinates"]) {
+    return coverage;
+  }
   let value = coverage["value"];
   if (coverage["type"] == "Point") {
     return {

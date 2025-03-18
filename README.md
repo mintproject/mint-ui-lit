@@ -33,7 +33,25 @@ You can start the development server with:
 yarn start
 ```
 
+### Authentication
 
+MINT-UI supports the OAuth 2.0 protocol for authorization. The authorization code grant, password grant, and implicit flow are supported for different scenarios.
 
+To configure the autorization system you will use, you must edit the `config.js` file. 
+
+- `REACT_APP_AUTH_GRANT`: Use `password` for the password grant, `implicit` for the implicit flow and `code` for the authorization code.
+- `REACT_APP_AUTH_SERVER`: The base URI for the authentication server.
+- `REACT_APP_AUTH_CLIENT_ID`: The client ID associated with MINT on the authentication server.
+- `REACT_APP_AUTH_TOKEN_URL`: The path to the token API on the authentication server.
+- `REACT_APP_AUTH_AUTH_URL`: The path to the authentication API on the authentication server.
+- `REACT_APP_AUTH_DISCOVERY_URL`: The path to the discovery API on the authentication server.
+- `REACT_APP_AUTH_LOGOUT`: The path to the logout or revoke API on the authentication server.
+
+Optional variables:
+
+- `REACT_APP_AUTH_PROVIDER`: For custom implementations, use `tapis` for Tapis authentication servers or `keycloak` for Keycloak authentication servers.
+- `REACT_APP_AUTH_HASH`: The hash for basic authentication. Will be written in the headers as `Authorization: Basic <HASH>`. This hash value can be generated in the browser using `btoa(<username>:<password>)`.
+
+Be sure of using the same authorization system on all your services, the access token will be send in execution and data requests.
 
 

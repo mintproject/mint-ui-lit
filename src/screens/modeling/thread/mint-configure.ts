@@ -97,11 +97,7 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
     });
 
     this.addEventListener("thread-models-updated", (e: Event) => {
-      console.log(
-        "asdas",
-        this.threadModelSelector.getStatus(),
-        this.threadDatasetSelector.getStatus()
-      );
+      //console.log("asdas",this.threadModelSelector.getStatus(),this.threadDatasetSelector.getStatus());
       this.threadDatasetSelector.requestUpdate();
       if (
         this.threadModelSelector.getStatus() === "done" &&
@@ -110,6 +106,13 @@ export class MintConfigure extends connect(store)(MintThreadPage) {
         this.threadDatasetSelector.open = true;
         this.threadDatasetSelector.setEditMode(true);
       }
+    });
+
+    this.addEventListener("thread-add-model-as-dataslice", (e: Event) => {
+      let newModels: string[] = e["detail"] as string[];
+      console.log(">> NEW models: ", newModels);
+      this.threadModelSelector.addModels(newModels);
+      this.threadModelSelector.requestUpdate();
     });
   }
 

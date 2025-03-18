@@ -1,7 +1,7 @@
 mutation update_thread_data(
-    $threadId: String!, 
-    $event: thread_provenance_insert_input!, 
-    $data: [thread_data_insert_input!]!, 
+    $threadId: String!,
+    $event: thread_provenance_insert_input!,
+    $data: [thread_data_insert_input!]!,
     $modelIO: [thread_model_io_insert_input!]!
 ) {
 
@@ -37,6 +37,13 @@ mutation update_thread_data(
   insert_thread_data (objects: $data) {
     returning {
         thread_id
+        __typename
+        dataslice {
+          resources {
+            resource_id
+            dataslice_id
+          }
+        }
     }
   }
 

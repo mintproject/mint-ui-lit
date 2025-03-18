@@ -14,7 +14,7 @@ import { problemStatementFromGQL, threadFromGQL } from "util/graphql_adapter";
 import fetchProblemStatementsListGQL from "../../queries/problem-statement/list.graphql";
 import fetchProblemStatementGQL from "../../queries/problem-statement/get.graphql";
 import fetchThreadGQL from "../../queries/thread/get.graphql";
-import { KeycloakAdapter } from "util/keycloak-adapter";
+import { OAuth2Adapter } from "util/oauth2-adapter";
 
 export const ANALYSIS_LIST = "ANALYSIS_LIST";
 
@@ -56,7 +56,7 @@ type ProblemDetailsThunkResult = ThunkAction<
 >;
 export const fetchProblemStatement: ActionCreator<ProblemDetailsThunkResult> =
   (problem_statement_id: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
+    let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
     APOLLO_CLIENT.query({
       query: fetchProblemStatementGQL,
       variables: {
@@ -90,7 +90,7 @@ type ThreadDetailsThunkResult = ThunkAction<
 >;
 export const fetchThread: ActionCreator<ThreadDetailsThunkResult> =
   (threadid: string) => (dispatch) => {
-    let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
+    let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
     APOLLO_CLIENT.query({
       query: fetchThreadGQL,
       variables: {
@@ -126,7 +126,7 @@ type ProblemListThunkResult = ThunkAction<
 export const fetchProblemStatementsList: ActionCreator<
   ProblemListThunkResult
 > = (regionid: string) => (dispatch) => {
-  let APOLLO_CLIENT = GraphQL.instance(KeycloakAdapter.getUser());
+  let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
   APOLLO_CLIENT.query({
     query: fetchProblemStatementsListGQL,
     variables: {

@@ -198,15 +198,14 @@ export class ModelsTree extends connect(store)(PageViewElement) {
   }
 
   protected render() {
-    if (!this._models || !this._regions || !this._categories)
+    if (!this._models || !this._region || !this._regions || !this._categories)
       return html`<div style="width:100%; text-align: center;">
         <wl-progress-spinner></wl-progress-spinner>
       </div>`;
 
     const visibleSetup = (setup: ModelConfigurationSetup) =>
       !!setup &&
-      (!this._region ||
-        !setup.hasRegion ||
+      (!setup.hasRegion ||
         setup.hasRegion.length == 0 ||
         (setup.hasRegion || []).some((region: Region) =>
           isSubregion(this._region.model_catalog_uri, this._regions[region.id])
@@ -218,12 +217,17 @@ export class ModelsTree extends connect(store)(PageViewElement) {
     });
 
     Object.values(this._models).forEach((m: Model) => {
-      if (m.hasModelCategory && m.hasModelCategory.length > 0) {
-        m.hasModelCategory.forEach((cat: ModelCategory) => {
-          let category: string = getLabel(this._categories[cat.id]);
-          categoryModels[category].push(m);
-          if (this._selectedModel === m.id) this._visible[category] = true;
-        });
+      if (
+        m.hasModelCategory &&
+        m.hasModelCategory.filter((c) => !!c.id).length > 0
+      ) {
+        m.hasModelCategory
+          .filter((c) => !!c.id)
+          .forEach((cat: ModelCategory) => {
+            let category: string = getLabel(this._categories[cat.id]);
+            categoryModels[category].push(m);
+            if (this._selectedModel === m.id) this._visible[category] = true;
+          });
       } else {
         let category: string = "Uncategorized";
         categoryModels[category].push(m);

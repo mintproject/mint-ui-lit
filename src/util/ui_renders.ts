@@ -73,6 +73,10 @@ export const renderNotifications = () => {
       <wl-icon slot="icon">error</wl-icon>
       <span>Please select at least two models.</span>
     </wl-snackbar>
+    <wl-snackbar id="errorPublishingNotification" fixed backdrop>
+      <wl-icon slot="icon">error</wl-icon>
+      <span>Error publishing results.</span>
+    </wl-snackbar>
   `;
 };
 

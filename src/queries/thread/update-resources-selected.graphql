@@ -1,0 +1,7 @@
+mutation update_data_slice_resource_selection($sliceId: uuid!, $resourceId: String!, $selected: Boolean!) {
+  update_dataslice_resource(where: {dataslice_id: {_eq: $sliceId}, resource_id: {_eq: $resourceId}}, _set: {selected: $selected}) {
+    returning {
+      resource_id
+    }
+  }
+}

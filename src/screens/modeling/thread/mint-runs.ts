@@ -550,6 +550,10 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     showNotification("runNotification", this.shadowRoot);
     let me = this;
     this._waiting = true;
+
+    // Get the auth token from localStorage
+    const token = localStorage.getItem("access-token");
+
     postJSONResource(
       {
         url:
@@ -566,7 +570,10 @@ export class MintRuns extends connect(store)(MintThreadPage) {
         },
       },
       data,
-      false
+      false,
+      {
+        Authorization: "Bearer " + token,
+      }
     );
 
     this.selectAndContinue("runs");

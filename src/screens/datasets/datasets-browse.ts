@@ -50,7 +50,7 @@ export class DatasetsBrowse extends connect(store)(PageViewElement) {
         .datacatalog {
           width: 100%;
           height: 100%;
-          margin-top: -70px;
+          /*margin-top: -70px;*/
           height: 100vh;
           border: 0;
         }

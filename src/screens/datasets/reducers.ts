@@ -45,6 +45,7 @@ export interface DataResource extends IdNameObject {
   url: string;
   time_period?: DateRange;
   spatial_coverage?: any;
+  dcid?: string;
   selected?: boolean;
 }
 

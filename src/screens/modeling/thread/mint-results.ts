@@ -25,9 +25,11 @@ import {
   sendDataForIngestion,
   subscribeThreadExecutionSummary,
   listThreadModelExecutionsAction,
+  sendDataForPublishing,
 } from "../actions";
 import {
   hideDialog,
+  hideNotification,
   showDialog,
   showNotification,
 } from "../../../util/ui_functions";
@@ -194,6 +196,10 @@ export class MintResults extends connect(store)(MintThreadPage) {
             let finished_ingestion =
               summary.ingested_runs == summary.total_runs;
             let finished = finished_runs == summary.total_runs;
+
+            let published_runs =
+              summary.published_runs == summary.successful_runs;
+            let submitted_publishing = summary.submitted_for_publishing;
             let running = summary.submitted_runs - finished_runs;
             let pending = summary.total_runs - summary.submitted_runs;
             if (!this.currentPage[modelid]) this.currentPage[modelid] = 1;
@@ -243,16 +249,37 @@ export class MintResults extends connect(store)(MintThreadPage) {
                 : html`Please execute some runs first`}
 
               <!-- FIXME: Temporarily removed -->
-              ${false && finished && !submitted && this.permission.write
+              ${finished && !published_runs && this.permission.write
                 ? html` <wl-button
                     class="submit"
-                    @click="${() => this._publishAllResults(model.id)}"
+                    ?disabled="${this.thread.execution_summary[model.id]
+                      .submitted_for_publishing || published_runs}"
+                    @click="${() => this._fetchAllResults(model.id)}"
+                    >Fetch all results</wl-button
+                  >`
+                : submitted_publishing
+                ? html`
+                    <p>
+                      Please wait while publishing data... <br />
+                      Published outputs from ${summary.published_runs || 0} out
+                      of ${summary.total_runs} model runs.
+                    </p>
+                  `
+                : ""}
+              <!-- FIXME: Temporarily removed -->
+              ${this.prefs.mint.ingestion_api &&
+              finished &&
+              !submitted &&
+              this.permission.write
+                ? html` <wl-button
+                    class="submit"
+                    @click="${() => this._ingestAllResults(model.id)}"
                     >Save all results</wl-button
                   >`
                 : submitted && !finished_ingestion
                 ? html`
                     <p>
-                      Please wait while saving and ingesting data... <br />
+                      Please wait while saving and registering data... <br />
                       Downloaded outputs from
                       ${summary.fetched_run_outputs || 0} out of
                       ${summary.total_runs} model runs. Ingested data from
@@ -802,10 +829,10 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ""}</textarea
     return purl + "/data/fetch?data_id=" + escape(dsid);
   }
 
-  _publishAllResults(modelid) {
+  _ingestAllResults(modelid) {
     ReactGA.event({
       category: "Thread",
-      action: "Save results",
+      action: "Ingest results",
     });
     let model = this.thread.models[modelid];
     /*
@@ -814,10 +841,33 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ""}</textarea
         -> Publish run to provenance catalog
         */
     showNotification("saveNotification", this.shadowRoot);
-
     sendDataForIngestion(this.thread.id, this.prefs);
-
     this.thread.execution_summary[modelid].submitted_for_ingestion = true;
+  }
+
+  _fetchAllResults(modelid) {
+    const token = localStorage.getItem("access-token");
+
+    ReactGA.event({
+      category: "Thread",
+      action: "Save results",
+    });
+    showNotification("saveNotification", this.shadowRoot);
+    sendDataForPublishing(this.thread.model_ensembles[modelid].id, this.prefs, {
+      Authorization: `Bearer ${token}`,
+    })
+      .then(() => {
+        this._notification.custom(
+          "The results will be available in a few minutes.",
+          "save"
+        );
+      })
+      .catch(() => {
+        showNotification("errorPublishingNotification", this.shadowRoot);
+        this._notification.error("Error publishing results");
+      });
+    hideNotification("saveNotification", this.shadowRoot);
+    hideNotification("errorPublishingNotification", this.shadowRoot);
   }
 
   async _reloadAllRuns() {
