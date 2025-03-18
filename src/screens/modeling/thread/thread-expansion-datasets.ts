@@ -883,7 +883,10 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
               r.selected = savedResourcesMap[r.id]
                 ? savedResourcesMap[r.id].selected
                 : false;
-              r.id = savedResourcesMap[r.id] && savedResourcesMap[r.id] ?savedResourcesMap[r.id].id : '';
+              r.id =
+                savedResourcesMap[r.id] && savedResourcesMap[r.id]
+                  ? savedResourcesMap[r.id].id
+                  : "";
               return r;
             }
           );

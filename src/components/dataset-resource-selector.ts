@@ -58,7 +58,6 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
     dataset: Dataset,
     resources: DataResource[],
     region: LocalRegion
-
   ) {
     super();
     this.selectedDataset = dataset;
@@ -74,22 +73,24 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
       api-key="${MINT_PREFERENCES.google_maps_key}"
       id="map"
       style="height: 400px"
-          ?disable-default-ui="${true}"
-          draggable="true"
-          @click="${this.handleMapClick}"
-          mapTypeId="terrain"
-          .styles=${mapStyles}
-        >
-        </google-map-custom>
-    `;
+      ?disable-default-ui="${true}"
+      draggable="true"
+      @click="${this.handleMapClick}"
+      mapTypeId="terrain"
+      .styles=${mapStyles}
+    >
+    </google-map-custom> `;
   }
-
 
   public renderTable(): TemplateResult {
     return html`
       <div style="margin-bottom: 10px;">
-        <wl-button @click=${this.selectAll} ?disabled=${this.isLoading}>Select All</wl-button>
-        <wl-button @click=${this.unselectAll} ?disabled=${this.isLoading}>Unselect All</wl-button>
+        <wl-button @click=${this.selectAll} ?disabled=${this.isLoading}
+          >Select All</wl-button
+        >
+        <wl-button @click=${this.unselectAll} ?disabled=${this.isLoading}
+          >Unselect All</wl-button
+        >
       </div>
       <table class="resource-table">
         <thead>
@@ -99,7 +100,8 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
           </tr>
         </thead>
         <tbody>
-          ${this.resources.length > 0 && this.resources.map(
+          ${this.resources.length > 0 &&
+          this.resources.map(
             (resource) => html`
               <tr>
                 <td>
@@ -140,7 +142,9 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
           ${this.selectedDataset ? "for " + this.selectedDataset.name : ""}
         </h3>
         <div slot="content">
-          ${this.isLoading ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>` : this.renderTable()}
+          ${this.isLoading
+            ? html`<wl-progress-spinner class="loading"></wl-progress-spinner>`
+            : this.renderTable()}
         </div>
         <div slot="footer" style="padding-top:0px;">
           <wl-button
@@ -150,7 +154,12 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
             @click=${this.onCancelClicked}
             >Cancel</wl-button
           >
-          <wl-button class="submit" ?disabled=${this.isLoading} @click=${this.onSaveClicked}>Save</wl-button>
+          <wl-button
+            class="submit"
+            ?disabled=${this.isLoading}
+            @click=${this.onSaveClicked}
+            >Save</wl-button
+          >
         </div>
       </wl-dialog>`;
   }
@@ -208,18 +217,19 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
     if (ev.detail && ev.detail.id) console.log("-->", ev.detail.id);
   }
 
-
   protected onCancelClicked(): void {
     hideDialog("resourceMapDialog", this.shadowRoot);
   }
 
   protected async onSaveClicked(): Promise<void> {
     this.isLoading = true;
-    await batchUpdateResourceSelection(this.resources.map(r => ({
-      slice_id: this.slice_id,
-      resource_id: r.id,
-      selected: r.selected
-    })));
+    await batchUpdateResourceSelection(
+      this.resources.map((r) => ({
+        slice_id: this.slice_id,
+        resource_id: r.id,
+        selected: r.selected,
+      }))
+    );
     this.isLoading = false;
     hideDialog("resourceMapDialog", this.shadowRoot);
   }
@@ -240,14 +250,14 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
   }
 
   private selectAll(): void {
-    this.resources.forEach(resource => {
+    this.resources.forEach((resource) => {
       resource.selected = true;
     });
     this.requestUpdate();
   }
 
   private unselectAll(): void {
-    this.resources.forEach(resource => {
+    this.resources.forEach((resource) => {
       resource.selected = false;
     });
     this.requestUpdate();

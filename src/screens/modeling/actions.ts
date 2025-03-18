@@ -955,16 +955,18 @@ export type ResourceSelectionUpdate = {
  * @param updates Array of updates containing slice_id, resource_id, and selected status
  * @returns Promise with the mutation result
  */
-export const batchUpdateResourceSelection = (updates: ResourceSelectionUpdate[]) => {
+export const batchUpdateResourceSelection = (
+  updates: ResourceSelectionUpdate[]
+) => {
   let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
 
   // Transform the updates into the format expected by the GraphQL mutation
-  const formattedUpdates = updates.map(update => ({
+  const formattedUpdates = updates.map((update) => ({
     where: {
       dataslice_id: { _eq: update.slice_id },
-      resource_id: { _eq: update.resource_id }
+      resource_id: { _eq: update.resource_id },
     },
-    _set: { selected: update.selected }
+    _set: { selected: update.selected },
   }));
 
   console.log("formattedUpdates", formattedUpdates);
@@ -972,11 +974,10 @@ export const batchUpdateResourceSelection = (updates: ResourceSelectionUpdate[])
   return APOLLO_CLIENT.mutate({
     mutation: updateResourceSelectionGQLBatch,
     variables: {
-      updates: formattedUpdates
+      updates: formattedUpdates,
     },
   });
 };
-
 
 export const setThreadParameters = (
   model_ensembles: ModelEnsembleMap,
