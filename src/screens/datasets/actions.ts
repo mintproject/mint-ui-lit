@@ -517,14 +517,6 @@ export const queryDatasetResources: ActionCreator<
       });
       req.catch(reject);
     });
-    req.then((response) => {
-      response.json().then((obj) => {
-        resources = getResourcesFromDCResponse(obj);
-        resolve();
-      });
-    });
-    req.catch(reject);
-  });
 
     Promise.all([prom1, prom2]).then((values: any) => {
       if (dataset) dataset.resources = resources;
