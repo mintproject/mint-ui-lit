@@ -58,7 +58,7 @@ export class CKANDataCatalog implements IDataCatalog {
 
   }
 
-  public async findDatasetsByRegion(region: Region): Promise<Dataset[]> {
+  public async listDatasetsByRegion(region: Region): Promise<Dataset[]> {
     let res: any = await CKANDataCatalog.request(
       `${MINT_PREFERENCES.data_catalog_api}/api/action/package_search`,
       {

@@ -17,7 +17,7 @@ export class DefaultDataCatalog implements IDataCatalog {
     }
   }
 
-  public async findDatasetsByRegion(region: Region): Promise<Dataset[]> {
+  public async listDatasetsByRegion(region: Region): Promise<Dataset[]> {
     throw new Error("Not implemented");
   }
 

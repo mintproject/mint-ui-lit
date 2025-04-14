@@ -533,7 +533,7 @@ export const queryDatasetByRegionCkan: ActionCreator<
     loading: true,
   });
   const dataCatalog = DataCatalogAdapter.getInstance();
-  const datasets = await dataCatalog.findDatasetsByRegion(region);
+  const datasets = await dataCatalog.listDatasetsByRegion(region);
   dispatch({
     type: DATASETS_REGION_QUERY,
     region: region,
