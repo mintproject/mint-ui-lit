@@ -106,7 +106,7 @@ export const getDatasetsFromDCResponse = (
   return datasets;
 };
 
-const getDatasetDetailFromDCResponse = (ds: any) => {
+export const getDatasetDetailFromDCResponse = (ds: any) => {
   let dmeta = ds["metadata"];
   return {
     id: ds["dataset_id"],

@@ -48,7 +48,7 @@ export class DefaultDataCatalog implements IDataCatalog {
     return DefaultDataCatalog.getDatasetsFromDCResponse(obj, {});
   }
 
-  public async findDatasetByVariableName(
+  public async findDatasetByVariableNameRegionDates(
     driving_variables: string[],
     region: Region,
     dates?: DateRange
