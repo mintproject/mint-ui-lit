@@ -86,15 +86,24 @@ export class CKANDataCatalog implements IDataCatalog {
       `${MINT_PREFERENCES.data_catalog_api}/api/action/package_search`,
       dsQueryData
     );
-    datasetResponse.result.results = datasetResponse.result.results.filter((ckanDataset: any) => {
-
-      if (ckanDataset.temporal_coverage_start && ckanDataset.temporal_coverage_end) {
-        const dataSetStartDate = new Date(ckanDataset.temporal_coverage_start);
-        const dataSetEndDate = new Date(ckanDataset.temporal_coverage_end);
-        return dataSetStartDate <= dates.end_date && dataSetEndDate >= dates.start_date;
+    datasetResponse.result.results = datasetResponse.result.results.filter(
+      (ckanDataset: any) => {
+        if (
+          ckanDataset.temporal_coverage_start &&
+          ckanDataset.temporal_coverage_end
+        ) {
+          const dataSetStartDate = new Date(
+            ckanDataset.temporal_coverage_start
+          );
+          const dataSetEndDate = new Date(ckanDataset.temporal_coverage_end);
+          return (
+            dataSetStartDate <= dates.end_date &&
+            dataSetEndDate >= dates.start_date
+          );
+        }
+        return true;
       }
-      return true;
-    });
+    );
 
     //Filter datasets by resources datasets[].resources[] contains mint_standard_variables === variable
     for (const dataset of datasetResponse.result.results) {
@@ -117,9 +126,11 @@ export class CKANDataCatalog implements IDataCatalog {
     }
 
     // If the dataset has no resources, remove it from the list
-    datasetResponse.result.results = datasetResponse.result.results.filter((dataset: any) => {
-      return dataset.resources.length > 0;
-    });
+    datasetResponse.result.results = datasetResponse.result.results.filter(
+      (dataset: any) => {
+        return dataset.resources.length > 0;
+      }
+    );
 
     datasets = CKANDataCatalog.convertCkanDatasets(datasetResponse, {
       variables: driving_variables,

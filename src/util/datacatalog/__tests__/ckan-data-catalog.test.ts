@@ -11,8 +11,8 @@ import { MINT_PREFERENCES } from "config";
 jest.mock("config", () => ({
   MINT_PREFERENCES: {
     data_catalog_api: "http://test-api",
-    data_catalog_type: "CKAN"
-  }
+    data_catalog_type: "CKAN",
+  },
 }));
 
 describe("CKANDataCatalog", () => {
@@ -26,13 +26,13 @@ describe("CKANDataCatalog", () => {
       xmin: -180,
       ymin: -90,
       xmax: 180,
-      ymax: 90
-    }
+      ymax: 90,
+    },
   };
 
   const mockDateRange: DateRange = {
     start_date: new Date("2020-01-01"),
-    end_date: new Date("2020-12-31")
+    end_date: new Date("2020-12-31"),
   };
 
   beforeEach(() => {
@@ -50,12 +50,12 @@ describe("CKANDataCatalog", () => {
           version: "1.0",
           resources: [],
           temporal_coverage_start: "2020-01-01",
-          temporal_coverage_end: "2020-12-31"
-        }
+          temporal_coverage_end: "2020-12-31",
+        },
       };
 
       (global as any).fetch.mockResolvedValueOnce({
-        json: () => Promise.resolve(mockDataset)
+        json: () => Promise.resolve(mockDataset),
       });
 
       const result = await catalog.getDataset("test-dataset");
@@ -66,7 +66,7 @@ describe("CKANDataCatalog", () => {
 
     it("should return null when dataset not found", async () => {
       (global as any).fetch.mockResolvedValueOnce({
-        json: () => Promise.resolve({ result: null })
+        json: () => Promise.resolve({ result: null }),
       });
 
       const result = await catalog.getDataset("non-existent-dataset");
@@ -86,14 +86,14 @@ describe("CKANDataCatalog", () => {
               version: "1.0",
               resources: [],
               temporal_coverage_start: "2020-01-01",
-              temporal_coverage_end: "2020-12-31"
-            }
-          ]
-        }
+              temporal_coverage_end: "2020-12-31",
+            },
+          ],
+        },
       };
 
       (global as any).fetch.mockResolvedValueOnce({
-        json: () => Promise.resolve(mockResponse)
+        json: () => Promise.resolve(mockResponse),
       });
 
       const result = await catalog.listDatasetsByRegion(mockRegion);
@@ -117,18 +117,18 @@ describe("CKANDataCatalog", () => {
                 {
                   id: "resource-1",
                   name: "Resource 1",
-                  mint_standard_variables: ["temperature"]
-                }
+                  mint_standard_variables: ["temperature"],
+                },
               ],
               temporal_coverage_start: "2020-01-01",
-              temporal_coverage_end: "2020-12-31"
-            }
-          ]
-        }
+              temporal_coverage_end: "2020-12-31",
+            },
+          ],
+        },
       };
 
       (global as any).fetch.mockResolvedValueOnce({
-        json: () => Promise.resolve(mockResponse)
+        json: () => Promise.resolve(mockResponse),
       });
 
       const result = await catalog.listDatasetsByVariableNameRegionDates(
@@ -155,16 +155,16 @@ describe("CKANDataCatalog", () => {
             {
               id: "resource-1",
               name: "Resource 1",
-              mint_standard_variables: ["temperature"]
-            }
+              mint_standard_variables: ["temperature"],
+            },
           ],
           temporal_coverage_start: "2020-01-01",
-          temporal_coverage_end: "2020-12-31"
-        }
+          temporal_coverage_end: "2020-12-31",
+        },
       };
 
       (global as any).fetch.mockResolvedValueOnce({
-        json: () => Promise.resolve(mockResponse)
+        json: () => Promise.resolve(mockResponse),
       });
 
       const result = await catalog.listResourcesByDataset(
