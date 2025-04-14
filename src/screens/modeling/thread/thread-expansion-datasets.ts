@@ -28,7 +28,6 @@ import { Model as LocalModel, ModelIO } from "screens/models/reducers";
 import { DatasetSelector } from "components/dataset-selector";
 import { hideDialog, showDialog } from "util/ui_functions";
 import { DataResource, Dataset, Dataslice } from "screens/datasets/reducers";
-import { DataCatalogAdapter, DatasetQuery } from "util/datacatalog/data-catalog-adapter";
 import { Region as LocalRegion, RegionMap } from "screens/regions/reducers";
 import { uuidv4 } from "util/helpers";
 import { IdMap } from "app/reducers";
@@ -46,6 +45,7 @@ import {
 import { ModelConfigurationSetup } from "@mintproject/modelcatalog_client";
 import { getLabel } from "model-catalog-api/util";
 import { PREFIX_URI } from "config/default-graph";
+import { DataCatalogAdapter } from "util/datacatalog/data-catalog-adapter";
 
 type StatusType = "warning" | "done" | "error";
 
@@ -479,7 +479,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     // Load dataset details.
     let loadingDataslices: Dataslice[] = [];
     let reqs: Promise<Dataslice>[] = datasets.map((d: Dataset) => {
-      let req = this.loadResourcesForDataset(d, region, dates);
+      let req = this.loadResourcesForDataset(d, region, dates, undefined, this.selectedInput.variables);
       req.then((slice: Dataslice) => {
         loadingDataslices.push(slice);
         this.resourceSelectors[slice.dataset.id] = new DatasetResourceSelector(
@@ -778,7 +778,8 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
             slice.dataset,
             region,
             dates,
-            slice.id
+            slice.id,
+            input.variables
           );
           req.then((resp: Dataslice) => {
             loadingDataslices.push(resp);
@@ -814,7 +815,9 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
         let req: Promise<Dataslice> = this.loadResourcesForDataset(
           dataset,
           region,
-          dates
+          dates,
+          undefined,
+          input.variables
         );
         req.then((slice: Dataslice) => {
           loadingDataslices.push(slice);
@@ -857,14 +860,16 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     dataset: Dataset,
     region: LocalRegion,
     dates: DateRange,
-    sliceid?: string
+    sliceid?: string,
+    variableNames?: string[]
   ): Promise<Dataslice> {
     return new Promise<Dataslice>((resolve, reject) => {
       //A dataset can have one or more resources selected. First we query for resources
       let req: Promise<DataResource[]> = this.queryResources(
         dataset,
         region,
-        dates
+        dates,
+        variableNames
       );
       req.catch(reject);
       if (sliceid) {
@@ -930,7 +935,8 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
   private queryResources(
     dataset: Dataset,
     region: LocalRegion,
-    dates: DateRange
+    dates: DateRange,
+    variableNames?: string[]
   ): Promise<DataResource[]> {
     let cacheid: string =
       dataset.id +
@@ -940,10 +946,11 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       dates.end_date.getTime();
     if (!this.resourceCache[cacheid]) {
       this.addToLoadQueue(cacheid);
-      this.resourceCache[cacheid] = DataCatalogAdapter.queryDatasetResources(
+      this.resourceCache[cacheid] = DataCatalogAdapter.getInstance().queryDatasetResources(
         dataset.id,
         region,
-        dates
+        dates,
+        variableNames
       );
       this.resourceCache[cacheid].finally(() =>
         this.removeFromLoadQueue(cacheid)
@@ -965,7 +972,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       "-" +
       dates.end_date.getTime();
     if (!this.datasetCache[cacheid])
-      this.datasetCache[cacheid] = DataCatalogAdapter.findDatasetByVariableName(
+      this.datasetCache[cacheid] = DataCatalogAdapter.getInstance().findDatasetByVariableNameRegionDates(
         input.variables,
         region,
         dates
