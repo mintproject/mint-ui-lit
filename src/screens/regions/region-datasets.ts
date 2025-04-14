@@ -7,7 +7,10 @@ import "components/google-map-custom";
 import "weightless/progress-spinner";
 import { RegionQueryPage } from "./region-query-page";
 import { DatasetsWithStatus, Dataset } from "screens/datasets/reducers";
-import { queryDatasetByRegionCkan, queryDatasetsByRegion } from "screens/datasets/actions";
+import {
+  queryDatasetByRegionCkan,
+  queryDatasetsByRegion,
+} from "screens/datasets/actions";
 import { SharedStyles } from "styles/shared-styles";
 import { UserPreferences } from "app/reducers";
 import { goToPage } from "app/actions";

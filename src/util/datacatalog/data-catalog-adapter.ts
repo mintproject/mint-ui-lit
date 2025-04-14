@@ -1,14 +1,10 @@
 import { MINT_PREFERENCES } from "config";
-import {
-  DataResource,
-  Dataset,
-} from "screens/datasets/reducers";
+import { DataResource, Dataset } from "screens/datasets/reducers";
 
 import { DateRange } from "screens/modeling/reducers";
 import { Region } from "screens/regions/reducers";
 import { CKANDataCatalog } from "./ckan-data-catalog";
 import { DefaultDataCatalog } from "./default-data-catalog";
-
 
 export interface DatasetQuery {
   search_operators?: string;
@@ -47,9 +43,10 @@ export class DataCatalogAdapter {
   public static getInstance(): IDataCatalog {
     if (!this.instance) {
       const catalogType = MINT_PREFERENCES.data_catalog_type || "default";
-      this.instance = catalogType === "CKAN"
-        ? new CKANDataCatalog()
-        : new DefaultDataCatalog();
+      this.instance =
+        catalogType === "CKAN"
+          ? new CKANDataCatalog()
+          : new DefaultDataCatalog();
     }
     return this.instance;
   }

@@ -63,7 +63,6 @@ export type DatasetsAction =
   | DatasetsActionDatasetResourceQuery
   | DatasetsActionDatasetAdd;
 
-
 export const getDatasetsFromDCResponse = (
   obj: any,
   queryParameters: DatasetQueryParameters
@@ -405,69 +404,74 @@ type QueryDatasetResourcesThunkResult = ThunkAction<
 >;
 export const queryDatasetResources: ActionCreator<
   QueryDatasetResourcesThunkResult
-> = (dsid: string, region: Region, prefs: MintPreferences) => async (dispatch) => {
-  dispatch({
-    type: DATASETS_RESOURCE_QUERY,
-    dsid: dsid,
-    dataset: null,
-    loading: true,
-  });
-  const dataCatalog = DataCatalogAdapter.getInstance();
-  const dataset = await dataCatalog.getDataset(dsid);
-  dispatch({
-    type: DATASETS_RESOURCE_QUERY,
-    dsid: dsid,
-    dataset: dataset,
-    loading: false,
-  });
+> =
+  (dsid: string, region: Region, prefs: MintPreferences) =>
+  async (dispatch) => {
+    dispatch({
+      type: DATASETS_RESOURCE_QUERY,
+      dsid: dsid,
+      dataset: null,
+      loading: true,
+    });
+    const dataCatalog = DataCatalogAdapter.getInstance();
+    const dataset = await dataCatalog.getDataset(dsid);
+    dispatch({
+      type: DATASETS_RESOURCE_QUERY,
+      dsid: dsid,
+      dataset: dataset,
+      loading: false,
+    });
 
-  if (prefs.data_catalog_type == "default") {
-    let prom1 = new Promise<void>((resolve, reject) => {
-      let req = fetch(prefs.data_catalog_api + "/datasets/get_dataset_info", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        //mode: "no-cors",
-        body: JSON.stringify({ dataset_id: dsid }),
+    if (prefs.data_catalog_type == "default") {
+      let prom1 = new Promise<void>((resolve, reject) => {
+        let req = fetch(prefs.data_catalog_api + "/datasets/get_dataset_info", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          //mode: "no-cors",
+          body: JSON.stringify({ dataset_id: dsid }),
+        });
+        req.then((response) => {
+          response.json().then((obj) => {
+            dataset = getDatasetDetailFromDCResponse(obj);
+            resolve();
+          });
+        });
+        req.catch(reject);
       });
-      req.then((response) => {
-        response.json().then((obj) => {
-          dataset = getDatasetDetailFromDCResponse(obj);
-          resolve();
+
+      let resources;
+      let prom2 = new Promise<void>((resolve, reject) => {
+        let req = fetch(
+          prefs.data_catalog_api + "/datasets/dataset_resources",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            //mode: "no-cors",
+            body: JSON.stringify({
+              dataset_id: dsid,
+            }),
+          }
+        );
+        req.then((response) => {
+          response.json().then((obj) => {
+            resources = getResourcesFromDCResponse(obj);
+            resolve();
+          });
+        });
+        req.catch(reject);
+      });
+
+      Promise.all([prom1, prom2]).then((values: any) => {
+        if (dataset) dataset.resources = resources;
+        dispatch({
+          type: DATASETS_RESOURCE_QUERY,
+          dsid: dsid,
+          dataset: dataset,
+          loading: false,
         });
       });
-      req.catch(reject);
-    });
-
-    let resources;
-    let prom2 = new Promise<void>((resolve, reject) => {
-      let req = fetch(prefs.data_catalog_api + "/datasets/dataset_resources", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        //mode: "no-cors",
-        body: JSON.stringify({
-          dataset_id: dsid,
-        }),
-      });
-      req.then((response) => {
-        response.json().then((obj) => {
-          resources = getResourcesFromDCResponse(obj);
-          resolve();
-        });
-      });
-      req.catch(reject);
-    });
-
-    Promise.all([prom1, prom2]).then((values: any) => {
-      if (dataset) dataset.resources = resources;
-      dispatch({
-        type: DATASETS_RESOURCE_QUERY,
-        dsid: dsid,
-        dataset: dataset,
-        loading: false,
-      });
-    });
-  }
-};
+    }
+  };
 
 // Query Data Catalog for resources of a particular dataset and save the results
 type QueryDatasetResourcesAndSaveThunkResult = ThunkAction<

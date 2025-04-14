@@ -1,11 +1,14 @@
 import { MINT_PREFERENCES } from "config";
-import { DataResource, Dataset, DatasetQueryParameters } from "screens/datasets/reducers";
+import {
+  DataResource,
+  Dataset,
+  DatasetQueryParameters,
+} from "screens/datasets/reducers";
 import { DateRange } from "screens/modeling/reducers";
 import { Region } from "screens/regions/reducers";
 import { DatasetQuery, IDataCatalog } from "./data-catalog-adapter";
 
 export class DefaultDataCatalog implements IDataCatalog {
-
   private static async request(url: string, query: any): Promise<any> {
     let res: Response = await fetch(url, {
       method: "POST",
@@ -31,11 +34,15 @@ export class DefaultDataCatalog implements IDataCatalog {
 
   public async findDatasetByDateRange(query: DatasetQuery): Promise<Dataset[]> {
     if (query.start_time) {
-      query.start_time__gte = query.start_time.toISOString().replace(/\.\d{3}Z$/, "");
+      query.start_time__gte = query.start_time
+        .toISOString()
+        .replace(/\.\d{3}Z$/, "");
       delete query.start_time;
     }
     if (query.end_time) {
-      query.end_time__lte = query.end_time.toISOString().replace(/\.\d{3}Z$/, "");
+      query.end_time__lte = query.end_time
+        .toISOString()
+        .replace(/\.\d{3}Z$/, "");
       delete query.end_time;
     }
 
@@ -61,8 +68,12 @@ export class DefaultDataCatalog implements IDataCatalog {
       limit: 1000,
     };
     if (dates) {
-      dsQueryData.end_time__gte = dates?.start_date?.toISOString()?.replace(/\.\d{3}Z$/, "");
-      dsQueryData.start_time__lte = dates?.end_date?.toISOString()?.replace(/\.\d{3}Z$/, "");
+      dsQueryData.end_time__gte = dates?.start_date
+        ?.toISOString()
+        ?.replace(/\.\d{3}Z$/, "");
+      dsQueryData.start_time__lte = dates?.end_date
+        ?.toISOString()
+        ?.replace(/\.\d{3}Z$/, "");
     }
     let res: any = await DefaultDataCatalog.request(
       `${MINT_PREFERENCES.data_catalog_api}/datasets/find`,
@@ -91,8 +102,12 @@ export class DefaultDataCatalog implements IDataCatalog {
       filters.spatial_coverage__intersects = region.geometries[0];
     else return null;
     if (dates) {
-      filters.end_time__gte = dates?.start_date?.toISOString()?.replace(/\.\d{3}Z$/, "");
-      filters.start_time__lte = dates?.end_date?.toISOString()?.replace(/\.\d{3}Z$/, "");
+      filters.end_time__gte = dates?.start_date
+        ?.toISOString()
+        ?.replace(/\.\d{3}Z$/, "");
+      filters.start_time__lte = dates?.end_date
+        ?.toISOString()
+        ?.replace(/\.\d{3}Z$/, "");
     }
 
     let resQueryData = {
@@ -105,7 +120,9 @@ export class DefaultDataCatalog implements IDataCatalog {
       `${MINT_PREFERENCES.data_catalog_api}/datasets/dataset_resources`,
       resQueryData
     );
-    return obj && obj.resources ? DefaultDataCatalog.getDatasetResourceListFromDCResponse(obj) : [];
+    return obj && obj.resources
+      ? DefaultDataCatalog.getDatasetResourceListFromDCResponse(obj)
+      : [];
   }
 
   private static convertDatasetFromDCResponse = (
@@ -145,17 +162,18 @@ export class DefaultDataCatalog implements IDataCatalog {
       categories: dmeta["category_tags"] || [],
       resources: [],
     } as Dataset;
-
-  }
+  };
 
   private static getDatasetsFromDCResponse = (
     obj: any,
     queryParameters: DatasetQueryParameters
   ): Dataset[] => {
     let datasets = obj.datasets.map((ds) => {
-      return DefaultDataCatalog.convertDatasetFromDCResponse(ds, queryParameters);
+      return DefaultDataCatalog.convertDatasetFromDCResponse(
+        ds,
+        queryParameters
+      );
     });
     return datasets;
   };
-
 }

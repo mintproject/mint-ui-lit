@@ -479,7 +479,13 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     // Load dataset details.
     let loadingDataslices: Dataslice[] = [];
     let reqs: Promise<Dataslice>[] = datasets.map((d: Dataset) => {
-      let req = this.loadResourcesForDataset(d, region, dates, undefined, this.selectedInput.variables);
+      let req = this.loadResourcesForDataset(
+        d,
+        region,
+        dates,
+        undefined,
+        this.selectedInput.variables
+      );
       req.then((slice: Dataslice) => {
         loadingDataslices.push(slice);
         this.resourceSelectors[slice.dataset.id] = new DatasetResourceSelector(
@@ -946,12 +952,13 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       dates.end_date.getTime();
     if (!this.resourceCache[cacheid]) {
       this.addToLoadQueue(cacheid);
-      this.resourceCache[cacheid] = DataCatalogAdapter.getInstance().listResourcesByDataset(
-        dataset.id,
-        region,
-        dates,
-        variableNames
-      );
+      this.resourceCache[cacheid] =
+        DataCatalogAdapter.getInstance().listResourcesByDataset(
+          dataset.id,
+          region,
+          dates,
+          variableNames
+        );
       this.resourceCache[cacheid].finally(() =>
         this.removeFromLoadQueue(cacheid)
       );
@@ -972,11 +979,12 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       "-" +
       dates.end_date.getTime();
     if (!this.datasetCache[cacheid])
-      this.datasetCache[cacheid] = DataCatalogAdapter.getInstance().listDatasetsByVariableNameRegionDates(
-        input.variables,
-        region,
-        dates
-      );
+      this.datasetCache[cacheid] =
+        DataCatalogAdapter.getInstance().listDatasetsByVariableNameRegionDates(
+          input.variables,
+          region,
+          dates
+        );
     return this.datasetCache[cacheid];
   }
 
