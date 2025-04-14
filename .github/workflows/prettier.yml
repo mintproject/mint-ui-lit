@@ -1,26 +1,26 @@
-name: Prettier
+# name: Prettier
 
-# This action works with pull requests and pushes
-on:
-  pull_request:
-  push:
-    branches:
-      - main
-      - dev
-      - master
-jobs:
-  prettier:
-    runs-on: ubuntu-latest
+# # This action works with pull requests and pushes
+# on:
+#   pull_request:
+#   push:
+#     branches:
+#       - main
+#       - dev
+#       - master
+# jobs:
+#   prettier:
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          # Make sure the actual branch is checked out when running on pull requests
-          ref: ${{ github.head_ref }}
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v3
+#         with:
+#           # Make sure the actual branch is checked out when running on pull requests
+#           ref: ${{ github.head_ref }}
 
-      - name: Prettify code
-        uses: creyD/prettier_action@v4.3
-        with:
-          prettier_options: --write **/**/*.ts
-          prettier_version: "2.8.8"
+#       - name: Prettify code
+#         uses: creyD/prettier_action@v4.3
+#         with:
+#           prettier_options: --write **/**/*.ts
+#           prettier_version: "2.8.8"
