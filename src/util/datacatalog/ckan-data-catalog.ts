@@ -6,12 +6,20 @@ import {
 } from "screens/datasets/reducers";
 import { DateRange } from "screens/modeling/reducers";
 import { Region } from "screens/regions/reducers";
-import { BaseDataCatalog } from "./data-catalog-adapter";
+import { IDataCatalog } from "./data-catalog-adapter";
 
-export class CKANDataCatalog extends BaseDataCatalog {
+export class CKANDataCatalog implements IDataCatalog {
+  private static async request(url: string, query: any): Promise<any> {
+    const res: Response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(query),
+    });
+    return await res.json();
+  }
   public async findDataset(id: string): Promise<Dataset | null> {
     // Implement CKAN-specific dataset search
-    let res: any = await BaseDataCatalog.fetchJson(
+    let res: any = await CKANDataCatalog.request(
       `${MINT_PREFERENCES.data_catalog_api}/api/action/package_search`,
       {
         fq: "id:" + id,
@@ -19,6 +27,17 @@ export class CKANDataCatalog extends BaseDataCatalog {
     );
     let dses = CKANDataCatalog.convertCkanDatasets(res, {});
     return dses.length > 0 ? dses[0] : null;
+  }
+
+  public async findDatasetsByRegion(region: Region): Promise<Dataset[]> {
+    let res: any = await CKANDataCatalog.request(
+      `${MINT_PREFERENCES.data_catalog_api}/api/action/package_search`,
+      {
+        ext_bbox: `${region.bounding_box.xmin},${region.bounding_box.ymin},${region.bounding_box.xmax},${region.bounding_box.ymax}`,
+      },
+    );
+    console.log(res);
+    return CKANDataCatalog.convertCkanDatasets(res, {});
   }
 
   public async findDatasetByVariableName(
@@ -32,7 +51,7 @@ export class CKANDataCatalog extends BaseDataCatalog {
       let dsQueryData: any = {
         ext_bbox: `${region.bounding_box.xmin},${region.bounding_box.ymin},${region.bounding_box.xmax},${region.bounding_box.ymax}`,
       };
-      let res: any = await BaseDataCatalog.fetchJson(
+      let res: any = await CKANDataCatalog.request(
         `${MINT_PREFERENCES.data_catalog_api}/api/action/package_search`,
         dsQueryData,
       );
@@ -47,7 +66,7 @@ export class CKANDataCatalog extends BaseDataCatalog {
         ext_bbox: `${region.bounding_box.xmin},${region.bounding_box.ymin},${region.bounding_box.xmax},${region.bounding_box.ymax}`,
       };
 
-      let res: any = await BaseDataCatalog.fetchJson(
+      let res: any = await CKANDataCatalog.request(
         `${MINT_PREFERENCES.data_catalog_api}/api/action/package_search`,
         dsQueryData,
       );
@@ -71,7 +90,7 @@ export class CKANDataCatalog extends BaseDataCatalog {
     let resQueryData = {
       fq: "id:" + datasetid,
     };
-    let obj: any = await BaseDataCatalog.fetchJson(
+    let obj: any = await CKANDataCatalog.request(
       `${MINT_PREFERENCES.data_catalog_api}/api/action/package_search`,
       resQueryData,
     );
@@ -126,6 +145,7 @@ export class CKANDataCatalog extends BaseDataCatalog {
     obj: any,
     queryParameters: DatasetQueryParameters,
   ) => {
+    console.log(obj);
     let datasets = obj.result.results.map((ds) => {
       return CKANDataCatalog.convertCkanDataset(ds, queryParameters);
     });
