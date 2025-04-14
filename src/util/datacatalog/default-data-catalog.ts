@@ -2,11 +2,27 @@ import { MINT_PREFERENCES } from "config";
 import { DataResource, Dataset, DatasetQueryParameters } from "screens/datasets/reducers";
 import { DateRange } from "screens/modeling/reducers";
 import { Region } from "screens/regions/reducers";
-import { BaseDataCatalog, DatasetQuery } from "./data-catalog-adapter";
+import { DatasetQuery, IDataCatalog } from "./data-catalog-adapter";
 
-export class DefaultDataCatalog extends BaseDataCatalog {
+export class DefaultDataCatalog implements IDataCatalog {
+
+  private static async request(url: string, query: any): Promise<any> {
+    let res: Response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(query),
+    });
+    if (res && res.json) {
+      return await res.json();
+    }
+  }
+
+  public async findDatasetsByRegion(region: Region): Promise<Dataset[]> {
+    throw new Error("Not implemented");
+  }
+
   public async findDataset(id: string): Promise<Dataset | null> {
-    let obj = await BaseDataCatalog.fetchJson(
+    let obj = await DefaultDataCatalog.request(
       `${MINT_PREFERENCES.data_catalog_api}/datasets/find`,
       { id: id }
     );
@@ -25,7 +41,7 @@ export class DefaultDataCatalog extends BaseDataCatalog {
 
     query.limit = 100;
 
-    let obj = await BaseDataCatalog.fetchJson(
+    let obj = await DefaultDataCatalog.request(
       `${MINT_PREFERENCES.data_catalog_api}/datasets/find`,
       query
     );
@@ -48,7 +64,7 @@ export class DefaultDataCatalog extends BaseDataCatalog {
       dsQueryData.end_time__gte = dates?.start_date?.toISOString()?.replace(/\.\d{3}Z$/, "");
       dsQueryData.start_time__lte = dates?.end_date?.toISOString()?.replace(/\.\d{3}Z$/, "");
     }
-    let res: any = await BaseDataCatalog.fetchJson(
+    let res: any = await DefaultDataCatalog.request(
       `${MINT_PREFERENCES.data_catalog_api}/datasets/find`,
       dsQueryData
     );
@@ -85,7 +101,7 @@ export class DefaultDataCatalog extends BaseDataCatalog {
       limit: 5000,
     };
 
-    let obj: any = await BaseDataCatalog.fetchJson(
+    let obj: any = await DefaultDataCatalog.request(
       `${MINT_PREFERENCES.data_catalog_api}/datasets/dataset_resources`,
       resQueryData
     );
