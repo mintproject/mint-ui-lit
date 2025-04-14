@@ -5,6 +5,7 @@ import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../app/store";
 import { listVariables } from "./actions";
 import { Variable, VariableMap } from "./reducers";
+import { CustomNotification } from "../../components/notification";
 
 /*
 store.addReducers({
@@ -16,6 +17,21 @@ store.addReducers({
 export class VariablesHome extends connect(store)(PageViewElement) {
   @property({ type: Object })
   private variables: VariableMap = {};
+
+  private _notification: CustomNotification;
+
+  firstUpdated() {
+    this._notification = document.createElement('custom-notification') as CustomNotification;
+    document.body.appendChild(this._notification);
+  }
+
+  private copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      this._notification.custom("Variable name copied to clipboard!", "content_copy");
+    }).catch(() => {
+      this._notification.error("Failed to copy variable name");
+    });
+  }
 
   static get styles() {
     return [
@@ -79,6 +95,10 @@ export class VariablesHome extends connect(store)(PageViewElement) {
           z-index: 1;
         }
         .table th:first-child {
+          width: 60px;
+          min-width: 60px;
+        }
+        .table th:nth-child(2) {
           width: 300px;
           min-width: 300px;
         }
@@ -89,6 +109,12 @@ export class VariablesHome extends connect(store)(PageViewElement) {
           vertical-align: top;
         }
         .table td:first-child {
+          width: 60px;
+          min-width: 60px;
+          text-align: center;
+          padding: 0.5rem;
+        }
+        .table td:nth-child(2) {
           width: 300px;
           min-width: 300px;
           word-break: break-word;
@@ -114,6 +140,25 @@ export class VariablesHome extends connect(store)(PageViewElement) {
           color: #6c757d;
           font-size: 1.25rem;
           margin-bottom: 1.5rem;
+        }
+        .copy-button {
+          background: none;
+          border: none;
+          color: #6c757d;
+          cursor: pointer;
+          padding: 8px;
+          border-radius: 4px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0.6;
+          transition: all 0.2s;
+          width: 32px;
+          height: 32px;
+        }
+        .copy-button:hover {
+          background: #f1f3f5;
+          opacity: 1;
         }
       `
     ];
@@ -167,6 +212,7 @@ export class VariablesHome extends connect(store)(PageViewElement) {
           <table class="table">
             <thead>
               <tr>
+                <th></th>
                 <th>Name</th>
                 <th>Description</th>
               </tr>
@@ -175,6 +221,17 @@ export class VariablesHome extends connect(store)(PageViewElement) {
               ${variables.map(
                 (variable) => html`
                   <tr>
+                    <td>
+                      <button
+                        class="copy-button"
+                        @click=${() => this.copyToClipboard(variable.name)}
+                        title="Copy variable name">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                      </button>
+                    </td>
                     <td class="name-cell">${variable.name}</td>
                     <td class="description">${variable.description || "No description available"}</td>
                   </tr>
