@@ -168,7 +168,7 @@ export class CKANDataCatalog implements IDataCatalog {
     return CKANDataCatalog.convertCkanDataset(dataset, {}).resources;
   }
 
-  private static convertCkanDataset = (
+  public static convertCkanDataset = (
     ds: any,
     queryParameters: DatasetQueryParameters
   ) => {
@@ -183,10 +183,22 @@ export class CKANDataCatalog implements IDataCatalog {
       resource_repr: null,
       dataset_repr: null,
       resources_loaded: true,
-      resource_count: ds["resources"].length || 0,
+      resource_count: ds["resources"]?.length || 0,
       spatial_coverage: null,
       source: {},
-      resources: [],
+      resources: (ds["resources"] || []).map((r) => {
+        return {
+          id: r["id"],
+          name: r["name"],
+          url: r["name"],
+          selected: true,
+          spatial_coverage: null,
+          time_period: {
+            start_date: null,
+            end_date: null,
+          },
+        };
+      }),
       time_period: {
         start_date: null,
         end_date: null,
@@ -205,19 +217,6 @@ export class CKANDataCatalog implements IDataCatalog {
         }
       }
     }
-    newds.resources = ds["resources"].map((r) => {
-      return {
-        id: r["id"],
-        name: r["name"],
-        url: r["name"],
-        selected: true,
-        spatial_coverage: newds["spatial_coverage"],
-        time_period: {
-          start_date: null,
-          end_date: null,
-        },
-      };
-    });
     return newds;
   };
 
