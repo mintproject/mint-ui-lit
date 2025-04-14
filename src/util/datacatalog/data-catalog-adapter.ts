@@ -1,13 +1,6 @@
-import { MintPreferences } from "app/reducers";
-import {
-  getDatasetResourceListFromDCResponse,
-  getDatasetsFromCKANResponse,
-  getDatasetsFromDCResponse,
-} from "screens/datasets/actions";
 import {
   DataResource,
   Dataset,
-  DatasetQueryParameters,
 } from "screens/datasets/reducers";
 
 import { DateRange } from "screens/modeling/reducers";

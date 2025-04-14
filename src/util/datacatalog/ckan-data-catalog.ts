@@ -6,7 +6,7 @@ import {
 } from "screens/datasets/reducers";
 import { DateRange } from "screens/modeling/reducers";
 import { Region } from "screens/regions/reducers";
-import { BaseDataCatalog, DatasetQuery } from "./data-catalog-adapter";
+import { BaseDataCatalog } from "./data-catalog-adapter";
 
 export class CKANDataCatalog extends BaseDataCatalog {
   public async findDataset(id: string): Promise<Dataset | null> {

@@ -28,7 +28,7 @@ import { Model as LocalModel, ModelIO } from "screens/models/reducers";
 import { DatasetSelector } from "components/dataset-selector";
 import { hideDialog, showDialog } from "util/ui_functions";
 import { DataResource, Dataset, Dataslice } from "screens/datasets/reducers";
-import { DataCatalogAdapter, DatasetQuery } from "util/data-catalog-adapter";
+import { DataCatalogAdapter, DatasetQuery } from "util/datacatalog/data-catalog-adapter";
 import { Region as LocalRegion, RegionMap } from "screens/regions/reducers";
 import { uuidv4 } from "util/helpers";
 import { IdMap } from "app/reducers";
