@@ -68,7 +68,7 @@ export class CKANDataCatalog implements IDataCatalog {
     return CKANDataCatalog.convertCkanDatasets(res, {});
   }
 
-  public async findDatasetByVariableNameRegionDates(
+  public async listDatasetsByVariableNameRegionDates(
     driving_variables: string[],
     region: Region,
     dates?: DateRange,

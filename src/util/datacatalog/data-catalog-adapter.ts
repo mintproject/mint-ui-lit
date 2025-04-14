@@ -28,7 +28,7 @@ export interface DatasetQuery {
 export interface IDataCatalog {
   getDataset(id: string): Promise<Dataset | null>;
   listDatasetsByRegion(region: Region): Promise<Dataset[]>;
-  findDatasetByVariableNameRegionDates(
+  listDatasetsByVariableNameRegionDates(
     driving_variables: string[],
     region: Region,
     dates?: DateRange

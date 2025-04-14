@@ -972,7 +972,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       "-" +
       dates.end_date.getTime();
     if (!this.datasetCache[cacheid])
-      this.datasetCache[cacheid] = DataCatalogAdapter.getInstance().findDatasetByVariableNameRegionDates(
+      this.datasetCache[cacheid] = DataCatalogAdapter.getInstance().listDatasetsByVariableNameRegionDates(
         input.variables,
         region,
         dates
