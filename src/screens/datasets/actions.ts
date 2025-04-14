@@ -431,7 +431,7 @@ export const queryDatasetResources: ActionCreator<
       });
       req.then((response) => {
         response.json().then((obj) => {
-          let dataset = getDatasetDetailFromDCResponse(obj);
+          dataset = getDatasetDetailFromDCResponse(obj);
           resolve();
         });
       });
@@ -525,22 +525,20 @@ type QueryDatasetsByRegionThunkResult = ThunkAction<
 
 export const queryDatasetByRegionCkan: ActionCreator<
   QueryDatasetsByRegionThunkResult
-> = (region: Region, prefs: MintPreferences) => (dispatch) => {
+> = (region: Region, prefs: MintPreferences) => async (dispatch) => {
   dispatch({
     type: DATASETS_REGION_QUERY,
     region: region,
     datasets: null,
     loading: true,
   });
-
-  DataCatalogAdapter.findDataset({
-  }).then((datasets) => {
-    dispatch({
-      type: DATASETS_REGION_QUERY,
-      region: region,
-      datasets: datasets,
-      loading: false,
-    });
+  const dataCatalog = DataCatalogAdapter.getInstance();
+  const datasets = await dataCatalog.findDatasetsByRegion(region);
+  dispatch({
+    type: DATASETS_REGION_QUERY,
+    region: region,
+    datasets: datasets,
+    loading: false,
   });
 };
 export const queryDatasetsByRegion: ActionCreator<
