@@ -405,13 +405,6 @@ const loadPage: ActionCreator<ThunkResult> =
         });
         break;
 
-      case "variables":
-        import("../screens/variables/variables-home").then((_module) => {
-          if (params.length > 0) {
-            //store.dispatch(queryVariableDetail(params[0]));
-          }
-        });
-        break;
       case "messages":
         if (subpage == "home") {
           // No parameters. Load Modeling Home (List of ProblemStatements)
@@ -424,6 +417,13 @@ const loadPage: ActionCreator<ThunkResult> =
             }
           });
         }
+        break;
+      case "variables":
+        import("../screens/variables/variables-home").then((_module) => {
+          if (params.length > 0) {
+            //store.dispatch(queryVariableDetail(params[0]));
+          }
+        });
         break;
       default:
         page = "view404";

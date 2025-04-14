@@ -9,6 +9,8 @@ import {
   UI_SELECT_TOP_REGION,
   UI_SELECT_SUB_REGION,
 } from "./ui-actions";
+import { VARIABLES_LIST } from "../screens/variables/actions";
+import { VariableMap } from "../screens/variables/reducers";
 
 export interface UIState {
   selected_top_regionid?: string;
@@ -18,6 +20,7 @@ export interface UIState {
   selected_thread_id?: string;
   selected_thread_section?: string;
   selected_datatransformationid?: string;
+  variables?: VariableMap;
 }
 
 const INITIAL_STATE: UIState = {};
@@ -58,7 +61,6 @@ const ui: Reducer<UIState, RootAction> = (state = INITIAL_STATE, action) => {
       return {
         ...state,
         selected_thread_id: action.thread_id,
-        //selected_thread_section: "variables"
       };
     case UI_SELECT_THREAD_SECTION:
       return {
@@ -69,6 +71,11 @@ const ui: Reducer<UIState, RootAction> = (state = INITIAL_STATE, action) => {
       return {
         ...state,
         selected_datatransformationid: action.dtid,
+      };
+    case VARIABLES_LIST:
+      return {
+        ...state,
+        variables: action.list,
       };
     default:
       return state;
