@@ -29,7 +29,8 @@ export class CKANDataCatalog implements IDataCatalog {
 
   public async getDataset(id: string): Promise<Dataset | null> {
     const res: any = await this.getDatasetRaw(id);
-    return CKANDataCatalog.convertCkanDataset(res, {});
+    if (!res || !res.result) return null;
+    return CKANDataCatalog.convertCkanDataset(res.result, {});
   }
 
   public async getResourcesByDatasetId(id: string): Promise<DataResource[]> {
