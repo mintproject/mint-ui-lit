@@ -1,15 +1,19 @@
 import { MINT_PREFERENCES } from "config";
-import {
-  getDatasetResourceListFromDCResponse,
-  getDatasetsFromDCResponse,
-} from "screens/datasets/actions";
 import { DataResource, Dataset, DatasetQueryParameters } from "screens/datasets/reducers";
 import { DateRange } from "screens/modeling/reducers";
 import { Region } from "screens/regions/reducers";
 import { BaseDataCatalog, DatasetQuery } from "./data-catalog-adapter";
 
 export class DefaultDataCatalog extends BaseDataCatalog {
-  public async findDataset(query: DatasetQuery): Promise<Dataset[]> {
+  public async findDataset(id: string): Promise<Dataset | null> {
+    let obj = await BaseDataCatalog.fetchJson(
+      `${MINT_PREFERENCES.data_catalog_api}/datasets/find`,
+      { id: id }
+    );
+    return DefaultDataCatalog.convertDatasetFromDCResponse(obj, {});
+  }
+
+  public async findDatasetByDateRange(query: DatasetQuery): Promise<Dataset[]> {
     if (query.start_time) {
       query.start_time__gte = query.start_time.toISOString().replace(/\.\d{3}Z$/, "");
       delete query.start_time;
@@ -25,7 +29,7 @@ export class DefaultDataCatalog extends BaseDataCatalog {
       `${MINT_PREFERENCES.data_catalog_api}/datasets/find`,
       query
     );
-    return getDatasetsFromDCResponse(obj, {});
+    return DefaultDataCatalog.getDatasetsFromDCResponse(obj, {});
   }
 
   public async findDatasetByVariableName(
@@ -49,7 +53,7 @@ export class DefaultDataCatalog extends BaseDataCatalog {
       dsQueryData
     );
     if (!!res && res.result === "success") {
-      const datasets = getDatasetsFromDCResponse(res, {
+      const datasets = DefaultDataCatalog.getDatasetsFromDCResponse(res, {
         variables: driving_variables,
       } as DatasetQueryParameters);
       datasets.map((ds) => {
@@ -85,6 +89,57 @@ export class DefaultDataCatalog extends BaseDataCatalog {
       `${MINT_PREFERENCES.data_catalog_api}/datasets/dataset_resources`,
       resQueryData
     );
-    return obj && obj.resources ? getDatasetResourceListFromDCResponse(obj) : [];
+    return obj && obj.resources ? DefaultDataCatalog.getDatasetResourceListFromDCResponse(obj) : [];
   }
+
+  private static convertDatasetFromDCResponse = (
+    obj: any,
+    queryParameters: DatasetQueryParameters
+  ): Dataset => {
+    let dmeta = obj["dataset_metadata"];
+    return {
+      id: obj["dataset_id"],
+      name: obj["dataset_name"] || "",
+      region: "",
+      variables: queryParameters.variables,
+      time_period: dmeta["temporal_coverage"]
+        ? {
+            start_date: dmeta["temporal_coverage"]["start_time"]
+              ? new Date(dmeta["temporal_coverage"]["start_time"])
+              : null,
+            end_date: dmeta["temporal_coverage"]["end_time"]
+              ? new Date(dmeta["temporal_coverage"]["end_time"])
+              : null,
+          }
+        : null,
+      description: dmeta["dataset_description"] || "",
+      version: dmeta["version"] || "",
+      limitations: dmeta["limitations"] || "",
+      source: {
+        name: dmeta["source"] || "",
+        url: dmeta["source_url"] || "",
+        type: dmeta["source_type"] || "",
+      },
+      is_cached: dmeta["is_cached"] || false,
+      resource_repr: dmeta["resource_repr"] || null,
+      dataset_repr: dmeta["dataset_repr"] || null,
+      resource_count: dmeta["resource_count"] || 0,
+      spatial_coverage: dmeta["dataset_spatial_coverage"] || null,
+      datatype: dmeta["datatype"] || dmeta["data_type"] || "",
+      categories: dmeta["category_tags"] || [],
+      resources: [],
+    } as Dataset;
+
+  }
+
+  private static getDatasetsFromDCResponse = (
+    obj: any,
+    queryParameters: DatasetQueryParameters
+  ): Dataset[] => {
+    let datasets = obj.datasets.map((ds) => {
+      return DefaultDataCatalog.convertDatasetFromDCResponse(ds, queryParameters);
+    });
+    return datasets;
+  };
+
 }

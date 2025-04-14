@@ -63,10 +63,11 @@ export type DatasetsAction =
   | DatasetsActionDatasetResourceQuery
   | DatasetsActionDatasetAdd;
 
+
 export const getDatasetsFromDCResponse = (
   obj: any,
   queryParameters: DatasetQueryParameters
-) => {
+): Dataset[] => {
   let datasets = obj.datasets.map((ds) => {
     let dmeta = ds["dataset_metadata"];
     return {
@@ -100,54 +101,7 @@ export const getDatasetsFromDCResponse = (
       datatype: dmeta["datatype"] || dmeta["data_type"] || "",
       categories: dmeta["category_tags"] || [],
       resources: [],
-    };
-  });
-  return datasets;
-};
-
-export const getDatasetsFromCKANResponse = (
-  obj: any,
-  queryParameters: DatasetQueryParameters
-) => {
-  let datasets = obj.result.results.map((ds) => {
-    //let dmeta = ds["dataset_metadata"];
-    let newds = {
-      id: ds["id"],
-      name: ds["title"] || "",
-      region: "",
-      variables: queryParameters.variables,
-      description: ds["notes"] || "",
-      version: ds["version"] || "",
-      is_cached: false,
-      resource_repr: null,
-      dataset_repr: null,
-      resources_loaded: true,
-      resource_count: ds["resources"].length || 0,
-      spatial_coverage: null,
-      source: {},
-      resources: [],
     } as Dataset;
-    if ("extras" in ds) {
-      for (let e of ds["extras"]) {
-        if (e["key"] == "spatial") {
-          newds["spatial_coverage"] = JSON.parse(e["value"]);
-        }
-      }
-    }
-    newds.resources = ds["resources"].map((r) => {
-      return {
-        id: r["id"],
-        name: r["name"],
-        url: r["name"],
-        selected: true,
-        spatial_coverage: newds["spatial_coverage"],
-        time_period: {
-          start_date: null,
-          end_date: null,
-        },
-      };
-    });
-    return newds;
   });
   return datasets;
 };
@@ -451,39 +405,23 @@ type QueryDatasetResourcesThunkResult = ThunkAction<
 >;
 export const queryDatasetResources: ActionCreator<
   QueryDatasetResourcesThunkResult
-> = (dsid: string, region: Region, prefs: MintPreferences) => (dispatch) => {
+> = (dsid: string, region: Region, prefs: MintPreferences) => async (dispatch) => {
   dispatch({
     type: DATASETS_RESOURCE_QUERY,
     dsid: dsid,
     dataset: null,
     loading: true,
   });
-  let dataset: Dataset;
+  const dataCatalog = DataCatalogAdapter.getInstance();
+  const dataset = await dataCatalog.findDataset(dsid);
+  dispatch({
+    type: DATASETS_RESOURCE_QUERY,
+    dsid: dsid,
+    dataset: dataset,
+    loading: false,
+  });
 
-  if (prefs.data_catalog_type == "CKAN") {
-    fetchJson(`${data_catalog_api_url}/api/action/package_search`, {
-      q: "id:" + dsid,
-    }).then((res: any) => {
-      if (!!res && res.result && res.result.count > 0) {
-        let datasets = getDatasetsFromCKANResponse(res, {});
-        if (datasets && datasets.length > 0) {
-          dispatch({
-            type: DATASETS_RESOURCE_QUERY,
-            dsid: dsid,
-            dataset: datasets[0],
-            loading: false,
-          });
-        }
-      } else {
-        dispatch({
-          type: DATASETS_RESOURCE_QUERY,
-          dsid: dsid,
-          dataset: null,
-          loading: false,
-        });
-      }
-    });
-  } else {
+  if (prefs.data_catalog_type == "default") {
     let prom1 = new Promise<void>((resolve, reject) => {
       let req = fetch(prefs.data_catalog_api + "/datasets/get_dataset_info", {
         method: "POST",
@@ -493,7 +431,7 @@ export const queryDatasetResources: ActionCreator<
       });
       req.then((response) => {
         response.json().then((obj) => {
-          dataset = getDatasetDetailFromDCResponse(obj);
+          let dataset = getDatasetDetailFromDCResponse(obj);
           resolve();
         });
       });
