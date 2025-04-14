@@ -12,6 +12,7 @@ import { IdMap, MintPreferences } from "app/reducers";
 import { DateRange } from "screens/modeling/reducers";
 import { Region } from "screens/regions/reducers";
 import { MINT_PREFERENCES } from "config";
+import { DataCatalogAdapter } from "util/datacatalog/data-catalog-adapter";
 
 export const DATASETS_VARIABLES_QUERY = "DATASETS_VARIABLES_QUERY";
 export const DATASETS_GENERAL_QUERY = "DATASETS_GENERAL_QUERY";
@@ -65,7 +66,7 @@ export type DatasetsAction =
 export const getDatasetsFromDCResponse = (
   obj: any,
   queryParameters: DatasetQueryParameters
-) => {
+): Dataset[] => {
   let datasets = obj.datasets.map((ds) => {
     let dmeta = ds["dataset_metadata"];
     return {
@@ -99,59 +100,12 @@ export const getDatasetsFromDCResponse = (
       datatype: dmeta["datatype"] || dmeta["data_type"] || "",
       categories: dmeta["category_tags"] || [],
       resources: [],
-    };
-  });
-  return datasets;
-};
-
-export const getDatasetsFromCKANResponse = (
-  obj: any,
-  queryParameters: DatasetQueryParameters
-) => {
-  let datasets = obj.result.results.map((ds) => {
-    //let dmeta = ds["dataset_metadata"];
-    let newds = {
-      id: ds["id"],
-      name: ds["title"] || "",
-      region: "",
-      variables: queryParameters.variables,
-      description: ds["notes"] || "",
-      version: ds["version"] || "",
-      is_cached: false,
-      resource_repr: null,
-      dataset_repr: null,
-      resources_loaded: true,
-      resource_count: ds["resources"].length || 0,
-      spatial_coverage: null,
-      source: {},
-      resources: [],
     } as Dataset;
-    if ("extras" in ds) {
-      for (let e of ds["extras"]) {
-        if (e["key"] == "spatial") {
-          newds["spatial_coverage"] = JSON.parse(e["value"]);
-        }
-      }
-    }
-    newds.resources = ds["resources"].map((r) => {
-      return {
-        id: r["id"],
-        name: r["name"],
-        url: r["name"],
-        selected: true,
-        spatial_coverage: newds["spatial_coverage"],
-        time_period: {
-          start_date: null,
-          end_date: null,
-        },
-      };
-    });
-    return newds;
   });
   return datasets;
 };
 
-const getDatasetDetailFromDCResponse = (ds: any) => {
+export const getDatasetDetailFromDCResponse = (ds: any) => {
   let dmeta = ds["metadata"];
   return {
     id: ds["dataset_id"],
@@ -450,85 +404,74 @@ type QueryDatasetResourcesThunkResult = ThunkAction<
 >;
 export const queryDatasetResources: ActionCreator<
   QueryDatasetResourcesThunkResult
-> = (dsid: string, region: Region, prefs: MintPreferences) => (dispatch) => {
-  dispatch({
-    type: DATASETS_RESOURCE_QUERY,
-    dsid: dsid,
-    dataset: null,
-    loading: true,
-  });
-  let dataset: Dataset;
+> =
+  (dsid: string, region: Region, prefs: MintPreferences) =>
+  async (dispatch) => {
+    dispatch({
+      type: DATASETS_RESOURCE_QUERY,
+      dsid: dsid,
+      dataset: null,
+      loading: true,
+    });
+    const dataCatalog = DataCatalogAdapter.getInstance();
+    const dataset = await dataCatalog.getDataset(dsid);
+    dispatch({
+      type: DATASETS_RESOURCE_QUERY,
+      dsid: dsid,
+      dataset: dataset,
+      loading: false,
+    });
 
-  if (prefs.data_catalog_type == "CKAN") {
-    fetchJson(`${data_catalog_api_url}/api/action/package_search`, {
-      q: "id:" + dsid,
-    }).then((res: any) => {
-      if (!!res && res.result && res.result.count > 0) {
-        let datasets = getDatasetsFromCKANResponse(res, {});
-        if (datasets && datasets.length > 0) {
-          dispatch({
-            type: DATASETS_RESOURCE_QUERY,
-            dsid: dsid,
-            dataset: datasets[0],
-            loading: false,
+    if (prefs.data_catalog_type == "default") {
+      let prom1 = new Promise<void>((resolve, reject) => {
+        let req = fetch(prefs.data_catalog_api + "/datasets/get_dataset_info", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          //mode: "no-cors",
+          body: JSON.stringify({ dataset_id: dsid }),
+        });
+        req.then((response) => {
+          response.json().then((obj) => {
+            dataset = getDatasetDetailFromDCResponse(obj);
+            resolve();
           });
-        }
-      } else {
+        });
+        req.catch(reject);
+      });
+
+      let resources;
+      let prom2 = new Promise<void>((resolve, reject) => {
+        let req = fetch(
+          prefs.data_catalog_api + "/datasets/dataset_resources",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            //mode: "no-cors",
+            body: JSON.stringify({
+              dataset_id: dsid,
+            }),
+          }
+        );
+        req.then((response) => {
+          response.json().then((obj) => {
+            resources = getResourcesFromDCResponse(obj);
+            resolve();
+          });
+        });
+        req.catch(reject);
+      });
+
+      Promise.all([prom1, prom2]).then((values: any) => {
+        if (dataset) dataset.resources = resources;
         dispatch({
           type: DATASETS_RESOURCE_QUERY,
           dsid: dsid,
-          dataset: null,
+          dataset: dataset,
           loading: false,
         });
-      }
-    });
-  } else {
-    let prom1 = new Promise<void>((resolve, reject) => {
-      let req = fetch(prefs.data_catalog_api + "/datasets/get_dataset_info", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        //mode: "no-cors",
-        body: JSON.stringify({ dataset_id: dsid }),
       });
-      req.then((response) => {
-        response.json().then((obj) => {
-          dataset = getDatasetDetailFromDCResponse(obj);
-          resolve();
-        });
-      });
-      req.catch(reject);
-    });
-
-    let resources;
-    let prom2 = new Promise<void>((resolve, reject) => {
-      let req = fetch(prefs.data_catalog_api + "/datasets/dataset_resources", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        //mode: "no-cors",
-        body: JSON.stringify({
-          dataset_id: dsid,
-        }),
-      });
-      req.then((response) => {
-        response.json().then((obj) => {
-          resources = getResourcesFromDCResponse(obj);
-          resolve();
-        });
-      });
-      req.catch(reject);
-    });
-
-    Promise.all([prom1, prom2]).then((values: any) => {
-      if (dataset) dataset.resources = resources;
-      dispatch({
-        type: DATASETS_RESOURCE_QUERY,
-        dsid: dsid,
-        dataset: dataset,
-        loading: false,
-      });
-    });
-  }
-};
+    }
+  };
 
 // Query Data Catalog for resources of a particular dataset and save the results
 type QueryDatasetResourcesAndSaveThunkResult = ThunkAction<
@@ -583,6 +526,25 @@ type QueryDatasetsByRegionThunkResult = ThunkAction<
   undefined,
   DatasetsActionRegionQuery
 >;
+
+export const queryDatasetByRegionCkan: ActionCreator<
+  QueryDatasetsByRegionThunkResult
+> = (region: Region, prefs: MintPreferences) => async (dispatch) => {
+  dispatch({
+    type: DATASETS_REGION_QUERY,
+    region: region,
+    datasets: null,
+    loading: true,
+  });
+  const dataCatalog = DataCatalogAdapter.getInstance();
+  const datasets = await dataCatalog.listDatasetsByRegion(region);
+  dispatch({
+    type: DATASETS_REGION_QUERY,
+    region: region,
+    datasets: datasets,
+    loading: false,
+  });
+};
 export const queryDatasetsByRegion: ActionCreator<
   QueryDatasetsByRegionThunkResult
 > = (region: Region, prefs: MintPreferences) => (dispatch) => {

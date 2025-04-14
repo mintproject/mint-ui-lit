@@ -19,7 +19,9 @@
     "build": "ts-node webpack/build.ts",
     "serve": "prpl-server --root build/ ",
     "lint": "npm run gulp lint",
-    "start:debug": "cross-env BROWSERSLIST=\"edge > 12\" webpack-dev-server --config webpack/dev.config.ts --hot --color --overlay --history-api-fallback"
+    "start:debug": "cross-env BROWSERSLIST=\"edge > 12\" webpack-dev-server --config webpack/dev.config.ts --hot --color --overlay --history-api-fallback",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@apollo/client": "^3.7.1",
@@ -113,6 +115,7 @@
     "stylelint-scss": "^3.5.3",
     "terser": "^3.16.1",
     "terser-webpack-plugin": "^1.2.2",
+    "ts-jest": "24.1.0",
     "ts-node": "^10.9.1",
     "tslint": "^5.12.1",
     "typescript": "^4.0.2",
@@ -124,5 +127,26 @@
   },
   "engines": {
     "node": ">=8.3"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^config$": "<rootDir>/src/config.ts",
+      "^screens/(.*)$": "<rootDir>/src/screens/$1",
+      "^util/(.*)$": "<rootDir>/src/util/$1"
+    },
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
   }
 }

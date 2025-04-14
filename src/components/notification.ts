@@ -12,24 +12,57 @@ export class CustomNotification extends LitElement {
 
   private snackbar: Snackbar;
 
+  static get styles() {
+    return css`
+      wl-snackbar {
+        --wl-snackbar-bg: #2c3e50;
+        --wl-snackbar-color: #ffffff;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      wl-icon {
+        margin-right: 8px;
+        color: inherit;
+      }
+
+      wl-button {
+        --wl-button-color: #ffffff;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      span {
+        line-height: 1.5;
+        letter-spacing: 0.2px;
+      }
+    `;
+  }
+
   protected render() {
-    return html` <wl-snackbar
-      id="snackbar"
-      fixed
-      backdrop
-      disableFocusTrap
-      hideDelay="${this.delay}"
-    >
-      ${this.icon ? html`<wl-icon slot="icon">${this.icon}</wl-icon>` : ""}
-      ${this.buttonName && this.buttonFn
-        ? html`
-            <wl-button @click="${this.buttonFn}" slot="action" flat inverted>
-              ${this.buttonName}
-            </wl-button>
-          `
-        : ""}
-      <span>${this.message}</span>
-    </wl-snackbar>`;
+    return html`
+      <wl-snackbar
+        id="snackbar"
+        fixed
+        backdrop
+        disableFocusTrap
+        hideDelay="${this.delay}"
+      >
+        ${this.icon ? html`<wl-icon slot="icon">${this.icon}</wl-icon>` : ""}
+        ${this.buttonName && this.buttonFn
+          ? html`
+              <wl-button @click="${this.buttonFn}" slot="action" flat inverted>
+                ${this.buttonName}
+              </wl-button>
+            `
+          : ""}
+        <span>${this.message}</span>
+      </wl-snackbar>
+    `;
   }
 
   protected updated() {
@@ -66,12 +99,7 @@ export class CustomNotification extends LitElement {
     this.show();
   }
 
-  public custom(
-    msg: string,
-    icon: string,
-    buttonName?: string,
-    buttonFn?: any
-  ) {
+  public custom(msg: string, icon: string, buttonName?: string, buttonFn?: any) {
     this.message = msg;
     this.icon = icon;
     if (buttonName && buttonFn) {

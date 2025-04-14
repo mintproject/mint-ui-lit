@@ -7,7 +7,10 @@ import "components/google-map-custom";
 import "weightless/progress-spinner";
 import { RegionQueryPage } from "./region-query-page";
 import { DatasetsWithStatus, Dataset } from "screens/datasets/reducers";
-import { queryDatasetsByRegion } from "screens/datasets/actions";
+import {
+  queryDatasetByRegionCkan,
+  queryDatasetsByRegion,
+} from "screens/datasets/actions";
 import { SharedStyles } from "styles/shared-styles";
 import { UserPreferences } from "app/reducers";
 import { goToPage } from "app/actions";
@@ -140,8 +143,11 @@ export class RegionDatasets extends connect(store)(RegionQueryPage) {
     if (this._selectedRegion) {
       if (curregion != this._selectedRegion) {
         // New region. Requery
+        // store.dispatch(
+        //   queryDatasetsByRegion(this._selectedRegion, this.prefs.mint)
+        // );
         store.dispatch(
-          queryDatasetsByRegion(this._selectedRegion, this.prefs.mint)
+          queryDatasetByRegionCkan(this._selectedRegion, this.prefs.mint)
         );
       }
 

@@ -113,7 +113,5 @@ export const store = createStore(
 // Initially loaded reducers.
 store.addReducers({
   app,
-});
-store.addReducers({
   ui,
 });

@@ -17,7 +17,7 @@ import { DataResource, Dataset } from "screens/datasets/reducers";
 import { toDateString } from "util/date-utils";
 import { ExplorerStyles } from "screens/models/model-explore/explorer-styles";
 import { hideDialog, showDialog } from "util/ui_functions";
-import { DataCatalogAdapter } from "util/data-catalog-adapter";
+import { DataCatalogAdapter } from "util/datacatalog/data-catalog-adapter";
 import { Region } from "screens/regions/reducers";
 import { DateRange } from "screens/modeling/reducers";
 
@@ -328,7 +328,7 @@ export class DatasetSelector extends connect(store)(LitElement) {
                     ? html`<div>${dataset.description}</div>`
                     : ""
                 }
-            </td> 
+            </td>
             <td>
                 ${
                   dataset.datatype
