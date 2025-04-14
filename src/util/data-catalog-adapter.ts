@@ -4,7 +4,7 @@ import {
   getDatasetsFromCKANResponse,
   getDatasetsFromDCResponse,
 } from "screens/datasets/actions";
-import {
+import datasets, {
   DataResource,
   Dataset,
   DatasetQueryParameters,
@@ -46,9 +46,10 @@ export class DataCatalogAdapter {
   }
 
   public static async findDataset(query: DatasetQuery): Promise<Dataset[]> {
-    if (query.start_time) {
-      query.start_time__gte = query.start_time
-        .toISOString()
+    if (data_catalog_type === "default") {
+      if (query.start_time) {
+        query.start_time__gte = query.start_time
+          .toISOString()
         .replace(/\.\d{3}Z$/, "");
       delete query.start_time;
     }
@@ -65,7 +66,19 @@ export class DataCatalogAdapter {
       `${data_catalog_api_url}/datasets/find`,
       query
     );
-    return getDatasetsFromDCResponse(obj, {});
+      return getDatasetsFromDCResponse(obj, {});
+    } else if (data_catalog_type === "CKAN") {
+      // CKAN Data Catalog
+      let dsQueryData: any = {
+        // spatial_coverage__intersects: query.spatial_coverage__intersects,
+        // limit: 100,
+      };
+      let res: any = await this.fetchJson(
+        `${data_catalog_api_url}/api/action/package_search`,
+        dsQueryData
+      );
+      return getDatasetsFromCKANResponse(res, {});
+    }
   }
 
   public static async findDatasetByVariableName(

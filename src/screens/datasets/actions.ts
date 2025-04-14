@@ -12,6 +12,7 @@ import { IdMap, MintPreferences } from "app/reducers";
 import { DateRange } from "screens/modeling/reducers";
 import { Region } from "screens/regions/reducers";
 import { MINT_PREFERENCES } from "config";
+import { DataCatalogAdapter } from "util/data-catalog-adapter";
 
 export const DATASETS_VARIABLES_QUERY = "DATASETS_VARIABLES_QUERY";
 export const DATASETS_GENERAL_QUERY = "DATASETS_GENERAL_QUERY";
@@ -583,6 +584,27 @@ type QueryDatasetsByRegionThunkResult = ThunkAction<
   undefined,
   DatasetsActionRegionQuery
 >;
+
+export const queryDatasetByRegionCkan: ActionCreator<
+  QueryDatasetsByRegionThunkResult
+> = (region: Region, prefs: MintPreferences) => (dispatch) => {
+  dispatch({
+    type: DATASETS_REGION_QUERY,
+    region: region,
+    datasets: null,
+    loading: true,
+  });
+
+  DataCatalogAdapter.findDataset({
+  }).then((datasets) => {
+    dispatch({
+      type: DATASETS_REGION_QUERY,
+      region: region,
+      datasets: datasets,
+      loading: false,
+    });
+  });
+};
 export const queryDatasetsByRegion: ActionCreator<
   QueryDatasetsByRegionThunkResult
 > = (region: Region, prefs: MintPreferences) => (dispatch) => {
