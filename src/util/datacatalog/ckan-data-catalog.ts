@@ -115,7 +115,7 @@ export class CKANDataCatalog implements IDataCatalog {
     return datasets;
   }
 
-  public async queryDatasetResources(
+  public async listResourcesByDataset(
     datasetid: string,
     region: Region,
     dates?: DateRange,

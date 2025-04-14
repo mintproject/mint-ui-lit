@@ -946,7 +946,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       dates.end_date.getTime();
     if (!this.resourceCache[cacheid]) {
       this.addToLoadQueue(cacheid);
-      this.resourceCache[cacheid] = DataCatalogAdapter.getInstance().queryDatasetResources(
+      this.resourceCache[cacheid] = DataCatalogAdapter.getInstance().listResourcesByDataset(
         dataset.id,
         region,
         dates,

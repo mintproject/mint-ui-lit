@@ -81,7 +81,7 @@ export class DefaultDataCatalog implements IDataCatalog {
     return [];
   }
 
-  public async queryDatasetResources(
+  public async listResourcesByDataset(
     datasetid: string,
     region: Region,
     dates?: DateRange

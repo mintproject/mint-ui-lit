@@ -33,7 +33,7 @@ export interface IDataCatalog {
     region: Region,
     dates?: DateRange
   ): Promise<Dataset[]>;
-  queryDatasetResources(
+  listResourcesByDataset(
     datasetid: string,
     region: Region,
     dates?: DateRange,
