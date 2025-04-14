@@ -9,6 +9,7 @@ import { Region } from "screens/regions/reducers";
 import { IDataCatalog } from "./data-catalog-adapter";
 
 export class CKANDataCatalog implements IDataCatalog {
+
   private static async request(url: string, query: any): Promise<any> {
     const res: Response = await fetch(url, {
       method: "POST",
@@ -17,16 +18,44 @@ export class CKANDataCatalog implements IDataCatalog {
     });
     return await res.json();
   }
+
+  public async getDatasetRaw(id: string): Promise<any> {
+    return await CKANDataCatalog.request(
+      `${MINT_PREFERENCES.data_catalog_api}/api/action/package_show`,
+      {
+        id: id,
+      },
+    );
+  }
+
   public async findDataset(id: string): Promise<Dataset | null> {
-    // Implement CKAN-specific dataset search
+    const res: any = await this.getDatasetRaw(id);
+    return CKANDataCatalog.convertCkanDataset(res, {});
+  }
+
+
+  public async getResourcesByDatasetId(id: string): Promise<DataResource[]> {
+    let res: any = await CKANDataCatalog.request(
+      `${MINT_PREFERENCES.data_catalog_api}/api/action/package_show`,
+      {
+        id: id,
+      },
+    );
+    return res.result.resources;
+  }
+
+  public async findDatasetsByRegionDates(region: Region, dates: DateRange): Promise<Dataset[]> {
     let res: any = await CKANDataCatalog.request(
       `${MINT_PREFERENCES.data_catalog_api}/api/action/package_search`,
       {
-        fq: "id:" + id,
+        ext_bbox: `${region.bounding_box.xmin},${region.bounding_box.ymin},${region.bounding_box.xmax},${region.bounding_box.ymax}`,
       },
     );
-    let dses = CKANDataCatalog.convertCkanDatasets(res, {});
-    return dses.length > 0 ? dses[0] : null;
+
+    return CKANDataCatalog.convertCkanDatasets(res, {}).filter((ds) => {
+      return ds.time_period.start_date >= dates.start_date && ds.time_period.end_date <= dates.end_date;
+    });
+
   }
 
   public async findDatasetsByRegion(region: Region): Promise<Dataset[]> {
@@ -36,49 +65,53 @@ export class CKANDataCatalog implements IDataCatalog {
         ext_bbox: `${region.bounding_box.xmin},${region.bounding_box.ymin},${region.bounding_box.xmax},${region.bounding_box.ymax}`,
       },
     );
-    console.log(res);
     return CKANDataCatalog.convertCkanDatasets(res, {});
   }
 
-  public async findDatasetByVariableName(
+  public async findDatasetByVariableNameRegionDates(
     driving_variables: string[],
     region: Region,
     dates?: DateRange,
   ): Promise<Dataset[]> {
     let datasets: Dataset[] = [];
 
-    if (driving_variables.length === 0) {
-      let dsQueryData: any = {
-        ext_bbox: `${region.bounding_box.xmin},${region.bounding_box.ymin},${region.bounding_box.xmax},${region.bounding_box.ymax}`,
-      };
-      let res: any = await CKANDataCatalog.request(
-        `${MINT_PREFERENCES.data_catalog_api}/api/action/package_search`,
-        dsQueryData,
-      );
-      datasets = CKANDataCatalog.convertCkanDatasets(res, {
-        variables: driving_variables,
-      } as DatasetQueryParameters);
+    let dsQueryData: any = {
+      ext_bbox: `${region.bounding_box.xmin},${region.bounding_box.ymin},${region.bounding_box.xmax},${region.bounding_box.ymax}`,
+    };
+    let datasetResponse: any = await CKANDataCatalog.request(
+      `${MINT_PREFERENCES.data_catalog_api}/api/action/package_search`,
+      dsQueryData,
+    );
+    datasetResponse.result.results = datasetResponse.result.results.filter((ckanDataset: any) => {
+      const dataSetStartDate = new Date(ckanDataset.temporal_coverage_start);
+      const dataSetEndDate = new Date(ckanDataset.temporal_coverage_end);
+      return dataSetStartDate <= dates.end_date && dataSetEndDate >= dates.start_date;
+    });
+
+    //Filter datasets by resources datasets[].resources[] contains mint_standard_variables === variable
+    for (const dataset of datasetResponse.result.results) {
+      dataset.resources = dataset.resources.filter((resource: any) => {
+        const resourceVariables = resource.mint_standard_variables;
+        // Check if resourceVariables exists and handle different types
+        if (!resourceVariables) {
+          return false;
+        }
+        if (typeof resourceVariables === 'string') {
+          return driving_variables.includes(resourceVariables);
+        }
+        if (Array.isArray(resourceVariables)) {
+          return resourceVariables.some((variable: string) =>
+            driving_variables.includes(variable)
+          );
+        }
+        return false; // Handle any other unexpected types
+      });
     }
 
-    for (const variable of driving_variables) {
-      let dsQueryData: any = {
-        fq: "tags:stdvar." + variable,
-        ext_bbox: `${region.bounding_box.xmin},${region.bounding_box.ymin},${region.bounding_box.xmax},${region.bounding_box.ymax}`,
-      };
+    datasets = CKANDataCatalog.convertCkanDatasets(datasetResponse, {
+      variables: driving_variables,
+    } as DatasetQueryParameters);
 
-      let res: any = await CKANDataCatalog.request(
-        `${MINT_PREFERENCES.data_catalog_api}/api/action/package_search`,
-        dsQueryData,
-      );
-      if (!!res && res.result && res.result.count > 0) {
-        datasets = [
-          ...datasets,
-          ...CKANDataCatalog.convertCkanDatasets(res, {
-            variables: driving_variables,
-          } as DatasetQueryParameters),
-        ];
-      }
-    }
     return datasets;
   }
 
@@ -86,16 +119,29 @@ export class CKANDataCatalog implements IDataCatalog {
     datasetid: string,
     region: Region,
     dates?: DateRange,
+    variableNames?: string[]
   ): Promise<DataResource[]> {
-    let resQueryData = {
-      fq: "id:" + datasetid,
-    };
-    let obj: any = await CKANDataCatalog.request(
-      `${MINT_PREFERENCES.data_catalog_api}/api/action/package_search`,
-      resQueryData,
-    );
-    let dses = CKANDataCatalog.convertCkanDatasets(obj, {});
-    return dses.length > 0 ? dses[0].resources : [];
+    const response = await this.getDatasetRaw(datasetid);
+    const dataset = response.result;
+    if (variableNames) {
+      dataset.resources = dataset.resources.filter((resource: any) => {
+        const resourceVariables = resource.mint_standard_variables;
+        // Check if resourceVariables exists and handle different types
+      if (!resourceVariables) {
+        return false;
+      }
+      if (typeof resourceVariables === 'string') {
+        return variableNames.includes(resourceVariables);
+      }
+      if (Array.isArray(resourceVariables)) {
+        return resourceVariables.some((variable: string) =>
+          variableNames.includes(variable)
+        );
+      }
+        return false; // Handle any other unexpected types
+      });
+    }
+    return CKANDataCatalog.convertCkanDataset(dataset, {}).resources;
   }
 
   private static convertCkanDataset = (
@@ -117,7 +163,17 @@ export class CKANDataCatalog implements IDataCatalog {
         spatial_coverage: null,
         source: {},
         resources: [],
+        time_period: {
+          start_date: null,
+          end_date: null,
+        },
       } as Dataset;
+      if (ds["temporal_coverage_start"]) {
+        newds.time_period.start_date = new Date(ds["temporal_coverage_start"]);
+      }
+      if (ds["temporal_coverage_end"]) {
+        newds.time_period.end_date = new Date(ds["temporal_coverage_end"]);
+      }
       if ("extras" in ds) {
         for (let e of ds["extras"]) {
           if (e["key"] == "spatial") {
@@ -150,5 +206,30 @@ export class CKANDataCatalog implements IDataCatalog {
       return CKANDataCatalog.convertCkanDataset(ds, queryParameters);
     });
     return datasets;
+  };
+
+
+  private static convertCkanResources = (obj: any) => {
+    let resources = [];
+    obj.resources.map((row: any) => {
+      let rmeta = row["resource_metadata"];
+      let tcover = rmeta["temporal_coverage"];
+      let scover = rmeta["spatial_coverage"];
+      let tcoverstart = tcover ? new Date(tcover["start_time"]) : null;
+      let tcoverend = tcover ? new Date(tcover["end_time"]) : null;
+
+      resources.push({
+        id: row["resource_id"],
+        name: row["resource_name"],
+        url: row["resource_data_url"],
+        time_period: {
+          start_date: tcoverstart,
+          end_date: tcoverend,
+        },
+        spatial_coverage: scover,
+        selected: true,
+      });
+    });
+    return resources;
   };
 }

@@ -28,7 +28,7 @@ export interface DatasetQuery {
 export interface IDataCatalog {
   findDataset(id: string): Promise<Dataset | null>;
   findDatasetsByRegion(region: Region): Promise<Dataset[]>;
-  findDatasetByVariableName(
+  findDatasetByVariableNameRegionDates(
     driving_variables: string[],
     region: Region,
     dates?: DateRange
@@ -36,7 +36,8 @@ export interface IDataCatalog {
   queryDatasetResources(
     datasetid: string,
     region: Region,
-    dates?: DateRange
+    dates?: DateRange,
+    variableNames?: string[]
   ): Promise<DataResource[]>;
 }
 
