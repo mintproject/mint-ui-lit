@@ -1,3 +1,4 @@
+import { MINT_PREFERENCES } from "config";
 import {
   DataResource,
   Dataset,
@@ -5,9 +6,8 @@ import {
 
 import { DateRange } from "screens/modeling/reducers";
 import { Region } from "screens/regions/reducers";
-import { MINT_PREFERENCES } from "config";
-import { DefaultDataCatalog } from "./default-data-catalog";
 import { CKANDataCatalog } from "./ckan-data-catalog";
+import { DefaultDataCatalog } from "./default-data-catalog";
 
 
 export interface DatasetQuery {
@@ -27,6 +27,7 @@ export interface DatasetQuery {
 // Base interface for data catalog operations
 export interface IDataCatalog {
   findDataset(id: string): Promise<Dataset | null>;
+  findDatasetsByRegion(region: Region): Promise<Dataset[]>;
   findDatasetByVariableName(
     driving_variables: string[],
     region: Region,
@@ -39,34 +40,6 @@ export interface IDataCatalog {
   ): Promise<DataResource[]>;
 }
 
-// Base class with common functionality
-export abstract class BaseDataCatalog implements IDataCatalog {
-  protected static async fetchJson(url: string, query: any): Promise<any> {
-    let res: Response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(query),
-    });
-    if (res && res.json) {
-      return await res.json();
-    }
-  }
-
-
-  abstract findDataset(id: string): Promise<Dataset | null>;
-  abstract findDatasetByVariableName(
-    driving_variables: string[],
-    region: Region,
-    dates?: DateRange
-  ): Promise<Dataset[]>;
-  abstract queryDatasetResources(
-    datasetid: string,
-    region: Region,
-    dates?: DateRange
-  ): Promise<DataResource[]>;
-}
-
-// Factory class to create the appropriate catalog adapter
 export class DataCatalogAdapter {
   private static instance: IDataCatalog;
 
