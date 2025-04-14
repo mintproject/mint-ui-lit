@@ -16,6 +16,7 @@ import { MINT_PREFERENCES } from "config";
 import { DefaultDataCatalog } from "./default-data-catalog";
 import { CKANDataCatalog } from "./ckan-data-catalog";
 
+
 export interface DatasetQuery {
   search_operators?: string;
   dataset_names?: string[];
@@ -32,7 +33,7 @@ export interface DatasetQuery {
 
 // Base interface for data catalog operations
 export interface IDataCatalog {
-  findDataset(query: DatasetQuery): Promise<Dataset[]>;
+  findDataset(id: string): Promise<Dataset | null>;
   findDatasetByVariableName(
     driving_variables: string[],
     region: Region,
@@ -58,7 +59,8 @@ export abstract class BaseDataCatalog implements IDataCatalog {
     }
   }
 
-  abstract findDataset(query: DatasetQuery): Promise<Dataset[]>;
+
+  abstract findDataset(id: string): Promise<Dataset | null>;
   abstract findDatasetByVariableName(
     driving_variables: string[],
     region: Region,
