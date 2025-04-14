@@ -134,8 +134,7 @@ export class VariablesHome extends connect(store)(PageViewElement) {
     return html`
       <div class="container">
         <div class="header">
-          <h1>Variables</h1>
-          <h2>Standard Variables</h2>
+          <h1>Standard Variables</h1>
         </div>
         <div class="description-section">
           <h3>About Standard Variables</h3>
