@@ -26,7 +26,7 @@ export interface DatasetQuery {
 
 // Base interface for data catalog operations
 export interface IDataCatalog {
-  findDataset(id: string): Promise<Dataset | null>;
+  getDataset(id: string): Promise<Dataset | null>;
   findDatasetsByRegion(region: Region): Promise<Dataset[]>;
   findDatasetByVariableNameRegionDates(
     driving_variables: string[],

@@ -413,7 +413,7 @@ export const queryDatasetResources: ActionCreator<
     loading: true,
   });
   const dataCatalog = DataCatalogAdapter.getInstance();
-  const dataset = await dataCatalog.findDataset(dsid);
+  const dataset = await dataCatalog.getDataset(dsid);
   dispatch({
     type: DATASETS_RESOURCE_QUERY,
     dsid: dsid,

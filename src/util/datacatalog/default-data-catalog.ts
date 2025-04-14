@@ -21,7 +21,7 @@ export class DefaultDataCatalog implements IDataCatalog {
     throw new Error("Not implemented");
   }
 
-  public async findDataset(id: string): Promise<Dataset | null> {
+  public async getDataset(id: string): Promise<Dataset | null> {
     let obj = await DefaultDataCatalog.request(
       `${MINT_PREFERENCES.data_catalog_api}/datasets/find`,
       { id: id }
