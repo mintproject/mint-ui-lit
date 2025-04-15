@@ -4,6 +4,7 @@ import { ActionCreator, Action } from "redux";
 import { VariableMap } from "./reducers";
 import { ModelCatalogApi } from "../../model-catalog-api/model-catalog-api";
 import { StandardVariable } from "@mintproject/modelcatalog_client";
+import { DEFAULT_GRAPH } from "config/default-graph";
 
 export const VARIABLES_LIST = "VARIABLES_LIST";
 
@@ -22,6 +23,7 @@ type ListVariablesThunkResult = ThunkAction<
 >;
 export const listVariables: ActionCreator<ListVariablesThunkResult> =
   () => (dispatch) => {
+    ModelCatalogApi.setUsername(DEFAULT_GRAPH);
     dispatch(ModelCatalogApi.myCatalog.standardVariable.getAll()).then((result: any) => {
       let variables = {} as VariableMap;
       Object.values(result).forEach((varobj: StandardVariable) => {

@@ -254,6 +254,11 @@ export class MintApp extends connect(store)(LitElement) {
         ? !this.user
           ? html`
               <a
+                href="variables"
+                class=${this._page == "variables" ? "active" : ""}
+                >Explore Variables</a
+              >
+              <a
                 href="any/models"
                 class=${this._page == "models" ? "active" : ""}
                 >Explore Models</a
@@ -262,6 +267,11 @@ export class MintApp extends connect(store)(LitElement) {
             `
           : ""
         : html`
+            <a
+              href="${this._selectedRegion.id}/variables"
+              class=${this._page == "variables" ? "active" : ""}
+              >Explore Variables</a
+            >
             <a
               href="${this._selectedRegion.id}/regions"
               class=${this._page == "regions" ? "active" : ""}
@@ -588,9 +598,14 @@ export class MintApp extends connect(store)(LitElement) {
                   class="page fullpage"
                   ?active="${this._page == "emulators"}"
                 ></emulators-home>
+                <variables-home
+                  class="page fullpage"
+                  ?active="${this._page == "variables"}"
+                ></variables-home>
                 ${this._page != "home" &&
                 this._page != "emulators" &&
-                this._page !== "models"
+                this._page !== "models" &&
+                this._page !== "variables"
                   ? html`
                       <div
                         style="display: flex; color: #888; flex-direction: column; width: 100%; height: 100%; align-items: center; justify-content: center;"

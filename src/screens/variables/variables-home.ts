@@ -274,27 +274,27 @@ export class VariablesHome extends connect(store)(PageViewElement) {
 
   protected render() {
     const filteredPresentations = this._filterVariablePresentations();
+    let nav = [{ label: "Explore Variables", url: "variables" }];
 
     return html`
+      <nav-title .nav="${nav}"></nav-title>
       <div class="container">
-        <div class="header">
-          <h1>Variable Presentations</h1>
-          <button
-            class="toggle-button ${this.isExplanationExpanded ? '' : 'collapsed'}"
-            @click=${() => this.isExplanationExpanded = !this.isExplanationExpanded}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M6 9l6 6 6-6"/>
-            </svg>
-            ${this.isExplanationExpanded ? 'Hide Explanation' : 'Show Explanation'}
-          </button>
-        </div>
         <div class="description-section ${this.isExplanationExpanded ? '' : 'collapsed'}">
-          <h3>About Variable Presentations</h3>
+          <h3>About Variables</h3>
           <p>
-            Variable presentations define how variables are represented in specific contexts, including their units,
+            Variables define how variables are represented in specific contexts, including their units,
             constraints, and relationships to standard variables. They provide a way to customize how variables
             are used in different models and datasets while maintaining connections to standardized ontologies.
           </p>
+
+          <div class="variable-type">
+            <h4>What is a Standard Variable?</h4>
+            <p>
+              A standard variable is necessary to refer to all variables using the same nomenclature in a domain ontology.
+              For example, a standard variable may be a <a href="http://www.geoscienceontology.org/geo-upper#Variable" target="_blank">SVO variable</a>.
+              Standard variables serve as the common language that connects different variable presentations of the same concept.
+            </p>
+          </div>
 
           <div class="variable-type">
             <h4>What is a Variable Presentation?</h4>
@@ -308,15 +308,6 @@ export class VariablesHome extends connect(store)(PageViewElement) {
               </ul>
               This allows different models to use the same variable concept with different units or representations while maintaining
               semantic interoperability.
-            </p>
-          </div>
-
-          <div class="variable-type">
-            <h4>What is a Standard Variable?</h4>
-            <p>
-              A standard variable is necessary to refer to all variables using the same nomenclature in a domain ontology.
-              For example, a standard variable may be a <a href="http://www.geoscienceontology.org/geo-upper#Variable" target="_blank">SVO variable</a>.
-              Standard variables serve as the common language that connects different variable presentations of the same concept.
             </p>
           </div>
 
