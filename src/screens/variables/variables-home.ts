@@ -254,6 +254,55 @@ export class VariablesHome extends connect(store)(PageViewElement) {
           visibility: visible;
           transform: translateX(-50%) translateY(0);
         }
+        .concept-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+          gap: 2rem;
+          margin-bottom: 2rem;
+        }
+
+        .concept-card {
+          background: #f8f9fa;
+          border-radius: 8px;
+          padding: 1.5rem;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .concept-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .concept-card h4 {
+          color: #2c3e50;
+          margin-top: 0;
+          margin-bottom: 1rem;
+          font-size: 1.1rem;
+        }
+
+        .concept-card p {
+          color: #495057;
+          margin: 0;
+          line-height: 1.5;
+        }
+
+        .concept-card ul {
+          margin-top: 0.5rem;
+          margin-bottom: 0.5rem;
+          padding-left: 1.5rem;
+        }
+
+        .concept-card li {
+          margin-bottom: 0.5rem;
+          color: #495057;
+        }
+
+        @media (max-width: 900px) {
+          .concept-grid {
+            grid-template-columns: 1fr;
+          }
+        }
       `
     ];
   }
@@ -280,50 +329,44 @@ export class VariablesHome extends connect(store)(PageViewElement) {
       <nav-title .nav="${nav}"></nav-title>
       <div class="container">
         <div class="description-section ${this.isExplanationExpanded ? '' : 'collapsed'}">
-          <h3>About Variables</h3>
-          <p>
-            Variables define how variables are represented in specific contexts, including their units,
-            constraints, and relationships to standard variables. They provide a way to customize how variables
-            are used in different models and datasets while maintaining connections to standardized ontologies.
-          </p>
+          <div class="concept-grid">
+            <div class="concept-card">
+              <h4>What is a Standard Variable?</h4>
+              <p>
+                A standard variable is necessary to refer to all variables using the same nomenclature in a domain ontology.
+                For example, a standard variable may be a <a href="http://www.geoscienceontology.org/geo-upper#Variable" target="_blank">SVO variable</a>.
+                Standard variables serve as the common language that connects different variable presentations of the same concept.
+              </p>
+            </div>
 
-          <div class="variable-type">
-            <h4>What is a Standard Variable?</h4>
-            <p>
-              A standard variable is necessary to refer to all variables using the same nomenclature in a domain ontology.
-              For example, a standard variable may be a <a href="http://www.geoscienceontology.org/geo-upper#Variable" target="_blank">SVO variable</a>.
-              Standard variables serve as the common language that connects different variable presentations of the same concept.
-            </p>
+            <div class="concept-card">
+              <h4>What is a Variable Presentation?</h4>
+              <p>
+                A variable presentation is a concept used to represent an instantiation of a variable in an input/output dataset.
+                For example:
+                <ul>
+                  <li>Model A may use an input file with temperature expressed in Fahrenheit (variablePresentation1)</li>
+                  <li>Model B may produce an output with temperature in Celsius (variablePresentation2)</li>
+                  <li>Both variable presentations refer to the same concept of temperature</li>
+                </ul>
+                This allows different models to use the same variable concept with different units or representations while maintaining
+                semantic interoperability.
+              </p>
+            </div>
           </div>
 
           <div class="variable-type">
-            <h4>What is a Variable Presentation?</h4>
+            <h4>How to Use Standard Variables</h4>
             <p>
-              A variable presentation is a concept used to represent an instantiation of a variable in an input/output dataset.
-              For example:
+              The standard variable will be required on your model inputs and datasets (data catalog). Below you'll find a list
+              of all available standard variables that you can use when:
               <ul>
-                <li>Model A may use an input file with temperature expressed in Fahrenheit (variablePresentation1)</li>
-                <li>Model B may produce an output with temperature in Celsius (variablePresentation2)</li>
-                <li>Both variable presentations refer to the same concept of temperature</li>
+                <li>Uploading your datasets to the data catalog</li>
+                <li>Creating new models</li>
+                <li>Defining model inputs and outputs</li>
               </ul>
-              This allows different models to use the same variable concept with different units or representations while maintaining
-              semantic interoperability.
-            </p>
-          </div>
-
-          <div class="variable-type">
-            <h4>Model Integration with MINT</h4>
-            <p>
-              The Model Integration (MINT) platform uses standard variables as keys to match model inputs with datasets
-              from data catalogs like CKAN. Think of standard variables as the "mint" that connects different components:
-              <ul>
-                <li>They serve as a common language between models and datasets</li>
-                <li>Enable automatic matching of model inputs with appropriate data sources</li>
-                <li>Facilitate interoperability across different scientific domains</li>
-                <li>Allow for consistent data exchange and reuse</li>
-              </ul>
-              This standardization is crucial for enabling automated workflows and ensuring that models can find and use
-              the right data without manual intervention.
+              Use the search bar below to find the appropriate standard variable for your data or model. You can click the copy
+              button next to each variable to easily copy its name.
             </p>
           </div>
         </div>
