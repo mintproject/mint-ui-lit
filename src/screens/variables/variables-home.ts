@@ -3,9 +3,9 @@ import { PageViewElement } from "../../components/page-view-element";
 import { SharedStyles } from "../../styles/shared-styles";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store, RootState } from "../../app/store";
-import { listVariables } from "./actions";
-import { Variable, VariableMap } from "./reducers";
+import { VariablePresentation } from "@mintproject/modelcatalog_client";
 import { CustomNotification } from "../../components/notification";
+import { ModelCatalogApi } from "../../model-catalog-api/model-catalog-api";
 
 /*
 store.addReducers({
@@ -15,8 +15,8 @@ store.addReducers({
 
 @customElement("variables-home")
 export class VariablesHome extends connect(store)(PageViewElement) {
-  @property({ type: Object })
-  private variables: VariableMap = {};
+  @property({ type: Array })
+  private variablePresentations: VariablePresentation[] = [];
 
   private _notification: CustomNotification;
 
@@ -94,30 +94,11 @@ export class VariablesHome extends connect(store)(PageViewElement) {
           top: 0;
           z-index: 1;
         }
-        .table th:first-child {
-          width: 60px;
-          min-width: 60px;
-        }
-        .table th:nth-child(2) {
-          width: 300px;
-          min-width: 300px;
-        }
         .table td {
           padding: 1rem;
           border-bottom: 1px solid #dee2e6;
           color: #212529;
           vertical-align: top;
-        }
-        .table td:first-child {
-          width: 60px;
-          min-width: 60px;
-          text-align: center;
-          padding: 0.5rem;
-        }
-        .table td:nth-child(2) {
-          width: 300px;
-          min-width: 300px;
-          word-break: break-word;
         }
         .table tr:hover {
           background-color: #f8f9fa;
@@ -131,6 +112,10 @@ export class VariablesHome extends connect(store)(PageViewElement) {
           word-break: break-word;
           line-height: 1.5;
           padding-right: 1rem;
+        }
+        .units {
+          color: #6c757d;
+          font-style: italic;
         }
         h1 {
           color: #212529;
@@ -165,46 +150,43 @@ export class VariablesHome extends connect(store)(PageViewElement) {
   }
 
   stateChanged(state: RootState) {
-    this.variables = state.ui?.variables || {};
+    // Get variable presentations from the model catalog state
+    const modelCatalog = state.modelCatalog;
+    if (modelCatalog && modelCatalog.variablepresentation) {
+      this.variablePresentations = Object.values(modelCatalog.variablepresentation);
+    }
   }
 
   connectedCallback() {
     super.connectedCallback();
-    store.dispatch(listVariables());
+    // Load variable presentations
+    store.dispatch(ModelCatalogApi.myCatalog.variablePresentation.getAll());
   }
 
   protected render() {
-    const variables = Object.values(this.variables);
-
     return html`
       <div class="container">
         <div class="header">
-          <h1>Standard Variables</h1>
+          <h1>Variable Presentations</h1>
         </div>
         <div class="description-section">
-          <h3>About Standard Variables</h3>
+          <h3>About Variable Presentations</h3>
           <p>
-            A standard variable is necessary to refer to all variables using the same nomenclature in a domain ontology.
-            This standardization facilitates exchanges of information and software, allowing researchers to focus on research
-            rather than converting and re-formatting data.
+            Variable presentations define how variables are represented in specific contexts, including their units,
+            constraints, and relationships to standard variables. They provide a way to customize how variables
+            are used in different models and datasets while maintaining connections to standardized ontologies.
           </p>
 
           <div class="variable-type">
-            <h4>ICASA Variables</h4>
+            <h4>Key Features</h4>
             <p>
-              Variables that follow the ICASA standard for agriculture. These standards support agricultural research
-              that quantifies complex interactions of processes across environmental conditions and crop management scenarios.
-              <a href="https://dssat.net/data/standards_v2" target="_blank">Learn more about ICASA</a>
-            </p>
-          </div>
-
-          <div class="variable-type">
-            <h4>SVO Variables</h4>
-            <p>
-              Variables that follow the Scientific Variables Ontology (SVO). The SVO framework enables representation of
-              scientific variables in machine-readable form for automated computational scientific workflows, providing
-              modular expression and manipulation of scientific variable concepts.
-              <a href="http://geoscienceontology.org/" target="_blank">Learn more about SVO</a>
+              Variable presentations include:
+              <ul>
+                <li>Human-readable names and descriptions</li>
+                <li>Units of measurement</li>
+                <li>Constraints and value ranges</li>
+                <li>Links to standard variables</li>
+              </ul>
             </p>
           </div>
         </div>
@@ -215,16 +197,18 @@ export class VariablesHome extends connect(store)(PageViewElement) {
                 <th></th>
                 <th>Name</th>
                 <th>Description</th>
+                <th>Units</th>
+                <th>Standard Variables</th>
               </tr>
             </thead>
             <tbody>
-              ${variables.map(
-                (variable) => html`
+              ${this.variablePresentations.map(
+                (vp) => html`
                   <tr>
                     <td>
                       <button
                         class="copy-button"
-                        @click=${() => this.copyToClipboard(variable.name)}
+                        @click=${() => this.copyToClipboard(vp.label?.[0] || '')}
                         title="Copy variable name">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -232,8 +216,12 @@ export class VariablesHome extends connect(store)(PageViewElement) {
                         </svg>
                       </button>
                     </td>
-                    <td class="name-cell">${variable.name}</td>
-                    <td class="description">${variable.description || "No description available"}</td>
+                    <td class="name-cell">${vp.label?.[0] || 'Unnamed'}</td>
+                    <td class="description">${vp.description?.[0] || "No description available"}</td>
+                    <td class="units">${vp.usesUnit?.map(u => u.label?.[0]).join(', ') || '-'}</td>
+                    <td class="description">
+                      ${vp.hasStandardVariable?.map(sv => sv.label?.[0]).join(', ') || '-'}
+                    </td>
                   </tr>
                 `
               )}
