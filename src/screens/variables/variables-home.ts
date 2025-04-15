@@ -189,16 +189,31 @@ export class VariablesHome extends connect(store)(PageViewElement) {
               </ul>
             </p>
           </div>
+
+          <div class="variable-type">
+            <h4>Model Integration with MINT</h4>
+            <p>
+              The Model Integration (MINT) platform uses standard variables as keys to match model inputs with datasets
+              from data catalogs like CKAN. Think of standard variables as the "mint" that connects different components:
+              <ul>
+                <li>They serve as a common language between models and datasets</li>
+                <li>Enable automatic matching of model inputs with appropriate data sources</li>
+                <li>Facilitate interoperability across different scientific domains</li>
+                <li>Allow for consistent data exchange and reuse</li>
+              </ul>
+              This standardization is crucial for enabling automated workflows and ensuring that models can find and use
+              the right data without manual intervention.
+            </p>
+          </div>
         </div>
         <div class="table-container">
           <table class="table">
             <thead>
               <tr>
                 <th></th>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Units</th>
                 <th>Standard Variables</th>
+                <th>Variable Presentation</th>
+                <th>Units</th>
               </tr>
             </thead>
             <tbody>
@@ -208,20 +223,22 @@ export class VariablesHome extends connect(store)(PageViewElement) {
                     <td>
                       <button
                         class="copy-button"
-                        @click=${() => this.copyToClipboard(vp.label?.[0] || '')}
-                        title="Copy variable name">
+                        @click=${() => this.copyToClipboard(vp.hasStandardVariable?.[0]?.label?.[0] || vp.label?.[0] || '')}
+                        title="Copy standard variable name">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                         </svg>
                       </button>
                     </td>
-                    <td class="name-cell">${vp.label?.[0] || 'Unnamed'}</td>
-                    <td class="description">${vp.description?.[0] || "No description available"}</td>
-                    <td class="units">${vp.usesUnit?.map(u => u.label?.[0]).join(', ') || '-'}</td>
                     <td class="description">
                       ${vp.hasStandardVariable?.map(sv => sv.label?.[0]).join(', ') || '-'}
                     </td>
+                    <td class="name-cell">
+                      <div>${vp.label?.[0] || 'Unnamed'}</div>
+                      <div class="description">${vp.description?.[0] || "No description available"}</div>
+                    </td>
+                    <td class="units">${vp.usesUnit?.map(u => u.label?.[0]).join(', ') || '-'}</td>
                   </tr>
                 `
               )}
