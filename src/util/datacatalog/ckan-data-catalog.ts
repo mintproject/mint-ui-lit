@@ -190,7 +190,7 @@ export class CKANDataCatalog implements IDataCatalog {
         return {
           id: r["id"],
           name: r["name"],
-          url: r["name"],
+          url: r["url"],
           selected: true,
           spatial_coverage: null,
           time_period: {

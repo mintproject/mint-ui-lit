@@ -412,7 +412,7 @@ describe("CKANDataCatalog", () => {
             resource_type: null,
             size: null,
             state: "active",
-            url: "",
+            url: "https://example.com/resource",
             url_type: null
           }
         ],
@@ -443,6 +443,7 @@ describe("CKANDataCatalog", () => {
       expect(result.resources).toHaveLength(1);
       expect(result.resources[0].id).toBe("7fc45eb5-b0fb-4e82-85be-bb4af4360f70");
       expect(result.resources[0].name).toBe("test resource");
+      expect(result.resources[0].url).toBe("https://example.com/resource");
     });
 
     it("should handle missing temporal coverage dates", () => {
