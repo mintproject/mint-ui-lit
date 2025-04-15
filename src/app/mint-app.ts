@@ -524,13 +524,6 @@ export class MintApp extends connect(store)(LitElement) {
                       <wl-button
                         flat
                         inverted
-                        @click="${this._showConfigWindow}"
-                      >
-                        CONFIGURE
-                      </wl-button>
-                      <wl-button
-                        flat
-                        inverted
                         @click="${this._onLogOutButtonClicked}"
                       >
                         LOGOUT
