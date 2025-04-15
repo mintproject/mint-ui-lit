@@ -46,6 +46,7 @@ import { ModelConfigurationSetup } from "@mintproject/modelcatalog_client";
 import { getLabel } from "model-catalog-api/util";
 import { PREFIX_URI } from "config/default-graph";
 import { DataCatalogAdapter } from "util/datacatalog/data-catalog-adapter";
+import { CustomNotification } from "components/notification";
 
 type StatusType = "warning" | "done" | "error";
 
@@ -64,6 +65,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
   private modifiedInputs: IdMap<Dataslice[]> = {};
   private resourceSelectors: IdMap<DatasetResourceSelector> = {};
   private modelIds: string[] = [];
+  private notification: CustomNotification;
 
   static get styles() {
     return [
@@ -133,6 +135,12 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
           --button-bg-hover: #ffa52b;
           --button-bg-active: #f1951b;
         }
+        custom-notification {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          z-index: 1000;
+        }
       `,
     ];
   }
@@ -141,6 +149,12 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     super();
     this.datasetSelector = new DatasetSelector();
     this.datasetModelSelector = new DatasetCompatibleModel();
+  }
+
+  protected firstUpdated(changedProperties: Map<string, any>) {
+    super.firstUpdated(changedProperties);
+    this.notification = new CustomNotification();
+    this.shadowRoot.appendChild(this.notification);
   }
 
   protected getStatusInfo(): string {
@@ -423,11 +437,30 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
             ? html`
                   <h4>Variables</h4>
                   <p>
-                    The dataset has the following variables:
+                    Learn more about standard variables <a href="/variables" target="_blank">here</a>.
+                  </p>
+                  <p>
+                    The selected input is looking for data with the following standard variables:
                   </p>
                   <ul>
                    ${this.selectedInput?.variables.map(
-                     (v) => html`<li>${v}</li>`
+                     (v) => html`<li>
+                       <div style="display: flex; align-items: center; gap: 8px;">
+                         <span>${v}</span>
+                         <wl-button
+                           class="copy-button"
+                           style="--button-padding: 2px; --button-min-width: 24px; --button-bg: #f1951b; --button-bg-hover: #ffa52b; --button-bg-active: #f1951b;"
+                           @click=${() => {
+                             navigator.clipboard.writeText(v);
+                             if (this.notification) {
+                               this.notification.custom("Variable copied to clipboard", "content_copy");
+                             }
+                           }}
+                         >
+                           Copy
+                         </wl-button>
+                       </div>
+                     </li>`
                    )}
                   </ul>
                 </div>
