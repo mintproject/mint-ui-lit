@@ -1261,10 +1261,10 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@mintproject/modelcatalog_client@^8.0.1":
-  version "8.0.1"
-  resolved "https://registry.npmjs.org/@mintproject/modelcatalog_client/-/modelcatalog_client-8.0.1.tgz"
-  integrity sha512-sCxTe1VUlcJ8assVw8SW2g7y35B+vwj2ip3cUylP2Lk+qCMSF+S47lfHtDzFzx/XMTuhkDaXRT8FuvUeaFdNjQ==
+"@mintproject/modelcatalog_client@^8.0.3-alpha.3":
+  version "8.0.3-alpha.3"
+  resolved "https://registry.npmjs.org/@mintproject/modelcatalog_client/-/modelcatalog_client-8.0.3-alpha.3.tgz"
+  integrity sha512-CP/1rQS91FDhLC28ksU4AGNodiKY/whBj+OGJ9EsQI0/Qu9tzybKBd1hUZ0a5/Ofzt7PXDK2KUdwbmQKj7Iqnw==
 
 "@mrmlnc/readdir-enhanced@^2.2.1":
   version "2.2.1"
