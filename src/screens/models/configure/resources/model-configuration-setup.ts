@@ -378,10 +378,12 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
           </td>
         </tr>
 
+        ${!this._loadingTapisApp ? html`
         <tr>
           <td>Source Code:</td>
           <td>${this._inputSourceCode}</td>
         </tr>
+        ` : null}
 
         ${r.runtimeEstimation
           ? html` <tr>
@@ -402,10 +404,13 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
             </tr>`
           : ""}
 
+
+        ${!this._loadingTapisApp ? html`
         <tr>
           <td>Software Image:</td>
           <td>${this._inputSoftwareImage}</td>
         </tr>
+        ` : null}
 
         <tr>
           <td>Component Location:</td>
@@ -560,10 +565,12 @@ ${edResource && edResource.description
           </td>
         </tr>
 
+        ${!this._loadingTapisApp ? html`
         <tr>
           <td>Source Code:</td>
           <td>${this._inputSourceCode}</td>
         </tr>
+        ` : null}
 
         <tr>
           <td>Runtime Estimation:</td>
@@ -604,10 +611,12 @@ ${edResource && edResource.description
           </td>
         </tr>
 
+        ${!this._loadingTapisApp ? html`
         <tr>
           <td>Software Image:</td>
           <td>${this._inputSoftwareImage}</td>
         </tr>
+        ` : null}
 
         <tr>
           <td>Component Location:</td>
