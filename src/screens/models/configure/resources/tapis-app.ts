@@ -59,4 +59,10 @@ export class ModelCatalogTapisApp extends connect(store)(
   protected _getResourceFromForm() {
     return null
   }
+
+  public validateInputs(modelInputs: { parameters?: any[], datasets?: any[] }): boolean {
+    // TODO: Implement actual validation by fetching TapisApp inputs from the API
+    // For now, we'll return true to not block the flow
+    return true;
+  }
 }
