@@ -1646,6 +1646,13 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     });
   }
 
+  public getResourceIdNotUri() {
+    return this._resources.map((r: T) => {
+      let lr = this._loadedResources[r.id];
+      return lr
+    });
+  }
+
   public isSaved(): boolean {
     return (
       !this.lazy ||

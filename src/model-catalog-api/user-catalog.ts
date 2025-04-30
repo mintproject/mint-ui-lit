@@ -1,4 +1,4 @@
-import { Configuration } from "@mintproject/modelcatalog_client";
+import { Configuration, TapisApp } from "@mintproject/modelcatalog_client";
 import { DefaultReduxApi } from "./default-redux-api";
 
 import {
@@ -97,6 +97,7 @@ import {
   CoupledModelApi,
   ModelCategoryApi,
   ConstraintApi,
+  TapisAppApi,
 } from "@mintproject/modelcatalog_client";
 
 import { CustomModelApi } from "./custom-apis/model";
@@ -213,6 +214,7 @@ export class UserCatalog {
     StandardVariable,
     StandardVariableApi
   >;
+  private _tapisAppApi: DefaultReduxApi<TapisApp, TapisAppApi>;
   private _theoryGuidedModelApi: DefaultReduxApi<
     TheoryGuidedModel,
     TheoryGuidedModelApi
@@ -510,6 +512,17 @@ export class UserCatalog {
         StandardVariableApi
       >(StandardVariableApi, this.username, this.configuration);
     return this._standardVariableApi;
+  }
+
+  public get tapisApp(): DefaultReduxApi<TapisApp, TapisAppApi> {
+    if (!this._tapisAppApi)
+      this._tapisAppApi = new DefaultReduxApi<TapisApp, TapisAppApi>(
+        TapisAppApi,
+        this.username,
+        this.configuration
+
+      );
+    return this._tapisAppApi;
   }
 
   //public get theoryGuidedModel () : DefaultReduxApi<TheoryGuidedModel,TheoryGuidedModelApi> {};

@@ -10,7 +10,8 @@ import { apiNameToCaptionName, ModelCatalogTypes } from "./reducers";
 
 import { Configuration, BaseAPI } from "@mintproject/modelcatalog_client";
 import { IdObject } from "./interfaces";
-import { DEFAULT_GRAPH, PREFIX_URI } from "config/default-graph";
+import { PREFIX_URI } from "config/default-graph";
+import { MINT_PREFERENCES } from "config";
 
 const PERPAGE = 200; //This is the max the API allows
 
@@ -24,6 +25,7 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
   protected _cached: Promise<IdMap<T>>;
   private _name: string;
   private _lname: ModelCatalogTypes;
+  private _tapisTenant: string | undefined;
 
   public getName(): ModelCatalogTypes {
     return this._lname;
@@ -48,7 +50,7 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
   public constructor(
     ApiType: new (cfg?: Configuration) => API,
     user: string,
-    config?: Configuration
+    config?: Configuration,
   ) {
     if (config) {
       this._api = new ApiType(config);
@@ -57,6 +59,7 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
       this._api = new ApiType();
       this._redux = false;
     }
+    this._tapisTenant = MINT_PREFERENCES.execution_component_from_tapis ? MINT_PREFERENCES.execution_component_from_tapis_tenant : undefined;
     this._lname = this.getNameFromPrototype(this._api) as ModelCatalogTypes;
     this._name = apiNameToCaptionName[this._lname];
     this._username = user;
@@ -68,6 +71,7 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
       let req: Promise<T> = this._api[this._lname + "sIdGet"]({
         username: this._username,
         id: id,
+        tenant: this._tapisTenant,
       });
       if (this._redux)
         req.then((resp: T) => {
@@ -136,6 +140,7 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
       username: this._username,
       perPage: PERPAGE,
       page: currentPage,
+      tenant: this._tapisTenant,
     });
   }
 
