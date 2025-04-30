@@ -25,7 +25,7 @@ export class CustomModelConfigurationApi extends DefaultReduxApi<
     user: string,
     config?: Configuration
   ) {
-    super(ModelConfigurationApi, user, config, MINT_PREFERENCES.execution_engine_tapis_tenant);
+    super(ModelConfigurationApi, user, config, MINT_PREFERENCES.execution_component_from_tapis);
   }
 
   private simplePost: ActionThunk<Promise<ModelConfiguration>, MCActionAdd> =

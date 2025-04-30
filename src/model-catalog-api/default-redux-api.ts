@@ -25,7 +25,7 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
   protected _cached: Promise<IdMap<T>>;
   private _name: string;
   private _lname: ModelCatalogTypes;
-  private _tapisTenant: string | undefined = MINT_PREFERENCES.execution_engine_tapis_tenant || undefined;
+  private _tapisTenant: string | undefined = MINT_PREFERENCES.execution_component_from_tapis || undefined;
 
   public getName(): ModelCatalogTypes {
     return this._lname;

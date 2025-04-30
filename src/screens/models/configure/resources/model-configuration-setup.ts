@@ -114,12 +114,12 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
   protected resourceApi: DefaultReduxApi<ModelConfigurationSetup, BaseAPI> =
     ModelCatalogApi.myCatalog.modelConfigurationSetup;
 
+  private _loadingTapisApp: boolean;
   protected resourcePost = (r: ModelConfigurationSetup) => {
     return this.resourceApi.post(r, this._parentConfig?.id);
   };
 
   public pageMax: number = 10;
-  private _loadingTapisApp: boolean = MINT_PREFERENCES.execution_engine === "tapis";
 
   private _parentConfig: ModelConfiguration;
 
@@ -148,6 +148,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
   }
 
   protected _initializeSingleMode() {
+    this._loadingTapisApp = MINT_PREFERENCES.execution_component_from_tapis && MINT_PREFERENCES.execution_component_from_tapis_tenant !== undefined;
     this._inputAuthor = new ModelCatalogPerson();
     this._inputGrid = new ModelCatalogGrid();
     this._inputGrid.lazy = true;
@@ -416,11 +417,9 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
           <td>Component Location:</td>
           ${this._loadingTapisApp ? html`<td>${this._inputTapisApp}</td>` : html`
             <td>
-              <textarea id="i-comploc" rows="2">
-                ${r && r.hasComponentLocation
-                  ? r.hasComponentLocation[0]
-                  : ""}</textarea
-              >
+              ${r && r.hasComponentLocation
+              ? renderExternalLink(r.hasComponentLocation)
+                : ""}
             </td>
           `}
         </tr>
@@ -623,7 +622,7 @@ ${edResource && edResource.description
           ${this._loadingTapisApp ? html`<td>${this._inputTapisApp}</td>` : html`
             <td>
               <textarea id="i-comploc" rows="2">
-                ${edResource === null
+${edResource === null
                   ? this._parentInnerResourcesSet
                     ? this._parentComponentLocation
                     : ""

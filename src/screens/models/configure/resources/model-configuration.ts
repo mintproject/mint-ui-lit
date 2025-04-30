@@ -114,7 +114,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
   };
 
   public pageMax: number = 10;
-  private _loadingTapisApp: boolean = MINT_PREFERENCES.execution_engine === "tapis";
+  private _loadingTapisApp: boolean;
 
   private _parentVersion: SoftwareVersion;
 
@@ -139,6 +139,8 @@ export class ModelCatalogModelConfiguration extends connect(store)(
   }
 
   protected _initializeSingleMode() {
+    this._loadingTapisApp = MINT_PREFERENCES.execution_component_from_tapis && MINT_PREFERENCES.execution_component_from_tapis_tenant !== undefined;
+    console.log("this._loadingTapisApp", this._loadingTapisApp);
     this._inputAuthor = new ModelCatalogPerson();
     this._inputGrid = new ModelCatalogGrid();
     this._inputTimeInterval = new ModelCatalogTimeInterval();
@@ -600,7 +602,7 @@ ${edResource && edResource.hasAssumption
           ${this._loadingTapisApp ? html`<td>${this._inputTapisApp}</td>` : html`
             <td>
               <textarea id="i-comploc" rows="2">
-                ${edResource && edResource.hasComponentLocation
+${edResource && edResource.hasComponentLocation
                   ? edResource.hasComponentLocation[0]
                   : ""}</textarea
               >
