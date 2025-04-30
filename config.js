@@ -14,6 +14,7 @@ window.REACT_APP_DATA_CATALOG_TYPE = "CKAN";
 window.REACT_APP_ENSEMBLE_MANAGER_API = "http://localhost:3000/v1";
 //window.REACT_APP_ENSEMBLE_MANAGER_API = "http://ensemble-manager.mint.local/v1";
 window.REACT_APP_EXECUTION_ENGINE = "tapis";
+window.REACT_APP_EXECUTION_ENGINE_TAPIS_TENANT = "tacc";
 
 // Google API Key
 window.REACT_APP_GOOGLE_MAPS_KEY = "AIzaSyBl8J85KibSuhHEw_j0JTlITVTBb8oXiMo";

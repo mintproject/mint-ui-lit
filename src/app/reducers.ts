@@ -50,6 +50,7 @@ export interface MintPreferences {
   ingestion_api: string;
   visualization_url: string;
   execution_engine?: string;
+  execution_engine_tapis_tenant?: string;
   // Local Execution
   localex?: LocalExecutionPreferences;
   // Wings Execution
