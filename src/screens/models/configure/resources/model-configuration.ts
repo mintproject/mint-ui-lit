@@ -34,6 +34,8 @@ import { Select } from "weightless/select";
 import { BaseAPI } from "@mintproject/modelcatalog_client";
 import { DefaultReduxApi } from "model-catalog-api/default-redux-api";
 import { ModelCatalogApi } from "model-catalog-api/model-catalog-api";
+import { ModelCatalogTapisApp } from "./tapis-app";
+import { MINT_PREFERENCES } from "config";
 
 @customElement("model-catalog-model-configuration")
 export class ModelCatalogModelConfiguration extends connect(store)(
@@ -112,6 +114,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
   };
 
   public pageMax: number = 10;
+  private _loadingTapisApp: boolean = MINT_PREFERENCES.execution_engine === "tapis";
 
   private _parentVersion: SoftwareVersion;
 
@@ -123,6 +126,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
   private _inputRegion: ModelCatalogRegion;
   private _inputProcesses: ModelCatalogProcess;
   private _inputSoftwareImage: ModelCatalogSoftwareImage;
+  private _inputTapisApp: ModelCatalogTapisApp;
 
   private _inputParameter: ModelCatalogParameter;
   private _inputDSInput: ModelCatalogDatasetSpecification;
@@ -143,6 +147,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     this._inputRegion = new ModelCatalogRegion();
     this._inputProcesses = new ModelCatalogProcess();
     this._inputSoftwareImage = new ModelCatalogSoftwareImage();
+    this._inputTapisApp = new ModelCatalogTapisApp();
     this._inputSourceCode = new ModelCatalogSourceCode();
     this._inputConstraint = new ModelCatalogConstraint();
 
@@ -157,6 +162,10 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     this._inputDSOutput = new ModelCatalogDatasetSpecification();
     this._inputDSOutput.inline = false;
     this._inputDSOutput.lazy = true;
+
+    this._inputTapisApp.disableEdition();
+    this._inputTapisApp.disableCreation();
+    this._inputTapisApp.disableDeletion();
   }
 
   protected _setSubResources(r: ModelConfiguration) {
@@ -168,6 +177,13 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     this._inputRegion.setResources(r.hasRegion);
     this._inputProcesses.setResources(r.hasProcess);
     this._inputSoftwareImage.setResources(r.hasSoftwareImage);
+    if (this._loadingTapisApp && r.hasComponentLocation?.[0]) {
+      //load the tapis app from the uri
+      const tapisApp = this._inputTapisApp._fromUri(r.hasComponentLocation?.[0]);
+      this._inputTapisApp.setResources([tapisApp]);
+    } else {
+      this._inputTapisApp.setResources(null);
+    }
     this._inputParameter.setResources(r.hasParameter);
     this._inputDSInput.setResources(r.hasInput);
     this._inputDSOutput.setResources(r.hasOutput);
@@ -185,6 +201,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
       this._inputRegion.setResources(null);
       this._inputProcesses.setResources(null);
       this._inputSoftwareImage.setResources(null);
+      this._inputTapisApp.setResources(null);
       this._inputParameter.setResources(null);
       this._inputDSInput.setResources(null);
       this._inputDSOutput.setResources(null);
@@ -202,6 +219,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     this._inputRegion.setActionMultiselect();
     this._inputProcesses.setActionMultiselect();
     this._inputSoftwareImage.setActionSelect();
+    this._inputTapisApp.setActionSelect();
     this._inputParameter.setActionEditOrAdd();
     this._inputDSInput.setActionEditOrAdd();
     this._inputDSOutput.setActionEditOrAdd();
@@ -218,6 +236,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     if (this._inputRegion) this._inputRegion.unsetAction();
     if (this._inputProcesses) this._inputProcesses.unsetAction();
     if (this._inputSoftwareImage) this._inputSoftwareImage.unsetAction();
+    if (this._inputTapisApp) this._inputTapisApp.unsetAction();
     if (this._inputParameter) this._inputParameter.unsetAction();
     if (this._inputDSInput) this._inputDSInput.unsetAction();
     if (this._inputDSOutput) this._inputDSOutput.unsetAction();
@@ -572,13 +591,15 @@ ${edResource && edResource.hasAssumption
 
         <tr>
           <td>Component Location:</td>
-          <td>
-            <textarea id="i-comploc" rows="2">
-${edResource && edResource.hasComponentLocation
-                ? edResource.hasComponentLocation[0]
-                : ""}</textarea
-            >
-          </td>
+          ${this._loadingTapisApp ? html`<td>${this._inputTapisApp}</td>` : html`
+            <td>
+              <textarea id="i-comploc" rows="2">
+                ${edResource && edResource.hasComponentLocation
+                  ? edResource.hasComponentLocation[0]
+                  : ""}</textarea
+              >
+            </td>
+          `}
         </tr>
 
         <tr>
@@ -730,7 +751,12 @@ ${edResource && edResource.hasUsageNotes
     let keywords: string = inputKeywords ? inputKeywords.value : "";
     let shortDesc: string = inputShortDesc ? inputShortDesc.value : "";
     let desc: string = inputDesc ? inputDesc.value : "";
-    let comploc: string = inputCompLoc ? inputCompLoc.value : "";
+    let comploc: string;
+    if (this._loadingTapisApp && this._inputTapisApp.getResourceIdNotUri()?.[0]) {
+      comploc = this._inputTapisApp._toUri(this._inputTapisApp.getResourceIdNotUri()?.[0]);
+    } else {
+      comploc = inputCompLoc ? inputCompLoc.value : "";
+    }
     let website: string = inputWebsite ? inputWebsite.value : "";
     let installInstructions: string = inputInstallInstructions
       ? inputInstallInstructions.value

@@ -15,7 +15,7 @@ import {
   SoftwareVersion,
 } from "@mintproject/modelcatalog_client";
 import { ModelCatalogApi } from "model-catalog-api/model-catalog-api";
-
+import { MINT_PREFERENCES } from "config";
 export class CustomModelConfigurationApi extends DefaultReduxApi<
   ModelConfiguration,
   ModelConfigurationApi
@@ -25,7 +25,7 @@ export class CustomModelConfigurationApi extends DefaultReduxApi<
     user: string,
     config?: Configuration
   ) {
-    super(ModelConfigurationApi, user, config);
+    super(ModelConfigurationApi, user, config, MINT_PREFERENCES.execution_engine_tapis_tenant);
   }
 
   private simplePost: ActionThunk<Promise<ModelConfiguration>, MCActionAdd> =
