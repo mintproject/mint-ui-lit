@@ -319,10 +319,12 @@ export class ModelCatalogModelConfiguration extends connect(store)(
           <td>${r.keywords ? r.keywords[0] : ""}</td>
         </tr>
 
+        ${!this._loadingTapisApp ? html`
         <tr>
           <td>Source Code:</td>
           <td>${this._inputSourceCode}</td>
         </tr>
+        ` : null}
 
         <tr>
           <td>Installation instructions:</td>
@@ -372,11 +374,12 @@ export class ModelCatalogModelConfiguration extends connect(store)(
           <td>${this._inputRegion}</td>
         </tr>
 
+        ${!this._loadingTapisApp ? html`
         <tr>
           <td>Software Image:</td>
           <td>${this._inputSoftwareImage}</td>
         </tr>
-
+        ` : null}
         <tr>
           <td>Component Location:</td>
           <td>
@@ -490,10 +493,12 @@ ${edResource && edResource.shortDescription
           </td>
         </tr>
 
+        ${!this._loadingTapisApp ? html`
         <tr>
           <td>Source Code:</td>
           <td>${this._inputSourceCode}</td>
         </tr>
+        ` : null}
 
         <tr>
           <td>Installation instructions:</td>
@@ -584,11 +589,12 @@ ${edResource && edResource.hasAssumption
           <td>${this._inputRegion}</td>
         </tr>
 
+        ${!this._loadingTapisApp ? html`
         <tr>
           <td>Software Image:</td>
           <td>${this._inputSoftwareImage}</td>
         </tr>
-
+        ` : null}
         <tr>
           <td>Component Location:</td>
           ${this._loadingTapisApp ? html`<td>${this._inputTapisApp}</td>` : html`
