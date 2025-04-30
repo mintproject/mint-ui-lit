@@ -25,7 +25,7 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
   protected _cached: Promise<IdMap<T>>;
   private _name: string;
   private _lname: ModelCatalogTypes;
-  private _tapisTenant: string | undefined = MINT_PREFERENCES.execution_component_from_tapis || undefined;
+  private _tapisTenant: string | undefined;
 
   public getName(): ModelCatalogTypes {
     return this._lname;
@@ -51,7 +51,6 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
     ApiType: new (cfg?: Configuration) => API,
     user: string,
     config?: Configuration,
-    tapisTenant?: string
   ) {
     if (config) {
       this._api = new ApiType(config);
@@ -60,8 +59,7 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
       this._api = new ApiType();
       this._redux = false;
     }
-
-    if (tapisTenant) this._tapisTenant = tapisTenant;
+    this._tapisTenant = MINT_PREFERENCES.execution_component_from_tapis ? MINT_PREFERENCES.execution_component_from_tapis_tenant : undefined;
     this._lname = this.getNameFromPrototype(this._api) as ModelCatalogTypes;
     this._name = apiNameToCaptionName[this._lname];
     this._username = user;

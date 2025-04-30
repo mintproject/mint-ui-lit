@@ -140,7 +140,6 @@ export class ModelCatalogModelConfiguration extends connect(store)(
 
   protected _initializeSingleMode() {
     this._loadingTapisApp = MINT_PREFERENCES.execution_component_from_tapis && MINT_PREFERENCES.execution_component_from_tapis_tenant !== undefined;
-    console.log("this._loadingTapisApp", this._loadingTapisApp);
     this._inputAuthor = new ModelCatalogPerson();
     this._inputGrid = new ModelCatalogGrid();
     this._inputTimeInterval = new ModelCatalogTimeInterval();
