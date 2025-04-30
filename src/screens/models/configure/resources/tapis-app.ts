@@ -6,6 +6,7 @@ import { getLabel } from "model-catalog-api/util";
 import {
   TapisApp,
   TapisAppFromJSON,
+  TapisAppApi,
 } from "@mintproject/modelcatalog_client";
 
 import { Textfield } from "weightless/textfield";
@@ -24,6 +25,13 @@ export class ModelCatalogTapisApp extends connect(store)(
 
   protected resourceApi: DefaultReduxApi<TapisApp, BaseAPI> =
     ModelCatalogApi.myCatalog.tapisApp;
+
+  private tapisAppApi: TapisAppApi;
+
+  constructor() {
+    super();
+    this.tapisAppApi = new TapisAppApi();
+  }
 
   public _fromUri(uri: string): TapisApp {
     // Extract the tenant, id, and version from the URI using regex
@@ -58,6 +66,20 @@ export class ModelCatalogTapisApp extends connect(store)(
 
   protected _getResourceFromForm() {
     return null
+  }
+
+  public async getAppDetails(app: TapisApp): Promise<TapisApp> {
+    try {
+      const response = await this.tapisAppApi.tapisappsIdGet({
+        tenant: app.tenant,
+        appId: app.id,
+        appVersion: app.version
+      });
+      return response;
+    } catch (error) {
+      console.error('Error fetching Tapis app details:', error);
+      throw error;
+    }
   }
 
   public validateInputs(modelInputs: { parameters?: any[], datasets?: any[] }): boolean {
