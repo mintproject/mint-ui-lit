@@ -1,12 +1,8 @@
 import { IdMap } from "app/reducers";
 import {
   MCActionAdd,
-  MCActionDelete,
-  MODEL_CATALOG_ADD,
-  MODEL_CATALOG_DELETE,
   ActionThunk,
 } from "../actions";
-import { ModelCatalogTypes } from "../reducers";
 import { Configuration, BaseAPI } from "@mintproject/modelcatalog_client";
 import { DefaultReduxApi } from "../default-redux-api";
 import {
@@ -15,7 +11,6 @@ import {
   SoftwareVersion,
 } from "@mintproject/modelcatalog_client";
 import { ModelCatalogApi } from "model-catalog-api/model-catalog-api";
-import { MINT_PREFERENCES } from "config";
 export class CustomModelConfigurationApi extends DefaultReduxApi<
   ModelConfiguration,
   ModelConfigurationApi
