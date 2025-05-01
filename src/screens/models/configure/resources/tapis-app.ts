@@ -15,6 +15,17 @@ import { BaseAPI } from "@mintproject/modelcatalog_client";
 import { DefaultReduxApi } from "model-catalog-api/default-redux-api";
 import { ModelCatalogApi } from "model-catalog-api/model-catalog-api";
 
+interface TapisAppFileInput {
+  name: string;
+  description: string;
+  inputMode: string;
+  autoMountLocal: boolean;
+  envKey: string | null;
+  notes: Record<string, any>;
+  sourceUrl: string | null;
+  targetPath: string;
+}
+
 @customElement("model-catalog-tapis-app")
 export class ModelCatalogTapisApp extends connect(store)(
   ModelCatalogResource
@@ -24,12 +35,24 @@ export class ModelCatalogTapisApp extends connect(store)(
   protected pname: string = "tapis apps";
   private hasError: boolean = false;
   private errors: string[] = [];
+  private _fileInputs: TapisAppFileInput[] = [];
 
   protected resourceApi: DefaultReduxApi<TapisApp, BaseAPI> =
     ModelCatalogApi.myCatalog.tapisApp;
 
   constructor() {
     super();
+    this.disableEdition();
+    this.disableCreation();
+    this.disableDeletion();
+  }
+
+  public getFileInputs(): TapisAppFileInput[] {
+    return this._fileInputs;
+  }
+
+  public setFileInputs(fileInputs: TapisAppFileInput[]): void {
+    this._fileInputs = fileInputs;
   }
 
   public _fromUri(uri: string): TapisApp {
@@ -52,6 +75,87 @@ export class ModelCatalogTapisApp extends connect(store)(
       version,
       tenant,
     };
+  }
+
+  public async loadFullTapisApp(app: TapisApp): Promise<TapisApp> {
+    if (!app.id || !app.version || !app.tenant) {
+      return app;
+    }
+
+    try {
+      const fullApp = await store.dispatch(
+        this.resourceApi.getTapisApp(app.id, app.version, app.tenant)
+      );
+
+      // Update file inputs if available in the full app
+      if (fullApp && typeof fullApp === 'object' && 'fileInputs' in fullApp) {
+        this.setFileInputs((fullApp as any).fileInputs);
+      }
+
+      return fullApp;
+    } catch (error) {
+      console.error('Failed to load full TapisApp details:', error);
+      return app;
+    }
+  }
+
+  public validateInputs(modelInputs: { parameters?: any[], datasets?: any[] }): boolean {
+    if (!this._resources || this._resources.length === 0) {
+      return true;
+    }
+
+    const tapisApp = this._resources[0];
+    const fileInputs = this.getFileInputs();
+
+    // Validate parameters
+    if (modelInputs.parameters) {
+      const requiredParams = fileInputs
+        .filter(input => input.inputMode === 'PARAMETER')
+        .map(input => input.name);
+
+      const providedParams = modelInputs.parameters.map(param => param.label?.[0]);
+      const missingParams = requiredParams.filter(param => !providedParams.includes(param));
+
+      if (missingParams.length > 0) {
+        this.hasError = true;
+        this.errors.push(`Missing required parameters: ${missingParams.join(', ')}`);
+        return false;
+      }
+    }
+
+    // Validate datasets
+    if (modelInputs.datasets) {
+      const requiredDatasets = fileInputs
+        .filter(input => input.inputMode === 'DATASET')
+        .map(input => input.name);
+
+      const providedDatasets = modelInputs.datasets.map(dataset => dataset.label?.[0]);
+      const missingDatasets = requiredDatasets.filter(dataset => !providedDatasets.includes(dataset));
+
+      if (missingDatasets.length > 0) {
+        this.hasError = true;
+        this.errors.push(`Missing required datasets: ${missingDatasets.join(', ')}`);
+        return false;
+      }
+    }
+
+    this.hasError = false;
+    this.errors = [];
+    return true;
+  }
+
+  public setResources(resources: TapisApp[] | null): void {
+    if (resources && resources.length > 0) {
+      const app = resources[0];
+      this.loadFullTapisApp(app).then((fullApp) => {
+        super.setResources([fullApp]);
+      }).catch((error) => {
+        console.error('Error loading full TapisApp:', error);
+        super.setResources(resources);
+      });
+    } else {
+      super.setResources(resources);
+    }
   }
 
   public _toUri(r: TapisApp): string {
@@ -88,17 +192,12 @@ export class ModelCatalogTapisApp extends connect(store)(
   }
 
   protected _renderForm() {
-    return null
+    return null;
   }
 
   protected _getResourceFromForm() {
-    return null
+    return null;
   }
 
-  public validateInputs(modelInputs: { parameters?: any[], datasets?: any[] }): boolean {
-    // TODO: Implement actual validation by fetching TapisApp inputs from the API
-    // For now, we'll return true to not block the flow
-    console.log(this._resources)
-    return true;
-  }
+
 }

@@ -179,18 +179,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     this._inputProcesses.setResources(r.hasProcess);
     this._inputSoftwareImage.setResources(r.hasSoftwareImage);
     if (this._loadingTapisApp && r.hasComponentLocation?.[0]) {
-      //load the tapis app from the uri
-      const tapisApp = this._inputTapisApp._fromUri(r.hasComponentLocation?.[0]);
-      this._inputTapisApp.setResources([tapisApp]);
-
-      // Validate inputs when a TapisApp is selected
-      const modelInputs = {
-        parameters: r.hasParameter,
-        datasets: r.hasInput
-      };
-      if (!this._inputTapisApp.validateInputs(modelInputs)) {
-        console.warn('Input validation failed between ModelConfiguration and TapisApp');
-      }
+      this._inputTapisApp.setResources([this._inputTapisApp._fromUri(r.hasComponentLocation?.[0])]);
     } else {
       this._inputTapisApp.setResources(null);
     }
@@ -392,11 +381,13 @@ export class ModelCatalogModelConfiguration extends connect(store)(
         ` : null}
         <tr>
           <td>Component Location:</td>
-          <td>
-            ${r && r.hasComponentLocation
+          ${this._loadingTapisApp ? html`<td>${this._inputTapisApp}</td>` : html`
+            <td>
+              ${r && r.hasComponentLocation
               ? renderExternalLink(r.hasComponentLocation)
-              : ""}
-          </td>
+                : ""}
+            </td>
+          `}
         </tr>
 
         <tr>
@@ -605,6 +596,7 @@ ${edResource && edResource.hasAssumption
           <td>${this._inputSoftwareImage}</td>
         </tr>
         ` : null}
+
         <tr>
           <td>Component Location:</td>
           ${this._loadingTapisApp ? html`<td>${this._inputTapisApp}</td>` : html`

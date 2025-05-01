@@ -183,9 +183,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
     this._inputDSOutput.disableCreation();
     this._inputDSOutput.disableDeletion();
 
-    this._inputTapisApp.disableEdition();
-    this._inputTapisApp.disableCreation();
-    this._inputTapisApp.disableDeletion();
   }
 
   //when this happens ?
@@ -198,32 +195,13 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
     this._inputRegion.setResources(r.hasRegion);
     this._inputProcesses.setResources(r.hasProcess);
     this._inputSoftwareImage.setResources(r.hasSoftwareImage);
+
     if (this._loadingTapisApp && r.hasComponentLocation?.[0]) {
-      //load the tapis app from the uri
-      const tapisApp = this._inputTapisApp._fromUri(r.hasComponentLocation?.[0]);
-
-      // Get full TapisApp details using tapisappsIdGet
-      const tapisAppApi = ModelCatalogApi.myCatalog.tapisApp;
-
-      store.dispatch(tapisAppApi.getTapisApp(tapisApp.id, tapisApp.version, tapisApp.tenant)).then((fullTapisApp) => {
-        this._inputTapisApp.setResources([fullTapisApp]);
-        this._inputTapisApp.validateInputs(modelInputs);
-      }).catch((error) => {
-        this._inputTapisApp.setResources([tapisApp]);
-        throw error;
-      });
-
-      // Validate inputs when a TapisApp is selected
-      const modelInputs = {
-        parameters: r.hasParameter,
-        datasets: r.hasInput
-      };
-      if (!this._inputTapisApp.validateInputs(modelInputs)) {
-        console.warn('Input validation failed between ModelConfigurationSetup and TapisApp');
-      }
+      this._inputTapisApp.setResources([this._inputTapisApp._fromUri(r.hasComponentLocation?.[0])]);
     } else {
       this._inputTapisApp.setResources(null);
     }
+
     this._inputParameter.setResources(r.hasParameter);
     this._inputDSInput.setResources(r.hasInput);
     this._inputDSOutput.setResources(r.hasOutput);
