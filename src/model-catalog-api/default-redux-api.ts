@@ -84,6 +84,16 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
       return req;
     };
 
+  public getTapisApp: ActionThunk<Promise<T>, MCActionAdd> =
+    (id: string, version: string, tenant: string) => (dispatch) => {
+      let req: Promise<T> = this._api[this._lname + "sIdGet"]({
+          appId: id,
+          appVersion: version,
+          tenant: tenant,
+      });
+      return req;
+    };
+
   public getAll: ActionThunk<Promise<IdMap<T>>, MCActionAdd> =
     (ignoreCache: boolean = false) =>
     (dispatch) => {

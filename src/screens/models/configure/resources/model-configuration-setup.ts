@@ -201,7 +201,17 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
     if (this._loadingTapisApp && r.hasComponentLocation?.[0]) {
       //load the tapis app from the uri
       const tapisApp = this._inputTapisApp._fromUri(r.hasComponentLocation?.[0]);
-      this._inputTapisApp.setResources([tapisApp]);
+
+      // Get full TapisApp details using tapisappsIdGet
+      const tapisAppApi = ModelCatalogApi.myCatalog.tapisApp;
+
+      store.dispatch(tapisAppApi.getTapisApp(tapisApp.id, tapisApp.version, tapisApp.tenant)).then((fullTapisApp) => {
+        this._inputTapisApp.setResources([fullTapisApp]);
+        this._inputTapisApp.validateInputs(modelInputs);
+      }).catch((error) => {
+        this._inputTapisApp.setResources([tapisApp]);
+        throw error;
+      });
 
       // Validate inputs when a TapisApp is selected
       const modelInputs = {

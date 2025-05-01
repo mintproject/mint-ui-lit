@@ -26,11 +26,8 @@ export class ModelCatalogTapisApp extends connect(store)(
   protected resourceApi: DefaultReduxApi<TapisApp, BaseAPI> =
     ModelCatalogApi.myCatalog.tapisApp;
 
-  private tapisAppApi: TapisAppApi;
-
   constructor() {
     super();
-    this.tapisAppApi = new TapisAppApi();
   }
 
   public _fromUri(uri: string): TapisApp {
@@ -68,23 +65,10 @@ export class ModelCatalogTapisApp extends connect(store)(
     return null
   }
 
-  public async getAppDetails(app: TapisApp): Promise<TapisApp> {
-    try {
-      const response = await this.tapisAppApi.tapisappsIdGet({
-        tenant: app.tenant,
-        appId: app.id,
-        appVersion: app.version
-      });
-      return response;
-    } catch (error) {
-      console.error('Error fetching Tapis app details:', error);
-      throw error;
-    }
-  }
-
   public validateInputs(modelInputs: { parameters?: any[], datasets?: any[] }): boolean {
     // TODO: Implement actual validation by fetching TapisApp inputs from the API
     // For now, we'll return true to not block the flow
+    console.log(this._resources)
     return true;
   }
 }
