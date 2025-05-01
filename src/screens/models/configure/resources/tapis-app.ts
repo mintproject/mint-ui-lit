@@ -22,6 +22,8 @@ export class ModelCatalogTapisApp extends connect(store)(
   protected classes: string = "resource tapis-app";
   protected name: string = "tapis app";
   protected pname: string = "tapis apps";
+  private hasError: boolean = false;
+  private errors: string[] = [];
 
   protected resourceApi: DefaultReduxApi<TapisApp, BaseAPI> =
     ModelCatalogApi.myCatalog.tapisApp;
@@ -54,7 +56,31 @@ export class ModelCatalogTapisApp extends connect(store)(
 
   protected _renderResource(r: TapisApp) {
     let url = this._toUri(r);
-    return html`<a target="_blank" href="${url}">${r.id}:${r.version}</a>`;
+    return html`
+      <div style="display: grid; grid-template-columns: auto 36px 36px;">
+        <a target="_blank" href="${url}" style="vertical-align: middle; line-height: 40px; font-size: 16px;">
+          ${r.tenant}/${r.id}:${r.version}
+        </a>
+        <span
+          tip="Tapis App: A containerized application that can be executed on Tapis systems.&#10;Format: tenant/app_id:version"
+          id="tapis-app-tooltip"
+          class="tooltip"
+          style="top: 8px;"
+        >
+          <wl-icon style="--icon-size: 24px;">help_outline</wl-icon>
+        </span>
+        <span
+          tip="${this.hasError ? 'Invalid: ' + this.errors.join(', ') : 'Valid: Component is properly configured'}"
+          id="tapis-app-validation"
+          class="tooltip"
+          style="top: 8px;"
+        >
+          <wl-icon style="--icon-size: 24px; color: ${this.hasError ? 'red' : 'green'}">
+            ${this.hasError ? 'error' : 'check_circle'}
+          </wl-icon>
+        </span>
+      </div>
+    `;
   }
 
   protected _renderForm() {
