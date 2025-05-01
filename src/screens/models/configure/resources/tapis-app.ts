@@ -39,7 +39,11 @@ export class ModelCatalogTapisApp extends connect(store)(
     const match = uri.match(pattern);
 
     if (!match) {
-      throw new Error(`Invalid Tapis app URI format: ${uri}`);
+      return {
+        id: undefined,
+        version: undefined,
+        tenant: undefined,
+      };
     }
 
     const [, tenant, id, version] = match;
