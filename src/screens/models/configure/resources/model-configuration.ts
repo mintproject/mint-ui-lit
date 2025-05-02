@@ -179,10 +179,13 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     this._inputProcesses.setResources(r.hasProcess);
     this._inputSoftwareImage.setResources(r.hasSoftwareImage);
     if (this._loadingTapisApp && r.hasComponentLocation?.[0]) {
-      this._inputTapisApp.setResources([this._inputTapisApp._fromUri(r.hasComponentLocation?.[0])]);
+      const tapisApp = this._inputTapisApp._fromUri(r.hasComponentLocation?.[0]);
+      this._inputTapisApp.setResources([tapisApp]);
+      this._inputParameter._addTapisApp(tapisApp);
     } else {
       this._inputTapisApp.setResources(null);
     }
+
     this._inputParameter.setResources(r.hasParameter);
     this._inputDSInput.setResources(r.hasInput);
     this._inputDSOutput.setResources(r.hasOutput);
