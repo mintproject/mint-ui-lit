@@ -155,10 +155,14 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     this._inputParameter = new ModelCatalogParameter();
     this._inputParameter.inline = false;
     this._inputParameter.lazy = true;
+    this._inputParameter.disableCreation();
+    this._inputParameter.disableDeletion();
 
     this._inputDSInput = new ModelCatalogDatasetSpecification();
     this._inputDSInput.inline = false;
     this._inputDSInput.lazy = true;
+    this._inputDSInput.disableCreation();
+    this._inputDSInput.disableDeletion();
 
     this._inputDSOutput = new ModelCatalogDatasetSpecification();
     this._inputDSOutput.inline = false;
@@ -419,7 +423,15 @@ export class ModelCatalogModelConfiguration extends connect(store)(
         </tr>
       </table>
 
-      <wl-title level="3" style="margin-top:1em"> Inputs: </wl-title>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1em;">
+        <wl-title level="3" style="margin: 0;"> Inputs: </wl-title>
+        <wl-button id="sync-button" raised inverted @click="${this._onSyncTapisApp}">
+          <wl-icon>sync</wl-icon>
+          Sync with TapisApp
+        </wl-button>
+      </div>
+
       <wl-title level="4"> Parameters: </wl-title>
       ${this._inputParameter}
 
@@ -666,7 +678,14 @@ ${edResource && edResource.hasUsageNotes
         </tr>
       </table>
 
-      <wl-title level="3" style="margin-top:1em"> Inputs: </wl-title>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1em;">
+        <wl-title level="3" style="margin: 0;"> Inputs: </wl-title>
+        <wl-button id="sync-button" raised inverted @click="${this._onSyncTapisApp}">
+          <wl-icon>sync</wl-icon>
+          Sync with TapisApp
+        </wl-button>
+      </div>
+
       <wl-title level="4"> Parameters: </wl-title>
       ${this._inputParameter}
 
@@ -934,5 +953,10 @@ ${edResource && edResource.hasUsageNotes
         resolve(copy);
       });
     });
+  }
+
+  private _onSyncTapisApp() {
+    this._notification.save("Syncing with TapisApp and Inputs...");
+    // TODO: Add actual sync logic here
   }
 }
