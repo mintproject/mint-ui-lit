@@ -8,6 +8,7 @@ import {
   SoftwareVersion,
   ModelConfiguration,
   ModelConfigurationFromJSON,
+  ModelConfigurationApi,
 } from "@mintproject/modelcatalog_client";
 import { renderExternalLink } from "util/ui_renders";
 
@@ -108,6 +109,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
 
   protected resourceApi: DefaultReduxApi<ModelConfiguration, BaseAPI> =
     ModelCatalogApi.myCatalog.modelConfiguration;
+
 
   protected resourcePost = (r: ModelConfiguration) => {
     return this.resourceApi.post(r, this._parentVersion?.id);
@@ -426,7 +428,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
 
       <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1em;">
         <wl-title level="3" style="margin: 0;"> Inputs: </wl-title>
-        <wl-button id="sync-button" raised inverted @click="${this._onSyncTapisApp}">
+        <wl-button id="sync-button" raised inverted @click="${() => this._onSyncTapisApp(r.id)}">
           <wl-icon>sync</wl-icon>
           Sync with TapisApp
         </wl-button>
@@ -680,7 +682,7 @@ ${edResource && edResource.hasUsageNotes
 
       <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1em;">
         <wl-title level="3" style="margin: 0;"> Inputs: </wl-title>
-        <wl-button id="sync-button" raised inverted @click="${this._onSyncTapisApp}">
+        <wl-button id="sync-button" raised inverted @click="${() => this._onSyncTapisApp(edResource?.id)}">
           <wl-icon>sync</wl-icon>
           Sync with TapisApp
         </wl-button>
@@ -955,8 +957,7 @@ ${edResource && edResource.hasUsageNotes
     });
   }
 
-  private _onSyncTapisApp() {
-    this._notification.save("Syncing with TapisApp and Inputs...");
-    // TODO: Add actual sync logic here
+  private _onSyncTapisApp(modelConfigurationId: string) {
+    store.dispatch(this.resourceApi.postSyncWithTapisApp(modelConfigurationId, this._inputTapisApp.getResourceIdNotUri()[0]))
   }
 }

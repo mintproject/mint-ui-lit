@@ -8,7 +8,7 @@ import {
 } from "./actions";
 import { apiNameToCaptionName, ModelCatalogTypes } from "./reducers";
 
-import { Configuration, BaseAPI } from "@mintproject/modelcatalog_client";
+import { Configuration, BaseAPI, TapisApp } from "@mintproject/modelcatalog_client";
 import { IdObject } from "./interfaces";
 import { PREFIX_URI } from "config/default-graph";
 import { MINT_PREFERENCES } from "config";
@@ -227,6 +227,21 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
       }
     };
 
+  public postSyncWithTapisApp: ActionThunk<Promise<T>, MCActionAdd> =
+    (modelConfigurationId: string, tapisApp: TapisApp) => (dispatch) => {
+
+      return new Promise<T>((resolve, reject) => {
+          let req: Promise<T> = this._api["modelconfigurationsIdTapisSyncPost"]({
+            user: this._username,
+            id: modelConfigurationId,
+            tapisApp: tapisApp,
+          });
+          req.catch(reject);
+          req.then((resp: T) => resolve(dispatch(this.get(resp.id))));
+      });
+    };
+
+
   public isEditable(): boolean {
     return this._editable;
   }
@@ -261,4 +276,5 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
     item.id = uri;
     return map;
   }
+
 }
