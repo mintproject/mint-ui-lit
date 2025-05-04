@@ -193,6 +193,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
   private _idToCopy: IdMap<string> = {} as IdMap<string>;
   public lazy: boolean = false;
+  private _nameEditable: boolean = true;
 
   protected classes: string = "resource";
   protected name: string = "resource";
@@ -234,6 +235,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
   public disableDeletion() {
     this._deletionEnabled = false;
   }
+
 
   public enableDuplication(...args: any[]) {
     this._duplicationEnabled = true;
@@ -1699,4 +1701,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
   public getAllResources(): Promise<IdMap<T>> {
     return this._loadAllResources();
   }
+
+  public setNameEditable(editable: boolean) {
+    this._nameEditable = editable;
+  }
+
+
 }

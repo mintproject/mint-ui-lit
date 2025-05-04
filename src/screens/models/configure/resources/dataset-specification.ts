@@ -66,6 +66,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
   private _inputDataTransformation: ModelCatalogDataTransformation;
   private _inputSampleResource: ModelCatalogSampleResource;
   private _inputSampleCollection: ModelCatalogSampleCollection;
+  private _nameIsEditable;
 
   protected classes: string = "resource dataset-specification";
   protected name: string = "dataset specification";
@@ -112,6 +113,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
     this._inputSampleCollection = new ModelCatalogSampleCollection();
     this._inputSampleCollection.setActionSelect();
     this._inputSampleCollection.setAttribute("id", "input-sample-collection");
+    this._nameIsEditable = true;
   }
 
   protected _editResource(r: DatasetSpecification) {
@@ -220,13 +222,17 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
         variables set in this resource will be used to search relevant datasets.
       </div>
       <form>
-        <wl-textfield
-          id="ds-label"
-          label="Name"
-          required
-          value=${edResource ? getLabel(edResource) : ""}
+        ${this._nameIsEditable
+          ? html`
+              <wl-textfield
+                id="ds-label"
+                label="Name"
+                required
+                value=${edResource ? getLabel(edResource) : ""}
         >
         </wl-textfield>
+        `
+          : ""}
         <wl-textarea
           id="ds-desc"
           label="Description"
@@ -359,5 +365,9 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
       if (presentation.length == 0)
         console.log("You must select at least a presentation!");
     }
+  }
+
+  public setNameEditable(editable: boolean) {
+    this._nameIsEditable = editable;
   }
 }

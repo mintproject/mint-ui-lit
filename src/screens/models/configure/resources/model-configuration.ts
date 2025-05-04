@@ -163,6 +163,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     this._inputParameter.disableCreation();
     this._inputParameter.disableEdition();
     this._inputParameter.disableDeletion();
+    this._inputParameter.setNameEditable(false);
 
     this._inputDSInput = new ModelCatalogDatasetSpecification();
     this._inputDSInput.inline = false;
@@ -170,7 +171,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     this._inputDSInput.disableCreation();
     this._inputDSInput.disableEdition();
     this._inputDSInput.disableDeletion();
-
+    this._inputDSInput.setNameEditable(false);
     this._inputDSOutput = new ModelCatalogDatasetSpecification();
     this._inputDSOutput.inline = false;
     this._inputDSOutput.lazy = true;
