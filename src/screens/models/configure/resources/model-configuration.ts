@@ -305,6 +305,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
 
   protected _renderFullResource(r: ModelConfiguration) {
     // Example, Type, operating system, versions?
+    const hasTapisApp = this._inputTapisApp.getResourceIdNotUri()?.length > 0;
     return html`
       <table class="details-table">
         <colgroup>
@@ -432,13 +433,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
       </table>
 
 
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1em;">
-        <wl-title level="3" style="margin: 0;"> Inputs: </wl-title>
-        <wl-button id="sync-button" raised inverted @click="${() => this._onSyncTapisApp(this._inputTapisApp.getResourceIdNotUri()[0])}">
-          <wl-icon>sync</wl-icon>
-          Sync inputs with TapisApp
-        </wl-button>
-      </div>
+      <wl-title level="3" style="margin: 0;"> Inputs: </wl-title>
 
       <wl-title level="4"> Parameters: </wl-title>
       ${this._inputParameter}
@@ -979,44 +974,89 @@ ${edResource && edResource.hasUsageNotes
     };
   }
 
-  private async _deleteExistingResources() {
-    const existingParameters = this._inputParameter.getResources();
-    const existingFileInputs = this._inputDSInput.getResources();
-
+  private async _syncResources(currentResources: any[], newResources: any[], compareFields: string[],
+    inputHandler: any, convertFunction: Function, sourceObjects: any[]): Promise<void> {
     try {
-      existingFileInputs.forEach(fileInput => {
-        this._inputDSInput._deleteResource(fileInput, false);
+      // Create lookup maps
+      const currentMap = new Map(currentResources.map(res => [
+        this._getResourceKey(res, compareFields),
+        res
+      ]));
+
+      const newResourcesMap = new Map(newResources.map((res, index) => [
+        this._getResourceKey(convertFunction(sourceObjects[index], index + 1), compareFields),
+        { resource: convertFunction(sourceObjects[index], index + 1), sourceObject: sourceObjects[index], index: index + 1 }
+      ]));
+
+      // Identify resources to add, update, and delete
+      const toAdd: any[] = [];
+      const toKeep: any[] = [];
+
+      // Identify resources to add
+      newResourcesMap.forEach((value, key) => {
+        if (!currentMap.has(key)) {
+          toAdd.push(value.resource);
+        } else {
+          const existingResource = currentMap.get(key);
+          // Keep existing resource
+          toKeep.push(existingResource);
+          // Remove from current map to identify what's left to delete
+          currentMap.delete(key);
+        }
       });
-      existingParameters.forEach(parameter => {
-        this._inputParameter._deleteResource(parameter, false);
-      });
+
+      // Identify resources to delete (anything left in currentMap)
+      const toDelete = Array.from(currentMap.values());
+
+      // Process deletions
+      for (const resource of toDelete) {
+        await inputHandler._deleteResource(resource, false);
+      }
+
+      // Process additions
+      const temporalResources = [...toKeep];
+      for (const resource of toAdd) {
+        temporalResources.push(inputHandler._addToSaveQueue(resource));
+      }
+
+      // Update resources and save
+      if (temporalResources.length > 0) {
+        inputHandler.setResources(temporalResources);
+        await inputHandler.save();
+      } else {
+        inputHandler.setResources([]);
+      }
+
+      if (toAdd.length > 0 || toDelete.length > 0) {
+        console.log(`Sync summary: ${toAdd.length} added, ${toKeep.length} kept, ${toDelete.length} deleted`);
+      }
     } catch (error) {
-      console.error("Error syncing with TapisApp:", error);
-      this._notification.error(
-        "Failed to sync with TapisApp: " + (error instanceof Error ? error.message : "Unknown error")
-      );
+      console.error("Error syncing resources:", error);
+      throw error;
     }
+  }
+
+  private _getResourceKey(resource: any, compareFields: string[]): string {
+    return compareFields.map(field => {
+      return Array.isArray(resource[field]) ? resource[field][0] : resource[field];
+    }).join('|');
   }
 
   private async _syncParameters(parameterSet: ParameterSet) {
     try {
-      if (parameterSet) {
-        const parameters: Parameter[] = [];
-        let inputIndex = 1;
-        for (let parameter of parameterSet.appArgs) {
-          let newParameter = this.convertTapisParameterToParameter(parameter, inputIndex);
-          parameters.push(newParameter);
-          inputIndex++;
-        }
-        const temporalParameters: Parameter[] = [];
-        if (parameters.length > 0) {
-          for (let parameter of parameters) {
-            temporalParameters.push(this._inputParameter._addToSaveQueue(parameter));
-          }
-          this._inputParameter.setResources(temporalParameters);
-          await this._inputParameter.save();
-        }
-      }
+      // Handle case where there are no parameters in the TapisApp
+      const appArgs = parameterSet?.appArgs || [];
+      const existingParameters = this._inputParameter.getResources() || [];
+
+      // Even if there are no new parameters, we still need to process to handle deletions
+      await this._syncResources(
+        existingParameters,
+        appArgs.map((_, i) => ({})), // Placeholder objects, actual conversion happens in convertFunction
+        ['label', 'description'],
+        this._inputParameter,
+        this.convertTapisParameterToParameter.bind(this),
+        appArgs
+      );
     } catch (error) {
       console.error("Error syncing parameters:", error);
       this._notification.error(
@@ -1027,23 +1067,19 @@ ${edResource && edResource.hasUsageNotes
 
   private async _syncFiles(fileInputs: FileInput[]) {
     try {
-      if (fileInputs) {
-        const mintFiles: DatasetSpecification[] = [];
-        let inputIndex = 1;
-        for (let fileInput of fileInputs) {
-          let mintFile = this.convertTapisFileInputToDatasetSpecification(fileInput, inputIndex);
-          mintFiles.push(mintFile);
-          inputIndex++;
-        }
-        const temporalResources: DatasetSpecification[] = [];
-        if (mintFiles.length > 0) {
-          for (let fileInput of mintFiles) {
-            temporalResources.push(this._inputDSInput._addToSaveQueue(fileInput));
-          }
-          this._inputDSInput.setResources(temporalResources);
-          await this._inputDSInput.save();
-        }
-      }
+      // Handle case where there are no file inputs in the TapisApp
+      const inputs = fileInputs || [];
+      const existingFiles = this._inputDSInput.getResources() || [];
+
+      // Even if there are no new file inputs, we still need to process to handle deletions
+      await this._syncResources(
+        existingFiles,
+        inputs.map((_, i) => ({})), // Placeholder objects, actual conversion happens in convertFunction
+        ['label', 'description'],
+        this._inputDSInput,
+        this.convertTapisFileInputToDatasetSpecification.bind(this),
+        inputs
+      );
     } catch (error) {
       console.error("Error syncing files:", error);
       this._notification.error(
@@ -1057,15 +1093,8 @@ ${edResource && edResource.hasUsageNotes
       this._notification.error("No valid TapisApp selected. Please select a TapisApp first.");
       return;
     }
+
     this._notification.custom("Syncing with TapisApp...", "sync");
-    try {
-      await this._deleteExistingResources();
-    } catch (error) {
-      console.error("Error deleting existing resources:", error);
-      this._notification.error(
-        "Failed to delete existing resources: " + (error instanceof Error ? error.message : "Unknown error")
-      );
-    }
 
     try {
       const fullTapisApp = await this._inputTapisApp.loadFullTapisApp(tapisApp);
