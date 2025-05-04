@@ -12,6 +12,7 @@ import {
   TapisApp,
   FileInput,
   Argument,
+  ParameterSet,
 } from "@mintproject/modelcatalog_client";
 import { renderExternalLink } from "util/ui_renders";
 
@@ -978,14 +979,31 @@ ${edResource && edResource.hasUsageNotes
     };
   }
 
-  private async _onSyncTapisApp(tapisApp: TapisApp) {
+  private async _deleteExistingResources() {
+    const existingParameters = this._inputParameter.getResources();
+    const existingFileInputs = this._inputDSInput.getResources();
+
     try {
-      this._notification.custom("Syncing with TapisApp...", "sync");
-      const fullTapisApp = await this._inputTapisApp.loadFullTapisApp(tapisApp);
-      if (fullTapisApp.jobAttributes.parameterSet) {
+      existingFileInputs.forEach(fileInput => {
+        this._inputDSInput._deleteResource(fileInput, false);
+      });
+      existingParameters.forEach(parameter => {
+        this._inputParameter._deleteResource(parameter, false);
+      });
+    } catch (error) {
+      console.error("Error syncing with TapisApp:", error);
+      this._notification.error(
+        "Failed to sync with TapisApp: " + (error instanceof Error ? error.message : "Unknown error")
+      );
+    }
+  }
+
+  private async _syncParameters(parameterSet: ParameterSet) {
+    try {
+      if (parameterSet) {
         const parameters: Parameter[] = [];
         let inputIndex = 1;
-        for (let parameter of fullTapisApp.jobAttributes.parameterSet.appArgs) {
+        for (let parameter of parameterSet.appArgs) {
           let newParameter = this.convertTapisParameterToParameter(parameter, inputIndex);
           parameters.push(newParameter);
           inputIndex++;
@@ -999,24 +1017,56 @@ ${edResource && edResource.hasUsageNotes
           await this._inputParameter.save();
         }
       }
+    } catch (error) {
+      console.error("Error syncing parameters:", error);
+      this._notification.error(
+        "Failed to sync parameters: " + (error instanceof Error ? error.message : "Unknown error")
+      );
+    }
+  }
 
-      if (fullTapisApp.jobAttributes.fileInputs) {
-        const fileInputs: DatasetSpecification[] = [];
+  private async _syncFiles(fileInputs: FileInput[]) {
+    try {
+      if (fileInputs) {
+        const mintFiles: DatasetSpecification[] = [];
         let inputIndex = 1;
-        for (let fileInput of fullTapisApp.jobAttributes.fileInputs) {
-          let newFileInput = this.convertTapisFileInputToDatasetSpecification(fileInput, inputIndex);
-          fileInputs.push(newFileInput);
+        for (let fileInput of fileInputs) {
+          let mintFile = this.convertTapisFileInputToDatasetSpecification(fileInput, inputIndex);
+          mintFiles.push(mintFile);
           inputIndex++;
         }
         const temporalResources: DatasetSpecification[] = [];
-        if (fileInputs.length > 0) {
-          for (let fileInput of fileInputs) {
+        if (mintFiles.length > 0) {
+          for (let fileInput of mintFiles) {
             temporalResources.push(this._inputDSInput._addToSaveQueue(fileInput));
           }
           this._inputDSInput.setResources(temporalResources);
           await this._inputDSInput.save();
         }
       }
+    } catch (error) {
+      console.error("Error syncing files:", error);
+      this._notification.error(
+        "Failed to sync files: " + (error instanceof Error ? error.message : "Unknown error")
+      );
+    }
+  }
+
+  private async _onSyncTapisApp(tapisApp: TapisApp) {
+    this._notification.custom("Syncing with TapisApp...", "sync");
+    try {
+      await this._deleteExistingResources();
+    } catch (error) {
+      console.error("Error deleting existing resources:", error);
+      this._notification.error(
+        "Failed to delete existing resources: " + (error instanceof Error ? error.message : "Unknown error")
+      );
+    }
+
+    try {
+      const fullTapisApp = await this._inputTapisApp.loadFullTapisApp(tapisApp);
+      await this._syncParameters(fullTapisApp.jobAttributes.parameterSet);
+      await this._syncFiles(fullTapisApp.jobAttributes.fileInputs);
       this._notification.custom("Successfully synced with TapisApp", "check_circle");
     } catch (error) {
       console.error("Error syncing with TapisApp:", error);

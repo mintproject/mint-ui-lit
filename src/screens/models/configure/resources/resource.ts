@@ -1266,10 +1266,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     this._setSubActions();
   }
 
-  private _deleteResource(r: T) {
+  public _deleteResource(r: T, notify: boolean = true) {
     if (
-      r &&
-      confirm("This " + this.name + " will be deleted on all related resources")
+      r
     ) {
       if (this._selectedResources[r.id]) this._selectedResources[r.id] = false;
       if (this._selectedResourceId === r.id) this._selectedResourceId = "";
@@ -1283,7 +1282,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this.requestUpdate();
       }
       store.dispatch(this.resourceApi.delete(r.id)).then(() => {
-        this._notification.save(this.name + " deleted");
+        if (notify) this._notification.save(this.name + " deleted");
         this._eventDelete(r);
       });
     }
