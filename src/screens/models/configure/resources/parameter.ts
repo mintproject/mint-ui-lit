@@ -184,7 +184,15 @@ export class ModelCatalogParameter extends connect(store)(
       (label == "gldas_dataset_id" ||
         label == "shapefile_dataset_id" ||
         label == "data_set_id");
+
     return html`
+      ${this._action === Action.EDIT_OR_ADD
+        ? html`
+            <td>
+              ${r.position}
+            </td>
+          `
+        : ""}
       <td>
         <code>${label}</code><br />
         <b>${r.description ? r.description[0].split(",").join(", ") : ""}</b>
