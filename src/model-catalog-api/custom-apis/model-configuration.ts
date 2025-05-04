@@ -60,41 +60,4 @@ export class CustomModelConfigurationApi extends DefaultReduxApi<
         });
       });
     };
-
-
-  public postSyncWithTapisApp: ActionThunk<Promise<ModelConfiguration>, MCActionAdd> =
-    (uri: string, tapisApp: TapisApp) => (dispatch) => {
-      var id = this._getIdFromUri(uri);
-      if (!tapisApp) return Promise.reject("Error syncing with Tapis app. Invalid Tapis app.");
-
-      // First dispatch an action to update the store with the Tapis app data
-      // This ensures inputs and parameters from the Tapis app are in the Redux store
-      const action = {
-        type: "MODEL_CATALOG_ADD" as const,
-        kind: "modelconfiguration" as ModelCatalogTypes,
-        payload: { [id]: id}
-      };
-
-      dispatch(action);
-
-      const reqParams = {
-        id: id,
-        tapisApp: tapisApp,
-        username: this._username
-      };
-
-      return new Promise<ModelConfiguration>((resolve, reject) => {
-        // Wait a bit to ensure the Tapis sync has time to process inputs
-        let req: Promise<ModelConfiguration> = this._api.modelconfigurationsIdTapisSyncPost(reqParams);
-        req.catch(reject);
-        req.then((resp: ModelConfiguration) => {
-          // Add a small delay before getting the updated resource
-          setTimeout(() => {
-            dispatch(this.get(resp.id))
-              .then(resolve)
-              .catch(reject);
-          }, 100);
-        });
-      });
-    };
 }
