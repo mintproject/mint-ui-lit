@@ -15,16 +15,6 @@ import { BaseAPI } from "@mintproject/modelcatalog_client";
 import { DefaultReduxApi } from "model-catalog-api/default-redux-api";
 import { ModelCatalogApi } from "model-catalog-api/model-catalog-api";
 
-interface TapisAppFileInput {
-  name: string;
-  description: string;
-  inputMode: string;
-  autoMountLocal: boolean;
-  envKey: string | null;
-  notes: Record<string, any>;
-  sourceUrl: string | null;
-  targetPath: string;
-}
 
 @customElement("model-catalog-tapis-app")
 export class ModelCatalogTapisApp extends connect(store)(
