@@ -190,7 +190,6 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     if (this._loadingTapisApp && r.hasComponentLocation?.[0]) {
       const tapisApp = this._inputTapisApp._fromUri(r.hasComponentLocation?.[0]);
       this._inputTapisApp.setResources([tapisApp]);
-      this._inputParameter._addTapisApp(tapisApp);
     } else {
       this._inputTapisApp.setResources(null);
     }
@@ -978,13 +977,14 @@ ${edResource && edResource.hasUsageNotes
     console.log("tapisApp", tapisApp);
     if (tapisApp.jobAttributes.parameterSet) {
       for (let parameter of tapisApp.jobAttributes.parameterSet.appArgs) {
-        this._inputParameter.setResource(this.convertTapisParameterToParameter(parameter));
+        let newParameter = this.convertTapisParameterToParameter(parameter);
       }
     }
     if (tapisApp.jobAttributes.fileInputs) {
-    for (let fileInput of tapisApp.jobAttributes.fileInputs) {
-        this._inputDSInput.setResource(this.convertTapisFileInputToDatasetSpecification(fileInput));
+      for (let fileInput of tapisApp.jobAttributes.fileInputs) {
+        let newFileInput = this.convertTapisFileInputToDatasetSpecification(fileInput);
+
+        }
       }
-    }
   }
 }
