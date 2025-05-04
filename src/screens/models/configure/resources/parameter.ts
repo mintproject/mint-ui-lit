@@ -128,14 +128,10 @@ export class ModelCatalogParameter extends connect(store)(
     super._createResource();
   }
 
-  public _addTapisApp(tapisApp: TapisApp) {
-    console.log("addTapisApp", tapisApp);
+  protected _createResourceTapisApp(parameter: Parameter) {
+    this._inputUnit.setResources(null);
+    super._createResource();
   }
-
-  public _syncWithTapisApp(tapisApp: TapisApp) {
-    console.log("syncWithTapisApp", tapisApp);
-  }
-
 
   protected _renderTableHeader() {
     return html`

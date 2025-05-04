@@ -9,6 +9,9 @@ import {
   ModelConfiguration,
   ModelConfigurationFromJSON,
   ModelConfigurationApi,
+  TapisApp,
+  FileInput,
+  Argument,
 } from "@mintproject/modelcatalog_client";
 import { renderExternalLink } from "util/ui_renders";
 
@@ -157,14 +160,14 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     this._inputParameter = new ModelCatalogParameter();
     this._inputParameter.inline = false;
     this._inputParameter.lazy = true;
-    this._inputParameter.disableCreation();
-    this._inputParameter.disableDeletion();
+    //this._inputParameter.disableCreation();
+    //this._inputParameter.disableDeletion();
 
     this._inputDSInput = new ModelCatalogDatasetSpecification();
     this._inputDSInput.inline = false;
     this._inputDSInput.lazy = true;
-    this._inputDSInput.disableCreation();
-    this._inputDSInput.disableDeletion();
+    //this._inputDSInput.disableCreation();
+    //this._inputDSInput.disableDeletion();
 
     this._inputDSOutput = new ModelCatalogDatasetSpecification();
     this._inputDSOutput.inline = false;
@@ -428,7 +431,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
 
       <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1em;">
         <wl-title level="3" style="margin: 0;"> Inputs: </wl-title>
-        <wl-button id="sync-button" raised inverted @click="${() => this._onSyncTapisApp(r.id)}">
+        <wl-button id="sync-button" raised inverted @click="${() => this._onSyncTapisApp(this._inputTapisApp.getResourceIdNotUri()[0])}">
           <wl-icon>sync</wl-icon>
           Sync with TapisApp
         </wl-button>
@@ -957,7 +960,31 @@ ${edResource && edResource.hasUsageNotes
     });
   }
 
-  private _onSyncTapisApp(modelConfigurationId: string) {
-    store.dispatch(this.resourceApi.postSyncWithTapisApp(modelConfigurationId, this._inputTapisApp.getResourceIdNotUri()[0]))
+  private convertTapisParameterToParameter(parameter: Argument): Parameter {
+    return {
+      label: [parameter.name],
+      description: [parameter.description],
+    };
+  }
+
+  private convertTapisFileInputToDatasetSpecification(fileInput: FileInput): DatasetSpecification {
+    return {
+      label: [fileInput.name],
+      description: [fileInput.description],
+    };
+  }
+
+  private _onSyncTapisApp(tapisApp: TapisApp) {
+    console.log("tapisApp", tapisApp);
+    if (tapisApp.jobAttributes.parameterSet) {
+      for (let parameter of tapisApp.jobAttributes.parameterSet.appArgs) {
+        this._inputParameter.setResource(this.convertTapisParameterToParameter(parameter));
+      }
+    }
+    if (tapisApp.jobAttributes.fileInputs) {
+    for (let fileInput of tapisApp.jobAttributes.fileInputs) {
+        this._inputDSInput.setResource(this.convertTapisFileInputToDatasetSpecification(fileInput));
+      }
+    }
   }
 }
