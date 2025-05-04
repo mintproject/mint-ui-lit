@@ -8,7 +8,7 @@ import { IdMap } from "app/reducers";
 import { SharedStyles } from "styles/shared-styles";
 import { ExplorerStyles } from "../../model-explore/explorer-styles";
 
-import { Parameter, ParameterFromJSON, TapisApp } from "@mintproject/modelcatalog_client";
+import { Parameter, ParameterFromJSON } from "@mintproject/modelcatalog_client";
 import { PARAMETER_TYPES } from "offline_data/parameter_types";
 
 import { ModelCatalogUnit } from "./unit";
@@ -24,7 +24,6 @@ import { Textfield } from "weightless/textfield";
 import { Textarea } from "weightless/textarea";
 import { Select } from "weightless/select";
 import "weightless/checkbox";
-import { MINT_PREFERENCES } from "config";
 
 const renderParameterType = (param: Parameter) => {
   let ptype = param.type
@@ -128,11 +127,6 @@ export class ModelCatalogParameter extends connect(store)(
     super._createResource();
   }
 
-  protected _createResourceTapisApp(parameter: Parameter) {
-    this._inputUnit.setResources(null);
-    super._createResource();
-  }
-
   protected _renderTableHeader() {
     return html`
       <th><b>Name</b></th>
@@ -168,10 +162,10 @@ export class ModelCatalogParameter extends connect(store)(
     `;
   }
 
-
   private _prepareVariablePresentation(r: Parameter) {
     if (r.hasPresentation && r.hasPresentation.length > 0) {
       if (!this._vpDisplayer[r.id])
+        this._vpDisplayer[r.id] = new ModelCatalogVariablePresentation();
       this._vpDisplayer[r.id].setResources(r.hasPresentation);
     }
   }
@@ -184,15 +178,7 @@ export class ModelCatalogParameter extends connect(store)(
       (label == "gldas_dataset_id" ||
         label == "shapefile_dataset_id" ||
         label == "data_set_id");
-
     return html`
-      ${this._action === Action.EDIT_OR_ADD
-        ? html`
-            <td>
-              ${r.position}
-            </td>
-          `
-        : ""}
       <td>
         <code>${label}</code><br />
         <b>${r.description ? r.description[0].split(",").join(", ") : ""}</b>
@@ -818,149 +804,5 @@ export class ModelCatalogParameter extends connect(store)(
     } else {
       (<any>inputDef).onBlur();
     }
-  }
-
-  protected _renderParameterTable() {
-    if (MINT_PREFERENCES.execution_component_from_tapis) {
-      return this._renderParameterTableTapisApp();
-    }
-    let displayedResources: Parameter[] =
-      this.positionAttr && this._orderedResources.length > 0
-        ? this._orderedResources
-        : this._resources;
-    let editing: boolean = this._action === Action.EDIT_OR_ADD;
-    return html`
-      <table class="pure-table striped" style="width: 100%">
-        <thead>
-          ${editing && this.positionAttr
-            ? html`<th style="width:10px;"></th>`
-            : ""}
-          ${this._renderTableHeader()}
-          ${editing ? html`<th style="width:10px;"></th>` : ""}
-        </thead>
-        ${this._resources.length > 0
-          ? displayedResources.map((r: Parameter) => this._renderParameterRow(r))
-          : ""}
-        ${this._action === Action.EDIT_OR_ADD && this._creationEnabled
-          ? html` <tr class="ignore-grab">
-              <td
-                colspan="${this.positionAttr
-                  ? this.colspan + 2
-                  : this.colspan + 1}"
-                align="center"
-              >
-                <a class="clickable" @click=${this._createResource}
-                  >Add Parameter</a
-                >
-              </td>
-            </tr>`
-          : this._resources.length == 0
-          ? html` <tr>
-              <td colspan="${this.colspan + 1}" align="center">
-                ${this._renderEmpty()}
-              </td>
-            </tr>`
-          : ""}
-      </table>
-    `;
-  }
-
-  protected _renderParameterTableTapisApp() {
-    let displayedResources: Parameter[] =
-      this.positionAttr && this._orderedResources.length > 0
-        ? this._orderedResources
-        : this._resources;
-    let editing: boolean = this._action === Action.EDIT_OR_ADD;
-    return html`
-      <table class="pure-table striped" style="width: 100%">
-        <thead>
-          ${editing && this.positionAttr
-            ? html`<th style="width:10px;"></th>`
-            : ""}
-          ${this._renderTableHeader()}
-          ${editing ? html`<th style="width:10px;"></th>` : ""}
-        </thead>
-        ${this._resources.length > 0
-          ? displayedResources.map((r: Parameter) => this._renderParameterRow(r))
-          : ""}
-        ${this._action === Action.EDIT_OR_ADD && this._creationEnabled
-          ? html` <tr class="ignore-grab">
-              <td
-                colspan="${this.positionAttr
-                  ? this.colspan + 2
-                  : this.colspan + 1}"
-                align="center"
-              >
-                <a class="clickable" @click=${this._createResource}
-                  >Add a new parameter</a
-                >
-              </td>
-            </tr>`
-          : this._resources.length == 0
-          ? html` <tr>
-              <td colspan="${this.colspan + 1}" align="center">
-                ${this._renderEmpty()}
-              </td>
-            </tr>`
-          : ""}
-      </table>
-    `;
-  }
-
-  protected _renderParameterRowTa
-
-  protected _renderParameterRow(r: Parameter) {
-    return html`<tr>
-      ${this._renderRow(r)}
-      ${this._action === Action.EDIT_OR_ADD
-        ? html` <td
-            style="width: ${this._deletionEnabled ? "65" : "30"}px"
-          >
-            <div style="display: flex; justify-content: space-between;">
-              <wl-button
-                class="edit"
-                @click="${() => this._editResource(r)}"
-                flat
-                inverted
-              >
-                <wl-icon>edit</wl-icon>
-              </wl-button>
-              ${this._deletionEnabled
-                ? html`
-                    <wl-button
-                      class="edit"
-                      @click="${() => this._deleteResource(r)}"
-                      flat
-                      inverted
-                    >
-                      <wl-icon>delete</wl-icon>
-                    </wl-button>
-                  `
-                : ""}
-            </div>
-          </td>`
-        : ""}
-    </tr>`;
-  }
-
-  protected render() {
-    return html`
-      ${this._singleMode
-        ? this._renderFullResource(this._resources[0])
-        : this.inline
-        ? this._renderInline()
-        : this._renderParameterTable()}
-      <wl-dialog
-        class="larger"
-        id="resource-dialog"
-        fixed
-        backdrop
-        blockscrolling
-        persistent
-      >
-        ${this._dialogOpen ? this._renderDialogContent() : ""}
-      </wl-dialog>
-      ${this._notification}
-    `;
   }
 }
