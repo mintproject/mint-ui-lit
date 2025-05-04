@@ -846,7 +846,7 @@ export class ModelCatalogParameter extends connect(store)(
                 align="center"
               >
                 <a class="clickable" @click=${this._createResource}
-                  >Sync with Tapis App</a
+                  >Add Parameter</a
                 >
               </td>
             </tr>`
@@ -887,8 +887,8 @@ export class ModelCatalogParameter extends connect(store)(
                   : this.colspan + 1}"
                 align="center"
               >
-                <a class="clickable" @click=${this._syncWithTapisApp}
-                  >Sync with Tapis App</a
+                <a class="clickable" @click=${this._createResource}
+                  >Add a new parameter</a
                 >
               </td>
             </tr>`
@@ -902,6 +902,8 @@ export class ModelCatalogParameter extends connect(store)(
       </table>
     `;
   }
+
+  protected _renderParameterRowTa
 
   protected _renderParameterRow(r: Parameter) {
     return html`<tr>
