@@ -160,14 +160,16 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     this._inputParameter = new ModelCatalogParameter();
     this._inputParameter.inline = false;
     this._inputParameter.lazy = true;
-    //this._inputParameter.disableCreation();
-    //this._inputParameter.disableDeletion();
+    this._inputParameter.disableCreation();
+    this._inputParameter.disableEdition();
+    this._inputParameter.disableDeletion();
 
     this._inputDSInput = new ModelCatalogDatasetSpecification();
     this._inputDSInput.inline = false;
     this._inputDSInput.lazy = true;
-    //this._inputDSInput.disableCreation();
-    //this._inputDSInput.disableDeletion();
+    this._inputDSInput.disableCreation();
+    this._inputDSInput.disableEdition();
+    this._inputDSInput.disableDeletion();
 
     this._inputDSOutput = new ModelCatalogDatasetSpecification();
     this._inputDSOutput.inline = false;
@@ -684,7 +686,7 @@ ${edResource && edResource.hasUsageNotes
 
       <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1em;">
         <wl-title level="3" style="margin: 0;"> Inputs: </wl-title>
-        <wl-button id="sync-button" raised inverted @click="${() => this._onSyncTapisApp(edResource?.id)}">
+        <wl-button id="sync-button" raised inverted @click="${() => this._onSyncTapisApp(this._inputTapisApp.getResourceIdNotUri()?.[0])}">
           <wl-icon>sync</wl-icon>
           Sync with TapisApp
         </wl-button>
@@ -959,32 +961,60 @@ ${edResource && edResource.hasUsageNotes
     });
   }
 
-  private convertTapisParameterToParameter(parameter: Argument): Parameter {
+  private convertTapisParameterToParameter(parameter: Argument, inputIndex: number): Parameter {
     return {
       label: [parameter.name],
       description: [parameter.description],
+      position: [inputIndex],
     };
   }
 
-  private convertTapisFileInputToDatasetSpecification(fileInput: FileInput): DatasetSpecification {
+  private convertTapisFileInputToDatasetSpecification(fileInput: FileInput, inputIndex: number): DatasetSpecification {
     return {
       label: [fileInput.name],
       description: [fileInput.description],
+      position: [inputIndex],
     };
   }
 
-  private _onSyncTapisApp(tapisApp: TapisApp) {
-    console.log("tapisApp", tapisApp);
-    if (tapisApp.jobAttributes.parameterSet) {
-      for (let parameter of tapisApp.jobAttributes.parameterSet.appArgs) {
-        let newParameter = this.convertTapisParameterToParameter(parameter);
+  private async _onSyncTapisApp(tapisApp: TapisApp) {
+    const fullTapisApp = await this._inputTapisApp.loadFullTapisApp(tapisApp);
+    if (fullTapisApp.jobAttributes.parameterSet) {
+      const parameters: Parameter[] = [];
+      let inputIndex = 1;
+      for (let parameter of fullTapisApp.jobAttributes.parameterSet.appArgs) {
+        let newParameter = this.convertTapisParameterToParameter(parameter, inputIndex);
+        parameters.push(newParameter);
+        inputIndex++;
+      }
+      if (parameters.length > 0) {
+        this._inputParameter.setResources(parameters);
+        await this._inputParameter.save();
       }
     }
-    if (tapisApp.jobAttributes.fileInputs) {
-      for (let fileInput of tapisApp.jobAttributes.fileInputs) {
-        let newFileInput = this.convertTapisFileInputToDatasetSpecification(fileInput);
 
+    if (fullTapisApp.jobAttributes.fileInputs) {
+      const fileInputs: DatasetSpecification[] = [];
+      let inputIndex = 1;
+      for (let fileInput of fullTapisApp.jobAttributes.fileInputs) {
+        let newFileInput = this.convertTapisFileInputToDatasetSpecification(fileInput, inputIndex);
+        fileInputs.push(newFileInput);
+        inputIndex++;
+      }
+      const temporalResources: DatasetSpecification[] = [];
+      if (fileInputs.length > 0) {
+        this._inputDSInput.setActionEditOrAdd();
+        for (let fileInput of fileInputs) {
+          temporalResources.push(this._inputDSInput._addToSaveQueue(fileInput));
+        }
+        this._inputDSInput.setResources(temporalResources);
+        try {
+          const response = await this._inputDSInput.save();
+          console.log("response", response);
+        } catch (error) {
+          console.error("Error saving file inputs:", error);
         }
       }
+    }
   }
 }
