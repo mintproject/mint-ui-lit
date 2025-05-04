@@ -435,7 +435,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
         <wl-title level="3" style="margin: 0;"> Inputs: </wl-title>
         <wl-button id="sync-button" raised inverted @click="${() => this._onSyncTapisApp(this._inputTapisApp.getResourceIdNotUri()[0])}">
           <wl-icon>sync</wl-icon>
-          Sync with TapisApp
+          Sync inputs with TapisApp
         </wl-button>
       </div>
 
@@ -689,7 +689,7 @@ ${edResource && edResource.hasUsageNotes
         <wl-title level="3" style="margin: 0;"> Inputs: </wl-title>
         <wl-button id="sync-button" raised inverted @click="${() => this._onSyncTapisApp(this._inputTapisApp.getResourceIdNotUri()?.[0])}">
           <wl-icon>sync</wl-icon>
-          Sync with TapisApp
+          Sync inputs with TapisApp
         </wl-button>
       </div>
 
@@ -979,43 +979,50 @@ ${edResource && edResource.hasUsageNotes
   }
 
   private async _onSyncTapisApp(tapisApp: TapisApp) {
-    const fullTapisApp = await this._inputTapisApp.loadFullTapisApp(tapisApp);
-    if (fullTapisApp.jobAttributes.parameterSet) {
-      const parameters: Parameter[] = [];
-      let inputIndex = 1;
-      for (let parameter of fullTapisApp.jobAttributes.parameterSet.appArgs) {
-        let newParameter = this.convertTapisParameterToParameter(parameter, inputIndex);
-        parameters.push(newParameter);
-        inputIndex++;
+    try {
+      this._notification.custom("Syncing with TapisApp...", "sync");
+      const fullTapisApp = await this._inputTapisApp.loadFullTapisApp(tapisApp);
+      if (fullTapisApp.jobAttributes.parameterSet) {
+        const parameters: Parameter[] = [];
+        let inputIndex = 1;
+        for (let parameter of fullTapisApp.jobAttributes.parameterSet.appArgs) {
+          let newParameter = this.convertTapisParameterToParameter(parameter, inputIndex);
+          parameters.push(newParameter);
+          inputIndex++;
+        }
+        const temporalParameters: Parameter[] = [];
+        if (parameters.length > 0) {
+          for (let parameter of parameters) {
+            temporalParameters.push(this._inputParameter._addToSaveQueue(parameter));
+          }
+          this._inputParameter.setResources(temporalParameters);
+          await this._inputParameter.save();
+        }
       }
-      if (parameters.length > 0) {
-        this._inputParameter.setResources(parameters);
-        await this._inputParameter.save();
-      }
-    }
 
-    if (fullTapisApp.jobAttributes.fileInputs) {
-      const fileInputs: DatasetSpecification[] = [];
-      let inputIndex = 1;
-      for (let fileInput of fullTapisApp.jobAttributes.fileInputs) {
-        let newFileInput = this.convertTapisFileInputToDatasetSpecification(fileInput, inputIndex);
-        fileInputs.push(newFileInput);
-        inputIndex++;
-      }
-      const temporalResources: DatasetSpecification[] = [];
-      if (fileInputs.length > 0) {
-        this._inputDSInput.setActionEditOrAdd();
-        for (let fileInput of fileInputs) {
-          temporalResources.push(this._inputDSInput._addToSaveQueue(fileInput));
+      if (fullTapisApp.jobAttributes.fileInputs) {
+        const fileInputs: DatasetSpecification[] = [];
+        let inputIndex = 1;
+        for (let fileInput of fullTapisApp.jobAttributes.fileInputs) {
+          let newFileInput = this.convertTapisFileInputToDatasetSpecification(fileInput, inputIndex);
+          fileInputs.push(newFileInput);
+          inputIndex++;
         }
-        this._inputDSInput.setResources(temporalResources);
-        try {
-          const response = await this._inputDSInput.save();
-          console.log("response", response);
-        } catch (error) {
-          console.error("Error saving file inputs:", error);
+        const temporalResources: DatasetSpecification[] = [];
+        if (fileInputs.length > 0) {
+          for (let fileInput of fileInputs) {
+            temporalResources.push(this._inputDSInput._addToSaveQueue(fileInput));
+          }
+          this._inputDSInput.setResources(temporalResources);
+          await this._inputDSInput.save();
         }
       }
+      this._notification.custom("Successfully synced with TapisApp", "check_circle");
+    } catch (error) {
+      console.error("Error syncing with TapisApp:", error);
+      this._notification.error(
+        "Failed to sync with TapisApp: " + (error instanceof Error ? error.message : "Unknown error")
+      );
     }
   }
 }
