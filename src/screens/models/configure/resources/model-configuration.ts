@@ -1053,6 +1053,10 @@ ${edResource && edResource.hasUsageNotes
   }
 
   private async _onSyncTapisApp(tapisApp: TapisApp) {
+    if (!tapisApp || !tapisApp.id || !tapisApp.version || !tapisApp.tenant) {
+      this._notification.error("No valid TapisApp selected. Please select a TapisApp first.");
+      return;
+    }
     this._notification.custom("Syncing with TapisApp...", "sync");
     try {
       await this._deleteExistingResources();
