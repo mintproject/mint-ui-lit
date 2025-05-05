@@ -305,7 +305,6 @@ export class ModelCatalogModelConfiguration extends connect(store)(
 
   protected _renderFullResource(r: ModelConfiguration) {
     // Example, Type, operating system, versions?
-    const hasTapisApp = this._inputTapisApp.getResourceIdNotUri()?.length > 0;
     return html`
       <table class="details-table">
         <colgroup>

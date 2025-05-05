@@ -157,7 +157,7 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
     return html`
       <th><b>Input name</b></th>
       <th><b>Description</b></th>
-      <!--th><b>Data Transformations</b></th-->
+      <th><b>Ready for run</b></th>
       <th><b>Variables</b></th>
       ${this.isSetup ? html` <th><b>Selected File</b></th> ` : ""}
     `;
@@ -183,6 +183,11 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
     }
   }
 
+  private _isReadyForRun(r: DatasetSpecification) {
+    return (r.hasPresentation && r.hasPresentation.length > 0) ||
+           (r.hasFixedResource && r.hasFixedResource.length > 0);
+  }
+
   protected _renderRow(r: DatasetSpecification) {
     this._setSubResources2(r);
     return html`
@@ -196,6 +201,19 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
       </td>
       <td>
         <b>${r.description ? r.description[0] : ""}</b>
+      </td>
+      <td>
+        ${this._isReadyForRun(r)
+          ? "Yes"
+          : html`No
+              <span
+                tip="Dataset specification needs at least one variable presentation or fixed resource to be ready for execution."
+                class="tooltip"
+                style="top: 2px;"
+              >
+                <wl-icon style="--icon-size: 16px;">help_outline</wl-icon>
+              </span>`
+        }
       </td>
       <!--td>
                 {r.hasDataTransformation ? r.hasDataTransformation.map((dt:DataTransformation) =>
@@ -223,6 +241,13 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
     return html` <div style="font-weight: bold; padding: 5px;">
         A Dataset Specification is the description of an input/output file. The
         variables set in this resource will be used to search relevant datasets.
+        <span
+          tip="Dataset specification needs at least one variable presentation or fixed resource to be ready for execution."
+          class="tooltip"
+          style="top: 2px;"
+        >
+          <wl-icon style="--icon-size: 16px;">help_outline</wl-icon>
+        </span>
       </div>
       <form>
         <wl-textfield
@@ -252,7 +277,16 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
         >
         </wl-textfield>
         <div style="min-height:50px; padding: 10px 0px;">
-          <div style="padding-top: 10px; font-weight: bold;">Variables:</div>
+          <div style="padding-top: 10px; font-weight: bold;">
+            Variables:
+            <span
+              tip="At least one variable is required for the dataset to be ready for execution."
+              class="tooltip"
+              style="top: 2px;"
+            >
+              <wl-icon style="--icon-size: 16px;">help_outline</wl-icon>
+            </span>
+          </div>
           ${this._inputVariablePresentation}
         </div>
         ${this.isSetup
@@ -266,7 +300,16 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
                   <option value="resource">Single file</option>
                   <option value="collection">Multiple files</option>
                 </wl-select>
-                <div style="padding: 5px 0px; font-weight: bold;">Files:</div>
+                <div style="padding: 5px 0px; font-weight: bold;">
+                  Files:
+                  <span
+                    tip="Having a fixed resource file specified will make this dataset ready for execution."
+                    class="tooltip"
+                    style="top: 2px;"
+                  >
+                    <wl-icon style="--icon-size: 16px;">help_outline</wl-icon>
+                  </span>
+                </div>
                 ${this._fileType == "resource"
                   ? this._inputSampleResource
                   : this._inputSampleCollection}
