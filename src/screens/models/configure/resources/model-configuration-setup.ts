@@ -10,6 +10,10 @@ import {
   ModelConfiguration,
   ModelConfigurationSetup,
   ModelConfigurationSetupFromJSON,
+  TapisApp,
+  FileInput,
+  Argument,
+  ParameterSet,
 } from "@mintproject/modelcatalog_client";
 import { renderExternalLink } from "util/ui_renders";
 
@@ -167,14 +171,18 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
     this._inputParameter.inline = false;
     this._inputParameter.lazy = true;
     this._inputParameter.disableCreation();
+    this._inputParameter.disableEdition();
     this._inputParameter.disableDeletion();
+    this._inputParameter.setNameEditable(false);
     this._inputParameter.setAsSetup();
 
     this._inputDSInput = new ModelCatalogDatasetSpecification();
     this._inputDSInput.inline = false;
     this._inputDSInput.lazy = true;
     this._inputDSInput.disableCreation();
+    this._inputDSInput.disableEdition();
     this._inputDSInput.disableDeletion();
+    this._inputDSInput.setNameEditable(false);
     this._inputDSInput.setAsSetup();
 
     this._inputDSOutput = new ModelCatalogDatasetSpecification();
@@ -182,10 +190,8 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
     this._inputDSOutput.lazy = true;
     this._inputDSOutput.disableCreation();
     this._inputDSOutput.disableDeletion();
-
   }
 
-  //when this happens ?
   protected _setSubResources(r: ModelConfigurationSetup) {
     this._inputAuthor.setResources(r.author);
     this._inputGrid.setResources(r.hasGrid);
@@ -197,7 +203,8 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
     this._inputSoftwareImage.setResources(r.hasSoftwareImage);
 
     if (this._loadingTapisApp && r.hasComponentLocation?.[0]) {
-      this._inputTapisApp.setResources([this._inputTapisApp._fromUri(r.hasComponentLocation?.[0])]);
+      const tapisApp = this._inputTapisApp._fromUri(r.hasComponentLocation?.[0]);
+      this._inputTapisApp.setResources([tapisApp]);
     } else {
       this._inputTapisApp.setResources(null);
     }
@@ -322,6 +329,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
 
   protected _renderFullResource(r: ModelConfigurationSetup) {
     // Example, Type, operating system, versions?
+    const hasTapisApp = this._inputTapisApp.getResourceIdNotUri()?.length > 0;
     return html`
       <table class="details-table">
         <colgroup>
@@ -447,7 +455,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
         </tr>
       </table>
 
-      <wl-title level="3" style="margin-top:1em"> Inputs: </wl-title>
+      <wl-title level="3" style="margin: 0;"> Inputs: </wl-title>
       <wl-title level="4"> Parameters: </wl-title>
       ${this._inputParameter}
 
@@ -668,7 +676,14 @@ ${edResource && edResource.hasUsageNotes
         </tr>
       </table>
 
-      <wl-title level="3" style="margin-top:1em"> Inputs: </wl-title>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1em;">
+        <wl-title level="3" style="margin: 0;"> Inputs: </wl-title>
+        <wl-button id="sync-button" raised inverted @click="${() => this._onSyncTapisApp(this._inputTapisApp.getResourceIdNotUri()?.[0])}">
+          <wl-icon>sync</wl-icon>
+          Sync inputs with TapisApp
+        </wl-button>
+      </div>
+
       <wl-title level="4"> Parameters: </wl-title>
       ${this._inputParameter}
 
@@ -960,5 +975,156 @@ ${edResource && edResource.hasUsageNotes
         resolve(copy);
       });
     });
+  }
+
+  private convertTapisParameterToParameter(parameter: Argument, inputIndex: number): Parameter {
+    return {
+      label: [parameter.name],
+      description: [parameter.description],
+      position: [inputIndex],
+    };
+  }
+
+  private convertTapisFileInputToDatasetSpecification(fileInput: FileInput, inputIndex: number): DatasetSpecification {
+    return {
+      label: [fileInput.name],
+      description: [fileInput.description],
+      position: [inputIndex],
+    };
+  }
+
+  private async _syncResources(currentResources: any[], newResources: any[], compareFields: string[],
+    inputHandler: any, convertFunction: Function, sourceObjects: any[]): Promise<void> {
+    try {
+      // Create lookup maps
+      const currentMap = new Map(currentResources.map(res => [
+        this._getResourceKey(res, compareFields),
+        res
+      ]));
+
+      const newResourcesMap = new Map(newResources.map((res, index) => [
+        this._getResourceKey(convertFunction(sourceObjects[index], index + 1), compareFields),
+        { resource: convertFunction(sourceObjects[index], index + 1), sourceObject: sourceObjects[index], index: index + 1 }
+      ]));
+
+      // Identify resources to add, update, and delete
+      const toAdd: any[] = [];
+      const toKeep: any[] = [];
+
+      // Identify resources to add
+      newResourcesMap.forEach((value, key) => {
+        if (!currentMap.has(key)) {
+          toAdd.push(value.resource);
+        } else {
+          const existingResource = currentMap.get(key);
+          // Keep existing resource
+          toKeep.push(existingResource);
+          // Remove from current map to identify what's left to delete
+          currentMap.delete(key);
+        }
+      });
+
+      // Identify resources to delete (anything left in currentMap)
+      const toDelete = Array.from(currentMap.values());
+
+      // Process deletions
+      for (const resource of toDelete) {
+        await inputHandler._deleteResource(resource, false);
+      }
+
+      // Process additions
+      const temporalResources = [...toKeep];
+      for (const resource of toAdd) {
+        temporalResources.push(inputHandler._addToSaveQueue(resource));
+      }
+
+      // Update resources and save
+      if (temporalResources.length > 0) {
+        inputHandler.setResources(temporalResources);
+        await inputHandler.save();
+      } else {
+        inputHandler.setResources([]);
+      }
+
+      if (toAdd.length > 0 || toDelete.length > 0) {
+        console.log(`Sync summary: ${toAdd.length} added, ${toKeep.length} kept, ${toDelete.length} deleted`);
+      }
+    } catch (error) {
+      console.error("Error syncing resources:", error);
+      throw error;
+    }
+  }
+
+  private _getResourceKey(resource: any, compareFields: string[]): string {
+    return compareFields.map(field => {
+      return Array.isArray(resource[field]) ? resource[field][0] : resource[field];
+    }).join('|');
+  }
+
+  private async _syncParameters(parameterSet: ParameterSet) {
+    try {
+      // Handle case where there are no parameters in the TapisApp
+      const appArgs = parameterSet?.appArgs || [];
+      const existingParameters = this._inputParameter.getResources() || [];
+
+      // Even if there are no new parameters, we still need to process to handle deletions
+      await this._syncResources(
+        existingParameters,
+        appArgs.map((_, i) => ({})), // Placeholder objects, actual conversion happens in convertFunction
+        ['label', 'description'],
+        this._inputParameter,
+        this.convertTapisParameterToParameter.bind(this),
+        appArgs
+      );
+    } catch (error) {
+      console.error("Error syncing parameters:", error);
+      this._notification.error(
+        "Failed to sync parameters: " + (error instanceof Error ? error.message : "Unknown error")
+      );
+    }
+  }
+
+  private async _syncFiles(fileInputs: FileInput[]) {
+    try {
+      // Handle case where there are no file inputs in the TapisApp
+      const inputs = fileInputs || [];
+      const existingFiles = this._inputDSInput.getResources() || [];
+
+      // Even if there are no new file inputs, we still need to process to handle deletions
+      await this._syncResources(
+        existingFiles,
+        inputs.map((_, i) => ({})), // Placeholder objects, actual conversion happens in convertFunction
+        ['label', 'description'],
+        this._inputDSInput,
+        this.convertTapisFileInputToDatasetSpecification.bind(this),
+        inputs
+      );
+    } catch (error) {
+      console.error("Error syncing files:", error);
+      this._notification.error(
+        "Failed to sync files: " + (error instanceof Error ? error.message : "Unknown error")
+      );
+    }
+  }
+
+  private async _onSyncTapisApp(tapisApp: TapisApp) {
+    if (!tapisApp || !tapisApp.id || !tapisApp.version || !tapisApp.tenant) {
+      this._notification.error("No valid TapisApp selected. Please select a TapisApp first.");
+      return;
+    }
+
+    this._notification.custom("Syncing with TapisApp...", "sync");
+
+    try {
+      const fullTapisApp = await this._inputTapisApp.loadFullTapisApp(tapisApp);
+      await this._syncParameters(fullTapisApp.jobAttributes.parameterSet);
+      await this._syncFiles(fullTapisApp.jobAttributes.fileInputs);
+      this._notification.custom("Successfully synced with TapisApp", "check_circle");
+    } catch (error) {
+      console.error("Error syncing with TapisApp:", error);
+      this._notification.error(
+        "Failed to sync with TapisApp: " + (error instanceof Error ? error.message : "Unknown error")
+      );
+    }
   }
 }
