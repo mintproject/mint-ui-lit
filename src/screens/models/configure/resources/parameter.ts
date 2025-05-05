@@ -95,6 +95,7 @@ export class ModelCatalogParameter extends connect(store)(
   @property({ type: Boolean }) private isAdjustable = false;
   @property({ type: Boolean }) private showDefaults = false;
   @property({ type: String }) private _formPart: string = "";
+  @property({ type: Boolean }) private _nameIsEditable = true;
 
   private _inputUnit: ModelCatalogUnit;
   private _vpDisplayer: IdMap<ModelCatalogVariablePresentation> = {};
@@ -120,6 +121,8 @@ export class ModelCatalogParameter extends connect(store)(
     this._inputIntervention = new ModelCatalogIntervention();
     this._inputIntervention.setActionSelect();
     this._inputIntervention.setAttribute("id", "input-intervention");
+
+    this._nameIsEditable = true;
   }
 
   protected _createResource() {
@@ -296,13 +299,17 @@ export class ModelCatalogParameter extends connect(store)(
             </div>
           `
         : html`
-            <wl-textfield
-              id="parameter-label"
-              label="Name"
-              required
-              value=${edResource ? getLabel(edResource) : ""}
-            >
-            </wl-textfield>
+            ${this._nameIsEditable
+              ? html`
+                  <wl-textfield
+                    id="parameter-label"
+                    label="Name"
+                    required
+                    value=${edResource ? getLabel(edResource) : ""}
+                  >
+                  </wl-textfield>
+                `
+              : ""}
             <wl-textarea
               id="parameter-desc"
               label="Description"
@@ -804,5 +811,9 @@ export class ModelCatalogParameter extends connect(store)(
     } else {
       (<any>inputDef).onBlur();
     }
+  }
+
+  public setNameEditable(editable: boolean) {
+    this._nameIsEditable = editable;
   }
 }

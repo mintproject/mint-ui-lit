@@ -3,7 +3,7 @@ import {
   MCActionAdd,
   ActionThunk,
 } from "../actions";
-import { Configuration, BaseAPI } from "@mintproject/modelcatalog_client";
+import { Configuration, BaseAPI, TapisApp } from "@mintproject/modelcatalog_client";
 import { DefaultReduxApi } from "../default-redux-api";
 import {
   ModelConfiguration,
@@ -11,6 +11,8 @@ import {
   SoftwareVersion,
 } from "@mintproject/modelcatalog_client";
 import { ModelCatalogApi } from "model-catalog-api/model-catalog-api";
+import { ModelCatalogTypes } from "../reducers";
+
 export class CustomModelConfigurationApi extends DefaultReduxApi<
   ModelConfiguration,
   ModelConfigurationApi

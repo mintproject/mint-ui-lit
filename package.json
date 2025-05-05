@@ -27,7 +27,7 @@
     "@apollo/client": "^3.7.1",
     "@babel/polyfill": "^7.10.4",
     "@babel/runtime-corejs2": "^7.11.2",
-    "@mintproject/modelcatalog_client": "^8.0.3-alpha.3",
+    "@mintproject/modelcatalog_client": "^8.0.3-alpha.8",
     "@polymer/app-layout": "^3.0.2",
     "@polymer/polymer": "^3.1.0",
     "@types/codemirror": "^0.0.78",

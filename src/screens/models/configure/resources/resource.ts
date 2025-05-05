@@ -193,6 +193,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
 
   private _idToCopy: IdMap<string> = {} as IdMap<string>;
   public lazy: boolean = false;
+  private _nameEditable: boolean = true;
 
   protected classes: string = "resource";
   protected name: string = "resource";
@@ -234,6 +235,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
   public disableDeletion() {
     this._deletionEnabled = false;
   }
+
 
   public enableDuplication(...args: any[]) {
     this._duplicationEnabled = true;
@@ -1157,7 +1159,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     this._postSaveUpdate(this._addToSaveQueue(resource));
   }
 
-  private _addToSaveQueue(r: T) {
+   public _addToSaveQueue(r: T) {
     if (r.id && r.id.includes(PREFIX_URI)) {
       // if the resource has an ID and its part of the model catalog, is an edition.
       this._resourcesToEdit[r.id] = r;
@@ -1264,10 +1266,9 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
     this._setSubActions();
   }
 
-  private _deleteResource(r: T) {
+  public _deleteResource(r: T, notify: boolean = true) {
     if (
-      r &&
-      confirm("This " + this.name + " will be deleted on all related resources")
+      r
     ) {
       if (this._selectedResources[r.id]) this._selectedResources[r.id] = false;
       if (this._selectedResourceId === r.id) this._selectedResourceId = "";
@@ -1281,7 +1282,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
         this.requestUpdate();
       }
       store.dispatch(this.resourceApi.delete(r.id)).then(() => {
-        this._notification.save(this.name + " deleted");
+        if (notify) this._notification.save(this.name + " deleted");
         this._eventDelete(r);
       });
     }
@@ -1699,4 +1700,10 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
   public getAllResources(): Promise<IdMap<T>> {
     return this._loadAllResources();
   }
+
+  public setNameEditable(editable: boolean) {
+    this._nameEditable = editable;
+  }
+
+
 }

@@ -520,7 +520,6 @@ export class UserCatalog {
         TapisAppApi,
         this.username,
         this.configuration
-
       );
     return this._tapisAppApi;
   }
