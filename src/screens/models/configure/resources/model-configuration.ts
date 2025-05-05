@@ -15,6 +15,7 @@ import {
   ParameterSet,
 } from "@mintproject/modelcatalog_client";
 import { renderExternalLink } from "util/ui_renders";
+import { isExecutableFull } from "model-catalog-api/util";
 
 import { SharedStyles } from "styles/shared-styles";
 import { ExplorerStyles } from "../../model-explore/explorer-styles";
@@ -428,6 +429,15 @@ export class ModelCatalogModelConfiguration extends connect(store)(
         <tr>
           <td>Usage notes:</td>
           <td>${r && r.hasUsageNotes ? r.hasUsageNotes[0] : ""}</td>
+        </tr>
+
+        <tr>
+          <td>Execution status:</td>
+          <td>
+            ${isExecutableFull(r)
+              ? html`<span style="color: green; font-weight: bold;">Ready to execute</span>`
+              : html`<span style="color: red; font-weight: bold;">Not ready to execute</span>`}
+          </td>
         </tr>
       </table>
 

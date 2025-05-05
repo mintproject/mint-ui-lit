@@ -230,3 +230,19 @@ export const isExecutable = (
     config.hasSoftwareImage.length > 0
   );
 };
+
+export const isExecutableFull = (
+  config: ModelConfiguration | ModelConfigurationSetup,
+): boolean => {
+  return (
+    !!config &&
+    (!config.hasInput || !config.hasInput.length ||
+      config.hasInput.every((input: any) =>
+        input.hasPresentation &&
+        input.hasPresentation.length > 0 ||
+        input.hasFixedResource &&
+        input.hasFixedResource.length > 0
+      )
+    )
+  );
+};
