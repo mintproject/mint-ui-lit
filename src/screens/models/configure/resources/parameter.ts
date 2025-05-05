@@ -299,17 +299,14 @@ export class ModelCatalogParameter extends connect(store)(
             </div>
           `
         : html`
-            ${this._nameIsEditable
-              ? html`
-                  <wl-textfield
-                    id="parameter-label"
-                    label="Name"
-                    required
-                    value=${edResource ? getLabel(edResource) : ""}
-                  >
-                  </wl-textfield>
-                `
-              : ""}
+            <wl-textfield
+              id="parameter-label"
+              label="Name"
+              required
+              value=${edResource ? getLabel(edResource) : ""}
+              class=${this._nameIsEditable ? "" : "hidden-field"}
+            >
+            </wl-textfield>
             <wl-textarea
               id="parameter-desc"
               label="Description"

@@ -58,6 +58,9 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
           display: inline-block;
           width: 50%;
         }
+        .hidden-field {
+          display: none;
+        }
       `,
     ];
   }
@@ -222,17 +225,14 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
         variables set in this resource will be used to search relevant datasets.
       </div>
       <form>
-        ${this._nameIsEditable
-          ? html`
-              <wl-textfield
-                id="ds-label"
-                label="Name"
-                required
-                value=${edResource ? getLabel(edResource) : ""}
+        <wl-textfield
+            id="ds-label"
+            label="Name"
+            required
+            class=${this._nameIsEditable ? "" : "hidden-field"}
+            value=${edResource ? getLabel(edResource) : ""}
         >
         </wl-textfield>
-        `
-          : ""}
         <wl-textarea
           id="ds-desc"
           label="Description"
