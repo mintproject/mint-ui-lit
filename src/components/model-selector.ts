@@ -654,7 +654,7 @@ export class ModelSelector extends LitElement {
             <td>
                 <input class="checkbox" type="checkbox" data-modelid="${
                   model.id
-                }" 
+                }"
                         .disabled=${!this.editMode}
                         @change=${this.toggleSelection}
                         .checked=${option.isSelected}></input>
@@ -668,8 +668,8 @@ export class ModelSelector extends LitElement {
                     ? html`<div>${model.description[0]}</div>`
                     : ""
                 }
-            </td> 
-            <td> 
+            </td>
+            <td>
                 ${
                   model.hasModelCategory && model.hasModelCategory.length > 0
                     ? model.hasModelCategory
@@ -764,16 +764,29 @@ export class ModelSelector extends LitElement {
   }
 
   private applyIndicatorFilter(options: ModelOption[]): ModelOption[] {
+    const validOptions = options.filter(
+      (opt: ModelOption) =>
+        !!opt.value.hasInput &&
+        opt.value.hasInput.length > 0 &&
+        opt.value.hasInput
+          .map(
+            (input: DatasetSpecification) =>
+              this.datasetSpecifications[input.id]
+          )
+          .every((input: DatasetSpecification) =>
+            (input.hasPresentation || []).length > 0 ||
+            (input.hasFixedResource || []).length > 0
+          )
+    );
     if (
       !this.selectedIndicatorId ||
       !this.datasetSpecifications ||
       !this.variablePresentations ||
       !this.standardVariables
     )
-      return options;
+      return validOptions;
 
-    //FIXME: this does not work for "useful for calculating index"
-    return options.filter(
+    return validOptions.filter(
       (opt: ModelOption) =>
         !!opt.value.hasOutput &&
         opt.value.hasOutput
