@@ -34,6 +34,10 @@ export class ModelCatalogTapisApp extends connect(store)(
     this.disableDeletion();
   }
 
+  protected _renderEmpty() {
+    return "⚠️ Required: A Tapis app must be selected to run the model";
+  }
+
   public _fromUri(uri: string): TapisApp {
     // Extract the tenant, id, and version from the URI using regex
     // Expected format: https://{tenant}.tapis.io/v3/apps/{id}/{version}
