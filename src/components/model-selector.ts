@@ -764,7 +764,13 @@ export class ModelSelector extends LitElement {
   }
 
   private applyIndicatorFilter(options: ModelOption[]): ModelOption[] {
-    const validOptions = options.filter(
+    const validOptions = options.filter((opt: ModelOption) => {
+      console.log(`${opt.value.label} ${opt.value.hasComponentLocation}`)
+      if (!opt.value.hasComponentLocation || opt.value.hasComponentLocation.length === 0 || opt.value.hasComponentLocation[0] === '')  {
+        return false
+      }
+      return true
+    }).filter(
       (opt: ModelOption) =>
         !!opt.value.hasInput &&
         opt.value.hasInput.length > 0 &&
@@ -777,7 +783,7 @@ export class ModelSelector extends LitElement {
             (input.hasPresentation || []).length > 0 ||
             (input.hasFixedResource || []).length > 0
           )
-    );
+    )
     if (
       !this.selectedIndicatorId ||
       !this.datasetSpecifications ||
