@@ -205,14 +205,19 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
       <td>
         ${this._isReadyForRun(r)
           ? "Yes"
-          : html`No
-              <span
-                tip="Dataset specification needs at least one variable presentation or fixed resource to be ready for execution."
-                class="tooltip"
-                style="top: 2px;"
-              >
-                <wl-icon style="--icon-size: 16px;">help_outline</wl-icon>
-              </span>`
+          : html`
+              <div style="display: flex; align-items: center;">
+                <wl-icon style="--icon-size: 16px; color: orange; margin-right: 4px;">warning</wl-icon>
+                No
+                <span
+                  tip="Dataset specification needs at least one variable presentation or fixed resource to be ready for execution."
+                  class="tooltip"
+                  style="top: 2px; margin-left: 4px;"
+                >
+                  <wl-icon style="--icon-size: 16px;">help_outline</wl-icon>
+                </span>
+              </div>
+            `
         }
       </td>
       <!--td>

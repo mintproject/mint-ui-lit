@@ -15,6 +15,7 @@ import {
   ParameterSet,
 } from "@mintproject/modelcatalog_client";
 import { renderExternalLink } from "util/ui_renders";
+import { isExecutableFull } from "model-catalog-api/util";
 
 import { SharedStyles } from "styles/shared-styles";
 import { ExplorerStyles } from "../../model-explore/explorer-styles";
@@ -203,6 +204,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     this._inputDSOutput.setResources(r.hasOutput);
     this._inputSourceCode.setResources(r.hasSourceCode);
     this._inputConstraint.setResources(r.hasConstraint);
+
   }
 
   protected _unsetSubResources() {
@@ -429,6 +431,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
           <td>Usage notes:</td>
           <td>${r && r.hasUsageNotes ? r.hasUsageNotes[0] : ""}</td>
         </tr>
+
       </table>
 
 
@@ -833,6 +836,10 @@ ${edResource && edResource.hasUsageNotes
         hasSourceCode: this._inputSourceCode.getResources(),
         hasConstraint: this._inputConstraint.getResources(),
       };
+
+      if (this._loadingTapisApp && this._inputTapisApp.getResources()?.length == 0) {
+        jsonRes["hasComponentLocation"] = [comploc];
+      }
       if (keywords) jsonRes["keywords"] = [keywords];
       if (shortDesc) jsonRes["shortDescription"] = [shortDesc];
       if (comploc) jsonRes["hasComponentLocation"] = [comploc];
