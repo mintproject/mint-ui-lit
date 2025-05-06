@@ -2,7 +2,7 @@ import { ModelCatalogResource } from "./resource";
 import { html, customElement } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store } from "app/store";
-import { getLabel } from "model-catalog-api/util";
+import { getLabel, getId } from "model-catalog-api/util";
 import {
   TapisApp,
   TapisAppFromJSON,
@@ -34,7 +34,6 @@ export class ModelCatalogTapisApp extends connect(store)(
     this.disableDeletion();
   }
 
-
   public _fromUri(uri: string): TapisApp {
     // Extract the tenant, id, and version from the URI using regex
     // Expected format: https://{tenant}.tapis.io/v3/apps/{id}/{version}
@@ -56,8 +55,6 @@ export class ModelCatalogTapisApp extends connect(store)(
       tenant,
     };
   }
-
-
 
   public async loadFullTapisApp(app: TapisApp): Promise<TapisApp> {
     if (!app.id || !app.version || !app.tenant) {
@@ -87,11 +84,18 @@ export class ModelCatalogTapisApp extends connect(store)(
   }
 
   protected _renderResource(r: TapisApp) {
+    if (!r) return html``;
+
     let url = this._toUri(r);
     return html`
-      <div style="display: grid; grid-template-columns: auto 36px 36px;">
-        <a target="_blank" href="${url}" style="vertical-align: middle; line-height: 40px; font-size: 16px;">
-          ${r.tenant}/${r.id}:${r.version}
+      <div class="tapis-app-inline">
+        <a
+          target="_blank"
+          href="${url}"
+          style="text-decoration: none; display: inline-flex; align-items: center;"
+        >
+          <wl-icon style="margin-right: 4px; font-size: 18px;">cloud</wl-icon>
+          <span>${r.tenant}/${r.id}:${r.version}</span>
         </a>
       </div>
     `;
@@ -104,6 +108,4 @@ export class ModelCatalogTapisApp extends connect(store)(
   protected _getResourceFromForm() {
     return null;
   }
-
-
 }
