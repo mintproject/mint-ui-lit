@@ -4,6 +4,7 @@ import {
   Model,
   ModelConfiguration,
   ModelConfigurationSetup,
+  DatasetSpecification,
 } from "@mintproject/modelcatalog_client";
 import { IdMap } from "app/reducers";
 
@@ -232,12 +233,12 @@ export const isExecutable = (
 };
 
 export const isExecutableFull = (
-  config: ModelConfiguration | ModelConfigurationSetup,
+  inputs: DatasetSpecification[],
 ): boolean => {
   return (
-    !!config &&
-    (!config.hasInput || !config.hasInput.length ||
-      config.hasInput.every((input: any) =>
+    !!inputs &&
+    (!inputs.length ||
+      inputs.every((input: DatasetSpecification) =>
         input.hasPresentation &&
         input.hasPresentation.length > 0 ||
         input.hasFixedResource &&

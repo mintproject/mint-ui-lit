@@ -204,6 +204,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     this._inputDSOutput.setResources(r.hasOutput);
     this._inputSourceCode.setResources(r.hasSourceCode);
     this._inputConstraint.setResources(r.hasConstraint);
+
   }
 
   protected _unsetSubResources() {
@@ -431,14 +432,6 @@ export class ModelCatalogModelConfiguration extends connect(store)(
           <td>${r && r.hasUsageNotes ? r.hasUsageNotes[0] : ""}</td>
         </tr>
 
-        <tr>
-          <td>Execution status:</td>
-          <td>
-            ${isExecutableFull(r)
-              ? html`<span style="color: green; font-weight: bold;">Ready to execute</span>`
-              : html`<span style="color: red; font-weight: bold;">Not ready to execute</span>`}
-          </td>
-        </tr>
       </table>
 
 
@@ -843,6 +836,10 @@ ${edResource && edResource.hasUsageNotes
         hasSourceCode: this._inputSourceCode.getResources(),
         hasConstraint: this._inputConstraint.getResources(),
       };
+
+      if (this._loadingTapisApp && this._inputTapisApp.getResources()?.length == 0) {
+        jsonRes["hasComponentLocation"] = [comploc];
+      }
       if (keywords) jsonRes["keywords"] = [keywords];
       if (shortDesc) jsonRes["shortDescription"] = [shortDesc];
       if (comploc) jsonRes["hasComponentLocation"] = [comploc];

@@ -112,6 +112,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
     ];
   }
 
+  isExecutable: boolean;
   protected classes: string = "resource setup";
   protected name: string = "setup";
   protected pname: string = "setups";
@@ -215,6 +216,7 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
     this._inputDSOutput.setResources(r.hasOutput);
     this._inputSourceCode.setResources(r.hasSourceCode);
     this._inputConstraint.setResources(r.hasConstraint);
+    this.isExecutable = isExecutableFull(r.hasInput) && this._inputTapisApp.getResources()?.length > 0;
   }
 
   protected _unsetSubResources() {
@@ -455,14 +457,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
           <td>${r && r.hasUsageNotes ? r.hasUsageNotes[0] : ""}</td>
         </tr>
 
-        <tr>
-          <td>Execution status:</td>
-          <td>
-            ${isExecutableFull(r)
-              ? html`<span style="color: green; font-weight: bold;">Ready to execute</span>`
-              : html`<span style="color: red; font-weight: bold;">Not ready to execute</span>`}
-          </td>
-        </tr>
       </table>
 
       <wl-title level="3" style="margin: 0;"> Inputs: </wl-title>
@@ -847,6 +841,10 @@ ${edResource && edResource.hasUsageNotes
         hasSourceCode: this._inputSourceCode.getResources(),
         hasConstraint: this._inputConstraint.getResources(),
       };
+      if (this._loadingTapisApp && this._inputTapisApp.getResources()?.length == 0) {
+        jsonRes["hasComponentLocation"] = [comploc];
+      }
+
       if (keywords) jsonRes["keywords"] = [keywords];
       if (shortDesc) jsonRes["shortDescription"] = [shortDesc];
       if (comploc) jsonRes["hasComponentLocation"] = [comploc];
