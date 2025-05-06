@@ -216,7 +216,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
     this._inputDSOutput.setResources(r.hasOutput);
     this._inputSourceCode.setResources(r.hasSourceCode);
     this._inputConstraint.setResources(r.hasConstraint);
-    this.isExecutable = isExecutableFull(r.hasInput) && this._inputTapisApp.getResources()?.length > 0;
   }
 
   protected _unsetSubResources() {
