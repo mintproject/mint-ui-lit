@@ -173,8 +173,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
     this._inputParameter.inline = false;
     this._inputParameter.lazy = true;
     this._inputParameter.disableCreation();
-    this._inputParameter.disableEdition();
-    this._inputParameter.disableDeletion();
     this._inputParameter.setNameEditable(false);
     this._inputParameter.setAsSetup();
 
@@ -182,8 +180,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
     this._inputDSInput.inline = false;
     this._inputDSInput.lazy = true;
     this._inputDSInput.disableCreation();
-    this._inputDSInput.disableEdition();
-    this._inputDSInput.disableDeletion();
     this._inputDSInput.setNameEditable(false);
     this._inputDSInput.setAsSetup();
 
@@ -191,7 +187,6 @@ export class ModelCatalogModelConfigurationSetup extends connect(store)(
     this._inputDSOutput.inline = false;
     this._inputDSOutput.lazy = true;
     this._inputDSOutput.disableCreation();
-    this._inputDSOutput.disableDeletion();
   }
 
   protected _setSubResources(r: ModelConfigurationSetup) {

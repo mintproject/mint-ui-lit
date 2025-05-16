@@ -163,24 +163,18 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     this._inputParameter.inline = false;
     this._inputParameter.lazy = true;
     this._inputParameter.disableCreation();
-    this._inputParameter.disableEdition();
-    this._inputParameter.disableDeletion();
     this._inputParameter.setNameEditable(false);
 
     this._inputDSInput = new ModelCatalogDatasetSpecification();
     this._inputDSInput.inline = false;
     this._inputDSInput.lazy = true;
     this._inputDSInput.disableCreation();
-    this._inputDSInput.disableEdition();
-    this._inputDSInput.disableDeletion();
     this._inputDSInput.setNameEditable(false);
     this._inputDSOutput = new ModelCatalogDatasetSpecification();
     this._inputDSOutput.inline = false;
     this._inputDSOutput.lazy = true;
 
-    this._inputTapisApp.disableEdition();
     this._inputTapisApp.disableCreation();
-    this._inputTapisApp.disableDeletion();
   }
 
   protected _setSubResources(r: ModelConfiguration) {
