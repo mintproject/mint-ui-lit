@@ -323,19 +323,6 @@ export class MintResults extends connect(store)(MintThreadPage) {
                           >`}
                     `
                   : ""}
-                ${!grouped_ensemble || !grouped_ensemble.loading
-                  ? html`<wl-button
-                      type="button"
-                      flat
-                      inverted
-                      style="float:right; --button-padding:7px"
-                      ?disabled="${!grouped_ensemble ||
-                      Object.keys(grouped_ensemble.executions).length == 0}"
-                      @click="${this.onDownloadButtonClicked}"
-                    >
-                      <wl-icon>cloud_download</wl-icon>
-                    </wl-button>`
-                  : ""}
                 ${!grouped_ensemble.loading &&
                 ((totalOut > 0 && totalOut != showedOut) ||
                   this._showAllResults)
