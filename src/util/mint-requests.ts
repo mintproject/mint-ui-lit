@@ -1,9 +1,14 @@
-export function getResource(rq: any, withCredentials: boolean) {
+export function getResource(rq: any, withCredentials: boolean, headers?: Record<string, string>) {
   var xhr = new XMLHttpRequest();
   xhr.addEventListener("load", rq.onLoad);
   xhr.addEventListener("error", rq.onError);
   xhr.withCredentials = withCredentials;
   xhr.open("GET", rq.url);
+  if (headers) {
+    for (var header in headers) {
+      xhr.setRequestHeader(header, headers[header]);
+    }
+  }
   xhr.send();
 }
 

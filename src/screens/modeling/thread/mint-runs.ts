@@ -608,7 +608,10 @@ export class MintRuns extends connect(store)(MintThreadPage) {
         },
         onError: function () {},
       },
-      false
+      false,
+      {
+        Authorization: "Bearer " + localStorage.getItem("access-token"),
+      }
     );
   }
 
