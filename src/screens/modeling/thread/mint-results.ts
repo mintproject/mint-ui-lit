@@ -111,6 +111,7 @@ export class MintResults extends connect(store)(MintThreadPage) {
       let model = this.thread.models![modelid];
       if (!model) return;
       let loading = this._executions[modelid].loading;
+      console.log('Processing model:', modelid, 'model:', model, 'loading:', loading);
       grouped_executions[model.id] = {
         executions: {},
         params: [],
@@ -145,17 +146,11 @@ export class MintResults extends connect(store)(MintThreadPage) {
       let executions: Execution[] = this._executions[modelid].executions;
       if (executions) {
         executions.map((ensemble) => {
-          /* Check if outputs are bound */
-          let allbound = true;
-          model.output_files.map((outf) => {
-            let foundmatch = false;
-            if (ensemble.results[outf.id]) {
-              foundmatch = true;
-            }
-            if (!foundmatch) allbound = false;
-          });
-          if (allbound)
+          /* Check if any outputs are bound */
+          let hasResults = Object.keys(ensemble.results).length > 0;
+          if (hasResults) {
             grouped_executions[model.id].executions[ensemble.id] = ensemble;
+          }
         });
       }
     });
@@ -521,10 +516,16 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                         }
                                         let result =
                                           ensemble.results[output.id];
+                                        if (!result) {
+                                          return html`<td></td>`;
+                                        }
                                         let furl = result.url;
                                         let fname = result.name;
                                         if (!furl) {
                                           let location = result.location;
+                                          if (!location) {
+                                            return html`<td></td>`;
+                                          }
                                           let prefs = this.prefs.mint;
                                           furl =
                                             ensemble.execution_engine ==
@@ -538,15 +539,14 @@ export class MintResults extends connect(store)(MintThreadPage) {
                                                   prefs.wings.dataurl
                                                 );
                                         }
-                                        if (!fname)
+                                        if (!fname && result.location) {
                                           fname = result.location.replace(
                                             /.+\//,
                                             ""
                                           );
+                                        }
                                         return html`<td>
-                                          <a target="_blank" href="${furl}"
-                                            >${fname}</a
-                                          >
+                                          ${furl ? html`<a target="_blank" href="${furl}">${fname || 'Download'}</a>` : html`${fname || 'No file available'}`}
                                         </td>`;
                                       }
                                     )}
