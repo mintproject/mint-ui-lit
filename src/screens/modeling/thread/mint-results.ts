@@ -244,11 +244,9 @@ export class MintResults extends connect(store)(MintThreadPage) {
                 : html`Please execute some runs first`}
 
               <!-- FIXME: Temporarily removed -->
-              ${finished && this.permission.write
+              ${finished
                 ? html` <wl-button
                     class="submit"
-                    ?disabled="${this.thread.execution_summary[model.id]
-                      .submitted_for_publishing || published_runs}"
                     @click="${() => this._fetchAllResults(model.id)}"
                     >${published_runs ? "Refresh results" : "Fetch results"}</wl-button
                   >`
