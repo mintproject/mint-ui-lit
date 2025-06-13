@@ -406,7 +406,7 @@ export class ModelSelector extends LitElement {
         return opt.isVisible && !opt.isSelected;
       });
       visibleOptions = this.applyTextFilter(visibleOptions);
-      visibleOptions = this.applyRegionFilter(visibleOptions);
+      // visibleOptions = this.applyRegionFilter(visibleOptions);
       visibleOptions = this.applyIndicatorFilter(visibleOptions);
       let hiddenByCategory: number = visibleOptions.filter(
         (opt: ModelOption) =>
