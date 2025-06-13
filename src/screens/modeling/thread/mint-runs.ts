@@ -18,6 +18,7 @@ import { renderNotifications } from "util/ui_renders";
 import { Model } from "screens/models/reducers";
 import { Execution, ExecutionSummary, ModelExecutions } from "../reducers";
 import {
+  handleEnsembleManagerConnectionFailed,
   listThreadModelExecutionsAction,
   subscribeThreadExecutionSummary,
 } from "../actions";
@@ -562,11 +563,19 @@ export class MintRuns extends connect(store)(MintThreadPage) {
         onLoad: function (e: any) {
           me._waiting = false;
           hideNotification("runNotification", me.shadowRoot);
+          me.selectAndContinue("runs");
         },
         onError: function () {
           me._waiting = false;
           hideNotification("runNotification", me.shadowRoot);
-          alert("Could not connect to the Execution Manager!");
+          let notes = "Could not connect to the Execution Manager!";
+          handleEnsembleManagerConnectionFailed(
+            me.thread.model_ensembles,
+            me.thread.execution_summary,
+            notes,
+            me.thread
+          );
+          alert(notes);
         },
       },
       data,
@@ -576,7 +585,6 @@ export class MintRuns extends connect(store)(MintThreadPage) {
       }
     );
 
-    this.selectAndContinue("runs");
   }
 
   _nextPage(threadid: string, modelid: string, offset: number) {

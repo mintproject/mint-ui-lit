@@ -35,6 +35,7 @@ import updateTaskGQL from "../../queries/task/update.graphql";
 import updateThreadModelGQL from "../../queries/thread/update-models.graphql";
 import updateThreadDataGQL from "../../queries/thread/update-datasets.graphql";
 import updateThreadParametersGQL from "../../queries/thread/update-parameters.graphql";
+import handleEnsembleManagerConnectionFailedGQL from "../../queries/thread/handle-ensemble-manager-connection-failed.graphql";
 import updateThreadInfoGQL from "../../queries/thread/update-info.graphql";
 import addThreadEventGQL from "../../queries/thread/add-event.graphql";
 import setDatasliceResourcesGQL from "../../queries/thread/set-dataslice-resources.graphql";
@@ -1002,6 +1003,33 @@ export const setThreadParameters = (
       threadId: thread.id,
       summaries: summaries,
       modelParams: bindings,
+      event: eventobj,
+    },
+  });
+};
+
+export const handleEnsembleManagerConnectionFailed = (
+  model_ensembles: ModelEnsembleMap,
+  execution_summary: IdMap<ExecutionSummary>,
+  notes: string,
+  thread: Thread
+) => {
+  let event = getCustomEvent("SELECT_PARAMETERS", notes);
+  let eventobj = event;
+  eventobj["thread_id"] = thread.id;
+  let summaries = [];
+  Object.keys(execution_summary).forEach((modelid) => {
+    let summary = execution_summary[modelid];
+    delete summary.changed;
+    summary["thread_model_id"] = model_ensembles[modelid].id;
+    summaries.push(summary);
+  });
+  let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
+  return APOLLO_CLIENT.mutate({
+    mutation: handleEnsembleManagerConnectionFailedGQL,
+    variables: {
+      threadId: thread.id,
+      summaries: summaries,
       event: eventobj,
     },
   });
