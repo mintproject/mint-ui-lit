@@ -563,6 +563,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
         onLoad: function (e: any) {
           me._waiting = false;
           hideNotification("runNotification", me.shadowRoot);
+          console.log("Ensemble manager connection successful");
           me.selectAndContinue("runs");
         },
         onError: function () {
