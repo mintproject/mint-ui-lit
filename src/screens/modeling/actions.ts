@@ -1008,7 +1008,7 @@ export const setThreadParameters = (
   });
 };
 
-export const handleEnsembleManagerConnectionFailed = (
+export const handleEnsembleManagerConnectionFailed = async (
   model_ensembles: ModelEnsembleMap,
   execution_summary: IdMap<ExecutionSummary>,
   notes: string,
