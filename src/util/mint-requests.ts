@@ -16,6 +16,44 @@ function sendData(xhr: XMLHttpRequest, payload: any) {
   xhr.send(payload);
 }
 
+interface RequestConfig {
+  url: string;
+  onLoad: (response: any) => void;
+  onError: (error: Error) => void;
+}
+
+export async function postJSONResourceModern(
+  rq: RequestConfig,
+  data: Object,
+  withCredentials: boolean,
+  headers?: Record<string, string>
+) {
+  try {
+    const response = await fetch(rq.url, {
+      method: 'POST',
+      credentials: withCredentials ? 'include' : 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    rq.onLoad(result);
+    return result;
+  } catch (error: unknown) {
+    console.error('Failed to send data:', error);
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    rq.onError(errorObj);
+    throw errorObj;
+  }
+}
+
 export function postJSONResource(
   rq: any,
   data: Object,
@@ -85,4 +123,27 @@ export function deleteResource(rq: any, withCredentials: boolean) {
   xhr.withCredentials = withCredentials;
   xhr.open("DELETE", rq.url);
   xhr.send();
+}
+
+export async function postJSONResourcePromise(
+  url: string,
+  data: Object,
+  withCredentials: boolean,
+  headers?: Record<string, string>
+): Promise<any> {
+  const response = await fetch(url, {
+    method: 'POST',
+    credentials: withCredentials ? 'include' : 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
 }
