@@ -563,12 +563,32 @@ export class MintRuns extends connect(store)(MintThreadPage) {
         { Authorization: "Bearer " + token }
       )
       me._waiting = false;
-      hideNotification("runNotification", me.shadowRoot);
-      console.log("Ensemble manager connection successful");
-      me.selectAndContinue("runs");
+      if (response.ok) {
+        hideNotification("runNotification", me.shadowRoot);
+        me.selectAndContinue("runs");
+      } else {
+        this.showErrorNotification(response, me);
+        this.handleError(me);
+      }
     } catch (error) {
-      console.error("Error sending runs:", error);
+      me._waiting = false;
+      this.handleError(me);
       hideNotification("runNotification", me.shadowRoot);
+    }
+  }
+
+  async showErrorNotification(response: any, me: MintRuns) {
+    hideNotification("runNotification", me.shadowRoot);
+    if (response.status === 404) {
+      showNotification("errorHTTPNotFoundNotificationRun", me.shadowRoot);
+    } else if (response.status === 401) {
+      showNotification("errorHTTPUnauthorizedNotificationRun", me.shadowRoot);
+    } else if (response.status === 403) {
+      showNotification("errorHTTPForbiddenNotificationRun", me.shadowRoot);
+    }
+  }
+
+  async handleError(me: MintRuns) {
       let notes = "Could not connect to the Execution Manager!";
       await handleEnsembleManagerConnectionFailed(
         me.thread.model_ensembles,
@@ -576,9 +596,6 @@ export class MintRuns extends connect(store)(MintThreadPage) {
         notes,
         me.thread
       );
-      alert(notes);
-      me._waiting = false;
-    }
   }
 
   _nextPage(threadid: string, modelid: string, offset: number) {

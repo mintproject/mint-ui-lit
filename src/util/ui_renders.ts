@@ -77,6 +77,31 @@ export const renderNotifications = () => {
       <wl-icon slot="icon">error</wl-icon>
       <span>Error publishing results.</span>
     </wl-snackbar>
+    <wl-snackbar id="errorHTTPNotFoundNotification" fixed backdrop>
+      <wl-icon slot="icon">error</wl-icon>
+      <span>Not Found.</span>
+    </wl-snackbar>
+    <wl-snackbar id="errorHTTPUnauthorizedNotification" fixed backdrop>
+      <wl-icon slot="icon">error</wl-icon>
+      <span>Unauthorized.</span>
+    </wl-snackbar>
+    <wl-snackbar id="errorHTTPForbiddenNotification" fixed backdrop>
+      <wl-icon slot="icon">error</wl-icon>
+      <span>Forbidden.</span>
+    </wl-snackbar>
+    <wl-snackbar id="errorHTTPNotFoundNotificationRun" fixed backdrop>
+      <wl-icon slot="icon">error</wl-icon>
+      <span>The component has not been found.</span>
+    </wl-snackbar>
+    <wl-snackbar id="errorHTTPUnauthorizedNotificationRun" fixed backdrop>
+      <wl-icon slot="icon">error</wl-icon>
+      <span>You don't have permission to read this component.</span>
+    </wl-snackbar>
+    <wl-snackbar id="errorHTTPForbiddenNotificationRun" fixed backdrop>
+      <wl-icon slot="icon">error</wl-icon>
+      <span>You don't have permission to read this component.</span>
+    </wl-snackbar>
+
   `;
 };
 

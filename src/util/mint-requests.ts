@@ -131,7 +131,7 @@ export async function postJSONResourcePromise(
   withCredentials: boolean,
   headers?: Record<string, string>
 ): Promise<any> {
-  const response = await fetch(url, {
+  return await fetch(url, {
     method: 'POST',
     credentials: withCredentials ? 'include' : 'same-origin',
     headers: {
@@ -140,10 +140,73 @@ export async function postJSONResourcePromise(
     },
     body: JSON.stringify(data)
   });
+}
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+export async function getResourcePromise(
+  url: string,
+  withCredentials: boolean,
+  headers?: Record<string, string>
+): Promise<any> {
+  return await fetch(url, {
+    method: 'GET',
+    credentials: withCredentials ? 'include' : 'same-origin',
+    headers: {
+      ...headers
+    }
+  });
+}
+
+export async function putJSONResourcePromise(
+  url: string,
+  data: Object,
+  withCredentials: boolean,
+  headers?: Record<string, string>
+): Promise<any> {
+  return await fetch(url, {
+    method: 'PUT',
+    credentials: withCredentials ? 'include' : 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers
+    },
+    body: JSON.stringify(data)
+  });
+
+}
+
+export async function postFormResourcePromise(
+  url: string,
+  formData: Record<string, string>,
+  withCredentials: boolean,
+  headers?: Record<string, string>
+): Promise<any> {
+  const formBody = new URLSearchParams();
+  for (const [key, value] of Object.entries(formData)) {
+    formBody.append(key, value);
   }
 
-  return response.json();
+  return await fetch(url, {
+    method: 'POST',
+    credentials: withCredentials ? 'include' : 'same-origin',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      ...headers
+    },
+    body: formBody.toString()
+  });
+
+}
+
+export async function deleteResourcePromise(
+  url: string,
+  withCredentials: boolean,
+  headers?: Record<string, string>
+): Promise<any> {
+  return await fetch(url, {
+    method: 'DELETE',
+    credentials: withCredentials ? 'include' : 'same-origin',
+    headers: {
+      ...headers
+    }
+  });
 }
