@@ -23,7 +23,7 @@ import {
   subscribeThreadExecutionSummary,
 } from "../actions";
 import { DataResource } from "screens/datasets/reducers";
-import { postJSONResource, getResource } from "util/mint-requests";
+import { postJSONResource, getResource, postJSONResourcePromise } from "util/mint-requests";
 import {
   getThreadRunsStatus,
   TASK_DONE,
@@ -538,7 +538,7 @@ export class MintRuns extends connect(store)(MintThreadPage) {
     `;
   }
 
-  _submitRuns(modelid: string) {
+  async _submitRuns(modelid: string) {
     ReactGA.event({
       category: "Thread",
       action: "Send run",
@@ -554,38 +554,48 @@ export class MintRuns extends connect(store)(MintThreadPage) {
 
     // Get the auth token from localStorage
     const token = localStorage.getItem("access-token");
-
-    postJSONResource(
-      {
-        url:
-          mint.ensemble_manager_api +
+    try {
+      const response = await postJSONResourcePromise(
+        mint.ensemble_manager_api +
           this.getEnsembleManagerExecutionPath(mint.execution_engine),
-        onLoad: function (e: any) {
-          me._waiting = false;
-          hideNotification("runNotification", me.shadowRoot);
-          console.log("Ensemble manager connection successful");
-          me.selectAndContinue("runs");
-        },
-        onError: function () {
-          me._waiting = false;
-          hideNotification("runNotification", me.shadowRoot);
-          let notes = "Could not connect to the Execution Manager!";
-          handleEnsembleManagerConnectionFailed(
-            me.thread.model_ensembles,
-            me.thread.execution_summary,
-            notes,
-            me.thread
-          );
-          alert(notes);
-        },
-      },
-      data,
-      false,
-      {
-        Authorization: "Bearer " + token,
+        data,
+        false,
+        { Authorization: "Bearer " + token }
+      )
+      me._waiting = false;
+      if (response.ok) {
+        hideNotification("runNotification", me.shadowRoot);
+        me.selectAndContinue("runs");
+      } else {
+        this.showErrorNotification(response, me);
+        this.handleError(me);
       }
-    );
+    } catch (error) {
+      me._waiting = false;
+      this.handleError(me);
+      hideNotification("runNotification", me.shadowRoot);
+    }
+  }
 
+  async showErrorNotification(response: any, me: MintRuns) {
+    hideNotification("runNotification", me.shadowRoot);
+    if (response.status === 404) {
+      showNotification("errorHTTPNotFoundNotificationRun", me.shadowRoot);
+    } else if (response.status === 401) {
+      showNotification("errorHTTPUnauthorizedNotificationRun", me.shadowRoot);
+    } else if (response.status === 403) {
+      showNotification("errorHTTPForbiddenNotificationRun", me.shadowRoot);
+    }
+  }
+
+  async handleError(me: MintRuns) {
+      let notes = "Could not connect to the Execution Manager!";
+      await handleEnsembleManagerConnectionFailed(
+        me.thread.model_ensembles,
+        me.thread.execution_summary,
+        notes,
+        me.thread
+      );
   }
 
   _nextPage(threadid: string, modelid: string, offset: number) {

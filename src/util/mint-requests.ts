@@ -16,6 +16,44 @@ function sendData(xhr: XMLHttpRequest, payload: any) {
   xhr.send(payload);
 }
 
+interface RequestConfig {
+  url: string;
+  onLoad: (response: any) => void;
+  onError: (error: Error) => void;
+}
+
+export async function postJSONResourceModern(
+  rq: RequestConfig,
+  data: Object,
+  withCredentials: boolean,
+  headers?: Record<string, string>
+) {
+  try {
+    const response = await fetch(rq.url, {
+      method: 'POST',
+      credentials: withCredentials ? 'include' : 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    rq.onLoad(result);
+    return result;
+  } catch (error: unknown) {
+    console.error('Failed to send data:', error);
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    rq.onError(errorObj);
+    throw errorObj;
+  }
+}
+
 export function postJSONResource(
   rq: any,
   data: Object,
@@ -85,4 +123,90 @@ export function deleteResource(rq: any, withCredentials: boolean) {
   xhr.withCredentials = withCredentials;
   xhr.open("DELETE", rq.url);
   xhr.send();
+}
+
+export async function postJSONResourcePromise(
+  url: string,
+  data: Object,
+  withCredentials: boolean,
+  headers?: Record<string, string>
+): Promise<any> {
+  return await fetch(url, {
+    method: 'POST',
+    credentials: withCredentials ? 'include' : 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers
+    },
+    body: JSON.stringify(data)
+  });
+}
+
+export async function getResourcePromise(
+  url: string,
+  withCredentials: boolean,
+  headers?: Record<string, string>
+): Promise<any> {
+  return await fetch(url, {
+    method: 'GET',
+    credentials: withCredentials ? 'include' : 'same-origin',
+    headers: {
+      ...headers
+    }
+  });
+}
+
+export async function putJSONResourcePromise(
+  url: string,
+  data: Object,
+  withCredentials: boolean,
+  headers?: Record<string, string>
+): Promise<any> {
+  return await fetch(url, {
+    method: 'PUT',
+    credentials: withCredentials ? 'include' : 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers
+    },
+    body: JSON.stringify(data)
+  });
+
+}
+
+export async function postFormResourcePromise(
+  url: string,
+  formData: Record<string, string>,
+  withCredentials: boolean,
+  headers?: Record<string, string>
+): Promise<any> {
+  const formBody = new URLSearchParams();
+  for (const [key, value] of Object.entries(formData)) {
+    formBody.append(key, value);
+  }
+
+  return await fetch(url, {
+    method: 'POST',
+    credentials: withCredentials ? 'include' : 'same-origin',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      ...headers
+    },
+    body: formBody.toString()
+  });
+
+}
+
+export async function deleteResourcePromise(
+  url: string,
+  withCredentials: boolean,
+  headers?: Record<string, string>
+): Promise<any> {
+  return await fetch(url, {
+    method: 'DELETE',
+    credentials: withCredentials ? 'include' : 'same-origin',
+    headers: {
+      ...headers
+    }
+  });
 }
