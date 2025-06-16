@@ -573,7 +573,7 @@ export const executionToGQL = (ex: Execution) => {
 
 export const executionFromGQL = (ex: any, emulator = false): Execution => {
   let exobj = {
-    id: ex.id.replace(/\-/g, ""),
+    id: ex.id,
     modelid: ex.model_id,
     status: ex.status,
     start_time: new Date(ex.start_time),

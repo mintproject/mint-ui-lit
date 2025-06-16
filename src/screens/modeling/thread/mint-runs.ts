@@ -612,8 +612,9 @@ export class MintRuns extends connect(store)(MintThreadPage) {
       {
         url:
           this.prefs.mint.ensemble_manager_api +
-          "/logs?ensemble_id=" +
-          ensembleid,
+          "/executions/" +
+          ensembleid +
+          "/logs",
         onLoad: function (e: any) {
           let log = e.target.responseText;
           log = log.replace(/\\n/g, "\n");
