@@ -26,24 +26,69 @@ export const SharedStyles = css`
   }
 
   wl-nav {
-    /*--nav-bg: #F0F0F0;*/
-    --nav-color: #232323;
+    --nav-bg: #222222;
+    --nav-color: #FFFFFF;
     --nav-height: 50px;
     --nav-title-margin: 0px;
-    --nav-padding: 10px;
-    border-bottom: 1px solid #e6e6e6;
+    border-bottom: 1px solid #7F7F7F;
+    font-family: "Roboto", sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+  }
+
+  wl-nav wl-button[flat] {
+    --button-bg: #FFFFFF;
+    --button-bg-hover: #FFFFFF;
+    --button-bg-active: #FFFFFF;
+  }
+
+  wl-nav a wl-icon,
+  wl-nav wl-button wl-icon {
+    vertical-align: middle;
+    margin-bottom: 2px;
+  }
+  
+  wl-nav .popover-wrapper {
+    background: #fff; 
+    padding: 5px 0px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  wl-nav .popover-wrapper wl-button {
+    border-radius: 0px;
+    font-family: "Roboto", sans-serif;
+    color: #000000;
+    padding: 10px 20px;
+  }
+
+  wl-nav .popover-wrapper wl-button:hover {
+    border-radius: 0px;
+    font-family: "Roboto", sans-serif;
+    color: #000000;
+    background-color: #F3F3F3;
+  }
+
+  wl-nav .popover-wrapper wl-button.active {
+    border-radius: 0px;
+    font-family: "Roboto", sans-serif;
+    color: #FFFFFF;
+    background-color: #039;
   }
 
   wl-button {
     --button-padding: 10px;
-    --button-font-size: 12px;
+    --button-font-size: 14px;
     --button-letter-spacing: 1px;
+    text-transform: none;
   }
 
   wl-button[flat] {
-    --button-bg: #444;
-    --button-bg-hover: #666;
-    --button-bg-active: #444;
+    --button-bg: transparent;
+    --button-bg-hover: #666666;
+    --button-bg-active: #444444;
   }
 
   wl-button[outlined] {
@@ -55,12 +100,6 @@ export const SharedStyles = css`
     --button-bg-hover: #ffa52b;
     --button-bg-active: #f1951b;
     --button-border-radius: 3px;
-  }
-
-  wl-nav wl-button[flat] {
-    --button-bg: #0f7acf;
-    --button-bg-hover: #0f7acf;
-    --button-bg-active: #0f7acf;
   }
 
   wl-list-item {
@@ -712,22 +751,22 @@ export const SharedStyles = css`
     float: left;
     cursor: pointer;
     min-width: 70px;
-    color: #232323;
+    color: #FFF;
     display: block;
-    background: #f0f0f0;
+    background: transparent;
     text-decoration: none;
     position: relative;
-    height: 26px;
-    line-height: 26px;
+    height: 46px;
+    line-height: 46px;
     font-size: 13px;
-    font-weight: bold;
+    font-weight: 400;
     padding: 0 15px;
     text-align: center;
     margin: 0px 2px;
-    border-radius: 5px;
+    border-bottom: 3px solid transparent;
   }
   .breadcrumbs_header a:hover {
-    background-color: #e0e0e0;
+    border-bottom: 3px solid #FEB50D;
   }
   .breadcrumbs_header a:first-child {
     padding-left: 8px;
@@ -736,8 +775,7 @@ export const SharedStyles = css`
     border-radius: 2px 0 0 2px;
   }
   .breadcrumbs_header a.active {
-    background-color: rgb(98, 155, 48);
-    color: white;
+    border-bottom: 3px solid #FEB50D;
   }
 
   /* Input type = File styles */

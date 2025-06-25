@@ -32,7 +32,6 @@ export class CustomNotification extends LitElement {
       wl-button {
         --wl-button-color: #ffffff;
         font-weight: 600;
-        text-transform: uppercase;
         letter-spacing: 0.5px;
       }
 

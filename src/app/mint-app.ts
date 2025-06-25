@@ -179,20 +179,6 @@ export class MintApp extends connect(store)(LitElement) {
         .breadcrumbs a:first:after {
           border-left-color: #629b30;
         }
-        .message-button {
-          --button-padding: 6px;
-        }
-        .message-button.selected {
-          background-color: rgb(98, 155, 48);
-          color: white;
-        }
-        .message-button.selected:hover {
-          background-color: rgb(98, 155, 48);
-        }
-        .message-button:hover {
-          background-color: rgb(224, 224, 224);
-        }
-
         #breadcrumbs-menu-button {
           display: none;
         }
@@ -200,7 +186,7 @@ export class MintApp extends connect(store)(LitElement) {
           display: none;
         }
 
-        @media (max-width: 1024px) {
+        @media (max-width: 1200px) {
           #main-breadcrumbs {
             display: none;
           }
@@ -212,9 +198,6 @@ export class MintApp extends connect(store)(LitElement) {
           }
           #main-breadcrumbs .emulator-button {
             display: none;
-          }
-          wl-nav {
-            --nav-padding: 0px;
           }
           wl-button.active {
             --button-bg: #629b30 !important;
@@ -415,13 +398,7 @@ export class MintApp extends connect(store)(LitElement) {
               @click="${this._onBreadcrumbsMenuButtonClicked}"
             >
               <wl-icon>menu</wl-icon>
-            </wl-button>
-            <wl-button
-              style="display: inline-block"
-              flat
-              inverted
-              @click="${this._onBreadcrumbsMenuButtonClicked}"
-            >
+              &nbsp;
               ${this._getPageTitle()}
             </wl-button>
             <wl-popover
@@ -433,71 +410,52 @@ export class MintApp extends connect(store)(LitElement) {
               anchorOriginX="left"
               anchorOriginY="bottom"
             >
-              <div
-                style="background: #fff; padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px; display: flex; flex-direction: column;"
-              >
-                <ul class="breadcrumbs">
-                  ${this._getMenuButtons()}
-                </ul>
+              <div class="popover-wrapper">
+                ${this._getMenuButtons()}
               </div>
             </wl-popover>
           </div>
+
           <div slot="title">
             <ul id="main-breadcrumbs" class="breadcrumbs_header">
               ${this._getMenuLinks()}
             </ul>
           </div>
           <div slot="right">
+            <ul class="breadcrumbs_header">
             ${this.user == null
               ? html`
                   ${this._selectedRegion
                     ? html`
-                        <wl-button
-                          flat
-                          inverted
-                          class="message-button emulators-button ${this._page ==
-                          "emulators"
-                            ? "selected"
-                            : ""}"
-                          @click="${() => goToPage("emulators")}"
-                        >
-                          Emulators &#38; Results
-                          <wl-icon style="margin-left: 4px;">settings</wl-icon>
-                        </wl-button>
-                      `
-                    : ""}
-                  <wl-button flat inverted @click="${this._showLoginWindow}">
-                    LOGIN &nbsp;
+                  <a href="${this._selectedRegion.id}/emulators"
+                    class=${this._page == "emulators" ? "active" : ""}>
+                    <wl-icon style="margin-left: 4px;">settings</wl-icon>
+                    &nbsp;
+                    Emulators &#38; Results
+                  </a>`: ""}
+                  <a @click="${this._showLoginWindow}">
                     <wl-icon alt="account">account_circle</wl-icon>
-                  </wl-button>
+                    &nbsp;
+                    Log in 
+                  </a>
                 `
               : html`
                   ${this._selectedRegion
                     ? html`
-                        &nbsp;
-                        <wl-button
-                          flat
-                          inverted
-                          class="message-button emulators-button ${this._page ==
-                          "emulators"
-                            ? "selected"
-                            : ""}"
-                          @click="${() => goToPage("emulators")}"
-                        >
-                          Emulators &#38; Results
-                          <wl-icon style="margin-left: 4px;">settings</wl-icon>
-                        </wl-button>
-                      `
-                    : ""}
+                  <a
+                    href="${this._selectedRegion.id}/emulators"
+                    class=${this._page == "emulators" ? "active" : ""}>
+                    <wl-icon style="margin-left: 4px;">settings</wl-icon>
+                    &nbsp;
+                    Emulators &#38; Results
+                  </a>`: ""}
 
-                  <wl-button
-                    id="user-button"
-                    flat
-                    inverted
-                    @click="${this._onUserButtonClicked}"
-                  >
+                  <a @click="${this._onUserButtonClicked}" id="user-button">
+                    <wl-icon alt="account">account_circle</wl-icon>
+                    &nbsp;
                     ${this.user.email}
-                  </wl-button>
+                  </a>
+
                   <wl-popover
                     id="user-popover"
                     anchor="#user-button"
@@ -507,9 +465,7 @@ export class MintApp extends connect(store)(LitElement) {
                     anchorOriginX="right"
                     anchorOriginY="bottom"
                   >
-                    <div
-                      style="background: #fff; padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px; display: flex; flex-direction: column;"
-                    >
+                    <div class="popover-wrapper">
                       <wl-button
                         flat
                         inverted
@@ -518,19 +474,21 @@ export class MintApp extends connect(store)(LitElement) {
                           : ""}"
                         @click="${() => goToPage("messages")}"
                       >
+                        <wl-icon>message</wl-icon>
+                        &nbsp;
                         Messages
-                        <wl-icon style="margin-left: 4px;">message</wl-icon>
                       </wl-button>
                       <wl-button
                         flat
                         inverted
                         @click="${this._onLogOutButtonClicked}"
                       >
-                        LOGOUT
+                        Log out
                       </wl-button>
                     </div>
                   </wl-popover>
                 `}
+          </ul>
           </div>
         </wl-nav>
 
