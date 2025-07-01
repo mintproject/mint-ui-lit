@@ -1229,22 +1229,29 @@ export const sendDataForIngestion = (
 };
 
 export const sendDataForPublishing = (
-  modelEnsembleId: string,
+  problemStatementId: string,
+  taskId: string,
+  threadId: string,
+  datasetId: string | undefined,
   prefs: UserPreferences,
   headers?: Record<string, string>
 ) => {
-  let data = {
-    thread_id: modelEnsembleId,
-  };
+  let data: Record<string, string> = {};
+  if (datasetId) {
+    data["datasetId"] = datasetId;
+  }
+
   return new Promise<void>((resolve, reject) => {
     postJSONResource(
       {
         url:
           prefs.mint.ensemble_manager_api +
-          "/" +
-          prefs.mint.execution_engine +
-          "/modelEnsembles/" +
-          modelEnsembleId +
+          "/problemStatements/" +
+          problemStatementId +
+          "/tasks/" +
+          taskId +
+          "/subtasks/" +
+          threadId +
           "/outputs",
         onLoad: function (e: any) {
           resolve();
