@@ -1232,15 +1232,10 @@ export const sendDataForPublishing = (
   problemStatementId: string,
   taskId: string,
   threadId: string,
-  datasetId: string | undefined,
   prefs: UserPreferences,
   headers?: Record<string, string>
 ) => {
   let data: Record<string, string> = {};
-  if (datasetId) {
-    data["datasetId"] = datasetId;
-  }
-
   return new Promise<void>((resolve, reject) => {
     postJSONResource(
       {

@@ -139,7 +139,6 @@ export interface Thread extends ThreadInfo {
   changed?: boolean;
   refresh?: boolean;
   unsubscribe?: Function;
-  dataset_id?: string;
 }
 
 export interface Visualization {

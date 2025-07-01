@@ -838,7 +838,7 @@ ${latest_ingest_event?.notes ? latest_ingest_event.notes : ""}</textarea
       action: "Save results",
     });
     showNotification("saveNotification", this.shadowRoot);
-    sendDataForPublishing(this.problem_statement.id, this.thread.task_id, this.thread.id, this.thread.dataset_id, this.prefs, {
+    sendDataForPublishing(this.problem_statement.id, this.thread.task_id, this.thread.id, this.prefs, {
       Authorization: `Bearer ${token}`,
     })
       .then(() => {
