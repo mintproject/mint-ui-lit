@@ -61,7 +61,7 @@ export class VariablesHome extends connect(store)(PageViewElement) {
         .container {
           max-width: 1200px;
           margin: 0 auto;
-          padding: 2rem;
+          padding: 1em 2rem;
         }
         .header {
           margin-bottom: 2rem;
@@ -92,10 +92,6 @@ export class VariablesHome extends connect(store)(PageViewElement) {
           transform: rotate(-90deg);
         }
         .description-section {
-          background: white;
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          padding: 2rem;
           margin-bottom: 2rem;
           transition: all 0.3s ease;
         }
@@ -114,16 +110,6 @@ export class VariablesHome extends connect(store)(PageViewElement) {
           color: #6c757d;
           line-height: 1.6;
           margin-bottom: 1rem;
-        }
-        .description-section .variable-type {
-          margin-top: 1.5rem;
-        }
-        .description-section .variable-type h4 {
-          color: #2c3e50;
-          margin-bottom: 0.5rem;
-        }
-        .description-section .variable-type p {
-          margin-left: 1rem;
         }
         .search-bar {
           margin-bottom: 1rem;
@@ -163,10 +149,10 @@ export class VariablesHome extends connect(store)(PageViewElement) {
           padding: 1rem;
           text-align: left;
           font-weight: 600;
-          color: #495057;
+          color: rgb(72,72,72);
           border-bottom: 2px solid #dee2e6;
           position: sticky;
-          top: 0;
+          top: -10px;
           z-index: 1;
         }
         .table td {
@@ -175,8 +161,14 @@ export class VariablesHome extends connect(store)(PageViewElement) {
           color: #212529;
           vertical-align: top;
         }
+        .table tr:nth-child(even) {
+          background-color: #F2F2F2;
+        }
+        .table tr:nth-child(odd) {
+          background-color: #F9F9F9;
+        }
         .table tr:hover {
-          background-color: #f8f9fa;
+          background-color: #EEEEEE;
         }
         .name-cell {
           font-weight: 500;
@@ -225,7 +217,7 @@ export class VariablesHome extends connect(store)(PageViewElement) {
           position: absolute;
           bottom: calc(100% + 15px);
           left: 50%;
-          transform: translateX(-50%) translateY(10px);
+          transform: translateX(-25%) translateY(10px);
           background: #2c3e50;
           color: white;
           padding: 8px 12px;
@@ -243,7 +235,7 @@ export class VariablesHome extends connect(store)(PageViewElement) {
           content: '';
           position: absolute;
           top: 100%;
-          left: 50%;
+          left: 25%;
           transform: translateX(-50%);
           border-width: 5px;
           border-style: solid;
@@ -252,7 +244,7 @@ export class VariablesHome extends connect(store)(PageViewElement) {
         .copy-button:hover .tooltip {
           opacity: 1;
           visibility: visible;
-          transform: translateX(-50%) translateY(0);
+          transform: translateX(-25%) translateY(0);
         }
         .concept-grid {
           display: grid;
@@ -262,20 +254,20 @@ export class VariablesHome extends connect(store)(PageViewElement) {
         }
 
         .concept-card {
-          background: #f8f9fa;
-          border-radius: 8px;
+          border-top: 4px solid rgb(97, 163, 156);
+          background: #F4F4F4;
           padding: 1.5rem;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
           transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .concept-card:hover {
           transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.4);
         }
 
         .concept-card h4 {
-          color: #2c3e50;
+          color: rgb(72, 72, 72);
           margin-top: 0;
           margin-bottom: 1rem;
           font-size: 1.1rem;
@@ -355,7 +347,7 @@ export class VariablesHome extends connect(store)(PageViewElement) {
             </div>
           </div>
 
-          <div class="variable-type">
+          <div class="concept-card">
             <h4>How to Use Standard Variables</h4>
             <p>
               The standard variable will be required on your model inputs and datasets (data catalog). Below you'll find a list

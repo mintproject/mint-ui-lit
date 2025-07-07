@@ -48,17 +48,17 @@ export class MintThread extends connect(store)(MintThreadPage) {
       css`
         .breadcrumbs a.active,
         .breadcrumbs a.done.active {
-          background-color: #0f7acf;
+          background-color: rgb(61, 106, 204);
           color: white;
         }
         .breadcrumbs a.active:before,
         .breadcrumbs a.done.active:before {
-          border-color: #0f7acf;
+          border-color: rgb(61, 106, 204);
           border-left-color: transparent;
         }
         .breadcrumbs a.active:after,
         .breadcrumbs a.done.active:after {
-          border-left-color: #0f7acf;
+          border-left-color: rgb(61, 106, 204);
         }
 
         .breadcrumbs a.done {

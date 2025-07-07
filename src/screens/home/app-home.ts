@@ -68,6 +68,21 @@ export class AppHome extends connect(store)(PageViewElement) {
           height: calc(70%);
           min-height: 300px;
         }
+
+        @media (max-width: 1200px) {
+          .middle2main {
+            height: calc(50%);
+            min-height: 300px;
+          }
+        }
+
+        @media (max-width: 1400px) {
+          .middle2main {
+            height: calc(54%);
+            min-height: 300px;
+          }
+        }
+
         .middle > p {
           margin-bottom: 5px;
         }

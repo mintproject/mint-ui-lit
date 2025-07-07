@@ -195,7 +195,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
           href="${this._regionid}/models/configure"
           ?disabled=${this.user === null}
         >
-          <wl-icon>perm_data_settings</wl-icon>
+          <wl-icon style="margin-left: 20px;">perm_data_settings</wl-icon>
           <div>Configure Models</div>
         </a>
         <a

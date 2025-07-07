@@ -35,6 +35,12 @@ export class NavTitle extends LitElement {
         .clickable {
           cursor: pointer;
         }
+        div.cltrow wl-button {
+          color: rgb(144,144,144);
+        }
+        div.cltrow wl-button:hover {
+          color: rgb(72, 72, 72);
+        }
 
         wl-title.clickable:hover {
           text-decoration: underline;

@@ -77,7 +77,7 @@ export const SharedStyles = css`
     color: #FFFFFF;
     background-color: #039;
   }
-
+  
   wl-button {
     --button-padding: 10px;
     --button-font-size: 14px;
@@ -107,14 +107,15 @@ export const SharedStyles = css`
     --list-item-before-margin: 8px;
     border-bottom: 1px solid #f0f0f0;
     font-size: 12px;
-    color: #0f7acf;
+    color: rgb(61, 106, 204);
   }
 
   wl-title[level="3"] {
-    color: #06436c;
+    color: #484848;
+    font-weight: 900;
   }
   wl-title[level="4"] {
-    color: #06436c;
+    color: #484848;
     font-size: 14px;
   }
 
@@ -127,9 +128,6 @@ export const SharedStyles = css`
     font-weight: bold;
   }
 
-  wl-title {
-    color: #444;
-  }
 
   wl-progress-spinner.loading {
     --progress-spinner-color: #06436c;
@@ -203,7 +201,7 @@ export const SharedStyles = css`
 
   .actionIcon:hover,
   .actionIcon.bigActionIcon:hover {
-    background-color: #0f7acf;
+    background-color: rgb(61, 106, 204);
     color: white;
   }
 
@@ -230,7 +228,7 @@ export const SharedStyles = css`
   }
 
   a {
-    color: #0f7acf;
+    color: rgb(61, 106, 204);
     text-decoration: none;
   }
   a:hover {
@@ -256,11 +254,17 @@ export const SharedStyles = css`
   .icongrid a {
     text-align: center;
     vertical-align: middle;
-    border: 5px solid #0f7acf;
+    border: 5px solid rgb(61, 106, 204);
     border-radius: 10px;
     font-size: 16px;
     font-weight: bold;
     margin: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .icongrid a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
   }
   .icongrid wl-icon {
     --icon-size: 100px;
@@ -285,7 +289,7 @@ export const SharedStyles = css`
     text-align: center;
   }
   .svgicon svg {
-    fill: #0f7acf;
+    fill: rgb(61, 106, 204);
   }
   /* End of Big Icons view */
 
@@ -303,7 +307,7 @@ export const SharedStyles = css`
     font-weight: normal;
   }
   .clt ul li.active {
-    color: #0f7acf;
+    color: rgb(61, 106, 204);
     cursor: pointer;
     font-weight: normal;
   }
@@ -392,11 +396,9 @@ export const SharedStyles = css`
   /* End of Tree View */
 
   .card {
-    margin: 10px;
     left: 0px;
     right: 0px;
-    padding: 10px;
-    padding-top: 0px;
+    padding: 10px 20px;
     height: calc(100% - 75px);
     overflow: auto;
   }
