@@ -28,8 +28,15 @@ import { ModelCatalogApi } from "model-catalog-api/model-catalog-api";
 import "weightless/progress-spinner";
 import "components/loading-dots";
 
+interface ConfigurationOptions {
+  categories: string[];
+  onlyLatest: boolean;
+
+}
+
 @customElement("models-tree")
 export class ModelsTree extends connect(store)(PageViewElement) {
+  active: boolean = true;
   @property({ type: Object })
   private _regions: IdMap<Region> = {} as IdMap<Region>;
 
@@ -64,6 +71,12 @@ export class ModelsTree extends connect(store)(PageViewElement) {
   @property({ type: String })
   private _selectedSetup: string = "";
 
+  @property({ type: String })
+  private _selectedCategory: string = "all";
+
+  @property({ type: String })
+  private _searchString: string = "";
+
   @property({ type: Boolean })
   private _creating: boolean = false;
 
@@ -80,12 +93,10 @@ export class ModelsTree extends connect(store)(PageViewElement) {
         .inline-new-button {
           line-height: 1.2em;
           font-size: 1.2em;
-          vertical-align: middle;
-        }
-
-        wl-icon {
-          position: relative;
-          top: 5px;
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+          gap: 4px;
         }
 
         .inline-new-button > wl-icon {
@@ -102,7 +113,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
         }
 
         ul {
-          padding-left: 14px;
+          padding-left: 12px;
           font-size: 13px;
         }
 
@@ -120,9 +131,9 @@ export class ModelsTree extends connect(store)(PageViewElement) {
         }
 
         li[selected] > span,
+        li[selected] > div,
         li[selected] > a {
           font-weight: 900;
-          font-size: 15px;
         }
 
         span {
@@ -130,10 +141,12 @@ export class ModelsTree extends connect(store)(PageViewElement) {
         }
 
         span.tag {
+          display: block;
           border: 1px solid;
           border-radius: 3px;
-          padding: 0px 3px;
+          padding: 0px 5px;
           font-weight: bold;
+          height: 1.4em;
         }
 
         span.tag.deprecated {
@@ -147,26 +160,48 @@ export class ModelsTree extends connect(store)(PageViewElement) {
           background: forestgreen;
           color: white;
         }
+
+        div.tree-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          heigth: 2em;
+          padding: 2px 4px 2px 0px;
+        }
+
+        div.tree-item > div.name {
+          width: 100%;
+        }
+
+        div.tree-item.config > wl-icon.sample-icon {
+          margin-right:4px;
+          color: rgb(6, 148, 90);
+        }
+
+        div.tree-item.config > wl-icon.sample-icon[selected] {
+          margin-right:4px;
+          color: rgb(6, 108, 67);
+        }
+
+        div.tree-item.setup > wl-icon.sample-icon {
+          margin-right:4px;
+          color: rgb(6, 101, 162);
+        }
+
+        div.tree-item.setup > wl-icon.sample-icon[selected] {
+          margin-right:4px;
+          color: rgb(6, 67, 108);
+
+        }
       `,
     ];
   }
 
-  _getId(
-    resource:
-      | Model
-      | SoftwareVersion
-      | ModelConfiguration
-      | ModelConfigurationSetup
-  ) {
+  _getId(resource: | Model | SoftwareVersion | ModelConfiguration | ModelConfigurationSetup) {
     return resource.id.split("/").pop();
   }
 
-  _createUrl(
-    model: Model,
-    version?: SoftwareVersion,
-    config?: ModelConfiguration,
-    setup?: ModelConfigurationSetup
-  ) {
+  _createUrl(model: Model, version?: SoftwareVersion, config?: ModelConfiguration, setup?: ModelConfigurationSetup) {
     let url = "models/configure/" + this._getId(model);
     if (version) {
       url += "/" + this._getId(version);
@@ -180,20 +215,19 @@ export class ModelsTree extends connect(store)(PageViewElement) {
     return url;
   }
 
-  _select(
-    model: Model,
-    version: SoftwareVersion,
-    config: ModelConfiguration,
-    setup?: ModelConfigurationSetup
-  ) {
+  _search (arg) {
+    this._searchString = arg.target.value;
+  }
+
+  _changeCategory (elem) {
+    this._selectedCategory = elem.target.value;
+  }
+
+  _select(model: Model, version: SoftwareVersion, config: ModelConfiguration, setup?: ModelConfigurationSetup) {
     goToPage(this._createUrl(model, version, config, setup));
   }
 
-  _selectNew(
-    model: Model,
-    version: SoftwareVersion,
-    config?: ModelConfigurationSetup
-  ) {
+  _selectNew(model: Model, version: SoftwareVersion, config?: ModelConfigurationSetup) {
     goToPage(this._createUrl(model, version, config) + "/new");
   }
 
@@ -212,9 +246,10 @@ export class ModelsTree extends connect(store)(PageViewElement) {
         ));
 
     let categoryModels = { Uncategorized: [] };
-    Object.values(this._categories).forEach((cat: ModelCategory) => {
-      categoryModels[getLabel(cat)] = [];
-    });
+    Object.values(this._categories)
+      .forEach((cat: ModelCategory) => {
+        categoryModels[getLabel(cat)] = [];
+      });
 
     Object.values(this._models).forEach((m: Model) => {
       if (
@@ -242,24 +277,36 @@ export class ModelsTree extends connect(store)(PageViewElement) {
       }
     });
 
+    console.log(categoryModels);
+
     return html`
-      <ul style="padding-left: 10px; margin-top: 4px;">
+      <div>
+        <div style="display: flex; ">
+          <wl-textfield
+            label="Search"
+            @input=${this._search}
+            id="search-input"
+            style="--input-font-size: 14px; --input-label-space: 10px; width: 100%;"
+          >
+            <wl-icon slot="after">search</wl-icon>
+          </wl-textfield>
+          <wl-button style="--button-padding: 8px; width: 32px;">
+            <wl-icon>settings</wl-icon>
+          </wl-button>
+        </div>
+        <wl-select label="Model Category" @input=${this._changeCategory} value=${this._selectedCategory}>
+          <option value="all">All model categories</option>
+          ${Object.keys(categoryModels).map(n => html`<option value="${n}">${n}</value>`)}
+        </wl-select>
+      </div>
+      <ul style="padding-left: 8px; margin-top: 4px;">
         ${Object.keys(categoryModels).map(
           (category: string) => html`
             <li ?selected="${this._visible[category]}">
-              <span
-                @click="${() => {
-                  this._visible[category] = !this._visible[category];
-                  this.requestUpdate();
-                }}"
-              >
-                <wl-icon
-                  >${this._visible[category]
-                    ? "expand_more"
-                    : "expand_less"}</wl-icon
-                >
-                <span style="font-size: 15px;"> ${category} </span>
-              </span>
+              <div class="tree-item" @click="${() => { this._visible[category] = !this._visible[category]; this.requestUpdate(); }}" >
+                <wl-icon>${this._visible[category] ? "expand_more" : "expand_less"}</wl-icon >
+                <div class="name" style="font-size: 15px;"> ${category} </div>
+              </div>
               ${this._visible[category]
                 ? html`
                     <ul>
@@ -268,203 +315,63 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                         .map(
                           (model: Model) => html`
                             <li ?selected="${this._selectedModel === model.id}">
-                              <span
-                                @click="${() => {
-                                  this._visible[model.id] =
-                                    !this._visible[model.id];
-                                  this.requestUpdate();
-                                }}"
-                              >
-                                <wl-icon
-                                  >${this._visible[model.id]
-                                    ? "expand_more"
-                                    : "expand_less"}</wl-icon
-                                >
-                                <span> ${model.label} </span>
-                              </span>
+                              <div class="tree-item" @click="${() => { this._visible[model.id] = !this._visible[model.id]; this.requestUpdate(); }}">
+                                <wl-icon>${this._visible[model.id] ? "expand_more" : "expand_less"}</wl-icon>
+                                <div class="name"> ${model.label} </div>
+                              </div>
                               ${this._visible[model.id]
-                                ? html`
-                                    ${Object.keys(this._versions).length === 0
-                                      ? html`<loading-dots
-                                          style="--width: 20px;"
-                                        ></loading-dots>`
-                                      : html`
-                                          <ul>
+                                ? html` ${Object.keys(this._versions).length === 0
+                                      ? html`<loading-dots style="--width: 20px;" ></loading-dots>`
+                                      : html` <ul>
                                             ${model.hasVersion
-                                              .filter(
-                                                (v: any) =>
-                                                  !!this._versions[v.id]
-                                              )
-                                              .map(
-                                                (v: any) => this._versions[v.id]
-                                              )
+                                              .filter((v: any) => !!this._versions[v.id]) .map( (v: any) => this._versions[v.id])
                                               .sort(sortVersions)
-                                              .map(
-                                                (
-                                                  version: SoftwareVersion
-                                                ) => html` <li
-                                                  ?selected="${this
-                                                    ._selectedVersion ===
-                                                  version.id}"
-                                                >
-                                                  <span
-                                                    @click=${() => {
-                                                      this._visible[
-                                                        version.id
-                                                      ] =
-                                                        !this._visible[
-                                                          version.id
-                                                        ];
-                                                      this.requestUpdate();
-                                                    }}
-                                                  >
-                                                    <wl-icon
-                                                      >${this._visible[
-                                                        version.id
-                                                      ]
-                                                        ? "expand_more"
-                                                        : "expand_less"}</wl-icon
-                                                    >
-                                                    ${this._renderTag(
-                                                      version["tag"]
-                                                    )}
-                                                    <span>
-                                                      ${version.label
-                                                        ? version.label
-                                                        : this._getId(version)}
-                                                    </span>
-                                                  </span>
-                                                  ${this._visible[version.id]
-                                                    ? html`
-                                                        <ul
-                                                          style="padding-left: 30px;"
-                                                        >
-                                                          ${(
-                                                            version.hasConfiguration ||
-                                                            []
-                                                          )
-                                                            .filter(
-                                                              (c) => !!c.id
-                                                            )
-                                                            .map(
-                                                              (c) =>
-                                                                this._configs[
-                                                                  c.id
-                                                                ]
-                                                            )
-                                                            .filter(
-                                                              (c) => c && c.id
-                                                            )
-                                                            .sort(
-                                                              sortConfigurations
-                                                            )
-                                                            .map(
-                                                              (
-                                                                config: ModelConfiguration
-                                                              ) => html`
-                                                                <li
-                                                                  ?selected="${this
-                                                                    ._selectedConfig ===
-                                                                  config.id}"
-                                                                >
-                                                                  ${this._renderTag(
-                                                                    config.tag
-                                                                  )}
-                                                                  <a
-                                                                    class="config"
-                                                                    @click="${() => {
-                                                                      this._select(
-                                                                        model,
-                                                                        version,
-                                                                        config
-                                                                      );
-                                                                    }}"
-                                                                  >
-                                                                    ${config
-                                                                      ? config.label
-                                                                      : this._getId(
-                                                                          config
-                                                                        )}
-                                                                  </a>
-                                                                  <ul>
-                                                                    ${(
-                                                                      config.hasSetup ||
-                                                                      []
-                                                                    )
-                                                                      .map(
-                                                                        (
-                                                                          s: any
-                                                                        ) =>
-                                                                          this
-                                                                            ._setups[
-                                                                            s.id
-                                                                          ]
-                                                                      )
-                                                                      .filter(
-                                                                        visibleSetup
-                                                                      )
-                                                                      .sort(
-                                                                        sortSetups
-                                                                      )
-                                                                      .map(
-                                                                        (
-                                                                          setup: ModelConfigurationSetup
-                                                                        ) => html`
-                                                                          <li
-                                                                            style="list-style:disc"
-                                                                            ?selected="${this
-                                                                              ._selectedSetup ===
-                                                                            setup.id}"
-                                                                          >
-                                                                            ${this._renderTag(
-                                                                              setup.tag
-                                                                            )}
-                                                                            <a
-                                                                              class="setup"
-                                                                              @click="${() => {
-                                                                                this._select(
-                                                                                  model,
-                                                                                  version,
-                                                                                  config,
-                                                                                  setup
-                                                                                );
-                                                                              }}"
-                                                                            >
-                                                                              ${setup &&
-                                                                              setup.label
-                                                                                ? setup.label
-                                                                                : this._getId(
-                                                                                    setup
-                                                                                  )}
-                                                                            </a>
+                                              .map( ( version: SoftwareVersion) => 
+                                                html` <li ?selected="${this ._selectedVersion === version.id}" >
+                                                  <div @click=${() => { this._visible[ version.id ] = !this._visible[ version.id ]; this.requestUpdate(); }} class="tree-item">
+                                                    <wl-icon>${this._visible[ version.id ] ? "expand_more" : "expand_less"}</wl-icon >
+                                                    <div class="name">
+                                                      ${version.label ? version.label : this._getId(version)}
+                                                    </div>
+                                                    ${this._renderTag( version["tag"])}
+                                                  </div>
+                                                  ${this._visible[version.id] ? html`
+                                                        <ul>
+                                                          ${( version.hasConfiguration || [])
+                                                            .filter( (c) => !!c.id)
+                                                            .map( (c) => this._configs[ c.id ])
+                                                            .filter( (c) => c && c.id)
+                                                            .sort( sortConfigurations)
+                                                            .map( ( config: ModelConfiguration) => html`
+                                                                <li ?selected="${this ._selectedConfig === config.id}" >
+                                                                  <div @click=${() => {this._select( model, version, config)}} class="tree-item config">
+                                                                    <wl-icon class="sample-icon" ?selected="${this ._selectedConfig === config.id}">label</wl-icon>
+                                                                    <a class="config" style="width:100%" @click="${() => { this._select( model, version, config); }}" >
+                                                                      ${config ? config.label : this._getId( config)}
+                                                                    </a>
+                                                                    ${this._renderTag(config.tag)}
+                                                                  </div>
+
+                                                                  <ul> ${( config.hasSetup || [])
+                                                                      .map( ( s: any) => this ._setups[ s.id ])
+                                                                      .filter( visibleSetup)
+                                                                      .sort( sortSetups)
+                                                                      .map( ( setup: ModelConfigurationSetup) => html`
+                                                                          <li ?selected="${this ._selectedSetup === setup.id}" >
+                                                                            <div @click=${() => {this._select( model, version, config, setup)}} class="tree-item setup">
+                                                                              <wl-icon class="sample-icon" ?selected="${this ._selectedSetup === setup.id}">label</wl-icon>
+                                                                              <a class="setup" style="width:100%" @click="${() => { this._select( model, version, config, setup); }}" >
+                                                                                ${setup && setup.label ? setup.label : this._getId( setup)}
+                                                                              </a>
+                                                                              ${this._renderTag( setup.tag)}
+                                                                            </div>
                                                                           </li>
                                                                         `
                                                                       )}
-                                                                    <li
-                                                                      ?selected="${this
-                                                                        ._creating &&
-                                                                      this
-                                                                        ._selectedConfig ===
-                                                                        config.id}"
-                                                                    >
-                                                                      <a
-                                                                        class="inline-new-button setup"
-                                                                        @click="${() => {
-                                                                          this._selectNew(
-                                                                            model,
-                                                                            version,
-                                                                            config
-                                                                          );
-                                                                        }}"
-                                                                      >
-                                                                        <wl-icon
-                                                                          >add_circle_outline</wl-icon
-                                                                        >
-                                                                        <span>
-                                                                          Add
-                                                                          new
-                                                                          setup
-                                                                        </span>
+                                                                    <li ?selected="${this ._creating && this ._selectedConfig === config.id}" >
+                                                                      <a class="inline-new-button setup" @click="${() => { this._selectNew( model, version, config); }}" >
+                                                                        <wl-icon >add_circle_outline</wl-icon >
+                                                                        <span> Add new setup </span>
                                                                       </a>
                                                                     </li>
                                                                   </ul>
@@ -472,20 +379,10 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                                                               `
                                                             )}
                                                           <li>
-                                                            <a
-                                                              class="inline-new-button config"
-                                                              @click="${() => {
-                                                                this._selectNew(
-                                                                  model,
-                                                                  version
-                                                                );
-                                                              }}"
-                                                            >
-                                                              <wl-icon
-                                                                >add_circle_outline</wl-icon
-                                                              >
-                                                              Add new
-                                                              configuration
+                                                          <li ?selected="${this ._creating && !this ._selectedConfig && this._selectedVersion === version.id}" >
+                                                            <a class="inline-new-button config" @click="${() => { this._selectNew( model, version); }}" >
+                                                              <wl-icon>add_circle_outline</wl-icon>
+                                                              Add new configuration
                                                             </a>
                                                           </li>
                                                         </ul>

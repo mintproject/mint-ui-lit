@@ -141,7 +141,6 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     this._iSetup = new ModelCatalogModelConfigurationSetup();
     this._iConfig = new ModelCatalogModelConfiguration();
     this._modelTree = new ModelsTree();
-    this._modelTree.active = true;
   }
 
   firstUpdated() {

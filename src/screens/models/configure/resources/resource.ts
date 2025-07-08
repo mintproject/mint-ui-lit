@@ -81,7 +81,7 @@ export class ModelCatalogResource<T extends BaseResources> extends LitElement {
       }
 
       .buttons-area {
-        display: inline-block;
+        display: flex;
       }
 
       .buttons-area > wl-button {

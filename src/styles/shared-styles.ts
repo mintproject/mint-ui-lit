@@ -86,7 +86,7 @@ export const SharedStyles = css`
   }
 
   wl-button[flat] {
-    --button-bg: transparent;
+    --button-bg: #555555;
     --button-bg-hover: #666666;
     --button-bg-active: #444444;
   }
