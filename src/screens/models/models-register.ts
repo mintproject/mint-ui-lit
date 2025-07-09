@@ -124,16 +124,6 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
           width: 100%;
         }
 
-        .step {
-          border: 2px solid darkgray;
-          border-radius: 5px;
-          padding: 5px 10px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin: 5px 0px;
-        }
-
         .step[active] {
           background: rgba(127, 191, 63, 0.2);
         }
@@ -145,6 +135,33 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
         .step[disabled] {
           background: rgba(62, 62, 62, 0.3);
           cursor: not-allowed;
+        }
+
+        .step {
+          border-top: 4px solid rgb(97, 163, 156);
+          background: #F4F4F4;
+          padding: 1rem 1.5em;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          margin-bottom: 10px;
+        }
+
+        .step:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+
+        .step h4 {
+          color: rgb(72, 72, 72);
+          margin-top: 0;
+          margin-bottom: 1rem;
+          font-size: 1.1rem;
+        }
+
+        .step p {
+          color: #495057;
+          margin: 0;
+          line-height: 1.5;
         }
       `,
     ];
@@ -191,8 +208,8 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
         <div class="${this._hideLateral ? "left_closed" : "left"}">
           <div class="clt">${this._renderSteps()}</div>
         </div>
-        <div class="${this._hideLateral ? "right_full" : "right"}">
-          <div class="card2">
+        <div class="${this._hideLateral ? "right_full" : "right"}" style="${this._hideLateral ? "display:flex; justify-content: center;" : ""}">
+          <div class="card2" style="${this._hideLateral ? "width: 800px" : ""}">
             <div style="height: 24px;" id="page-top">
               <wl-icon
                 @click="${() => (this._hideLateral = !this._hideLateral)}"
@@ -202,10 +219,12 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
                 ${!this._hideLateral ? "fullscreen" : "fullscreen_exit"}
               </wl-icon>
             </div>
-            <wl-title level="4">
-              To register a new model, please fill the following form:
-            </wl-title>
-            ${this._iModel}
+            <div style=" padding: 4px 6px;">
+              <wl-title level="4">
+                To register a new model, please fill the following form:
+              </wl-title>
+              ${this._iModel}
+            </div>
           </div>
         </div>
       </div>
@@ -225,11 +244,9 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
         ?active="${this._step <= 1}"
         ?disabled="${this._step > 1}"
       >
-        <div>
-          <wl-title level="3"> Step 1: </wl-title>
-          <div>Describe your model</div>
-        </div>
-        <div>
+        <h4>Step 1:</h4>
+        <div style="display:flex; justify-content:space-between;">
+          <p>Describe your model</p>
           <wl-icon>library_books</wl-icon>
         </div>
       </div>
@@ -239,11 +256,9 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
         ?active="${this._step == 2}"
         ?disabled="${this._step < 2}"
       >
-        <div>
-          <wl-title level="3"> Step 2: </wl-title>
-          <div>Make your model discoverable</div>
-        </div>
-        <div>
+        <h4>Step 2:</h4>
+        <div style="display:flex; justify-content:space-between;">
+          <p>Make your model discoverable</p>
           <wl-icon>library_books</wl-icon>
         </div>
       </div>
@@ -253,11 +268,9 @@ export class ModelsRegister extends connect(store)(PageViewElement) {
         ?active="${this._step == 3}"
         ?disabled="${this._step < 3}"
       >
-        <div>
-          <wl-title level="3"> Step 3: </wl-title>
-          <div>Register a initial version</div>
-        </div>
-        <div>
+        <h4>Step 3:</h4>
+        <div style="display:flex; justify-content:space-between;">
+          <p>Register a initial version</p>
           <wl-icon>library_books</wl-icon>
         </div>
       </div>

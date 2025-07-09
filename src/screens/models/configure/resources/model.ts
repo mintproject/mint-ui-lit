@@ -51,6 +51,7 @@ export class ModelCatalogModel extends connect(store)(
           font-weight: bold;
           padding-right: 6px;
           padding-left: 13px;
+          width: 200px;
         }
 
         .details-table tr td:last-child {

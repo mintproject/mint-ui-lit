@@ -156,7 +156,7 @@ export class CustomModelApi extends DefaultReduxApi<Model, ModelApi> {
       let api: BaseAPI = isCoupled ? this._coupledApi : this._api;
 
       reqParams[name] = resource;
-      let req: Promise<Model | CoupledModel> = api[call](reqParams);
+      /*let req: Promise<Model | CoupledModel> = api[call](reqParams);
       req.then((resp: Model | CoupledModel) => {
         if (this._redux)
           dispatch({
@@ -165,7 +165,12 @@ export class CustomModelApi extends DefaultReduxApi<Model, ModelApi> {
             payload: this._idReducer({}, resp),
           });
       });
-      return req;
+      return req;*/
+      return new Promise<Model | CoupledModel>((resolve, reject) => {
+        let req: Promise<Model | CoupledModel> = api[call](reqParams);
+        req.catch(reject);
+        req.then((resp: Model | CoupledModel) => resolve(dispatch(this.get(resp.id))));
+      });
     };
 
   public post: ActionThunk<Promise<Model | CoupledModel>, MCActionAdd> =

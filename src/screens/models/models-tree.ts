@@ -168,6 +168,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
           align-items: center;
           heigth: 2em;
           padding: 2px 4px 2px 0px;
+          cursor:pointer;
         }
 
         div.tree-item > div.name {
@@ -202,6 +203,9 @@ export class ModelsTree extends connect(store)(PageViewElement) {
           padding: 10px 0px;
         }
 
+        .tree-item:hover {
+          background-color: rgb(240, 240, 240);
+        }
       `,
     ];
   }
