@@ -712,14 +712,18 @@ export class MintRuns extends connect(store)(MintThreadPage) {
   }
 
   _getDatasetURL(res: any) {
-    let furl = res.url;
-    let fname = res.name;
-    if (!furl) {
+    if (!res.url && res.location) {
       let location = res.location;
       let prefs = this.prefs.mint;
-      furl = location.replace(prefs.localex.datadir, prefs.localex.dataurl);
+      return location.replace(prefs.localex.datadir, prefs.localex.dataurl);
     }
-    return furl;
+    else if (!res.url && res.name) {
+      return res.name;
+    } else if (res.url) {
+      return res.url;
+    } else {
+      return ''
+    }
   }
 
   stateChanged(state: RootState) {
