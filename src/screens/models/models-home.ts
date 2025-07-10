@@ -110,23 +110,22 @@ export class ModelsHome extends connect(store)(PageViewElement) {
   protected render() {
     let extraNames = {}
     let ignore = [];
-    if (this._subpage === 'explore') {
-      if (this._selectedModel) {
-        extraNames[this._selectedModel.id.split('/').pop()] = getLabel(this._selectedModel);
-        if (this._selectedConfig) {
-          extraNames[this._selectedConfig.id.split('/').pop()] = getLabel(this._selectedConfig);
-          if (this._selectedSetup) {
-            extraNames[this._selectedSetup.id.split('/').pop()] = getLabel(this._selectedSetup);
-          }
+    if (this._selectedModel) {
+      extraNames[this._selectedModel.id.split('/').pop()] = getLabel(this._selectedModel);
+      if (this._selectedConfig) {
+        extraNames[this._selectedConfig.id.split('/').pop()] = getLabel(this._selectedConfig);
+        if (this._selectedSetup) {
+          extraNames[this._selectedSetup.id.split('/').pop()] = getLabel(this._selectedSetup);
         }
       }
-      if (this._selectedVersionID) {
-        ignore.push(this._selectedVersionID);
-      }
+    }
+    if (this._selectedVersionID) {
+      ignore.push(this._selectedVersionID);
     }
 
     return html`
-      <nav-title .names="${extraNames}" .ignore="${ignore}">
+      <nav-title .names="${extraNames}" .ignore="${ignore}" .displaytitle=${true}>
+        ${this._subpage === 'home' ? html`
         <span slot="after">
           <a
             class="no-decoration"
@@ -152,6 +151,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
             </wl-button>
           </a>
         </span>
+          ` : null}
       </nav-title>
 
       <div class="${this._subpage != "home" ? "hiddensection" : "icongrid"}">

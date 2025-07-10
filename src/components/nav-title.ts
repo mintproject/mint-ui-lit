@@ -30,7 +30,7 @@ const PAGE_SKIP = ['analysis']
 
 @customElement("nav-title")
 export class NavTitle extends LitElement {
-  @property({ type: Boolean }) showTitle = true;
+  @property({ type: Boolean }) displaytitle = true;
   @property({ type: Object }) names = {};
   @property({ type: Array }) ignore = [];
 
@@ -39,10 +39,19 @@ export class NavTitle extends LitElement {
         div.simple-breadcrumbs {
           color: rgb(72, 72, 72);
           font-size: .8rem;
+          display: flex;
         }
 
         div.simple-breadcrumbs > span {
           padding: 0px 4px;
+        }
+
+        div.simple-breadcrumbs > a {
+          display: inline-block;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          text-wrap: nowrap;
+          max-width: 210px;
         }
 
         div.simple-breadcrumbs > a[selected] {
@@ -89,15 +98,14 @@ export class NavTitle extends LitElement {
               <a href="${this.createURL(paths, i)}" ?selected=${page === current}>${pageNames[page] || page}</a>`
             )
         )}
-      <div>
+      </div>
+      ${this.displaytitle ? html`
       <div style="display:flex; justify-content: space-between; align-items: center;">
-        ${this.showTitle ? html`
           <wl-title level="3" class="page-title">
             ${pageNames[current] || current}
           </wl-title>
-        ` : html`<div></div>`}
         <slot name="after"></slot>
-      </div>
+      </div>` : null}
     `;
   }
 }
