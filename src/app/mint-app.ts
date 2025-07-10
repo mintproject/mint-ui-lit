@@ -186,8 +186,11 @@ export class MintApp extends connect(store)(LitElement) {
           display: none;
         }
 
-        @media (max-width: 1200px) {
+        @media (max-width: 1240px) {
           #main-breadcrumbs {
+            display: none;
+          }
+          a.hide-in-small-screen {
             display: none;
           }
           #breadcrumbs-menu-button {
@@ -195,9 +198,6 @@ export class MintApp extends connect(store)(LitElement) {
           }
           #breadcrumbs-popover wl-button {
             display: block;
-          }
-          #main-breadcrumbs .emulator-button {
-            display: none;
           }
           wl-button.active {
             --button-bg: #629b30 !important;
@@ -423,16 +423,17 @@ export class MintApp extends connect(store)(LitElement) {
           </div>
           <div slot="right">
             <ul class="breadcrumbs_header">
+              ${this._selectedRegion
+                ? html`
+              <a href="${this._selectedRegion.id}/emulators"
+                class="${this._page == "emulators" ? "active" : ""} hide-in-small-screen">
+                <wl-icon style="margin-left: 4px;">settings</wl-icon>
+                &nbsp;
+                Emulators &#38; Results
+              </a>`: ""}
+
             ${this.user == null
               ? html`
-                  ${this._selectedRegion
-                    ? html`
-                  <a href="${this._selectedRegion.id}/emulators"
-                    class=${this._page == "emulators" ? "active" : ""}>
-                    <wl-icon style="margin-left: 4px;">settings</wl-icon>
-                    &nbsp;
-                    Emulators &#38; Results
-                  </a>`: ""}
                   <a @click="${this._showLoginWindow}">
                     <wl-icon alt="account">account_circle</wl-icon>
                     &nbsp;
@@ -440,16 +441,6 @@ export class MintApp extends connect(store)(LitElement) {
                   </a>
                 `
               : html`
-                  ${this._selectedRegion
-                    ? html`
-                  <a
-                    href="${this._selectedRegion.id}/emulators"
-                    class=${this._page == "emulators" ? "active" : ""}>
-                    <wl-icon style="margin-left: 4px;">settings</wl-icon>
-                    &nbsp;
-                    Emulators &#38; Results
-                  </a>`: ""}
-
                   <a @click="${this._onUserButtonClicked}" id="user-button">
                     <wl-icon alt="account">account_circle</wl-icon>
                     &nbsp;

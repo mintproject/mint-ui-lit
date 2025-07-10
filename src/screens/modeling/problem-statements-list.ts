@@ -96,30 +96,26 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
   }
 
   protected render() {
-    if (this._dispatched)
-      return html`<wl-progress-spinner class="loading"></wl-progress-spinner>`;
-
-    //console.log("rendering");
     return html`
-      <div class="cltrow problem_statement_row">
-        <wl-button flat inverted disabled>
-          <wl-icon>arrow_back_ios</wl-icon>
-        </wl-button>
-        <div class="cltmain navtop">
-          <wl-title level="3">Problem statements</wl-title>
-        </div>
+      <nav-title>
         <wl-icon
+          slot="after"
           @click="${this._addProblemStatementDialog}"
           class="actionIcon bigActionIcon addIcon"
           id="addProblemStatementIcon"
           >note_add</wl-icon
         >
-      </div>
+      </nav-title>
+
       <p class="top-paragraph">
         Choose an existing problem from the list below or click add to create a
         new one.
       </p>
       <!-- Show ProblemStatement List -->
+      ${this._dispatched ? 
+        html`<wl-progress-spinner class="loading"></wl-progress-spinner>`
+      :
+        html`
       ${this._list &&
       this._list.problem_statement_ids.map((problem_statement_id) => {
         let problem_statement =
@@ -214,6 +210,8 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
         }
         return html``;
       })}
+      `}
+
       ${this._renderTooltips()} ${renderNotifications()}
       ${this._renderDialogs()}
     `;
@@ -274,7 +272,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
           </div>
           
           <div style="height:10px;">&nbsp;</div>
-          <input type="hidden" name="problem_statement_region" value="${this._top_region.id}"></input>
+          <input type="hidden" name="problem_statement_region" value="${this._top_region?.id || ''}"></input>
           <input type="hidden" name="problem_statement_subregion" value=""></input>
 
           <div class="input_full">

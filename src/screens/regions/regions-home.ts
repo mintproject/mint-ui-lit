@@ -70,7 +70,7 @@ export class RegionsHome extends connect(store)(PageViewElement) {
     }
 
     return html`
-      <nav-title .nav="${nav}"></nav-title>
+      <nav-title .ignore=${[]}></nav-title>
 
       <div class="${this._subpage != "home" ? "hiddensection" : "icongrid"}">
         <a href="${this._regionid}/regions/agriculture">

@@ -130,13 +130,7 @@ export class AnalysisReport extends connect(store)(PageViewElement) {
   }
 
   protected render() {
-    let nav = [{ label: "Available Reports", url: "analysis/report" }];
-    if (this._selectedThreadId) {
-      nav.push({ label: "Available Reports", url: "analysis/report" });
-    }
-
     return html`
-      <nav-title .nav="${nav}" max="2"></nav-title>
       ${!this._list || this._dispatched
         ? this._renderLoading()
         : this._selectedProblemStatementId &&

@@ -119,6 +119,10 @@ export const SharedStyles = css`
     font-size: 14px;
   }
 
+  wl-title[level="3"].page-title {
+    padding: .8em 32px;
+  }
+
   wl-list-item.active {
     cursor: pointer;
   }

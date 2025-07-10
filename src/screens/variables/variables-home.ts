@@ -318,7 +318,7 @@ export class VariablesHome extends connect(store)(PageViewElement) {
     let nav = [{ label: "Explore Variables", url: "variables" }];
 
     return html`
-      <nav-title .nav="${nav}"></nav-title>
+      <nav-title .ignore=${[]}></nav-title>
       <div class="container">
         <div class="description-section ${this.isExplanationExpanded ? '' : 'collapsed'}">
           <div class="concept-grid">

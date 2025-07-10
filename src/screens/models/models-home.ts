@@ -22,6 +22,8 @@ store.addReducers({
 import modelCatalog from "model-catalog-api/reducers";
 import { ModelCatalogApi } from "model-catalog-api/model-catalog-api";
 import { UserCatalog } from "model-catalog-api/user-catalog";
+import { Model, ModelConfiguration, ModelConfigurationSetup } from "@mintproject/modelcatalog_client";
+import { getLabel } from "model-catalog-api/util";
 
 store.addReducers({
   modelCatalog,
@@ -29,14 +31,11 @@ store.addReducers({
 
 @customElement("models-home")
 export class ModelsHome extends connect(store)(PageViewElement) {
-  @property({ type: String })
-  private _selectedModelId: string = "";
-  @property({ type: String })
-  private _selectedConfig: string = "";
-  @property({ type: String })
-  private _selectedSetup: string = "";
-  @property({ type: Object })
-  private user: User | null = null;
+  @property({ type: Object }) private _selectedModel: Model;
+  @property({ type: Object }) private _selectedConfig: ModelConfiguration;
+  @property({ type: Object }) private _selectedSetup: ModelConfigurationSetup;
+  @property({ type: String }) private _selectedVersionID: String;
+  @property({ type: Object }) private user: User | null = null;
 
   static get styles() {
     return [
@@ -109,66 +108,50 @@ export class ModelsHome extends connect(store)(PageViewElement) {
   }
 
   protected render() {
-    let nav = [{ label: "Prepare Models", url: "models" }];
-    switch (this._subpage) {
-      case "explore":
-        nav.push({ label: "Model Catalog", url: "models/explore" });
-        if (this._selectedModelId) {
-          nav.push({
-            label: this._selectedModelId,
-            url: "models/explore/" + this._selectedModelId,
-          });
+    let extraNames = {}
+    let ignore = [];
+    if (this._subpage === 'explore') {
+      if (this._selectedModel) {
+        extraNames[this._selectedModel.id.split('/').pop()] = getLabel(this._selectedModel);
+        if (this._selectedConfig) {
+          extraNames[this._selectedConfig.id.split('/').pop()] = getLabel(this._selectedConfig);
+          if (this._selectedSetup) {
+            extraNames[this._selectedSetup.id.split('/').pop()] = getLabel(this._selectedSetup);
+          }
         }
-        break;
-      case "register":
-        nav.push({ label: "Add Models", url: "models/register" });
-        break;
-      case "configure":
-        nav.push({ label: "Configure Models", url: "models/configure" });
-        break;
-      case "calibrate":
-        nav.push({ label: "Calibrate Models", url: "models/calibrate" });
-        break;
-      case "compare":
-        nav.push({ label: "Compare Models", url: "models/compare" });
-        break;
-      case "edit":
-        nav.push({ label: "Edit Models", url: "models/edit" });
-        break;
-      case "cromo":
-        nav.push({ label: "Recommend Models", url: "models/cromo" });
-        break;
-      default:
-        break;
+      }
+      if (this._selectedVersionID) {
+        ignore.push(this._selectedVersionID);
+      }
     }
 
     return html`
-      <nav-title .nav="${nav}" max="2">
-        <a
-          slot="after"
-          class="no-decoration"
-          target="_blank"
-          href="${this._getAPILink()}"
-          style="margin-right: 0.5em;"
-        >
-          <wl-button style="--button-padding: 8px;">
-            <wl-icon style="margin-right: 5px;">help_outline</wl-icon>
-            <b>API</b>
-          </wl-button>
-        </a>
-        <a
-          slot="after"
-          class="no-decoration"
-          target="_blank"
-          href="${this._getHelpLink()}"
-        >
-          <wl-button
-            style="--button-bg: forestgreen; --button-bg-hover: darkgreen; --button-padding: 8px;"
+      <nav-title .names="${extraNames}" .ignore="${ignore}">
+        <span slot="after">
+          <a
+            class="no-decoration"
+            target="_blank"
+            href="${this._getAPILink()}"
+            style="margin-right: 0.5em;"
           >
-            <wl-icon style="margin-right: 5px;">help_outline</wl-icon>
-            <b>Documentation</b>
-          </wl-button>
-        </a>
+            <wl-button style="--button-padding: 8px;">
+              <wl-icon style="margin-right: 5px;">help_outline</wl-icon>
+              <b>API</b>
+            </wl-button>
+          </a>
+          <a
+            class="no-decoration"
+            target="_blank"
+            href="${this._getHelpLink()}"
+          >
+            <wl-button
+              style="--button-bg: forestgreen; --button-bg-hover: darkgreen; --button-padding: 8px;"
+            >
+              <wl-icon style="margin-right: 5px;">help_outline</wl-icon>
+              <b>Documentation</b>
+            </wl-button>
+          </a>
+        </span>
       </nav-title>
 
       <div class="${this._subpage != "home" ? "hiddensection" : "icongrid"}">
@@ -280,10 +263,19 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     this.user = state.app!.user!;
     super.setSubPage(state);
     super.setRegionId(state);
-    if (state && state.explorerUI) {
-      this._selectedModelId = state.explorerUI.selectedModel.split("/").pop();
-      this._selectedConfig = state.explorerUI.selectedConfig;
-      this._selectedSetup = state.explorerUI.selectedCalibration;
+    if (state && state.explorerUI && state.modelCatalog) {
+      if (state.explorerUI.selectedVersion)
+        this._selectedVersionID = state.explorerUI.selectedVersion.split('/').pop();
+      else
+        this._selectedVersionID = "";
+      if (state.explorerUI.selectedModel && state.modelCatalog.model[state.explorerUI.selectedModel])
+        this._selectedModel = state.modelCatalog.model[state.explorerUI.selectedModel]
+      if (state.explorerUI.selectedModel && state.modelCatalog.modelconfiguration[state.explorerUI.selectedConfig]) {
+        this._selectedConfig = state.modelCatalog.modelconfiguration[state.explorerUI.selectedConfig]
+      }
+      if (state.explorerUI.selectedModel && state.modelCatalog.modelconfigurationsetup[state.explorerUI.selectedCalibration]) {
+        this._selectedSetup = state.modelCatalog.modelconfigurationsetup[state.explorerUI.selectedCalibration]
+      }
     }
   }
 }
