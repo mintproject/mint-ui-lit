@@ -27,6 +27,8 @@ import {
 } from "@mintproject/modelcatalog_client";
 
 import "../../../components/loading-dots";
+import { SharedStyles } from "styles/shared-styles";
+import { navigate } from "app/actions";
 
 @customElement("model-preview")
 export class ModelPreview extends connect(store)(PageViewElement) {
@@ -46,80 +48,79 @@ export class ModelPreview extends connect(store)(PageViewElement) {
 
   static get styles() {
     return [
+      SharedStyles,
       ExplorerStyles,
       css`
         :host {
           display: block;
         }
+        
+        a.concept-card {
+          display: block;
+          color: unset;
+          text-decoration: none;
+        }
+        
+        .flex {
+          display:flex;
+          align-items: center;
+          gap: 10px;
+        }
 
-        table {
+        .between {
+          justify-content: space-between;
+        }
+
+        .nowrap {
+          text-wrap: nowrap;
+        }
+
+        .ellipsis {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          text-wrap: nowrap;
+        }
+
+        .concept-card > div > h4 {
+          margin-bottom: 0px;
+        }
+
+        .icon {
+          cursor: pointer;
+          display: inline-block;
+          border-radius: 5px;
+          padding: 4px 6px;
+        }
+
+        .icon:hover {
+          background-color: #ddd;
+        }
+        
+        img {
+          min-height: 100px;
+          min-width: 100px;
+        }
+
+        .content {
+          text-align: justify;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: -webkit-box;
+          line-height: 16px;
+          max-height: 96px;
+
+          /* The number of lines to be displayed */
+          -webkit-line-clamp: 6;
+          -webkit-box-orient: vertical;
+          margin-bottom: 4px;
+        }
+
+        .content > code {
+          line-height: 19px;
+        }
+
+        hr {
           margin-bottom: 1em;
-          table-layout: fixed;
-          border: 1px solid black;
-          width: 100%;
-          border-spacing: 0;
-          border-collapse: collapse;
-          height: 160px;
-          overflow: hidden;
-        }
-
-        td {
-          padding: 0px;
-          padding-top: 3px;
-          vertical-align: top;
-        }
-
-        td.left {
-          width: 25%;
-        }
-
-        td.right {
-          width: 75%;
-        }
-
-        td div {
-          overflow: hidden;
-        }
-
-        td.left div:nth-child(1) {
-          min-height: 1.2em;
-        }
-        td.left div:nth-child(2) {
-          height: calc(150px - 3.6em);
-          text-align: center;
-        }
-        td.left div:nth-child(3) {
-          height: 2.4em;
-        }
-
-        td.right div:nth-child(1) {
-          height: 1.3em;
-        }
-        td.right div:nth-child(2) {
-          height: 96px;
-        }
-        td.right div:nth-child(3) {
-          height: calc(44px - 1.3em);
-        }
-
-        .one-line {
-          height: 1.2em;
-          line-height: 1.2em;
-        }
-
-        .two-lines {
-          height: 2.4em;
-          line-height: 1.2em;
-        }
-
-        .header {
-          font-size: 1.2em;
-          line-height: 1.3em;
-          height: 1.3em;
-        }
-
-        .text-centered {
-          text-align: center;
         }
 
         img {
@@ -134,151 +135,33 @@ export class ModelPreview extends connect(store)(PageViewElement) {
           --icon-size: 80px;
         }
 
-        .helper {
-          display: inline-block;
-          height: 100%;
-          vertical-align: middle;
-        }
-
-        .title {
-          display: inline-block;
-          padding: 0px 10px 3px 10px;
-          //width: calc(100% - 2.6em - 20px);
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .title > a > wl-icon {
-          font-size: 1em;
-        }
-
-        .icon {
-          cursor: pointer;
-          display: inline-block;
-          overflow: hidden;
-          float: right;
-          font-size: 1em;
-          width: 1.4em;
-          margin-right: 7px;
-          margin-top: -5px;
-        }
-
-        .content {
-          padding: 5px 10px 0px 10px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          display: -webkit-box;
-          line-height: 16px;
-          max-height: 96px;
-
-          /* The number of lines to be displayed */
-          -webkit-line-clamp: 6;
-          -webkit-box-orient: vertical;
-        }
-
-        .content > code {
-          line-height: 19px;
-        }
-
-        .footer {
-          padding: 5px 10px 0px 10px;
-        }
-
         .keywords {
           display: inline-block;
-          width: calc(100% - 100px);
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-        }
-
-        .ver-conf-text {
-          float: right;
-          font-size: 13px;
-          padding-right: 3px;
-          line-height: 1.2em;
-        }
-
-        .details-button {
-          display: inline-block;
-          float: right;
-          color: rgb(15, 122, 207);
-          cursor: pointer;
-          font-weight: bold;
         }
 
         loading-dots {
           --width: 20px;
         }
 
-        .title:hover {
-          color: rgb(15, 122, 207);
-        }
       `,
     ];
   }
 
   protected render() {
     if (this._model) {
-      //console.log(this._model);
       let modelType: string[] = this._model.type
         ? getModelTypeNames(this._model.type)
         : [];
-      let modelUri: string =
-        this._regionid +
-        (this._url ? this._url : this.PREFIX + getId(this._model));
+      let modelUri: string = this._regionid + (this._url ? this._url : this.PREFIX + getId(this._model));
       return html`
-        <table>
-          <tr>
-            <td class="left">
-              <div class="text-centered">
-                ${this._nLocalSetups < 0
-                  ? html`<loading-dots></loading-dots>`
-                  : this._nLocalSetups > 0
-                  ? html`<b style="color: darkgreen;">Executable in MINT</b>`
-                  : this._nSetups > 0
-                  ? html`<b>Executable in MINT in another region</b>`
-                  : html`<b style="color: chocolate;"
-                      >Not executable in MINT</b
-                    >`}
-              </div>
-              <div>
-                <span class="helper"></span>
-                <a
-                  href="${modelUri}"
-                  style="color: unset; text-decoration: none;"
-                >
-                  ${this._loadingLogo
-                    ? html`<wl-progress-spinner></wl-progress-spinner>`
-                    : this._logo && this._logo.value
-                    ? html`<img src="${this._logo.value[0]}" />`
-                    : html`<wl-icon id="img-placeholder">image</wl-icon>`}
-                </a>
-              </div>
-              <div class="text-centered two-lines">
-                Category: ${this._modelCategories}
-                ${modelType && modelType.length > 0
-                  ? html`
-                      <br />
-                      Type: ${modelType.join(", ")}
-                    `
-                  : html``}
-              </div>
-            </td>
-
-            <td class="right">
-              <div class="header">
-                <a
-                  href="${modelUri}"
-                  style="color: unset; text-decoration: none;"
-                >
-                  <span class="title">${this._model.label}</span>
-                </a>
-                <span class="icon">
-                  <slot name="extra-icon"></slot>
-                </span>
-                <span class="ver-conf-text">
+        <a class="concept-card" style="margin-bottom:1em; cursor: pointer;" href=${modelUri}>
+          <div class="flex between">
+            <h4 class="ellipsis">${this._model.label}</h4>
+            <div class="flex">
+              <span class="nowrap">
                   ${this._nVersions > 0
                     ? this._nVersions.toString() +
                       " version" +
@@ -289,40 +172,59 @@ export class ModelPreview extends connect(store)(PageViewElement) {
                       " config" +
                       (this._nConfigs > 1 ? "s" : "")
                     : "No configs"}
-                </span>
+              </span>
+              <span class="icon">
+                <slot name="extra-icon"></slot>
+              </span>
+            </div>
+          </div>
+          <hr></hr>
+          <div style="display:flex;">
+            <div style="flex: 0 0 200px; display:flex; align-items:center; flex-direction: column;justify-content: space-between;">
+                ${this._loadingLogo
+                  ? html`<wl-progress-spinner></wl-progress-spinner>`
+                  : this._logo && this._logo.value
+                  ? html`<img src="${this._logo.value[0]}" />`
+                  : html`<wl-icon id="img-placeholder">image</wl-icon>`}
+              <div style="margin-top: .6em;">
+                <b>Category:</b> ${this._modelCategories}
               </div>
+            </div>
 
+            <div style="display:flex; flex-direction: column; width: calc(100% - 200px); justify-content: space-between;">
               <div class="content">
                 <slot name="description"></slot>
               </div>
 
-              ${Array.from(this._regions || []).length > 0
-                ? html` <div class="footer one-line" style="height: auto;">
-                    <span class="keywords">
-                      <b>Regions:</b>
-                      ${Array.from(this._regions)
-                        .map((r) => r.label)
-                        .join(", ")}
-                    </span>
-                  </div>`
-                : ""}
-              <div class="footer one-line" style="padding-top: 0px;">
+              <div style="display:flex; flex-direction: column;">
+                ${modelType && modelType.length > 0 ? html`
+                  <span class="keywords">
+                    <b>Type:</b>
+                    ${modelType.join(", ")} ` : null}
+
+                ${Array.from(this._regions || []).length > 0 ? html`
+                  <span class="keywords">
+                    <b>Regions:</b>
+                    ${Array.from(this._regions).map((r) => r.label) .join(", ")}
+                  </span>` : null}
+
                 <span class="keywords">
                   <b>Keywords:</b>
                   ${this._model.keywords && this._model.keywords.length > 0
                     ? this._model.keywords.join(";").split(/ *; */).join(", ")
                     : "No keywords"}
                 </span>
-                <a href="${modelUri}" class="details-button"> More details </a>
               </div>
-            </td>
-          </tr>
-        </table>
+            </div>
+
+          </div>
+        </a>
       `;
     } else {
       return html`Something when wrong!`;
     }
   }
+
 
   stateChanged(state: RootState) {
     let lastParentRegion = this._regionid;

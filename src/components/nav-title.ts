@@ -76,7 +76,6 @@ export class NavTitle extends LitElement {
 
   protected render() {
     let pageNames = { ...PAGE_NAMES, ...this.names};
-    let pageSkip = [ ...PAGE_SKIP, ...this.ignore];
 
     let loc = window.location.pathname;
     let parts = loc.split('/');
@@ -87,6 +86,10 @@ export class NavTitle extends LitElement {
     }
     let paths = parts.slice(1);
     let current = paths[paths.length-1];
+    
+    //exclude model= paths
+    let ignore = paths.filter(p => p.includes('model='));
+    let pageSkip = [ ...PAGE_SKIP, ...this.ignore, ...ignore];
     
     return html`
       <div class="simple-breadcrumbs">
@@ -102,7 +105,7 @@ export class NavTitle extends LitElement {
       ${this.displaytitle ? html`
       <div style="display:flex; justify-content: space-between; align-items: center;">
           <wl-title level="3" class="page-title">
-            ${pageNames[current] || current}
+            ${pageSkip.includes(current) ? "Compare Models" : pageNames[current] || current}
           </wl-title>
         <slot name="after"></slot>
       </div>` : null}

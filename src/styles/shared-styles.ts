@@ -903,4 +903,48 @@ export const SharedStyles = css`
   .font-numbers {
     font-family: system-ui;
   }
+
+  .concept-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .concept-card {
+    border-top: 4px solid rgb(97, 163, 156);
+    background: #F4F4F4;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .concept-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+  }
+
+  .concept-card h4 {
+    color: rgb(72, 72, 72);
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+  }
+
+  .concept-card p {
+    color: #495057;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .concept-card ul {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding-left: 1.5rem;
+  }
+
+  .concept-card li {
+    margin-bottom: 0.5rem;
+    color: #495057;
+  }
 `;

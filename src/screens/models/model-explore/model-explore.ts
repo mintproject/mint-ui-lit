@@ -238,7 +238,8 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
                 <wl-icon
                   slot="extra-icon"
-                  @click="${() => {
+                  @click="${(ev) => {
+                    ev.preventDefault();
                     this._addToComparisonList(key);
                   }}"
                   >compare_arrows</wl-icon
