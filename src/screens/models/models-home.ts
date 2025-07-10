@@ -77,7 +77,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
         }
 
         model-explorer {
-          height: calc(100% - 40px);
+          height: calc(100% - 80px);
         }
 
         @media (max-width: 768px) {

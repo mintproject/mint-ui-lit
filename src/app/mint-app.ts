@@ -113,6 +113,10 @@ export class MintApp extends connect(store)(LitElement) {
     return [
       SharedStyles,
       css`
+        .scrollable {
+          height:unset !important;
+        }
+
         .appframe {
           position: fixed;
           top: 0;
@@ -504,7 +508,7 @@ export class MintApp extends connect(store)(LitElement) {
                   ?active="${this._page == "variables"}"
                 ></variables-home>
                 <models-home
-                  class="page fullpage"
+                  class="page fullpage scrollable"
                   ?active="${this._page == "models"}"
                 ></models-home>
                 <modeling-home
