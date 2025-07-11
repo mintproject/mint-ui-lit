@@ -935,6 +935,7 @@ export const SharedStyles = css`
     color: #495057;
     margin: 0;
     line-height: 1.5;
+    margin-bottom: .5em;
   }
 
   .concept-card ul {

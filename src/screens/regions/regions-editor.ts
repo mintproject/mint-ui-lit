@@ -309,9 +309,9 @@ export class RegionsEditor extends connect(store)(PageViewElement) {
             </div>
             <div style="color: #777;">
               <b>Note:</b>
-              Datasets and models displayed below are retrieved based on the
+              The Models and Datasets found are calculated using the 
               bounding box of the region highlighted in the map. Results from
-              overlapping regions may be included
+              overlapping regions may be included.
             </div>`
         : ""}
 
