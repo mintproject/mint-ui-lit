@@ -12,73 +12,121 @@ import { css } from "lit-element";
 
 export const SharedStyles = css`
   :host {
-    font-family: "Raleway";
-    --font-family-serif: "Raleway";
-    --font-family-sans-serif: "Raleway";
+    font-family: "Benton Sans";
+    --font-family-serif: "Benton Sans";
+    --font-family-sans-serif: "Benton Sans";
     --primary-hue: 224;
     --primary-saturation: 50%;
     font-size: 14px;
     color: #444;
+    letter-spacing: .025rem;
+    line-height: 1.6;
+  }
+  
+  .appframe {
+    min-height: calc(100vh - 50px);
+    overflow-x:hidden;
+  }
+
+  .gray-section {
+    background-color: #f4f4f4;
+  }
+
+  .gray-section > .content-page {
+    padding-top: 15px;
+    padding-bottom: 25px;
+  }
+
+  @media (min-width: 1920px) {
+    .content-page {
+      max-width: 1550px;
+    }
+  }
+
+  @media (min-width: 1680px) and (max-width: 1919px){
+    .content-page {
+      max-width: 1320px;
+    }
+  }
+
+  @media (min-width: 1200px) and (max-width: 1679px){
+    .content-page {
+      max-width: 1140px;
+    }
+  }
+
+  @media (min-width: 992px) and (max-width: 1199px){
+    .content-page {
+      max-width: 960px;
+    }
+  }
+
+  @media (min-width: 768px) and (max-width: 991px) {
+    .content-page {
+      max-width: 720px;
+    }
+  }
+
+  @media (min-width: 576px) and (max-width: 767px) {
+    .content-page {
+      max-width: 540px;
+    }
+  }
+
+  @media (max-width: 575px) {
+    .content-page {
+      padding:0px 15px;
+    }
+  }
+
+  .content-page {
+    width: 100%;
+    padding: 0px 24px;
+    margin: 0 auto;
+    padding-inline: 0;
+  }
+
+  .page {
+    display: none;
+  }
+
+  .page[active] {
+    display: block;
   }
 
   p {
-    color: #666;
+    margin-top: 5px;
   }
 
-  wl-nav {
-    --nav-bg: #222222;
-    --nav-color: #FFFFFF;
-    --nav-height: 50px;
-    --nav-title-margin: 0px;
-    border-bottom: 1px solid #7F7F7F;
-    font-family: "Roboto", sans-serif;
-    font-size: 13px;
-    font-weight: 400;
-  }
-
-  wl-nav wl-button[flat] {
-    --button-bg: #FFFFFF;
-    --button-bg-hover: #FFFFFF;
-    --button-bg-active: #FFFFFF;
-  }
-
-  wl-nav a wl-icon,
-  wl-nav wl-button wl-icon {
-    vertical-align: middle;
-    margin-bottom: 2px;
-  }
-  
-  wl-nav .popover-wrapper {
-    background: #fff; 
-    padding: 5px 0px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
+  div.simple-breadcrumbs {
+    color: rgb(72, 72, 72);
+    font-size: .8rem;
     display: flex;
-    flex-direction: column;
   }
 
-  wl-nav .popover-wrapper wl-button {
-    border-radius: 0px;
-    font-family: "Roboto", sans-serif;
-    color: #000000;
-    padding: 10px 20px;
+  div.simple-breadcrumbs > span {
+    padding: 0px 4px;
   }
 
-  wl-nav .popover-wrapper wl-button:hover {
-    border-radius: 0px;
-    font-family: "Roboto", sans-serif;
-    color: #000000;
-    background-color: #F3F3F3;
+  div.simple-breadcrumbs > a {
+    display: inline-block;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    text-wrap: nowrap;
+    max-width: 210px;
   }
 
-  wl-nav .popover-wrapper wl-button.active {
-    border-radius: 0px;
-    font-family: "Roboto", sans-serif;
-    color: #FFFFFF;
-    background-color: #039;
+  div.simple-breadcrumbs > a[selected] {
+    color: rgb(72, 72, 72);
+    font-weight: 600;
   }
-  
+
+  div.simple-breadcrumbs > a:hover {
+    background-color: transparent;
+  }
+        
   wl-button {
+    border-radius: 2px;
     --button-padding: 10px;
     --button-font-size: 14px;
     --button-letter-spacing: 1px;
@@ -110,6 +158,10 @@ export const SharedStyles = css`
     color: rgb(61, 106, 204);
   }
 
+  wl-title {
+    font-family: "Benton Sans Bold";
+  }
+
   wl-title[level="3"] {
     color: #484848;
     font-weight: 900;
@@ -118,9 +170,13 @@ export const SharedStyles = css`
     color: #484848;
     font-size: 14px;
   }
-
-  wl-title[level="3"].page-title {
-    padding: .8em 32px;
+  
+  .clickable {
+    cursor: pointer;
+  }
+  
+  wl-tab-group, wl-tab {
+    background-color: transparent;
   }
 
   wl-list-item.active {
@@ -317,7 +373,7 @@ export const SharedStyles = css`
   }
   .clt ul li.active:hover,
   .clt ul li.highlighted {
-    background-color: #f0f0f0;
+    /* background-color: #f0f0f0;*/
   }
   .clt ul li.active:hover .cltmain {
     /*text-decoration: underline;*/
@@ -399,32 +455,6 @@ export const SharedStyles = css`
   }
   /* End of Tree View */
 
-  .card {
-    left: 0px;
-    right: 0px;
-    padding: 10px 20px;
-    height: calc(100% - 75px);
-    overflow: auto;
-  }
-
-  .page {
-    display: none;
-  }
-
-  .page.fullpage[active] {
-    height: 100%;
-    left: 0px;
-    right: 0px;
-  }
-
-  .page[active] {
-    display: block;
-  }
-
-  p {
-    margin-top: 5px;
-  }
-
   /* Dialog and Dialog form elements */
   wl-dialog {
     --dialog-bg: #f6f6f6;
@@ -481,12 +511,6 @@ export const SharedStyles = css`
   fieldset.notes textarea:focus {
     outline: none;
     border-color: #909090;
-  }
-
-  .footer {
-    display: flex;
-    justify-content: flex-end;
-    padding: 10px;
   }
 
   .formRow {
@@ -823,11 +847,6 @@ export const SharedStyles = css`
       --list-item-padding: 10px;
       --list-item-after-margin: 5px;
     }
-    .card {
-      margin: 5px;
-      padding: 5px;
-      padding-top: 0px;
-    }
     .card2 {
       padding: 0px;
     }
@@ -922,6 +941,11 @@ export const SharedStyles = css`
   .concept-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+  }
+
+  .concept-card.nohover:hover {
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
   }
 
   .concept-card h4 {

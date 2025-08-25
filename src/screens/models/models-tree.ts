@@ -459,16 +459,13 @@ export class ModelsTree extends connect(store)(PageViewElement) {
       <div style="margin-bottom:1em; padding: 0px 6px;" >
         <div style="display: flex; ">
           <wl-textfield
-            label="Search"
+            label="Search model configurations"
             @input=${this._search}
             id="search-input"
             style="--input-font-size: 14px; --input-label-space: 10px; width: 100%;"
           >
             <wl-icon slot="after">search</wl-icon>
           </wl-textfield>
-          <wl-button inverted flat style="--button-padding: 8px; width: 32px;">
-            <wl-icon>settings</wl-icon>
-          </wl-button>
         </div>
         <wl-select label="Model Category" @input=${this._changeCategory} value=${this._selectedCategory}>
           <option value="all">All model categories</option>

@@ -58,11 +58,6 @@ export class VariablesHome extends connect(store)(PageViewElement) {
     return [
       SharedStyles,
       css`
-        .container {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 1em 2rem;
-        }
         .header {
           margin-bottom: 2rem;
           display: flex;
@@ -275,6 +270,7 @@ export class VariablesHome extends connect(store)(PageViewElement) {
     let nav = [{ label: "Explore Variables", url: "variables" }];
 
     return html`
+    <div class="content-page">
       <nav-title .ignore=${[]}></nav-title>
       <div class="container">
         <div class="description-section ${this.isExplanationExpanded ? '' : 'collapsed'}">
@@ -368,6 +364,7 @@ export class VariablesHome extends connect(store)(PageViewElement) {
           </table>
         </div>
       </div>
+    </div>
     `;
   }
 }

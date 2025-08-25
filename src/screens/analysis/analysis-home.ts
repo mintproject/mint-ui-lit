@@ -27,11 +27,13 @@ export class AnalysisHome extends connect(store)(PageViewElement) {
 
   protected render() {
     return html`
-    <nav-title .ignore="${[]}"></nav-title>
-    <analysis-report
-      class="page"
-      ?active="${this._subpage == "report"}"
-    ></analysis-report>`;
+    <div class="content-page">
+      <nav-title .ignore="${[]}"></nav-title>
+      <analysis-report
+        class="page"
+        ?active="${this._subpage == "report"}"
+      ></analysis-report>
+    </div>`;
   }
 
   stateChanged(state: RootState) {

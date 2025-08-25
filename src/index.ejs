@@ -2,23 +2,43 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>MINT</title>
-    <meta name="generator" content="MINT UI">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="World Modelers Model INTegration (MINT) User Interface">
+    <title>DYNAMO</title>
+    <meta name="generator" content="DYNAMO UI">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="DYNAMO User Interface">
 
     <base href="<%= htmlWebpackPlugin.options.buildName && !htmlWebpackPlugin.options.static ? `/${htmlWebpackPlugin.options.buildName}/` : '/' %>">
     <script src="./config.js"></script>
     <link href="https://fonts.googleapis.com/css?family=Raleway:700,500,200" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <!--script crossorigin src="https://polyfill.app/api/polyfill?features=web-animations"></script-->
+    <style>
+      @font-face {
+        font-family: "Benton Sans";
+        src: url('fonts/BentonSans_Regular.otf') format('opentype');
+        font-weight: normal;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: "Benton Sans Bold";
+        src: url('fonts/BentonSans_Bold.otf') format('opentype');
+        font-weight: normal;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: "Benton Sans Black";
+        src: url('fonts/BentonSans_Black.otf') format('opentype');
+        font-weight: bold;
+        font-style: normal;
+      }
+    </style>
     
     <%- include fragments/icons -%>
     <%- include fragments/critical-css -%>
     <%- include fragments/critical-js -%>
   </head>
   <body>
-    <mint-app appTitle="MINT"></mint-app>
+    <mint-app appTitle="DYNAMO"></mint-app>
     <noscript>
       Please enable JavaScript to view this website.
     </noscript>

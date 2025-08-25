@@ -157,7 +157,7 @@ export class ModelPreview extends connect(store)(PageViewElement) {
         : [];
       let modelUri: string = this._regionid + (this._url ? this._url : this.PREFIX + getId(this._model));
       return html`
-        <a class="concept-card" style="margin-bottom:1em; cursor: pointer;" href=${modelUri}>
+        <a class="concept-card" style="margin-bottom:2em; cursor: pointer;" href=${modelUri}>
           <div class="flex between">
             <h4 class="ellipsis">${this._model.label}</h4>
             <div class="flex">

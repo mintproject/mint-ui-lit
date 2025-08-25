@@ -36,32 +36,15 @@ export class NavTitle extends LitElement {
 
   static get styles() {
     return [ SharedStyles, css`
+        .nav-br-t {
+          padding: 0;
+        }
+
         div.simple-breadcrumbs {
-          color: rgb(72, 72, 72);
-          font-size: .8rem;
-          display: flex;
+          padding-top: 45px;
+          margin-bottom: 40px
         }
-
-        div.simple-breadcrumbs > span {
-          padding: 0px 4px;
-        }
-
-        div.simple-breadcrumbs > a {
-          display: inline-block;
-          text-overflow: ellipsis;
-          overflow: hidden;
-          text-wrap: nowrap;
-          max-width: 210px;
-        }
-
-        div.simple-breadcrumbs > a[selected] {
-          color: rgb(72, 72, 72);
-          font-weight: 600;
-        }
-
-        div.simple-breadcrumbs > a:hover {
-          background-color: transparent;
-        }`
+          `
     ];
   }
 
@@ -92,6 +75,7 @@ export class NavTitle extends LitElement {
     let pageSkip = [ ...PAGE_SKIP, ...this.ignore, ...ignore];
     
     return html`
+    <div class="nav-br-t">
       <div class="simple-breadcrumbs">
         ${paths.map((page, i) => i == 0 ? 
             html`<a href="${this.createURL(paths, i)}/home" ?selected=${page === current}>Home</a>`
@@ -103,12 +87,13 @@ export class NavTitle extends LitElement {
         )}
       </div>
       ${this.displaytitle ? html`
-      <div style="display:flex; justify-content: space-between; align-items: center;">
-          <wl-title level="3" class="page-title">
+      <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+          <wl-title level="3">
             ${pageSkip.includes(current) ? "Compare Models" : pageNames[current] || current}
           </wl-title>
         <slot name="after"></slot>
       </div>` : null}
+    </div>
     `;
   }
 }

@@ -308,7 +308,7 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
       <div style="margin-bottom:1em; padding: 0px 6px;" >
         <div style="display: flex; ">
           <wl-textfield
-            label="Search"
+            label="Search Models and Versions"
             @input=${this._search}
             id="search-input"
             style="--input-font-size: 14px; --input-label-space: 10px; width: 100%;"
