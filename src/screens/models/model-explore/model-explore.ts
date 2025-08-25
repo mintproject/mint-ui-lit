@@ -85,7 +85,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         }
 
         #model-view-cont {
-          overflow: scroll;
           height: 100%;
           width: 100%;
         }

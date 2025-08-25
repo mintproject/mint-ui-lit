@@ -82,7 +82,7 @@ export class MintProblemStatement extends connect(store)(PageViewElement) {
         }
 
         .pslist {
-          max-height: calc(100vh - 365px);
+          height: calc(100vh - 365px);
           overflow-y:auto;
           overflow-x:hidden;
         }

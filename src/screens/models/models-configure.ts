@@ -78,6 +78,11 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
           background: #ffffff;
         }
 
+        .left-content {
+          grid-template-columns: 100%;
+          grid-template-rows: 30px
+        }
+
         .twocolumns {
           position: absolute;
           top: calc(100px + 1em);
@@ -246,7 +251,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     return html`
       <div class="twocolumns">
         <div class="${this._hideModels ? "left_closed" : "left"}">
-          <div class="clt">
+          <div class="clt left-content">
             <div class="simple-breadcrumbs">
               <a href="${this._regionid}/models">Prepare Models</a>
               <span>&gt;</span>
@@ -287,7 +292,7 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
               </div>
             </div>
 
-            ${!this._version && !this._creating ? html`<div class="empty-message">
+            ${!this._version && !this._creating && !this._loading ? html`<div class="empty-message">
               <span>Select a model configuration or setup on the left panel</span>
                       <div>
                         You can create custom configurations of a model by

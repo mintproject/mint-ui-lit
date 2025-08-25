@@ -100,6 +100,14 @@ export class ModelsTree extends connect(store)(PageViewElement) {
           gap: 4px;
         }
 
+        .inline-new-button:hover {
+          text-decoration: none;
+        }
+
+        .inline-new-button > span {
+          padding-top:4px;
+        }
+
         .inline-new-button > wl-icon {
           --icon-size: 1em;
           margin: 1px;
@@ -205,6 +213,12 @@ export class ModelsTree extends connect(store)(PageViewElement) {
 
         .tree-item:hover {
           background-color: rgb(240, 240, 240);
+        }
+        
+        .tree-content {
+          max-height: calc(100vh - 320px);
+          overflow-y: auto;
+          overflow-x: hidden;
         }
       `,
     ];
@@ -345,7 +359,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                                              <li ?selected="${this ._creating && !this ._selectedConfig && this._selectedVersion === version.id}" >
                                                <a class="inline-new-button config" @click="${() => { this._selectNew( model, version); }}" >
                                                  <wl-icon>add_circle_outline</wl-icon>
-                                                 Add new configuration
+                                                 <span>Add new configuration</span>
                                                </a>
                                              </li>
                                            </ul>
@@ -472,28 +486,30 @@ export class ModelsTree extends connect(store)(PageViewElement) {
           ${categoryOptions.map(n => html`<option value="${n}">${n}</value>`)}
         </wl-select>
       </div>
-      ${this._selectedCategory === 'all' ?  (Object.keys(categoryModels).length === 0 ? 
-        html`<div class="empty-search"> No models found </div>`
-      : 
-        html`
-        <ul style="padding-left: 8px; margin-top: 4px;">
-          ${Object.keys(categoryModels)
-            .map((category: string) => html`
-              <li ?selected="${this._visible[category]}">
-                <div class="tree-item" @click="${() => { this._visible[category] = !this._visible[category]; this.requestUpdate(); }}" >
-                  <wl-icon>${this._visible[category] ? "expand_more" : "expand_less"}</wl-icon >
-                  <div class="name" style="font-size: 15px;"> ${category} </div>
-                </div>
-                ${this._visible[category]
-                  ? this._renderCategoryTree(categoryModels, category, visibleSetup)
-                  : ""}
-              </li>
-            `
-          )}
-        </ul>` 
-      )
-      : 
-      this._renderCategoryTree(categoryModels, this._selectedCategory, visibleSetup)}`
+      <div class="tree-content">
+        ${this._selectedCategory === 'all' ?  (Object.keys(categoryModels).length === 0 ? 
+          html`<div class="empty-search"> No models found </div>`
+        : 
+          html`
+          <ul style="padding-left: 8px; margin-top: 4px;">
+            ${Object.keys(categoryModels)
+              .map((category: string) => html`
+                <li ?selected="${this._visible[category]}">
+                  <div class="tree-item" @click="${() => { this._visible[category] = !this._visible[category]; this.requestUpdate(); }}" >
+                    <wl-icon>${this._visible[category] ? "expand_more" : "expand_less"}</wl-icon >
+                    <div class="name" style="font-size: 15px;"> ${category} </div>
+                  </div>
+                  ${this._visible[category]
+                    ? this._renderCategoryTree(categoryModels, category, visibleSetup)
+                    : ""}
+                </li>
+              `
+            )}
+          </ul>` 
+        )
+        : 
+        this._renderCategoryTree(categoryModels, this._selectedCategory, visibleSetup)}
+      </div>`
   }
 
   private _renderTag(tag: string[]) {

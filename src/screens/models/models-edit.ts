@@ -175,7 +175,7 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
               <div class="cltmain">
                 <span class="title-prefix">
                   ${this._creating ? 
-                    ("CREATING NEW" + (this._model ? " VERSION FOR" : " MODEL")) 
+                    ("CREATING A NEW" + (this._model ? " VERSION FOR" : " MODEL")) 
                   :
                     (this._editing ? "EDITING" : "")}
                   ${this._version ? "VERSION:" : (this._model ? "MODEL:" : "")}
@@ -202,13 +202,10 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
             </div>` : ""}
 
             <div style="padding: 0px 10px;">
-              ${!this._selectedVersion &&
-              !this._selectedModel != !this._creating
-                ? this._iModel
-                : ""}
-              ${this._selectedModel && (this._selectedVersion || this._creating)
-                ? this._iVersion
-                : ""}
+              ${this._selectedModel && (this._selectedVersion || this._creating) ?
+                this._iVersion 
+              : (this._selectedModel || this._creating ? this._iModel : "")}
+
             </div>
           </div>
         </div>
@@ -303,6 +300,8 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
       if (this._creating) {
         if (this._model) {
           this._iVersion.enableSingleResourceCreation(this._model);
+        } else {
+          this._iModel.enableSingleResourceCreation();
         }
       }
 
