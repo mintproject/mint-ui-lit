@@ -48,6 +48,7 @@ import "../screens/variables/variables-home";
 import "../screens/messages/messages-home";
 import "../screens/emulators/emulators-home";
 import "components/notification";
+import "../components/my-footer";
 
 import "weightless/popover";
 import "weightless/radio";
@@ -104,21 +105,67 @@ export class MintApp extends connect(store)(LitElement) {
   private _dispatchedRegionsQuery: boolean = false;
   private _dispatchedSubRegionsQuery: boolean = false;
   private _dispatchedVariablesQuery: boolean = false;
-
-  private _loggedIntoWings = false;
-
   private _dispatchedConfigQuery = false;
 
   static get styles() {
     return [
       SharedStyles,
       css`
-        .appframe {
-          position: fixed;
-          top: 0;
-          bottom: 0;
-          left: 0;
-          right: 0;
+        wl-nav {
+          --nav-bg: #222222;
+          --nav-color: #FFFFFF;
+          --nav-height: 50px;
+          --nav-title-margin: 0px;
+          border-bottom: 1px solid #7F7F7F;
+          font-family: "Roboto", sans-serif;
+          font-size: 13px;
+          font-weight: 400;
+        }
+
+        wl-nav wl-button[flat] {
+          --button-bg: #FFFFFF;
+          --button-bg-hover: #FFFFFF;
+          --button-bg-active: #FFFFFF;
+        }
+
+        wl-nav a wl-icon,
+        wl-nav wl-button wl-icon {
+          vertical-align: middle;
+          margin-bottom: 2px;
+        }
+        
+        wl-nav .popover-wrapper {
+          background: #fff; 
+          padding: 5px 0px;
+          border: 1px solid #ddd;
+          border-radius: 3px;
+          display: flex;
+          flex-direction: column;
+        }
+
+        wl-nav .popover-wrapper wl-button {
+          border-radius: 0px;
+          font-family: "Roboto", sans-serif;
+          color: #000000;
+          padding: 10px 20px;
+        }
+
+        wl-nav .popover-wrapper wl-button:hover {
+          border-radius: 0px;
+          font-family: "Roboto", sans-serif;
+          color: #000000;
+          background-color: #F3F3F3;
+        }
+
+        wl-nav .popover-wrapper wl-button.active {
+          border-radius: 0px;
+          font-family: "Roboto", sans-serif;
+          color: #FFFFFF;
+          background-color: #039;
+        }
+      
+        .scrollable {
+          height:unset !important;
         }
 
         .sectionframe {
@@ -179,20 +226,6 @@ export class MintApp extends connect(store)(LitElement) {
         .breadcrumbs a:first:after {
           border-left-color: #629b30;
         }
-        .message-button {
-          --button-padding: 6px;
-        }
-        .message-button.selected {
-          background-color: rgb(98, 155, 48);
-          color: white;
-        }
-        .message-button.selected:hover {
-          background-color: rgb(98, 155, 48);
-        }
-        .message-button:hover {
-          background-color: rgb(224, 224, 224);
-        }
-
         #breadcrumbs-menu-button {
           display: none;
         }
@@ -200,8 +233,39 @@ export class MintApp extends connect(store)(LitElement) {
           display: none;
         }
 
-        @media (max-width: 1024px) {
+        .branding {
+          border-bottom: 1px solid white;
+          background-color: #222222;
+          height: 50px;
+          font-family: "Roboto", sans-serif;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-gap: 1em;
+        }
+
+        .branding > a:hover {
+          text-decoration: none;
+          background-color: unset;
+        }
+
+        .branding > a > img {
+          height: 24px;
+        }
+
+        .branding > .separator {
+          border-left: 1px solid white;
+          height: 24px;
+          margin: 0 15px;
+          vertical-align: middle;
+          width: 1px;
+        }
+
+        @media (max-width: 1240px) {
           #main-breadcrumbs {
+            display: none;
+          }
+          a.hide-in-small-screen {
             display: none;
           }
           #breadcrumbs-menu-button {
@@ -209,12 +273,6 @@ export class MintApp extends connect(store)(LitElement) {
           }
           #breadcrumbs-popover wl-button {
             display: block;
-          }
-          #main-breadcrumbs .emulator-button {
-            display: none;
-          }
-          wl-nav {
-            --nav-padding: 0px;
           }
           wl-button.active {
             --button-bg: #629b30 !important;
@@ -283,21 +341,16 @@ export class MintApp extends connect(store)(LitElement) {
               >Prepare Models</a
             >
             <a
-              href="${this._selectedRegion.id}/datasets"
-              class=${this._page == "datasets" ? "active" : ""}
-              >Browse Datasets</a
-            >
-            <a
               href="${this._selectedRegion.id}/modeling"
               class=${this._page == "modeling" ? "active" : ""}
               class="active"
               >Use Models</a
             >
-            <a
-              href="${this._selectedRegion.id}/analysis/report"
-              class=${this._page == "analysis" ? "active" : ""}
+            <!--a
+              href="{this._selectedRegion.id}/analysis/report"
+              class={this._page == "analysis" ? "active" : ""}
               >Prepare Reports</a
-            >
+            -->
           `}
     `;
   }
@@ -335,35 +388,19 @@ export class MintApp extends connect(store)(LitElement) {
             <wl-button
               flat
               inverted
-              class="${this._page == "datasets" ? "active" : ""}"
-              @click="${() => goToPage("datasets")}"
-            >
-              Browse Datasets
-            </wl-button>
-            <wl-button
-              flat
-              inverted
               class="${this._page == "modeling" ? "active" : ""}"
               @click="${() => goToPage("modeling")}"
             >
               Use Models
             </wl-button>
-            <wl-button
+            <!--wl-button
               flat
               inverted
-              class="${this._page == "analysis" ? "active" : ""}"
-              @click="${() => goToPage("analysis")}"
+              class="{this._page == "analysis" ? "active" : ""}"
+              @click="{() => goToPage("analysis")}"
             >
               Prepare Reports
-            </wl-button>
-            <wl-button
-              flat
-              inverted
-              class="${this._page == "emulators" ? "active" : ""}"
-              @click="${() => goToPage("emulators")}"
-            >
-              Emulators &#38; Results
-            </wl-button>
+            </wl-button-->
           `}
     `;
   }
@@ -406,6 +443,15 @@ export class MintApp extends connect(store)(LitElement) {
 
       <div class="appframe">
         <!-- Navigation Bar -->
+        <div class="branding">
+          <a href="https://www.tacc.utexas.edu/" target="_blank" aria-label="Opens in new window.">
+            <img src="/images/tacc-white.png" crossorigin="anonymous" alt="TACC Logo">
+          </a>
+          <span class="separator"></span>
+          <a href="https://www.utexas.edu/" target="_blank" aria-label="Opens in new window.">
+            <img src="/images/utaustin-white.png" crossorigin="anonymous" alt="University of Texas at Austin Logo">
+          </a>
+        </div>
         <wl-nav>
           <div class="small-screen" slot="left">
             <wl-button
@@ -415,13 +461,7 @@ export class MintApp extends connect(store)(LitElement) {
               @click="${this._onBreadcrumbsMenuButtonClicked}"
             >
               <wl-icon>menu</wl-icon>
-            </wl-button>
-            <wl-button
-              style="display: inline-block"
-              flat
-              inverted
-              @click="${this._onBreadcrumbsMenuButtonClicked}"
-            >
+              &nbsp;
               ${this._getPageTitle()}
             </wl-button>
             <wl-popover
@@ -433,71 +473,44 @@ export class MintApp extends connect(store)(LitElement) {
               anchorOriginX="left"
               anchorOriginY="bottom"
             >
-              <div
-                style="background: #fff; padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px; display: flex; flex-direction: column;"
-              >
-                <ul class="breadcrumbs">
-                  ${this._getMenuButtons()}
-                </ul>
+              <div class="popover-wrapper">
+                ${this._getMenuButtons()}
               </div>
             </wl-popover>
           </div>
+
           <div slot="title">
             <ul id="main-breadcrumbs" class="breadcrumbs_header">
               ${this._getMenuLinks()}
             </ul>
           </div>
           <div slot="right">
+            <ul class="breadcrumbs_header">
+              ${this._selectedRegion
+                ? html`
+              <a href="https://ckan.tacc.utexas.edu"
+                class="hide-in-small-screen"
+                target="_blank">
+                <wl-icon style="margin-left: 4px;">filter_drama</wl-icon>
+                &nbsp;
+                Data discovery
+              </a>`: ""}
+
             ${this.user == null
               ? html`
-                  ${this._selectedRegion
-                    ? html`
-                        <wl-button
-                          flat
-                          inverted
-                          class="message-button emulators-button ${this._page ==
-                          "emulators"
-                            ? "selected"
-                            : ""}"
-                          @click="${() => goToPage("emulators")}"
-                        >
-                          Emulators &#38; Results
-                          <wl-icon style="margin-left: 4px;">settings</wl-icon>
-                        </wl-button>
-                      `
-                    : ""}
-                  <wl-button flat inverted @click="${this._showLoginWindow}">
-                    LOGIN &nbsp;
+                  <a @click="${this._showLoginWindow}">
                     <wl-icon alt="account">account_circle</wl-icon>
-                  </wl-button>
+                    &nbsp;
+                    Log in 
+                  </a>
                 `
               : html`
-                  ${this._selectedRegion
-                    ? html`
-                        &nbsp;
-                        <wl-button
-                          flat
-                          inverted
-                          class="message-button emulators-button ${this._page ==
-                          "emulators"
-                            ? "selected"
-                            : ""}"
-                          @click="${() => goToPage("emulators")}"
-                        >
-                          Emulators &#38; Results
-                          <wl-icon style="margin-left: 4px;">settings</wl-icon>
-                        </wl-button>
-                      `
-                    : ""}
-
-                  <wl-button
-                    id="user-button"
-                    flat
-                    inverted
-                    @click="${this._onUserButtonClicked}"
-                  >
+                  <a @click="${this._onUserButtonClicked}" id="user-button">
+                    <wl-icon alt="account">account_circle</wl-icon>
+                    &nbsp;
                     ${this.user.email}
-                  </wl-button>
+                  </a>
+
                   <wl-popover
                     id="user-popover"
                     anchor="#user-button"
@@ -507,9 +520,7 @@ export class MintApp extends connect(store)(LitElement) {
                     anchorOriginX="right"
                     anchorOriginY="bottom"
                   >
-                    <div
-                      style="background: #fff; padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px; display: flex; flex-direction: column;"
-                    >
+                    <div class="popover-wrapper">
                       <wl-button
                         flat
                         inverted
@@ -518,118 +529,117 @@ export class MintApp extends connect(store)(LitElement) {
                           : ""}"
                         @click="${() => goToPage("messages")}"
                       >
+                        <wl-icon>message</wl-icon>
+                        &nbsp;
                         Messages
-                        <wl-icon style="margin-left: 4px;">message</wl-icon>
                       </wl-button>
                       <wl-button
                         flat
                         inverted
                         @click="${this._onLogOutButtonClicked}"
                       >
-                        LOGOUT
+                        Log out
                       </wl-button>
                     </div>
                   </wl-popover>
                 `}
+          </ul>
           </div>
         </wl-nav>
 
         ${this.user
           ? html`
-              <div class="card">
-                <!-- Main Pages -->
-                <app-home
-                  class="page fullpage"
-                  ?active="${this._page == "home"}"
-                ></app-home>
-                <datasets-home
-                  class="page fullpage"
-                  ?active="${this._page == "datasets"}"
-                ></datasets-home>
-                <regions-home
-                  class="page fullpage"
-                  ?active="${this._page == "regions"}"
-                ></regions-home>
-                <variables-home
-                  class="page fullpage"
-                  ?active="${this._page == "variables"}"
-                ></variables-home>
-                <models-home
-                  class="page fullpage"
-                  ?active="${this._page == "models"}"
-                ></models-home>
-                <modeling-home
-                  class="page fullpage"
-                  ?active="${this._page == "modeling"}"
-                ></modeling-home>
-                <analysis-home
-                  class="page fullpage"
-                  ?active="${this._page == "analysis"}"
-                ></analysis-home>
-                <messages-home
-                  class="page fullpage"
-                  ?active="${this._page == "messages"}"
-                ></messages-home>
-                <emulators-home
-                  class="page fullpage"
-                  ?active="${this._page == "emulators"}"
-                ></emulators-home>
-              </div>
+              <!-- Main Pages -->
+              <app-home
+                class="page fullpage"
+                ?active="${this._page == "home"}"
+              ></app-home>
+              <datasets-home
+                class="page fullpage"
+                ?active="${this._page == "datasets"}"
+              ></datasets-home>
+              <regions-home
+                class="page fullpage"
+                ?active="${this._page == "regions"}"
+              ></regions-home>
+              <variables-home
+                class="page fullpage"
+                ?active="${this._page == "variables"}"
+              ></variables-home>
+              <models-home
+                class="page fullpage scrollable"
+                ?active="${this._page == "models"}"
+              ></models-home>
+              <modeling-home
+                class="page fullpage"
+                ?active="${this._page == "modeling"}"
+              ></modeling-home>
+              <analysis-home
+                class="page fullpage"
+                ?active="${this._page == "analysis"}"
+              ></analysis-home>
+              <messages-home
+                class="page fullpage"
+                ?active="${this._page == "messages"}"
+              ></messages-home>
+              <emulators-home
+                class="page fullpage"
+                ?active="${this._page == "emulators"}"
+              ></emulators-home>
             `
           : html`
-              <div class="card">
-                <!-- Main Pages -->
-                <app-home
-                  class="page fullpage"
-                  ?active="${this._page == "home"}"
-                ></app-home>
-                <models-home
-                  class="page fullpage"
-                  ?active="${this._page == "models"}"
-                ></models-home>
-                <emulators-home
-                  class="page fullpage"
-                  ?active="${this._page == "emulators"}"
-                ></emulators-home>
-                <variables-home
-                  class="page fullpage"
-                  ?active="${this._page == "variables"}"
-                ></variables-home>
-                ${this._page != "home" &&
-                this._page != "emulators" &&
-                this._page !== "models" &&
-                this._page !== "variables"
-                  ? html`
-                      <div
-                        style="display: flex; color: #888; flex-direction: column; width: 100%; height: 100%; align-items: center; justify-content: center;"
-                      >
-                        <div style="font-size: 2em;">
-                          ${this._page === "callback"
-                            ? "Please wait"
-                            : "Unauthorized"}
-                        </div>
-                        <div style="font-size: 1.5em;">
-                          ${this._page === "callback"
-                            ? ""
-                            : html`
-                                Please
-                                <a
-                                  style="cursor: pointer;"
-                                  @click="${this._showLoginWindow}"
-                                  >log in</a
-                                >
-                                or go to the <a href="/">home page</a>
-                              `}
-                        </div>
+              <!-- Main Pages -->
+              <app-home
+                class="page fullpage"
+                ?active="${this._page == "home"}"
+              ></app-home>
+              <models-home
+                class="page fullpage"
+                ?active="${this._page == "models"}"
+              ></models-home>
+              <emulators-home
+                class="page fullpage"
+                ?active="${this._page == "emulators"}"
+              ></emulators-home>
+              <variables-home
+                class="page fullpage"
+                ?active="${this._page == "variables"}"
+              ></variables-home>
+              ${this._page != "home" &&
+              this._page != "emulators" &&
+              this._page !== "models" &&
+              this._page !== "variables"
+                ? html`
+                    <div
+                      style="display: flex; color: #888; flex-direction: column; width: 100%; height: 100%; align-items: center; justify-content: center;"
+                    >
+                      <div style="font-size: 2em;">
+                        ${this._page === "callback"
+                          ? "Please wait"
+                          : "Unauthorized"}
                       </div>
-                    `
-                  : ""}
-              </div>
+                      <div style="font-size: 1.5em;">
+                        ${this._page === "callback"
+                          ? ""
+                          : html`
+                              Please
+                              <a
+                                style="cursor: pointer;"
+                                @click="${this._showLoginWindow}"
+                                >log in</a
+                              >
+                              or go to the <a href="/">home page</a>
+                            `}
+                      </div>
+                    </div>
+                  `
+                : ""}
             `}
       </div>
-
-      ${this._renderLoginDialog()} ${this._renderConfigureUserDialog()}
+      ${this._renderLoginDialog()}
+      ${this._renderConfigureUserDialog()}
       ${this._renderWaitDialog()}
+      <my-footer></my-footer>
     `;
   }
 

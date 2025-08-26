@@ -22,6 +22,8 @@ store.addReducers({
 import modelCatalog from "model-catalog-api/reducers";
 import { ModelCatalogApi } from "model-catalog-api/model-catalog-api";
 import { UserCatalog } from "model-catalog-api/user-catalog";
+import { Model, ModelConfiguration, ModelConfigurationSetup } from "@mintproject/modelcatalog_client";
+import { getLabel } from "model-catalog-api/util";
 
 store.addReducers({
   modelCatalog,
@@ -29,14 +31,11 @@ store.addReducers({
 
 @customElement("models-home")
 export class ModelsHome extends connect(store)(PageViewElement) {
-  @property({ type: String })
-  private _selectedModelId: string = "";
-  @property({ type: String })
-  private _selectedConfig: string = "";
-  @property({ type: String })
-  private _selectedSetup: string = "";
-  @property({ type: Object })
-  private user: User | null = null;
+  @property({ type: Object }) private _selectedModel: Model;
+  @property({ type: Object }) private _selectedConfig: ModelConfiguration;
+  @property({ type: Object }) private _selectedSetup: ModelConfigurationSetup;
+  @property({ type: String }) private _selectedVersionID: String;
+  @property({ type: Object }) private user: User | null = null;
 
   static get styles() {
     return [
@@ -78,7 +77,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
         }
 
         model-explorer {
-          height: calc(100% - 40px);
+          height: calc(100% - 80px);
         }
 
         @media (max-width: 768px) {
@@ -90,6 +89,69 @@ export class ModelsHome extends connect(store)(PageViewElement) {
 
         a[disabled] {
           pointer-events: none;
+        }
+
+        .two-section {
+          display: grid;
+          grid-template-columns: auto 45%;
+          gap: 2em;
+          margin-bottom:3em;
+        }
+
+        .concept-grid-3 > .concept-card > div:first-child {
+          display: flex;
+          justify-content: space-between;
+          flex-direction: column;
+        }
+
+        .concept-grid-3 > .concept-card > div > a:hover {
+          background-color:transparent;
+        }
+
+
+        .gray-section {
+          margin-top: 2em;
+          padding-bottom: 3em;
+        }
+
+        .concept-grid-3 {
+          padding-top: 40px;
+          display: grid;
+          grid-template-columns: auto auto auto;
+          gap: 1em;
+        }
+
+        @media (max-width: 768px) {
+          .concept-grid-3 {
+            grid-template-columns: auto;
+          }
+        }
+
+        @media (min-width: 769px) {
+          .concept-grid-3 {
+            grid-template-columns: auto auto;
+          }
+        }
+        @media (min-width: 1024px) {
+          .concept-grid-3 {
+            grid-template-columns: auto auto auto;
+          }
+        }
+
+        .concept-grid-3 .concept-card {
+          display: grid;
+          grid-template-columns: auto 100px;
+          background-color:white;
+        }
+
+        .concept-grid-3 .concept-card > .card-icon {
+          display: flex;
+          align-items: center;
+        }
+
+        .concept-grid-3 > .concept-card > .card-icon > wl-icon {
+          --icon-size: 100px;
+          color:hsl(224,50%,38%);
         }
       `,
       SharedStyles,
@@ -105,138 +167,192 @@ export class ModelsHome extends connect(store)(PageViewElement) {
   }
 
   private _getAPILink() {
-    return "https://api.models.wildfire.mint.isi.edu/latest/ui/";
+    return "https://api.models.mint.tacc.utexas.edu/v1.8.0/docs";
   }
 
   protected render() {
-    let nav = [{ label: "Prepare Models", url: "models" }];
-    switch (this._subpage) {
-      case "explore":
-        nav.push({ label: "Model Catalog", url: "models/explore" });
-        if (this._selectedModelId) {
-          nav.push({
-            label: this._selectedModelId,
-            url: "models/explore/" + this._selectedModelId,
-          });
+    let extraNames = {}
+    let ignore = [];
+    if (this._selectedModel) {
+      extraNames[this._selectedModel.id.split('/').pop()] = getLabel(this._selectedModel);
+      if (this._selectedConfig) {
+        extraNames[this._selectedConfig.id.split('/').pop()] = getLabel(this._selectedConfig);
+        if (this._selectedSetup) {
+          extraNames[this._selectedSetup.id.split('/').pop()] = getLabel(this._selectedSetup);
         }
-        break;
-      case "register":
-        nav.push({ label: "Add Models", url: "models/register" });
-        break;
-      case "configure":
-        nav.push({ label: "Configure Models", url: "models/configure" });
-        break;
-      case "calibrate":
-        nav.push({ label: "Calibrate Models", url: "models/calibrate" });
-        break;
-      case "compare":
-        nav.push({ label: "Compare Models", url: "models/compare" });
-        break;
-      case "edit":
-        nav.push({ label: "Edit Models", url: "models/edit" });
-        break;
-      case "cromo":
-        nav.push({ label: "Recommend Models", url: "models/cromo" });
-        break;
-      default:
-        break;
+      }
+    }
+    if (this._selectedVersionID) {
+      ignore.push(this._selectedVersionID);
     }
 
     return html`
-      <nav-title .nav="${nav}" max="2">
-        <a
-          slot="after"
-          class="no-decoration"
-          target="_blank"
-          href="${this._getAPILink()}"
-          style="margin-right: 0.5em;"
-        >
-          <wl-button style="--button-padding: 8px;">
-            <wl-icon style="margin-right: 5px;">help_outline</wl-icon>
-            <b>API</b>
-          </wl-button>
-        </a>
-        <a
-          slot="after"
-          class="no-decoration"
-          target="_blank"
-          href="${this._getHelpLink()}"
-        >
-          <wl-button
-            style="--button-bg: forestgreen; --button-bg-hover: darkgreen; --button-padding: 8px;"
-          >
-            <wl-icon style="margin-right: 5px;">help_outline</wl-icon>
-            <b>Documentation</b>
-          </wl-button>
-        </a>
+    <div class="${this._subpage == "home" || this._subpage == "explore" ? "content-page" : "hiddensection"}">
+      <nav-title .names="${extraNames}" .ignore="${ignore}" .displaytitle=${this._subpage !== 'explore'}>
       </nav-title>
+    </div>
 
-      <div class="${this._subpage != "home" ? "hiddensection" : "icongrid"}">
-        <a href="${this._regionid}/models/explore">
-          <wl-icon>search</wl-icon>
-          <div>Browse Models</div>
-        </a>
-        <a
-          href="${this._regionid}/models/register"
-          ?disabled=${this.user === null}
-        >
-          <wl-icon>library_add</wl-icon>
-          <div>Add Models</div>
-        </a>
-        <a href="${this._regionid}/models/edit" ?disabled=${this.user === null}>
-          <wl-icon>edit</wl-icon>
-          <div>Edit Models</div>
-        </a>
-        <a href="${this._regionid}/models/compare">
-          <wl-icon>compare</wl-icon>
-          <div>Compare Models</div>
-        </a>
-        <a
-          href="${this._regionid}/models/configure"
-          ?disabled=${this.user === null}
-        >
-          <wl-icon>perm_data_settings</wl-icon>
-          <div>Configure Models</div>
-        </a>
-        <a
-          href="${this._regionid}/models/cromo"
-          ?disabled=${this.user === null}
-        >
-          <wl-icon style="margin-top:0px">manage_search</wl-icon>
-          <div style="margin-top: -10px;">Recommend Models</div>
-        </a>
+    <div class="${this._subpage == "home" ? "content-page" : "hiddensection"}">
+      <div class="two-section">
+        <div>
+          <p>
+            The DYNAMO Model Services describe physical, environmental, and social models
+            (e.g., climate, hydrology, agriculture, or economy models) to help users:
+          </p>
+          <ul>
+            <li>
+              Find relevant models by name, keywords, variables, or region of execution.
+            </li>
+            <li>
+              Understand how to use models and interpret their results. To support this,
+              key variables in input and output files are described, along with essential
+              geospatial and temporal information that provides context for interpreting results.
+            </li>
+            <li>
+              Configure models by providing new input files and parameters, or by creating
+              new expert-prepared setups.
+            </li>
+          </ul>
+        </div>
+        <div class="concept-card nohover">
+          <h4>Whant to know more?</h4>
+          <hr></hr>
+          <ul>
+            <li>
+              <a target="_blank" href="${this._getHelpLink()}">
+                Check out the documentation
+              </a>
+               for an introduction to how the model catalog defines models and configurations.
+            </li>
+            <li>
+              The model catalog is also accessible through an OpenAPI-compatible API. For more details,
+              <a target="_blank" href="${this._getAPILink()}" >
+                read the API documentation.
+              </a>
+            </li>
+          </ul>
+        </div>
       </div>
+    </div>
 
-      <model-explorer
-        class="page"
-        ?active="${this._subpage == "explore"}"
-      ></model-explorer>
-      <models-register
-        class="page"
-        ?active="${this._subpage == "register"}"
-      ></models-register>
-      <models-configure
-        class="page"
-        ?active="${this._subpage == "configure"}"
-      ></models-configure>
-      <models-calibrate
-        class="page"
-        ?active="${this._subpage == "calibrate"}"
-      ></models-calibrate>
-      <models-compare
-        class="page"
-        ?active="${this._subpage == "compare"}"
-      ></models-compare>
-      <models-edit
-        class="page"
-        ?active="${this._subpage == "edit"}"
-      ></models-edit>
-      <models-cromo
-        class="page"
-        ?active="${this._subpage == "cromo"}"
-      ></models-cromo>
+    <div class="${this._subpage == "home" ? "gray-section" : "hiddensection"}">
+      <div class="content-page">
+        <div class="concept-grid-3">
+          <div class="concept-card">
+            <div>
+              <h4>Browse Models</h4>
+              <p>
+                The DYNAMO Model Browser helps you explore the models available in the catalog.
+              </p>
+              <a href="${this._regionid}/models/explore" class="no-decoration,"> 
+                <wl-button>Browse Models</wl-button>
+              </a>
+            </div>
+            <div class="card-icon">
+              <wl-icon>search</wl-icon>
+            </div>
+          </div>
+
+          <div class="concept-card">
+            <div>
+              <h4>Create or Edit Models</h4>
+              <p>
+                Create new models or software versions, or edit existing ones.
+              </p>
+              <a href="${this._regionid}/models/edit" ?disabled=${this.user === null}>
+                <wl-button>Edit models</wl-button>
+              </a>
+            </div>
+            <div class="card-icon">
+              <wl-icon>edit</wl-icon>
+            </div>
+          </div>
+
+          <div class="concept-card">
+            <div>
+              <h4>Configure Models</h4>
+              <p>
+                Create generic model configurations or set up heavily restricted executions.
+              </p>
+              <a href="${this._regionid}/models/configure" ?disabled=${this.user === null}>
+                <wl-button>Set up models</wl-button>
+              </a>
+            </div>
+            <div class="card-icon">
+              <wl-icon>perm_data_settings</wl-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <model-explorer
+      class="page"
+      ?active="${this._subpage == "explore"}"
+    ></model-explorer>
+    <models-register
+      class="page"
+      ?active="${this._subpage == "register"}"
+    ></models-register>
+    <models-configure
+      class="page"
+      ?active="${this._subpage == "configure"}"
+    ></models-configure>
+    <models-calibrate
+      class="page"
+      ?active="${this._subpage == "calibrate"}"
+    ></models-calibrate>
+    <models-compare
+      class="page"
+      ?active="${this._subpage == "compare"}"
+    ></models-compare>
+    <models-edit
+      class="page"
+      ?active="${this._subpage == "edit"}"
+    ></models-edit>
+    <models-cromo
+      class="page"
+      ?active="${this._subpage == "cromo"}"
+    ></models-cromo>
     `;
   }
+
+//    <div>
+//      <div class="${this._subpage != "home" ? "hiddensection" : "icongrid"}">
+//        <a href="${this._regionid}/models/explore">
+//          <wl-icon>search</wl-icon>
+//          <div>Browse Models</div>
+//        </a>
+//        <a
+//          href="${this._regionid}/models/register"
+//          ?disabled=${this.user === null}
+//        >
+//          <wl-icon>library_add</wl-icon>
+//          <div>Add Models</div>
+//        </a>
+//        <a href="${this._regionid}/models/edit" ?disabled=${this.user === null}>
+//          <wl-icon>edit</wl-icon>
+//          <div>Edit Models</div>
+//        </a>
+//        <a href="${this._regionid}/models/compare">
+//          <wl-icon>compare</wl-icon>
+//          <div>Compare Models</div>
+//        </a>
+//        <a
+//          href="${this._regionid}/models/configure"
+//          ?disabled=${this.user === null}
+//        >
+//          <wl-icon style="margin-left: 20px;">perm_data_settings</wl-icon>
+//          <div>Configure Models</div>
+//        </a>
+//        <a
+//          href="${this._regionid}/models/cromo"
+//          ?disabled=${this.user === null}
+//        >
+//          <wl-icon style="margin-top:0px">manage_search</wl-icon>
+//          <div style="margin-top: -10px;">Recommend Models</div>
+//        </a>
+//      </div>
 
   firstUpdated() {
     let api: UserCatalog = ModelCatalogApi.myCatalog;
@@ -280,10 +396,19 @@ export class ModelsHome extends connect(store)(PageViewElement) {
     this.user = state.app!.user!;
     super.setSubPage(state);
     super.setRegionId(state);
-    if (state && state.explorerUI) {
-      this._selectedModelId = state.explorerUI.selectedModel.split("/").pop();
-      this._selectedConfig = state.explorerUI.selectedConfig;
-      this._selectedSetup = state.explorerUI.selectedCalibration;
+    if (state && state.explorerUI && state.modelCatalog) {
+      if (state.explorerUI.selectedVersion)
+        this._selectedVersionID = state.explorerUI.selectedVersion.split('/').pop();
+      else
+        this._selectedVersionID = "";
+      if (state.explorerUI.selectedModel && state.modelCatalog.model[state.explorerUI.selectedModel])
+        this._selectedModel = state.modelCatalog.model[state.explorerUI.selectedModel]
+      if (state.explorerUI.selectedModel && state.modelCatalog.modelconfiguration[state.explorerUI.selectedConfig]) {
+        this._selectedConfig = state.modelCatalog.modelconfiguration[state.explorerUI.selectedConfig]
+      }
+      if (state.explorerUI.selectedModel && state.modelCatalog.modelconfigurationsetup[state.explorerUI.selectedCalibration]) {
+        this._selectedSetup = state.modelCatalog.modelconfigurationsetup[state.explorerUI.selectedCalibration]
+      }
     }
   }
 }

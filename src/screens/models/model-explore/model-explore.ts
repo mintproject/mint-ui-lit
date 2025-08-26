@@ -76,19 +76,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
           padding: 6px 10px;
         }
 
-        #model-search-results {
-          margin: 0 auto;
-          overflow-y: scroll;
-          overflow-x: hidden;
-          height: calc(100% - 140px);
-          width: 100%;
-        }
-
-        #model-search-results > model-preview {
-          margin: 0 auto;
-          width: 75%;
-        }
-
         model-preview {
           display: none;
         }
@@ -98,21 +85,15 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
         }
 
         #model-view-cont {
-          margin: 0 auto;
-          overflow: scroll;
           height: 100%;
           width: 100%;
         }
 
         #model-view-cont > model-view {
-          margin: 0 auto;
           display: block;
-          width: 75%;
         }
 
         #model-search-form {
-          margin: 0 auto;
-          width: 75%;
           padding-bottom: 1em;
         }
 
@@ -141,8 +122,6 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
         .explanation {
           display: block;
-          margin: 0 auto;
-          width: 75%;
           color: rgb(102, 102, 102);
           font-size: 13px;
         }
@@ -162,27 +141,28 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
   protected render() {
     return html`
       ${this._notifications}
-      ${this._selectedUri
-        ? //Display only selected model or the search
+      ${this._selectedUri ?
           html`<div id="model-view-cont"><model-view active></model-view></div>`
-        : this._renderSearch()}
-    `;
+        : html`<div>${ this._renderSearch() }</div>`
+      }`
   }
 
   _renderSearch() {
     let hasResults = Object.values(this._activeModels).some((x) => x);
     return html`
+    <div class="content-page">
+      <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+          <wl-title level="3">
+            Model Catalog
+          </wl-title>
+        <slot name="after"></slot>
+      </div>
       <wl-text class="explanation">
-        The MINT model browser allows you to learn about the different models
-        included in MINT. Each model can have separate configurations, each
-        representing a unique functionality of that model (particular choices of
-        processes, regions, etc). Each configuration can have separate setups
-        that provide different default values for files and parameters.
-        <br />
-        In the search bar below you can search models in several ways, which you
-        can choose on the right. You can search by model name, description, type
-        (e.g. agriculture), keywords (fertilizer), areas (e.g. Pongo), variables
-        (e.g. rainfall), index or intervention.
+        The DYNAMO Model Browser helps you explore the models available in the catalog.
+        Each model may include multiple configurations, representing different functionalities
+        such as processes, regions, or parameter choices. Configurations can also contain
+        distinct setups that define default input files and parameter values, making it
+        easier to run and compare model executions.
       </wl-text>
       <div id="model-search-form">
         <!-- https://github.com/andreasbm/weightless/issues/58 -->
@@ -242,7 +222,8 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
 
                 <wl-icon
                   slot="extra-icon"
-                  @click="${() => {
+                  @click="${(ev) => {
+                    ev.preventDefault();
                     this._addToComparisonList(key);
                   }}"
                   >compare_arrows</wl-icon
@@ -255,7 +236,7 @@ export class ModelExplorer extends connect(store)(PageViewElement) {
               >
             </div>`}
       </div>
-    `;
+    </div>`;
   }
 
   private _addToComparisonList(uri: string) {

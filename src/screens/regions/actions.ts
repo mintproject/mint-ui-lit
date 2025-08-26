@@ -271,7 +271,7 @@ export const listSubRegions: ActionCreator<SubRegionsThunkResult> =
           regions,
         });
       }
-    });
+    })
   };
 
 export const filterRegionsOfType = (

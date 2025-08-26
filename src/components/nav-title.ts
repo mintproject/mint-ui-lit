@@ -1,100 +1,99 @@
 import { customElement, LitElement, property, html, css } from "lit-element";
-
-import { goToPage } from "../app/actions";
 import { SharedStyles } from "../styles/shared-styles";
 
 import "weightless/icon";
 
+const PAGE_NAMES = {
+  'variables': 'Explore Variables',
+  'regions': 'Explore Areas',
+  'agriculture': 'Agriculture Regions',
+  'hydrology': 'Hydrology Regions',
+  'administrative': 'Administrative Regions',
+  'models': 'Prepare Models',
+  'explore': 'Model Catalog',
+  'register': 'Add Models',
+  'edit': 'Edit Models',
+  'compare': 'Compare Models',
+  'configure': 'Configure Models',
+  'cromo': 'Recommend Models',
+  'datasets': 'Explore Data',
+  'browse': 'Browse Datasets',
+  'quality-workflows': 'Improve Quality of Datasets',
+  'rs-workflows': 'Remote Sensing',
+  'report': 'Available Reports',
+  'emulators': 'Model Products / Emulators',
+  'messages': 'Discussion topics',
+  'modeling': 'Problem statements'
+}
+
+const PAGE_SKIP = ['analysis']
+
 @customElement("nav-title")
 export class NavTitle extends LitElement {
-  @property({ type: Array })
-  nav = [];
-
-  @property({ type: Number })
-  min = 1;
-
-  @property({ type: Number })
-  max = 3;
+  @property({ type: Boolean }) displaytitle = true;
+  @property({ type: Object }) names = {};
+  @property({ type: Array }) ignore = [];
 
   static get styles() {
-    return [
-      SharedStyles,
-      css`
-        .cltmain > wl-title {
-          display: inline-block;
+    return [ SharedStyles, css`
+        .nav-br-t {
+          padding: 0;
         }
 
-        #nav-container {
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          padding-left: 5px;
-          padding-top: 5px;
+        div.simple-breadcrumbs {
+          padding-top: 45px;
+          margin-bottom: 40px
         }
-
-        .clickable {
-          cursor: pointer;
-        }
-
-        wl-title.clickable:hover {
-          text-decoration: underline;
-        }
-      `,
+          `
     ];
   }
 
+  createURL (pages, index) {
+    let url = ""
+    for (let i = 0; i <= index; i++) {
+      url += pages[i] + '/';
+    }
+    return url.substring(0, url.length - 1);
+  }
+
+
   protected render() {
-    let len: number = this.nav.length;
+    let pageNames = { ...PAGE_NAMES, ...this.names};
 
+    let loc = window.location.pathname;
+    let parts = loc.split('/');
+    if (parts[parts.length-1] === "")
+      parts = parts.slice(0,-1);
+    if (parts.length <= 2) {
+      return html``;
+    }
+    let paths = parts.slice(1);
+    let current = paths[paths.length-1];
+    
+    //exclude model= paths
+    let ignore = paths.filter(p => p.includes('model='));
+    let pageSkip = [ ...PAGE_SKIP, ...this.ignore, ...ignore];
+    
     return html`
-      <div class="cltrow">
-        <wl-button
-          flat
-          inverted
-          @click="${() => {
-            goToPage(this.nav[len - 2].url);
-          }}"
-          ?disabled="${len === 1}"
-        >
-          <wl-icon>arrow_back_ios</wl-icon>
-        </wl-button>
-
-        <div class="cltmain" id="nav-container">
-          ${this.nav.map((n, i) => {
-            return i < this.max
-              ? html`
-                  ${i > 1
-                    ? html`<wl-title
-                        level="3"
-                        style="padding:0px 10px; cursor: default;"
-                        >/</wl-title
-                      >`
-                    : html``}
-                  ${i >= this.min || len === 1
-                    ? i === len - 1
-                      ? html`
-                          <wl-title level="3" style="cursor: default;"
-                            >${n.label}</wl-title
-                          >
-                        `
-                      : html`
-                          <wl-title
-                            level="3"
-                            class="clickable"
-                            @click="${() => {
-                              goToPage(n.url);
-                            }}"
-                            >${n.label}</wl-title
-                          >
-                        `
-                    : html``}
-                `
-              : html``;
-          })}
-        </div>
-
-        <slot name="after"></slot>
+    <div class="nav-br-t">
+      <div class="simple-breadcrumbs">
+        ${paths.map((page, i) => i == 0 ? 
+            html`<a href="${this.createURL(paths, i)}/home" ?selected=${page === current}>Home</a>`
+          : (pageSkip.includes(page) ? html`` :
+            html`
+              <span>&gt;</span>
+              <a href="${this.createURL(paths, i)}" ?selected=${page === current}>${pageNames[page] || page}</a>`
+            )
+        )}
       </div>
+      ${this.displaytitle ? html`
+      <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+          <wl-title level="3">
+            ${pageSkip.includes(current) ? "Compare Models" : pageNames[current] || current}
+          </wl-title>
+        <slot name="after"></slot>
+      </div>` : null}
+    </div>
     `;
   }
 }

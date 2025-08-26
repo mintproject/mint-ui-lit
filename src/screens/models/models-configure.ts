@@ -26,6 +26,7 @@ import "weightless/progress-spinner";
 import "weightless/tab";
 import "weightless/tab-group";
 import "../../components/loading-dots";
+import { getLabel } from "model-catalog-api/util";
 
 @customElement("models-configure")
 export class ModelsConfigure extends connect(store)(PageViewElement) {
@@ -77,12 +78,17 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
           background: #ffffff;
         }
 
+        .left-content {
+          grid-template-columns: 100%;
+          grid-template-rows: 30px
+        }
+
         .twocolumns {
           position: absolute;
-          top: 120px;
-          bottom: 25px;
-          left: 25px;
-          right: 25px;
+          top: calc(100px + 1em);
+          bottom: calc(50px + 1em);
+          left: 1em;
+          right: 1em;
           display: flex;
           border: 1px solid #f0f0f0;
         }
@@ -91,7 +97,6 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
           width: 30%;
           padding-top: 0px;
           border-right: 1px solid #f0f0f0;
-          padding-right: 5px;
           overflow: auto;
           height: 100%;
         }
@@ -131,6 +136,41 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
           font-weight: normal;
           color: rgb(153, 153, 153) !important;
         }
+
+        .simple-breadcrumbs {
+          padding: 6px 12px 4px 12px;
+          border-bottom:1px solid #f0f0f0;
+        }
+
+        .r-title {
+          font-size: 1.2em;
+          font-family: "Benton Sans Bold";
+          font-weight: bolder;
+        }
+
+        .r-config {
+          color:rgb(6, 108, 67);
+        }
+
+        .empty-message {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100%;
+          font-size: 1.3em;
+          font-family: "Benton Sans Bold";
+          font-weight: bolder;
+          color: #999;
+          flex-direction: column;
+        }
+
+        .empty-message > div {
+          text-align: center;
+          color: #888;
+          font-size: .9em;
+          width: 80%;
+          font-family: "Benton Sans";
+        }
       `,
       SharedStyles,
     ];
@@ -141,7 +181,6 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     this._iSetup = new ModelCatalogModelConfigurationSetup();
     this._iConfig = new ModelCatalogModelConfiguration();
     this._modelTree = new ModelsTree();
-    this._modelTree.active = true;
   }
 
   firstUpdated() {
@@ -212,12 +251,12 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     return html`
       <div class="twocolumns">
         <div class="${this._hideModels ? "left_closed" : "left"}">
-          <div class="clt">
-            <wl-title
-              level="4"
-              style="margin: 4px; padding: 10px 10px 0px 10px;"
-              >Models:</wl-title
-            >
+          <div class="clt left-content">
+            <div class="simple-breadcrumbs">
+              <a href="${this._regionid}/models">Prepare Models</a>
+              <span>&gt;</span>
+              <a selected>Configure Models:</a>
+            </div>
             ${this._modelTree}
           </div>
         </div>
@@ -231,57 +270,36 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
             >
               ${!this._hideModels ? "fullscreen" : "fullscreen_exit"}
             </wl-icon>
-            ${this._selectedConfig && !this._creating
-              ? html`
-                  <span
-                    style="float:right;"
-                    class="custom-button"
-                    @click="${this._goToCatalog}"
-                    >See in catalog</span
-                  >
-                `
-              : ""}
             <div class="cltrow_padded">
               <div class="cltmain">
-                <wl-title
-                  level="3"
-                  .style="margin: 0px; ${this._config && !this._setup
-                    ? "color:rgb(6, 108, 67);"
-                    : ""}"
-                >
-                  ${this._creating
-                    ? html`<span class="title-prefix">
-                        CREATING A NEW
-                        ${this._config ? "SETUP" : "CONFIGURATION"} FOR
-                      </span>`
-                    : this._editing
-                    ? html`<span class="title-prefix">EDITING</span>`
-                    : ""}
-                  ${this._setup
-                    ? html`<span class="title-prefix">SETUP:</span> ${this
-                          ._setup.label}`
-                    : this._config
-                    ? html`<span class="title-prefix">CONFIGURATION:</span>
-                        ${this._config.label}`
-                    : this._version
-                    ? this._version.label
-                    : "Select a model configuration or setup on the left panel."}
-                </wl-title>
-                ${!this._version
-                  ? html`
-                      <wl-text>
-                        You can create custom configurations of a model, by
-                        fixing parameter values or input datasets or by
-                        constraining the ranges that parameters can take.
-                      </wl-text>
-                      <wl-title level="4">
-                        Select a model from the left panel, and edit the
-                        parameters and files accordingly.
-                      </wl-title>
-                    `
-                  : ""}
+                <span class="title-prefix">
+                  ${this._creating ? 
+                    ("CREATING A NEW " + (this._config ? "SETUP" : "CONFIGURATION") + " FOR") 
+                  :
+                    (this._editing ? "EDITING" : "")}
+                  ${this._setup ? "SETUP:" : (this._config ? "CONFIGURATION:" : "")}
+                </span>
+
+                ${this._setup ? html`
+                  <a class="no-decoration clickable r-title" target="_blank" href="${this._getConfigURL()}">
+                    ${getLabel(this._setup)}
+                  </a>
+                ` : (this._config ? html`
+                  <a class="no-decoration clickable r-title r-config" target="_blank" href="${this._getConfigURL()}">
+                    ${getLabel( this._config)}
+                  </span>
+                ` : (this._version ? html`<span class="r-title">${getLabel(this._version)}</span>` : ""))}
               </div>
             </div>
+
+            ${!this._version && !this._creating && !this._loading ? html`<div class="empty-message">
+              <span>Select a model configuration or setup on the left panel</span>
+                      <div>
+                        You can create custom configurations of a model by
+                        fixing parameter values or input datasets or by
+                        constraining the ranges that parameters can take.
+                      </div>
+            </div>` : ""}
 
             ${this._config ||
             this._setup ||
@@ -330,16 +348,17 @@ export class ModelsConfigure extends connect(store)(PageViewElement) {
     `;
   }
 
-  private _goToCatalog() {
+  private _getConfigURL() {
     let url =
-      "models/explore/" +
+      this._regionid + 
+      "/models/explore/" +
       this._selectedModel.split("/").pop() +
       "/" +
       this._selectedVersion.split("/").pop() +
       "/" +
       this._selectedConfig.split("/").pop();
     if (this._selectedSetup) url += "/" + this._selectedSetup.split("/").pop();
-    goToPage(url);
+    return url;
   }
 
   stateChanged(state: RootState) {

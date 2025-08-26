@@ -39,6 +39,13 @@ export class RegionDatasets extends connect(store)(RegionQueryPage) {
         :host {
           margin-bottom: 10px;
         }
+
+        .info-center {
+          font-size: 12pt;
+          color: #999;
+          padding-left: 16px;
+          padding-bottom: 1em;
+        }
       `,
     ];
   }
@@ -82,7 +89,7 @@ export class RegionDatasets extends connect(store)(RegionQueryPage) {
                   <wl-progress-spinner></wl-progress-spinner>
                 </div>`
               : !this._datasets.datasets || this._datasets.datasets.length === 0
-              ? "No datasets for this region"
+              ? html`<div class="info-center">No datasets for this region</div>`
               : this._datasets.datasets.map(
                   (ds) => html`
                     <wl-list-item

@@ -17,6 +17,7 @@ import { getLabel, sortVersions, getURL } from "model-catalog-api/util";
 
 import "weightless/progress-spinner";
 import "components/loading-dots";
+import { Select } from "weightless";
 
 @customElement("model-version-tree")
 export class ModelVersionTree extends connect(store)(PageViewElement) {
@@ -41,11 +42,23 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
   @property({ type: Boolean })
   private _creating: boolean = false;
 
+  @property({ type: String })
+  private _selectedCategory: string = "all";
+
+  @property({ type: String })
+  private _searchString: string = "";
+
   static get styles() {
     return [
       ExplorerStyles,
       SharedStyles,
       css`
+        .tree-content {
+          height: calc(100vh - 366px);
+          overflow-y: auto;
+          overflow-x: hidden;
+        }
+
         .tooltip:hover::after {
           width: 80px;
           left: -10px;
@@ -54,12 +67,18 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
         .inline-new-button {
           line-height: 1.2em;
           font-size: 1.2em;
-          vertical-align: middle;
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+          gap: 4px;
         }
 
-        wl-icon {
-          position: relative;
-          top: 5px;
+        .inline-new-button:hover {
+          text-decoration: none;
+        }
+
+        .inline-new-button > span {
+          padding-top:4px;
         }
 
         .inline-new-button > wl-icon {
@@ -67,12 +86,8 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
           margin: 1px;
         }
 
-        .config {
+        .version {
           color: rgb(6, 108, 67);
-        }
-
-        .setup {
-          color: rgb(6, 67, 108);
         }
 
         ul {
@@ -94,9 +109,9 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
         }
 
         li[selected] > span,
+        li[selected] > div,
         li[selected] > a {
           font-weight: 900;
-          font-size: 15px;
         }
 
         span {
@@ -121,8 +136,60 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
           background: forestgreen;
           color: white;
         }
+
+        div.tree-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          heigth: 2em;
+          padding: 2px 4px 2px 0px;
+          cursor:pointer;
+        }
+
+        div.tree-item > div.name {
+          width: 100%;
+        }
+
+        div.tree-item.version > wl-icon.sample-icon {
+          margin-right:4px;
+          color: rgb(6, 148, 90);
+        }
+
+        div.tree-item.version > wl-icon.sample-icon[selected] {
+          margin-right:4px;
+          color: rgb(6, 108, 67);
+        }
+
+        div.empty-search {
+          text-align:center;
+          color: rgb(153, 153, 153);
+          width:100%;
+          padding: 10px 0px;
+        }
+
+        .tree-item:hover {
+          background-color: rgb(240, 240, 240);
+        }
       `,
     ];
+  }
+
+  _getId(resource: | Model | SoftwareVersion) {
+    return resource.id.split("/").pop();
+  }
+
+  _search (arg) {
+    this._searchString = arg.target.value.toLowerCase();
+  }
+
+  _changeCategory (elem) {
+    this._selectedCategory = elem.target.value;
+    this._searchString = "";
+
+    let selector: Select = this.shadowRoot!.getElementById(
+      "search-input"
+    ) as Select;
+    if (selector) selector.value ="";
   }
 
   _select(model: Model, version?: SoftwareVersion) {
@@ -131,6 +198,62 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
 
   _selectNew(model?: Model) {
     goToPage("models/edit/" + getURL(model) + "/new");
+  }
+
+  _renderCategoryTree(categoryModels, category) {
+    const simpleSearch = (text:string) => text.toLowerCase().includes(this._searchString);
+    const modelSearch = (m:Model) => m.label.some(simpleSearch) ||
+      (m.hasVersion || [])
+        .filter(v => !!this._versions[v.id])
+        .map(v => this._versions[v.id])
+        .some(v => v.label.some(simpleSearch));
+    if ((categoryModels[category]||[]).filter(m => modelSearch(m) || simpleSearch(category)).length === 0)
+      return html`<div class="empty_search"> No models found </div>`
+
+    return html`
+       <ul>
+         ${categoryModels[category]
+           .filter(m => modelSearch(m) || simpleSearch(category))
+           .map(
+             (model: Model) => html`
+               <li ?selected="${this._selectedModel === model.id}">
+                 <div class="tree-item" @click="${() => { this._visible[model.id] = !this._visible[model.id]; this._select(model); this.requestUpdate(); }}">
+                   <wl-icon>${this._visible[model.id] ? "expand_more" : "expand_less"}</wl-icon>
+                   <div class="name"> ${model.label} </div>
+                 </div>
+                 ${this._visible[model.id]
+                   ? html` ${Object.keys(this._versions).length === 0
+                         ? html`<loading-dots style="--width: 20px;" ></loading-dots>`
+                         : html` <ul>
+                               ${(model.hasVersion||[])
+                                 .filter(v => !!this._versions[v.id])
+                                 .map(v => this._versions[v.id])
+                                 .sort(sortVersions)
+                                 .map((version: SoftwareVersion) => 
+                                   html` <li ?selected="${this ._selectedVersion === version.id}" >
+                                     <div @click=${() => this._select(model, version)} class="tree-item version">
+                                       <wl-icon class="sample-icon" ?selected="${this ._selectedVersion === version.id}">label</wl-icon>
+                                       <div class="name">
+                                         ${version.label ? version.label : this._getId(version)}
+                                       </div>
+                                       ${this._renderTag( version["tag"])}
+                                     </div>
+                                   </li>`
+                                 )}
+                                <li ?selected=${this._selectedModel === model.id && this._creating} >
+                                  <a class="inline-new-button version" @click="${() => { this._selectNew(model); }}" >
+                                    <wl-icon>add_circle_outline</wl-icon>
+                                    <span>Add new version</span>
+                                  </a>
+                                </li>
+                             </ul>
+                           `}
+                     `
+                   : ""}
+               </li>
+             `
+           )}
+       </ul>`
   }
 
   protected render() {
@@ -164,99 +287,88 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
         delete categoryModels[cat];
       }
     });
+    const categoryOptions = Object.keys(categoryModels);
+    const applySearch = (text:string) => text.toLowerCase().includes(this._searchString);
+
+    //When searching, remove categories with zero results
+    if (this._searchString) {
+      for (let categoryName of Object.keys(categoryModels)) {
+        let found = false;
+        if (applySearch(categoryName)) {
+          found = true;
+        } else {
+          for (let model of categoryModels[categoryName]) {
+            if (model.label.some(applySearch)) {
+              found = true;
+              break;
+            } 
+            for (let tver of (model.hasVersion || [])) {
+              let version = this._versions[tver.id];
+              if (version && (version.label||[]).some(applySearch)) {
+                    found = true;
+                    break;
+              } 
+            }
+          }
+        }
+        //--
+        if (!found) {
+          delete categoryModels[categoryName];
+        }
+      }
+    }
 
     return html`
-      <ul style="padding-left: 10px; margin-top: 4px;">
-        ${Object.keys(categoryModels).map(
-          (category: string) => html`
-            <li ?selected="${this._visible[category]}">
-              <span
-                @click="${() => {
-                  this._visible[category] = !this._visible[category];
-                  this.requestUpdate();
-                }}"
-              >
-                <wl-icon
-                  >${this._visible[category]
-                    ? "expand_more"
-                    : "expand_less"}</wl-icon
-                >
-                <span style="font-size: 15px;"> ${category} </span>
-              </span>
-              ${this._visible[category]
-                ? html`
-                    <ul>
-                      ${categoryModels[category].map(
-                        (model: Model) => html`
-                          <li ?selected="${this._selectedModel === model.id}">
-                            <span>
-                              <wl-icon
-                                @click="${() => {
-                                  this._visible[model.id] =
-                                    !this._visible[model.id];
-                                  this.requestUpdate();
-                                }}"
-                              >
-                                ${this._visible[model.id]
-                                  ? "expand_more"
-                                  : "expand_less"}
-                              </wl-icon>
-                              <span
-                                @click="${() => {
-                                  this._select(model);
-                                }}"
-                              >
-                                ${getLabel(model)}
-                              </span>
-                            </span>
-                            ${this._visible[model.id]
-                              ? html`
-                                  <ul>
-                                    ${(model.hasVersion || [])
-                                      .filter(
-                                        (v: any) => !!this._versions[v.id]
-                                      )
-                                      .map((v: any) => this._versions[v.id])
-                                      .sort(sortVersions)
-                                      .map(
-                                        (version: SoftwareVersion) => html` <li
-                                          ?selected="${this._selectedVersion ===
-                                          version.id}"
-                                        >
-                                          <span
-                                            @click=${() => {
-                                              this._select(model, version);
-                                            }}
-                                          >
-                                            ${this._renderTag(version["tag"])}
-                                            <span> ${getLabel(version)} </span>
-                                          </span>
-                                        </li>`
-                                      )}
-                                    <li>
-                                      <a
-                                        class="inline-new-button config"
-                                        @click="${() => {
-                                          this._selectNew(model);
-                                        }}"
-                                      >
-                                        <wl-icon>add_circle_outline</wl-icon>
-                                        Add new version
-                                      </a>
-                                    </li>
-                                  </ul>
-                                `
-                              : ""}
-                          </li>
-                        `
-                      )}
-                    </ul>
-                  `
-                : ""}
-            </li>
-          `
-        )}
-      </ul>
+      <div style="margin-bottom:1em; padding: 0px 6px;" >
+        <div style="display: flex; ">
+          <wl-textfield
+            label="Search Models and Versions"
+            @input=${this._search}
+            id="search-input"
+            style="--input-font-size: 14px; --input-label-space: 10px; width: 100%;"
+          >
+            <wl-icon slot="after">search</wl-icon>
+          </wl-textfield>
+        </div>
+        <wl-select label="Model Category" @input=${this._changeCategory} value=${this._selectedCategory}>
+          <option value="all">All model categories</option>
+          ${categoryOptions.map(n => html`<option value="${n}">${n}</value>`)}
+        </wl-select>
+      </div>
+
+      
+      <div class="tree-content">
+        ${this._selectedCategory === 'all' ?  (Object.keys(categoryModels).length === 0 ? 
+          html`<div class="empty-search"> No models found </div>`
+        : 
+          html`
+          <ul style="padding-left: 8px; margin-top: 4px;">
+            ${Object.keys(categoryModels)
+              .map((category: string) => html`
+                <li ?selected="${this._visible[category]}">
+                  <div class="tree-item" @click="${() => { this._visible[category] = !this._visible[category]; this.requestUpdate(); }}" >
+                    <wl-icon>${this._visible[category] ? "expand_more" : "expand_less"}</wl-icon >
+                    <div class="name" style="font-size: 15px;"> ${category} </div>
+                  </div>
+                  ${this._visible[category]
+                    ? this._renderCategoryTree(categoryModels, category)
+                    : ""}
+                </li>
+              `
+            )}
+          </ul>` 
+        )
+        : 
+        this._renderCategoryTree(categoryModels, this._selectedCategory)}
+      </div>
+      <div>
+        <wl-button style="display:flex;align-items:center; gap:1em; margin: 0 1em;"
+          @click="${() => goToPage("models/edit/new")}"
+        >
+          <wl-icon>add_circle_outline</wl-icon>
+          <span>Add new Model</span>
+        </wl-button>
+      </div>
     `;
   }
 

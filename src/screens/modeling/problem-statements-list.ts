@@ -65,19 +65,75 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
   @property({ type: String })
   private _top_regionid?: string;
 
+  @property({ type: String })
+  private _filter: string = "";
+
   static get styles() {
     return [
       SharedStyles,
       css`
+        .search-bar {
+          display:grid;
+          grid-template-columns: auto 120px;
+          gap: 1em;
+        }
+        #search-input {
+          --input-padding-top-bottom: 6px;
+        }
+        .concept-card {
+          display: grid;
+          grid-template-columns: 100px auto;
+        }
+        .concept-card > .card-icon {
+          display: flex;
+          align-items: center;
+        }
+        .concept-card > .card-icon > wl-icon {
+          --icon-size: 75px;
+          color: rgb(72, 132, 125);
+        }
+        .concept-grid-2 {
+          padding-top: 40px;
+          display: grid;
+          grid-template-columns: 50% 50%;
+          gap: 2em;
+          margin-bottom: 40px;
+        }
+        .concept-grid-2 > .concept-card {
+          padding: 16px 24px;
+          background-color: #f4f4f4;
+        }
+        @media (max-width: 991px) {
+          .concept-grid-2 {
+            grid-template-columns: auto;
+          }
+        }
+
+        .card-content-header {
+          display: grid;
+          grid-template-columns: auto 100px;
+          align-items: center;
+          gap: 1em;
+        }
+        .card-buttons {
+          display:flex;
+          justify-content: flex-end;
+          gap: .5em;
+        }
+        .card-buttons > wl-icon {
+          padding: 2px;
+          border-radius: 4px;
+        }
+        .card-buttons > wl-icon:hover {
+          background-color: #dadadada;
+        }
+
         .small-notes {
           font-size: 13px;
           color: black;
         }
         .top-paragraph {
           margin-left: 44px;
-        }
-        div.caption {
-          width: 200px;
         }
         @media (max-width: 1024px) {
           .big-screen {
@@ -95,77 +151,92 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
     ];
   }
 
-  protected render() {
-    if (this._dispatched)
-      return html`<wl-progress-spinner class="loading"></wl-progress-spinner>`;
+  _clearSearchInput() {
+    this._filter = "";
+  }
 
-    //console.log("rendering");
+  _onSearchInput() {
+    let inputElement: HTMLElement | null =
+      this.shadowRoot!.getElementById("search-input");
+    if (!inputElement) return;
+
+    this._filter = inputElement["value"];
+  }
+
+  protected render() {
     return html`
-      <div class="cltrow problem_statement_row">
-        <wl-button flat inverted disabled>
-          <wl-icon>arrow_back_ios</wl-icon>
-        </wl-button>
-        <div class="cltmain navtop">
-          <wl-title level="3">Problem statements</wl-title>
+      <nav-title>
+      </nav-title>
+
+      <div class="top-section">
+        <p>Choose an existing problem from the list below or click add to create a new one.</p>
+        <div class="search-bar">
+          <div id="ps-search-form">
+            <wl-textfield
+              id="search-input"
+              label="Search problem statemets"
+              @input=${this._onSearchInput}
+              value="${this._filter}"
+            >
+              <div slot="after">
+                <wl-icon
+                  .style="${this._filter == "" ? "display:none;" : ""}"
+                  @click="${this._clearSearchInput}"
+                  >clear</wl-icon
+                >
+              </div>
+              <div slot="before"><wl-icon>search</wl-icon></div> </wl-textfield
+            >
+          </div>
+          <wl-button @click="${this._addProblemStatementDialog}">
+            Add
+            <wl-icon>add</wl-icon>
+          </wl-button>
         </div>
-        <wl-icon
-          @click="${this._addProblemStatementDialog}"
-          class="actionIcon bigActionIcon addIcon"
-          id="addProblemStatementIcon"
-          >note_add</wl-icon
-        >
       </div>
-      <p class="top-paragraph">
-        Choose an existing problem from the list below or click add to create a
-        new one.
-      </p>
-      <!-- Show ProblemStatement List -->
-      ${this._list &&
-      this._list.problem_statement_ids.map((problem_statement_id) => {
-        let problem_statement =
-          this._list.problem_statements[problem_statement_id];
-        let last_event = getLatestEvent(problem_statement.events);
-        let permissions = getUserPermission(
-          problem_statement.permissions,
-          problem_statement.events
-        );
-        let create_event = getLatestEventOfType(
-          ["CREATE"],
-          problem_statement.events
-        );
-        //console.log(problem_statement.preview);
-        //let region = this._regions[problem_statement.regionid];
-        if (problem_statement.regionid == this._top_regionid) {
-          return html`
-            <wl-list-item
-              class="active"
+
+      ${this._dispatched ? 
+        html`<wl-progress-spinner class="loading"></wl-progress-spinner>`
+      :
+        html`<div class="concept-grid-2">
+          ${this._list &&
+          this._list.problem_statement_ids.map((problem_statement_id) => {
+            let problem_statement =
+              this._list.problem_statements[problem_statement_id];
+            let last_event = getLatestEvent(problem_statement.events);
+            let permissions = getUserPermission(
+              problem_statement.permissions,
+              problem_statement.events
+            );
+            let create_event = getLatestEventOfType(
+              ["CREATE"],
+              problem_statement.events
+            );
+            if (problem_statement.regionid != this._top_regionid || !(problem_statement.name || "").toLocaleLowerCase().includes(this._filter.toLocaleLowerCase())) {
+              return html``
+            }
+            return html`<div class="concept-card clickable"
               @click="${this._onSelectProblemStatement}"
               data-problem_statement_id="${problem_statement.id}"
             >
-              <div class="big-screen" slot="before">
-                <wl-icon>label_important</wl-icon>
+              <div class="card-icon">
+                <wl-icon>fact_check</wl-icon>
               </div>
-              <div slot="after" style="display:flex">
-                <div class="caption big-screen">
-                  Last updated by: ${last_event?.userid}<br />
-                  ${toDateTimeString(last_event?.timestamp)}
-                </div>
-                <div
-                  style="height: 24px; width: 40px; padding-left: 10px; display:flex; justify-content: end"
-                >
+              <div class="card-content">
+                <div class="card-content-header">
+                  <wl-title level="4" style="margin: 0">${problem_statement.name}</wl-title>
+                  <div class="card-buttons">
                   ${permissions.owner
                     ? html`
                         <wl-icon
                           @click="${this._editProblemStatementDialog}"
                           data-problem_statement_id="${problem_statement.id}"
                           id="editProblemStatementIcon"
-                          class="actionIcon editIcon"
                           >edit</wl-icon
                         >
                       `
-                    : !permissions.write
-                    ? html`<div style="width:20px">&nbsp;</div>
-                        <wl-icon class="smallIcon">lock</wl-icon>`
+                    : permissions.write
+                    ? html`<wl-icon class="smallIcon">lock</wl-icon>`
                     : ""}
                   ${permissions.owner
                     ? html`
@@ -173,51 +244,147 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
                           @click="${this._onDeleteProblemStatement}"
                           data-problem_statement_id="${problem_statement.id}"
                           id="delProblemStatementIcon"
-                          class="actionIcon deleteIcon"
                           >delete</wl-icon
                         >
                       `
                     : ""}
+                  </div>
                 </div>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <div>
-                  <wl-title level="4" style="margin: 0"
-                    >${problem_statement.name}</wl-title
-                  >
-                  ${last_event?.notes
-                    ? html`<div class="small-notes">
-                        <b>Notes:</b> ${last_event.notes}
-                      </div>`
-                    : ""}
-                  <div>
+                <hr/>
+                <div class="card-content-text">
+                  <div style="margin-bottom: .5em;">
                     Time Period:
                     ${toDateString(problem_statement.dates.start_date)} to
                     ${toDateString(problem_statement.dates.end_date)}
                   </div>
                   <div class="caption">
-                    Created by: ${create_event?.userid} at
-                    ${toDateTimeString(create_event?.timestamp)}
+                    <div>
+                      Created by: ${create_event?.userid} at ${toDateTimeString(create_event?.timestamp)}
+                    </div>
+                    <div>
+                      Last updated by: ${last_event?.userid} at ${toDateTimeString(last_event?.timestamp)}
+                    </div>
                   </div>
                 </div>
-                <div class="big-screen" style="width: 250px;">
-                  ${problem_statement.preview &&
-                  problem_statement.preview.length > 0
-                    ? html`<b>Indicators:</b> ${problem_statement.preview.join(
-                          ", "
-                        )}`
-                    : ""}
                 </div>
               </div>
-            </wl-list-item>
-          `;
-        }
-        return html``;
-      })}
+            </div>`;
+          })}
+        </div>`}
       ${this._renderTooltips()} ${renderNotifications()}
       ${this._renderDialogs()}
     `;
   }
+
+//      <p class="top-paragraph">
+//        Choose an existing problem from the list below or click add to create a
+//        new one.
+//      </p>
+//      <!-- Show ProblemStatement List -->
+//      ${this._dispatched ? 
+//        html`<wl-progress-spinner class="loading"></wl-progress-spinner>`
+//      :
+//        html`
+//      ${this._list &&
+//      this._list.problem_statement_ids.map((problem_statement_id) => {
+//        let problem_statement =
+//          this._list.problem_statements[problem_statement_id];
+//        let last_event = getLatestEvent(problem_statement.events);
+//        let permissions = getUserPermission(
+//          problem_statement.permissions,
+//          problem_statement.events
+//        );
+//        let create_event = getLatestEventOfType(
+//          ["CREATE"],
+//          problem_statement.events
+//        );
+//        //console.log(problem_statement.preview);
+//        //let region = this._regions[problem_statement.regionid];
+//        if (problem_statement.regionid == this._top_regionid) {
+//          return html`
+//            <wl-list-item
+//              class="active"
+//              @click="${this._onSelectProblemStatement}"
+//              data-problem_statement_id="${problem_statement.id}"
+//            >
+//              <div class="big-screen" slot="before">
+//                <wl-icon>label_important</wl-icon>
+//              </div>
+//              <div slot="after" style="display:flex">
+//                <div class="caption big-screen">
+//                  Last updated by: ${last_event?.userid}<br />
+//                  ${toDateTimeString(last_event?.timestamp)}
+//                </div>
+//                <div
+//                  style="height: 24px; width: 40px; padding-left: 10px; display:flex; justify-content: end"
+//                >
+//                  ${permissions.owner
+//                    ? html`
+//                        <wl-icon
+//                          @click="${this._editProblemStatementDialog}"
+//                          data-problem_statement_id="${problem_statement.id}"
+//                          id="editProblemStatementIcon"
+//                          class="actionIcon editIcon"
+//                          >edit</wl-icon
+//                        >
+//                      `
+//                    : !permissions.write
+//                    ? html`<div style="width:20px">&nbsp;</div>
+//                        <wl-icon class="smallIcon">lock</wl-icon>`
+//                    : ""}
+//                  ${permissions.owner
+//                    ? html`
+//                        <wl-icon
+//                          @click="${this._onDeleteProblemStatement}"
+//                          data-problem_statement_id="${problem_statement.id}"
+//                          id="delProblemStatementIcon"
+//                          class="actionIcon deleteIcon"
+//                          >delete</wl-icon
+//                        >
+//                      `
+//                    : ""}
+//                </div>
+//              </div>
+//              <div style="display: flex; justify-content: space-between;">
+//                <div>
+//                  <wl-title level="4" style="margin: 0"
+//                    >${problem_statement.name}</wl-title
+//                  >
+//                  ${last_event?.notes
+//                    ? html`<div class="small-notes">
+//                        <b>Notes:</b> ${last_event.notes}
+//                      </div>`
+//                    : ""}
+//                  <div>
+//                    Time Period:
+//                    ${toDateString(problem_statement.dates.start_date)} to
+//                    ${toDateString(problem_statement.dates.end_date)}
+//                  </div>
+//                  <div class="caption">
+//                    Created by: ${create_event?.userid} at
+//                    ${toDateTimeString(create_event?.timestamp)}
+//                  </div>
+//                </div>
+//                <div class="big-screen" style="width: 250px;">
+//                  ${problem_statement.preview &&
+//                  problem_statement.preview.length > 0
+//                    ? html`<b>Indicators:</b> ${problem_statement.preview.join(
+//                          ", "
+//                        )}`
+//                    : ""}
+//                </div>
+//              </div>
+//            </wl-list-item>
+//          `;
+//        }
+//        return html``;
+//      })}
+//      `}
+//
+//      ${this._renderTooltips()} ${renderNotifications()}
+//      ${this._renderDialogs()}
+//    `;
+//  }
 
   _renderTooltips() {
     return html`
@@ -274,7 +441,7 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
           </div>
           
           <div style="height:10px;">&nbsp;</div>
-          <input type="hidden" name="problem_statement_region" value="${this._top_region.id}"></input>
+          <input type="hidden" name="problem_statement_region" value="${this._top_region?.id || ''}"></input>
           <input type="hidden" name="problem_statement_subregion" value=""></input>
 
           <div class="input_full">

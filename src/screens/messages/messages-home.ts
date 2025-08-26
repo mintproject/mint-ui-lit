@@ -61,23 +61,16 @@ export class MessagesHome extends connect(store)(PageViewElement) {
   }
 
   protected render() {
-    let nav = [{ label: "Discussion topics", url: "messages" }];
-    switch (this._subpage) {
-      case "thread":
-        if (this._selectedThread) {
-          nav.push({
-            label: "Topic: " + this._selectedThread.name,
-            url: "messages/thread/" + this._selectedThread.id,
-          });
-        }
-      default:
-        break;
+    let ignore = ['thread']
+    let names = {}
+    if (this._subpage === 'thread' && this._selectedThread) {
+      names[this._selectedThread.id] = this._selectedThread.name;
     }
 
     return html`
       <div style="display: grid;">
         <div style="grid-row: 1;">
-          <nav-title .nav="${nav}"></nav-title>
+          <nav-title .names="${names}" .ignore="${ignore}"></nav-title>
           <div
             class="nav-search"
             style="${this._subpage === "home" ? "" : "display:none;"}"

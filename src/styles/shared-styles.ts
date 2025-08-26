@@ -12,38 +12,131 @@ import { css } from "lit-element";
 
 export const SharedStyles = css`
   :host {
-    font-family: "Raleway";
-    --font-family-serif: "Raleway";
-    --font-family-sans-serif: "Raleway";
+    font-family: "Benton Sans";
+    --font-family-serif: "Benton Sans";
+    --font-family-sans-serif: "Benton Sans";
     --primary-hue: 224;
     --primary-saturation: 50%;
     font-size: 14px;
     color: #444;
+    letter-spacing: .025rem;
+    line-height: 1.6;
+  }
+  
+  .appframe {
+    min-height: calc(100vh - 50px);
+    overflow-x:hidden;
+  }
+
+  .gray-section {
+    background-color: #f4f4f4;
+  }
+
+  .gray-section > .content-page {
+    padding-top: 15px;
+    padding-bottom: 25px;
+  }
+
+  @media (min-width: 1920px) {
+    .content-page {
+      max-width: 1550px;
+    }
+  }
+
+  @media (min-width: 1680px) and (max-width: 1919px){
+    .content-page {
+      max-width: 1320px;
+    }
+  }
+
+  @media (min-width: 1200px) and (max-width: 1679px){
+    .content-page {
+      max-width: 1140px;
+    }
+  }
+
+  @media (min-width: 992px) and (max-width: 1199px){
+    .content-page {
+      max-width: 960px;
+    }
+  }
+
+  @media (min-width: 768px) and (max-width: 991px) {
+    .content-page {
+      max-width: 720px;
+    }
+  }
+
+  @media (min-width: 576px) and (max-width: 767px) {
+    .content-page {
+      max-width: 540px;
+    }
+  }
+
+  @media (max-width: 575px) {
+    .content-page {
+      padding:0px 15px;
+    }
+  }
+
+  .content-page {
+    width: 100%;
+    padding: 0px 24px;
+    margin: 0 auto;
+    padding-inline: 0;
+  }
+
+  .page {
+    display: none;
+  }
+
+  .page[active] {
+    display: block;
   }
 
   p {
-    color: #666;
+    margin-top: 5px;
   }
 
-  wl-nav {
-    /*--nav-bg: #F0F0F0;*/
-    --nav-color: #232323;
-    --nav-height: 50px;
-    --nav-title-margin: 0px;
-    --nav-padding: 10px;
-    border-bottom: 1px solid #e6e6e6;
+  div.simple-breadcrumbs {
+    color: rgb(72, 72, 72);
+    font-size: .8rem;
+    display: flex;
   }
 
+  div.simple-breadcrumbs > span {
+    padding: 0px 4px;
+  }
+
+  div.simple-breadcrumbs > a {
+    display: inline-block;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    text-wrap: nowrap;
+    max-width: 210px;
+  }
+
+  div.simple-breadcrumbs > a[selected] {
+    color: rgb(72, 72, 72);
+    font-weight: 600;
+  }
+
+  div.simple-breadcrumbs > a:hover {
+    background-color: transparent;
+  }
+        
   wl-button {
+    border-radius: 2px;
     --button-padding: 10px;
-    --button-font-size: 12px;
+    --button-font-size: 14px;
     --button-letter-spacing: 1px;
+    text-transform: none;
   }
 
   wl-button[flat] {
-    --button-bg: #444;
-    --button-bg-hover: #666;
-    --button-bg-active: #444;
+    --button-bg: #555555;
+    --button-bg-hover: #666666;
+    --button-bg-active: #444444;
   }
 
   wl-button[outlined] {
@@ -57,26 +150,33 @@ export const SharedStyles = css`
     --button-border-radius: 3px;
   }
 
-  wl-nav wl-button[flat] {
-    --button-bg: #0f7acf;
-    --button-bg-hover: #0f7acf;
-    --button-bg-active: #0f7acf;
-  }
-
   wl-list-item {
     --list-item-border-radius: 0;
     --list-item-before-margin: 8px;
     border-bottom: 1px solid #f0f0f0;
     font-size: 12px;
-    color: #0f7acf;
+    color: rgb(61, 106, 204);
+  }
+
+  wl-title {
+    font-family: "Benton Sans Bold";
   }
 
   wl-title[level="3"] {
-    color: #06436c;
+    color: #484848;
+    font-weight: 900;
   }
   wl-title[level="4"] {
-    color: #06436c;
+    color: #484848;
     font-size: 14px;
+  }
+  
+  .clickable {
+    cursor: pointer;
+  }
+  
+  wl-tab-group, wl-tab {
+    background-color: transparent;
   }
 
   wl-list-item.active {
@@ -88,9 +188,6 @@ export const SharedStyles = css`
     font-weight: bold;
   }
 
-  wl-title {
-    color: #444;
-  }
 
   wl-progress-spinner.loading {
     --progress-spinner-color: #06436c;
@@ -164,7 +261,7 @@ export const SharedStyles = css`
 
   .actionIcon:hover,
   .actionIcon.bigActionIcon:hover {
-    background-color: #0f7acf;
+    background-color: rgb(61, 106, 204);
     color: white;
   }
 
@@ -191,7 +288,7 @@ export const SharedStyles = css`
   }
 
   a {
-    color: #0f7acf;
+    color: rgb(61, 106, 204);
     text-decoration: none;
   }
   a:hover {
@@ -217,11 +314,17 @@ export const SharedStyles = css`
   .icongrid a {
     text-align: center;
     vertical-align: middle;
-    border: 5px solid #0f7acf;
+    border: 5px solid rgb(61, 106, 204);
     border-radius: 10px;
     font-size: 16px;
     font-weight: bold;
     margin: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .icongrid a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
   }
   .icongrid wl-icon {
     --icon-size: 100px;
@@ -246,7 +349,7 @@ export const SharedStyles = css`
     text-align: center;
   }
   .svgicon svg {
-    fill: #0f7acf;
+    fill: rgb(61, 106, 204);
   }
   /* End of Big Icons view */
 
@@ -264,13 +367,13 @@ export const SharedStyles = css`
     font-weight: normal;
   }
   .clt ul li.active {
-    color: #0f7acf;
+    color: rgb(61, 106, 204);
     cursor: pointer;
     font-weight: normal;
   }
   .clt ul li.active:hover,
   .clt ul li.highlighted {
-    background-color: #f0f0f0;
+    /* background-color: #f0f0f0;*/
   }
   .clt ul li.active:hover .cltmain {
     /*text-decoration: underline;*/
@@ -352,34 +455,6 @@ export const SharedStyles = css`
   }
   /* End of Tree View */
 
-  .card {
-    margin: 10px;
-    left: 0px;
-    right: 0px;
-    padding: 10px;
-    padding-top: 0px;
-    height: calc(100% - 75px);
-    overflow: auto;
-  }
-
-  .page {
-    display: none;
-  }
-
-  .page.fullpage[active] {
-    height: 100%;
-    left: 0px;
-    right: 0px;
-  }
-
-  .page[active] {
-    display: block;
-  }
-
-  p {
-    margin-top: 5px;
-  }
-
   /* Dialog and Dialog form elements */
   wl-dialog {
     --dialog-bg: #f6f6f6;
@@ -436,12 +511,6 @@ export const SharedStyles = css`
   fieldset.notes textarea:focus {
     outline: none;
     border-color: #909090;
-  }
-
-  .footer {
-    display: flex;
-    justify-content: flex-end;
-    padding: 10px;
   }
 
   .formRow {
@@ -712,22 +781,22 @@ export const SharedStyles = css`
     float: left;
     cursor: pointer;
     min-width: 70px;
-    color: #232323;
+    color: #FFF;
     display: block;
-    background: #f0f0f0;
+    background: transparent;
     text-decoration: none;
     position: relative;
-    height: 26px;
-    line-height: 26px;
+    height: 46px;
+    line-height: 46px;
     font-size: 13px;
-    font-weight: bold;
+    font-weight: 400;
     padding: 0 15px;
     text-align: center;
     margin: 0px 2px;
-    border-radius: 5px;
+    border-bottom: 3px solid transparent;
   }
   .breadcrumbs_header a:hover {
-    background-color: #e0e0e0;
+    border-bottom: 3px solid #FEB50D;
   }
   .breadcrumbs_header a:first-child {
     padding-left: 8px;
@@ -736,8 +805,7 @@ export const SharedStyles = css`
     border-radius: 2px 0 0 2px;
   }
   .breadcrumbs_header a.active {
-    background-color: rgb(98, 155, 48);
-    color: white;
+    border-bottom: 3px solid #FEB50D;
   }
 
   /* Input type = File styles */
@@ -778,11 +846,6 @@ export const SharedStyles = css`
     wl-list-item {
       --list-item-padding: 10px;
       --list-item-after-margin: 5px;
-    }
-    .card {
-      margin: 5px;
-      padding: 5px;
-      padding-top: 0px;
     }
     .card2 {
       padding: 0px;
@@ -858,5 +921,55 @@ export const SharedStyles = css`
   /* End of Chevron Breadcrumbs */
   .font-numbers {
     font-family: system-ui;
+  }
+
+  .concept-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .concept-card {
+    border-top: 4px solid rgb(97, 163, 156);
+    background: #F4F4F4;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .concept-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+  }
+
+  .concept-card.nohover:hover {
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+
+  .concept-card h4 {
+    color: rgb(72, 72, 72);
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+  }
+
+  .concept-card p {
+    color: #495057;
+    margin: 0;
+    line-height: 1.5;
+    margin-bottom: .5em;
+  }
+
+  .concept-card ul {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding-left: 1.5rem;
+  }
+
+  .concept-card li {
+    margin-bottom: 0.5rem;
+    color: #495057;
   }
 `;

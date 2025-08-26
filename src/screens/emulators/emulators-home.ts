@@ -453,7 +453,6 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
   }
 
   protected render() {
-    let nav = [{ label: "Model Products / Emulators", url: "emulators" }];
     let inputs = (this._modelIO || []).filter((io) => io.type == "input");
     let params = (this._modelIO || []).filter((io) => io.type == "parameter");
     let outputs = (this._modelIO || []).filter((io) => io.type == "output");
@@ -462,7 +461,7 @@ export class EmulatorsHome extends connect(store)(PageViewElement) {
       (this._filtered_emulators?.total ?? 0) / this.pageSize
     );
 
-    return html` <nav-title .nav="${nav}"></nav-title>
+    return html` <nav-title .ignore="${[]}"></nav-title>
 
       <wl-tab-group align="center" style="width: 100%;">
         ${this._typesLoading

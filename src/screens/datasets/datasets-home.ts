@@ -39,38 +39,8 @@ export class DatasetsHome extends connect(store)(PageViewElement) {
   }
 
   protected render() {
-    let nav = [{ label: "Explore Data", url: "datasets" }];
-    switch (this._subpage) {
-      case "browse":
-        nav.push({ label: "Browse Datasets", url: "datasets/browse" });
-        if (this._dsid) {
-          nav.push({ label: this._dsid, url: "datasets/browse/" + this._dsid });
-        }
-        break;
-      case "register":
-        nav.push({ label: "Add Datasets", url: "datasets/register" });
-        break;
-      case "quality-workflows":
-        nav.push({
-          label: "Improve Quality of Datasets",
-          url: "datasets/quality-workflows",
-        });
-        break;
-      case "rs-workflows":
-        nav.push({ label: "Remote Sensing", url: "datasets/rs-workflows" });
-        break;
-      case "data-transformations":
-        nav.push({
-          label: "Data transformations",
-          url: "datasets/data-transformations",
-        });
-        break;
-      default:
-        break;
-    }
-
     return html`
-      <nav-title .nav="${nav}"></nav-title>
+      <nav-title .ignore="${[]}"></nav-title>
 
       <div class="${this._subpage != "home" ? "hiddensection" : "icongrid"}">
         <a href="${this._regionid}/datasets/browse">

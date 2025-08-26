@@ -65,10 +65,10 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
 
         .twocolumns {
           position: absolute;
-          top: 120px;
-          bottom: 25px;
-          left: 25px;
-          right: 25px;
+          top: calc(100px + 1em);
+          bottom: calc(50px + 1em);
+          left: 1em;
+          right: 1em;
           display: flex;
           border: 1px solid #f0f0f0;
         }
@@ -77,7 +77,6 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
           width: 30%;
           padding-top: 0px;
           border-right: 1px solid #f0f0f0;
-          padding-right: 5px;
           overflow: auto;
           height: 100%;
         }
@@ -113,9 +112,35 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
         }
 
         .title-prefix {
-          font-size: 15px;
-          font-weight: normal;
-          color: rgb(153, 153, 153) !important;
+          font-size: 1.1em;
+          font-weight: 700;
+          color: rgb(153, 153, 153);
+        }
+
+        .simple-breadcrumbs {
+          padding: 6px 12px 4px 12px;
+          border-bottom:1px solid #f0f0f0;
+        }
+        
+        .r-title {
+          font-size: 1.2em;
+          font-family: "Benton Sans Bold";
+          font-weight: bolder;
+        }
+
+        .r-model {
+          color:rgb(6, 108, 67);
+        }
+
+        .empty-message {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100%;
+          font-size: 1.3em;
+          font-family: "Benton Sans Bold";
+          font-weight: bolder;
+          color: #999;
         }
       `,
       SharedStyles,
@@ -127,11 +152,11 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
       <div class="twocolumns">
         <div class="${this._hideModels ? "left_closed" : "left"}">
           <div class="clt">
-            <wl-title
-              level="4"
-              style="margin: 4px; padding: 10px 10px 0px 10px;"
-              >Models:</wl-title
-            >
+            <div class="simple-breadcrumbs">
+              <a href="${this._regionid}/models">Prepare Models</a>
+              <span>&gt;</span>
+              <a selected>Edit Models:</a>
+            </div>
             <model-version-tree active></model-version-tree>
           </div>
         </div>
@@ -145,53 +170,42 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
             >
               ${!this._hideModels ? "fullscreen" : "fullscreen_exit"}
             </wl-icon>
-            ${this._selectedModel && !this._creating
-              ? html`
-                  <span
-                    style="float:right;"
-                    class="custom-button"
-                    @click="${this._goToCatalog}"
-                    >See in catalog</span
-                  >
-                `
-              : ""}
+
             <div class="cltrow_padded">
               <div class="cltmain">
-                <wl-title
-                  level="3"
-                  style="margin: 0px; ${this._model && !this._version
-                    ? "color:rgb(6, 108, 67);"
-                    : ""}"
-                >
-                  ${this._creating
-                    ? html`<span class="title-prefix">
-                        CREATING NEW ${this._model ? "VERSION FOR" : "MODEL"}
-                      </span>`
-                    : this._editing
-                    ? html`<span class="title-prefix">EDITING</span>`
-                    : ""}
-                  ${this._version
-                    ? html`<span class="title-prefix">VERSION:</span>
-                        ${getLabel(this._version)}`
-                    : this._model
-                    ? html`<span class="title-prefix">MODEL:</span> ${getLabel(
-                          this._model
-                        )}`
-                    : this._creating
-                    ? ""
-                    : "Select a model or software version on the left panel."}
-                </wl-title>
+                <span class="title-prefix">
+                  ${this._creating ? 
+                    ("CREATING A NEW" + (this._model ? " VERSION FOR" : " MODEL")) 
+                  :
+                    (this._editing ? "EDITING" : "")}
+                  ${this._version ? "VERSION:" : (this._model ? "MODEL:" : "")}
+                </span>
+
+                ${this._version ? html`
+                  <a class="no-decoration clickable r-title" target="_blank" href="${
+                    this._regionid + "/models/explore/" + getURL(this._model, this._version)
+                  }">
+                    ${getLabel(this._version)}
+                  </a>
+                ` : (this._model ? html`
+                  <a class="no-decoration clickable r-title r-model" target="_blank" href="${
+                    this._regionid + "/models/explore/" + getURL(this._model, this._version)
+                  }">
+                    ${getLabel( this._model)}
+                  </span>
+                ` : "")}
               </div>
             </div>
 
+            ${!this._model && !this._creating ? html`<div class="empty-message">
+              Select a model or software version on the left panel
+            </div>` : ""}
+
             <div style="padding: 0px 10px;">
-              ${!this._selectedVersion &&
-              !this._selectedModel != !this._creating
-                ? this._iModel
-                : ""}
-              ${this._selectedModel && (this._selectedVersion || this._creating)
-                ? this._iVersion
-                : ""}
+              ${this._selectedModel && (this._selectedVersion || this._creating) ?
+                this._iVersion 
+              : (this._selectedModel || this._creating ? this._iModel : "")}
+
             </div>
           </div>
         </div>
@@ -286,6 +300,8 @@ export class ModelsEdit extends connect(store)(PageViewElement) {
       if (this._creating) {
         if (this._model) {
           this._iVersion.enableSingleResourceCreation(this._model);
+        } else {
+          this._iModel.enableSingleResourceCreation();
         }
       }
 

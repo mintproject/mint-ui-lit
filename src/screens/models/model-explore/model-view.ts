@@ -875,7 +875,9 @@ export class ModelView extends connect(store)(PageViewElement) {
       }
     }
 
-    return html` ${this._renderCLIDialog()}
+    return html`
+    <div class="content-page">
+      ${this._renderCLIDialog()}
       <div class="col-title">
         <wl-title level="2">
           <a
@@ -1079,7 +1081,8 @@ export class ModelView extends connect(store)(PageViewElement) {
         </div>
       </div>
       ${this._renderCLIDialog()}
-      <div style="height: 50px;"></div>`;
+      <div style="height: 50px;"></div>
+    </div>`;
   }
 
   private _goToTab(tabid: tabType) {

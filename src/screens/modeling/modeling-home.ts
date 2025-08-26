@@ -35,7 +35,7 @@ export class ModelingHome extends connect(store)(PageViewElement) {
 
   protected render() {
     return html`
-      <div>
+      <div class="content-page">
         <problem-statements-list
           class="page fullpage"
           ?active="${this._subpage == "home"}"
