@@ -160,7 +160,7 @@ export class ModelsHome extends connect(store)(PageViewElement) {
 
   private _getHelpLink() {
     let uri: string =
-      "https://mintproject.readthedocs.io/en/latest/modelcatalog/";
+      "https://in-for-disaster-analytics.github.io/DYNAMO_USERGUIDE/modelcatalog/";
     if (this._selectedSetup) return uri + "#model-configuration-setup";
     if (this._selectedConfig) return uri + "#model-configuration";
     return uri;
