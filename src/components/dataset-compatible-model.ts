@@ -304,7 +304,7 @@ export class DatasetCompatibleModel extends LitElement {
   }
 
   private getModelUrl(modelid: string): string {
-    return "ethiopia/models/explore/" + this.urls[modelid]; //FIXME
+    return "/models/explore/" + this.urls[modelid]; //FIXME
   }
 
   private clearPossibleOptions(): void {
@@ -798,7 +798,9 @@ export class DatasetCompatibleModel extends LitElement {
               this.datasetSpecifications[output.id]
           )
           .some((output: DatasetSpecification) => {
-            let realPresentation = (output.hasPresentation || []).map(
+            let realPresentation = (output.hasPresentation || []).filter(
+              (vp: VariablePresentation) => this.variablePresentations[vp.id]
+            ).map(
               (vp: VariablePresentation) => this.variablePresentations[vp.id]
             );
             let providedVariables: string[] = [];

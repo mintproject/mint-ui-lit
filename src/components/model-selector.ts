@@ -294,7 +294,7 @@ export class ModelSelector extends LitElement {
   }
 
   private getModelUrl(modelid: string): string {
-    return "ethiopia/models/explore/" + this.urls[modelid];
+    return "texas/models/explore/" + this.urls[modelid];
   }
 
   private clearPossibleOptions(): void {
@@ -765,7 +765,7 @@ export class ModelSelector extends LitElement {
 
   private applyIndicatorFilter(options: ModelOption[]): ModelOption[] {
     const validOptions = options.filter((opt: ModelOption) => {
-      console.log(`${opt.value.label} ${opt.value.hasComponentLocation}`)
+      //console.log(`${opt.value.label} ${opt.value.hasComponentLocation}`)
       if (!opt.value.hasComponentLocation || opt.value.hasComponentLocation.length === 0 || opt.value.hasComponentLocation[0] === '')  {
         return false
       }

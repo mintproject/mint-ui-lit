@@ -81,6 +81,7 @@ export class CKANDataCatalog implements IDataCatalog {
 
     let dsQueryData: any = {
       ext_bbox: `${region.bounding_box.xmin},${region.bounding_box.ymin},${region.bounding_box.xmax},${region.bounding_box.ymax}`,
+      rows: 1000
     };
     let datasetResponse: any = await CKANDataCatalog.request(
       `${MINT_PREFERENCES.data_catalog_api}/api/action/package_search`,
