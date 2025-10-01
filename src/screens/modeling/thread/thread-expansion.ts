@@ -81,6 +81,7 @@ export class ThreadExpansion extends connect(store)(MintThreadPage) {
   }
 
   public render(): TemplateResult {
+    console.log("Permissions:", this.permission)
     return html`
       <wl-expansion
         .checked=${this.open}
@@ -111,7 +112,7 @@ export class ThreadExpansion extends connect(store)(MintThreadPage) {
             style="display:flex; align-items: center; justify-content: space-between;"
           >
             <p>${this._description}</p>
-            ${this.permission && this.permission.write && !this.editMode
+            ${this.permission && (this.permission.write || this.permission.userid === "*") && !this.editMode
               ? html` <wl-button flat @click="${this.onEditEnable}">
                   <wl-icon id="editModelsIcon" class="actionIcon editIcon"
                     >edit</wl-icon

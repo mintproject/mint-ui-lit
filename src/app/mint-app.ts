@@ -611,7 +611,7 @@ export class MintApp extends connect(store)(LitElement) {
               this._page !== "variables"
                 ? html`
                     <div
-                      style="display: flex; color: #888; flex-direction: column; width: 100%; height: calc(100hv - 150px); align-items: center; justify-content: center;"
+                      style="display: flex; color: #888; flex-direction: column; width: 100%; height: calc(100vh - 150px); align-items: center; justify-content: center;"
                     >
                       <div style="font-size: 2em;">
                         ${this._page === "callback"

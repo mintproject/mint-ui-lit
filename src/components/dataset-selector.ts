@@ -74,6 +74,12 @@ export class DatasetSelector extends connect(store)(LitElement) {
         .pure-table-striped tr:nth-child(2n-1) td {
           background-color: rgb(236, 236, 236);
         }
+        .elli {
+          display: -webkit-box;
+          -webkit-line-clamp: 4;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
       `,
     ];
   }
@@ -325,7 +331,7 @@ export class DatasetSelector extends connect(store)(LitElement) {
     }</a>
                 ${
                   dataset.description
-                    ? html`<div>${dataset.description}</div>`
+                    ? html`<div class="elli">${dataset.description}</div>`
                     : ""
                 }
             </td>

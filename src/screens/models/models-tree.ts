@@ -267,9 +267,9 @@ export class ModelsTree extends connect(store)(PageViewElement) {
   _renderCategoryTree(categoryModels, category, visibleSetup) {
     const simpleSearch = (text:string) => text.toLowerCase().includes(this._searchString);
     const setupSearch = (s:ModelConfigurationSetup) => (s.label||[]).some(simpleSearch);
-    const configSearch = (c:ModelConfiguration) => c.label.some(simpleSearch) ||
+    const configSearch = (c:ModelConfiguration) => (c.label||[]).some(simpleSearch) ||
       (c.hasSetup || []).some(setupSearch);
-    const modelSearch = (m:Model) => m.label.some(simpleSearch) ||
+    const modelSearch = (m:Model) => (m.label||[]).some(simpleSearch) ||
       (m.hasVersion || [])
         .filter(v => !!this._versions[v.id])
         .map(v => this._versions[v.id])
@@ -316,7 +316,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                                                .filter(c => !!c.id)
                                                .map(c => this._configs[c.id])
                                                .filter(c => c && c.id)
-                                               .filter(c => configSearch(c) || model.label.some(simpleSearch))
+                                               .filter(c => configSearch(c) || (model.label||[]).some(simpleSearch))
                                                .sort(sortConfigurations)
                                                .map( ( config: ModelConfiguration) => html`
                                                    <li ?selected="${this ._selectedConfig === config.id}" >
@@ -331,7 +331,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
                                                      <ul> ${( config.hasSetup || [])
                                                          .map(s => this ._setups[s.id])
                                                          .filter(visibleSetup)
-                                                         .filter(s => setupSearch(s) || config.label.some(simpleSearch) || model.label.some(simpleSearch))
+                                                         .filter(s => setupSearch(s) || (config.label||[]).some(simpleSearch) || (model.label||[]).some(simpleSearch))
                                                          .sort(sortSetups)
                                                          .map((setup: ModelConfigurationSetup) => html`
                                                              <li ?selected="${this ._selectedSetup === setup.id}" >
@@ -435,7 +435,7 @@ export class ModelsTree extends connect(store)(PageViewElement) {
           found = true;
         } else {
           for (let model of categoryModels[categoryName]) {
-            if (model.label.some(applySearch)) {
+            if ((model.label||[]).some(applySearch)) {
               found = true;
               break;
             } 
@@ -444,14 +444,14 @@ export class ModelsTree extends connect(store)(PageViewElement) {
               if (version) for (let tconf of (version.hasConfiguration || [])) {
                 let config = this._configs[tconf.id];
                 if (config) {
-                  if (config.label.some(applySearch)) {
+                  if ((config.label||[]).some(applySearch)) {
                     found = true;
                     break;
                   } 
                   for (let tset of (config.hasSetup || [])) {
                     let setup = this._setups[tset.id];
                     if (setup) {
-                      if (setup.label.some(applySearch)) {
+                      if ((setup.label||[]).some(applySearch)) {
                         found = true;
                         break;
                       }

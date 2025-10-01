@@ -202,11 +202,11 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
 
   _renderCategoryTree(categoryModels, category) {
     const simpleSearch = (text:string) => text.toLowerCase().includes(this._searchString);
-    const modelSearch = (m:Model) => m.label.some(simpleSearch) ||
+    const modelSearch = (m:Model) => (m.label||[]).some(simpleSearch) ||
       (m.hasVersion || [])
         .filter(v => !!this._versions[v.id])
         .map(v => this._versions[v.id])
-        .some(v => v.label.some(simpleSearch));
+        .some(v => (v.label||[]).some(simpleSearch));
     if ((categoryModels[category]||[]).filter(m => modelSearch(m) || simpleSearch(category)).length === 0)
       return html`<div class="empty_search"> No models found </div>`
 
@@ -298,7 +298,7 @@ export class ModelVersionTree extends connect(store)(PageViewElement) {
           found = true;
         } else {
           for (let model of categoryModels[categoryName]) {
-            if (model.label.some(applySearch)) {
+            if ((model.label||[]).some(applySearch)) {
               found = true;
               break;
             } 

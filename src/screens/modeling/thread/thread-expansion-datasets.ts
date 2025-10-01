@@ -221,7 +221,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       this.thread.model_ensembles![model.id].bindings || {};
     let modelDone: boolean =
       model.input_files.length == 0 ||
-      (fixedInputs.length > 0 &&
+      (fixedInputs.length + reqInputs.length == model.input_files.length &&
         reqInputs.every(
           (input: ModelIO) =>
             (this.modifiedInputs[input.id] &&
@@ -238,7 +238,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
             ? html` <wl-icon style="color: 'green'">done</wl-icon> `
             : html` <wl-icon style="color: 'orange'">warning</wl-icon> `}
           <span style="color: #aaa;">MODEL:</span>
-          <a href="#">${model.name}</a
+          <a href="${this._regionid + "/models/configure/"}">${model.name}</a
           ><!-- FIXME: url -->
         </div>
         <wl-icon
@@ -435,11 +435,11 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
           ${this.selectedInput?.variables &&
           this.selectedInput?.variables.length > 0
             ? html`
-                  <h4>Variables</h4>
-                  <p>
+                  <h4 style="margin-bottom: 0;">Variables</h4>
+                  <p style="margin:0;">
                     Learn more about standard variables <a href="/variables" target="_blank">here</a>.
                   </p>
-                  <p>
+                  <p style="margin:0;">
                     The selected input is looking for data with the following standard variables:
                   </p>
                   <ul>
