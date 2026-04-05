@@ -883,7 +883,7 @@ export const setThreadModels = (
   let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
   let threadmodelsobj = models.map((model) => {
     return {
-      model_id: model.id,
+      modelcatalog_configuration_id: model.id,
       thread_id: thread.id,
     };
   });
