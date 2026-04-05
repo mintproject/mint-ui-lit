@@ -35,7 +35,7 @@ subscription sub_thread($id: String!) {
         }
       }
     }
-    model {
+    thread_models {
       id
       modelcatalog_configuration {
         id
