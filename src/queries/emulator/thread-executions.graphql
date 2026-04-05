@@ -2,12 +2,10 @@ query thread_executions($threadId: uuid!) {
   thread(where: {id: {_eq: $threadId}}) {
     id
     thread_models {
-      model {
+      modelcatalog_configuration {
         id
-        name
-        model_name
-        model_version
-        model_configuration
+        label
+        description
       }
       executions {
         execution {

@@ -1,11 +1,8 @@
 query model_executions($modelTypes: [String!], $regionId: String!) {
-  model(where: {model_name: {_in: $modelTypes}}, order_by: {thread_models_aggregate: {count: desc}}) {
+  modelcatalog_configuration(where: {label: {_in: $modelTypes}}, order_by: {thread_models_aggregate: {count: desc}}) {
     id
-    name
-    region_name
-    model_name
-    model_version
-    model_configuration
+    label
+    description
     thread_models(order_by: {executions_aggregate: {count: desc}}, where: {thread: {task: {problem_statement: {region: {id: {_eq: $regionId}}}}}}) {
       thread {
         id
@@ -27,20 +24,17 @@ query model_executions($modelTypes: [String!], $regionId: String!) {
           }
         }
       }
-      model {
+      modelcatalog_configuration {
         parameters {
-          name
-          fixed_value
+          parameter {
+            label
+            has_fixed_value
+          }
         }
         inputs {
-          model_io {
-            name
-            fixed_bindings {
-              resource {
-                name
-                url
-              }
-            }
+          input {
+            id
+            label
           }
         }
       }

@@ -125,7 +125,7 @@ export const listEmulatorModelTypes: ActionCreator<ListModelsThunkAction> =
         });
       } else {
         let types = result.data.execution.map((m: any) =>
-          m.model.model_name.replace(MODEL_PREFIX, "")
+          m.modelcatalog_configuration.label.replace(MODEL_PREFIX, "")
         );
         types = types.filter(
           (item: string, pos: number) => item && types.indexOf(item) == pos
@@ -169,7 +169,7 @@ export const searchEmulatorsForModel: ActionCreator<ListEmulatorsThunkAction> =
           loading: false,
         });
       } else {
-        let executions = result.data.model.filter(
+        let executions = result.data.modelcatalog_configuration.filter(
           (item: any) => item.thread_models.length > 0
         );
         dispatch({

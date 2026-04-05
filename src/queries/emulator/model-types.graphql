@@ -11,12 +11,11 @@ query model_types($regionId: String!) {
         }
       }
     }
-  }
-    distinct_on: model_id
+    distinct_on: modelcatalog_configuration_id
   ) {
-		model {
+		modelcatalog_configuration {
       id
-      model_name
+      label
     }
   }
 }
