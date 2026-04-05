@@ -38,6 +38,13 @@ query get_thread($id: String!) {
                 id
                 label
                 description
+                model_configuration_id
+                software_version {
+                    id
+                    software {
+                        id
+                    }
+                }
                 inputs {
                     input {
                         id

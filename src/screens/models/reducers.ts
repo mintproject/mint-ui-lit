@@ -32,6 +32,7 @@ export interface Model extends IdNameObject {
 }
 
 const getLastPart = (s: string) => {
+  if (!s) return "";
   let sp = s.split("/");
   if (sp && sp.length > 0) return sp.pop();
   return "";

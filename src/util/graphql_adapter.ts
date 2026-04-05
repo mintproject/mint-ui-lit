@@ -479,6 +479,19 @@ export const modelFromGQL = (m: any) => {
   if (m["label"] && !m["name"]) {
     m.name = m["label"];
   }
+  // Populate hierarchy fields from modelcatalog_configuration relationships
+  if (!m["model_configuration"]) {
+    m.model_configuration = m["model_configuration_id"] ?? m["id"];
+  }
+  if (!m["model_version"] && m["software_version"]) {
+    m.model_version = m["software_version"]["id"];
+    if (!m["model_name"] && m["software_version"]["software"]) {
+      m.model_name = m["software_version"]["software"]["id"];
+    }
+  }
+  delete m["software_version"];
+  delete m["model_configuration_id"];
+
   m.input_files = (m["inputs"] ?? []).map((item: any) => {
     const io = item["input"] ?? item;
     return { id: io["id"], name: io["label"] ?? io["name"], variables: [] } as ModelIO;
