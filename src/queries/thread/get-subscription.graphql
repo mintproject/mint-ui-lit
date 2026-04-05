@@ -72,9 +72,9 @@ subscription sub_thread($id: String!) {
         dataslice_id
       }
       parameter_bindings {
-        model_parameter {
+        modelcatalog_parameter {
           id
-          name
+          label
         }
         parameter_value
       }

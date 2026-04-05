@@ -10,8 +10,8 @@ query thread_executions($threadId: uuid!) {
       executions {
         execution {
           parameter_bindings {
-            model_parameter {
-              name
+            modelcatalog_parameter {
+              label
             }
             parameter_value
           }
