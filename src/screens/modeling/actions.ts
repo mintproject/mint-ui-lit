@@ -46,9 +46,6 @@ import deleteProblemStatementGQL from "../../queries/problem-statement/delete.gr
 import deleteTaskGQL from "../../queries/task/delete.graphql";
 import deleteThreadGQL from "../../queries/thread/delete.graphql";
 
-import listExistingModelsGQL from "../../queries/model/list-in.graphql";
-import newModelsGQL from "../../queries/model/new.graphql";
-
 import executionIdsForThreadGQL from "../../queries/execution/executionids-for-thread.graphql";
 import subscribeExecutionsListGQL from "../../queries/execution/list-subscription.graphql";
 import listThreadModelExecutionsListGQL from "../../queries/execution/executions-for-thread-model.graphql";
@@ -68,8 +65,6 @@ import {
   problemStatementUpdateToGQL,
   threadInfoUpdateToGQL,
   threadInfoToGQL,
-  threadModelsToGQL,
-  modelToGQL,
   getCustomEvent,
   threadDataBindingsToGQL,
   threadParameterBindingsToGQL,
@@ -85,7 +80,6 @@ import {
   ModelConfiguration,
   SoftwareVersion,
 } from "@mintproject/modelcatalog_client";
-import { fetchModelsFromCatalog } from "screens/models/actions";
 import { OAuth2Adapter } from "util/oauth2-adapter";
 
 export const PROBLEM_STATEMENTS_LIST = "PROBLEM_STATEMENTS_LIST";
@@ -1103,46 +1097,9 @@ export const cacheModelsFromCatalog = async (
   allVersions: IdMap<SoftwareVersion>,
   allModels: IdMap<MCModel>
 ) => {
-  let APOLLO_CLIENT = GraphQL.instance(OAuth2Adapter.getUser());
-  // First check if any of these models are already in GraphQL
-  let result = await APOLLO_CLIENT.query({
-    query: listExistingModelsGQL,
-    variables: {
-      modelIds: models.map((m) => m.id),
-    },
-  });
-  if (result.errors && result.errors.length > 0) {
-    console.log("ERROR");
-    console.log(result);
-  } else {
-    let uncached_models = {};
-    models.forEach((model) => {
-      let found = false;
-      result.data.model.forEach((m) => {
-        if (m["id"] == model["id"]) found = true;
-      });
-      if (!found) {
-        uncached_models[model.id] = model;
-      }
-    });
-    if (Object.keys(uncached_models).length > 0) {
-      let full_models = await fetchModelsFromCatalog(
-        uncached_models,
-        allSoftwareImages,
-        allConfigs,
-        allVersions,
-        allModels
-      );
-      await APOLLO_CLIENT.mutate({
-        mutation: newModelsGQL,
-        variables: {
-          objects: Object.values(full_models).map((fullmodel) =>
-            modelToGQL(fullmodel)
-          ),
-        },
-      });
-    }
-  }
+  // No-op: The local 'model' caching table was removed in DYNAMO v2.0.
+  // thread_model now references modelcatalog_configuration_id directly.
+  return;
 };
 
 // Delete ProblemStatement

@@ -417,21 +417,6 @@ export const threadModelExecutionSummaryFromGQL = (tmex: any) => {
   } as ExecutionSummary;
 };
 
-export const threadModelsToGQL = (models: Model[], threadid: string) => {
-  return models.map((model) => {
-    return {
-      thread_id: threadid,
-      model: {
-        data: modelToGQL(model),
-        on_conflict: {
-          constraint: "model_pkey",
-          update_columns: ["name"],
-        },
-      },
-    };
-  });
-};
-
 export const getTotalConfigs = (
   model: Model,
   bindings: ModelIOBindings,
@@ -656,52 +641,6 @@ export const getCustomEvent = (event: string, notes: string) => {
 const getNamespacedId = (namespace, id) => {
   if (id.indexOf(namespace) == 0) return id;
   return namespace + id;
-};
-
-export const modelToGQL = (m: Model) => {
-  let namespace = m.id.replace(/(^.*\/).*$/, "$1");
-  return {
-    id: m.id,
-    name: m.name,
-    category: m.category,
-    description: m.description,
-    region_name: m.region_name,
-    type: m.model_type,
-    model_configuration: getNamespacedId(namespace, m.model_configuration),
-    model_version: getNamespacedId(namespace, m.model_version),
-    model_name: getNamespacedId(namespace, m.model_name),
-    dimensionality: m.dimensionality,
-    parameter_assignment: m.parameter_assignment,
-    parameter_assignment_details: m.parameter_assignment_details,
-    calibration_target_variable: m.calibration_target_variable,
-    spatial_grid_resolution: m.spatial_grid_resolution,
-    spatial_grid_type: m.spatial_grid_type,
-    output_time_interval: m.output_time_interval,
-    code_url: m.code_url,
-    usage_notes: m.usage_notes,
-    software_image: m.software_image,
-    inputs: {
-      data: m.input_files.map((input) => modelInputOutputToGQL(input)),
-      on_conflict: {
-        constraint: "model_input_pkey",
-        update_columns: ["model_id"],
-      },
-    },
-    parameters: {
-      data: m.input_parameters.map((param) => modelParameterToGQL(param)),
-      on_conflict: {
-        constraint: "model_parameter_pkey",
-        update_columns: ["model_id"],
-      },
-    },
-    outputs: {
-      data: m.output_files.map((output) => modelInputOutputToGQL(output)),
-      on_conflict: {
-        constraint: "model_output_pkey",
-        update_columns: ["model_id"],
-      },
-    },
-  };
 };
 
 export const getAutoID = () => {
