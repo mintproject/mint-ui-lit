@@ -1,5 +1,4 @@
 #import "../fragments/thread-info.graphql"
-#import "../fragments/model-info.graphql"
 #import "../fragments/execution-summary-info.graphql"
 
 query get_thread($id: String!) {
@@ -35,8 +34,32 @@ query get_thread($id: String!) {
             execution_summary {
                 ...execution_summary_info
             }
-            model {
-               ...model_info
+            modelcatalog_configuration {
+                id
+                label
+                description
+                inputs {
+                    input {
+                        id
+                        label
+                    }
+                }
+                outputs {
+                    output {
+                        id
+                        label
+                    }
+                }
+                parameters {
+                    parameter {
+                        id
+                        label
+                        has_default_value
+                        has_fixed_value
+                        has_minimum_accepted_value
+                        has_maximum_accepted_value
+                    }
+                }
             }
             data_bindings {
                 model_io {
