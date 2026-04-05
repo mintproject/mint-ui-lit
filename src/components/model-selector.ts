@@ -673,7 +673,12 @@ export class ModelSelector extends LitElement {
                 ${
                   model.hasModelCategory && model.hasModelCategory.length > 0
                     ? model.hasModelCategory
-                        .map((c: ModelCategory) => this.categories[c.id])
+                        .map((c: ModelCategory) => {
+                          if (!this.categories[c.id])
+                            console.warn(`ModelSelector: category not loaded for id="${c.id}"`);
+                          return this.categories[c.id];
+                        })
+                        .filter(Boolean)
                         .map(getLabel)
                         .join(", ")
                     : ""
@@ -683,7 +688,12 @@ export class ModelSelector extends LitElement {
                 ${
                   model.hasRegion && model.hasRegion.length > 0
                     ? model.hasRegion
-                        .map((r: Region) => this.regions[r.id])
+                        .map((r: Region) => {
+                          if (!this.regions[r.id])
+                            console.warn(`ModelSelector: region not loaded for id="${r.id}"`);
+                          return this.regions[r.id];
+                        })
+                        .filter(Boolean)
                         .map(getLabel)
                         .join(", ")
                     : ""

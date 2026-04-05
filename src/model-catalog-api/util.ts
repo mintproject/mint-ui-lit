@@ -78,7 +78,7 @@ export const uriToId = (uri: string): string => {
 };
 
 export const getId = (obj: any): string => {
-  return obj.id ? uriToId(obj.id) : "";
+  return obj && obj.id ? uriToId(obj.id) : "";
 };
 
 export const getLabel = (obj: any): string => {
