@@ -376,7 +376,7 @@ export const threadFromGQL = (thread: any) => {
   });
 
   thread["thread_models"].forEach((tm: any) => {
-    let m = tm["model"];
+    let m = tm["modelcatalog_configuration"];
     let model: Model = modelFromGQL(m);
 
     fbthread.models[model.id] = model;
@@ -475,16 +475,30 @@ export const datasliceFromGQL = (d: any) => {
 
 export const modelFromGQL = (m: any) => {
   m = Object.assign({}, m);
-  m.input_files = (m["inputs"] as any[]).map((input) => {
-    return modelIOFromGQL(input);
+  // Map modelcatalog_configuration label to name
+  if (m["label"] && !m["name"]) {
+    m.name = m["label"];
+  }
+  m.input_files = (m["inputs"] ?? []).map((item: any) => {
+    const io = item["input"] ?? item;
+    return { id: io["id"], name: io["label"] ?? io["name"], variables: [] } as ModelIO;
   });
   delete m["inputs"];
-  m.output_files = (m["outputs"] as any[]).map((output) => {
-    return modelIOFromGQL(output);
+  m.output_files = (m["outputs"] ?? []).map((item: any) => {
+    const io = item["output"] ?? item;
+    return { id: io["id"], name: io["label"] ?? io["name"], variables: [] } as ModelIO;
   });
   delete m["outputs"];
-  m.input_parameters = (m["parameters"] as any[]).map((parameter) => {
-    return modelParameterFromGQL(parameter);
+  m.input_parameters = (m["parameters"] ?? []).map((item: any) => {
+    const p = item["parameter"] ?? item;
+    return {
+      id: p["id"],
+      name: p["label"] ?? p["name"],
+      type: p["type"] ?? "",
+      default: p["has_default_value"],
+      min: p["has_minimum_accepted_value"],
+      max: p["has_maximum_accepted_value"],
+    } as ModelParameter;
   });
   delete m["parameters"];
   return m;
@@ -544,10 +558,11 @@ export const modelEnsembleFromGQL = (
     bindings[db["model_io"]["id"]] = binding;
   });
   pbs.forEach((pb) => {
-    let binding = bindings[pb["model_parameter"]["id"]];
+    const param = pb["modelcatalog_parameter"] ?? pb["model_parameter"];
+    let binding = bindings[param["id"]];
     if (!binding) binding = [];
     binding.push(pb["parameter_value"]);
-    bindings[pb["model_parameter"]["id"]] = binding;
+    bindings[param["id"]] = binding;
   });
   return bindings;
 };
