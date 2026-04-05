@@ -32,7 +32,10 @@ export interface Model extends IdNameObject {
 }
 
 const getLastPart = (s: string) => {
-  if (!s) return "";
+  if (!s) {
+    console.warn("getLastPart called with undefined/null value");
+    return "";
+  }
   let sp = s.split("/");
   if (sp && sp.length > 0) return sp.pop();
   return "";
