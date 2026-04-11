@@ -587,7 +587,7 @@ export const executionToGQL = (ex: Execution) => {
 export const executionFromGQL = (ex: any, emulator = false): Execution => {
   let exobj = {
     id: ex.id,
-    modelid: ex.model_id,
+    modelid: (ex.modelcatalog_configuration?.id ?? null) as string,
     status: ex.status,
     start_time: new Date(ex.start_time),
     end_time: ex.end_time ? new Date(ex.end_time) : null,
