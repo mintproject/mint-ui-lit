@@ -108,22 +108,12 @@ export class CKANDataCatalog implements IDataCatalog {
 
     //Filter datasets by resources datasets[].resources[] contains mint_standard_variables === variable
     for (const dataset of datasetResponse.result.results) {
-      dataset.resources = dataset.resources.filter((resource: any) => {
-        const resourceVariables = resource.mint_standard_variables;
-        // Check if resourceVariables exists and handle different types
-        if (!resourceVariables) {
-          return false;
-        }
-        if (typeof resourceVariables === "string") {
-          return driving_variables.includes(resourceVariables);
-        }
-        if (Array.isArray(resourceVariables)) {
-          return resourceVariables.some((variable: string) =>
-            driving_variables.includes(variable)
-          );
-        }
-        return false; // Handle any other unexpected types
-      });
+      dataset.resources = dataset.resources.filter((resource: any) =>
+        CKANDataCatalog.resourceMatchesVariables(
+          resource.mint_standard_variables,
+          driving_variables
+        )
+      );
     }
 
     // If the dataset has no resources, remove it from the list
@@ -149,24 +139,30 @@ export class CKANDataCatalog implements IDataCatalog {
     const response = await this.getDatasetRaw(datasetid);
     const dataset = response.result;
     if (variableNames) {
-      dataset.resources = dataset.resources.filter((resource: any) => {
-        const resourceVariables = resource.mint_standard_variables;
-        // Check if resourceVariables exists and handle different types
-        if (!resourceVariables) {
-          return false;
-        }
-        if (typeof resourceVariables === "string") {
-          return variableNames.includes(resourceVariables);
-        }
-        if (Array.isArray(resourceVariables)) {
-          return resourceVariables.some((variable: string) =>
-            variableNames.includes(variable)
-          );
-        }
-        return false; // Handle any other unexpected types
-      });
+      dataset.resources = dataset.resources.filter((resource: any) =>
+        CKANDataCatalog.resourceMatchesVariables(
+          resource.mint_standard_variables,
+          variableNames
+        )
+      );
     }
     return CKANDataCatalog.convertCkanDataset(dataset, {}).resources;
+  }
+
+  private static resourceMatchesVariables(
+    resourceVariables: any,
+    requestedVariables: string[]
+  ): boolean {
+    if (!resourceVariables) return false;
+    const values: string[] = Array.isArray(resourceVariables)
+      ? resourceVariables.flatMap((v) =>
+          typeof v === "string" ? v.split(",") : []
+        )
+      : typeof resourceVariables === "string"
+      ? resourceVariables.split(",")
+      : [];
+    const normalized = values.map((v) => v.trim()).filter(Boolean);
+    return normalized.some((v) => requestedVariables.includes(v));
   }
 
   public static convertCkanDataset = (
