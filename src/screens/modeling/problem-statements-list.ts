@@ -482,8 +482,11 @@ export class ProblemStatementsList extends connect(store)(PageViewElement) {
     (form.elements["problem_statement_id"] as HTMLInputElement).value = "";
     (form.elements["problem_statement_name"] as HTMLInputElement).value = "";
     (form.elements["problem_statement_notes"] as HTMLInputElement).value = "";
-    (form.elements["problem_statement_from"] as HTMLInputElement).value = "";
-    (form.elements["problem_statement_to"] as HTMLInputElement).value = "";
+    (form.elements["problem_statement_from"] as HTMLInputElement).value =
+      "2000-01-01";
+    (form.elements["problem_statement_to"] as HTMLInputElement).value = new Date()
+      .toISOString()
+      .split("T")[0];
     (
       form.querySelector("#problem_statement_permissions") as PermissionsEditor
     ).setPermissions([]);
