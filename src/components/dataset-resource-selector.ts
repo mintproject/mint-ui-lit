@@ -100,23 +100,31 @@ export class DatasetResourceSelector extends connect(store)(LitElement) {
           </tr>
         </thead>
         <tbody>
-          ${this.resources.length > 0 &&
-          this.resources.map(
-            (resource) => html`
-              <tr>
-                <td>
-                  <input
-                    type="checkbox"
-                    .checked=${resource.selected}
-                    @change=${(e: Event) =>
-                      this.toggleResourceSelection(e, resource)}
-                    ?disabled=${this.isLoading}
-                  />
-                </td>
-                <td>${resource.name}</td>
-              </tr>
-            `
-          )}
+          ${this.resources && this.resources.length > 0
+            ? this.resources.map(
+                (resource) => html`
+                  <tr>
+                    <td>
+                      <input
+                        type="checkbox"
+                        .checked=${resource.selected}
+                        @change=${(e: Event) =>
+                          this.toggleResourceSelection(e, resource)}
+                        ?disabled=${this.isLoading}
+                      />
+                    </td>
+                    <td>${resource.name}</td>
+                  </tr>
+                `
+              )
+            : html`
+                <tr>
+                  <td colspan="2" style="text-align:center; color:#777;">
+                    No resources match the current region, date range, and
+                    variable filters for this dataset.
+                  </td>
+                </tr>
+              `}
         </tbody>
       </table>
     `;
