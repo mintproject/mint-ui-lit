@@ -132,9 +132,32 @@ export class MintRuns extends connect(store)(MintThreadPage) {
               return `  `;
             }
             if (!summary.total_runs) {
-              return html`<loading-dots
-                style="--width: 20px; margin-left:10px"
-              ></loading-dots>`;
+              return html`<li>
+                <wl-title level="4"
+                  ><a target="_blank" href="${this._getModelURL(model)}"
+                    >${model.name}</a
+                  ></wl-title
+                >
+                <p>
+                  No runs are configured for this model. This usually means no
+                  input resources or parameter combinations were selected.
+                  Please go back to the
+                  <a
+                    href="javascript:void(0)"
+                    @click="${() =>
+                      store.dispatch(selectThreadSection("datasets"))}"
+                    >Data</a
+                  >
+                  and
+                  <a
+                    href="javascript:void(0)"
+                    @click="${() =>
+                      store.dispatch(selectThreadSection("parameters"))}"
+                    >Parameters</a
+                  >
+                  steps and verify your selections.
+                </p>
+              </li>`;
             }
 
             let grouped_ensemble = grouped_executions[modelid];
