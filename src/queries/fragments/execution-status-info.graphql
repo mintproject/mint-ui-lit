@@ -6,5 +6,7 @@ fragment execution_info on execution {
     run_progress
     run_id
     execution_engine
-    model_id
+    modelcatalog_configuration {
+        id
+    }
 }
