@@ -62,6 +62,9 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
   @property({ type: Object }) selectedInput: ModelIO;
   @property({ type: Object }) localRegions: RegionMap;
   @property({ type: Object }) modelVisible: IdMap<boolean> = {};
+  @property({ type: Boolean }) private filterByTime: boolean = true;
+  @property({ type: Boolean }) private filterByRegion: boolean = true;
+  @property({ type: Boolean }) private filterByVariables: boolean = true;
   private modifiedInputs: IdMap<Dataslice[]> = {};
   private resourceSelectors: IdMap<DatasetResourceSelector> = {};
   private modelIds: string[] = [];
@@ -195,9 +198,116 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       return html`You must select at least a model first.`;
     return html`
       <div>
+        ${this.renderFilterControls()}
         ${Object.values(thread.models).map(this.renderModelDatasets.bind(this))}
       </div>
     `;
+  }
+
+  private renderFilterControls(): TemplateResult {
+    let thread: Thread = this.thread;
+    let region = this.localRegions
+      ? this.localRegions[thread.regionid]
+      : undefined;
+    let dates: DateRange = thread.dates;
+
+    // Collect union of all variables across required inputs for summary display
+    // (Variables vary per-input; this shows the union across all required inputs)
+    let allVars: string[] = [];
+    let inputCount: number = 0;
+    if (thread.models) {
+      Object.values(thread.models).forEach((m: LocalModel) => {
+        let reqInputs: ModelIO[] = (m.input_files || []).filter(
+          (input: ModelIO) =>
+            !input.value || !input.value.resources || input.value.resources.length === 0
+        );
+        reqInputs.forEach((input: ModelIO) => {
+          if (input.variables && input.variables.length > 0) {
+            inputCount++;
+            input.variables.forEach((v) => {
+              if (!allVars.includes(v)) allVars.push(v);
+            });
+          }
+        });
+      });
+    }
+
+    const regionName = region
+      ? region.name || region.id || "task region"
+      : "task region";
+    const regionBbox = region && region.bounding_box
+      ? `xmin:${region.bounding_box.xmin}, ymin:${region.bounding_box.ymin}, xmax:${region.bounding_box.xmax}, ymax:${region.bounding_box.ymax}`
+      : "";
+    const timeValue = dates
+      ? `${dates.start_date?.toISOString()?.slice(0, 10) ?? "?"} to ${dates.end_date?.toISOString()?.slice(0, 10) ?? "?"}`
+      : "not set";
+    const variablesSummary = allVars.length > 0
+      ? `${allVars.length} variable${allVars.length > 1 ? "s" : ""} across ${inputCount} input${inputCount > 1 ? "s" : ""}`
+      : "no variables";
+    const variablesTooltip = allVars.join(", ");
+
+    const toggleIcon = (enabled: boolean) =>
+      enabled ? "check_box" : "check_box_outline_blank";
+
+    return html`
+      <div style="border: 1px solid #DDD; border-radius: 4px; margin-bottom: 10px; padding: 8px 12px; background: #FAFAFA;">
+        <div style="font-weight: bold; margin-bottom: 6px; font-size: 13px; color: #555;">Active filters</div>
+        <div style="display: flex; flex-direction: column; gap: 4px; font-size: 13px;">
+          <div class="flex-between" style="align-items: center;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <wl-icon
+                class="clickable"
+                style="font-size: 18px; color: ${this.filterByTime ? "#1976d2" : "#aaa"};"
+                @click=${() => this.toggleFilter("time")}
+              >${toggleIcon(this.filterByTime)}</wl-icon>
+              <span style="min-width: 70px;">Time</span>
+            </div>
+            <span style="color: ${this.filterByTime ? "#333" : "#aaa"}; opacity: ${this.filterByTime ? 1 : 0.5};">
+              ${timeValue}
+            </span>
+          </div>
+          <div class="flex-between" style="align-items: center;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <wl-icon
+                class="clickable"
+                style="font-size: 18px; color: ${this.filterByRegion ? "#1976d2" : "#aaa"};"
+                @click=${() => this.toggleFilter("region")}
+              >${toggleIcon(this.filterByRegion)}</wl-icon>
+              <span style="min-width: 70px;">Region</span>
+            </div>
+            <span
+              class="tooltip"
+              tip="${regionBbox}"
+              style="color: ${this.filterByRegion ? "#333" : "#aaa"}; opacity: ${this.filterByRegion ? 1 : 0.5};"
+            >${regionName}</span>
+          </div>
+          <div class="flex-between" style="align-items: center;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <wl-icon
+                class="clickable"
+                style="font-size: 18px; color: ${this.filterByVariables ? "#1976d2" : "#aaa"};"
+                @click=${() => this.toggleFilter("variables")}
+              >${toggleIcon(this.filterByVariables)}</wl-icon>
+              <span style="min-width: 70px;">Variables</span>
+            </div>
+            <span
+              class="tooltip"
+              tip="${variablesTooltip}"
+              style="color: ${this.filterByVariables ? "#333" : "#aaa"}; opacity: ${this.filterByVariables ? 1 : 0.5};"
+            >${variablesSummary}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private toggleFilter(which: "time" | "region" | "variables"): void {
+    if (which === "time") this.filterByTime = !this.filterByTime;
+    if (which === "region") this.filterByRegion = !this.filterByRegion;
+    if (which === "variables") this.filterByVariables = !this.filterByVariables;
+    this.datasetCache = {};   // invalidate so renderRequiredDatasetRow re-queries
+    this.resourceCache = {};  // resources also depend on the filter args (see queryResources below)
+    this.requestUpdate();
   }
 
   private toggleModelVisibility(modelid: string): void {
@@ -982,15 +1092,17 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       region.id +
       dates.start_date.getTime() +
       "-" +
-      dates.end_date.getTime();
+      dates.end_date.getTime() +
+      "|v=" + this.filterByVariables;
     if (!this.resourceCache[cacheid]) {
       this.addToLoadQueue(cacheid);
+      // Variables toggle applies to resources too — consistent UX with queryDatasets. See plan 260411-hb5.
       this.resourceCache[cacheid] =
         DataCatalogAdapter.getInstance().listResourcesByDataset(
           dataset.id,
           region,
           dates,
-          variableNames
+          this.filterByVariables ? variableNames : undefined
         );
       this.resourceCache[cacheid].finally(() =>
         this.removeFromLoadQueue(cacheid)
@@ -1010,13 +1122,16 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       region.id +
       dates.start_date.getTime() +
       "-" +
-      dates.end_date.getTime();
+      dates.end_date.getTime() +
+      "|t=" + this.filterByTime +
+      "|r=" + this.filterByRegion +
+      "|v=" + this.filterByVariables;
     if (!this.datasetCache[cacheid])
       this.datasetCache[cacheid] =
         DataCatalogAdapter.getInstance().listDatasetsByVariableNameRegionDates(
-          input.variables,
-          region,
-          dates
+          this.filterByVariables ? input.variables : [],
+          this.filterByRegion ? region : undefined,
+          this.filterByTime ? dates : undefined
         );
     return this.datasetCache[cacheid];
   }
