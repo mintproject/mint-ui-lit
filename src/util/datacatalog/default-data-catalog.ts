@@ -57,16 +57,20 @@ export class DefaultDataCatalog implements IDataCatalog {
 
   public async listDatasetsByVariableNameRegionDates(
     driving_variables: string[],
-    region: Region,
+    region?: Region,
     dates?: DateRange
   ): Promise<Dataset[]> {
-    if (!region.geometries) return;
+    if (region && !region.geometries) return;
 
     let dsQueryData: any = {
-      standard_variable_names__in: driving_variables,
-      spatial_coverage__intersects: region.geometries[0],
       limit: 1000,
     };
+    if (driving_variables && driving_variables.length > 0) {
+      dsQueryData.standard_variable_names__in = driving_variables;
+    }
+    if (region && region.geometries) {
+      dsQueryData.spatial_coverage__intersects = region.geometries[0];
+    }
     if (dates) {
       dsQueryData.end_time__gte = dates?.start_date
         ?.toISOString()

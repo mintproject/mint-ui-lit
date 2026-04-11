@@ -74,54 +74,60 @@ export class CKANDataCatalog implements IDataCatalog {
 
   public async listDatasetsByVariableNameRegionDates(
     driving_variables: string[],
-    region: Region,
+    region?: Region,
     dates?: DateRange
   ): Promise<Dataset[]> {
     let datasets: Dataset[] = [];
 
-    let dsQueryData: any = {
-      ext_bbox: `${region.bounding_box.xmin},${region.bounding_box.ymin},${region.bounding_box.xmax},${region.bounding_box.ymax}`,
-      rows: 1000
-    };
+    let dsQueryData: any = { rows: 1000 };
+    if (region) {
+      dsQueryData.ext_bbox = `${region.bounding_box.xmin},${region.bounding_box.ymin},${region.bounding_box.xmax},${region.bounding_box.ymax}`;
+    }
+
     let datasetResponse: any = await CKANDataCatalog.request(
       `${MINT_PREFERENCES.data_catalog_api}/api/action/package_search`,
       dsQueryData
     );
-    datasetResponse.result.results = datasetResponse.result.results.filter(
-      (ckanDataset: any) => {
-        if (
-          ckanDataset.temporal_coverage_start &&
-          ckanDataset.temporal_coverage_end
-        ) {
-          const dataSetStartDate = new Date(
-            ckanDataset.temporal_coverage_start
-          );
-          const dataSetEndDate = new Date(ckanDataset.temporal_coverage_end);
-          return (
-            dataSetStartDate <= dates.end_date &&
-            dataSetEndDate >= dates.start_date
-          );
-        }
-        return true;
-      }
-    );
 
-    //Filter datasets by resources datasets[].resources[] contains mint_standard_variables === variable
-    for (const dataset of datasetResponse.result.results) {
-      dataset.resources = dataset.resources.filter((resource: any) =>
-        CKANDataCatalog.resourceMatchesVariables(
-          resource.mint_standard_variables,
-          driving_variables
-        )
+    if (dates) {
+      datasetResponse.result.results = datasetResponse.result.results.filter(
+        (ckanDataset: any) => {
+          if (
+            ckanDataset.temporal_coverage_start &&
+            ckanDataset.temporal_coverage_end
+          ) {
+            const dataSetStartDate = new Date(
+              ckanDataset.temporal_coverage_start
+            );
+            const dataSetEndDate = new Date(ckanDataset.temporal_coverage_end);
+            return (
+              dataSetStartDate <= dates.end_date &&
+              dataSetEndDate >= dates.start_date
+            );
+          }
+          return true;
+        }
       );
     }
 
-    // If the dataset has no resources, remove it from the list
-    datasetResponse.result.results = datasetResponse.result.results.filter(
-      (dataset: any) => {
-        return dataset.resources.length > 0;
+    if (driving_variables && driving_variables.length > 0) {
+      //Filter datasets by resources datasets[].resources[] contains mint_standard_variables === variable
+      for (const dataset of datasetResponse.result.results) {
+        dataset.resources = dataset.resources.filter((resource: any) =>
+          CKANDataCatalog.resourceMatchesVariables(
+            resource.mint_standard_variables,
+            driving_variables
+          )
+        );
       }
-    );
+
+      // If the dataset has no resources, remove it from the list
+      datasetResponse.result.results = datasetResponse.result.results.filter(
+        (dataset: any) => {
+          return dataset.resources.length > 0;
+        }
+      );
+    }
 
     datasets = CKANDataCatalog.convertCkanDatasets(datasetResponse, {
       variables: driving_variables,
