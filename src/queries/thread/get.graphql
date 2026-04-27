@@ -69,9 +69,9 @@ query get_thread($id: String!) {
                 }
             }
             data_bindings {
-                model_io {
+                model_io: modelcatalog_dataset_specification {
                     id
-                    name
+                    name: label
                 }
                 dataslice_id
             }
