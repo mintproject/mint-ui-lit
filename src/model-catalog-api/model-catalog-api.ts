@@ -2,6 +2,7 @@ import {
   Configuration,
   ConfigurationParameters,
 } from "@mintproject/modelcatalog_client";
+import "./sdk-patches";
 import { UserCatalog } from "./user-catalog";
 import { MINT_PREFERENCES } from "config";
 
