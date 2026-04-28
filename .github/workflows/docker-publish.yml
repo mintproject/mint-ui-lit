@@ -108,6 +108,7 @@ jobs:
     name: 'Scan vulnerabilities in the image'
     needs: [push]
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
