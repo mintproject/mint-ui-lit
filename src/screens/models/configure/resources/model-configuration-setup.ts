@@ -688,7 +688,7 @@ ${edResource && edResource.hasUsageNotes
       ${this._inputParameter}
 
       <wl-title level="4" style="margin-top:1em"> Files: </wl-title>
-      <div style="font-size: 0.8em; color: #666; margin-bottom: 4px;">Use the edit button on each input to mark it as optional.</div>
+      <div style="font-size: 0.8em; color: #666; margin-bottom: 4px;">Use the "optional" checkbox on each input to mark it skippable. Save the configuration to persist.</div>
       ${this._inputDSInput}
 
       <wl-title level="3" style="margin-top:1em"> Output files: </wl-title>

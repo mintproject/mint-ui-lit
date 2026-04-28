@@ -86,7 +86,6 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
   private _vpDisplayer: IdMap<ModelCatalogVariablePresentation> = {};
   @property({ type: String }) private _fileType: "resource" | "collection" =
     "resource";
-  @property({ type: Boolean }) private _editingIsOptional: boolean = false;
 
   public setAsSetup() {
     this.isSetup = true;
@@ -123,7 +122,6 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
   protected _editResource(r: DatasetSpecification) {
     super._editResource(r);
     let ed: DatasetSpecification = this._getEditingResource();
-    this._editingIsOptional = !!(ed as any).isOptional;
     this._inputVariablePresentation.setResources(ed.hasPresentation);
     this._inputDataTransformation.setResources(ed.hasDataTransformation);
     this._inputSampleCollection.setResources(null);
@@ -148,7 +146,6 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
   }
 
   protected _createResource() {
-    this._editingIsOptional = false;
     this._inputVariablePresentation.setResources(null);
     this._inputDataTransformation.setResources(null);
     this._inputSampleResource.setResources(null);
@@ -201,9 +198,17 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
               >(.${r.hasFormat})</span
             >`
           : ""}
-        ${(r as any).isOptional
-          ? html`<span style="font-size: 0.75em; background: #e8e8e8; border-radius: 3px; padding: 1px 5px; margin-left: 6px; color: #555;">optional</span>`
-          : ""}
+        <label style="font-size: 0.75em; margin-left: 8px; cursor: pointer; color: #555; display: inline-flex; align-items: center; gap: 3px;" title="Optional inputs are skipped during execution if no dataset is bound">
+          <input type="checkbox"
+            style="margin: 0;"
+            .checked="${!!(r as any).isOptional}"
+            @change="${(e: Event) => {
+              (r as any).isOptional = (e.target as HTMLInputElement).checked;
+              this.requestUpdate();
+            }}"
+          />
+          optional
+        </label>
       </td>
       <td>
         <b>${r.description ? r.description[0] : ""}</b>
@@ -287,13 +292,6 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
             : ""}"
         >
         </wl-textfield>
-        <label style="font-size: 0.85em; display: flex; align-items: center; gap: 4px; margin: 6px 0 4px 0; cursor: pointer;">
-          <input type="checkbox"
-            .checked="${this._editingIsOptional}"
-            @change="${(e: Event) => { this._editingIsOptional = (e.target as HTMLInputElement).checked; this.requestUpdate(); }}"
-          />
-          Optional (can be skipped when no dataset is bound)
-        </label>
         <div style="min-height:50px; padding: 10px 0px;">
           <div style="padding-top: 10px; font-weight: bold;">
             Variables:
@@ -417,7 +415,6 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
         )
       ) {
         const result = DatasetSpecificationFromJSON(jsonRes);
-        (result as any).isOptional = this._editingIsOptional;
         return result;
       }
     } else {
