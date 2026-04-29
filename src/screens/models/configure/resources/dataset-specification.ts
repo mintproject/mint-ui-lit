@@ -1,4 +1,4 @@
-import { ModelCatalogResource } from "./resource";
+import { ModelCatalogResource, Action } from "./resource";
 import { property, html, customElement, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store } from "app/store";
@@ -223,19 +223,23 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
               >(.${r.hasFormat})</span
             >`
           : ""}
-        <label style="font-size: 0.75em; margin-left: 8px; cursor: pointer; color: #555; display: inline-flex; align-items: center; gap: 3px;" title="Optional inputs are skipped during execution if no dataset is bound">
-          <input type="checkbox"
-            style="margin: 0;"
-            .checked="${!!(r as any).isOptional}"
-            @change="${(e: Event) => {
-              const checked = (e.target as HTMLInputElement).checked;
-              (r as any).isOptional = checked;
-              this._junctionOverlay[r.id] = { isOptional: checked };
-              this.requestUpdate();
-            }}"
-          />
-          optional
-        </label>
+        ${this._action === Action.EDIT_OR_ADD
+          ? html`<label style="font-size: 0.75em; margin-left: 8px; cursor: pointer; color: #555; display: inline-flex; align-items: center; gap: 3px;" title="Optional inputs are skipped during execution if no dataset is bound">
+              <input type="checkbox"
+                style="margin: 0;"
+                .checked="${!!(r as any).isOptional}"
+                @change="${(e: Event) => {
+                  const checked = (e.target as HTMLInputElement).checked;
+                  (r as any).isOptional = checked;
+                  this._junctionOverlay[r.id] = { isOptional: checked };
+                  this.requestUpdate();
+                }}"
+              />
+              optional
+            </label>`
+          : (r as any).isOptional
+          ? html`<span style="font-size: 0.7em; margin-left: 8px; padding: 1px 6px; border-radius: 3px; background: #f0f0f0; color: #666;" title="Optional input — skipped during execution if no dataset is bound">optional</span>`
+          : ""}
       </td>
       <td>
         <b>${r.description ? r.description[0] : ""}</b>
