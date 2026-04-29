@@ -84,12 +84,37 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
   private sampleResources: IdMap<ModelCatalogSampleResource> = {};
   private sampleCollections: IdMap<ModelCatalogSampleCollection> = {};
   private _vpDisplayer: IdMap<ModelCatalogVariablePresentation> = {};
+  // isOptional is a junction column on modelcatalog_configuration_input, not on the
+  // DatasetSpecification entity. The base setResources() refetches each row by id,
+  // and that entity GET has no isOptional. Stash the inline value from the parent
+  // ModelConfiguration payload and re-apply it onto _loadedResources before render.
+  private _junctionOverlay: { [id: string]: { isOptional?: boolean } } = {};
   @property({ type: String }) private _fileType: "resource" | "collection" =
     "resource";
 
   public setAsSetup() {
     this.isSetup = true;
     this.colspan = 4;
+  }
+
+  public setResources(r: DatasetSpecification[]) {
+    this._junctionOverlay = {};
+    (r || []).forEach((it: any) => {
+      if (it && it.id) {
+        this._junctionOverlay[it.id] = { isOptional: !!it.isOptional };
+      }
+    });
+    super.setResources(r);
+  }
+
+  public requestUpdate(name?: PropertyKey, oldValue?: unknown) {
+    Object.keys(this._junctionOverlay || {}).forEach((id: string) => {
+      const lr = (this as any)._loadedResources[id];
+      if (lr && (lr as any).isOptional === undefined) {
+        (lr as any).isOptional = this._junctionOverlay[id].isOptional;
+      }
+    });
+    return super.requestUpdate(name as any, oldValue);
   }
 
   constructor() {
@@ -203,7 +228,9 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
             style="margin: 0;"
             .checked="${!!(r as any).isOptional}"
             @change="${(e: Event) => {
-              (r as any).isOptional = (e.target as HTMLInputElement).checked;
+              const checked = (e.target as HTMLInputElement).checked;
+              (r as any).isOptional = checked;
+              this._junctionOverlay[r.id] = { isOptional: checked };
               this.requestUpdate();
             }}"
           />
