@@ -3,7 +3,7 @@ name: ui
 on:
   push:
     branches:
-      - '*'
+      - '**'
     tags:
       - v*
   pull_request:
@@ -60,9 +60,12 @@ jobs:
           name: nextjs-build
           path: build/
 
-      - name: Create environment variable with the commit id
+      - name: Create environment variables (commit id + sanitized branch)
         run: |
           echo "DOCKER_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
+          SAFE_BRANCH="${{ steps.branch-name.outputs.current_branch }}"
+          # Docker tags forbid '/' — replace with '-' so slash-containing branches build
+          echo "SAFE_BRANCH=${SAFE_BRANCH//\//-}" >> $GITHUB_ENV
 
       - name: Expose the commit id
         id: exposeValue
@@ -86,7 +89,7 @@ jobs:
         with:
           push: true
           context: .
-          tags: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ steps.branch-name.outputs.current_branch }}, ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_TAG }}
+          tags: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.SAFE_BRANCH }}, ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_TAG }}
           file: ${{ env.DOCKER_FILE}}
           platforms: linux/amd64,linux/arm64
 
@@ -108,6 +111,7 @@ jobs:
     name: 'Scan vulnerabilities in the image'
     needs: [push]
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master

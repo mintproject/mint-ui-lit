@@ -194,6 +194,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
     }
 
     this._inputParameter.setResources(r.hasParameter);
+    // hasInput items carry isOptional from the raw API response (see CustomModelConfigurationApi.get)
     this._inputDSInput.setResources(r.hasInput);
     this._inputDSOutput.setResources(r.hasOutput);
     this._inputSourceCode.setResources(r.hasSourceCode);
@@ -435,6 +436,7 @@ export class ModelCatalogModelConfiguration extends connect(store)(
       ${this._inputParameter}
 
       <wl-title level="4" style="margin-top:1em"> Files: </wl-title>
+      <div style="font-size: 0.8em; color: #666; margin-bottom: 4px;">Inputs marked as optional can be skipped when no dataset is bound for execution.</div>
       ${this._inputDSInput}
 
       <wl-title level="3" style="margin-top:1em"> Output files: </wl-title>
@@ -689,6 +691,7 @@ ${edResource && edResource.hasUsageNotes
       ${this._inputParameter}
 
       <wl-title level="4" style="margin-top:1em"> Files: </wl-title>
+      <div style="font-size: 0.8em; color: #666; margin-bottom: 4px;">Use the "optional" checkbox on each input to mark it skippable. Save the configuration to persist.</div>
       ${this._inputDSInput}
 
       <wl-title level="3" style="margin-top:1em"> Output files: </wl-title>
@@ -825,7 +828,8 @@ ${edResource && edResource.hasUsageNotes
         hasGrid: this._inputGrid.getResources(),
         // this ones are temporal resources
         hasParameter: this._inputParameter.getResources(),
-        hasInput: this._inputDSInput.getResources(),
+        // getResources() returns hasInput items with isOptional preserved from API or form edits
+        hasInput: this._inputDSInput.getResources().map((ds: any) => ({ ...ds, isOptional: ds.isOptional ?? false })),
         hasOutput: this._inputDSOutput.getResources(),
         hasSourceCode: this._inputSourceCode.getResources(),
         hasConstraint: this._inputConstraint.getResources(),

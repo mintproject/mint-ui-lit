@@ -1,6 +1,7 @@
 import { IdMap } from "app/reducers";
 import {
   MCActionAdd,
+  MODEL_CATALOG_ADD,
   ActionThunk,
 } from "../actions";
 import { Configuration, BaseAPI, TapisApp } from "@mintproject/modelcatalog_client";
@@ -24,6 +25,41 @@ export class CustomModelConfigurationApi extends DefaultReduxApi<
   ) {
     super(ModelConfigurationApi, user, config);
   }
+
+  /** Override get to restore isOptional on hasInput items from the raw API response.
+   *  The generated ModelConfigurationFromJSON strips isOptional because it is not in
+   *  the v1.8.0 OpenAPI schema used to generate the client.  We fetch the raw JSON
+   *  alongside the typed object and merge the flag back before dispatching to Redux.
+   */
+  public get: ActionThunk<Promise<ModelConfiguration>, MCActionAdd> =
+    (uri: string) => (dispatch) => {
+      const id: string = this._getIdFromUri(uri);
+      const rawReq = this._api.modelconfigurationsIdGetRaw({
+        username: this._username,
+        id,
+      });
+      return rawReq.then(async (apiResponse) => {
+        const [rawJson, typed] = await Promise.all([
+          apiResponse.raw.clone().json() as Promise<any>,
+          apiResponse.value(),
+        ]);
+        // Restore isOptional on hasInput items from the raw JSON
+        if (typed.hasInput && rawJson.hasInput) {
+          typed.hasInput = typed.hasInput.map((item: any, i: number) => ({
+            ...item,
+            isOptional: !!(rawJson.hasInput[i]?.isOptional),
+          }));
+        }
+        if (this._redux) {
+          dispatch({
+            type: MODEL_CATALOG_ADD,
+            kind: this.getName(),
+            payload: this._idReducer({}, typed),
+          });
+        }
+        return typed;
+      });
+    };
 
   private simplePost: ActionThunk<Promise<ModelConfiguration>, MCActionAdd> =
     this.post;

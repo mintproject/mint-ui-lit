@@ -1,4 +1,4 @@
-import { ModelCatalogResource } from "./resource";
+import { ModelCatalogResource, Action } from "./resource";
 import { property, html, customElement, css } from "lit-element";
 import { connect } from "pwa-helpers/connect-mixin";
 import { store } from "app/store";
@@ -84,12 +84,37 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
   private sampleResources: IdMap<ModelCatalogSampleResource> = {};
   private sampleCollections: IdMap<ModelCatalogSampleCollection> = {};
   private _vpDisplayer: IdMap<ModelCatalogVariablePresentation> = {};
+  // isOptional is a junction column on modelcatalog_configuration_input, not on the
+  // DatasetSpecification entity. The base setResources() refetches each row by id,
+  // and that entity GET has no isOptional. Stash the inline value from the parent
+  // ModelConfiguration payload and re-apply it onto _loadedResources before render.
+  private _junctionOverlay: { [id: string]: { isOptional?: boolean } } = {};
   @property({ type: String }) private _fileType: "resource" | "collection" =
     "resource";
 
   public setAsSetup() {
     this.isSetup = true;
     this.colspan = 4;
+  }
+
+  public setResources(r: DatasetSpecification[]) {
+    this._junctionOverlay = {};
+    (r || []).forEach((it: any) => {
+      if (it && it.id) {
+        this._junctionOverlay[it.id] = { isOptional: !!it.isOptional };
+      }
+    });
+    super.setResources(r);
+  }
+
+  public requestUpdate(name?: PropertyKey, oldValue?: unknown) {
+    Object.keys(this._junctionOverlay || {}).forEach((id: string) => {
+      const lr = (this as any)._loadedResources[id];
+      if (lr && (lr as any).isOptional === undefined) {
+        (lr as any).isOptional = this._junctionOverlay[id].isOptional;
+      }
+    });
+    return super.requestUpdate(name as any, oldValue);
   }
 
   constructor() {
@@ -197,6 +222,23 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
           ? html`<span class="monospaced" style="color: gray;"
               >(.${r.hasFormat})</span
             >`
+          : ""}
+        ${this._action === Action.EDIT_OR_ADD
+          ? html`<label style="font-size: 0.75em; margin-left: 8px; cursor: pointer; color: #555; display: inline-flex; align-items: center; gap: 3px;" title="Optional inputs are skipped during execution if no dataset is bound">
+              <input type="checkbox"
+                style="margin: 0;"
+                .checked="${!!(r as any).isOptional}"
+                @change="${(e: Event) => {
+                  const checked = (e.target as HTMLInputElement).checked;
+                  (r as any).isOptional = checked;
+                  this._junctionOverlay[r.id] = { isOptional: checked };
+                  this.requestUpdate();
+                }}"
+              />
+              optional
+            </label>`
+          : (r as any).isOptional
+          ? html`<span style="font-size: 0.7em; margin-left: 8px; padding: 1px 6px; border-radius: 3px; background: #f0f0f0; color: #666;" title="Optional input — skipped during execution if no dataset is bound">optional</span>`
           : ""}
       </td>
       <td>
@@ -403,7 +445,8 @@ export class ModelCatalogDatasetSpecification extends connect(store)(
           "If no variables are associated with an input, we will not be able to search dataset candidates in the MINT data catalog when using this model"
         )
       ) {
-        return DatasetSpecificationFromJSON(jsonRes);
+        const result = DatasetSpecificationFromJSON(jsonRes);
+        return result;
       }
     } else {
       // Show errors
