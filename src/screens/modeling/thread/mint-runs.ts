@@ -508,13 +508,17 @@ export class MintRuns extends connect(store)(MintThreadPage) {
                                         }
                                       })}
                                       ${grouped_ensemble.params.map((param) => {
-                                        let pvalue = ensemble.bindings[param.id]
-                                          ? ensemble.bindings[param.id]
-                                          : param_defaults[param.id];
-                                        if (pvalue.match(/^__region_geojson/)) {
+                                        let pvalue =
+                                          param.id in ensemble.bindings
+                                            ? ensemble.bindings[param.id]
+                                            : param_defaults[param.id];
+                                        if (
+                                          typeof pvalue === 'string' &&
+                                          pvalue.match(/^__region_geojson/)
+                                        ) {
                                           pvalue = 'Region Geojson';
                                         }
-                                        return html`<td>${pvalue}</td>`;
+                                        return html`<td>${pvalue ?? ''}</td>`;
                                       })}
                                     </tr>
                                   `;
