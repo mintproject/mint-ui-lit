@@ -1110,6 +1110,7 @@ ${latest_data_event?.notes ? latest_data_event.notes : ""}</textarea
       this.thread.model_dt_ensembles || {};
 
     let allok = true;
+    console.groupCollapsed("[mint-datasets] _selectThreadDatasets gating");
     Object.keys(this.thread.models!).map((modelid) => {
       let model = this.thread.models![modelid];
       let ok = true;
@@ -1127,6 +1128,9 @@ ${latest_data_event?.notes ? latest_data_event.notes : ""}</textarea
             current_data_ensemble &&
             current_data_ensemble.length > 0
           ) {
+            console.log(
+              `[mint-datasets] skip pre-bound input model=${model.name} input=${input.name} isOptional=${!!input.isOptional} preBindings=${current_data_ensemble.length}`
+            );
             return;
           }
 
@@ -1159,18 +1163,26 @@ ${latest_data_event?.notes ? latest_data_event.notes : ""}</textarea
             data_transformations[dtid] = new_datatransformations[dtid];
           });
 
-          if (
-            !input.isOptional &&
-            model_ensembles[modelid].bindings[inputid].length == 0 &&
-            model_dt_ensembles[modelid].bindings[inputid].length == 0
-          ) {
+          const dsCount = model_ensembles[modelid].bindings[inputid].length;
+          const dtCount = model_dt_ensembles[modelid].bindings[inputid].length;
+          const empty = dsCount === 0 && dtCount === 0;
+          const blocks = empty && !input.isOptional;
+          if (blocks) {
             ok = false;
           }
+          console.log(
+            `[mint-datasets] input model=${model.name} input=${input.name} isOptional=${!!input.isOptional} datasets=${dsCount} dts=${dtCount} empty=${empty} blocks=${blocks}`
+          );
         });
       if (!ok) {
         allok = false;
       }
+      console.log(
+        `[mint-datasets] model summary model=${model.name} ok=${ok}`
+      );
     });
+    console.log(`[mint-datasets] allok=${allok}`);
+    console.groupEnd();
 
     if (!allok) {
       this._waiting = false;
