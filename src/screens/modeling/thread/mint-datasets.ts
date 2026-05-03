@@ -1160,6 +1160,7 @@ ${latest_data_event?.notes ? latest_data_event.notes : ""}</textarea
           });
 
           if (
+            !input.isOptional &&
             model_ensembles[modelid].bindings[inputid].length == 0 &&
             model_dt_ensembles[modelid].bindings[inputid].length == 0
           ) {
