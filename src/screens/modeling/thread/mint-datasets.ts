@@ -392,8 +392,11 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                               });
                               return html`
                                 <li>
+                                  ${input.isOptional
+                                    ? html`<wl-icon style="color: #999; font-size:16px; vertical-align:middle; margin-right:4px;" title="Optional input — selection not required">info</wl-icon>`
+                                    : html`<wl-icon style="color: orange; font-size:16px; vertical-align:middle; margin-right:4px;">warning</wl-icon>`}
                                   Select an input dataset for
-                                  <b>${input.name}</b>. (You can select more
+                                  <b>${input.name}</b>${input.isOptional ? html` <span style="color:#999; font-size:0.85em;">(optional)</span>` : ""}. (You can select more
                                   than one dataset if you want several runs).
                                   Datasets matching the driving variable specied
                                   (if any) are in <b>bold</b>.
