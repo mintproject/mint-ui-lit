@@ -494,7 +494,12 @@ export const modelFromGQL = (m: any) => {
 
   m.input_files = (m["inputs"] ?? []).map((item: any) => {
     const io = item["input"] ?? item;
-    return { id: io["id"], name: io["label"] ?? io["name"], variables: [] } as ModelIO;
+    return {
+      id: io["id"],
+      name: io["label"] ?? io["name"],
+      variables: [],
+      isOptional: !!item["is_optional"],
+    } as ModelIO;
   });
   delete m["inputs"];
   m.output_files = (m["outputs"] ?? []).map((item: any) => {

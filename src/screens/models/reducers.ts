@@ -64,6 +64,7 @@ export interface ModelIO extends IdNameObject {
   variables: string[];
   value?: Dataslice;
   position?: number;
+  isOptional?: boolean;
 }
 
 export interface ModelParameter extends IdNameObject {
