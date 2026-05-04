@@ -49,6 +49,7 @@ subscription sub_thread($id: String!) {
           }
         }
         inputs {
+          is_optional
           input {
             id
             label

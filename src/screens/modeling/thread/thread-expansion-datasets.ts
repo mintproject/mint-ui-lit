@@ -175,6 +175,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     let done: boolean = true;
     Object.values(this.thread.models).forEach((m: LocalModel) => {
       (m.input_files || []).forEach((input: ModelIO) => {
+        if (input.isOptional) return;
         if (!input.value) {
           let allBindings: ModelIOBindings =
             this.thread.model_ensembles![m.id].bindings || {};
@@ -334,6 +335,7 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
       (fixedInputs.length + reqInputs.length == model.input_files.length &&
         reqInputs.every(
           (input: ModelIO) =>
+            input.isOptional ||
             (this.modifiedInputs[input.id] &&
               this.modifiedInputs[input.id].length > 0) ||
             (modelBindings[input.id] || []).map(
@@ -442,14 +444,23 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
     input: ModelIO
   ): TemplateResult {
     let dataslices: Dataslice[] = this.modifiedInputs[input.id];
+    let hasSelection: boolean = !!(dataslices && dataslices.length > 0);
     return html`
       <tr>
         <td>
           <div style="display:flex; align-items:center;">
-            ${dataslices && dataslices.length > 0
+            ${hasSelection
               ? html`
                   <wl-icon style="color: 'green'; margin-right: 5px;"
                     >done</wl-icon
+                  >
+                `
+              : input.isOptional
+              ? html`
+                  <wl-icon
+                    style="color: #999; margin-right: 5px;"
+                    title="Optional input — selection not required"
+                    >info</wl-icon
                   >
                 `
               : html`
@@ -457,7 +468,9 @@ export class ThreadExpansionDatasets extends ThreadExpansion {
                     >warning</wl-icon
                   >
                 `}
-            ${input.name}
+            ${input.name}${input.isOptional && !hasSelection
+              ? html`<span style="color:#999; margin-left:6px; font-size:0.85em;">(optional)</span>`
+              : ""}
           </div>
         </td>
         <td>

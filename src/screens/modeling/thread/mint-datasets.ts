@@ -392,8 +392,11 @@ export class MintDatasets extends connect(store)(MintThreadPage) {
                               });
                               return html`
                                 <li>
+                                  ${input.isOptional
+                                    ? html`<wl-icon style="color: #999; font-size:16px; vertical-align:middle; margin-right:4px;" title="Optional input — selection not required">info</wl-icon>`
+                                    : html`<wl-icon style="color: orange; font-size:16px; vertical-align:middle; margin-right:4px;">warning</wl-icon>`}
                                   Select an input dataset for
-                                  <b>${input.name}</b>. (You can select more
+                                  <b>${input.name}</b>${input.isOptional ? html` <span style="color:#999; font-size:0.85em;">(optional)</span>` : ""}. (You can select more
                                   than one dataset if you want several runs).
                                   Datasets matching the driving variable specied
                                   (if any) are in <b>bold</b>.
@@ -1110,6 +1113,7 @@ ${latest_data_event?.notes ? latest_data_event.notes : ""}</textarea
       this.thread.model_dt_ensembles || {};
 
     let allok = true;
+    console.groupCollapsed("[mint-datasets] _selectThreadDatasets gating");
     Object.keys(this.thread.models!).map((modelid) => {
       let model = this.thread.models![modelid];
       let ok = true;
@@ -1127,6 +1131,9 @@ ${latest_data_event?.notes ? latest_data_event.notes : ""}</textarea
             current_data_ensemble &&
             current_data_ensemble.length > 0
           ) {
+            console.log(
+              `[mint-datasets] skip pre-bound input model=${model.name} input=${input.name} isOptional=${!!input.isOptional} preBindings=${current_data_ensemble.length}`
+            );
             return;
           }
 
@@ -1159,17 +1166,26 @@ ${latest_data_event?.notes ? latest_data_event.notes : ""}</textarea
             data_transformations[dtid] = new_datatransformations[dtid];
           });
 
-          if (
-            model_ensembles[modelid].bindings[inputid].length == 0 &&
-            model_dt_ensembles[modelid].bindings[inputid].length == 0
-          ) {
+          const dsCount = model_ensembles[modelid].bindings[inputid].length;
+          const dtCount = model_dt_ensembles[modelid].bindings[inputid].length;
+          const empty = dsCount === 0 && dtCount === 0;
+          const blocks = empty && !input.isOptional;
+          if (blocks) {
             ok = false;
           }
+          console.log(
+            `[mint-datasets] input model=${model.name} input=${input.name} isOptional=${!!input.isOptional} datasets=${dsCount} dts=${dtCount} empty=${empty} blocks=${blocks}`
+          );
         });
       if (!ok) {
         allok = false;
       }
+      console.log(
+        `[mint-datasets] model summary model=${model.name} ok=${ok}`
+      );
     });
+    console.log(`[mint-datasets] allok=${allok}`);
+    console.groupEnd();
 
     if (!allok) {
       this._waiting = false;

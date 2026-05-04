@@ -77,7 +77,7 @@ export const getThreadDatasetsStatus = (thread: Thread) => {
       let model = thread.models[modelid];
       let mensemble = thread.model_ensembles[modelid];
       model.input_files.forEach((input) => {
-        if (!input.value && !mensemble.bindings[input.id]) {
+        if (!input.value && !mensemble.bindings[input.id] && !input.isOptional) {
           ok = false;
         }
       });
