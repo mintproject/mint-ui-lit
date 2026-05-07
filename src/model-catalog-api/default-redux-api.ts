@@ -257,7 +257,10 @@ export class DefaultReduxApi<T extends IdObject, API extends BaseAPI> {
   }
 
   protected _getIdFromUri(uri: string): string {
-    return uri.split("/").pop();
+    // URI is opaque. Send full URI; SDK URL-encodes the path param.
+    // Avoids dropping namespace segments (e.g. legacy mint/{user}/{slug} URIs)
+    // which previously broke GET on user-namespaced resources.
+    return uri;
   }
 
   // Moves resources to a hashmap (id -> resource)
