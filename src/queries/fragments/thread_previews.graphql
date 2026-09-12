@@ -1,9 +1,19 @@
+# This fragment must not traverse `response_variable` or `driving_variable`.
+#
+# Both are `foreign_key_constraint_on` relationships, so they follow the
+# constraint. mintproject/monorepo#136 repoints the constraint from
+# `public.variable` to `modelcatalog_standard_variable`, which has `label`
+# and no `name`. Selecting `name` through the relationship makes Hasura
+# reject the whole document at validation, which takes down the problem
+# statement list, its detail page and both subscriptions -- every consumer
+# of `problem_statement_info`.
+#
+# Selecting only columns keeps this app working against the schema on both
+# sides of that migration. The columns themselves do not change.
 fragment thread_previews on problem_statement {
   tasks {
     threads {
-      response_variable {
-        name
-      }
+      id
     }
   }
 }
